@@ -46,6 +46,17 @@ func TestLoadConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "localhost:1234"
 
+	clientConfigREADME := confighttp.NewDefaultClientConfig()
+	clientConfigREADME.Endpoint = "172.17.0.5:9153"
+	clientConfigREADME.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "/path/to/ca",
+			CertFile: "/path/to/cert",
+			KeyFile:  "/path/to/key",
+		},
+		Insecure: true,
+	}
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -61,6 +72,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/v2/metrics",
 				JobName:            "job123",
+				Labels:             map[string]string{"env": "prod"},
 				Params:             url.Values{"columns": []string{"name", "messages"}, "key": []string{"foo", "bar"}},
 				UseServiceAccount:  true,
 			},
@@ -79,6 +91,15 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:       clientConfig,
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/metrics",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "readme_example"),
+			expected: &Config{
+				ClientConfig:       clientConfigREADME,
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+				UseServiceAccount:  true,
 			},
 		},
 	}
