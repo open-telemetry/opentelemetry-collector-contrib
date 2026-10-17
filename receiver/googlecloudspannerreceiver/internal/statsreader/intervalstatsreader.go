@@ -21,6 +21,7 @@ const (
 	backfillIntervalDuration = time.Hour
 	topLockStatsMetricName   = "top minute lock stats"
 	topQueryStatsMetricName  = "top minute query stats"
+	topSplitStatsMetricName  = "top minute split stats"
 	maxLengthTruncateText    = 1024
 )
 
@@ -29,6 +30,7 @@ type intervalStatsReader struct {
 	timestampsGenerator               *timestampsGenerator
 	lastPullTimestamp                 time.Time
 	hideTopnLockstatsRowrangestartkey bool
+	hideSplitStatsKeys                bool
 	truncateText                      bool
 }
 
@@ -54,6 +56,7 @@ func newIntervalStatsReader(
 		currentStatsReader:                reader,
 		timestampsGenerator:               tsGenerator,
 		hideTopnLockstatsRowrangestartkey: config.HideTopnLockstatsRowrangestartkey,
+		hideSplitStatsKeys:                config.HideSplitStatsKeys,
 		truncateText:                      config.TruncateText,
 	}
 }
@@ -84,6 +87,12 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 				dataPoint.HideLockStatsRowrangestartkeyPII()
 			}
 		}
+		if reader.hideSplitStatsKeys && metricMetadata != nil && metricMetadata.Name == topSplitStatsMetricName {
+			for _, dataPoint := range dataPoints {
+				dataPoint.HideSplitStatsKeysPII()
+			}
+		}
+
 		if reader.truncateText && metricMetadata != nil && metricMetadata.Name == topQueryStatsMetricName {
 			for _, dataPoint := range dataPoints {
 				dataPoint.TruncateQueryText(maxLengthTruncateText)

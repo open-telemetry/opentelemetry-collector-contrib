@@ -464,6 +464,25 @@ The metric types supported are:
 - Exponential histogram (Delta temporality only)
 - Summary
 
+### Histogram storage
+
+In OTel mapping mode, OTLP exponential histograms are stored in Elasticsearch's
+native [`exponential_histogram`](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/exponential-histogram)
+field when connected to Elasticsearch 9.3.0 or later. This preserves the
+exponential bucket layout (scale, zero bucket, positive/negative buckets, sum,
+min, max) losslessly.
+
+This is enabled automatically via [version detection](#elasticsearch-version-detection): when
+version detection is disabled (`version_detection.enabled: false`) or the
+connected Elasticsearch is older than 9.3.0, exponential histograms fall back to
+a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
+`histogram` field.
+
+Per-data-point mapping hints still apply and take precedence: `histogram:raw`
+stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
+stores a `{sum, value_count}` summary. The native `exponential_histogram` field
+is only used in OTel mapping mode.
+
 ### Metrics dynamic templates
 
 For metrics, the exporter sends **per-document `dynamic_templates`** with each bulk index action so that Elasticsearch can apply the correct mapping to metric fields. It uses the [bulk API `dynamic_templates` parameter](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk):
@@ -474,7 +493,7 @@ The index template must define dynamic templates whose names match the values se
 
 | Mapping mode | Field path in document | Template names sent | Notes |
 | ------------ | ---------------------- | -------------------- | ----- |
-| **OTel**     | `metrics.<metric name>` | `histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.3.0 or later. |
 | **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
