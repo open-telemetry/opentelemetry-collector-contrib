@@ -547,6 +547,31 @@ func Test_parseFrameFromString(t *testing.T) {
 			wantErr:  assert.NoError,
 		},
 		{
+			name:     "Unparseable frame",
+			frameStr: "invalid",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Whitespace frame",
+			frameStr: " ",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Native frame",
+			frameStr: "foo (native)",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Missing closing parenthesis",
+			frameStr: "foo (file.js:1:2",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Non-numeric line",
+			frameStr: "foo (file.js:line:2)",
+			wantErr:  assert.Error,
+		},
+		{
 			name:     "All the frame fields are present in the frame string",
 			frameStr: "? (http://fe:3002/static/js/vendors~main.chunk.js:8639:42)",
 			frame: &faroTypes.Frame{
@@ -627,6 +652,34 @@ func Test_parseFrameFromString(t *testing.T) {
 	}
 }
 
+func Test_parseStacktraceFromString(t *testing.T) {
+	validFrame := "foo (file.js:1:2)"
+	for _, tt := range []struct {
+		name       string
+		stacktrace string
+		wantErr    bool
+		wantFrames int
+	}{
+		{name: "empty"},
+		{name: "exception header only", stacktrace: "Error: failure"},
+		{name: "valid frame", stacktrace: "Error: failure\n  at " + validFrame, wantFrames: 1},
+		{name: "unparseable frame", stacktrace: "Error: failure\n  at invalid", wantErr: true},
+		{name: "unparseable frame after valid frame", stacktrace: "Error: failure\n  at " + validFrame + "\n  at invalid", wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			stacktrace, err := parseStacktraceFromString(tt.stacktrace, "Error", "failure")
+			if tt.wantErr {
+				require.EqualError(t, err, "invalid stack trace frame")
+				assert.Nil(t, stacktrace)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, stacktrace)
+			assert.Len(t, stacktrace.Frames, tt.wantFrames)
+		})
+	}
+}
+
 func Test_translateLogToFaroPayload(t *testing.T) {
 	testcases := []struct {
 		name        string
@@ -696,6 +749,36 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 					},
 				},
 				Meta: getTestMeta(),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Log record body has kind=log and level=warn",
+			lr: func() plog.LogRecord {
+				record := plog.NewLogRecord()
+				record.Body().SetStr("kind=log level=warn")
+				return record
+			}(),
+			rl: pcommon.NewResource(),
+			wantPayload: faroTypes.Payload{
+				Logs: []faroTypes.Log{
+					{LogLevel: faroLogLevelWarn},
+				},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Log record body has kind=log and level=warning",
+			lr: func() plog.LogRecord {
+				record := plog.NewLogRecord()
+				record.Body().SetStr("kind=log level=warning")
+				return record
+			}(),
+			rl: pcommon.NewResource(),
+			wantPayload: faroTypes.Payload{
+				Logs: []faroTypes.Log{
+					{LogLevel: faroTypes.LogLevelWarning},
+				},
 			},
 			wantErr: assert.NoError,
 		},
