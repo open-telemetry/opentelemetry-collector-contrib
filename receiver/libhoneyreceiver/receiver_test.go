@@ -1359,7 +1359,7 @@ func TestReceiverDecompressionLimits(t *testing.T) {
 	r.registerLogConsumer(sink)
 
 	// Now the limit dynamically picks up your 1MB config!
-	limit := int64(cfg.HTTP.Get().ServerConfig.MaxRequestBodySize)
+	limit := cfg.HTTP.Get().ServerConfig.MaxRequestBodySize
 
 	tests := []struct {
 		name             string

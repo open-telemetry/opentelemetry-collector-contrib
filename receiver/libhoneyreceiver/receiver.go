@@ -267,7 +267,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	maxDecodedBodySize := int64(r.cfg.HTTP.Get().ServerConfig.MaxRequestBodySize)
+	maxDecodedBodySize := r.cfg.HTTP.Get().ServerConfig.MaxRequestBodySize
 	if maxDecodedBodySize == 0 {
 		maxDecodedBodySize = 20 * 1024 * 1024
 	}
