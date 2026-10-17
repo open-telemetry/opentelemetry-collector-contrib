@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datad
 go 1.26.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.211
+	github.com/DataDog/agent-payload/v5 v5.0.214
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.83.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.163.0
