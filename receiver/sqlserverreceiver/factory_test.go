@@ -218,7 +218,7 @@ func TestFactory(t *testing.T) {
 				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
-				q := getSQLServerQueryTextAndPlanQuery()
+				q := getSQLServerQueryTextAndPlanQuery(false)
 
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {
@@ -265,7 +265,7 @@ func TestFactory(t *testing.T) {
 				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
 
-				q := getSQLServerQueryTextAndPlanQuery()
+				q := getSQLServerQueryTextAndPlanQuery(false)
 
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {
