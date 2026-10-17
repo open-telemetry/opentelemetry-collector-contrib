@@ -98,6 +98,7 @@ func TestLoadConfig(t *testing.T) {
 					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 				},
+				CacheSyncTimeout: 10 * time.Second,
 			},
 		},
 		{
@@ -109,6 +110,7 @@ func TestLoadConfig(t *testing.T) {
 					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 				},
 				DedupInterval: 5 * time.Minute,
+				CacheSyncTimeout: 10 * time.Second,
 			},
 		},
 	}
