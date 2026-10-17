@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -25,6 +26,10 @@ type traceBulkIndexer struct {
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 
+	// mu guards the fields below and errs. Item callbacks run on the bulk
+	// indexer's worker goroutine while items are still being added, and can
+	// outlive close when the context expires during a flush.
+	mu sync.Mutex
 	// requestErr is set when a whole bulk request was rejected with a retryable status.
 	requestErr error
 	// retryErrs and retryTraces hold the spans OpenSearch rejected one by one with a retryable status.
@@ -37,6 +42,8 @@ func newTraceBulkIndexer(bulkAction string, model mappingModel, pipeline string)
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
+	tbi.mu.Lock()
+	defer tbi.mu.Unlock()
 	return joinBulkErrors(tbi.errs, tbi.requestErr, tbi.retryErrs, func(err error) error {
 		return consumererror.NewTraces(err, tbi.retryTraces)
 	})
@@ -51,7 +58,9 @@ func (tbi *traceBulkIndexer) start(client *opensearchapi.Client) error {
 func (tbi *traceBulkIndexer) close(ctx context.Context) {
 	closeErr := tbi.bulkIndexer.Close(ctx)
 	if closeErr != nil {
+		tbi.mu.Lock()
 		tbi.errs = append(tbi.errs, closeErr)
+		tbi.mu.Unlock()
 	}
 }
 
@@ -62,10 +71,14 @@ func (tbi *traceBulkIndexer) onIndexerError(_ context.Context, indexerErr error)
 }
 
 func (tbi *traceBulkIndexer) appendPermanentError(e error) {
+	tbi.mu.Lock()
+	defer tbi.mu.Unlock()
 	tbi.errs = append(tbi.errs, consumererror.NewPermanent(e))
 }
 
 func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Traces) {
+	tbi.mu.Lock()
+	defer tbi.mu.Unlock()
 	if len(tbi.retryErrs) == 0 {
 		tbi.retryTraces = ptrace.NewTraces()
 	}
@@ -140,9 +153,11 @@ func (tbi *traceBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem,
 		tbi.appendRetryTraceError(responseAsError(resp), traces)
 	case resp.Status == 0 && isRetryableResponse(itemErr):
 		// The whole bulk request was rejected, and this is called for each of its items.
+		tbi.mu.Lock()
 		if tbi.requestErr == nil {
 			tbi.requestErr = itemErr
 		}
+		tbi.mu.Unlock()
 	case resp.Status != 0 && itemErr == nil:
 		// Non-recoverable OpenSearch error while indexing document
 		tbi.appendPermanentError(responseAsError(resp))

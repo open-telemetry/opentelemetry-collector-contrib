@@ -5,6 +5,7 @@ package opensearchexporter
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -157,6 +158,7 @@ var docMarker = regexp.MustCompile(`doc-\d+`)
 func readBulkDocs(t *testing.T, r *http.Request) []string {
 	var docs []string
 	scanner := bufio.NewScanner(r.Body)
+	scanner.Buffer(nil, 1<<20)
 	for i := 0; scanner.Scan(); i++ {
 		if i%2 == 1 { // even lines are the action metadata
 			docs = append(docs, docMarker.FindString(scanner.Text()))
@@ -293,4 +295,48 @@ func TestJoinBulkErrors(t *testing.T) {
 		_, isLogs := errors.AsType[consumererror.Logs](err)
 		require.False(t, isLogs, "whole push must be retried, not a subset")
 	})
+}
+
+// A batch over the bulk indexer's 5MB flush size is flushed by its worker
+// while the batch is still being added. When the context expires during that
+// flush, Close returns before the worker is done, and the worker's late item
+// callbacks must neither race with the push nor drop the batch.
+func TestLogBulkIndexerTimeoutDuringWorkerFlush(t *testing.T) {
+	release := make(chan struct{})
+	responded := make(chan struct{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		docs := readBulkDocs(t, r)
+		<-release
+		writeBulkReply(t, w, bulkReply{status: http.StatusOK, itemStatus: map[string]int{docs[0]: 429}}, docs)
+		close(responded)
+	}))
+	defer ts.Close()
+	client, err := newOpenSearchClient(ts.URL, http.DefaultClient, zap.NewNop())
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	records := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	big := strings.Repeat("x", 100_000)
+	for i := range 80 {
+		records.AppendEmpty().Body().SetStr(fmt.Sprintf("doc-%d %s", i, big))
+	}
+	cfg := withDefaultConfig()
+	lbi := newLogBulkIndexer(cfg.BulkAction, &encodeModel{dataset: cfg.Dataset, namespace: cfg.Namespace}, "")
+	require.NoError(t, lbi.start(client))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
+	defer cancel()
+	// Answer the worker's flush right when the deadline fires, so its item
+	// callbacks overlap with the rest of the push.
+	stop := context.AfterFunc(ctx, func() { close(release) })
+	defer stop()
+	lbi.submit(ctx, logs, newIndexResolver("ss4o_logs", cfg.Dataset, cfg.Namespace), cfg, time.Now())
+	lbi.close(ctx)
+	err = lbi.joinedError()
+
+	<-responded
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err), "a push cut short by its deadline must be retried: %v", err)
+	_, isLogs := errors.AsType[consumererror.Logs](err)
+	require.False(t, isLogs, "records still in the worker are not known, so the whole push must be retried")
 }
