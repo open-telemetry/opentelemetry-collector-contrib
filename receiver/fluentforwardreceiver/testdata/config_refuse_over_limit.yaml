@@ -1,0 +1,3 @@
+fluent_forward:
+  max_connections: 5
+  refuse_over_limit: true

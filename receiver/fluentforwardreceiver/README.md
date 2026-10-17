@@ -42,6 +42,18 @@ receivers:
     endpoint: 0.0.0.0:8006
 ```
 
+The following settings are optional:
+
+- `max_connections` (default = `100`): maximum simultaneously open connections.
+  Connections over the limit wait in the accept backlog until a slot frees. `0`
+  means no limit.
+- `refuse_over_limit` (default = `false`): close connections over
+  `max_connections` on accept instead of queueing them. Use this for long-lived
+  clients behind a load balancer, which would otherwise wait on a slot that may
+  never free; a refused client reconnects, possibly to another instance.
+  Requires `max_connections` to be greater than `0`.
+  Refusals are counted by `otelcol_fluent_refused_connections`.
+
 ## Data Conversion
 
 The receiver converts Fluentd events to OpenTelemetry logs. Each Fluentd event

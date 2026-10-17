@@ -27,16 +27,18 @@ const readBufferSize = 10 * 1024
 type server struct {
 	outCh            chan<- eventWithACK
 	ackWaitTimeout   time.Duration
+	refuseAbove      int // 0 disables refusal
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
 	conns            map[net.Conn]struct{}
 	mu               sync.Mutex
 }
 
-func newServer(outCh chan<- eventWithACK, ackWaitTimeout time.Duration, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
+func newServer(outCh chan<- eventWithACK, ackWaitTimeout time.Duration, refuseAbove int, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
 	return &server{
 		outCh:            outCh,
 		ackWaitTimeout:   ackWaitTimeout,
+		refuseAbove:      refuseAbove,
 		logger:           logger,
 		telemetryBuilder: telemetryBuilder,
 		conns:            make(map[net.Conn]struct{}),
@@ -72,10 +74,14 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 			}
 		}
 
+		if !s.addConn(conn) {
+			s.refuseConn(ctx, conn)
+			continue
+		}
+
 		s.telemetryBuilder.FluentOpenedConnections.Add(ctx, 1)
 
 		s.logger.Debug("Got connection", zap.String("remoteAddr", conn.RemoteAddr().String()))
-		s.addConn(conn)
 
 		go func() {
 			defer s.telemetryBuilder.FluentClosedConnections.Add(ctx, 1)
@@ -253,10 +259,29 @@ func determineNextEventMode(peeker peeker) (eventMode, error) {
 	}
 }
 
-func (s *server) addConn(c net.Conn) {
+// addConn tracks c, or reports false if refusal is on and c is over the limit.
+func (s *server) addConn(c net.Conn) bool {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.refuseAbove > 0 && len(s.conns) >= s.refuseAbove {
+		return false
+	}
 	s.conns[c] = struct{}{}
-	s.mu.Unlock()
+	return true
+}
+
+// refuseConn closes a connection over the limit. Linger 0 sends RST, so the
+// client fails its next write and reconnects instead of treating the socket as
+// live.
+func (s *server) refuseConn(ctx context.Context, conn net.Conn) {
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		_ = tcpConn.SetLinger(0)
+	}
+	_ = conn.Close()
+	s.telemetryBuilder.FluentRefusedConnections.Add(ctx, 1)
+	s.logger.Debug("Refused connection over max_connections",
+		zap.String("remoteAddr", conn.RemoteAddr().String()),
+		zap.Int("max_connections", s.refuseAbove))
 }
 
 func (s *server) removeConn(c net.Conn) {
