@@ -540,6 +540,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			InitialInterval:     prwe.retrySettings.InitialInterval,
 			RandomizationFactor: prwe.retrySettings.RandomizationFactor,
 			Multiplier:          prwe.retrySettings.Multiplier,
+			MaxInterval:         prwe.retrySettings.MaxInterval,
 		}), backoff.WithMaxElapsedTime(prwe.retrySettings.MaxElapsedTime))
 	} else {
 		_, err = executeFunc()

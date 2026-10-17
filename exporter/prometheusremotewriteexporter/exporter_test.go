@@ -1377,6 +1377,50 @@ func TestRetries(t *testing.T) {
 	}
 }
 
+func TestRetriesBackOffInterval(t *testing.T) {
+	var attemptTimes []time.Time
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attemptTimes = append(attemptTimes, time.Now())
+		if len(attemptTimes) <= 3 {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(t, err)
+
+	testTel := componenttest.NewTelemetry()
+	telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
+	require.NoError(t, err)
+
+	exporter := &prwExporter{
+		endpointURL: endpointURL,
+		client:      http.DefaultClient,
+		retrySettings: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			Multiplier:      10,
+			MaxInterval:     50 * time.Millisecond,
+			MaxElapsedTime:  10 * time.Second,
+		},
+		settings:  testTel.NewTelemetrySettings(),
+		telemetry: telemetry,
+	}
+	buf := bufferPool.Get().(*buffer)
+	defer bufferPool.Put(buf)
+
+	reqBuf, err := buf.MarshalAndEncode(&prompb.WriteRequest{})
+	require.NoError(t, err)
+
+	require.NoError(t, exporter.execute(t.Context(), reqBuf))
+	require.Len(t, attemptTimes, 4)
+	// Waits are 10ms, then 50ms twice; without MaxInterval every wait stays at 10ms.
+	assert.GreaterOrEqual(t, attemptTimes[3].Sub(attemptTimes[0]), 110*time.Millisecond)
+}
+
 func BenchmarkExecute(b *testing.B) {
 	for _, numSample := range []int{100, 1000, 10000} {
 		b.Run(fmt.Sprintf("numSample=%d", numSample), func(b *testing.B) {
