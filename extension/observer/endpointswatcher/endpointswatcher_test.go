@@ -476,3 +476,47 @@ func TestEndpointsEqual(t *testing.T) {
 		})
 	}
 }
+
+func TestStopListAndWatchIdempotency(t *testing.T) {
+	_, watcher, _ := setup(t)
+
+	require.NotPanics(t, func() {
+		watcher.StopListAndWatch()
+	})
+	require.NotPanics(t, func() {
+		watcher.StopListAndWatch()
+	})
+	require.NotPanics(t, func() {
+		watcher.StopListAndWatch()
+	})
+}
+
+func TestStopListAndWatchConcurrent(t *testing.T) {
+	_, watcher, _ := setup(t)
+
+	const numGoroutines = 20
+	var wg sync.WaitGroup
+	wg.Add(numGoroutines)
+
+	for range numGoroutines {
+		go func() {
+			defer wg.Done()
+			assert.NotPanics(t, func() {
+				watcher.StopListAndWatch()
+			})
+		}()
+	}
+
+	wg.Wait()
+}
+
+func TestStopListAndWatchNilSafety(t *testing.T) {
+	emptyWatcher := &EndpointsWatcher{}
+	require.NotPanics(t, func() {
+		emptyWatcher.StopListAndWatch()
+	})
+	partialWatcher := &EndpointsWatcher{stopOnce: &sync.Once{}}
+	require.NotPanics(t, func() {
+		partialWatcher.StopListAndWatch()
+	})
+}
