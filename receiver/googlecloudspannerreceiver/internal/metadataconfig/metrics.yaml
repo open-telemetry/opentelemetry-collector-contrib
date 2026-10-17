@@ -32,6 +32,43 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Column Operations Stats -------------------------------------------------------------
+#
+  - name: "minute column operations stats"
+    query: "SELECT INTERVAL_END, TABLE_NAME, COLUMN_NAME, IS_QUERY_CACHE_MEMORY_CAPPED, READ_COUNT, QUERY_COUNT, WRITE_COUNT FROM SPANNER_SYS.COLUMN_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC"
+    metric_name_prefix: "database/spanner/column_operations/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "column_name"
+        column_name: "COLUMN_NAME"
+        value_type: "string"
+      - name: "is_query_cache_memory_capped"
+        column_name: "IS_QUERY_CACHE_MEMORY_CAPPED"
+        value_type: "bool"
+    metrics:
+      - name: "read_count"
+        column_name: "READ_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "query_count"
+        column_name: "QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Locks Stats -------------------------------------------------------------
 #
   - name: "top minute lock stats"
