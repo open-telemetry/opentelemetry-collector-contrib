@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -674,6 +676,8 @@ func decompress(src []byte) ([]byte, error) {
 }
 
 func TestConcurrentlyCompress(t *testing.T) {
+	zstdCompress, buildErr := buildCompressor(compressionZSTD, 0)
+	require.NoError(t, buildErr)
 	wg := sync.WaitGroup{}
 	wg.Add(4)
 	var (
@@ -801,16 +805,17 @@ func TestFlushing(t *testing.T) {
 
 	// Start the flusher.
 	ctx := t.Context()
+	compressor, err := buildCompressor(fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	require.NoError(t, err)
 	fe.marshaller = &marshaller{
 		formatType:       fe.conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],
 		metricsMarshaler: metricsMarshalers[fe.conf.FormatType],
 		logsMarshaler:    logsMarshalers[fe.conf.FormatType],
 		compression:      fe.conf.Compression,
-		compressor:       buildCompressor(fe.conf.Compression),
+		compressor:       compressor,
 	}
 	export := buildExportFunc(fe.conf)
-	var err error
 	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
@@ -856,16 +861,17 @@ func TestAppend(t *testing.T) {
 
 	// Start the flusher.
 	ctx := t.Context()
+	compressor, err := buildCompressor(fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	require.NoError(t, err)
 	fe.marshaller = &marshaller{
 		formatType:       fe.conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],
 		metricsMarshaler: metricsMarshalers[fe.conf.FormatType],
 		logsMarshaler:    logsMarshalers[fe.conf.FormatType],
 		compression:      fe.conf.Compression,
-		compressor:       buildCompressor(fe.conf.Compression),
+		compressor:       compressor,
 	}
 	export := buildExportFunc(fe.conf)
-	var err error
 	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
@@ -1079,4 +1085,41 @@ func TestFileAppendLogsExporter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLegacyCompressionLevel(t *testing.T) {
+	setNativeCompressionFeatureGate(t, false)
+
+	ld := plog.NewLogs()
+	lrs := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	for i := range 2000 {
+		lrs.AppendEmpty().Body().SetStr(fmt.Sprintf("request %d served by host-%d in %dms", i, i%7, i%250))
+	}
+
+	compress := func(level int) []byte {
+		conf := &Config{FormatType: formatTypeJSON, Compression: compressionZSTD}
+		conf.CompressionParams.Level = configcompression.Level(level)
+		m, err := newMarshaller(conf, componenttest.NewNopHost())
+		require.NoError(t, err)
+		buf, err := m.marshalLogs(ld)
+		require.NoError(t, err)
+		return buf
+	}
+
+	raw, err := logsMarshalers[formatTypeJSON].MarshalLogs(ld)
+	require.NoError(t, err)
+
+	fastest, best := compress(1), compress(11)
+	// Output size ordering between levels depends on the data, so only check that the level is applied.
+	assert.NotEqual(t, fastest, best, "compression_params.level must change the encoder output")
+	for _, c := range [][]byte{fastest, best} {
+		got, decErr := decompress(c)
+		require.NoError(t, decErr)
+		assert.Equal(t, raw, got)
+	}
+
+	// An unset level must keep producing the same output as the zstd defaults.
+	defaultEncoder, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+	assert.Equal(t, defaultEncoder.EncodeAll(raw, nil), compress(0))
 }

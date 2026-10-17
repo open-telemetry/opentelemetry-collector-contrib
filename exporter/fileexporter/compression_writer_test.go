@@ -197,17 +197,18 @@ func TestCompressingWriter_Flush(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestZstdEncoderLevelFromZstd(t *testing.T) {
+func TestZstdLevel(t *testing.T) {
 	tests := []struct {
 		level    int
 		expected zstd.EncoderLevel
 	}{
+		{0, zstd.SpeedDefault},
 		{1, zstd.SpeedFastest},
 		{3, zstd.SpeedDefault},
 		{6, zstd.SpeedBetterCompression},
 		{11, zstd.SpeedBestCompression},
 	}
 	for _, tt := range tests {
-		require.Equal(t, tt.expected, zstd.EncoderLevelFromZstd(tt.level), "level %d", tt.level)
+		require.Equal(t, tt.expected, zstdLevel(tt.level), "level %d", tt.level)
 	}
 }
