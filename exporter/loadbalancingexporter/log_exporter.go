@@ -5,6 +5,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"strings"
@@ -13,13 +14,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -32,6 +33,8 @@ const (
 )
 
 var _ exporter.Logs = (*logExporterImp)(nil)
+
+type exporterLogs map[*wrappedExporter]plog.Logs
 
 type logExporterImp struct {
 	loadBalancer *loadBalancer
@@ -120,43 +123,97 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		batches = splitLogsByAttributes(ld, e.routingAttrs)
 	}
 
-	logsByExporter := make(map[*wrappedExporter]plog.Logs, len(batches))
-	exporterEndpoints := make(map[*wrappedExporter]string, len(batches))
+	logsByExporter, err := groupLogsByExporter(batches, e.loadBalancer.exporterAndEndpoint)
+	if err != nil {
+		return err
+	}
+	return e.exportBatches(ctx, logsByExporter)
+}
+
+// groupLogsByExporter resolves the backend for each routed batch and merges batches that
+// share a backend, adding one consumeWG count per distinct backend.
+func groupLogsByExporter(batches map[string]plog.Logs, resolve func([]byte) (*wrappedExporter, string, error)) (exporterLogs, error) {
+	logsByExporter := make(exporterLogs, len(batches))
 
 	for routingID, lds := range batches {
-		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := resolve([]byte(routingID))
 		if err != nil {
-			return err
+			// Release the consumeWG counts already added for backends collected so far;
+			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+			for exp := range logsByExporter {
+				exp.consumeWG.Done()
+			}
+			return nil, err
 		}
 
 		_, ok := logsByExporter[exp]
 		if !ok {
 			exp.consumeWG.Add(1)
 			logsByExporter[exp] = lds
-			exporterEndpoints[exp] = endpoint
 		} else {
 			mergeLogs(logsByExporter[exp], lds)
 		}
 	}
 
-	var errs error
-	for exp, lds := range logsByExporter {
-		start := time.Now()
-		err := exp.ConsumeLogs(ctx, lds)
-		duration := time.Since(start)
+	return logsByExporter, nil
+}
 
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+// exportToBackend sends ld to one backend, records per-backend telemetry, and signals the
+// exporter's consume wait group.
+func (e *logExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, ld plog.Logs) error {
+	start := time.Now()
+	err := exp.ConsumeLogs(ctx, ld)
+	duration := time.Since(start)
+	exp.consumeWG.Done()
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+	if err == nil {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	} else {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export logs", zap.Error(err))
+	}
+	return err
+}
+
+// exportBatches sends each pre-routed batch to its backend. When any backend fails with a
+// retryable error, it returns a consumererror.Logs carrying only the retryable failed data and
+// causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
+// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// returns a permanent error wrapping a consumererror.Logs with the failed data.
+func (e *logExporterImp) exportBatches(ctx context.Context, batches exporterLogs) error {
+	var retryableErrs, permanentErrs []error
+	var retryable, permanent []plog.Logs
+	var permanentExps []*wrappedExporter
+	for exp, lds := range batches {
+		err := e.exportToBackend(ctx, exp, lds)
 		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+			continue
+		}
+		failed := failedLogsFromError(err, lds)
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+			permanent = append(permanent, failed)
+			permanentExps = append(permanentExps, exp)
 		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export logs", zap.Error(err))
+			retryableErrs = append(retryableErrs, err)
+			retryable = append(retryable, failed)
 		}
 	}
-
-	return errs
+	if len(retryableErrs) > 0 {
+		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
+		// searches the whole error tree and would stop the retry of the retryable data.
+		for i, err := range permanentErrs {
+			e.logger.Warn("dropping logs rejected permanently by backend, retrying the remaining failed logs",
+				zap.String("endpoint", permanentExps[i].endpoint),
+				zap.Int("log_records", permanent[i].LogRecordCount()),
+				zap.Error(err))
+		}
+		return consumererror.NewLogs(errors.Join(retryableErrs...), copyFailedLogs(retryable))
+	}
+	if len(permanentErrs) > 0 {
+		return consumererror.NewPermanent(consumererror.NewLogs(errors.Join(permanentErrs...), copyFailedLogs(permanent)))
+	}
+	return nil
 }
 
 func splitLogsByServiceName(ld plog.Logs) map[string]plog.Logs {

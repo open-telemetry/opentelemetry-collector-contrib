@@ -4,12 +4,26 @@
 package loadbalancingexporter
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+// serviceNameForEndpoint brute-forces a service name that the ring routes to wantEndpoint.
+func serviceNameForEndpoint(t *testing.T, ring *hashRing, wantEndpoint string) string {
+	t.Helper()
+	for i := range 1_000_000 {
+		name := fmt.Sprintf("svc-%d", i)
+		if ring.endpointFor([]byte(name)) == wantEndpoint {
+			return name
+		}
+	}
+	t.Fatalf("no service name routed to %q", wantEndpoint)
+	return ""
+}
 
 func TestMergeTracesTwoEmpty(t *testing.T) {
 	expectedEmpty := ptrace.NewTraces()

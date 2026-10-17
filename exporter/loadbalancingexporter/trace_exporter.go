@@ -13,12 +13,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -150,11 +150,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	var errs error
-	for exp, td := range exporterSegregatedTraces {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
-	}
-	return errs
+	return e.exportBatches(ctx, exporterSegregatedTraces)
 }
 
 // spanTraceIDIdentifier is the identifierFor function for traceID routing.
@@ -286,11 +282,11 @@ func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.T
 		}
 	}
 
-	var errs error
+	batches := make(exporterTraces, len(dests))
 	for exp, d := range dests {
-		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+		batches[exp] = d.traces
 	}
-	return errs
+	return e.exportBatches(ctx, batches)
 }
 
 // exportToBackend sends td to one backend, records per-backend telemetry, and signals the
@@ -298,8 +294,8 @@ func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.T
 func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, td ptrace.Traces) error {
 	start := time.Now()
 	err := exp.ConsumeTraces(ctx, td)
-	exp.consumeWG.Done()
 	duration := time.Since(start)
+	exp.consumeWG.Done()
 	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 	if err == nil {
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
@@ -308,6 +304,47 @@ func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExpo
 		e.logger.Debug("failed to export traces", zap.Error(err))
 	}
 	return err
+}
+
+// exportBatches sends each pre-routed batch to its backend. When any backend fails with a
+// retryable error, it returns a consumererror.Traces carrying only the retryable failed data and
+// causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
+// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// returns a permanent error wrapping a consumererror.Traces with the failed data.
+func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTraces) error {
+	var retryableErrs, permanentErrs []error
+	var retryable, permanent []ptrace.Traces
+	var permanentExps []*wrappedExporter
+	for exp, td := range batches {
+		err := e.exportToBackend(ctx, exp, td)
+		if err == nil {
+			continue
+		}
+		failed := failedTracesFromError(err, td)
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+			permanent = append(permanent, failed)
+			permanentExps = append(permanentExps, exp)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+			retryable = append(retryable, failed)
+		}
+	}
+	if len(retryableErrs) > 0 {
+		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
+		// searches the whole error tree and would stop the retry of the retryable data.
+		for i, err := range permanentErrs {
+			e.logger.Warn("dropping traces rejected permanently by backend, retrying the remaining failed traces",
+				zap.String("endpoint", permanentExps[i].endpoint),
+				zap.Int("spans", permanent[i].SpanCount()),
+				zap.Error(err))
+		}
+		return consumererror.NewTraces(errors.Join(retryableErrs...), copyFailedTraces(retryable))
+	}
+	if len(permanentErrs) > 0 {
+		return consumererror.NewPermanent(consumererror.NewTraces(errors.Join(permanentErrs...), copyFailedTraces(permanent)))
+	}
+	return nil
 }
 
 // routingIdentifiersFromTraces reads the traces and determines an identifier that can be used to define a position on the
