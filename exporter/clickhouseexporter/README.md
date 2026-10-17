@@ -8,8 +8,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_clickhouse)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_clickhouse&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
-| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax), [@hanjm](https://www.github.com/hanjm) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -387,7 +387,7 @@ ClickHouse tables:
 
 Cluster definition:
 
-- `cluster_name` (default = ): Optional. If present, will include `ON CLUSTER cluster_name` when creating tables.
+- `cluster_name` (default = ): Optional. If present, will include `ON CLUSTER cluster_name` when creating the database and tables.
 
 Table engine:
 
@@ -397,6 +397,15 @@ Table engine:
 
 Modifies `ENGINE` definition when table is created. If not set then `ENGINE` defaults to `MergeTree()`.
 Can be combined with `cluster_name` to enable [replication for fault tolerance](https://clickhouse.com/docs/en/architecture/replication).
+
+Database engine:
+
+- `database_engine`
+    - `name` (default = )
+    - `params` (default = )
+
+Modifies `ENGINE` definition when the database is created. If not set then the server default is used. Not used for the `default` database.
+With `Replicated`, `ON CLUSTER` is only used for the database since a [Replicated database](https://clickhouse.com/docs/engines/database-engines/replicated) replicates table DDL itself.
 
 Processing:
 
@@ -538,6 +547,9 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
     # cluster_name: my_cluster
+    # database_engine:
+    #   name: Replicated
+    #   params: "'/clickhouse/databases/otel'"
     # table_engine:
     #   name: ReplicatedMergeTree
     #   params:

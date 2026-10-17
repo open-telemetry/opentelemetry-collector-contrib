@@ -18,8 +18,8 @@ type tracesRouter struct {
 	*baseFailoverRouter[consumer.Traces]
 }
 
-func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*tracesRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg)
+func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config, logger *zap.Logger) (*tracesRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 
 		if err := tc.ConsumeTraces(ctx, td); err != nil {
 			if f.shouldFailoverOnError(err) {
-				f.reportConsumerError(idx)
+				f.reportConsumerError(idx, err)
 				continue
 			}
 			return err
@@ -111,7 +111,7 @@ func newTracesToTraces(set connector.Settings, cfg component.Config, traces cons
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}
 
-	failover, err := newTracesRouter(tr.Consumer, config)
+	failover, err := newTracesRouter(tr.Consumer, config, set.Logger)
 	if err != nil {
 		return nil, err
 	}

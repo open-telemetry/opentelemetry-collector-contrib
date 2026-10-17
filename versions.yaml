@@ -3,12 +3,13 @@
 
 module-sets:
   stable-base:
-    version: v1.1.0
+    version: v1.2.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
   contrib-base:
-    version: v0.162.0
+    version: v0.163.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -89,6 +90,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth
@@ -106,6 +108,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/filetelemetrypolicyextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
@@ -162,6 +165,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow
@@ -176,7 +180,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
@@ -275,6 +278,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gnmireceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
@@ -302,6 +306,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/natsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
@@ -367,3 +372,4 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/integrationtest
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension/integrationtest
