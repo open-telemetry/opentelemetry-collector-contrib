@@ -49,10 +49,38 @@ func (rb *ResourceBuilder) SetRabbitmqNodeName(val string) {
 	}
 }
 
+// SetRabbitmqQueueAutoDelete sets provided value as "rabbitmq.queue.auto_delete" attribute.
+func (rb *ResourceBuilder) SetRabbitmqQueueAutoDelete(val bool) {
+	if rb.config.RabbitmqQueueAutoDelete.Enabled {
+		rb.res.Attributes().PutBool("rabbitmq.queue.auto_delete", val)
+	}
+}
+
+// SetRabbitmqQueueDurable sets provided value as "rabbitmq.queue.durable" attribute.
+func (rb *ResourceBuilder) SetRabbitmqQueueDurable(val bool) {
+	if rb.config.RabbitmqQueueDurable.Enabled {
+		rb.res.Attributes().PutBool("rabbitmq.queue.durable", val)
+	}
+}
+
 // SetRabbitmqQueueName sets provided value as "rabbitmq.queue.name" attribute.
 func (rb *ResourceBuilder) SetRabbitmqQueueName(val string) {
 	if rb.config.RabbitmqQueueName.Enabled {
 		rb.res.Attributes().PutStr("rabbitmq.queue.name", val)
+	}
+}
+
+// SetRabbitmqQueuePolicyExpires sets provided value as "rabbitmq.queue.policy.expires" attribute.
+func (rb *ResourceBuilder) SetRabbitmqQueuePolicyExpires(val int64) {
+	if rb.config.RabbitmqQueuePolicyExpires.Enabled {
+		rb.res.Attributes().PutInt("rabbitmq.queue.policy.expires", val)
+	}
+}
+
+// SetRabbitmqQueuePolicyName sets provided value as "rabbitmq.queue.policy.name" attribute.
+func (rb *ResourceBuilder) SetRabbitmqQueuePolicyName(val string) {
+	if rb.config.RabbitmqQueuePolicyName.Enabled {
+		rb.res.Attributes().PutStr("rabbitmq.queue.policy.name", val)
 	}
 }
 

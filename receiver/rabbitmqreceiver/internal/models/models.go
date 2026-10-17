@@ -22,6 +22,17 @@ type Queue struct {
 
 	// Embedded Metrics
 	MessageStats map[string]any `json:"message_stats"`
+
+	// Attributes
+	Durable    bool           `json:"durable"`
+	AutoDelete bool           `json:"auto_delete"`
+	Arguments  map[string]any `json:"arguments"`
+
+	// Policy is the name of the effective user policy applied to this queue, if any.
+	Policy string `json:"policy"`
+	// EffectivePolicyDefinition is RabbitMQ's own merge of the user and operator
+	// policies that apply to this queue.
+	EffectivePolicyDefinition map[string]any `json:"effective_policy_definition"`
 }
 
 // Node represents a RabbitMQ node in the API response
