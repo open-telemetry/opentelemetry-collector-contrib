@@ -183,7 +183,7 @@ pkg/ottl/xottl/                                                  @open-telemetry
 pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers @dmitryax @singhvibhanshu
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/sampling/                                                    @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
-pkg/semconvtest/                                                 @open-telemetry/collector-contrib-approvers @braydonk
+pkg/semconvtest/                                                 @open-telemetry/collector-contrib-approvers @braydonk @vesari
 pkg/stanza/                                                      @open-telemetry/collector-contrib-approvers @andrzej-stencel @atoulme
 pkg/stanza/fileconsumer/                                         @open-telemetry/collector-contrib-approvers @andrzej-stencel @paulojmdias @VihasMakwana @braydonk
 pkg/stanza/operator/input/journald/                              @open-telemetry/collector-contrib-approvers @belimawr @namco1992
