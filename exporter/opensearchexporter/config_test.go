@@ -350,14 +350,19 @@ func TestOTelV1MappingModeValidation(t *testing.T) {
 			manageTpl: true,
 		},
 		{
-			name:        "ss4o with manage_index_template true is invalid",
-			mode:        "ss4o",
-			manageTpl:   true,
-			expectError: errManageIndexTemplateInvalidMode.Error(),
+			name:      "ss4o with manage_index_template true is valid",
+			mode:      "ss4o",
+			manageTpl: true,
 		},
 		{
 			name: "ss4o with manage_index_template false is valid",
 			mode: "ss4o",
+		},
+		{
+			name:        "ecs with manage_index_template true is invalid",
+			mode:        "ecs",
+			manageTpl:   true,
+			expectError: errManageIndexTemplateInvalidMode.Error(),
 		},
 	}
 

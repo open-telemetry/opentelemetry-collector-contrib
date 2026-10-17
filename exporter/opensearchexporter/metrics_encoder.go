@@ -80,6 +80,7 @@ func (m *encodeModel) encodeMetricSSO(
 	sso.InstrumentationScope.Version = scope.Version()
 	sso.InstrumentationScope.SchemaURL = schemaURL
 	sso.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
+	resolveAttributeKeyConflicts(sso.InstrumentationScope.Attributes)
 
 	return json.Marshal(sso)
 }
@@ -125,6 +126,7 @@ func (*encodeModel) encodeMetricOTelV1(
 		Attributes:             scope.Attributes().AsRaw(),
 		DroppedAttributesCount: scope.DroppedAttributesCount(),
 	}
+	resolveAttributeKeyConflicts(doc.InstrumentationScope.Attributes)
 	if serviceName, ok := resource.Attributes().Get("service.name"); ok {
 		doc.ServiceName = serviceName.AsString()
 	}
@@ -141,6 +143,7 @@ func populateMetricDocBase(doc *metricDocBase, metric pmetric.Metric, dp metricD
 	doc.StartTime = dp.StartTimestamp().AsTime()
 	doc.Timestamp = dp.Timestamp().AsTime()
 	doc.Attributes = dp.Attributes().AsRaw()
+	resolveAttributeKeyConflicts(doc.Attributes)
 
 	switch dp := dp.(type) {
 	case pmetric.NumberDataPoint:
@@ -373,6 +376,7 @@ func makeExemplars(exemplars pmetric.ExemplarSlice) []metricExemplar {
 			Time:       e.Timestamp().AsTime(),
 			Attributes: e.FilteredAttributes().AsRaw(),
 		}
+		resolveAttributeKeyConflicts(exemplar.Attributes)
 		switch e.ValueType() {
 		case pmetric.ExemplarValueTypeInt:
 			value := float64(e.IntValue())
