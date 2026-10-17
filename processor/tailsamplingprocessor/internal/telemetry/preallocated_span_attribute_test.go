@@ -9,8 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -189,4 +191,18 @@ func TestDecisionAttributes_ImmutabilityAfterConstruction(t *testing.T) {
 	assert.Equal(t, attr1.Value.AsString(), attr2.Value.AsString())
 	assert.Equal(t, attr2.Value.AsString(), attr3.Value.AsString())
 	assert.Equal(t, "sampled", attr1.Value.AsString())
+}
+
+func TestIsDefaultErrorModeIgnoreEnabled(t *testing.T) {
+	gate := metadata.ProcessorTailsamplingprocessorDefaultErrorModeIgnoreFeatureGate
+	prev := gate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	assert.False(t, IsDefaultErrorModeIgnoreEnabled())
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	assert.True(t, IsDefaultErrorModeIgnoreEnabled())
 }
