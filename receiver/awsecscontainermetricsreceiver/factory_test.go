@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata"
 )
 
@@ -66,5 +67,15 @@ func TestCreateMetricsWithNilConsumer(t *testing.T) {
 	)
 
 	require.Error(t, err, "Nil Consumer")
+	require.Nil(t, metricsReceiver)
+}
+
+func TestCreateMetricsRequiresEmitV1WhenDontEmitV0(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate, false)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate, true)()
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
+
+	metricsReceiver, err := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), createDefaultConfig(), consumertest.NewNop())
+	require.ErrorContains(t, err, "requires receiver.awsecscontainermetrics.EmitV1ContainerConventions to be enabled")
 	require.Nil(t, metricsReceiver)
 }
