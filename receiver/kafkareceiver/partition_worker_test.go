@@ -779,7 +779,413 @@ func TestProcessPartitionBatchCancelDoesNotStartNext(t *testing.T) {
 	require.Equal(t, int64(1), calls.Load())
 }
 
-// waitAcquireBlocked returns once a goroutine is blocked in inflightBatch.acquire.
+// TestPartitionWindowPerFetch checks that with the default window the worker
+// starts nothing from the second fetch until every call of the first finishes.
+func TestPartitionWindowPerFetch(t *testing.T) {
+	consumer, kafkaClient, partitionConsumer := newMaxInFlightConsumer(t, 4)
+	entered, releases, _ := blockingConsume(consumer, 4)
+	mailbox := startPartitionWorker(t, consumer, partitionConsumer)
+	mailbox.enqueue(offsetBatchFrom(0, 2), func(partitionPauseReason) {})
+	mailbox.enqueue(offsetBatchFrom(2, 2), func(partitionPauseReason) {})
+
+	waitEntered(t, entered, 2)
+	releases[1] <- nil
+	requireNoEntry(t, entered, "started a call from the second fetch before the first drained")
+	releases[0] <- nil
+	waitEntered(t, entered, 2)
+	releases[2] <- nil
+	releases[3] <- nil
+	requireMarked(t, kafkaClient, 4)
+}
+
+// TestPartitionWindowSpansFetches checks that with cross_fetch calls from two
+// fetches run at once, and that pc.wg, which revoke and shutdown wait on,
+// covers both.
+func TestPartitionWindowSpansFetches(t *testing.T) {
+	consumer, kafkaClient, partitionConsumer := newCrossFetchConsumer(t, 4)
+	entered, releases, _ := blockingConsume(consumer, 4)
+	mailbox := startPartitionWorker(t, consumer, partitionConsumer)
+	mailbox.enqueue(offsetBatchFrom(0, 2), func(partitionPauseReason) {})
+	mailbox.enqueue(offsetBatchFrom(2, 2), func(partitionPauseReason) {})
+
+	// Two records per fetch, so four calls at once proves the window spans fetches.
+	waitEntered(t, entered, 4)
+
+	releases[0] <- nil
+	requireMarked(t, kafkaClient, 1)
+
+	partitionConsumer.cancelContext(errors.New("revoked"))
+	stopped := make(chan struct{})
+	go func() {
+		partitionConsumer.wg.Wait()
+		close(stopped)
+	}()
+	for _, off := range []int{1, 2} {
+		requireNotClosed(t, stopped, "pc.wg returned while a call was in Consume")
+		releases[off] <- context.Canceled
+	}
+	requireNotClosed(t, stopped, "pc.wg returned while a call from the second fetch was in Consume")
+	releases[3] <- context.Canceled
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		t.Fatal("pc.wg did not return after every call finished")
+	}
+	requireMarked(t, kafkaClient, 1)
+}
+
+// TestPartitionWindowPrefixAcrossFetches checks that the mark moves across a
+// fetch boundary when calls finish out of order.
+func TestPartitionWindowPrefixAcrossFetches(t *testing.T) {
+	const topic = "test"
+	consumer, kafkaClient, partitionConsumer := newCrossFetchConsumer(t, 4)
+	entered, releases, _ := blockingConsume(consumer, 4)
+
+	second := offsetBatchFrom(2, 2)
+	second.HighWatermark = 10
+	// Both calls are blocked, so the worker has started records from both fetches.
+	consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(0, 2))
+	consumer.processPartitionBatch(partitionConsumer, second)
+	waitEntered(t, entered, 4)
+
+	releases[2] <- nil
+	time.Sleep(50 * time.Millisecond)
+	require.Empty(t, kafkaClient.MarkedOffsets()[topic], "marked past an unfinished record")
+	releases[0] <- nil
+	requireMarked(t, kafkaClient, 1)
+	releases[1] <- nil
+	requireMarked(t, kafkaClient, 3)
+	releases[3] <- nil
+	requireMarked(t, kafkaClient, 4)
+	require.Eventually(t, func() bool { return partitionConsumer.offsetLag.Load() == 6 },
+		10*time.Second, time.Millisecond, "lag must use the high watermark of the marked record's fetch")
+	partitionConsumer.window.wg.Wait()
+}
+
+// TestPartitionWindowFailureWakesIdleWorker checks that a failure wakes a
+// worker with an empty mailbox, so it rewinds without waiting for a new fetch.
+func TestPartitionWindowFailureWakesIdleWorker(t *testing.T) {
+	consumer, kafkaClient, partitionConsumer := newCrossFetchConsumer(t, 4)
+	entered, releases, calls := blockingConsume(consumer, 2)
+	mailbox := startPartitionWorker(t, consumer, partitionConsumer)
+	mailbox.enqueue(offsetBatchFrom(0, 2), func(partitionPauseReason) {})
+	waitEntered(t, entered, 2)
+	// The mailbox is empty, so only the failure can wake the worker.
+	releases[1] <- nil
+	releases[0] <- errors.New("boom")
+
+	var control partitionControl
+	select {
+	case control = <-consumer.controls:
+	case <-time.After(10 * time.Second):
+		t.Fatal("worker did not request a rewind")
+	}
+	require.Equal(t, int64(0), mailbox.takeOffsetChange().Offset)
+	control.applied <- true
+
+	mailbox.enqueue(offsetBatchFrom(0, 2), func(partitionPauseReason) {})
+	waitEntered(t, entered, 1)
+	releases[0] <- nil
+	requireMarked(t, kafkaClient, 2)
+	require.Equal(t, int64(2), calls[0].Load())
+	require.Equal(t, int64(1), calls[1].Load(), "the re-fetch must skip the finished record")
+}
+
+// TestPartitionWindowSkipAcrossFetches checks that after a failure a later
+// fetch starts nothing and waits for the calls still running. Records that
+// finished above the failed one are then skipped on the replay, whichever fetch
+// they came from.
+func TestPartitionWindowSkipAcrossFetches(t *testing.T) {
+	const topic = "test"
+	consumer, kafkaClient, partitionConsumer := newCrossFetchConsumer(t, 4)
+	entered, releases, calls := blockingConsume(consumer, 6)
+	consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(0, 2))
+	consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(2, 2))
+	waitEntered(t, entered, 4)
+	releases[2] <- nil
+	releases[3] <- nil
+	releases[0] <- errors.New("boom")
+	require.Eventually(t, partitionConsumer.window.hasFailed, 10*time.Second, time.Millisecond)
+
+	// Offset 1 is still in Consume, so the later fetch must wait for it.
+	done := make(chan partitionBatchResult, 1)
+	go func() { done <- consumer.processPartitionBatch(partitionConsumer, offsetBatchFrom(4, 2)) }()
+	select {
+	case off := <-entered:
+		t.Fatalf("started offset %d from a later fetch after a failure", off)
+	case <-done:
+		t.Fatal("returned while offset 1 was still in Consume")
+	case <-time.After(50 * time.Millisecond):
+	}
+	releases[1] <- nil
+	result := <-done
+	require.NotNil(t, result.rewindRecord)
+	require.Equal(t, int64(0), result.rewindRecord.Offset)
+	require.Equal(t, map[int64]struct{}{1: {}, 2: {}, 3: {}}, partitionConsumer.skipConsume)
+	require.Empty(t, kafkaClient.MarkedOffsets()[topic])
+
+	done = make(chan partitionBatchResult, 1)
+	go func() { done <- consumer.processPartitionBatch(partitionConsumer, offsetBatch(4)) }()
+	waitEntered(t, entered, 1)
+	requireNoEntry(t, entered, "the re-fetch called Consume for a finished record")
+	releases[0] <- nil
+	require.Nil(t, (<-done).rewindRecord)
+	require.Equal(t, int64(2), calls[0].Load())
+	for off := 1; off < 4; off++ {
+		require.Equal(t, int64(1), calls[off].Load())
+	}
+	require.Zero(t, calls[4].Load())
+	require.Zero(t, calls[5].Load())
+	requireMarked(t, kafkaClient, 4)
+	// The worker trims the skip set on its next fetch, once the mark has moved.
+	empty := kgo.FetchTopicPartition{Topic: topic, FetchPartition: kgo.FetchPartition{Partition: 0}}
+	consumer.processPartitionBatch(partitionConsumer, empty)
+	require.Nil(t, partitionConsumer.skipConsume)
+}
+
+// windowModes runs a test in both windows. cross_fetch splits the three
+// records over two fetches, so the window carries its state across the fetch
+// boundary. per_fetch keeps them in one fetch, since it would otherwise wait
+// for the first fetch to drain.
+var windowModes = []struct {
+	name string
+	new  func(testing.TB, int) (*franzConsumer, *kgo.Client, *pc)
+	// fetchSizes is the number of records in each fetch.
+	fetchSizes []int
+}{
+	{name: "per_fetch", new: newMaxInFlightConsumer, fetchSizes: []int{3}},
+	{name: "cross_fetch", new: newCrossFetchConsumer, fetchSizes: []int{2, 1}},
+}
+
+// sizedFetches builds fetches of the given sizes with consecutive offsets from
+// 0. Each record has size value bytes.
+func sizedFetches(fetchSizes []int, size int) []kgo.FetchTopicPartition {
+	fetches := make([]kgo.FetchTopicPartition, 0, len(fetchSizes))
+	start := 0
+	for _, n := range fetchSizes {
+		fetch := offsetBatchFrom(start, n)
+		for _, r := range fetch.Records {
+			r.Value = make([]byte, size)
+		}
+		fetches = append(fetches, fetch)
+		start += n
+	}
+	return fetches
+}
+
+// TestPartitionWindowHoldsBytesUntilMark checks that a records slot frees when
+// the call returns, but the bytes only free once the mark passes the record. A
+// slow first record then limits how many finished bytes pile up behind it, not
+// how many calls run.
+func TestPartitionWindowHoldsBytesUntilMark(t *testing.T) {
+	const recordSize = 10
+	limits := []struct {
+		name    string
+		records int
+		bytes   int
+		// startsAtFinish is whether offset 2 starts once offset 1 finishes while
+		// offset 0 is still running.
+		startsAtFinish bool
+	}{
+		{name: "records", records: 2, startsAtFinish: true},
+		{name: "bytes", records: 8, bytes: 2 * recordSize},
+	}
+	for _, mode := range windowModes {
+		for _, limit := range limits {
+			t.Run(mode.name+"/"+limit.name, func(t *testing.T) {
+				consumer, kafkaClient, partitionConsumer := mode.new(t, limit.records)
+				if limit.bytes > 0 {
+					consumer.config.PartitionProcessing.MaxInFlight.Bytes = limit.bytes
+				}
+				entered, releases, _ := blockingConsume(consumer, 3)
+				mailbox := startPartitionWorker(t, consumer, partitionConsumer)
+				for _, fetch := range sizedFetches(mode.fetchSizes, recordSize) {
+					mailbox.enqueue(fetch, func(partitionPauseReason) {})
+				}
+
+				waitEntered(t, entered, 2)
+				releases[1] <- nil
+				if limit.startsAtFinish {
+					waitEntered(t, entered, 1)
+				} else {
+					requireNoEntry(t, entered, "started a call in the bytes of a finished record the mark has not passed")
+				}
+				releases[0] <- nil
+				if !limit.startsAtFinish {
+					waitEntered(t, entered, 1)
+				}
+				releases[2] <- nil
+				requireMarked(t, kafkaClient, 3)
+			})
+		}
+	}
+}
+
+// TestPartitionWindowFailureWakesAcquire checks that a worker waiting in
+// acquire stops when the first record in the window fails. The failure doesn't
+// move the mark, so only the call returning can wake the worker. The replay
+// after the rewind then runs under the same cap, and the record it skips holds
+// its bytes until the mark passes it.
+func TestPartitionWindowFailureWakesAcquire(t *testing.T) {
+	const recordSize = 10
+	for _, mode := range windowModes {
+		t.Run(mode.name, func(t *testing.T) {
+			consumer, _, partitionConsumer := mode.new(t, 8)
+			consumer.config.PartitionProcessing.MaxInFlight.Bytes = 2 * recordSize
+			entered, releases, _ := blockingConsume(consumer, 3)
+			fetches := sizedFetches(mode.fetchSizes, recordSize)
+			last := len(fetches) - 1
+			// cross_fetch returns once a fetch's records have started, so only the
+			// last fetch blocks, in acquire for offset 2.
+			for _, fetch := range fetches[:last] {
+				require.Nil(t, consumer.processPartitionBatch(partitionConsumer, fetch).rewindRecord)
+			}
+			done := make(chan partitionBatchResult, 1)
+			go func() { done <- consumer.processPartitionBatch(partitionConsumer, fetches[last]) }()
+
+			waitEntered(t, entered, 2)
+			waitAcquireBlocked(t)
+			releases[0] <- errors.New("consume failed")
+			releases[1] <- nil
+			select {
+			case result := <-done:
+				require.NotNil(t, result.rewindRecord)
+				require.Equal(t, int64(0), result.rewindRecord.Offset)
+			case <-time.After(10 * time.Second):
+				t.Fatal("the worker stayed blocked in acquire after a record failed")
+			}
+			requireNoEntry(t, entered, "started a call after a record failed")
+
+			// The failed window gave all its bytes back. Offset 1 already finished
+			// and is skipped, but its bytes still count, so offset 2 waits for the
+			// mark to pass offsets 0 and 1.
+			replay := make(chan partitionBatchResult, 1)
+			go func() {
+				replay <- consumer.processPartitionBatch(partitionConsumer, sizedFetches([]int{3}, recordSize)[0])
+			}()
+			waitEntered(t, entered, 1)
+			releases[0] <- nil
+			waitEntered(t, entered, 1)
+			releases[2] <- nil
+			require.Nil(t, (<-replay).rewindRecord)
+			partitionConsumer.window.wg.Wait()
+		})
+	}
+}
+
+// TestPartitionWindowCapAcrossFetches checks that records and bytes limit the
+// whole window, so a slot freed by the first fetch goes to the second.
+func TestPartitionWindowCapAcrossFetches(t *testing.T) {
+	const (
+		topic      = "test"
+		recordSize = 10
+	)
+	cases := []struct {
+		name    string
+		records int
+		bytes   int
+	}{
+		{name: "records", records: 3},
+		{name: "bytes", records: 8, bytes: 3 * recordSize},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			consumer, kafkaClient, partitionConsumer := newCrossFetchConsumer(t, tc.records)
+			if tc.bytes > 0 {
+				consumer.config.PartitionProcessing.MaxInFlight.Bytes = tc.bytes
+			}
+			entered, releases, _ := blockingConsume(consumer, 6)
+			mailbox := startPartitionWorker(t, consumer, partitionConsumer)
+			for start := 0; start < 6; start += 2 {
+				batch := offsetBatchFrom(start, 2)
+				for _, r := range batch.Records {
+					r.Key = make([]byte, recordSize/2)
+					r.Value = make([]byte, recordSize/2)
+				}
+				mailbox.enqueue(batch, func(partitionPauseReason) {})
+			}
+
+			waitEntered(t, entered, 3)
+			releases[0] <- nil
+			select {
+			case off := <-entered:
+				require.Equal(t, int64(3), off, "the freed slot must go to the next record in the second fetch")
+			case <-time.After(10 * time.Second):
+				t.Fatal("no call started after a slot freed")
+			}
+			requireNoEntry(t, entered, "started more calls than the cap allows")
+			for off := 1; off < 6; off++ {
+				releases[off] <- nil
+			}
+			requireMarked(t, kafkaClient, 6)
+		})
+	}
+}
+
+// blockingConsume makes Consume report each offset on entered, then return the
+// error sent on releases[offset]. calls counts calls per offset.
+func blockingConsume(consumer *franzConsumer, n int) (entered chan int64, releases []chan error, calls []atomic.Int64) {
+	entered = make(chan int64, 2*n)
+	releases = make([]chan error, n)
+	for i := range releases {
+		releases[i] = make(chan error, 1)
+	}
+	calls = make([]atomic.Int64, n)
+	consumer.consumeMessage = func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		calls[record.Offset].Add(1)
+		entered <- record.Offset
+		return <-releases[record.Offset]
+	}
+	return entered, releases, calls
+}
+
+// startPartitionWorker runs the real worker loop for partition 0.
+func startPartitionWorker(t *testing.T, consumer *franzConsumer, partitionConsumer *pc) *partitionMailbox {
+	t.Helper()
+	partitionConsumer.mailbox = newPartitionMailbox(partitionConsumer.ctx, 4)
+	require.True(t, partitionConsumer.add())
+	go consumer.runPartitionWorker(partitionConsumer, topicPartition{topic: "test", partition: 0})
+	return partitionConsumer.mailbox
+}
+
+// waitEntered waits for n Consume calls to start, then checks no more start.
+func waitEntered(t *testing.T, entered <-chan int64, n int) {
+	t.Helper()
+	timeout := time.After(10 * time.Second)
+	for range n {
+		select {
+		case <-entered:
+		case <-timeout:
+			t.Fatalf("fewer than %d Consume calls started", n)
+		}
+	}
+	select {
+	case off := <-entered:
+		t.Fatalf("unexpected Consume call for offset %d", off)
+	case <-time.After(50 * time.Millisecond):
+	}
+}
+
+// requireMarked waits until the marked commit offset of partition 0 is want.
+func requireMarked(t *testing.T, kafkaClient *kgo.Client, want int64) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		marked := kafkaClient.MarkedOffsets()["test"]
+		return len(marked) == 1 && marked[0].Offset == want
+	}, 10*time.Second, time.Millisecond, "marked offset did not reach %d", want)
+}
+
+// requireNotClosed fails if ch closes within a short wait.
+func requireNotClosed(t *testing.T, ch <-chan struct{}, msg string) {
+	t.Helper()
+	select {
+	case <-ch:
+		t.Fatal(msg)
+	case <-time.After(50 * time.Millisecond):
+	}
+}
+
+// waitAcquireBlocked returns once a goroutine is blocked in inflightWindow.acquire.
 func waitAcquireBlocked(t *testing.T) {
 	t.Helper()
 	deadline := time.Now().Add(10 * time.Second)
@@ -788,7 +1194,7 @@ func waitAcquireBlocked(t *testing.T) {
 		for {
 			n := runtime.Stack(buf, true)
 			if n < len(buf) {
-				if bytes.Contains(buf[:n], []byte("inflightBatch).acquire")) {
+				if bytes.Contains(buf[:n], []byte("inflightWindow).acquire")) {
 					return
 				}
 				break
@@ -814,6 +1220,15 @@ func requireNoEntry[T any](t *testing.T, entered <-chan T, msg string) {
 // independent processing and error backoff so failures rewind instead of pause.
 func newMaxInFlightConsumer(tb testing.TB, maxInFlight int) (*franzConsumer, *kgo.Client, *pc) {
 	return newIndependentConsumer(tb, "test", maxInFlight, MessageMarking{After: true}, true)
+}
+
+// newCrossFetchConsumer is newMaxInFlightConsumer with window cross_fetch and,
+// as cross_fetch requires, a byte cap. The cap is high enough not to limit.
+func newCrossFetchConsumer(tb testing.TB, maxInFlight int) (*franzConsumer, *kgo.Client, *pc) {
+	consumer, kafkaClient, partitionConsumer := newMaxInFlightConsumer(tb, maxInFlight)
+	consumer.config.PartitionProcessing.MaxInFlight.Window = InFlightWindowCrossFetch
+	consumer.config.PartitionProcessing.MaxInFlight.Bytes = 1 << 20
+	return consumer, kafkaClient, partitionConsumer
 }
 
 func newIndependentConsumer(
@@ -850,6 +1265,11 @@ func newIndependentConsumer(
 		cancel: cancel,
 		attrs:  attribute.NewSet(),
 		logger: zap.NewNop(),
+	}
+	// runPartitionWorker creates the window. Tests that call
+	// processPartitionBatch directly need one too.
+	if maxInFlight > 1 {
+		partitionConsumer.window = newInflightWindow(consumer, partitionConsumer)
 	}
 	consumer.assignments[topicPartition{topic: topic, partition: 0}] = partitionConsumer
 	return consumer, kafkaClient, partitionConsumer
