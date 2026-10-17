@@ -879,6 +879,16 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 	}
 }
 
+func saslMechanism(t *testing.T, opt kgo.Opt) sasl.Mechanism {
+	t.Helper()
+	cl, err := kgo.NewClient(opt)
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
+	require.Len(t, mechanisms, 1)
+	return mechanisms[0]
+}
+
 func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 	var loads, retrievals atomic.Int32
 	orig := loadAWSCredentialsProvider
@@ -899,13 +909,9 @@ func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	cl, err := kgo.NewClient(opt)
-	require.NoError(t, err)
-	defer cl.Close()
-	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
-	require.Len(t, mechanisms, 1)
+	mech := saslMechanism(t, opt)
 	for range 3 {
-		_, msg, err := mechanisms[0].Authenticate(t.Context(), "broker:9098")
+		_, msg, err := mech.Authenticate(t.Context(), "broker:9098")
 		require.NoError(t, err)
 		assert.Contains(t, string(msg), "auth=Bearer ")
 	}
@@ -948,7 +954,8 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 			OAuthBearerTokenSource: extID,
 		}, host)
 		require.Error(t, err)
-		assert.ErrorContains(t, err, "does not implement Token(context.Context)")
+		assert.ErrorContains(t, err, "oauthbearer_token_source")
+		assert.EqualError(t, err, `oauthbearer_token_source extension "oauth2client" does not implement Token(context.Context)`)
 	})
 
 	t.Run("present_extension_success", func(t *testing.T) {
@@ -962,12 +969,8 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, opt)
 
-		cl, err := kgo.NewClient(opt)
-		require.NoError(t, err)
-		defer cl.Close()
-		mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
-		require.Len(t, mechanisms, 1)
-		_, msg, err := mechanisms[0].Authenticate(t.Context(), "broker:9092")
+		mech := saslMechanism(t, opt)
+		_, msg, err := mech.Authenticate(t.Context(), "broker:9092")
 		require.NoError(t, err)
 		assert.Contains(t, string(msg), "auth=Bearer tok")
 	})
@@ -983,12 +986,8 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, opt)
 
-		cl, err := kgo.NewClient(opt)
-		require.NoError(t, err)
-		defer cl.Close()
-		mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
-		require.Len(t, mechanisms, 1)
-		_, _, err = mechanisms[0].Authenticate(t.Context(), "broker:9092")
+		mech := saslMechanism(t, opt)
+		_, _, err = mech.Authenticate(t.Context(), "broker:9092")
 		require.ErrorContains(t, err, "token fetch failed")
 	})
 }
