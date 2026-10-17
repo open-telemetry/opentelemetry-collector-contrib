@@ -34,6 +34,10 @@ type Config struct {
 	LogTableMapping    string                                                   `mapstructure:"logs_table_json_mapping"`
 	TraceTableMapping  string                                                   `mapstructure:"traces_table_json_mapping"`
 	IngestionType      string                                                   `mapstructure:"ingestion_type"`
+	// IncludeExemplars controls whether OTLP metric exemplars (which carry
+	// trace_id/span_id) are written to the Exemplars column of the metrics table.
+	// Disabled by default to avoid added volume/cardinality unless explicitly opted in.
+	IncludeExemplars bool `mapstructure:"include_exemplars"`
 }
 
 // Validate checks if the exporter configuration is valid
