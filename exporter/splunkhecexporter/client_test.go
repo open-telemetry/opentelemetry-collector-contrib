@@ -2116,16 +2116,14 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	rp1.Resource().Attributes().PutStr("host.name", "good-host")
 	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
 
-	// Resource 2: profile with a sample whose values and timestamps_unix_nano lengths disagree,
-	// which the spec forbids. This causes an error that is local to this profile and does not
-	// affect the shared dictionary used by the good profile.
+	// Resource 2: profile with an out-of-range sample type string index. This
+	// must be rejected without affecting the shared dictionary or good profile.
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	badProfile.SampleType().SetTypeStrindex(2) // The string table contains indices 0 and 1.
 	badSample := badProfile.Samples().AppendEmpty()
 	badSample.Values().Append(1)
-	badSample.Values().Append(2)                        // 2 values
-	badSample.TimestampsUnixNano().Append(uint64(1000)) // but only 1 timestamp → mismatch error
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
@@ -2139,6 +2137,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	// The combined error must be non-nil and permanent.
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
+	assert.ErrorContains(t, err, "sample_type.type_strindex")
 }
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
