@@ -196,6 +196,16 @@ resource_attributes:
     type: string
 
 attributes:
+  channel.consuming:
+    name_override: rabbitmq.channel.consuming
+    description: Whether the channel has at least one consumer.
+    type: bool
+    requirement_level: opt_in
+  channel.prefetch_count:
+    name_override: rabbitmq.channel.prefetch_count
+    description: The prefetch limit applied to consumers on the channel (0 means unlimited).
+    type: int
+    requirement_level: opt_in
   message.state:
     name_override: state
     description: The state of messages in a queue.
@@ -204,8 +214,38 @@ attributes:
     enum:
       - ready
       - unacknowledged
+  user.name:
+    name_override: rabbitmq.user.name
+    description: The RabbitMQ user that owns the channel or connection.
+    type: string
+    requirement_level: recommended
+  vhost.name:
+    name_override: rabbitmq.vhost.name
+    description: The vHost of the channel or connection.
+    type: string
+    requirement_level: recommended
 
 metrics:
+  rabbitmq.channel.count:
+    description: The number of open channels.
+    stability: development
+    unit: "{channels}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [channel.consuming, channel.prefetch_count, user.name, vhost.name]
+    enabled: false
+  rabbitmq.connection.count:
+    description: The number of open connections.
+    stability: development
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [user.name, vhost.name]
+    enabled: false
   rabbitmq.consumer.count:
     description: The number of consumers currently reading from the queue.
     stability: development
