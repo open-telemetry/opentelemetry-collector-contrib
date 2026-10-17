@@ -61,7 +61,7 @@ func TestMetricProcessItemFailure(t *testing.T) {
 			mbi := &metricBulkIndexer{}
 			resp := opensearchapi.BulkRespItem{Status: tt.status}
 			mbi.processItemFailure(resp, tt.itemErr, pmetric.NewMetrics())
-			require.Len(t, mbi.errs, 1)
+			require.Len(t, append(mbi.errs, mbi.retryErrs...), 1)
 			require.Equal(t, tt.wantPermanent, consumererror.IsPermanent(mbi.joinedError()))
 		})
 	}
