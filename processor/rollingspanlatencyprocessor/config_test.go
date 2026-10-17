@@ -97,6 +97,21 @@ func TestConfig_Validate(t *testing.T) {
 			modify:      func(c *Config) { c.WarmupCount = 0 },
 			expectedErr: "warmup_count must be greater than 0",
 		},
+		{
+			name:        "unrecognized span_kinds value",
+			modify:      func(c *Config) { c.SpanKinds = []string{"SERVER", "bogus"} },
+			expectedErr: `span_kinds: "bogus" is not a recognized span kind`,
+		},
+		{
+			name:        "span_kinds accepts mixed case",
+			modify:      func(c *Config) { c.SpanKinds = []string{"server", "Consumer"} },
+			expectedErr: "",
+		},
+		{
+			name:        "include_root_spans alone is valid",
+			modify:      func(c *Config) { c.IncludeRootSpans = true },
+			expectedErr: "",
+		},
 	}
 
 	for _, tt := range tests {
