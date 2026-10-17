@@ -7,6 +7,7 @@ package exphistogram // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"math"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -54,6 +55,11 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 	return toHistogram(dp, midpointBucketValue)
 }
 
+// ToNativeExponentialHistogram returns the native exponential histogram
+func ToNativeExponentialHistogram(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
+	return toNativeExponentialHistogram(dp)
+}
+
 func toHistogram(dp pmetric.ExponentialHistogramDataPoint, valueFn bucketValueFunc) (counts []int64, values []float64) {
 	scale := int(dp.Scale())
 
@@ -86,6 +92,65 @@ func toHistogram(dp pmetric.ExponentialHistogramDataPoint, valueFn bucketValueFu
 		values = append(values, valueFn(lb, ub))
 	}
 	return counts, values
+}
+
+func toNativeExponentialHistogram(dp pmetric.ExponentialHistogramDataPoint) pcommon.Value {
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+
+	m.PutInt("scale", int64(dp.Scale()))
+
+	if dp.ZeroCount() > 0 {
+		zeroMap := m.PutEmptyMap("zero")
+		zeroMap.PutInt("count", safeUint64ToInt64(dp.ZeroCount()))
+		if dp.ZeroThreshold() > 0 {
+			zeroMap.PutDouble("threshold", dp.ZeroThreshold())
+		}
+	}
+
+	putExponentialBuckets(m, "negative", dp.Negative())
+	putExponentialBuckets(m, "positive", dp.Positive())
+
+	if dp.HasSum() {
+		m.PutDouble("sum", dp.Sum())
+	}
+	if dp.HasMin() {
+		m.PutDouble("min", dp.Min())
+	}
+	if dp.HasMax() {
+		m.PutDouble("max", dp.Max())
+	}
+	return vm
+}
+
+func putExponentialBuckets(m pcommon.Map, key string, b pmetric.ExponentialHistogramDataPointBuckets) {
+	counts := b.BucketCounts()
+	offset := int64(b.Offset())
+
+	var n int
+	for i := 0; i < counts.Len(); i++ {
+		if counts.At(i) != 0 {
+			n++
+		}
+	}
+	if n == 0 {
+		return
+	}
+
+	bm := m.PutEmptyMap(key)
+	indices := bm.PutEmptySlice("indices")
+	indices.EnsureCapacity(n)
+	outCounts := bm.PutEmptySlice("counts")
+	outCounts.EnsureCapacity(n)
+
+	for i := 0; i < counts.Len(); i++ {
+		c := counts.At(i)
+		if c == 0 {
+			continue
+		}
+		indices.AppendEmpty().SetInt(offset + int64(i))
+		outCounts.AppendEmpty().SetInt(safeUint64ToInt64(c))
+	}
 }
 
 func safeUint64ToInt64(v uint64) int64 {
