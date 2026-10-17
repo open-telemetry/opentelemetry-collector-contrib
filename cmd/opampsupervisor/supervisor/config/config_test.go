@@ -604,7 +604,7 @@ func TestValidate(t *testing.T) {
 			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
 		},
 		{
-			name: "Package with unsupported verifier type (cosign not yet supported)",
+			name: "Package with unsupported verifier type",
 			config: Supervisor{
 				Server: OpAMPServer{
 					Endpoint: "wss://localhost:9090/opamp",
@@ -616,7 +616,7 @@ func TestValidate(t *testing.T) {
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 					Package: AgentPackage{
-						Verifier: Verifier{Type: "cosign"},
+						Verifier: Verifier{Type: "gpg"},
 					},
 				},
 				Capabilities: Capabilities{AcceptsRemoteConfig: true},
@@ -624,6 +624,89 @@ func TestValidate(t *testing.T) {
 				HealthCheck:  defaultHealthCheck,
 			},
 			expectedErrorFunc: simpleError("unsupported verifier type"),
+		},
+		{
+			name: "Package with cosign identity specifying both subject and subject_regex",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:        "https://token.actions.githubusercontent.com",
+									Subject:       "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+									SubjectRegExp: "^https://github.com/example/.*$",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier::cosign::identities::0: cannot specify both subject and subject_regex"),
+		},
+		{
+			name: "Package with cosign verifier and no identities",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{Type: VerifierTypeCosign},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier: cosign::identities must not be empty"),
+		},
+		{
+			name: "Package with valid cosign verifier is not yet supported",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:  "https://token.actions.githubusercontent.com",
+									Subject: "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier is not yet supported"),
 		},
 	}
 
