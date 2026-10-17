@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: extension/observer
+note: Fix panic when StopListAndWatch is called multiple times on EndpointsWatcher.
+issues: [52134]
+subtext:
+change_logs: [user]
