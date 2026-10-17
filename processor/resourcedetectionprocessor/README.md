@@ -141,9 +141,9 @@ be found at [Docker Detector Resource Attributes](./internal/docker/documentatio
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
 
-If `container.name` or `container.image.name` is enabled, the detector inspects the current container
-by using the container hostname as the Docker container name or ID. This can fail when the container
-hostname is changed, for example when running with `network_mode: host`.
+The detector inspects the current container by using the container hostname as the Docker container
+name or ID. This can fail when the container hostname is changed, for example when running with
+`network_mode: host`, in which case an empty resource is returned.
 
 Example:
 
@@ -156,6 +156,21 @@ processors:
 ```
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted. When `false` (default), failures are logged and an empty resource is returned.
+
+#### Migrating to the semantic convention container attributes
+
+Two attribute values do not follow the semantic conventions: `container.name` carries the leading
+slash the Docker API returns (`/my-container`), and `container.image.name` reports the image ID
+(`sha256:<hex>`) rather than the image name. Enabling the
+`processor.resourcedetection.docker.EmitSemconvContainerAttributes` feature gate reports
+`container.name` without the slash and `container.image.name` as the image name, with the image ID
+available from the `container.image.id` attribute:
+
+```shell
+otelcol --feature-gates=processor.resourcedetection.docker.EmitSemconvContainerAttributes
+```
+
+The gate is alpha (disabled by default) and is expected to become the default in a future release.
 
 #### Docker Socket Permissions
 
