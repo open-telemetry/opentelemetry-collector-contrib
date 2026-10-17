@@ -86,7 +86,7 @@ exporter/signalfxexporter/                                       @open-telemetry
 exporter/splunkhecexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/stefexporter/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @dmitryax
 exporter/sumologicexporter/                                      @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
-exporter/syslogexporter/                                         @open-telemetry/collector-contrib-approvers @kasia-kujawa @rnishtala-sumo @andrzej-stencel
+exporter/syslogexporter/                                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo @andrzej-stencel
 exporter/tencentcloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @wgliang
 exporter/tinybirdexporter/                                       @open-telemetry/collector-contrib-approvers @mx-psi @MoreraAlejandro
 exporter/zipkinexporter/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
