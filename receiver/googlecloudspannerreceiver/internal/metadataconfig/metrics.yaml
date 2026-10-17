@@ -67,6 +67,24 @@ metadata:
           type: "gauge"
         unit: "second"
 #
+# -------------------------------------------- Oldest Active Queries -----------------------------------------------------------
+#
+  - name: "oldest active queries"
+    query: "SELECT CLIENT_IP_ADDRESS, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY CLIENT_IP_ADDRESS ORDER BY ACTIVE_QUERIES_COUNT DESC"
+    metric_name_prefix: "database/spanner/oldest_active_queries/"
+    high_cardinality: true
+    labels:
+      - name: "client_ip_address"
+        column_name: "CLIENT_IP_ADDRESS"
+        value_type: "string"
+    metrics:
+      - name: "active_queries_count"
+        column_name: "ACTIVE_QUERIES_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Queries Stats -----------------------------------------------------------
 #
   - name: "top minute query stats"
