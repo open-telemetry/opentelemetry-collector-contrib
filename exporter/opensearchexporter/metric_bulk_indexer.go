@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net"
 	"time"
 
@@ -251,6 +252,10 @@ func isRetryableError(err error) bool {
 		return false
 	}
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	// The transport calls RoundTrip directly, so a proxy closing the connection surfaces as a bare io.EOF.
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return true
 	}
 	var netErr net.Error

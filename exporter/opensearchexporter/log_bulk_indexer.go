@@ -47,7 +47,11 @@ func (lbi *logBulkIndexer) close(ctx context.Context) {
 
 func (lbi *logBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		lbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
+		// Indexer-level errors are transport/flush failures (connection refused,
+		// timeout, DNS). They are transient, so surface them as a retryable error
+		// and let exporterhelper's retry_on_failure resend the batch instead of
+		// dropping it as permanent.
+		lbi.errs = append(lbi.errs, indexerErr)
 	}
 }
 
@@ -128,8 +132,23 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 		// Non-recoverable OpenSearch error while indexing document
 		lbi.appendPermanentError(responseAsError(resp))
 	default:
-		// Encoding error. We didn't even attempt to send the event
-		lbi.appendPermanentError(itemErr)
+		// No server status classified the item, so this is either a flush/
+		// transport failure (retry) or an encoding failure we never sent
+		// (permanent). On a flush failure opensearchutil reports the same error
+		// through both this per-item path and onIndexerError, so both must land
+		// on retryable or the joined error is still permanent via errors.As.
+		//
+		// The retryable error is deliberately bare rather than carrying this one
+		// item. A flush failure fires this callback for every buffered item, and
+		// exporterhelper's OnError resolves the first consumererror it finds and
+		// retries only that payload, so wrapping here would narrow the retry to a
+		// single record and silently drop the rest of the batch. With no payload
+		// attached, OnError falls through and the whole request is resent.
+		if isRetryableError(itemErr) {
+			lbi.errs = append(lbi.errs, itemErr)
+		} else {
+			lbi.appendPermanentError(itemErr)
+		}
 	}
 }
 
