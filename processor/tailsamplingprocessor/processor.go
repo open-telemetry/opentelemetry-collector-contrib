@@ -1169,6 +1169,11 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 				} else {
 					tsp.releaseNotSampledTrace(id, actualData)
 				}
+				// The trace left memory with a final decision, so its ID must not
+				// be reported as dropped too early on the next tick.
+				if _, pending := tsp.idToTrace[id]; !pending {
+					tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
+				}
 			} else {
 				// Persist current batch for pending traces.
 				if err := tsp.tailStorage.Append(id, spanIngestTraceData.ReceivedBatches); err != nil {
