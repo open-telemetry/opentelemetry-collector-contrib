@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -545,4 +546,38 @@ func TestTLSClientConfigInvalidCert(t *testing.T) {
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "could not load docker client TLS config")
+}
+
+// TestClientCloseClosesUnderlyingClient verifies that Client.Close closes idle transport connections.
+func TestClientCloseClosesUnderlyingClient(t *testing.T) {
+	var activeConns atomic.Int32
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			activeConns.Add(1)
+		case http.StateClosed:
+			activeConns.Add(-1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	err = cli.LoadContainerList(t.Context())
+	require.NoError(t, err)
+	assert.Positive(t, activeConns.Load())
+
+	err = cli.Close()
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, int32(0), activeConns.Load(), "Underlying client transport should be closed")
 }

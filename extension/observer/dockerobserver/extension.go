@@ -5,6 +5,7 @@ package dockerobserver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -104,7 +105,11 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.StopListAndWatch()
 	d.cancel()
-	return d.wg.Wait()
+	err := d.wg.Wait()
+	if d.dClient != nil {
+		return errors.Join(err, d.dClient.Close())
+	}
+	return err
 }
 
 func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
