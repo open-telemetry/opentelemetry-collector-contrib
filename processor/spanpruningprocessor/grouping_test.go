@@ -150,6 +150,7 @@ func TestBuildLeafGroupKey_DifferentDepthsProduceDifferentKeys(t *testing.T) {
 	child.span.SetName("handler")
 
 	child.parent = parent
+	child.treeDepth = 1
 
 	processor := &spanPruningProcessor{}
 
