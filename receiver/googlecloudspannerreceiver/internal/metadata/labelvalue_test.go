@@ -7,6 +7,8 @@ import (
 	"math"
 	"testing"
 
+	"cloud.google.com/go/civil"
+	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -374,4 +376,176 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 
 	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, expectedValue, labelValue.Value())
+}
+
+func TestDateLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+
+	assert.Equal(t, DateValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *spanner.NullDate
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
+func TestDateLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+	labelValue := dateLabelValue{
+		metadata: metadata,
+		value:    "2023-10-01",
+	}
+
+	assert.Equal(t, DateValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, "2023-10-01", labelValue.Value())
+
+	attributes := pcommon.NewMap()
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, "2023-10-01", attributeValue.Str())
+
+	labelValue.ModifyValue("2023-10-02")
+	assert.Equal(t, "2023-10-02", labelValue.Value())
+}
+
+func TestNewDateLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+
+	tests := []struct {
+		name          string
+		value         spanner.NullDate
+		expectedValue string
+	}{
+		{
+			name: "Valid standard date 2026-09-10",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2026, Month: 9, Day: 10},
+				Valid: true,
+			},
+			expectedValue: "2026-09-10",
+		},
+		{
+			name: "Valid standard date 2023-10-01",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 10, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "2023-10-01",
+		},
+		{
+			name: "Valid leap year date 2024-02-29",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2024, Month: 2, Day: 29},
+				Valid: true,
+			},
+			expectedValue: "2024-02-29",
+		},
+		{
+			name: "Valid century leap year date 2000-02-29",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2000, Month: 2, Day: 29},
+				Valid: true,
+			},
+			expectedValue: "2000-02-29",
+		},
+		{
+			name: "Valid minimum boundary date 0001-01-01",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 1, Month: 1, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "0001-01-01",
+		},
+		{
+			name: "Valid maximum boundary date 9999-12-31",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 9999, Month: 12, Day: 31},
+				Valid: true,
+			},
+			expectedValue: "9999-12-31",
+		},
+		{
+			name: "Valid Unix epoch date 1970-01-01",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 1970, Month: 1, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "1970-01-01",
+		},
+		{
+			name: "Valid zero-padded single-digit month and day 2026-01-05",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2026, Month: 1, Day: 5},
+				Valid: true,
+			},
+			expectedValue: "2026-01-05",
+		},
+		{
+			name: "Valid zero-padded year under 1000 (0099-03-07)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 99, Month: 3, Day: 7},
+				Valid: true,
+			},
+			expectedValue: "0099-03-07",
+		},
+		{
+			name:          "Null date (Valid=false)",
+			value:         spanner.NullDate{Valid: false},
+			expectedValue: "",
+		},
+		{
+			name: "Null date with non-zero Date struct (Valid=false)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2026, Month: 9, Day: 10},
+				Valid: false,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Empty zero civil.Date with Valid=true",
+			value: spanner.NullDate{
+				Date:  civil.Date{},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Invalid calendar date (non-leap year Feb 29)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 2, Day: 29},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Invalid calendar date (month out of range)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 13, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Invalid calendar date (day out of range)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 4, Day: 31},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			valueHolder := &tt.value
+			labelValue := newDateLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, DateValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tt.expectedValue, labelValue.Value())
+		})
+	}
 }
