@@ -71,7 +71,6 @@ exporter/syslogexporter exporter/syslog
 exporter/tencentcloudlogserviceexporter exporter/tencentcloudlogservice
 exporter/tinybirdexporter exporter/tinybird
 exporter/zipkinexporter exporter/zipkin
-extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
 extension/awsproxy extension/awsproxy
 extension/azureauthextension extension/azureauth
@@ -374,3 +373,4 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+extension/ackextension extension/ack
