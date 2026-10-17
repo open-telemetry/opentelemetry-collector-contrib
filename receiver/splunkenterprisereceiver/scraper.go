@@ -2186,16 +2186,19 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
 
 		return fmt.Errorf("failed to set TTL for search: %s", body)
 	}
+
+	// Drain the body so the underlying connection can be reused.
+	_, _ = io.Copy(io.Discard, res.Body)
 
 	return nil
 }
