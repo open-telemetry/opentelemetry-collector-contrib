@@ -73,7 +73,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			if urlParts[key] == "" {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
-		case string(conventionsv112.HostNameKey):
+		case string(conventions.HostNameKey):
 			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		case string(conventionsv112.NetHostNameKey):
@@ -247,7 +247,7 @@ func constructServerURL(urlParts map[string]string) string {
 		if !ok {
 			host, ok = urlParts[string(conventionsv112.NetHostNameKey)]
 			if !ok {
-				host, ok = urlParts[string(conventionsv112.HostNameKey)]
+				host, ok = urlParts[string(conventions.HostNameKey)]
 				if !ok {
 					host = urlParts[string(conventions.ServerAddressKey)]
 				}
