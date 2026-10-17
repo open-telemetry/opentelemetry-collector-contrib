@@ -81,6 +81,10 @@ type Config struct {
 	// If empty, defaults to "tag_only".
 	EnforcementMode EnforcementMode `mapstructure:"enforcement_mode"`
 
+	// ReadOnly tracks cardinality and reports it through the telemetry gauges
+	// without applying EnforcementMode, so data is never changed.
+	ReadOnly bool `mapstructure:"read_only"`
+
 	// EstimatedCostPerMetricMonth configures the theoretical cost per active time-series. This is
 	// used solely to populate the "otelcol_processor_cardinality_estimated_savings_dollars_total" OTel counter
 	// emitted by this processor. It allows platform owners to quantify FinOps ROI directly in the processor's
@@ -94,10 +98,11 @@ type Config struct {
 	EstimatedCostPerMetricMonth float64 `mapstructure:"estimated_cost_per_metric_month"`
 
 	// TopOffendersCount is the number of highest-delta (metric, label) pairs
-	// to report via the "otelcol_processor_cardinality_top_offenders" gauge. The snapshot is
-	// computed once per epoch rotation, so it adds no hot-path cost.
+	// to report via the "otelcol_processor_cardinality_top_offenders" gauge, and
+	// of highest distinct-value pairs via "otelcol_processor_cardinality_top_distinct".
+	// The snapshots are computed once per epoch rotation, so they add no hot-path cost.
 	//
-	// Set to 0 to disable the Top-N gauge entirely.
+	// Set to 0 to disable both Top-N gauges.
 	// Must be ≥ 0.
 	TopOffendersCount int `mapstructure:"top_offenders_count"`
 

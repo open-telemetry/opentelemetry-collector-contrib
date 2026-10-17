@@ -33,6 +33,14 @@ telemetry:
         value_type: double
         monotonic: true
         async: true
+    processor_cardinality_top.distinct:
+      enabled: true
+      stability: development
+      description: Distinct values in the last epoch of the top-N (metric, label) pairs, with a recommendation for each.
+      unit: "{value}"
+      gauge:
+        value_type: int
+        async: true
     processor_cardinality_top.offenders:
       enabled: true
       stability: development
