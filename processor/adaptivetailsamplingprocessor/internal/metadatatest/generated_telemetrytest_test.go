@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -19,9 +20,23 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerBurstCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
+	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerKeyspaceSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
+	require.NoError(t, tb.RegisterProcessorAdaptiveTailSamplingSamplerRequestCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
 	tb.ProcessorAdaptiveTailSamplingDecisionSampleRate.Record(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingDecisionTriggers.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingFingerprintDuration.Record(context.Background(), 1)
+	tb.ProcessorAdaptiveTailSamplingFleetMemberCount.Record(context.Background(), 1)
+	tb.ProcessorAdaptiveTailSamplingFleetTrackerErrors.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingIncomingTracestateUnparseable.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingOttlEvalErrors.Add(context.Background(), 1)
 	tb.ProcessorAdaptiveTailSamplingTraceSpanCount.Record(context.Background(), 1)
@@ -38,10 +53,25 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorAdaptiveTailSamplingFingerprintDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorAdaptiveTailSamplingFleetMemberCount(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorAdaptiveTailSamplingFleetTrackerErrors(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingIncomingTracestateUnparseable(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingOttlEvalErrors(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorAdaptiveTailSamplingTraceSpanCount(t, testTel,

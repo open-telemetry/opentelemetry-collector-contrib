@@ -4,8 +4,15 @@
 package prometheusreceiver
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -482,6 +489,8 @@ func TestReloadPromConfigSecretHandling(t *testing.T) {
 	// corrupting them to "<secret>" placeholders. This is critical for authentication
 	// to work properly when using configurations with basic auth or bearer tokens.
 
+	certPEM, keyPEM := generateSelfSignedPEM(t)
+
 	tests := []struct {
 		name       string
 		configYAML string
@@ -602,6 +611,44 @@ scrape_configs:
 				assert.Equal(t, "%password", password, "password should preserve original value with leading %")
 			},
 		},
+		{
+			name: "inline multi-line tls cert and key",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-inline-tls"
+    tls_config:
+      cert: |
+` + indentLines(certPEM, "        ") + `
+      key: |
+` + indentLines(keyPEM, "        ") + `
+    static_configs:
+      - targets: ["localhost:8443"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				tlsConfig := dst.ScrapeConfigs[0].HTTPClientConfig.TLSConfig
+				assert.Equal(t, certPEM, tlsConfig.Cert, "cert should round-trip byte for byte")
+				assert.Equal(t, keyPEM, string(tlsConfig.Key), "key should round-trip byte for byte")
+			},
+		},
+		{
+			name: "basic auth password ending with newline",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-trailing-newline"
+    basic_auth:
+      username: "user"
+      password: "password\n"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				require.NotNil(t, dst.ScrapeConfigs[0].HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(dst.ScrapeConfigs[0].HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "password\n", password, "password should preserve trailing newline")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -620,6 +667,35 @@ scrape_configs:
 			tt.checkFn(t, dst)
 		})
 	}
+}
+
+// generateSelfSignedPEM returns a PEM-encoded self-signed certificate and its private key.
+func generateSelfSignedPEM(t *testing.T) (certPEM, keyPEM string) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "localhost"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+	keyDER, err := x509.MarshalECPrivateKey(key)
+	require.NoError(t, err)
+	certPEM = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+	keyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER}))
+	return certPEM, keyPEM
+}
+
+// indentLines prefixes every line of s with prefix, dropping the trailing newline.
+func indentLines(s, prefix string) string {
+	lines := strings.Split(strings.TrimSuffix(s, "\n"), "\n")
+	for i, l := range lines {
+		lines[i] = prefix + l
+	}
+	return strings.Join(lines, "\n")
 }
 
 func TestReloadPromConfigStaticConfigsWithLabels(t *testing.T) {

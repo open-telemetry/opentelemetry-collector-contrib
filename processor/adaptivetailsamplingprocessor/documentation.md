@@ -30,6 +30,22 @@ Time spent extracting a rule's fingerprint per decision, in microseconds, labell
 | ---- | ----------- | ---------- | --------- |
 | us | Histogram | Int | Development |
 
+### otelcol_processor_adaptive_tail_sampling_fleet_member_count
+
+Current fleet member count reported by the fleet_tracker extension; the processor divides each rule's goal_throughput by this value. Not emitted when fleet_tracker is unset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {instances} | Gauge | Int | Development |
+
+### otelcol_processor_adaptive_tail_sampling_fleet_tracker_errors
+
+Number of non-positive member counts received from the fleet tracker; the last good count is kept.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {errors} | Sum | Int | true | Development |
+
 ### otelcol_processor_adaptive_tail_sampling_incoming_tracestate_unparseable
 
 Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.
@@ -45,6 +61,30 @@ Number of OTTL condition evaluation errors, labelled by the rule the condition b
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {errors} | Sum | Int | true | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_burst_count
+
+Cumulative number of intervals in which an adaptive sampler (adaptive_percentage or adaptive_throughput) detected a burst of traffic, labelled by rule, sampler_type, and sampler_algorithm. Not emitted for adaptive_throughput rules using the windowed algorithm, which do not track this counter.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {bursts} | Sum | Int | true | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size
+
+Current number of distinct sampling keys tracked by an adaptive sampler (adaptive_percentage or adaptive_throughput), labelled by rule, sampler_type, and sampler_algorithm. A rising value indicates growing key cardinality, which can degrade sampler accuracy and memory use.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {keys} | Gauge | Int | Development |
+
+### otelcol_processor_adaptive_tail_sampling_sampler_request_count
+
+Cumulative number of sample-rate requests made to an adaptive sampler (adaptive_percentage or adaptive_throughput) since it started, labelled by rule, sampler_type, and sampler_algorithm.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {requests} | Sum | Int | true | Development |
 
 ### otelcol_processor_adaptive_tail_sampling_trace_span_count
 

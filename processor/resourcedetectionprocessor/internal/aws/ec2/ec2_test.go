@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,6 +27,19 @@ import (
 )
 
 var errUnavailable = errors.New("ec2metadata unavailable")
+
+// httpError creates an error of the type the IMDS client returns for a metadata endpoint response with the given
+// status code, see github.com/aws/aws-sdk-go-v2/feature/ec2/imds.deserializeResponse.
+func httpError(statusCode int) error {
+	return &smithy.OperationError{
+		ServiceID:     "ec2imds",
+		OperationName: "GetInstanceIdentityDocument",
+		Err: &smithyhttp.ResponseError{
+			Response: &smithyhttp.Response{Response: &http.Response{StatusCode: statusCode}},
+			Err:      errors.New("request to EC2 IMDS failed"),
+		},
+	}
+}
 
 type mockMetadata struct {
 	retIDDoc    imds.InstanceIdentityDocument
@@ -438,7 +453,37 @@ func TestDetector_Detect(t *testing.T) {
 			failOnMissingMetadata: true,
 		},
 		{
-			name: "get fails",
+			// Regression test for clusters where the metadata service provides the EC2-compatible "meta-data" tree, but not the
+			// AWS-specific "dynamic/instance-identity" tree. Examples are clusters based on OpenStack Nova, like
+			// T Cloud Public/ECS. The instance ID probe succeeds and then the identity document lookup fails with HTTP 404.
+			// If fail_on_missing_metadata is false, this must not result in a startup error.
+			name: "get (identity document) fails with HTTP 404",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: httpError(http.StatusNotFound),
+				isAvailable: true,
+			}},
+			args:    args{ctx: t.Context()},
+			want:    pcommon.NewResource(),
+			wantErr: false,
+		},
+		{
+			// A status code other than 404 for the identity document is currently not covered by fail_on_missing_metadata==false,
+			// so the error is reported.
+			name: "get (identity document) fails with HTTP 500",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: httpError(http.StatusInternalServerError),
+				isAvailable: true,
+			}},
+			args:    args{ctx: t.Context()},
+			want:    pcommon.NewResource(),
+			wantErr: true,
+		},
+		{
+			// A non-HTTP error for the identity document is currently not covered by fail_on_missing_metadata==false, so the
+			// error is reported.
+			name: "get (identity document) fails with non-HTTP error",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
@@ -449,16 +494,104 @@ func TestDetector_Detect(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "get (identity document) fails with HTTP 404, with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: httpError(http.StatusNotFound),
+				isAvailable: true,
+			}},
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
+		},
+		{
 			name: "hostname fails",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:       imds.InstanceIdentityDocument{},
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args:    args{ctx: t.Context()},
-			want:    pcommon.NewResource(),
-			wantErr: true,
+			args: args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				return res
+			}(),
+			wantErr: false,
+		},
+		{
+			name: "hostname fails, tags are still fetched",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname:    "",
+				retErrHostname: errors.New("hostname failed"),
+				retTags:        map[string]string{"tag1": "val1"},
+				isAvailable:    true,
+			}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$")},
+			args:          args{ctx: t.Context()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("ec2.tag.tag1", "val1")
+				return res
+			}(),
+			tagsFromIMDS: true,
+			wantErr:      false,
+		},
+		{
+			// The hostname is only optional without fail_on_missing_metadata: with the flag set, a missing hostname
+			// fails the detector like any other missing metadata.
+			name: "hostname fails, with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: imds.InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname:    "",
+				retErrHostname: errors.New("hostname failed"),
+				isAvailable:    true,
+			}},
+			args:                  args{ctx: t.Context()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
 		},
 	}
 	for _, tt := range tests {

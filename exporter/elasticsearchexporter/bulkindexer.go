@@ -393,7 +393,8 @@ func flushBulkIndexer(
 		if resp.Error.Type == "version_conflict_engine_exception" {
 			if suppressConflictErrors ||
 				strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
-				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") {
+				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") ||
+				strings.HasPrefix(resp.Index, ".ds-profiling-") {
 				// Rejection of duplicates are either expected (Profiling indices)
 				// or globally suppressed by the user. Do not log them.
 				continue

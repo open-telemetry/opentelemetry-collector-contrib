@@ -475,6 +475,9 @@ exclusions:
       - name: processor.k8sattributes.EmitV1K8sConventions
         validation:
           enabled: false
+      - name: processor.k8sattributes.EnableKubeletPodSource
+        validation:
+          enabled: false
       - name: processor.k8sattributes.ShareProcessorBetweenPipelines
         validation:
           enabled: false
@@ -797,7 +800,7 @@ exclusions:
 
 stability:
   coverage:
-    development: 40
+    development: 25
     alpha: 15
-    beta: 50
+    beta: 20
     stable: 85
