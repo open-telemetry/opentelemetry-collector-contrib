@@ -19,13 +19,15 @@ type spanNode struct {
 	scopeSpans         ptrace.ScopeSpans
 	parent             *spanNode
 	children           []*spanNode
-	groupKey           string         // cached group key for leaf spans
-	replacementSpanID  pcommon.SpanID // summary span ID that replaced this node's group
-	isLeaf             bool           // true if node has no children
-	markedForRemoval   bool           // true if node will be aggregated
-	isPreservedOutlier bool           // true if this node is the root of a preserved outlier subtree
-	isExemplar         bool           // true if this node is the root of a sampled exemplar subtree
-	protected          bool           // true if this node is within a preserved outlier or exemplar subtree (never aggregated)
+	groupKey           string           // cached group key for leaf spans
+	existingSummary    *existingSummary // rollups read off a prior run's summary span; nil unless merging is enabled and this span is one
+	replacementSpanID  pcommon.SpanID   // summary span ID that replaced this node's group
+	isLeaf             bool             // true if node has no children
+	markedForRemoval   bool             // true if node will be aggregated
+	isPreservedOutlier bool             // true if this node is the root of a preserved outlier subtree
+	isExemplar         bool             // true if this node is the root of a sampled exemplar subtree
+	protected          bool             // true if this node is within a preserved outlier or exemplar subtree (never aggregated)
+	priorKept          bool             // true if this node is within a subtree an earlier run kept as a preserved outlier or exemplar
 }
 
 // traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
@@ -34,6 +36,9 @@ type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
 	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
+	// priorKept holds roots of subtrees an earlier run kept as preserved
+	// outliers or exemplars; populated only when merging existing summaries.
+	priorKept []*spanNode
 }
 
 // buildTraceTree constructs parent/child links for a trace and records
@@ -48,12 +53,19 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 		return tree
 	}
 
-	// First pass: create nodes for all spans, initially mark all as leaves
+	// First pass: create nodes for all spans, initially mark all as leaves.
+	// Summary rollups are read once here, alongside the other per-node caches,
+	// so later phases never re-parse a span's attributes.
 	for _, info := range spans {
 		node := &spanNode{
 			span:       info.span,
 			scopeSpans: info.scopeSpans,
 			isLeaf:     true, // assume leaf until a child links to it
+		}
+		if p.mergeSummaryPrefix != "" {
+			if summary, ok := readExistingSummary(info.span, p.mergeSummaryPrefix); ok {
+				node.existingSummary = summary
+			}
 		}
 		tree.nodeByID[info.span.SpanID()] = node
 	}
@@ -95,6 +107,10 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	sort.Slice(tree.leaves, func(i, j int) bool {
 		return nodeOrderLess(tree.leaves[i], tree.leaves[j])
 	})
+
+	if p.mergeSummaryPrefix != "" {
+		tree.priorKept = protectPriorKept(tree.nodeByID, p.mergeSummaryPrefix)
+	}
 
 	// Log warnings for incomplete traces
 	if rootCount > 1 {
@@ -138,6 +154,15 @@ func (n *spanNode) depth() int {
 		d++
 	}
 	return d
+}
+
+// isParentLevelSummary reports whether this node is a summary span a prior run
+// created from a parent-level (aggregation level >= 1) group. Its children were
+// deleted when it was created, so the tree sees it as a leaf even though it
+// stands for a whole subtree; the parent-aggregation path re-seeds it at its
+// stored level instead of grouping it with true leaves.
+func (n *spanNode) isParentLevelSummary() bool {
+	return n.existingSummary != nil && n.existingSummary.level >= 1
 }
 
 // markOutlierSubtree records root as a preserved-outlier root and marks every
@@ -211,8 +236,11 @@ func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 // so it does not block aggregation. The outlier keeps everything beneath it but
 // not its ancestors.
 func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
-	// Must have children (not a leaf)
-	if node.isLeaf {
+	// Must have children (not a leaf). A parent-level summary from a prior run
+	// is childless by construction — its children were pruned when it was
+	// created — but its subtree was already complete then, so it stays eligible
+	// at its stored aggregation level.
+	if node.isLeaf && !node.isParentLevelSummary() {
 		return false
 	}
 
