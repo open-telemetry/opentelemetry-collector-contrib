@@ -809,8 +809,13 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string, 
 		dest = append(dest, &bsc.state)
 	}
 	if grouping.waitEventType {
-		columns = append(columns, "coalesce(wait_event_type, 'none') as wait_event_type")
-		groupBy = append(groupBy, "wait_event_type")
+		// wait_event_type is NULL both when a backend is not waiting and when the monitoring user
+		// cannot inspect the backend. backend_type is NULL only in the second case, so it tells
+		// them apart. The query groups by the whole expression because it reads backend_type,
+		// which is not grouped by unless the backend type attribute is enabled too.
+		const waitEventType = "CASE WHEN backend_type IS NULL THEN 'unknown' ELSE coalesce(wait_event_type, 'none') END"
+		columns = append(columns, waitEventType+" as wait_event_type")
+		groupBy = append(groupBy, waitEventType)
 		dest = append(dest, &bsc.waitEventType)
 	}
 	columns = append(columns, "count(*) as count")

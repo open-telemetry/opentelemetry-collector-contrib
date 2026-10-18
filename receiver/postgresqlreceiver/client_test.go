@@ -194,12 +194,13 @@ func TestGetBackends(t *testing.T) {
 		selectDatname       = "SELECT datname"
 		selectBackendType   = ", coalesce(backend_type, 'unknown') as backend_type"
 		selectState         = ", coalesce(state, 'unknown') as state"
-		selectWaitEventType = ", coalesce(wait_event_type, 'none') as wait_event_type"
+		waitEventTypeExpr   = "CASE WHEN backend_type IS NULL THEN 'unknown' ELSE coalesce(wait_event_type, 'none') END"
+		selectWaitEventType = ", " + waitEventTypeExpr + " as wait_event_type"
 		fromActivity        = ", count(*) as count from pg_stat_activity"
 	)
 	allGrouping := backendGrouping{backendType: true, state: true, waitEventType: true}
 	allSQL := selectDatname + selectBackendType + selectState + selectWaitEventType + fromActivity
-	allGroupBy := " GROUP BY datname, backend_type, state, wait_event_type;"
+	allGroupBy := " GROUP BY datname, backend_type, state, " + waitEventTypeExpr + ";"
 	allColumns := []string{"datname", "backend_type", "state", "wait_event_type", "count"}
 
 	tests := []struct {
@@ -267,7 +268,7 @@ func TestGetBackends(t *testing.T) {
 		{
 			name:        "wait event type only",
 			grouping:    backendGrouping{waitEventType: true},
-			expectedSQL: selectDatname + selectWaitEventType + fromActivity + " GROUP BY datname, wait_event_type;",
+			expectedSQL: selectDatname + selectWaitEventType + fromActivity + " GROUP BY datname, " + waitEventTypeExpr + ";",
 			rows: sqlmock.NewRows([]string{"datname", "wait_event_type", "count"}).
 				AddRow("otel", "none", 4).
 				AddRow("otel", "Lock", 8),
@@ -279,9 +280,26 @@ func TestGetBackends(t *testing.T) {
 			},
 		},
 		{
+			// Without pg_monitor, PostgreSQL hides wait_event_type and backend_type of other roles'
+			// backends. Those report "unknown", not "none", so they are not mistaken for backends
+			// that are not waiting.
+			name:        "wait event type of hidden backends is unknown",
+			grouping:    backendGrouping{waitEventType: true},
+			expectedSQL: selectDatname + selectWaitEventType + fromActivity + " GROUP BY datname, " + waitEventTypeExpr + ";",
+			rows: sqlmock.NewRows([]string{"datname", "wait_event_type", "count"}).
+				AddRow("otel", "none", 1).
+				AddRow("otel", "unknown", 3),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{waitEventType: "none", count: 1},
+					{waitEventType: "unknown", count: 3},
+				},
+			},
+		},
+		{
 			name:        "state and wait event type",
 			grouping:    backendGrouping{state: true, waitEventType: true},
-			expectedSQL: selectDatname + selectState + selectWaitEventType + fromActivity + " GROUP BY datname, state, wait_event_type;",
+			expectedSQL: selectDatname + selectState + selectWaitEventType + fromActivity + " GROUP BY datname, state, " + waitEventTypeExpr + ";",
 			rows: sqlmock.NewRows([]string{"datname", "state", "wait_event_type", "count"}).
 				AddRow("otel", "active", "Lock", 3),
 			expected: map[databaseName][]backendStateCount{
