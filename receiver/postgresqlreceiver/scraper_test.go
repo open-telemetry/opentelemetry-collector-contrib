@@ -2521,8 +2521,8 @@ func (m *mockClient) getServerScopedLocks(ctx context.Context) ([]databaseLocks,
 	return args.Get(0).([]databaseLocks), args.Error(1)
 }
 
-func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName][]backendStateCount, error) {
-	args := m.Called(databases)
+func (m *mockClient) getBackends(_ context.Context, databases []string, grouping backendGrouping) (map[databaseName][]backendStateCount, error) {
+	args := m.Called(databases, grouping)
 	return args.Get(0).(map[databaseName][]backendStateCount), args.Error(1)
 }
 
@@ -2673,7 +2673,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		m.On("getDatabaseConflicts", databases).Return(dbConflictStats, nil)
 		m.On("getExecutionTimeStats", databases).Return(execDuration, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
-		m.On("getBackends", databases).Return(backends, nil)
+		m.On("getBackends", databases, mock.Anything).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
 			checkpointsReq:       1,
 			checkpointsScheduled: 2,
@@ -3039,7 +3039,9 @@ func TestScraperSkipsServerWideQueriesForDisabledMetrics(t *testing.T) {
 			require.NoError(t, clientErr)
 			listClient := listClientAny.(*mockClient)
 
-			listClient.AssertNotCalled(t, tc.mockMethod, mock.Anything)
+			// Count calls by method name only: AssertNotCalled matches arguments too, so it
+			// would pass vacuously for a method whose arity differs from the expectation.
+			listClient.AssertNumberOfCalls(t, tc.mockMethod, 0)
 		})
 	}
 }

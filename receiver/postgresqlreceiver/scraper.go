@@ -1369,7 +1369,7 @@ func (*postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	backendStateByDB, err := client.getBackends(ctx, databases)
+	backendStateByDB, err := client.getBackends(ctx, databases, backendGrouping{backendType: true, state: true, waitEventType: true})
 	if err != nil {
 		errs.addPartial(err)
 		return
