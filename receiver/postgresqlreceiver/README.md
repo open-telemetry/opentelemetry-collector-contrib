@@ -413,5 +413,6 @@ receivers:
         attributes: [db.namespace, postgresql.backend_type, postgresql.state, postgresql.wait_event_type]
 ```
 
-Data points that share the same enabled attributes are aggregated into one (summed by default). To
-reduce cardinality, enable only a subset of the attributes.
+The receiver groups the `pg_stat_activity` query by the enabled attributes only, so each data point
+is an exact backend count whatever the metric's `aggregation_strategy` is. To reduce cardinality,
+enable only a subset of the attributes.

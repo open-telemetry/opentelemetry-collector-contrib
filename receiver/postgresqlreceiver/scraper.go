@@ -69,6 +69,9 @@ type postgreSQLScraper struct {
 	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
 	dbVersion              string
+	// backendGrouping selects the pg_stat_activity columns that postgresql.backends is counted by,
+	// derived once from the attributes enabled on the metric.
+	backendGrouping backendGrouping
 }
 
 type errsMux struct {
@@ -142,6 +145,7 @@ func newPostgreSQLScraper(
 		serviceInstanceID:  serviceInstanceID,
 		serverEndpoint:     endpoint,
 		useOTelSemconv:     useOTelSemconv,
+		backendGrouping:    backendGroupingFor(mbConfig.Metrics.PostgresqlBackends.EnabledAttributes),
 	}, nil
 }
 
@@ -191,6 +195,18 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	metrics.PostgresqlTupUpdated.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTupUpdated.EnabledAttributes)
 
 	return config
+}
+
+// backendGroupingFor returns the pg_stat_activity columns that getBackends must group by so that it
+// returns exactly one row per postgresql.backends data point for the given enabled attributes. A row
+// per data point means the metrics builder never merges rows, so the emitted values do not depend on
+// the metric's aggregation_strategy.
+func backendGroupingFor(attributes []metadata.PostgresqlBackendsMetricAttributeKey) backendGrouping {
+	return backendGrouping{
+		backendType:   slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType),
+		state:         slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState),
+		waitEventType: slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType),
+	}
 }
 
 func legacyMetricAttributes[T ~string](attributes []T) []T {
@@ -1360,7 +1376,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (*postgreSQLScraper) retrieveBackends(
+func (p *postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
@@ -1369,7 +1385,7 @@ func (*postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	backendStateByDB, err := client.getBackends(ctx, databases, backendGrouping{backendType: true, state: true, waitEventType: true})
+	backendStateByDB, err := client.getBackends(ctx, databases, p.backendGrouping)
 	if err != nil {
 		errs.addPartial(err)
 		return

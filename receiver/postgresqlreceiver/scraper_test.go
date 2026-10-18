@@ -192,37 +192,274 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 	}, actual)
 }
 
-func TestRecordDatabaseBackendsDefaultsToTotalPerDatabase(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	scraper := &postgreSQLScraper{
-		config:            cfg,
-		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
-		serviceInstanceID: "example.com:5432",
-		useOTelSemconv:    true,
+func TestBackendGroupingFor(t *testing.T) {
+	tests := []struct {
+		name       string
+		attributes []metadata.PostgresqlBackendsMetricAttributeKey
+		expected   backendGrouping
+	}{
+		{
+			name:     "no attributes",
+			expected: backendGrouping{},
+		},
+		{
+			name:       "db.namespace alone needs no extra column",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace},
+			expected:   backendGrouping{},
+		},
+		{
+			name:       "backend type",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType},
+			expected:   backendGrouping{backendType: true},
+		},
+		{
+			name:       "state",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState},
+			expected:   backendGrouping{state: true},
+		},
+		{
+			name:       "wait event type",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType},
+			expected:   backendGrouping{waitEventType: true},
+		},
+		{
+			name: "all attributes",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
+				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+			},
+			expected: backendGrouping{backendType: true, state: true, waitEventType: true},
+		},
 	}
-	retrieval := &dbRetrieval{
-		backendStateMap: map[databaseName][]backendStateCount{
-			"orders": {
-				{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
-				{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
-				{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 1},
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, backendGroupingFor(tc.attributes))
+		})
+	}
+}
+
+func TestScraperRequestsBackendGroupingForEnabledAttributes(t *testing.T) {
+	tests := []struct {
+		name           string
+		useOTelSemconv bool
+		attributes     []metadata.PostgresqlBackendsMetricAttributeKey
+		expected       backendGrouping
+	}{
+		{
+			name:     "default attributes, legacy mode",
+			expected: backendGrouping{},
+		},
+		{
+			name:           "default attributes, semconv mode",
+			useOTelSemconv: true,
+			expected:       backendGrouping{},
+		},
+		{
+			name: "state and wait event type, legacy mode",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+			},
+			expected: backendGrouping{state: true, waitEventType: true},
+		},
+		{
+			name:           "all attributes, semconv mode",
+			useOTelSemconv: true,
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
+				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+			},
+			expected: backendGrouping{backendType: true, state: true, waitEventType: true},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, tc.useOTelSemconv)()
+
+			factory := new(mockClientFactory)
+			factory.initMocks([]string{"otel"})
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Databases = []string{"otel"}
+			if tc.attributes != nil {
+				cfg.MetricsBuilderConfig.Metrics.PostgresqlBackends.EnabledAttributes = tc.attributes
+			}
+
+			scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+			require.NoError(t, err)
+			_, err = scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			listClientAny, clientErr := factory.getClient(t.Context(), defaultPostgreSQLDatabase)
+			require.NoError(t, clientErr)
+			listClient := listClientAny.(*mockClient)
+			listClient.AssertCalled(t, "getBackends", []string{"otel"}, tc.expected)
+		})
+	}
+}
+
+// groupBackendsLikePostgres stands in for the server side of getBackends: it merges per-backend
+// rows on the columns that grouping selects and leaves the other columns empty, as the query does.
+func groupBackendsLikePostgres(backends []backendStateCount, grouping backendGrouping) []backendStateCount {
+	var grouped []backendStateCount
+	index := map[backendStateCount]int{}
+	for _, b := range backends {
+		var key backendStateCount
+		if grouping.backendType {
+			key.backendType = b.backendType
+		}
+		if grouping.state {
+			key.state = b.state
+		}
+		if grouping.waitEventType {
+			key.waitEventType = b.waitEventType
+		}
+		if i, ok := index[key]; ok {
+			grouped[i].count += b.count
+			continue
+		}
+		index[key] = len(grouped)
+		row := key
+		row.count = b.count
+		grouped = append(grouped, row)
+	}
+	return grouped
+}
+
+// TestRecordDatabaseBackendsIndependentOfAggregationStrategy verifies that postgresql.backends reports
+// true backend counts for every aggregation_strategy. The query returns one row per data point, so the
+// metrics builder never merges rows and the strategy has nothing to change. Before the grouping followed
+// the enabled attributes, a non-sum strategy with the default attributes reported a bucket statistic
+// (for example the largest bucket for "max") instead of the per-database total.
+func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
+	type backendKey struct {
+		backendType   string
+		state         string
+		waitEventType string
+	}
+	// The backends of one database as pg_stat_activity would list them, already counted per
+	// combination of all three columns.
+	backends := []backendStateCount{
+		{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
+		{backendType: "client backend", state: "active", waitEventType: "Lock", count: 2},
+		{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
+		{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 1},
+		{backendType: "unknown", state: "unknown", waitEventType: "none", count: 4},
+	}
+
+	attributeSets := []struct {
+		name       string
+		attributes []metadata.PostgresqlBackendsMetricAttributeKey
+		expected   map[backendKey]int64
+	}{
+		{
+			name:       "default attributes report the total",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace},
+			expected:   map[backendKey]int64{{}: 17},
+		},
+		{
+			name: "state only",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
+				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+			},
+			expected: map[backendKey]int64{
+				{state: "active"}:  6,
+				{state: "idle"}:    7,
+				{state: "unknown"}: 4,
+			},
+		},
+		{
+			name: "backend type and wait event type",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+			},
+			expected: map[backendKey]int64{
+				{backendType: "client backend", waitEventType: "none"}:    3,
+				{backendType: "client backend", waitEventType: "Lock"}:    2,
+				{backendType: "client backend", waitEventType: "Client"}:  7,
+				{backendType: "autovacuum worker", waitEventType: "none"}: 1,
+				{backendType: "unknown", waitEventType: "none"}:           4,
+			},
+		},
+		{
+			name: "all attributes",
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
+				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+			},
+			expected: map[backendKey]int64{
+				{backendType: "client backend", state: "active", waitEventType: "none"}:    3,
+				{backendType: "client backend", state: "active", waitEventType: "Lock"}:    2,
+				{backendType: "client backend", state: "idle", waitEventType: "Client"}:    7,
+				{backendType: "autovacuum worker", state: "active", waitEventType: "none"}: 1,
+				{backendType: "unknown", state: "unknown", waitEventType: "none"}:          4,
 			},
 		},
 	}
+	strategies := []string{
+		metadata.AggregationStrategySum,
+		metadata.AggregationStrategyAvg,
+		metadata.AggregationStrategyMin,
+		metadata.AggregationStrategyMax,
+	}
 
-	now := pcommon.NewTimestampFromTime(time.Unix(0, 1))
-	scraper.recordDatabase(now, "orders", retrieval, 0)
-	rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
-	backends := findMetric(t, scraper.mb.Emit(metadata.WithResource(rb.Emit())), "postgresql.backends")
+	for _, attributeSet := range attributeSets {
+		for _, strategy := range strategies {
+			t.Run(attributeSet.name+"/"+strategy, func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				backendsCfg := &cfg.MetricsBuilderConfig.Metrics.PostgresqlBackends
+				backendsCfg.EnabledAttributes = attributeSet.attributes
+				backendsCfg.AggregationStrategy = strategy
+				grouping := backendGroupingFor(attributeSet.attributes)
+				scraper := &postgreSQLScraper{
+					config:            cfg,
+					mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopSettings(metadata.Type)),
+					serviceInstanceID: "example.com:5432",
+					useOTelSemconv:    true,
+					backendGrouping:   grouping,
+				}
+				retrieval := &dbRetrieval{
+					backendStateMap: map[databaseName][]backendStateCount{
+						"orders": groupBackendsLikePostgres(backends, grouping),
+					},
+				}
 
-	dataPoints := backends.Sum().DataPoints()
-	require.Equal(t, 1, dataPoints.Len())
-	dp := dataPoints.At(0)
-	assert.Equal(t, int64(11), dp.IntValue())
-	assert.Equal(t, 1, dp.Attributes().Len())
-	namespace, ok := dp.Attributes().Get("db.namespace")
-	require.True(t, ok)
-	assert.Equal(t, "orders", namespace.Str())
+				scraper.recordDatabase(pcommon.NewTimestampFromTime(time.Unix(0, 1)), "orders", retrieval, 0)
+				rb := scraper.setupSemconvResourceBuilder(scraper.mb.NewResourceBuilder())
+				metric := findMetric(t, scraper.mb.Emit(metadata.WithResource(rb.Emit())), "postgresql.backends")
+
+				attributeValue := func(dp pmetric.NumberDataPoint, name string) string {
+					v, ok := dp.Attributes().Get(name)
+					if !ok {
+						return ""
+					}
+					return v.Str()
+				}
+				actual := map[backendKey]int64{}
+				dataPoints := metric.Sum().DataPoints()
+				for i := 0; i < dataPoints.Len(); i++ {
+					dp := dataPoints.At(i)
+					key := backendKey{
+						backendType:   attributeValue(dp, "postgresql.backend_type"),
+						state:         attributeValue(dp, "postgresql.state"),
+						waitEventType: attributeValue(dp, "postgresql.wait_event_type"),
+					}
+					_, seen := actual[key]
+					require.False(t, seen, "duplicate data point for %+v", key)
+					actual[key] = dp.IntValue()
+				}
+				assert.Equal(t, attributeSet.expected, actual)
+			})
+		}
+	}
 }
 
 func TestSemconvQueryConflictsPreserveDatabaseNamespace(t *testing.T) {
