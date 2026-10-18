@@ -250,7 +250,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
-                  attributes:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
@@ -461,7 +460,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  attributes:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
@@ -672,7 +670,6 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  attributes:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
