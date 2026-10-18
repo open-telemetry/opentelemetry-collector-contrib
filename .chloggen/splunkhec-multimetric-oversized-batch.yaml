@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/splunk_hec
+note: Fix inverted condition in multi-metric batching that prematurely terminated batching and dropped valid metrics when encountering an oversized event.
+issues: [0]
+subtext: ""
