@@ -121,12 +121,6 @@ func integrationTest(
 			"postgresql.wal.delay",
 			"postgresql.wal.lag",
 		),
-		// Which backend types, states and wait event types exist at scrape time depends on what
-		// the server happens to be doing, so keep a single postgresql.backends data point and
-		// don't compare the values of the attributes that distinguish them.
-		pmetrictest.IgnoreMetricAttributeValue("postgresql.backend_type", "postgresql.backends"),
-		pmetrictest.IgnoreMetricAttributeValue("postgresql.state", "postgresql.backends"),
-		pmetrictest.IgnoreMetricAttributeValue("postgresql.wait_event_type", "postgresql.backends"),
 		pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(),
@@ -1210,5 +1204,189 @@ WHERE c.relname IN ('big_index_table', 'toasted_table') AND n.nspname = 'public'
 			"postgresql.table.size must equal pg_total_relation_size, not pg_relation_size alone")
 		assert.Greater(t, toastStats.size, toastRef.relationSize+toastRef.indexesSize,
 			"reported size must include TOAST data, not just the main heap and indexes")
+	}
+}
+
+// TestGetBackendsBreakdown runs the postgresql.backends query against a real server for every
+// combination of the optional grouping columns. It checks the SQL that the unit tests can only
+// compare as text: that each grouping returns the same per-database total, one row per
+// combination, a value for every grouped column, and the "unknown" values that an unprivileged
+// monitoring user gets for other roles' backends.
+func TestGetBackendsBreakdown(t *testing.T) {
+	t.Run("pre17", getBackendsBreakdownTest(pre17TestVersion))
+	t.Run("post17", getBackendsBreakdownTest(post17TestVersion))
+}
+
+func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					// An autovacuum worker that starts mid-test would change the totals between
+					// the queries this test compares.
+					Cmd: []string{"-c", "autovacuum=off"},
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "01-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					// A listening port is not enough: the postgres image runs a temporary
+					// server for its init scripts, so the port accepts connections while the
+					// real server is still "starting up" (57P03). The readiness log line is
+					// emitted twice -- once for the init server, once for the real one -- so
+					// waiting for the second occurrence guarantees the DB is ready to query.
+					WaitingFor: wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).
+						WithStartupTimeout(2 * time.Minute),
+				},
+			},
+		)
+		require.NoError(t, err)
+		defer testcontainers.CleanupContainer(t, ci)
+
+		err = ci.Start(t.Context())
+		require.NoError(t, err)
+
+		p, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
+		rootDSN := fmt.Sprintf("postgres://root:otel@localhost:%s/otel?sslmode=disable", p.Port())
+
+		rootDB, err := sql.Open("postgres", rootDSN)
+		require.NoError(t, err)
+		defer rootDB.Close()
+		// A monitoring user without pg_monitor, to check what PostgreSQL hides from it.
+		_, err = rootDB.Exec("CREATE ROLE unprivileged LOGIN PASSWORD 'unprivilegedp'")
+		require.NoError(t, err)
+
+		// One root session holds a lock and stays idle in transaction; another waits on it.
+		holder, err := rootDB.Begin()
+		require.NoError(t, err)
+		defer func() {
+			_ = holder.Rollback()
+		}()
+		_, err = holder.Exec("LOCK TABLE table1 IN ACCESS EXCLUSIVE MODE")
+		require.NoError(t, err)
+
+		waiterDB, err := sql.Open("postgres", rootDSN)
+		require.NoError(t, err)
+		defer waiterDB.Close()
+		waiterCtx, cancelWaiter := context.WithCancel(t.Context())
+		waiterDone := make(chan struct{})
+		go func() {
+			defer close(waiterDone)
+			_, _ = waiterDB.ExecContext(waiterCtx, "SELECT * FROM table1")
+		}()
+		defer func() {
+			cancelWaiter()
+			<-waiterDone
+		}()
+		require.Eventually(t, func() bool {
+			var waiting int
+			err := rootDB.QueryRow("SELECT count(*) FROM pg_stat_activity WHERE datname = 'otel' AND wait_event_type = 'Lock'").Scan(&waiting)
+			return err == nil && waiting == 1
+		}, 30*time.Second, 100*time.Millisecond)
+
+		for _, monitor := range []struct {
+			username   string
+			password   string
+			privileged bool
+		}{
+			{username: "otelu", password: "otelp", privileged: true},
+			{username: "unprivileged", password: "unprivilegedp", privileged: false},
+		} {
+			t.Run(monitor.username, func(t *testing.T) {
+				clientDB, err := getDB(t.Context(), postgreSQLConfig{
+					username: monitor.username,
+					password: monitor.password,
+					address: confignet.AddrConfig{
+						Endpoint: net.JoinHostPort("localhost", p.Port()),
+					},
+					tls: configtls.ClientConfig{
+						Insecure: true,
+					},
+				}, "otel")
+				require.NoError(t, err)
+				// One connection, so the client does not add backends between the queries.
+				clientDB.SetMaxOpenConns(1)
+				client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+				defer func() {
+					require.NoError(t, client.Close())
+				}()
+
+				ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+				defer cancel()
+
+				totals, err := client.getBackends(ctx, []string{"otel"}, backendGrouping{})
+				require.NoError(t, err)
+				require.Len(t, totals["otel"], 1)
+				total := totals["otel"][0].count
+				// The client, the lock holder and the waiter, at least.
+				require.GreaterOrEqual(t, total, int64(3))
+
+				for i := range 8 {
+					grouping := backendGrouping{backendType: i&1 != 0, state: i&2 != 0, waitEventType: i&4 != 0}
+					backends, err := client.getBackends(ctx, []string{"otel"}, grouping)
+					require.NoError(t, err, "grouping %+v", grouping)
+
+					var sum int64
+					backendTypes := map[string]int64{}
+					states := map[string]int64{}
+					waitEventTypes := map[string]int64{}
+					seen := map[backendStateCount]bool{}
+					for _, b := range backends["otel"] {
+						sum += b.count
+						backendTypes[b.backendType] += b.count
+						states[b.state] += b.count
+						waitEventTypes[b.waitEventType] += b.count
+						key := b
+						key.count = 0
+						require.False(t, seen[key], "grouping %+v returned %+v twice", grouping, key)
+						seen[key] = true
+						require.Equal(t, grouping.backendType, b.backendType != "", "grouping %+v row %+v", grouping, b)
+						require.Equal(t, grouping.state, b.state != "", "grouping %+v row %+v", grouping, b)
+						require.Equal(t, grouping.waitEventType, b.waitEventType != "", "grouping %+v row %+v", grouping, b)
+					}
+					require.Equal(t, total, sum, "grouping %+v must split the total, not change it", grouping)
+
+					if monitor.privileged {
+						if grouping.backendType {
+							require.Equal(t, total, backendTypes["client backend"], "grouping %+v", grouping)
+						}
+						if grouping.state {
+							require.Equal(t, int64(1), states["idle in transaction"], "grouping %+v", grouping)
+							require.Zero(t, states["unknown"], "grouping %+v", grouping)
+						}
+						if grouping.waitEventType {
+							require.Equal(t, int64(1), waitEventTypes["Lock"], "grouping %+v", grouping)
+							require.Zero(t, waitEventTypes["unknown"], "grouping %+v", grouping)
+						}
+						continue
+					}
+					// Without pg_monitor, the root sessions are hidden: all three columns are
+					// NULL for them and report "unknown". Only the client's own session is
+					// visible.
+					if grouping.backendType {
+						require.Equal(t, total-1, backendTypes["unknown"], "grouping %+v", grouping)
+						require.Equal(t, int64(1), backendTypes["client backend"], "grouping %+v", grouping)
+					}
+					if grouping.state {
+						require.Equal(t, total-1, states["unknown"], "grouping %+v", grouping)
+						require.Equal(t, int64(1), states["active"], "grouping %+v", grouping)
+					}
+					if grouping.waitEventType {
+						require.Equal(t, total-1, waitEventTypes["unknown"], "grouping %+v", grouping)
+						require.Zero(t, waitEventTypes["Lock"], "grouping %+v", grouping)
+					}
+				}
+			})
+		}
 	}
 }
