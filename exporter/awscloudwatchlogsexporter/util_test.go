@@ -64,7 +64,7 @@ func TestReplacePatternValidKubernetesClusterName(t *testing.T) {
 
 	attrMap := map[string]any{
 		"k8s.cluster.name": "test-cluster-name",
-		"k8s.pod.name":      "test-pod-name",
+		"k8s.pod.name":     "test-pod-name",
 	}
 
 	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
