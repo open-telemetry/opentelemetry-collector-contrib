@@ -224,15 +224,55 @@ func newTestProfiles() pprofile.Profiles {
 	return pd
 }
 
+func TestPartitionProfiles_PartitionDictionaries(t *testing.T) {
+	// One dictionary attribute per tenant, each referenced only by that
+	// tenant's profile, so every partition must end up with its own dictionary.
+	pd := pprofile.NewProfiles()
+	dict := pd.Dictionary()
+	dict.StringTable().Append("", "owner")
+	dict.AttributeTable().AppendEmpty()
+	dict.MappingTable().AppendEmpty()
+	dict.LocationTable().AppendEmpty()
+	dict.FunctionTable().AppendEmpty()
+	dict.LinkTable().AppendEmpty()
+	dict.StackTable().AppendEmpty()
+	for _, tenant := range []string{"t1", "t2"} {
+		attrIdx := int32(dict.AttributeTable().Len())
+		attr := dict.AttributeTable().AppendEmpty()
+		attr.SetKeyStrindex(1)
+		attr.Value().SetStr(tenant)
+
+		rp := pd.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("tenant.id", tenant)
+		rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().AttributeIndices().Append(attrIdx)
+	}
+	requireConformant(t, pd)
+
+	result := partitionProfiles(t, pd, `resource.attributes["tenant.id"]`)
+	require.Len(t, result, 2)
+	for _, pp := range result {
+		requireConformant(t, pp.data)
+	}
+}
+
 // requireConformant checks pd against the profiling SIG conformance checker.
-// The pinned profcheck does not yet check for unreferenced dictionary entries,
-// so it cannot detect the entries each partition inherits from the full input
-// dictionary (see the README's known limitations).
 func requireConformant(t *testing.T, pd pprofile.Profiles) {
 	t.Helper()
-	b, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(pd)
+	require.NoError(t, profcheck.ConformanceChecker{
+		CheckDictionaryDuplicates: true,
+		CheckDictionaryOrphans:    true,
+	}.Check(toProfilesData(t, pd)))
+}
+
+// toProfilesData converts pd to its OTLP proto form. It marshals a copy because
+// the marshaler rewrites attributes into dictionary references in place.
+func toProfilesData(t *testing.T, pd pprofile.Profiles) *otlpprofiles.ProfilesData {
+	t.Helper()
+	clone := pprofile.NewProfiles()
+	pd.CopyTo(clone)
+	b, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(clone)
 	require.NoError(t, err)
 	var data otlpprofiles.ProfilesData
 	require.NoError(t, proto.Unmarshal(b, &data))
-	require.NoError(t, profcheck.ConformanceChecker{CheckDictionaryDuplicates: true}.Check(&data))
+	return &data
 }
