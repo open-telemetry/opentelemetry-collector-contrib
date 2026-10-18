@@ -145,11 +145,10 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 				{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
 				{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
 				{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 1},
-				// Non-client backends report no state, and an unprivileged monitoring user sees
-				// neither state nor backend type. Both land in the "unknown" bucket, and only
-				// backend_type tells the two apart.
-				{backendType: "checkpointer", state: "unknown", waitEventType: "none", count: 1},
-				{backendType: "unknown", state: "unknown", waitEventType: "none", count: 4},
+				{backendType: "logical replication worker", state: "idle", waitEventType: "Activity", count: 1},
+				// An unprivileged monitoring user sees none of the three columns for other roles'
+				// backends, so they all report "unknown".
+				{backendType: "unknown", state: "unknown", waitEventType: "unknown", count: 4},
 			},
 		},
 	}
@@ -184,11 +183,11 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 	}
 
 	assert.Equal(t, map[backendKey]int64{
-		{namespace: "orders", backendType: "client backend", state: "active", waitEventType: "none"}:    3,
-		{namespace: "orders", backendType: "client backend", state: "idle", waitEventType: "Client"}:    7,
-		{namespace: "orders", backendType: "autovacuum worker", state: "active", waitEventType: "none"}: 1,
-		{namespace: "orders", backendType: "checkpointer", state: "unknown", waitEventType: "none"}:     1,
-		{namespace: "orders", backendType: "unknown", state: "unknown", waitEventType: "none"}:          4,
+		{namespace: "orders", backendType: "client backend", state: "active", waitEventType: "none"}:               3,
+		{namespace: "orders", backendType: "client backend", state: "idle", waitEventType: "Client"}:               7,
+		{namespace: "orders", backendType: "autovacuum worker", state: "active", waitEventType: "none"}:            1,
+		{namespace: "orders", backendType: "logical replication worker", state: "idle", waitEventType: "Activity"}: 1,
+		{namespace: "orders", backendType: "unknown", state: "unknown", waitEventType: "unknown"}:                  4,
 	}, actual)
 }
 

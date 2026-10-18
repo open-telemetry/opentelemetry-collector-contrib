@@ -788,10 +788,11 @@ type backendGrouping struct {
 // including non-client backends such as autovacuum and parallel workers. Backends with no associated
 // database (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
 //
-// All three optional columns are nullable in pg_stat_activity. state is NULL for some non-client
-// backends, wait_event_type is NULL whenever a backend is not waiting, and both are NULL along with
-// backend_type for backends the monitoring user cannot inspect, which is every backend but its own
-// unless the user has been granted pg_monitor. They are coalesced so that they scan into strings.
+// All three optional columns are nullable in pg_stat_activity. wait_event_type is NULL whenever a
+// backend is not waiting, and all three are NULL for backends the monitoring user cannot inspect,
+// which is every backend but its own unless the user has been granted pg_monitor. state is also NULL
+// for auxiliary processes such as the checkpointer, but those have no database and are not counted.
+// The columns are coalesced so that they scan into strings.
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string, grouping backendGrouping) (map[databaseName][]backendStateCount, error) {
 	var datname string
 	var bsc backendStateCount
