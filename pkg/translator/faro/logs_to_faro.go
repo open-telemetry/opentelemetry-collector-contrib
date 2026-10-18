@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -675,6 +676,10 @@ func extractViewFromKeyVal(kv map[string]string) faroTypes.View {
 	return view
 }
 
+// faroLogLevelWarn is the warning level that Faro SDKs send. The faro
+// LogLevel enum only defines "warning".
+const faroLogLevelWarn faroTypes.LogLevel = "warn"
+
 func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 	var log faroTypes.Log
 	timestamp, err := extractTimestampFromKeyVal(kv)
@@ -693,6 +698,8 @@ func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 			log.LogLevel = faroTypes.LogLevelError
 		case string(faroTypes.LogLevelWarning):
 			log.LogLevel = faroTypes.LogLevelWarning
+		case string(faroLogLevelWarn):
+			log.LogLevel = faroLogLevelWarn
 		case string(faroTypes.LogLevelTrace):
 			log.LogLevel = faroTypes.LogLevelTrace
 		case string(faroTypes.LogLevelInfo):
@@ -853,6 +860,9 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 	}
 
 	matches := stacktraceRegexp.FindStringSubmatch(frameStr)
+	if matches == nil {
+		return nil, errors.New("invalid stack trace frame")
+	}
 
 	frame.Function = matches[stacktraceRegexp.SubexpIndex(faroStacktraceFunction)]
 	frame.Module = matches[stacktraceRegexp.SubexpIndex(faroStackTraceModule)]
