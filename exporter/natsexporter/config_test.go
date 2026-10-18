@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -26,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(component.MustNewType("nats"), ""),
 			expected: &Config{
-				Endpoint: "nats://localhost:4222",
+				ClientConfig: natsclient.ClientConfig{Endpoint: "nats://localhost:4222"},
 				// Signal subjects retain the factory defaults after merge.
 				Logs:    SignalConfig{Subject: defaultLogsSubject},
 				Metrics: SignalConfig{Subject: defaultMetricsSubject},
@@ -36,8 +38,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(component.MustNewType("nats"), "full"),
 			expected: &Config{
-				Endpoint: "nats://nats.example.com:4222",
-				Pedantic: true,
+				ClientConfig: natsclient.ClientConfig{
+					Endpoint: "nats://nats.example.com:4222",
+					Pedantic: true,
+					Auth: natsclient.AuthConfig{
+						User: &natsclient.UserConfig{Username: "otel", Password: "s3cret"},
+					},
+				},
 				JetStream: &JetStreamConfig{
 					Domain:         "hub",
 					PublishTimeout: 5 * time.Second,
@@ -45,9 +52,6 @@ func TestLoadConfig(t *testing.T) {
 				Logs:    SignalConfig{Subject: `"otel.logs"`, Marshaler: "otlp_proto"},
 				Metrics: SignalConfig{Subject: `"otel.metrics"`, Marshaler: "otlp_json"},
 				Traces:  SignalConfig{Subject: `"otel.spans"`, EncodingExtension: "otlp_encoding/nats"},
-				Auth: AuthConfig{
-					User: &UserConfig{Username: "otel", Password: "s3cret"},
-				},
 			},
 		},
 	}
@@ -66,13 +70,13 @@ func TestLoadConfig(t *testing.T) {
 			// populated by CreateDefaultConfig and not asserted here.
 			got := cfg.(*Config)
 			exp := tt.expected.(*Config)
-			assert.Equal(t, exp.Endpoint, got.Endpoint)
-			assert.Equal(t, exp.Pedantic, got.Pedantic)
+			assert.Equal(t, exp.ClientConfig.Endpoint, got.ClientConfig.Endpoint)
+			assert.Equal(t, exp.ClientConfig.Pedantic, got.ClientConfig.Pedantic)
 			assert.Equal(t, exp.JetStream, got.JetStream)
 			assert.Equal(t, exp.Logs, got.Logs)
 			assert.Equal(t, exp.Metrics, got.Metrics)
 			assert.Equal(t, exp.Traces, got.Traces)
-			assert.Equal(t, exp.Auth, got.Auth)
+			assert.Equal(t, exp.ClientConfig.Auth, got.ClientConfig.Auth)
 		})
 	}
 }
@@ -86,8 +90,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid",
 			cfg: &Config{
-				Endpoint: "nats://localhost:4222",
-				Logs:     SignalConfig{Marshaler: "otlp_proto"},
+				ClientConfig: natsclient.ClientConfig{Endpoint: "nats://localhost:4222"},
+				Logs:         SignalConfig{Marshaler: "otlp_proto"},
 			},
 		},
 		{
@@ -107,16 +111,20 @@ func TestValidate(t *testing.T) {
 		{
 			name: "incomplete user auth",
 			cfg: &Config{
-				Auth: AuthConfig{User: &UserConfig{Username: "otel"}},
+				ClientConfig: natsclient.ClientConfig{
+					Auth: natsclient.AuthConfig{User: &natsclient.UserConfig{Username: "otel"}},
+				},
 			},
 			wantErr: "incomplete username/password auth configuration",
 		},
 		{
 			name: "multiple nkey auth",
 			cfg: &Config{
-				Auth: AuthConfig{
-					Nkey:         &NkeyConfig{PublicKey: "k", Seed: []byte("s")},
-					NkeyUserFile: &NkeyUserFileConfig{UserFilePath: "/creds"},
+				ClientConfig: natsclient.ClientConfig{
+					Auth: natsclient.AuthConfig{
+						Nkey:         &natsclient.NkeyConfig{PublicKey: "k", Seed: []byte("s")},
+						NkeyUserFile: &natsclient.NkeyUserFileConfig{UserFilePath: "/creds"},
+					},
 				},
 			},
 			wantErr: "more than one auth method configured",
@@ -124,9 +132,11 @@ func TestValidate(t *testing.T) {
 		{
 			name: "multiple auth methods across families",
 			cfg: &Config{
-				Auth: AuthConfig{
-					Token: &TokenConfig{Token: "t"},
-					User:  &UserConfig{Username: "u", Password: "p"},
+				ClientConfig: natsclient.ClientConfig{
+					Auth: natsclient.AuthConfig{
+						Token: &natsclient.TokenConfig{Token: "t"},
+						User:  &natsclient.UserConfig{Username: "u", Password: "p"},
+					},
 				},
 			},
 			wantErr: "more than one auth method configured",

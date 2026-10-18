@@ -14,15 +14,6 @@ var OttlFunctionsEnableLambdaFeatureGate = featuregate.GlobalRegistry().MustRegi
 	featuregate.WithRegisterFromVersion("v0.155.0"),
 )
 
-var OttlSetAllowNilFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"ottl.set.allowNil",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the set function passes nil values directly to the target."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49741"),
-	featuregate.WithRegisterFromVersion("v0.158.0"),
-	featuregate.WithRegisterToVersion("v1.0.0"),
-)
-
 var PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.ottl.functions.enableDynamicSliceArguments",
 	featuregate.StageBeta,

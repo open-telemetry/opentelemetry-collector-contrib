@@ -4,124 +4,116 @@
 package kubeadm
 
 import (
-	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm/internal/metadata"
 )
 
-var _ kubeadm.Provider = (*mockMetadata)(nil)
+const (
+	clusterName = "my-cluster"
+	clusterUID  = "6f1d3c1e-2b4a-4f6e-9c1d-0a1b2c3d4e5f"
+)
 
-type mockMetadata struct {
-	mock.Mock
+func kubeSystem() *corev1.Namespace {
+	return &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system", UID: clusterUID}}
 }
 
-func (m *mockMetadata) ClusterName(_ context.Context) (string, error) {
-	args := m.MethodCalled("ClusterName")
-	return args.String(0), args.Error(1)
+func kubeadmConfig(clusterConfiguration string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "kubeadm-config", Namespace: "kube-system"},
+		Data:       map[string]string{"ClusterConfiguration": clusterConfiguration},
+	}
 }
 
-func (m *mockMetadata) ClusterUID(_ context.Context) (string, error) {
-	args := m.MethodCalled("ClusterUID")
-	return args.String(0), args.Error(1)
+// withFakeClient makes NewDetector use a fake clientset seeded with objs.
+func withFakeClient(t *testing.T, objs ...runtime.Object) {
+	t.Helper()
+	orig := makeClient
+	makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(objs...), nil
+	}
+	t.Cleanup(func() { makeClient = orig })
+}
+
+func detect(t *testing.T, cfg Config, failOnMissingMetadata bool) (map[string]any, error) {
+	t.Helper()
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, failOnMissingMetadata)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	return res.Attributes().AsRaw(), err
 }
 
 func TestDetect(t *testing.T) {
-	md := &mockMetadata{}
-	md.On("ClusterName").Return("cluster-1", nil)
-	md.On("ClusterUID").Return("uid-1", nil)
-	cfg := CreateDefaultConfig()
-	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
-	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	withFakeClient(t, kubeSystem(), kubeadmConfig("clusterName: "+clusterName))
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	got, err := detect(t, CreateDefaultConfig(), true)
 	require.NoError(t, err)
-	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context())
-	require.NoError(t, err)
-	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
-	md.AssertExpectations(t)
-
-	expected := map[string]any{
-		"k8s.cluster.name": "cluster-1",
-		"k8s.cluster.uid":  "uid-1",
-	}
-
-	assert.Equal(t, expected, res.Attributes().AsRaw())
+	assert.Equal(t, map[string]any{
+		"k8s.cluster.name": clusterName,
+		"k8s.cluster.uid":  clusterUID,
+	}, got)
 }
 
 func TestDetectDisabledResourceAttributes(t *testing.T) {
-	md := &mockMetadata{}
+	withFakeClient(t, kubeSystem(), kubeadmConfig("clusterName: "+clusterName))
+
 	cfg := CreateDefaultConfig()
 	cfg.ResourceAttributes.K8sClusterName.Enabled = false
-	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
-	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
-	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	got, err := detect(t, cfg, true)
 	require.NoError(t, err)
-	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(t.Context())
-	require.NoError(t, err)
-	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
-	md.AssertExpectations(t)
-
-	expected := map[string]any{}
-
-	assert.Equal(t, expected, res.Attributes().AsRaw())
+	assert.Equal(t, map[string]any{"k8s.cluster.uid": clusterUID}, got)
 }
 
-func TestDetectErrors(t *testing.T) {
-	someErr := errors.New("configmap not found")
-	tt := []struct {
-		name                  string
-		nameErr               error
-		uidErr                error
-		failOnMissingMetadata bool
-		wantErr               string
-	}{
-		{name: "cluster name error ignored", nameErr: someErr},
-		{name: "cluster name error returned", nameErr: someErr, failOnMissingMetadata: true, wantErr: "failed getting k8s cluster name"},
-		{name: "cluster uid error ignored", uidErr: someErr},
-		{name: "cluster uid error returned", uidErr: someErr, failOnMissingMetadata: true, wantErr: "failed getting k8s cluster uid"},
-	}
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			md := &mockMetadata{}
-			md.On("ClusterName").Return("cluster-1", tc.nameErr)
-			md.On("ClusterUID").Return("uid-1", tc.uidErr).Maybe()
-			cfg := CreateDefaultConfig()
-			d := &detector{
-				provider:              md,
-				logger:                zap.NewNop(),
-				ra:                    &cfg.ResourceAttributes,
-				rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-				failOnMissingMetadata: tc.failOnMissingMetadata,
-			}
+func TestDetectNotKubeadm(t *testing.T) {
+	withFakeClient(t, kubeSystem())
 
-			res, schemaURL, err := d.Detect(t.Context())
-			if tc.wantErr != "" {
-				require.ErrorIs(t, err, someErr)
-				assert.ErrorContains(t, err, tc.wantErr)
-			} else {
-				require.NoError(t, err)
-			}
-			assert.Empty(t, schemaURL)
-			assert.Equal(t, 0, res.Attributes().Len())
-			md.AssertExpectations(t)
+	got, err := detect(t, CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	got, err = detect(t, CreateDefaultConfig(), true)
+	assert.Error(t, err)
+	assert.Empty(t, got)
+}
+
+func TestDetectPartial(t *testing.T) {
+	tests := []struct {
+		name string
+		objs []runtime.Object
+		want map[string]any
+	}{
+		{
+			name: "namespace missing",
+			objs: []runtime.Object{kubeadmConfig("clusterName: " + clusterName)},
+			want: map[string]any{"k8s.cluster.name": clusterName},
+		},
+		{
+			name: "malformed ClusterConfiguration",
+			objs: []runtime.Object{kubeSystem(), kubeadmConfig("clusterName: [")},
+			want: map[string]any{"k8s.cluster.uid": clusterUID},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withFakeClient(t, tt.objs...)
+
+			got, err := detect(t, CreateDefaultConfig(), false)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+
+			got, err = detect(t, CreateDefaultConfig(), true)
+			assert.ErrorContains(t, err, "kubeadm metadata incomplete")
+			assert.Empty(t, got)
 		})
 	}
 }
@@ -132,6 +124,6 @@ func TestNewDetectorError(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_PORT", "")
 
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.ErrorContains(t, err, "failed creating kubeadm provider")
+	require.ErrorContains(t, err, "failed creating Kubernetes client")
 	assert.Nil(t, d)
 }
