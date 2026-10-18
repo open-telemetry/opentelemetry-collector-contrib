@@ -246,7 +246,7 @@ attributes:
     description: Total number of shared blocks written by the statement, reported in delta value.
     type: int
   postgresql.state:
-    description: Current overall state of this backend, as reported by pg_stat_activity.state. On the postgresql.backends metric, reports "unknown" when the state is not available, which happens when the monitoring user lacks the pg_monitor role.
+    description: Current overall state of this backend
     type: string
     requirement_level: opt_in
   postgresql.temp_blks_read:
@@ -268,7 +268,7 @@ attributes:
     description: Wait event name if backend is currently waiting, otherwise NULL.
     type: string
   postgresql.wait_event_type:
-    description: The type of event for which the backend is waiting, if any; otherwise NULL. On the postgresql.backends metric, reports "none" instead when the backend is not waiting, and "unknown" when the wait event type is not available, which happens when the monitoring user lacks the pg_monitor role.
+    description: The type of event for which the backend is waiting, if any; otherwise NULL.
     type: string
     requirement_level: opt_in
   relation:

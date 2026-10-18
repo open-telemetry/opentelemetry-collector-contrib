@@ -413,6 +413,11 @@ receivers:
         attributes: [db.namespace, postgresql.backend_type, postgresql.state, postgresql.wait_event_type]
 ```
 
+`postgresql.wait_event_type` reports "none" for a backend that is not waiting. Without the
+`pg_monitor` role (see [Prerequisites](#prerequisites)), the monitoring user cannot inspect the
+backends of other roles, so `postgresql.backend_type`, `postgresql.state` and
+`postgresql.wait_event_type` report "unknown" for them.
+
 The receiver groups the `pg_stat_activity` query by the enabled attributes only, so each data point
 is an exact backend count whatever the metric's `aggregation_strategy` is. To reduce cardinality,
 enable only a subset of the attributes.
