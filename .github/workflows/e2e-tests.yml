@@ -181,3 +181,51 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+
+  # Runs component e2e tests on MicroShift (real OpenShift runtime: SCCs, CRI-O).
+  # Not a required check. To opt a component in, add a matrix entry with the
+  # component path and a `go test -run` regex (use "." for the whole suite).
+  openshift-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: processor/resourcedetectionprocessor
+            tests: TestE2EOpenShiftDetector
+    runs-on: ubuntu-24.04
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            openshift:
+              - '${{ matrix.component }}/**'
+              - 'pkg/xk8stest/**'
+              - '.github/actions/setup-microshift/**'
+              - '.github/workflows/e2e-tests.yml'
+      - uses: $/.github/actions/setup-go-tools
+        if: steps.filter.outputs.openshift == 'true'
+        with:
+          go-version: oldstable
+      - name: Download artifact
+        if: steps.filter.outputs.openshift == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: otelcontribcol
+          path: /tmp
+      - uses: $/.github/actions/setup-microshift
+        if: steps.filter.outputs.openshift == 'true'
+        with:
+          image-tar: /tmp/otelcontribcol.tar
+      - name: Run e2e tests on MicroShift
+        if: steps.filter.outputs.openshift == 'true'
+        env:
+          COMPONENT: ${{ matrix.component }}
+          TESTS: ${{ matrix.tests }}
+        run: |
+          cd "$COMPONENT"
+          go test -v --tags=e2e -run "$TESTS"
