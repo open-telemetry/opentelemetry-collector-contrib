@@ -10,6 +10,32 @@ snmp/v2c_connection_good:
         value_type: double
       scalar_oids:
         - oid: "1"
+snmp/custom_max_repetitions:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  max_repetitions: 10
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: double
+      scalar_oids:
+        - oid: "1"
+snmp/max_repetitions_too_large:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  max_repetitions: 2147483648
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: double
+      scalar_oids:
+        - oid: "1"
 snmp/no_endpoint:
   collection_interval: 10s
   version: v2c
