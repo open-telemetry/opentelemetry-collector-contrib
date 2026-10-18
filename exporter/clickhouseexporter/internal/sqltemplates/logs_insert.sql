@@ -1,5 +1,6 @@
 INSERT INTO {{ident .Database}}.{{ident .TableName}} (
     Timestamp,
+    ObservedTimestamp,
     TraceId,
     SpanId,
     TraceFlags,
@@ -16,6 +17,7 @@ INSERT INTO {{ident .Database}}.{{ident .TableName}} (
     LogAttributes
     {{.FeatureColumnNames}}
 ) VALUES (
+    ?,
     ?,
     ?,
     ?,

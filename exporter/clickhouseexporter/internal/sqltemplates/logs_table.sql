@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS {{ident .Database}}.{{ident .TableName}} {{.ClusterString}} (
     `Timestamp` DateTime64(9) COMMENT 'Event timestamp with nanosecond precision' CODEC(Delta(8), ZSTD(1)),
+    `ObservedTimestamp` DateTime64(9) CODEC(Delta(8), ZSTD(1)),
     `TraceId` String COMMENT 'W3C trace identifier' CODEC(ZSTD(1)),
     `SpanId` String COMMENT 'W3C span identifier' CODEC(ZSTD(1)),
     `TraceFlags` UInt8 COMMENT 'W3C trace flags',

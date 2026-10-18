@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS {{ident .Database}}.{{ident .TableName}} {{.ClusterString}} (
     `Timestamp` DateTime64(9) CODEC(Delta(8), ZSTD(1)),
+    `ObservedTimestamp` DateTime64(9) CODEC(Delta(8), ZSTD(1)),
     `TraceId` String CODEC(ZSTD(1)),
     `SpanId` String CODEC(ZSTD(1)),
     `TraceFlags` UInt8,

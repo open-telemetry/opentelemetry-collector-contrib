@@ -64,6 +64,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody, tes
 	})
 
 	type log struct {
+		ObservedTimestamp      time.Time `ch:"ObservedTimestamp"`
 		Timestamp              time.Time `ch:"Timestamp"`
 		TraceID                string    `ch:"TraceId"`
 		SpanID                 string    `ch:"SpanId"`
@@ -86,6 +87,7 @@ func verifyExportLogsJSON(t *testing.T, exporter *logsJSONExporter, mapBody, tes
 	}
 
 	expectedLog := log{
+		ObservedTimestamp:      telemetryTimestamp.Add(123456789 * time.Nanosecond),
 		Timestamp:              telemetryTimestamp,
 		TraceID:                "01020300000000000000000000000000",
 		SpanID:                 "0102030000000000",

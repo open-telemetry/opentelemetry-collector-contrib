@@ -224,6 +224,7 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 		}
 	}
 
+	t.Run("TestLogsObservedTimestamp", testProtocols(testLogsObservedTimestamp, false))
 	t.Run("TestLogsExporter", testProtocolsMapBody(testLogsExporter))
 	t.Run("TestLogsExporterSchemaFeatures", testProtocolsMapBody(testLogsExporterSchemaFeatures))
 	t.Run("TestTracesExporter", testProtocols(testTracesExporter, false))

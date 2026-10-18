@@ -134,9 +134,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			scopeAttrMap := internal.AttributesToMap(scopeLogScope.Attributes())
 
 			slrLen := scopeLogRecords.Len()
-			// 16 matches the max number of columns in the insert statement.
-			// If you add or remove columns, update this value.
-			columnValues := make([]any, 0, 16)
+			columnValues := make([]any, 0, 17)
 			for k := range slrLen {
 				r := scopeLogRecords.At(k)
 				logAttrMap := internal.AttributesToMap(r.Attributes())
@@ -149,6 +147,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				columnValues = columnValues[:0]
 				columnValues = append(columnValues,
 					timestamp.AsTime(),
+					r.ObservedTimestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 					uint8(r.Flags()),

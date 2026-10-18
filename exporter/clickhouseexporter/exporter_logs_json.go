@@ -184,9 +184,10 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					timestamp = r.ObservedTimestamp()
 				}
 
-				columnValues := make([]any, 0, 19)
+				columnValues := make([]any, 0, 20)
 				columnValues = append(columnValues,
 					timestamp.AsTime(),
+					r.ObservedTimestamp().AsTime(),
 					r.TraceID().String(),
 					r.SpanID().String(),
 					uint8(r.Flags()),

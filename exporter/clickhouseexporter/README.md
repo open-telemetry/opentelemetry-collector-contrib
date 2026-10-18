@@ -63,6 +63,18 @@ If the official plugin doesn't meet your needs, you can try the [Altinity plugin
 
 ### Logs
 
+Log tables store `Timestamp` and `ObservedTimestamp` independently with nanosecond precision.
+When an event timestamp is absent, `Timestamp` uses the observed timestamp; an absent
+observed timestamp remains zero. Before upgrading an existing installation, add the
+observed timestamp column to each map and JSON log table:
+
+```sql
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS ObservedTimestamp DateTime64(9);
+```
+
+Use the configured database and log table names. Existing rows retain zero for an
+observed timestamp that the previous exporter did not store.
+
 - Get log severity count time series.
 
 ```sql
