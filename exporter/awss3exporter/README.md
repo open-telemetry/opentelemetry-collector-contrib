@@ -28,6 +28,8 @@ The following exporter configuration parameters are supported.
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `s3_partition_timezone`   | timezone used to format partition                                                                                                                                                                                          | Local                                       |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
+| `access_key`              | AWS access key ID for static credentials. Must be set together with `secret_key` and cannot be combined with `role_arn`. See [Static credentials](#static-credentials).                                                     |                                             |
+| `secret_key`              | AWS secret access key for static credentials. Must be set together with `access_key` and cannot be combined with `role_arn`. See [Static credentials](#static-credentials).                                                |                                             |
 | `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
 | `marshaler`               | marshaler used to produce output data                                                                                                                                                                                      | `otlp_json`                                 |
 | `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                                                                                                          |                                             |
@@ -254,6 +256,25 @@ This exporter follows default credential resolution for the
 
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the
 credential configuration.
+
+### Static credentials
+
+Static credentials can be set with `access_key` and `secret_key`. When set, they take precedence over the default
+credential resolution. Both must be set together and cannot be combined with `role_arn`. Prefer referencing
+environment variables over writing secrets inline:
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: "us-east-1"
+      s3_bucket: "my-bucket"
+      access_key: ${env:AWS_ACCESS_KEY_ID}
+      secret_key: ${env:AWS_SECRET_ACCESS_KEY}
+```
+
+Avoid combining static credentials with `disable_ssl: true`: requests are still signed, but the exported data is sent
+over plain HTTP.
 
 ### OpenTelemetry Collector Helm Chart for Kubernetes
 For example, when using OpenTelemetry Collector Helm Chart you could use `extraEnvs` in the values.yaml.
