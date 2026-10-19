@@ -136,7 +136,9 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 				kr.cancel = cancel
 				kr.ctx = cctx
 				kr.settings.Logger.Info("Events Receiver started as leader")
-				kr.startWatchers()
+				if err := kr.startWatchers(cctx); err != nil {
+					kr.settings.Logger.Error("Failed to start watchers", zap.Error(err))
+				}
 			},
 			func() {
 				// Shutdown on leader loss. The receiver will restart if leadership is regained
@@ -153,7 +155,9 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 
 	// No leader election: start immediately.
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
-	kr.startWatchers()
+	if err := kr.startWatchers(kr.ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -192,7 +196,7 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (kr *k8seventsReceiver) startWatchers() {
+func (kr *k8seventsReceiver) startWatchers(ctx context.Context) error {
 	kr.initDedupCache()
 
 	// Events GVR (GroupVersionResource)
@@ -222,8 +226,7 @@ func (kr *k8seventsReceiver) startWatchers() {
 		ev := &corev1.Event{}
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, ev)
 		if err != nil {
-			kr.settings.Logger.Error("Failed to convert unstructured object to Event",
-				zap.Error(err))
+			kr.settings.Logger.Error("Failed to convert unstructured object to Event", zap.Error(err))
 			return
 		}
 
@@ -272,18 +275,18 @@ func (kr *k8seventsReceiver) startWatchers() {
 	}
 
 	if err != nil {
-		kr.settings.Logger.Error("Failed to create watch observer", zap.Error(err))
-		return
+		return fmt.Errorf("failed to create watch observer: %w", err)
 	}
 
-	stopperChan, err := observer.Start(kr.ctx, &kr.wg)
+	stopperChan, err := observer.Start(ctx, &kr.wg)
 	if err != nil {
-		kr.settings.Logger.Error("Failed to start watch observer", zap.Error(err))
-		return
+		return fmt.Errorf("failed to start watch observer: %w", err)
 	}
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
+
+	return nil
 }
 
 // handleEvent always emits ADDED; MODIFIED is gated by dedup_interval.
