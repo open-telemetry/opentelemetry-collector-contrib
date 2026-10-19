@@ -36,8 +36,15 @@ func TestConvertPprofToProfilesKeepsDistinctInlineChains(t *testing.T) {
 		ID: 2, Mapping: first.Mapping, Address: first.Address,
 		Line: []profile.Line{first.Line[1], first.Line[0]},
 	}
-	p.Location = append(p.Location, second)
-	p.Sample = append(p.Sample, &profile.Sample{Value: []int64{7}, Location: []*profile.Location{second}})
+	duplicate := &profile.Location{
+		ID: 3, Mapping: first.Mapping, Address: first.Address,
+		Line: slices.Clone(first.Line),
+	}
+	p.Location = append(p.Location, second, duplicate)
+	p.Sample = append(p.Sample,
+		&profile.Sample{Value: []int64{7}, Location: []*profile.Location{second}},
+		&profile.Sample{Value: []int64{11}, Location: []*profile.Location{duplicate}},
+	)
 	expectedFirst, expectedSecond := slices.Clone(first.Line), slices.Clone(second.Line)
 	require.NoError(t, p.CheckValid())
 
@@ -45,6 +52,7 @@ func TestConvertPprofToProfilesKeepsDistinctInlineChains(t *testing.T) {
 	require.NoError(t, err)
 	samples := converted.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Samples()
 	require.NotEqual(t, samples.At(0).StackIndex(), samples.At(1).StackIndex())
+	require.Equal(t, samples.At(0).StackIndex(), samples.At(2).StackIndex())
 	requireInlineFrames(t, *converted, 0, expectedFirst)
 	requireInlineFrames(t, *converted, 1, expectedSecond)
 }
