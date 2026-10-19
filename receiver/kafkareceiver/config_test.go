@@ -143,6 +143,14 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "kafka/dial_timeout",
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig.DialTimeout = 30 * time.Second
+				return cfg
+			}(),
+		},
+		{
 			name: "kafka/valid_exclude_topics_logs",
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
