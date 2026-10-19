@@ -158,8 +158,8 @@ Available for all signals:
 
 Available only for traces:
 
-- `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.
-- `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
+- `jaeger_proto` (Deprecated [v0.164.0]: use [`jaegerencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/jaegerencodingextension) with `protocol: protobuf`): the payload is deserialized to a single Jaeger proto `Span`.
+- `jaeger_json` (Deprecated [v0.164.0]: use [`jaegerencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/jaegerencodingextension) with `protocol: json`): the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
 - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
 - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
 - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
