@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/sql_server
 
-note: Cache repeated obfuscated SQL Server XML query plans during top-query collection, with an option to disable the cache.
+note: Add an opt-in cache for repeated obfuscated SQL Server XML query plans during top-query collection.
 
 issues: [51998]
 

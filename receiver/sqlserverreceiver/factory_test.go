@@ -49,7 +49,6 @@ func TestFactory(t *testing.T) {
 						MaxQuerySampleCount: 1000,
 						TopQueryCount:       250,
 						CollectionInterval:  time.Minute,
-						QueryPlanCache:      QueryPlanCache{Enabled: true},
 					},
 					QuerySample: QuerySample{
 						MaxRowsPerQuery: 100,
@@ -292,7 +291,9 @@ func TestTopQueryPlanCacheEnabled(t *testing.T) {
 		cfg.Username = "sa"
 		cfg.Password = "password"
 		cfg.Port = 1433
-		cfg.TopQueryCollection.QueryPlanCache.Enabled = enabled
+		if enabled {
+			cfg.TopQueryCollection.QueryPlanCache.Enabled = true
+		}
 		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 		require.NoError(t, cfg.Validate())
 

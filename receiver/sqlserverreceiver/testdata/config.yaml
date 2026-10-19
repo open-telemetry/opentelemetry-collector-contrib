@@ -28,7 +28,7 @@ sql_server/named:
     top_query_count: 200
     collection_interval: 80s
     query_plan_cache:
-      enabled: false
+      enabled: true
   query_sample_collection:
     max_rows_per_query: 1450
   events:

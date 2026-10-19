@@ -64,7 +64,6 @@ func createDefaultConfig() component.Config {
 			MaxQuerySampleCount: 1000,
 			TopQueryCount:       250,
 			CollectionInterval:  time.Minute,
-			QueryPlanCache:      QueryPlanCache{Enabled: true},
 		},
 		TopProcedureCollection: TopProcedureCollection{
 			MaxProcedureSampleCount: 1000,

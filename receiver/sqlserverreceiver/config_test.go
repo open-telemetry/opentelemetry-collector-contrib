@@ -263,7 +263,7 @@ func TestLoadConfig(t *testing.T) {
 		sub, err := cm.Sub("sql_server/omitted_cache")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
-		require.True(t, cfg.(*Config).TopQueryCollection.QueryPlanCache.Enabled)
+		require.False(t, cfg.(*Config).TopQueryCollection.QueryPlanCache.Enabled)
 		require.NoError(t, confmap.Validate(cfg))
 	})
 
@@ -340,7 +340,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.TopQueryCollection.TopQueryCount = 200
 		expected.TopQueryCollection.MaxQuerySampleCount = 1000
 		expected.TopQueryCollection.CollectionInterval = 80 * time.Second
-		expected.TopQueryCollection.QueryPlanCache.Enabled = false
+		expected.TopQueryCollection.QueryPlanCache.Enabled = true
 
 		expected.QuerySample = QuerySample{
 			MaxRowsPerQuery: 1450,

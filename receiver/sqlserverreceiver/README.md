@@ -108,8 +108,8 @@ The following settings are optional:
   already scoped to a single instance and only exposes data from that instance. Both collection paths
   can run side by side on Windows, so a named instance still needs `instance_name` for the performance
   counter path even when direct connection options are also configured.
-- `top_query_collection.query_plan_cache.enabled` (default = `true`): Cache up to 300 obfuscated
-  XML plans in this receiver's memory. Set to `false` to disable this cache. This does not change
+- `top_query_collection.query_plan_cache.enabled` (default = `false`): Set to `true` to cache up to
+  300 obfuscated XML plans in this receiver's memory. This does not change
   SQL Server's own query-plan cache. Each cached plan is limited to 256 KiB.
 - `top_procedure_collection` (optional): Tunes the `db.server.top_procedure` event.
   - `max_procedure_sample_count` (default = `1000`, max `10000`): How many procedures to read from
