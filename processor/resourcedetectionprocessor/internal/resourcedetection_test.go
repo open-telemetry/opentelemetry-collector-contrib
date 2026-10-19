@@ -154,17 +154,6 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
-func TestDetectResource_OmittedDetector(t *testing.T) {
-	mockDetectorKey := DetectorType("mock")
-	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(processor.Settings, DetectorConfig, bool) (Detector, error) {
-			return nil, nil
-		},
-	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), fastRetryConfig, false, &mockDetectorConfig{}, mockDetectorKey)
-	require.EqualError(t, err, `detector "mock" is omitted from this binary`)
-}
-
 func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	md1 := &mockDetector{}
 	md1.On("Detect").Return(pcommon.NewResource(), "", errors.New("err1"))

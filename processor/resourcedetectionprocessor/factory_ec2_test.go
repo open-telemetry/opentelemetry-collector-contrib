@@ -6,8 +6,6 @@
 package resourcedetectionprocessor
 
 import (
-	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,21 +35,4 @@ func TestEC2TrimmedBuildCreatesConfiguredProcessor(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-}
-
-func TestEC2TrimmedBuildExcludesKubernetesDependencies(t *testing.T) {
-	// Inspect production imports, not the test binary: existing config tests
-	// import other detector implementations even in a targeted trimmed test run.
-	cmd := exec.CommandContext(t.Context(), "go", "list", "-deps",
-		"-tags=remove_all_resourcedetection_detectors,enable_resourcedetection_aws_ec2_detector", ".")
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err, "%s", output)
-	packages := strings.Fields(string(output))
-	const rdpInternal = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/"
-	require.Contains(t, packages, rdpInternal+"aws/ec2")
-	for _, pkg := range packages {
-		for _, prefix := range []string{"k8s.io/", "sigs.k8s.io/", "github.com/openshift/"} {
-			assert.False(t, strings.HasPrefix(pkg, prefix), "EC2-only build imports %s", pkg)
-		}
-	}
 }

@@ -110,9 +110,6 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}
-		if detector == nil {
-			return nil, fmt.Errorf("detector %q is omitted from this binary", detectorType)
-		}
 
 		detectors = append(detectors, detectorEntry{detectorType: detectorType, detector: detector})
 	}

@@ -45,3 +45,11 @@ func TestOracleCloudOnlyBuildRejectsDisabledDetector(t *testing.T) {
 	require.ErrorContains(t, err, "oraclecloud")
 	assert.Nil(t, tp)
 }
+
+func TestOracleCloudDetectorRegistry(t *testing.T) {
+	for detectorType, factory := range availableDetectorFactories() {
+		require.NotNil(t, factory, "factory should not be nil for %q", detectorType)
+	}
+
+	assert.Contains(t, availableDetectorFactories(), internal.DetectorType("oraclecloud"))
+}
