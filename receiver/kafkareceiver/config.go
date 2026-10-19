@@ -110,8 +110,8 @@ func (c *Config) Validate() error {
 		switch c.PartitionProcessing.MaxInFlight.Window {
 		case InFlightWindowPerFetch:
 		case InFlightWindowCrossFetch:
-			// cross_fetch holds records from several fetches, so without a byte cap
-			// the only memory bound is records times the largest record.
+			// cross_fetch frees a records slot when Consume returns, so without a
+			// byte cap finished records behind a slow one pile up across fetches.
 			if c.PartitionProcessing.MaxInFlight.Records <= 1 || c.PartitionProcessing.MaxInFlight.Bytes <= 0 {
 				return errors.New("partition_processing.max_in_flight.window cross_fetch requires records above 1 and bytes above 0")
 			}
@@ -228,9 +228,10 @@ type MaxInFlightConfig struct {
 	// Records is how many calls may run at once. Default 1.
 	Records int `mapstructure:"records"`
 
-	// Bytes caps the key and value bytes of the records in flight, from the start
-	// of their call until the mark passes them, counted after decompression.
-	// Headers are not counted. 0 means no cap. A record above the cap still runs,
+	// Bytes caps the bytes of the records in flight, from the start of their call
+	// until the mark passes them. A record counts its key, value, and headers
+	// after decompression, plus a fixed overhead of about 250 bytes per record
+	// and 40 per header, so empty records count too. 0 means no cap. A record above the cap still runs,
 	// alone. It has no effect when Records is 1.
 	Bytes int `mapstructure:"bytes"`
 

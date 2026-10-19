@@ -397,7 +397,7 @@ func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartiti
 			break
 		}
 		pc.currentOffset.Store(msg.Offset)
-		size := len(msg.Key) + len(msg.Value)
+		size := inflightSize(msg)
 		if _, ok := pc.skipConsume[msg.Offset]; ok {
 			w.complete(w.push(msg, p.HighWatermark, size), nil)
 			continue
@@ -434,13 +434,34 @@ func (c *franzConsumer) processRecordsConcurrent(pc *pc, p kgo.FetchTopicPartiti
 	return fatalRecord, fatalIsPermanent
 }
 
+// recordOverhead and headerOverhead approximate what a held record costs
+// besides its payload: the kgo.Record (160 bytes on 64-bit), its inflightEntry
+// and slot in entries (56), and 40 per kgo.RecordHeader. Counting them keeps
+// max_in_flight.bytes a bound when records are tiny or empty. They are rounded
+// estimates rather than unsafe.Sizeof, since allocator rounding and the shared
+// decompressed buffer make the real cost approximate anyway.
+const (
+	recordOverhead = 256
+	headerOverhead = 40
+)
+
+// inflightSize returns the bytes rec holds against max_in_flight.bytes: its
+// key, value, and headers, plus the per-record and per-header structs.
+func inflightSize(rec *kgo.Record) int {
+	size := recordOverhead + len(rec.Key) + len(rec.Value)
+	for _, h := range rec.Headers {
+		size += headerOverhead + len(h.Key) + len(h.Value)
+	}
+	return size
+}
+
 // inflightEntry is one started record in the partition window.
 type inflightEntry struct {
 	rec *kgo.Record
 	// hw is the high watermark of the fetch the record came from.
 	hw int64
-	// size is the key and value bytes this record holds against
-	// max_in_flight.bytes until the mark passes it. A replay that skips Consume
+	// size is the bytes this record holds against max_in_flight.bytes until
+	// the mark passes it, see inflightSize. A replay that skips Consume
 	// holds them too.
 	size int
 	done bool
@@ -474,12 +495,14 @@ type inflightWindow struct {
 	entries []*inflightEntry
 	// failed stops new calls once any record leaves a hole.
 	failed bool
-	// lastMarked is the last record marked, or nil.
-	lastMarked *kgo.Record
+	// lastMarked is the offset of the last record marked, or -1. It keeps the
+	// offset rather than the record, which would keep its whole decompressed
+	// record batch in memory while the partition is idle.
+	lastMarked int64
 }
 
 func newInflightWindow(c *franzConsumer, pc *pc) *inflightWindow {
-	w := &inflightWindow{c: c, pc: pc, failedCh: make(chan struct{}, 1)}
+	w := &inflightWindow{c: c, pc: pc, failedCh: make(chan struct{}, 1), lastMarked: -1}
 	w.room = sync.NewCond(&w.mu)
 	return w
 }
@@ -573,7 +596,7 @@ func (w *inflightWindow) complete(e *inflightEntry, err error) {
 	if last == nil {
 		return
 	}
-	w.lastMarked = last.rec
+	w.lastMarked = last.rec.Offset
 	w.c.markCommitRecords(w.pc, last.rec.Topic, last.rec.Partition, last.rec)
 	w.pc.offsetLag.Store((last.hw - 1) - last.rec.Offset)
 	w.pc.offsetLagReportable.Store(true)
@@ -608,17 +631,15 @@ func (w *inflightWindow) reset() {
 	}
 }
 
-// dropSkipConsume removes skip entries at or below the last marked record. The
+// dropSkipConsume removes skip entries at or below the last marked offset. The
 // map returns to nil when it is empty so later success batches do not keep a set.
-func (p *pc) dropSkipConsume(marked *kgo.Record) {
+func (p *pc) dropSkipConsume(marked int64) {
 	if p.skipConsume == nil {
 		return
 	}
-	if marked != nil {
-		for off := range p.skipConsume {
-			if off <= marked.Offset {
-				delete(p.skipConsume, off)
-			}
+	for off := range p.skipConsume {
+		if off <= marked {
+			delete(p.skipConsume, off)
 		}
 	}
 	if len(p.skipConsume) == 0 {

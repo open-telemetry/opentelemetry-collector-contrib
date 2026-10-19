@@ -13,7 +13,7 @@ $defs:
     type: object
     properties:
       bytes:
-        description: Bytes caps the key and value bytes of the records in flight, from the start of their call until the mark passes them, counted after decompression. Headers are not counted. 0 means no cap. A record above the cap still runs, alone. It has no effect when Records is 1.
+        description: Bytes caps the bytes of the records in flight, from the start of their call until the mark passes them. A record counts its key, value, and headers after decompression, plus a fixed overhead of about 250 bytes per record and 40 per header, so empty records count too. 0 means no cap. A record above the cap still runs, alone. It has no effect when Records is 1.
         type: integer
       records:
         description: Records is how many calls may run at once. Default 1.
