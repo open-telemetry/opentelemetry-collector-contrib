@@ -80,6 +80,7 @@ The following settings can be optionally configured:
 - `max_fetch_size` (default = `1048576`): The maximum number of message bytes to fetch in a request, defaults to 1MB. Must be greater than or equal to `min_fetch_size`.
 - `max_fetch_wait` (default = `250ms`): The maximum amount of time the broker should wait for `min_fetch_size` bytes to be available before returning anyway.
 - `max_partition_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request per partition, defaults to 1MB. If a single record batch is larger than this value, the broker will still return it to ensure the consumer can make progress.
+- `max_decompress_batch_bytes` (default = `1073741824`, 1 GiB): The maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after decompression, so it bounds the memory required for a decompressed record batch. This setting is independent of `max_fetch_size` and `max_partition_fetch_size`, which limit compressed bytes on the wire. If a record batch exceeds this decompression limit, the partition will stop making progress until the configuration is increased and the consumer is restarted.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
