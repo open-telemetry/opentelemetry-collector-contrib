@@ -14,9 +14,6 @@ import (
 // AuthType describes the type of authentication to use for the K8s API.
 type AuthType string
 
-// TODO: Add option for TLS once
-// https://go.opentelemetry.io/collector/issues/933
-// is addressed.
 const (
 	// AuthTypeNone means no auth is required.
 	AuthTypeNone AuthType = "none"
