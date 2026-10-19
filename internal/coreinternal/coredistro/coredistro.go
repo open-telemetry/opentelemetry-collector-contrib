@@ -11,6 +11,9 @@ import (
 // RemovalWarning starts the warning logged by components scheduled for removal from the core distribution.
 const RemovalWarning = "This component will be removed from the OpenTelemetry Collector core distribution (otelcol)"
 
+// JaegerZipkinCoda is the coda for the Jaeger and Zipkin components.
+const JaegerZipkinCoda = "See https://github.com/open-telemetry/opentelemetry-collector-releases/issues/1683 for more details."
+
 // IsCoreDistro reports whether the running collector is the core distribution.
 func IsCoreDistro(info component.BuildInfo) bool {
 	return info.Command == "otelcol" && info.Description == "OpenTelemetry Collector"
