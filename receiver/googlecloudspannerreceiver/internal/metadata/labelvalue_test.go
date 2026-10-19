@@ -6,6 +6,7 @@ package metadata
 import (
 	"math"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/civil"
 	"cloud.google.com/go/spanner"
@@ -376,6 +377,101 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 
 	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, expectedValue, labelValue.Value())
+}
+
+func TestTimestampLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, TimestampValueType)
+
+	assert.Equal(t, TimestampValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *spanner.NullTime
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
+func TestTimestampLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, TimestampValueType)
+	labelValue := timestampLabelValue{
+		metadata: metadata,
+		value:    "2023-10-01T12:00:00Z",
+	}
+
+	assert.Equal(t, TimestampValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, "2023-10-01T12:00:00Z", labelValue.Value())
+
+	attributes := pcommon.NewMap()
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, "2023-10-01T12:00:00Z", attributeValue.Str())
+
+	labelValue.ModifyValue("2023-10-02T12:00:00Z")
+	assert.Equal(t, "2023-10-02T12:00:00Z", labelValue.Value())
+}
+
+func TestNewTimestampLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, TimestampValueType)
+	ist := time.FixedZone("IST", 5*3600+30*60)
+
+	tests := []struct {
+		name          string
+		value         spanner.NullTime
+		expectedValue string
+	}{
+		{
+			name: "Valid UTC timestamp",
+			value: spanner.NullTime{
+				Time:  time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC),
+				Valid: true,
+			},
+			expectedValue: "2023-10-01T12:00:00Z",
+		},
+		{
+			name: "Valid non-UTC timestamp converted to UTC",
+			value: spanner.NullTime{
+				Time:  time.Date(2023, 10, 1, 17, 30, 0, 0, ist),
+				Valid: true,
+			},
+			expectedValue: "2023-10-01T12:00:00Z",
+		},
+		{
+			name: "Unix epoch timestamp",
+			value: spanner.NullTime{
+				Time:  time.Unix(0, 0).UTC(),
+				Valid: true,
+			},
+			expectedValue: "1970-01-01T00:00:00Z",
+		},
+		{
+			name: "Zero time with Valid true",
+			value: spanner.NullTime{
+				Time:  time.Time{},
+				Valid: true,
+			},
+			expectedValue: "0001-01-01T00:00:00Z",
+		},
+		{
+			name: "NULL timestamp",
+			value: spanner.NullTime{
+				Valid: false,
+			},
+			expectedValue: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			valueHolder := &tt.value
+			labelValue := newTimestampLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, TimestampValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tt.expectedValue, labelValue.Value())
+		})
+	}
 }
 
 func TestDateLabelValueMetadata(t *testing.T) {

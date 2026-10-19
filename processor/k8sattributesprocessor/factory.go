@@ -52,6 +52,10 @@ func createDefaultConfig() component.Config {
 		WaitForMetadataTimeout: 10 * time.Second,
 		WatchSyncPeriod:        5 * time.Minute,
 		PodDeleteGracePeriod:   120 * time.Second,
+		Kubelet: KubeletConfig{
+			PollInterval:   10 * time.Second,
+			RequestTimeout: 10 * time.Second,
+		},
 	}
 }
 
@@ -287,7 +291,8 @@ func createProcessorOpts(cfg component.Config) []option {
 		withExcludes(oCfg.Exclude),
 		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout),
 		withWatchSyncPeriod(oCfg.WatchSyncPeriod),
-		withPodDeleteGracePeriod(oCfg.PodDeleteGracePeriod))
+		withPodDeleteGracePeriod(oCfg.PodDeleteGracePeriod),
+		withKubeletConfig(oCfg.Kubelet))
 
 	if oCfg.WaitForMetadata {
 		opts = append(opts, withWaitForMetadata(true))

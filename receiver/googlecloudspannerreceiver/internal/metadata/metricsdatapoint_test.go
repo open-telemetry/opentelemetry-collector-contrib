@@ -20,7 +20,7 @@ import (
 const (
 	// Value was generated using the same library. Intent is to detect that something changed in library implementation
 	// in case we received different value here. For more details inspect tests where this value is used.
-	expectedHashValue = "5f24b722f606b24a"
+	expectedHashValue = "63b138e15cca6a33"
 )
 
 func TestMetricsDataPoint_GroupingKey(t *testing.T) {
@@ -208,6 +208,11 @@ func allPossibleLabelValues() []LabelValue {
 		metadata: iSliceLabelValueMetadata,
 		value:    stringValue,
 	}
+	timestampLabelValueMetadata, _ := NewLabelValueMetadata("timestampLabelName", "timestampLabelColumnName", TimestampValueType)
+	tsLabelValue := timestampLabelValue{
+		metadata: timestampLabelValueMetadata,
+		value:    stringValue,
+	}
 	dateLabelValueMetadata, _ := NewLabelValueMetadata("dateLabelName", "dateLabelColumnName", DateValueType)
 	dLabelValue := dateLabelValue{
 		metadata: dateLabelValueMetadata,
@@ -222,6 +227,7 @@ func allPossibleLabelValues() []LabelValue {
 		btSliceLabelValue,
 		lckReqSliceLabelValue,
 		iSliceLabelValue,
+		tsLabelValue,
 		dLabelValue,
 	}
 }
@@ -261,7 +267,7 @@ func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelV
 
 	assert.True(t, exists)
 	switch labelValue.(type) {
-	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, lockRequestSliceLabelValue, intSliceLabelValue, dateLabelValue:
+	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, lockRequestSliceLabelValue, intSliceLabelValue, timestampLabelValue, dateLabelValue:
 		assert.Equal(t, labelValue.Value(), value.Str())
 	case boolLabelValue:
 		assert.Equal(t, labelValue.Value(), value.Bool())
@@ -433,4 +439,234 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[0].Value(), "Hashing failed for case %s", tc.name)
 		})
 	}
+}
+
+func TestMetricsDataPoint_HideClientIPAddressPII(t *testing.T) {
+	testCases := []struct {
+		name          string
+		originalValue string
+		expectedValue string
+	}{
+		// Non-IP / Redacted / Placeholder strings (no '.' or ':')
+		{
+			name:          "empty string",
+			originalValue: "",
+			expectedValue: "",
+		},
+		{
+			name:          "private audit log placeholder",
+			originalValue: "private",
+			expectedValue: "private",
+		},
+		{
+			name:          "gce-internal-ip audit log placeholder",
+			originalValue: "gce-internal-ip",
+			expectedValue: "gce-internal-ip",
+		},
+		{
+			name:          "error placeholder",
+			originalValue: "<error>",
+			expectedValue: "<error>",
+		},
+		{
+			name:          "unknown placeholder",
+			originalValue: "unknown",
+			expectedValue: "unknown",
+		},
+		{
+			name:          "NULL string",
+			originalValue: "NULL",
+			expectedValue: "",
+		},
+		{
+			name:          "plain hostname without dots",
+			originalValue: "localhost",
+			expectedValue: "localhost",
+		},
+		{
+			name:          "plain numeric string without delimiters",
+			originalValue: "123456789",
+			expectedValue: "",
+		},
+
+		// IPv4 standard & boundary cases
+		{
+			name:          "ipv4 private address",
+			originalValue: "192.168.1.1",
+			expectedValue: "14261591930808458459",
+		},
+		{
+			name:          "ipv4 loopback address",
+			originalValue: "127.0.0.1",
+			expectedValue: "1353920702439368852",
+		},
+		{
+			name:          "ipv4 all zeros boundary",
+			originalValue: "0.0.0.0",
+			expectedValue: "1865442790408783828",
+		},
+		{
+			name:          "ipv4 broadcast max boundary",
+			originalValue: "255.255.255.255",
+			expectedValue: "17605805416796728994",
+		},
+		{
+			name:          "ipv4 address with port",
+			originalValue: "10.128.0.5:54321",
+			expectedValue: "6670765634391460772",
+		},
+
+		// IPv6 standard, compressed, bracketed & boundary cases
+		{
+			name:          "ipv6 full address",
+			originalValue: "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+			expectedValue: "5784436558048342182",
+		},
+		{
+			name:          "ipv6 unique local address",
+			originalValue: "fda3:e722:ac3:10:138:587f:ac11:5469",
+			expectedValue: "17752314877368136085",
+		},
+		{
+			name:          "ipv6 compressed middle zeros",
+			originalValue: "2001:db8::1",
+			expectedValue: "6556425118201004429",
+		},
+		{
+			name:          "ipv6 loopback leading double colon",
+			originalValue: "::1",
+			expectedValue: "17291825625407301630",
+		},
+		{
+			name:          "ipv6 trailing double colon",
+			originalValue: "fe80::",
+			expectedValue: "11812272640781785914",
+		},
+		{
+			name:          "ipv6 unspecified all zeros double colon",
+			originalValue: "::",
+			expectedValue: "8166266742203981559",
+		},
+		{
+			name:          "ipv6 uppercase hex",
+			originalValue: "2001:DB8:ABCD:EF01::F",
+			expectedValue: "17583487279216968028",
+		},
+		{
+			name:          "ipv4-mapped ipv6 address",
+			originalValue: "::ffff:192.168.1.1",
+			expectedValue: "6901447465218037910",
+		},
+		{
+			name:          "ipv6 nat64 embedded ipv4 address",
+			originalValue: "64:ff9b::192.0.2.33",
+			expectedValue: "3070413415546920759",
+		},
+		{
+			name:          "bracketed ipv6 with port",
+			originalValue: "[2001:db8::1]:8080",
+			expectedValue: "11397108773292763715",
+		},
+		{
+			name:          "bracketed ipv6 loopback with port",
+			originalValue: "[::1]:443",
+			expectedValue: "15343493414107352352",
+		},
+
+		// Invalid IP / port / degenerate delimiter edge cases (should return empty string)
+		{
+			name:          "single dot only",
+			originalValue: ".",
+			expectedValue: "",
+		},
+		{
+			name:          "multiple dots only",
+			originalValue: "...",
+			expectedValue: "",
+		},
+		{
+			name:          "single colon only",
+			originalValue: ":",
+			expectedValue: "",
+		},
+		{
+			name:          "leading and trailing dots",
+			originalValue: ".192.168.1.1.",
+			expectedValue: "",
+		},
+		{
+			name:          "empty brackets with colon",
+			originalValue: "[]:",
+			expectedValue: "",
+		},
+		{
+			name:          "invalid ipv4 octet out of range",
+			originalValue: "999.999.999.999",
+			expectedValue: "",
+		},
+		{
+			name:          "invalid port out of range",
+			originalValue: "192.168.1.1:99999",
+			expectedValue: "",
+		},
+		{
+			name:          "invalid non-numeric port",
+			originalValue: "192.168.1.1:abc",
+			expectedValue: "",
+		},
+		{
+			name:          "domain name with port",
+			originalValue: "example.com:8080",
+			expectedValue: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			clientIPMetadata, _ := NewLabelValueMetadata("client_ip_address", "CLIENT_IP_ADDRESS", StringValueType)
+			otherMetadata, _ := NewLabelValueMetadata("other_label", "OTHER_COLUMN", StringValueType)
+			labelValue1 := stringLabelValue{metadata: clientIPMetadata, value: tc.originalValue}
+			labelValue2 := stringLabelValue{metadata: otherMetadata, value: "unchanged_value"}
+
+			labelValues := []LabelValue{labelValue1, labelValue2}
+			metricsDataPoint := &MetricsDataPoint{
+				metricName:  "test_metric",
+				timestamp:   time.Now().UTC(),
+				databaseID:  databaseID(),
+				labelValues: labelValues,
+			}
+
+			metricsDataPoint.HideClientIPAddressPII()
+
+			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[0].Value(), "Hashing failed for case %s", tc.name)
+			assert.Equal(t, "unchanged_value", metricsDataPoint.labelValues[1].Value())
+		})
+	}
+
+	t.Run("no client_ip_address label present", func(t *testing.T) {
+		otherMetadata, _ := NewLabelValueMetadata("other_label", "OTHER_COLUMN", StringValueType)
+		metricsDataPoint := &MetricsDataPoint{
+			metricName:  "test_metric",
+			timestamp:   time.Now().UTC(),
+			databaseID:  databaseID(),
+			labelValues: []LabelValue{stringLabelValue{metadata: otherMetadata, value: "192.168.1.1"}},
+		}
+
+		metricsDataPoint.HideClientIPAddressPII()
+
+		assert.Equal(t, "192.168.1.1", metricsDataPoint.labelValues[0].Value())
+	})
+
+	t.Run("empty labelValues slice", func(t *testing.T) {
+		metricsDataPoint := &MetricsDataPoint{
+			metricName:  "test_metric",
+			timestamp:   time.Now().UTC(),
+			databaseID:  databaseID(),
+			labelValues: []LabelValue{},
+		}
+
+		metricsDataPoint.HideClientIPAddressPII()
+
+		assert.Empty(t, metricsDataPoint.labelValues)
+	})
 }
