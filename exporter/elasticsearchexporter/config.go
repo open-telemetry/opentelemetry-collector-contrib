@@ -239,6 +239,9 @@ type RetrySettings struct {
 	// RetryOnDocumentStatus configures the status codes that trigger document level retries.
 	// If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
 	RetryOnDocumentStatus []int `mapstructure:"retry_on_document_status"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type MappingsSettings struct {
