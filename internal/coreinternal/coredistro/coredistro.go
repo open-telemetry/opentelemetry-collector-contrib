@@ -11,6 +11,9 @@ import (
 // RemovalWarning starts the warning logged by components scheduled for removal from the core distribution.
 const RemovalWarning = "This component will be removed from the OpenTelemetry Collector core distribution (otelcol)"
 
+// TransformFilterCoda is the coda for components superseded by the transform and filter processors.
+const TransformFilterCoda = "Use the transform or filter processor instead."
+
 // IsCoreDistro reports whether the running collector is the core distribution.
 func IsCoreDistro(info component.BuildInfo) bool {
 	return info.Command == "otelcol" && info.Description == "OpenTelemetry Collector"
