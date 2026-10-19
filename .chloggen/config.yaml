@@ -118,6 +118,7 @@ components:
     - extension/otlp_encoding
     - extension/pebble_tail_storage
     - extension/pprof
+    - extension/redis_fleet_tracker
     - extension/redis_storage
     - extension/remotetap
     - extension/sd_notify
