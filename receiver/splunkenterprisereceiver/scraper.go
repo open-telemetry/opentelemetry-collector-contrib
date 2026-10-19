@@ -1897,11 +1897,15 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 	}
 }
 
-func (s *splunkScraper) scrapeAPIInfoUp(ctx context.Context, now pcommon.Timestamp, _ infoDict, errs chan error) {
+func (s *splunkScraper) scrapeAPIInfoUp(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAPIInfoUp.Enabled {
 		return
 	}
 	for cliType, client := range s.splunkClient.clients {
+		var i infoContent
+		if entries := info[cliType].Entries; len(entries) > 0 {
+			i = entries[0].Content
+		}
 		req, err := s.splunkClient.createAPIRequest(cliType, apiDict[`SplunkInfo`])
 		if err != nil {
 			errs <- err
@@ -1921,7 +1925,7 @@ func (s *splunkScraper) scrapeAPIInfoUp(ctx context.Context, now pcommon.Timesta
 			_, _ = io.Copy(io.Discard, res.Body)
 			res.Body.Close()
 		}
-		s.mb.RecordSplunkAPIInfoUpDataPoint(now, up, client.endpoint.String())
+		s.mb.RecordSplunkAPIInfoUpDataPoint(now, up, client.endpoint.String(), i.Build, i.Version)
 	}
 }
 

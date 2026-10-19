@@ -68,6 +68,8 @@ Availability of the authenticated /services/server/info endpoint. 1 for HTTP 200
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | splunk.host | The name of the splunk host | Any Str | Recommended | - |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str | Recommended | - |
+| splunk.splunkd.version | The splunkd version number | Any Str | Recommended | - |
 
 ### splunk.buckets.searchable.status
 

@@ -50,6 +50,10 @@ the configured endpoint URL, including when that endpoint is unavailable.
 
 The metric is disabled by default, reuses each endpoint's configured HTTP client
 settings and authentication, and does not require `build_version_info`.
+When `build_version_info: true`, the existing metadata lookup populates
+`splunk.splunkd.build` and `splunk.splunkd.version`. These attributes are empty
+when lookup is disabled or no metadata is available; availability still depends
+only on the probe's HTTP status, not on metadata decoding.
 
 ```yaml
 receivers:

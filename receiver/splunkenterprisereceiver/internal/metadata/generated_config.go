@@ -62,7 +62,9 @@ func (ms *SplunkAggregationQueueRatioMetricConfig) Validate() error {
 type SplunkAPIInfoUpMetricAttributeKey string
 
 const (
-	SplunkAPIInfoUpMetricAttributeKeySplunkHost SplunkAPIInfoUpMetricAttributeKey = "splunk.host"
+	SplunkAPIInfoUpMetricAttributeKeySplunkHost           SplunkAPIInfoUpMetricAttributeKey = "splunk.host"
+	SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild   SplunkAPIInfoUpMetricAttributeKey = "splunk.splunkd.build"
+	SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion SplunkAPIInfoUpMetricAttributeKey = "splunk.splunkd.version"
 )
 
 // SplunkAPIInfoUpMetricConfig provides config for the splunk.api.info.up metric.
@@ -91,9 +93,9 @@ func (ms *SplunkAPIInfoUpMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *SplunkAPIInfoUpMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SplunkAPIInfoUpMetricAttributeKeySplunkHost:
+		case SplunkAPIInfoUpMetricAttributeKeySplunkHost, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion:
 		default:
-			return fmt.Errorf("metric splunk.api.info.up doesn't have an attribute %v, valid attributes: [splunk.host]", val)
+			return fmt.Errorf("metric splunk.api.info.up doesn't have an attribute %v, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]", val)
 		}
 	}
 
@@ -2681,7 +2683,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkAPIInfoUp: SplunkAPIInfoUpMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost},
+			EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion},
 		},
 		SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 			Enabled:             false,

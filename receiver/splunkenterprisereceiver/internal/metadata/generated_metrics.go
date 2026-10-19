@@ -36,7 +36,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SplunkAPIInfoUp: metricInfo{
 		Name:       "splunk.api.info.up",
-		Attributes: []string{"splunk.host"},
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
 	SplunkBucketsSearchableStatus: metricInfo{
 		Name:       "splunk.buckets.searchable.status",
@@ -416,7 +416,7 @@ func (m *metricSplunkAPIInfoUp) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSplunkAPIInfoUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkAPIInfoUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -426,6 +426,12 @@ func (m *metricSplunkAPIInfoUp) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SplunkAPIInfoUpMetricAttributeKeySplunkHost) {
 		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 	}
 
 	var s string
@@ -5646,8 +5652,8 @@ func (mb *MetricsBuilder) RecordSplunkAggregationQueueRatioDataPoint(ts pcommon.
 }
 
 // RecordSplunkAPIInfoUpDataPoint adds a data point to splunk.api.info.up metric.
-func (mb *MetricsBuilder) RecordSplunkAPIInfoUpDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkAPIInfoUp.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkAPIInfoUpDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkAPIInfoUp.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkBucketsSearchableStatusDataPoint adds a data point to splunk.buckets.searchable.status metric.

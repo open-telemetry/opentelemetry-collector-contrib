@@ -115,7 +115,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.buckets.searchable.status:
     enabled: false
     description: Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.

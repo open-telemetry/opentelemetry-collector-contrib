@@ -57,6 +57,11 @@ func requireAPIInfoUp(t *testing.T, metrics pmetric.Metrics, endpoint string, va
 	host, ok := dp.Attributes().Get("splunk.host")
 	require.True(t, ok)
 	require.Equal(t, endpoint, host.Str())
+	for _, key := range []string{"splunk.splunkd.build", "splunk.splunkd.version"} {
+		attribute, exists := dp.Attributes().Get(key)
+		require.True(t, exists, "missing attribute %s", key)
+		require.Empty(t, attribute.Str(), "version lookup is disabled")
+	}
 }
 
 func TestScrapeAPIInfoUp(t *testing.T) {
@@ -181,6 +186,65 @@ func TestScrapeAPIInfoUpRecoveryAndConnectionReuse(t *testing.T) {
 	}
 	firstConnection, secondConnection := <-connections, <-connections
 	require.Equal(t, firstConnection, secondConnection, "reuse the connection after draining both success and error bodies")
+}
+
+func TestScrapeAPIInfoUpBuildVersion(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		metadata  string
+		status    int
+		wantBuild string
+		wantVer   string
+		wantUp    int64
+		wantErr   bool
+	}{
+		{
+			name:      "available",
+			metadata:  `{"entry":[{"content":{"build":"test-build","version":"9.4.1"}}]}`,
+			status:    http.StatusOK,
+			wantBuild: "test-build",
+			wantVer:   "9.4.1",
+			wantUp:    1,
+		},
+		{
+			name:      "unavailable after metadata lookup",
+			metadata:  `{"entry":[{"content":{"build":"test-build","version":"9.4.1"}}]}`,
+			status:    http.StatusServiceUnavailable,
+			wantBuild: "test-build",
+			wantVer:   "9.4.1",
+		},
+		{name: "empty metadata", metadata: `{"entry":[]}`, status: http.StatusOK, wantUp: 1},
+		{name: "missing metadata", metadata: `{}`, status: http.StatusOK, wantUp: 1},
+		{name: "invalid metadata", metadata: `not JSON`, status: http.StatusOK, wantUp: 1, wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			responses := make(chan int, 2)
+			responses <- http.StatusOK // Existing build/version lookup precedes the availability probe.
+			responses <- tt.status
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(<-responses)
+				_, _ = io.WriteString(w, tt.metadata)
+			}))
+			defer server.Close()
+			s := newAPIInfoScraper(t, server.Client(), server.URL)
+			s.conf.VersionInfo = true
+			metrics, err := s.scrape(t.Context())
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, 1, metrics.DataPointCount())
+			dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+			require.Equal(t, tt.wantUp, dp.IntValue())
+			require.Equal(t, map[string]any{
+				"splunk.host":            server.URL,
+				"splunk.splunkd.build":   tt.wantBuild,
+				"splunk.splunkd.version": tt.wantVer,
+			}, dp.Attributes().AsRaw())
+			require.Empty(t, responses, "perform the version lookup and availability probe")
+		})
+	}
 }
 
 type apiInfoRoundTripper func(*http.Request) (*http.Response, error)

@@ -6,7 +6,7 @@ all_set:
       attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.api.info.up:
       enabled: true
-      attributes: ["splunk.host"]
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.buckets.searchable.status:
       enabled: true
       attributes: ["splunk.host","splunk.indexer.searchable","splunk.splunkd.build","splunk.splunkd.version"]
@@ -322,7 +322,7 @@ none_set:
       attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.api.info.up:
       enabled: false
-      attributes: ["splunk.host"]
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.buckets.searchable.status:
       enabled: false
       attributes: ["splunk.host","splunk.indexer.searchable","splunk.splunkd.build","splunk.splunkd.version"]

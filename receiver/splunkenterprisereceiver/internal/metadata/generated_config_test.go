@@ -34,7 +34,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkAPIInfoUp: SplunkAPIInfoUpMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost},
+						EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion},
 					},
 					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 						Enabled:             true,
@@ -301,7 +301,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkAPIInfoUp: SplunkAPIInfoUpMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost},
+						EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion},
 					},
 					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 						Enabled:             false,
@@ -582,7 +582,7 @@ func TestSplunkAPIInfoUpMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SplunkAPIInfoUpMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric splunk.api.info.up doesn't have an attribute invalid, valid attributes: [splunk.host]")
+	require.ErrorContains(t, cfg.Validate(), "metric splunk.api.info.up doesn't have an attribute invalid, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]")
 
 	cfg = DefaultMetricsConfig().SplunkAPIInfoUp
 	cfg.AggregationStrategy = "invalid"

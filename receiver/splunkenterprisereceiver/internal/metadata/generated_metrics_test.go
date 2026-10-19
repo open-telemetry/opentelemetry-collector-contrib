@@ -129,11 +129,11 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSplunkAPIInfoUpDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkAPIInfoUpDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSplunkAPIInfoUpDataPoint(ts, 3, "splunk.host-val-2")
+				mb.RecordSplunkAPIInfoUpDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordSplunkAPIInfoUpDataPoint(ts+1, 3, "splunk.host-val-2")
+				mb.RecordSplunkAPIInfoUpDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 				assert.Equal(t, 2, mb.metricSplunkAPIInfoUp.data.Gauge().DataPoints().Len())
 			}
 
@@ -737,6 +737,12 @@ func TestMetricsBuilder(t *testing.T) {
 						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
 						assert.True(t, ok)
 						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+						splunkSplunkdBuildAttrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.build-val", splunkSplunkdBuildAttrVal.Str())
+						splunkSplunkdVersionAttrVal, ok := dp.Attributes().Get("splunk.splunkd.version")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.splunkd.version-val", splunkSplunkdVersionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["splunk.api.info.up"], "Found a duplicate in the metrics slice: splunk.api.info.up")
 						validatedMetrics["splunk.api.info.up"] = true
@@ -761,6 +767,10 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("splunk.host")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.build")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("splunk.splunkd.version")
 						assert.False(t, ok)
 					}
 				case "splunk.buckets.searchable.status":
