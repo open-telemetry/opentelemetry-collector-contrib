@@ -72,6 +72,7 @@ func TestToLabelValue(t *testing.T) {
 		"Int slice label value metadata":          {IntSliceValueType, intSliceLabelValue{}, []int64{1, 2}, "1,2"},
 		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
 		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
+		"Timestamp label value metadata":          {TimestampValueType, timestampLabelValue{}, spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true}, "2023-10-01T12:00:00Z"},
 	}
 
 	for name, testCase := range testCases {
@@ -101,6 +102,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	intSliceLabelValueMetadata, _ := NewLabelValueMetadata("intSliceLabelName", "intSliceLabelColumnName", IntSliceValueType)
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
 	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
+	timestampLabelValueMetadata, _ := NewLabelValueMetadata("timestampLabelName", "timestampLabelColumnName", TimestampValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{
 		stringLabelValueMetadata,
 		boolLabelValueMetadata,
@@ -109,6 +111,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		intSliceLabelValueMetadata,
 		byteSliceLabelValueMetadata,
 		lockRequestSliceLabelValueMetadata,
+		timestampLabelValueMetadata,
 	}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
 	row, _ := spanner.NewRow(
@@ -120,6 +123,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			intSliceLabelValueMetadata.ColumnName(),
 			byteSliceLabelValueMetadata.ColumnName(),
 			lockRequestSliceLabelValueMetadata.ColumnName(),
+			timestampLabelValueMetadata.ColumnName(),
 		},
 		[]any{
 			stringValue,
@@ -129,6 +133,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			[]int64{1, 2},
 			[]byte(stringValue),
 			[]*lockRequest{{}},
+			spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true},
 		},
 	)
 
@@ -144,6 +149,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		intSliceLabelValue{},
 		byteSliceLabelValue{},
 		lockRequestSliceLabelValue{},
+		timestampLabelValue{},
 	}
 
 	for i, expectedType := range expectedTypes {
