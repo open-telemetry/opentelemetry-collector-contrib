@@ -579,9 +579,9 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) (bool, 
 							attrs = append(attrs, k)
 						}
 					}
-					if err := aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType); err != nil {
-						return true, err
-					}
+				}
+				if err := aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType); err != nil {
+					return true, err
 				}
 			}
 		case aggregateLabelValues:
