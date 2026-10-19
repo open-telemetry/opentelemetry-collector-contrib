@@ -86,6 +86,9 @@ kafka/regex_topic_with_exclusion:
 kafka/conn_idle_timeout:
   conn_idle_timeout: 5m
 
+kafka/dial_timeout:
+  dial_timeout: 30s
+
 kafka/valid_exclude_topics_logs:
   logs:
     topics:
