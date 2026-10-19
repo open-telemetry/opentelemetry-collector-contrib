@@ -571,14 +571,17 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) (bool, 
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
 		case aggregateLabels:
 			if canChangeMetric {
-				attrs := make([]string, 0, len(op.labelSetMap))
-				for k, v := range op.labelSetMap {
-					if v {
-						attrs = append(attrs, k)
+				var attrs []string
+				if op.labelSetMap != nil {
+					attrs = make([]string, 0, len(op.labelSetMap))
+					for k, v := range op.labelSetMap {
+						if v {
+							attrs = append(attrs, k)
+						}
 					}
-				}
-				if err := aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType); err != nil {
-					return true, err
+					if err := aggregateLabelsOp(metric, attrs, op.configOperation.AggregationType); err != nil {
+						return true, err
+					}
 				}
 			}
 		case aggregateLabelValues:
