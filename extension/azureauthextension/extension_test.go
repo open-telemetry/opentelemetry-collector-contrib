@@ -196,39 +196,45 @@ func TestGetToken(t *testing.T) {
 	}
 }
 
-func TestGetCredentialUsesConfiguredScopes(t *testing.T) {
+func TestGetCredential(t *testing.T) {
 	t.Parallel()
 
 	expires := time.Now().Add(time.Hour)
-	m := &mockTokenCredential{}
-	m.On("GetToken", mock.Anything, policy.TokenRequestOptions{
-		Scopes: []string{"https://sql.custom-cloud.example/.default"},
-	}).Return(azcore.AccessToken{Token: "sql-token", ExpiresOn: expires}, nil).Once()
-
-	a := authenticator{
-		credential: m,
-		scopes:     []string{"https://sql.custom-cloud.example/.default"},
+	tests := map[string]struct {
+		scopes         []string
+		expectedScopes []string
+		token          azcore.AccessToken
+		request        dbauth.Request
+	}{
+		"uses_configured_scopes": {
+			scopes:         []string{"https://sql.custom-cloud.example/.default"},
+			expectedScopes: []string{"https://sql.custom-cloud.example/.default"},
+			token:          azcore.AccessToken{Token: "sql-token", ExpiresOn: expires},
+			request:        dbauth.Request{Endpoint: "sql.example.com:1433"},
+		},
+		"defaults_to_azure_public_sql_scope": {
+			expectedScopes: []string{defaultDatabaseScope},
+			token:          azcore.AccessToken{Token: "sql-token"},
+			request:        dbauth.Request{},
+		},
 	}
-	credential, err := a.GetCredential(t.Context(), dbauth.Request{Endpoint: "sql.example.com:1433"})
-	require.NoError(t, err)
-	require.Equal(t, "sql-token", credential.Secret)
-	require.Equal(t, &expires, credential.NotAfter)
-	m.AssertExpectations(t)
-}
 
-func TestGetCredentialDefaultsToAzurePublicSQLScope(t *testing.T) {
-	t.Parallel()
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			m := &mockTokenCredential{}
+			m.On("GetToken", mock.Anything, policy.TokenRequestOptions{
+				Scopes: tc.expectedScopes,
+			}).Return(tc.token, nil).Once()
 
-	m := &mockTokenCredential{}
-	m.On("GetToken", mock.Anything, policy.TokenRequestOptions{
-		Scopes: []string{defaultDatabaseScope},
-	}).Return(azcore.AccessToken{Token: "sql-token"}, nil).Once()
-
-	a := authenticator{credential: m}
-	credential, err := a.GetCredential(t.Context(), dbauth.Request{})
-	require.NoError(t, err)
-	require.Equal(t, "sql-token", credential.Secret)
-	m.AssertExpectations(t)
+			a := authenticator{credential: m, scopes: tc.scopes}
+			credential, err := a.GetCredential(t.Context(), tc.request)
+			require.NoError(t, err)
+			require.Equal(t, "sql-token", credential.Secret)
+			require.Equal(t, &tc.token.ExpiresOn, credential.NotAfter)
+			m.AssertExpectations(t)
+		})
+	}
 }
 
 func TestGetTokenForHost(t *testing.T) {
