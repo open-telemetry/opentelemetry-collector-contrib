@@ -54,9 +54,18 @@ const (
 type errElasticsearch struct {
 	httpStatus    int
 	httpDocStatus int
+
+	// abortConnection makes the mock Elasticsearch close the connection
+	// without sending any response. The exporter then observes a
+	// transport-level error instead of an HTTP status, the same failure it
+	// sees when Elasticsearch is unreachable.
+	abortConnection bool
 }
 
 func (e errElasticsearch) Error() string {
+	if e.abortConnection {
+		return "Simulated Elasticsearch aborted the connection"
+	}
 	if e.httpStatus != http.StatusOK {
 		return fmt.Sprintf("Simulated Elasticsearch returned HTTP status %d", e.httpStatus)
 	}
@@ -372,6 +381,11 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			if !errors.As(consumeErr, &errES) {
 				// panic to surface test logic error because we only expect error of type errElasticsearch
 				panic("unknown consume error")
+			}
+			if errES.abortConnection {
+				// Aborting the handler makes net/http close the connection
+				// without writing a response.
+				panic(http.ErrAbortHandler)
 			}
 			if errES.httpStatus != http.StatusOK {
 				w.WriteHeader(errES.httpStatus)
