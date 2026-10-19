@@ -283,7 +283,7 @@ receiver/cloudflarereceiver/                                     @open-telemetry
 receiver/cloudfoundryreceiver/                                   @open-telemetry/collector-contrib-approvers @crobert-1
 receiver/collectdreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers @antonblock
-receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @boostchicken @MovieStoreGuy
+receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 receiver/dnscheckreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/dockerstatsreceiver/                                    @open-telemetry/collector-contrib-approvers @jamesmoessis
 receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni @VihasMakwana @rogercoll
