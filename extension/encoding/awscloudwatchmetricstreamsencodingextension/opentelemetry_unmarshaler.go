@@ -101,18 +101,17 @@ func (f *formatOpenTelemetry10Unmarshaler) NewMetricsDecoder(reader io.Reader, o
 				return pmetric.Metrics{}, fmt.Errorf("unable to discard varint: %w", err)
 			}
 
-			// Reuse buffer, grow only if needed
-			if cap(buf) < int(toRead) {
-				buf = make([]byte, toRead)
-			} else {
-				buf = buf[:toRead]
-			}
-
-			// Read the OTLP metric message
-			_, err = io.ReadFull(bufReader, buf)
+			// Read the OTLP metric message. toRead comes from the input, so don't
+			// allocate it up front: grow the buffer only as bytes actually arrive.
+			b := bytes.NewBuffer(buf[:0])
+			n, err := b.ReadFrom(io.LimitReader(bufReader, int64(toRead)))
 			if err != nil {
 				return pmetric.Metrics{}, fmt.Errorf("unable to read OTLP metric message: %w", err)
 			}
+			if uint64(n) != toRead {
+				return pmetric.Metrics{}, fmt.Errorf("unable to read OTLP metric message: %w", io.ErrUnexpectedEOF)
+			}
+			buf = b.Bytes()
 
 			// unmarshal metric
 			req := pmetricotlp.NewExportRequest()

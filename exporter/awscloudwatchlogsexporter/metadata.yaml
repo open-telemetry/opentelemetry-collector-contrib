@@ -11,6 +11,14 @@ status:
     emeritus: [bryan-aguilar, boostchicken, rapphil]
     seeking_new: true
 
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    num_consumers: 1
+    batch:
+      enabled: true
+
 tests:
   config:
     endpoint: http://localhost:0

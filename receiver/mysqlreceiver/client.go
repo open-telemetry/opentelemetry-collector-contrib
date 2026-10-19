@@ -366,6 +366,11 @@ type querySample struct {
 	waitTime           float64
 	statementTimerWait float64
 	traceparent        string
+	// clientName is the client driver's self-reported identity
+	// (session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL
+	// Connector/J" or "libmysql". Empty if the client reported no connect
+	// attributes.
+	clientName string
 }
 
 type topQuery struct {
@@ -375,6 +380,10 @@ type topQuery struct {
 	countStar                 int64
 	sumTimerWaitInPicoSeconds int64
 	querySampleText           string
+	// sumRowsExamined and sumRowsSent are raw cumulative counters from
+	// events_statements_summary_by_digest, diffed the same way as countStar.
+	sumRowsExamined int64
+	sumRowsSent     int64
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -593,6 +602,10 @@ func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -620,18 +633,26 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
+// indexIoWaitsQuery lists the COUNT_ and SUM_TIMER_ columns in DELETE, FETCH, INSERT, UPDATE order so
+// they line up with the fields scanned in getIndexIoWaitsStats (countDelete, countFetch, countInsert,
+// countUpdate). The two must stay in sync, otherwise the mysql.index.io.wait.* metrics are reported
+// under the wrong operation. This matches the ordering already used by getTableIoWaitsStats.
+const indexIoWaitsQuery = "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
+	"COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE," +
+	"FLOOR(SUM_TIMER_DELETE/1000), FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000) " +
+	"FROM performance_schema.table_io_waits_summary_by_index_usage " +
+	"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
+
 // getIndexIoWaitsStats queries the db for index_io_waits metrics.
 func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
-	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
-		"COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE," +
-		"FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000), FLOOR(SUM_TIMER_DELETE/1000) " +
-		"FROM performance_schema.table_io_waits_summary_by_index_usage " +
-		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
-
-	rows, err := c.client.Query(query)
+	rows, err := c.client.Query(indexIoWaitsQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -646,6 +667,10 @@ func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -685,6 +710,10 @@ func (c *mySQLClient) getStatementEventsStats() ([]statementEventStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -717,6 +746,10 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -968,6 +1001,10 @@ func (c *mySQLClient) getReplicaStatusStats(supportsReplicaStatus bool) ([]repli
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -980,7 +1017,8 @@ var topQueryNoSampleTextTemplate string
 func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSampleText bool) ([]topQuery, error) {
 	// Select the appropriate template based on version support.
 	// MySQL <8 and all MariaDB versions lack query_sample_text in
-	// events_statements_summary_by_digest, so we use the 5-column fallback.
+	// events_statements_summary_by_digest, so we use the fallback template,
+	// whose SELECT is a strict prefix of the primary one (see topQueryNoSampleText.tmpl).
 	tmplSrc := topQueryTemplate
 	if !supportsSampleText {
 		tmplSrc = topQueryNoSampleTextTemplate
@@ -1016,6 +1054,8 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 				&tq.digestText,
 				&tq.countStar,
 				&tq.sumTimerWaitInPicoSeconds,
+				&tq.sumRowsExamined,
+				&tq.sumRowsSent,
 				&tq.querySampleText,
 			)
 		}
@@ -1026,6 +1066,8 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 			&tq.digestText,
 			&tq.countStar,
 			&tq.sumTimerWaitInPicoSeconds,
+			&tq.sumRowsExamined,
+			&tq.sumRowsSent,
 		)
 	}
 
@@ -1037,6 +1079,11 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 		}
 		topQueries = append(topQueries, tq)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return topQueries, nil
 }
 
@@ -1106,6 +1153,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.statementTimerWait)
 			case "traceparent":
 				dest = append(dest, &s.traceparent)
+			case "client_name":
+				dest = append(dest, &s.clientName)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
@@ -1127,6 +1176,10 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 		}
 
 		samples = append(samples, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return samples, nil
@@ -1227,6 +1280,10 @@ func query(c mySQLClient, query string) (map[string]string, error) {
 			return nil, err
 		}
 		stats[key] = val
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil

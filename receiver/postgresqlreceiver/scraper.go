@@ -215,9 +215,9 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
+	listClient, err := p.clientFactory.getClient(ctx, p.config.ConnectDatabase)
 	if err != nil {
-		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		p.logger.Error("Failed to initialize connection to configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(err))
 		return pmetric.NewMetrics(), err
 	}
 	defer listClient.Close()
@@ -227,7 +227,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	if len(databases) == 0 {
 		dbList, dbErr := listClient.listDatabases(ctx)
 		if dbErr != nil {
-			p.logger.Error("Failed to request list of databases from postgres", zap.Error(dbErr))
+			p.logger.Error("Failed to request list of databases from configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(dbErr))
 			return pmetric.NewMetrics(), dbErr
 		}
 		databases = dbList
@@ -287,9 +287,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
-	dbClient, err := p.clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
+	dbClient, err := p.clientFactory.getClient(ctx, p.config.ConnectDatabase)
 	if err != nil {
-		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		p.logger.Error("Failed to initialize connection to configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(err))
 		return plog.NewLogs(), err
 	}
 
@@ -315,7 +315,32 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 	}
 
 	rb := p.setupLogsResourceBuilder(p.lb.NewResourceBuilder())
-	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+	logs := p.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+
+	if p.config.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled {
+		removeQueryPlanFromTopQuery(logs)
+	}
+
+	return logs, nil
+}
+
+// removeQueryPlanFromTopQuery drops postgresql.query_plan from db.server.top_query records once
+// db.server.query_plan carries it instead. mdatagen sets every declared attribute, so this has to
+// run after recording rather than be skipped during it; the event name check keeps it off
+// db.server.query_plan's own records, which share the scope.
+func removeQueryPlanFromTopQuery(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				if logRecord := logRecords.At(k); logRecord.EventName() == "db.server.top_query" {
+					logRecord.Attributes().Remove(dbAttributePrefix + "query_plan")
+				}
+			}
+		}
+	}
 }
 
 func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
@@ -411,9 +436,9 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
 	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
-	defaultDbClient, err := clientFactory.getClient(ctx, defaultPostgreSQLDatabase)
+	defaultDbClient, err := clientFactory.getClient(ctx, p.config.ConnectDatabase)
 	if err != nil {
-		logger.Error("failed to create db client for default postgresql database")
+		logger.Error("failed to create db client for configured connect_database", zap.String("connect_database", p.config.ConnectDatabase), zap.Error(err))
 		mux.addPartial(err)
 		return
 	}
@@ -476,16 +501,21 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			continue
 		}
 
+		// userid is oid NOT NULL in pg_stat_statements, so this should never be nil;
+		// skip defensively rather than silently fall back to "" and collapse the
+		// cache key, which depends on userid being unique per role.
+		if row[dbAttributePrefix+"userid"] == nil {
+			logger.Debug("skipping top query row with nil userid")
+			continue
+		}
+
 		database, _ := row[string(semconv.DBNamespaceKey)].(string)
-		rolname, _ := row[dbAttributePrefix+"rolname"].(string)
-		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel).
-		// Include database and role to separate their independent counter streams.
-		// NUL cannot occur in PostgreSQL identifiers.
-		//
-		// Note: the SQL template does not select toplevel, so this key does not
-		// distinguish it. With pg_stat_statements.track=all, top-level and nested
-		// statements sharing the same database, role, and queryid can still collide.
-		cacheKeyPrefix := database + "\x00" + rolname + "\x00" + queryID.(string) + "\x00"
+		userid, _ := row[dbAttributePrefix+"userid"].(string)
+		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel). userid is
+		// used here instead of rolname because rolname is empty once the role is
+		// dropped, which would collide two different dropped roles onto one key.
+		// toplevel is not selected, so this key still doesn't distinguish it.
+		cacheKeyPrefix := database + "\x00" + userid + "\x00" + queryID.(string) + "\x00"
 
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
@@ -532,7 +562,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
 		database := item.Value[string(semconv.DBNamespaceKey)].(string)
 		rolname := item.Value[dbAttributePrefix+"rolname"].(string)
-		planCacheKey := database + "\x00" + rolname + "\x00" + queryID
+		userid, _ := item.Value[dbAttributePrefix+"userid"].(string)
+		// userid, not rolname: rolname is empty for a dropped role and would
+		// collide two dropped roles onto one cached plan.
+		planCacheKey := database + "\x00" + userid + "\x00" + queryID
 		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
 		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(planCacheKey)
@@ -569,11 +602,27 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			item.Value[dbAttributePrefix+tempBlksReadColumnName].(int64),
 			item.Value[dbAttributePrefix+tempBlksWrittenColumnName].(int64),
 			queryID,
+			userid,
 			rolname,
 			item.Value[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			item.Value[dbAttributePrefix+totalPlanTimeColumnName].(float64),
 			plan,
 		)
+
+		// Requires db.server.top_query, and skips a query with no plan yet (not explained,
+		// or EXPLAIN failed) rather than record one with an empty plan.
+		if p.config.LogsBuilderConfig.Events.DbServerTopQuery.Enabled && plan != "" {
+			p.lb.RecordDbServerQueryPlanEvent(
+				context.Background(),
+				timestamp,
+				metadata.AttributeDbSystemNamePostgresql,
+				queryID,
+				database,
+				userid,
+				rolname,
+				plan,
+			)
+		}
 		count++
 	}
 }
@@ -813,7 +862,9 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, metadata.AttributeOperationDel, namespace, tm.table)
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, metadata.AttributeOperationUpd, namespace, tm.table)
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd, namespace, tm.table)
-		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, namespace, tm.table)
+		if tm.size >= 0 {
+			p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, namespace, tm.table)
+		}
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount, namespace, tm.table)
 		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans, namespace, tm.table)
 
@@ -864,14 +915,15 @@ func (p *postgreSQLScraper) collectIndexes(
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
 		errs.addPartial(err)
-		return
 	}
 
 	for _, stat := range idxStats {
 		namespace := formatNamespace(database, stat.schema)
 
 		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans, namespace, stat.table, stat.index)
-		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, namespace, stat.table, stat.index)
+		if stat.size >= 0 {
+			p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, namespace, stat.table, stat.index)
+		}
 
 		if !p.useOTelSemconv {
 			var schemaName string

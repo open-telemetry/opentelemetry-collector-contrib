@@ -4,6 +4,7 @@ pkg/pdatatest
 cmd/golden
 extension/internal/basicauth
 extension/internal/credentialsfile
+extension/internal/secretprovider
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/oauth2clientauthextension
@@ -11,6 +12,7 @@ internal/common
 internal/coreinternal
 pkg/ottl
 pkg/ottl/contexts/xprofile
+pkg/ottl/xottl
 connector/routingconnector
 internal/pdatautil
 pkg/sampling
@@ -79,6 +81,8 @@ internal/filter
 connector/countconnector
 exporter/datadogexporter
 processor/tailsamplingprocessor
+pkg/winperfcounters
+receiver/hostmetricsreceiver
 connector/datadogconnector
 connector/exceptionsconnector
 connector/failoverconnector
@@ -108,9 +112,6 @@ exporter/bmchelixexporter
 exporter/cassandraexporter
 exporter/clickhouseexporter
 exporter/coralogixexporter
-pkg/winperfcounters
-receiver/hostmetricsreceiver
-exporter/datadogexporter/integrationtest
 exporter/datasetexporter
 exporter/dorisexporter
 exporter/elasticsearchexporter
@@ -135,6 +136,7 @@ exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
+internal/natsclient
 exporter/natsexporter
 exporter/opensearchexporter
 exporter/pulsarexporter
@@ -166,6 +168,9 @@ extension/encoding/skywalkingencodingextension
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/filetelemetrypolicyextension
+extension/fleettracker/redisfleettrackerextension
+processor/adaptivetailsamplingprocessor
+extension/fleettracker/redisfleettrackerextension/integrationtest
 extension/googleclientauthextension
 extension/headerssetterextension
 pkg/status
@@ -202,6 +207,7 @@ internal/aws/k8s
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
 internal/collectd
+internal/kubelet
 processor/k8sattributesprocessor
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
@@ -212,13 +218,11 @@ receiver/filelogreceiver
 internal/datadog/e2e
 internal/k8sinventory
 internal/k8sleaderelectortest
-internal/kubelet
 internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-processor/adaptivetailsamplingprocessor
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
@@ -239,6 +243,7 @@ processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor
+processor/partitioningprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
 processor/resourceprocessor
@@ -282,6 +287,7 @@ receiver/flinkmetricsreceiver
 receiver/fluentforwardreceiver
 receiver/githubreceiver
 receiver/gitlabreceiver
+receiver/gnmireceiver
 receiver/googlecloudmonitoringreceiver
 receiver/googlecloudpubsubpushreceiver
 receiver/googlecloudpubsubreceiver
@@ -307,6 +313,7 @@ receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver
 receiver/namedpipereceiver
+receiver/natsreceiver
 receiver/netflowreceiver
 receiver/nginxreceiver
 receiver/nsxtreceiver

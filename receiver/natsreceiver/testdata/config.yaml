@@ -1,0 +1,35 @@
+nats:
+  endpoint: nats://localhost:4222
+
+nats/core:
+  endpoint: nats://nats.example.com:4222
+  pedantic: true
+  tls:
+    insecure: false
+    ca_file: /etc/otel/certs/ca.crt
+  auth:
+    user:
+      username: otel
+      password: s3cret
+  logs:
+    subject: otel.logs.>
+    queue_group: otel-collectors
+    encoding: otlp_proto
+  metrics:
+    subject: otel.metrics
+    queue_group: otel-collectors
+    encoding: otlp_json
+  traces:
+    subject: otel.spans
+    encoding_extension: otlp_encoding/nats
+
+nats/jetstream:
+  endpoint: nats://nats.example.com:4222
+  jetstream:
+    domain: hub
+    ack_wait: 30s
+    max_deliver: 5
+  logs:
+    subject: otel.logs.>
+    stream: OTEL_LOGS
+    durable: otel_logs_consumer
