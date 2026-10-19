@@ -13,8 +13,10 @@ const (
 	NullFloatValueType        ValueType = "null_float"
 	BoolValueType             ValueType = "bool"
 	StringSliceValueType      ValueType = "string_slice"
+	IntSliceValueType         ValueType = "int_slice"
 	ByteSliceValueType        ValueType = "byte_slice"
 	LockRequestSliceValueType ValueType = "lock_request_slice"
+	TimestampValueType        ValueType = "timestamp"
 )
 
 type ValueMetadata interface {

@@ -44,7 +44,8 @@ type ContextStatements struct {
 	// ErrorMode determines how the processor reacts to errors that occur while processing
 	// this group of statements. When provided, it overrides the default Config ErrorMode.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
-	// SharedCache is experimental and subject to change or removal in the future.
+	// SharedCache enables sharing per-context caches between all statement groups
+	// with this option enabled in the same processor instance.
 	SharedCache bool `mapstructure:"shared_cache"`
 	// Flatten gives each log record a distinct copy of its resource and scope while this group runs.
 	// Requires the transform.flatten.logs feature gate and is only supported for log context groups.

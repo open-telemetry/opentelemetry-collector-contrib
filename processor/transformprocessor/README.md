@@ -163,7 +163,7 @@ transform:
 
 `error_mode`: allows overriding the top-level `error_mode`. See [General Config](#general-config) for details on how to configure `error_mode`.
 
-`shared_cache` (experimental): enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to hold state across multiple iterations over a set of data.
+`shared_cache`: enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to hold state across multiple iterations over a set of data.
 
 `flatten`: provides each log record with a distinct copy of its resource and scope while the group's statements run, then regroups the log records by resource and scope. Requires the [`transform.flatten.logs`](#transformflattenlogs) feature gate and is only supported in `log_statements` groups using the `log` context.
 

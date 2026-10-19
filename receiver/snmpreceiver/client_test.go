@@ -22,6 +22,43 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
+	factory := NewFactory()
+
+	defaultV2cCfg := factory.CreateDefaultConfig().(*Config)
+	defaultV2cCfg.Endpoint = "udp://localhost:161"
+	defaultV2cCfg.Community = "public"
+
+	defaultV3Cfg := factory.CreateDefaultConfig().(*Config)
+	defaultV3Cfg.Version = "v3"
+	defaultV3Cfg.Endpoint = "tcp://localhost:161"
+	defaultV3Cfg.User = "user"
+	defaultV3Cfg.SecurityLevel = "auth_priv"
+	defaultV3Cfg.AuthType = "MD5"
+	defaultV3Cfg.AuthPassword = "authpass"
+	defaultV3Cfg.PrivacyType = "DES"
+	defaultV3Cfg.PrivacyPassword = "privacypass"
+
+	customMaxRepetitionsCfg := factory.CreateDefaultConfig().(*Config)
+	customMaxRepetitionsCfg.Endpoint = "udp://localhost:161"
+	customMaxRepetitionsCfg.Community = "public"
+	customMaxRepetitionsCfg.MaxRepetitions = 10
+
+	maxInt32V2cCfg := factory.CreateDefaultConfig().(*Config)
+	maxInt32V2cCfg.Endpoint = "udp://localhost:161"
+	maxInt32V2cCfg.Community = "public"
+	maxInt32V2cCfg.MaxRepetitions = math.MaxInt32
+
+	maxInt32V3Cfg := factory.CreateDefaultConfig().(*Config)
+	maxInt32V3Cfg.Version = "v3"
+	maxInt32V3Cfg.Endpoint = "tcp://localhost:161"
+	maxInt32V3Cfg.User = "user"
+	maxInt32V3Cfg.SecurityLevel = "auth_priv"
+	maxInt32V3Cfg.AuthType = "MD5"
+	maxInt32V3Cfg.AuthPassword = "authpass"
+	maxInt32V3Cfg.PrivacyType = "DES"
+	maxInt32V3Cfg.PrivacyPassword = "privacypass"
+	maxInt32V3Cfg.MaxRepetitions = math.MaxInt32
+
 	testCase := []struct {
 		desc        string
 		cfg         *Config
@@ -31,29 +68,40 @@ func TestNewClient(t *testing.T) {
 		expectError error
 	}{
 		{
-			desc: "Valid v2c configuration",
-			cfg: &Config{
-				Version:   "v2c",
-				Endpoint:  "udp://localhost:161",
-				Community: "public",
-			},
+			desc:        "Valid v2c configuration",
+			cfg:         defaultV2cCfg,
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
 			expectError: nil,
 		},
 		{
-			desc: "Valid v3 configuration",
-			cfg: &Config{
-				Version:         "v3",
-				Endpoint:        "tcp://localhost:161",
-				User:            "user",
-				SecurityLevel:   "auth_priv",
-				AuthType:        "MD5",
-				AuthPassword:    "authpass",
-				PrivacyType:     "DES",
-				PrivacyPassword: "privacypass",
-			},
+			desc:        "Valid v3 configuration",
+			cfg:         defaultV3Cfg,
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
+		{
+			desc:        "Valid v2c configuration with custom max_repetitions",
+			cfg:         customMaxRepetitionsCfg,
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
+		{
+			desc:        "Valid v2c configuration with max_repetitions at maxInt32",
+			cfg:         maxInt32V2cCfg,
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
+		{
+			desc:        "Valid v3 configuration with max_repetitions at maxInt32",
+			cfg:         maxInt32V3Cfg,
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
@@ -85,6 +133,7 @@ func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 	require.Contains(t, cfg.Endpoint, client.client.GetTarget())
 	require.Contains(t, cfg.Endpoint, strconv.FormatInt(int64(client.client.GetPort()), 10))
 	require.Contains(t, cfg.Endpoint, client.client.GetTransport())
+	require.Equal(t, cfg.MaxRepetitions, client.client.GetMaxRepetitions())
 	switch cfg.Version {
 	case "v1":
 		require.Equal(t, gosnmp.Version1, client.client.GetVersion())
