@@ -953,9 +953,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
 		}, host)
-		require.Error(t, err)
-		assert.ErrorContains(t, err, "oauthbearer_token_source")
-		assert.EqualError(t, err, `oauthbearer_token_source extension "oauth2client" does not implement Token(context.Context)`)
+		require.EqualError(t, err, `oauthbearer_token_source extension "oauth2client" does not implement Token(context.Context)`)
 	})
 
 	t.Run("present_extension_success", func(t *testing.T) {
