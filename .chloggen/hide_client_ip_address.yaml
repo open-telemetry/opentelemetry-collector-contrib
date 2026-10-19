@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add oldest active queries metrics and `hide_client_ip_address` configuration to mask `client_ip_address` in oldest_active_queries in `googlecloudspannerreceiver`.
+issues: [52089]
