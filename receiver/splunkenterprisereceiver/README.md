@@ -39,6 +39,30 @@ The following settings are optional:
 
 > **Note:** The receiver type has been renamed from `splunkenterprise` to `splunk_enterprise`. The old name is still accepted but will log a deprecation warning.
 
+### Management API availability
+
+Enable `splunk.api.info.up` to probe the authenticated `/services/server/info`
+endpoint once per scrape for each configured indexer, search head, or cluster
+master. It is an integer gauge: `1` for HTTP 200, `0` for other HTTP responses
+(including redirects) or transport errors. Transport errors also produce a partial
+scrape error. Response bodies are not parsed. The `splunk.host` attribute identifies
+the configured endpoint URL, including when that endpoint is unavailable.
+
+The metric is disabled by default, reuses each endpoint's configured HTTP client
+settings and authentication, and does not require `build_version_info`.
+
+```yaml
+receivers:
+  splunk_enterprise:
+    metrics:
+      splunk.api.info.up:
+        enabled: true
+    indexer:
+      endpoint: https://localhost:8089
+      auth:
+        authenticator: basicauth/indexer
+```
+
 ## Basic Example:
 
 ```yaml

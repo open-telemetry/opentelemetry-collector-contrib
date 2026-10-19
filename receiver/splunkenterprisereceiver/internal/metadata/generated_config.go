@@ -58,6 +58,54 @@ func (ms *SplunkAggregationQueueRatioMetricConfig) Validate() error {
 	return nil
 }
 
+// SplunkAPIInfoUpMetricAttributeKey specifies the key of an attribute for the splunk.api.info.up metric.
+type SplunkAPIInfoUpMetricAttributeKey string
+
+const (
+	SplunkAPIInfoUpMetricAttributeKeySplunkHost SplunkAPIInfoUpMetricAttributeKey = "splunk.host"
+)
+
+// SplunkAPIInfoUpMetricConfig provides config for the splunk.api.info.up metric.
+type SplunkAPIInfoUpMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SplunkAPIInfoUpMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SplunkAPIInfoUpMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SplunkAPIInfoUpMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SplunkAPIInfoUpMetricAttributeKeySplunkHost:
+		default:
+			return fmt.Errorf("metric splunk.api.info.up doesn't have an attribute %v, valid attributes: [splunk.host]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SplunkBucketsSearchableStatusMetricAttributeKey specifies the key of an attribute for the splunk.buckets.searchable.status metric.
 type SplunkBucketsSearchableStatusMetricAttributeKey string
 
@@ -2570,6 +2618,7 @@ func (ms *SplunkTypingQueueRatioMetricConfig) Validate() error {
 // MetricsConfig provides config for splunk_enterprise metrics.
 type MetricsConfig struct {
 	SplunkAggregationQueueRatio                 SplunkAggregationQueueRatioMetricConfig                 `mapstructure:"splunk.aggregation.queue.ratio"`
+	SplunkAPIInfoUp                             SplunkAPIInfoUpMetricConfig                             `mapstructure:"splunk.api.info.up"`
 	SplunkBucketsSearchableStatus               SplunkBucketsSearchableStatusMetricConfig               `mapstructure:"splunk.buckets.searchable.status"`
 	SplunkDataIndexesExtendedBucketCount        SplunkDataIndexesExtendedBucketCountMetricConfig        `mapstructure:"splunk.data.indexes.extended.bucket.count"`
 	SplunkDataIndexesExtendedBucketEventCount   SplunkDataIndexesExtendedBucketEventCountMetricConfig   `mapstructure:"splunk.data.indexes.extended.bucket.event.count"`
@@ -2628,6 +2677,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SplunkAggregationQueueRatioMetricAttributeKey{SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion},
+		},
+		SplunkAPIInfoUp: SplunkAPIInfoUpMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost},
 		},
 		SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 			Enabled:             false,

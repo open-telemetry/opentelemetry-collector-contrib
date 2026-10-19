@@ -59,6 +59,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["splunk.aggregation.queue.ratio"] = mb.metricSplunkAggregationQueueRatio.config.AggregationStrategy
+			aggMap["splunk.api.info.up"] = mb.metricSplunkAPIInfoUp.config.AggregationStrategy
 			aggMap["splunk.buckets.searchable.status"] = mb.metricSplunkBucketsSearchableStatus.config.AggregationStrategy
 			aggMap["splunk.data.indexes.extended.bucket.count"] = mb.metricSplunkDataIndexesExtendedBucketCount.config.AggregationStrategy
 			aggMap["splunk.data.indexes.extended.bucket.event.count"] = mb.metricSplunkDataIndexesExtendedBucketEventCount.config.AggregationStrategy
@@ -125,6 +126,15 @@ func TestMetricsBuilder(t *testing.T) {
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordSplunkAggregationQueueRatioDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
 				assert.Equal(t, 2, mb.metricSplunkAggregationQueueRatio.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordSplunkAPIInfoUpDataPoint(ts, 1, "splunk.host-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSplunkAPIInfoUpDataPoint(ts, 3, "splunk.host-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkAPIInfoUpDataPoint(ts+1, 3, "splunk.host-val-2")
+				assert.Equal(t, 2, mb.metricSplunkAPIInfoUp.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -581,6 +591,7 @@ func TestMetricsBuilder(t *testing.T) {
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
 				assert.Empty(t, mb.metricSplunkAggregationQueueRatio.aggDataPoints)
+				assert.Empty(t, mb.metricSplunkAPIInfoUp.aggDataPoints)
 				assert.Empty(t, mb.metricSplunkBucketsSearchableStatus.aggDataPoints)
 				assert.Empty(t, mb.metricSplunkDataIndexesExtendedBucketCount.aggDataPoints)
 				assert.Empty(t, mb.metricSplunkDataIndexesExtendedBucketEventCount.aggDataPoints)
@@ -708,6 +719,48 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("splunk.splunkd.build")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("splunk.splunkd.version")
+						assert.False(t, ok)
+					}
+				case "splunk.api.info.up":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["splunk.api.info.up"], "Found a duplicate in the metrics slice: splunk.api.info.up")
+						validatedMetrics["splunk.api.info.up"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Availability of the authenticated /services/server/info endpoint. 1 for HTTP 200, 0 for other HTTP responses or transport errors.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						splunkHostAttrVal, ok := dp.Attributes().Get("splunk.host")
+						assert.True(t, ok)
+						assert.Equal(t, "splunk.host-val", splunkHostAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["splunk.api.info.up"], "Found a duplicate in the metrics slice: splunk.api.info.up")
+						validatedMetrics["splunk.api.info.up"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Availability of the authenticated /services/server/info endpoint. 1 for HTTP 200, 0 for other HTTP responses or transport errors.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["splunk.api.info.up"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("splunk.host")
 						assert.False(t, ok)
 					}
 				case "splunk.buckets.searchable.status":

@@ -115,6 +115,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeIndexerClusterManagerStatus,
 		s.scrapeLicenses,
 		s.scrapeCustomSearches,
+		s.scrapeAPIInfoUp,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1893,6 +1894,34 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 			}
 			s.mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(now, incompleteSize, s.conf.SHEndpoint.Endpoint, infoContent.Build, infoContent.Version)
 		}
+	}
+}
+
+func (s *splunkScraper) scrapeAPIInfoUp(ctx context.Context, now pcommon.Timestamp, _ infoDict, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAPIInfoUp.Enabled {
+		return
+	}
+	for cliType, client := range s.splunkClient.clients {
+		req, err := s.splunkClient.createAPIRequest(cliType, apiDict[`SplunkInfo`])
+		if err != nil {
+			errs <- err
+			continue
+		}
+		// Probe the configured endpoint, not a redirect destination.
+		httpClient := *client.client
+		httpClient.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+		res, err := httpClient.Do(req.WithContext(ctx))
+		var up int64
+		if err != nil {
+			errs <- err
+		} else {
+			if res.StatusCode == http.StatusOK {
+				up = 1
+			}
+			_, _ = io.Copy(io.Discard, res.Body)
+			res.Body.Close()
+		}
+		s.mb.RecordSplunkAPIInfoUpDataPoint(now, up, client.endpoint.String())
 	}
 }
 
