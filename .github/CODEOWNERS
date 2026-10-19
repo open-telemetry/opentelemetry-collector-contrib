@@ -90,7 +90,6 @@ exporter/syslogexporter/                                         @open-telemetry
 exporter/tencentcloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @wgliang
 exporter/tinybirdexporter/                                       @open-telemetry/collector-contrib-approvers @mx-psi @MoreraAlejandro
 exporter/zipkinexporter/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-extension/ackextension/                                          @open-telemetry/collector-contrib-approvers @splunkericl
 extension/asapauthextension/                                     @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/azureauthextension/                                    @open-telemetry/collector-contrib-approvers @constanca-m @dyl10s
@@ -415,6 +414,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
-
+extension/ackextension/                                          @open-telemetry/collector-contrib-approvers
 
 # End unmaintained components list
