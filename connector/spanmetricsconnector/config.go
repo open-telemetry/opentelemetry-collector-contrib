@@ -88,6 +88,7 @@ type Config struct {
 	SeriesExpiration time.Duration `mapstructure:"series_expiration"`
 
 	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
+	// Each resource-and-dimension combination uses one cache entry.
 	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
 
 	// Namespace is the namespace of the metrics emitted by the connector.
