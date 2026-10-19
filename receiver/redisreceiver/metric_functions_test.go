@@ -22,7 +22,7 @@ func TestDataPointRecorders(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	rs := &redisScraper{
-		redisSvc: newRedisSvc(newFakeClient(), logger),
+		redisSvc: newRedisSvc(newFakeClient(), logger, true),
 		settings: settings.TelemetrySettings,
 		mb:       metadata.NewMetricsBuilder(Config{}.MetricsBuilderConfig, settings),
 	}

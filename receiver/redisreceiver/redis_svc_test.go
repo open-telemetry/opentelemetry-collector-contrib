@@ -12,7 +12,7 @@ import (
 )
 
 func newFakeAPIParser() *redisSvc {
-	return newRedisSvc(fakeClient{}, zap.NewNop())
+	return newRedisSvc(fakeClient{}, zap.NewNop(), true)
 }
 
 func TestParser(t *testing.T) {
@@ -28,10 +28,23 @@ func TestParser(t *testing.T) {
 
 func TestParser_StandaloneSkipsClusterInfo(t *testing.T) {
 	client := &standaloneClient{}
-	s := newRedisSvc(client, zap.NewNop())
+	s := newRedisSvc(client, zap.NewNop(), true)
 	info, err := s.info()
 	require.NoError(t, err)
 	require.False(t, client.clusterInfoCalled, "CLUSTER INFO should not be attempted against a standalone server")
 	require.Len(t, info, 1)
 	require.Equal(t, "0", info["cluster_enabled"])
+}
+
+func TestParser_ClusterMetricsDisabledSkipsClusterInfo(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38955")
+	}
+	client := &trackingClient{}
+	s := newRedisSvc(client, zap.NewNop(), false)
+	info, err := s.info()
+	require.NoError(t, err)
+	require.False(t, client.clusterInfoCalled,
+		"CLUSTER INFO should not be attempted when no redis.cluster.* metric is enabled, even on a real cluster node")
+	require.Equal(t, "1", info["cluster_enabled"])
 }

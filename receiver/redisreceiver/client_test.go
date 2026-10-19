@@ -58,6 +58,19 @@ func (c *standaloneClient) retrieveClusterInfo() (string, error) {
 	return readFile("cluster_info")
 }
 
+// trackingClient wraps fakeClient (a cluster-enabled server) but tracks whether
+// retrieveClusterInfo was called, to test that CLUSTER INFO is skipped when no
+// redis.cluster.* metric is enabled, even though the server is a cluster node.
+type trackingClient struct {
+	fakeClient
+	clusterInfoCalled bool
+}
+
+func (c *trackingClient) retrieveClusterInfo() (string, error) {
+	c.clusterInfoCalled = true
+	return c.fakeClient.retrieveClusterInfo()
+}
+
 func readFile(fname string) (string, error) {
 	file, err := os.ReadFile(filepath.Join("testdata", fname+".txt"))
 	if err != nil {
