@@ -58,18 +58,19 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
-				NumConsumers:    2,
-				QueueSize:       10,
-				Sizer:           exporterhelper.RequestSizerTypeItems,
-				BlockOnOverflow: true,
-				Batch: configoptional.Some(exporterhelper.BatchConfig{
-					FlushTimeout: 200 * time.Millisecond,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					MinSize:      1000,
-					MaxSize:      10000,
-				}),
-			}),
+			QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+				queue := exporterhelper.NewDefaultQueueConfig()
+				queue.NumConsumers = 2
+				queue.QueueSize = 10
+				queue.Sizer = exporterhelper.RequestSizerTypeItems
+				queue.BlockOnOverflow = true
+				batch := queue.Batch.GetOrInsertDefault()
+				batch.FlushTimeout = 200 * time.Millisecond
+				batch.Sizer = exporterhelper.RequestSizerTypeItems
+				batch.MinSize = 1000
+				batch.MaxSize = 10000
+				return queue
+			}()),
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: configopaque.MapList{
 					{Name: "another", Value: "somevalue"},

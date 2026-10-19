@@ -86,6 +86,9 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInputRateLimit: time.Second,
 		},
 		IncludeSourceOnError: nil,
+		VersionDetection: VersionDetectionSettings{
+			Enabled: true,
+		},
 	}
 }
 

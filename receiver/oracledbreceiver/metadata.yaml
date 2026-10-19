@@ -20,6 +20,10 @@ resource_attributes:
     description: The host name of Oracle Server
     enabled: true
     type: string
+  oracle.db.edition:
+    description: The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE").
+    enabled: false
+    type: string
   oracle.db.hosting_type:
     description: The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci".
     enabled: true
@@ -403,6 +407,7 @@ events:
     enabled: false
     description: The execution plan for a query.
     attributes:
+      - db.system.name
       - oracledb.sql_id
       - oracledb.child_number
       - oracledb.child_address
@@ -460,6 +465,7 @@ events:
     enabled: false
     description: Per-session wait event statistics from v$session_event.
     attributes:
+      - db.system.name
       - oracledb.sid
       - oracledb.serial
       - oracledb.event

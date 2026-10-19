@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -121,6 +122,36 @@ func TestFactoryCreatesMetricsProcessor(t *testing.T) {
 	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	require.NoError(t, proc.Shutdown(t.Context()))
+}
+
+func TestFactoryParsesExperimentalConverters(t *testing.T) {
+	const lambdaGateID = "ottl.functions.enableLambda"
+	var wasEnabled bool
+	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+		if g.ID() == lambdaGateID {
+			wasEnabled = g.IsEnabled()
+		}
+	})
+	require.NoError(t, featuregate.GlobalRegistry().Set(lambdaGateID, true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(lambdaGateID, wasEnabled))
+	})
+
+	factory := NewFactory()
+	settings := processortest.NewNopSettings(metadata.Type)
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	cfg.Lookups = []LookupConfig{testLookupConfig(`When(() => true, log.attributes["test.key"], "fallback")`)}
+	_, err := factory.CreateLogs(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	cfg.Lookups = []LookupConfig{testLookupConfig(`When(() => true, span.attributes["test.key"], "fallback")`)}
+	_, err = factory.CreateTraces(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	cfg.Lookups = []LookupConfig{testLookupConfig(`When(() => true, datapoint.attributes["test.key"], "fallback")`)}
+	_, err = factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
 }
 
 func TestFactoryUnknownSourceType(t *testing.T) {
