@@ -50,10 +50,10 @@ func TestProcessLogsWithoutFlatten(t *testing.T) {
 func TestProcessLogsWithFlatten(t *testing.T) {
 	tests := []struct {
 		name         string
-		flattenData  bool
+		flattenLogs  bool
 		groupFlatten bool
 	}{
-		{name: "flatten_data", flattenData: true},
+		{name: "flatten.logs", flattenLogs: true},
 		{name: "flatten", groupFlatten: true},
 	}
 	for _, tt := range tests {
@@ -61,7 +61,7 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
-			oCfg.FlattenData = tt.flattenData
+			oCfg.Flatten.Logs = tt.flattenLogs
 			oCfg.LogStatements = []common.ContextStatements{
 				{
 					Context: "log",
@@ -119,10 +119,10 @@ func BenchmarkLogsWithoutFlatten(b *testing.B) {
 func BenchmarkLogsWithFlatten(b *testing.B) {
 	benchmarks := []struct {
 		name         string
-		flattenData  bool
+		flattenLogs  bool
 		groupFlatten bool
 	}{
-		{name: "flatten_data", flattenData: true},
+		{name: "flatten.logs", flattenLogs: true},
 		{name: "flatten", groupFlatten: true},
 	}
 	for _, bm := range benchmarks {
@@ -130,7 +130,7 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
-			oCfg.FlattenData = bm.flattenData
+			oCfg.Flatten.Logs = bm.flattenLogs
 			oCfg.LogStatements = []common.ContextStatements{
 				{
 					Context: "log",

@@ -1750,7 +1750,7 @@ func Test_ProcessLogs_Flatten(t *testing.T) {
 			},
 		},
 		{
-			name:     "flatten_data",
+			name:     "flatten.logs",
 			flatMode: true,
 			statements: []common.ContextStatements{
 				{Statements: []string{setHostFromLog}},
@@ -1761,7 +1761,7 @@ func Test_ProcessLogs_Flatten(t *testing.T) {
 			},
 		},
 		{
-			name:     "flatten_data keeps data flattened across groups",
+			name:     "flatten.logs keeps data flattened across groups",
 			flatMode: true,
 			statements: []common.ContextStatements{
 				{Statements: []string{setHostFromLog}},
@@ -1774,7 +1774,7 @@ func Test_ProcessLogs_Flatten(t *testing.T) {
 			},
 		},
 		{
-			name:     "flatten_data with flattened group",
+			name:     "flatten.logs with flattened group",
 			flatMode: true,
 			statements: []common.ContextStatements{
 				{Flatten: true, Statements: []string{setHostFromLog}},
@@ -1785,7 +1785,7 @@ func Test_ProcessLogs_Flatten(t *testing.T) {
 			},
 		},
 		{
-			name:     "flatten_data regrouped on error",
+			name:     "flatten.logs regrouped on error",
 			flatMode: true,
 			statements: []common.ContextStatements{
 				{Statements: []string{setHostFromLog, `set(log.attributes["test"], ParseJSON("1"))`}},

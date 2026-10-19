@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("'flatten_data' and 'flatten' require the 'transform.flatten.logs' feature gate to be enabled")
+var errFlatLogsGateDisabled = errors.New("flattening logs requires the 'transform.flatten.logs' feature gate to be enabled")
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -45,10 +45,8 @@ type Config struct {
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
-	// FlattenData flattens the data for all supported statement groups, which are currently only log_statements groups.
-	// Requires the transform.flatten.logs feature gate.
-	FlattenData bool `mapstructure:"flatten_data"`
-	logger      *zap.Logger
+	Flatten FlattenConfig `mapstructure:"flatten"`
+	logger  *zap.Logger
 
 	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	exemplarFunctions  map[string]ottl.Factory[*ottlexemplar.TransformContext]
@@ -57,6 +55,13 @@ type Config struct {
 	spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
 	profileFunctions   map[string]ottl.Factory[*ottlprofile.TransformContext]
+}
+
+// FlattenConfig configures, per signal, whether the data is flattened for all statement groups of that signal.
+type FlattenConfig struct {
+	// Logs gives each log record a distinct copy of its resource and scope for all log_statements groups.
+	// Requires the transform.flatten.logs feature gate.
+	Logs bool `mapstructure:"logs"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -217,7 +222,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	flatten := c.FlattenData || slices.ContainsFunc(c.LogStatements, func(cs common.ContextStatements) bool { return cs.Flatten })
+	flatten := c.Flatten.Logs || slices.ContainsFunc(c.LogStatements, func(cs common.ContextStatements) bool { return cs.Flatten })
 	if flatten && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
 		errors = multierr.Append(errors, errFlatLogsGateDisabled)
 	}

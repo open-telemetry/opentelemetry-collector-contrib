@@ -489,19 +489,19 @@ func Test_LoadConfig_Flatten(t *testing.T) {
 	}, cfg.(*Config).LogStatements)
 }
 
-func Test_LoadConfig_FlattenData(t *testing.T) {
+func Test_LoadConfig_FlattenLogs(t *testing.T) {
 	setFlattenLogsFeatureGate(t, true)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
 	cfg := NewFactory().CreateDefaultConfig()
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_logs").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, confmap.Validate(cfg))
 
-	assert.True(t, cfg.(*Config).FlattenData)
+	assert.True(t, cfg.(*Config).Flatten.Logs)
 	assert.Equal(t, []common.ContextStatements{
 		{
 			Statements: []string{`set(resource.attributes["host.name"], log.attributes["host.name"])`},
@@ -517,9 +517,9 @@ func Test_Validate_FlattenRequiresGate(t *testing.T) {
 		configure func(*Config)
 	}{
 		{
-			name: "flatten_data",
+			name: "flatten.logs",
 			configure: func(c *Config) {
-				c.FlattenData = true
+				c.Flatten.Logs = true
 			},
 		},
 		{

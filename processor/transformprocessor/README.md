@@ -165,7 +165,7 @@ transform:
 
 `shared_cache`: enables sharing per-context caches between all advanced statement groups with the option enabled in this Transform Processor instance. Use this when you want to hold state across multiple iterations over a set of data.
 
-`flatten`: provides each log record with a distinct copy of its resource and scope while the group's statements run, then regroups the log records by resource and scope. Requires the [`transform.flatten.logs`](#transformflattenlogs) feature gate and is only supported in `log_statements` groups using the `log` context. Has no effect when the top-level `flatten_data` option is enabled.
+`flatten`: provides each log record with a distinct copy of its resource and scope while the group's statements run, then regroups the log records by resource and scope. Requires the [`transform.flatten.logs`](#transformflattenlogs) feature gate and is only supported in `log_statements` groups using the `log` context. Has no effect when the top-level `flatten.logs` option is enabled.
 
 `conditions`: a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
 
@@ -1095,7 +1095,7 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the Transform Processor is NOOP.  To modify a data type you must use a function specific to that purpose.
 - [Identity Conflict](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#identity-conflict): Transformation of metrics have the potential to affect the identity of a metric leading to an Identity Crisis. Be especially cautious when transforming metric name and when reducing/changing existing attributes.  Adding new attributes is safe.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows you to modify `span_id`, `trace_id`, and `parent_span_id` for traces and `span_id`, and `trace_id` logs.  Modifying these fields could lead to orphaned spans or logs.
-- Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten_data` and `flatten`](#transformflattenlogs) options can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
+- Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten`](#transformflattenlogs) options can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
 
 ## Feature Gate
 
@@ -1103,12 +1103,12 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 
 The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables two options for flattening log data (both default `false`):
 
-- `flatten_data`: a top-level option that flattens the data for all supported statement groups. Works with both the [Basic Config](#basic-config) and [Advanced Config](#advanced-config) styles. Only `log_statements` are currently supported; it has no effect on other signals.
-- `flatten`: an [Advanced Config](#advanced-config) group option that flattens the data for that group only. Only supported in `log_statements` groups using the `log` context. Has no effect when `flatten_data` is `true`.
+- `flatten.logs`: a top-level option that flattens the data for all `log_statements` groups. Works with both the [Basic Config](#basic-config) and [Advanced Config](#advanced-config) styles.
+- `flatten`: an [Advanced Config](#advanced-config) group option that flattens the data for that group only. Only supported in `log_statements` groups using the `log` context. Has no effect when `flatten.logs` is `true`.
 
-Flattening provides each log record with a distinct copy of its resource and scope. With `flatten_data: true`, the data is flattened before any statements run and regrouped by resource and scope after all statements have run. With `flatten: true`, the data is flattened before the group's statements run and regrouped after they have run.
+Flattening provides each log record with a distinct copy of its resource and scope. With `flatten.logs: true`, the data is flattened before any statements run and regrouped by resource and scope after all statements have run. With `flatten: true`, the data is flattened before the group's statements run and regrouped after they have run.
 
-This is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], log.attributes["from"])`, which may otherwise result in unexpected behavior. Flattening typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record. Each group with `flatten: true` pays this cost separately, so prefer `flatten_data`, or fewer flattened groups, when several groups need flattening.
+This is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], log.attributes["from"])`, which may otherwise result in unexpected behavior. Flattening typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record. Each group with `flatten: true` pays this cost separately, so prefer `flatten.logs`, or fewer flattened groups, when several groups need flattening.
 
 #### Example Usage
   
@@ -1116,7 +1116,8 @@ This is useful when applying transformations which alter the resource or scope. 
   
   ```yaml
   transform:
-    flatten_data: true
+    flatten:
+      logs: true
     log_statements:
       - set(resource.attributes["to"], log.attributes["from"])
   ```
@@ -1164,7 +1165,7 @@ volume of telemetry flowing through the pipeline. To keep the processor efficien
 - Use conditions (statement-level `where` clauses or advanced [global conditions](#advanced-config))
   to skip statements for telemetry they don't apply to.
 - Prefer fewer, more targeted statements over broad transformations applied to all telemetry.
-- The [`flatten_data` and `flatten`](#transformflattenlogs) options incur a performance penalty because the
+- The [`flatten`](#transformflattenlogs) options incur a performance penalty because the
   processor must compute hashes and copy resource and scope information for every log record.
 
 The transform processor is tested as part of the project's load tests, with the results publicly

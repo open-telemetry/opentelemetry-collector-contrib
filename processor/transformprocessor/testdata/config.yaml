@@ -270,7 +270,8 @@ transform/flatten:
     - statements:
         - set(log.attributes["test"], "pass")
 
-transform/flatten_data:
-  flatten_data: true
+transform/flatten_logs:
+  flatten:
+    logs: true
   log_statements:
     - set(resource.attributes["host.name"], log.attributes["host.name"])
