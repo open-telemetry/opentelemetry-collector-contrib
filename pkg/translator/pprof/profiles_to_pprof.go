@@ -105,7 +105,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			// Skip the zero-value mapping at index 0.
 			continue
 		}
-		filename, err := getStringFromIdx(src.Dictionary(), m.FilenameStrindex(), fmt.Sprintf("mapping[%d].filename_strindex", i))
+		filename, err := getStringFromIdx(src.Dictionary(), m.FilenameStrindex(), "mapping.filename_strindex")
 		if err != nil {
 			return nil, err
 		}
@@ -616,14 +616,9 @@ func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mappin
 		File:   fileName,
 	}
 
-	// Extract mapping attributes from the OTel profile
-	var attrIndices []int32
+	// Extract BuildID and boolean mapping flags from attributes.
+	var buildIDSet, hasFunctionsSet, hasFilenamesSet, hasLineNumbersSet, hasInlineFramesSet bool
 	for _, idx := range m.AttributeIndices().All() {
-		attrIndices = append(attrIndices, idx)
-	}
-
-	// Extract BuildID from attributes
-	for _, idx := range attrIndices {
 		if idx == 0 {
 			continue
 		}
@@ -635,33 +630,34 @@ func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mappin
 		if err != nil {
 			return nil, err
 		}
-		if attrKey == string(semconv.ProcessExecutableBuildIDGNUKey) {
-			pprofM.BuildID = attr.Value().AsString()
-			break
+		switch attrKey {
+		case string(semconv.ProcessExecutableBuildIDGNUKey):
+			if !buildIDSet {
+				pprofM.BuildID = attr.Value().AsString()
+				buildIDSet = true
+			}
+		case string(semconv.PprofMappingHasFunctionsKey):
+			if !hasFunctionsSet {
+				pprofM.HasFunctions = attr.Value().Bool()
+				hasFunctionsSet = true
+			}
+		case string(semconv.PprofMappingHasFilenamesKey):
+			if !hasFilenamesSet {
+				pprofM.HasFilenames = attr.Value().Bool()
+				hasFilenamesSet = true
+			}
+		case string(semconv.PprofMappingHasLineNumbersKey):
+			if !hasLineNumbersSet {
+				pprofM.HasLineNumbers = attr.Value().Bool()
+				hasLineNumbersSet = true
+			}
+		case string(semconv.PprofMappingHasInlineFramesKey):
+			if !hasInlineFramesSet {
+				pprofM.HasInlineFrames = attr.Value().Bool()
+				hasInlineFramesSet = true
+			}
 		}
 	}
-
-	// Extract boolean mapping flags
-	hasFunctions, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFunctionsKey))
-	if err != nil && !errors.Is(err, errNotFound) {
-		return nil, err
-	}
-	pprofM.HasFunctions = hasFunctions
-	hasFilenames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFilenamesKey))
-	if err != nil && !errors.Is(err, errNotFound) {
-		return nil, err
-	}
-	pprofM.HasFilenames = hasFilenames
-	hasLineNumbers, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasLineNumbersKey))
-	if err != nil && !errors.Is(err, errNotFound) {
-		return nil, err
-	}
-	pprofM.HasLineNumbers = hasLineNumbers
-	hasInlineFrames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasInlineFramesKey))
-	if err != nil && !errors.Is(err, errNotFound) {
-		return nil, err
-	}
-	pprofM.HasInlineFrames = hasInlineFrames
 
 	dst.Mapping = append(dst.Mapping, pprofM)
 	mappingMap[mHash] = pprofM

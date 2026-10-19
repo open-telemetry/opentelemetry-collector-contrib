@@ -1782,8 +1782,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 func TestProfileData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 
-	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	config.MaxContentLengthLogs, config.DisableCompression = 350, true
+	// Allow enough room for the serialized profiling event.
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
 
 	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
 
