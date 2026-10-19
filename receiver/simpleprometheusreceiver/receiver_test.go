@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
@@ -88,10 +91,46 @@ func TestGetPrometheusConfig(t *testing.T) {
 	clientConfigJobName := confighttp.NewDefaultClientConfig()
 	clientConfigJobName.Endpoint = "localhost:1234"
 
+	clientConfigWithTimeout := func(timeout time.Duration) confighttp.ClientConfig {
+		c := confighttp.NewDefaultClientConfig()
+		c.Endpoint = "localhost:1234"
+		c.Timeout = timeout
+		return c
+	}
+
+	wantWithScrapeTimeout := func(scrapeTimeout time.Duration) *prometheusreceiver.Config {
+		return &prometheusreceiver.Config{
+			PrometheusConfig: &prometheusreceiver.PromConfig{
+				GlobalConfig: config.DefaultGlobalConfig,
+				ScrapeConfigs: []*config.ScrapeConfig{
+					{
+						JobName:         "prometheus_simple/localhost:1234",
+						HonorTimestamps: true,
+						ScrapeInterval:  model.Duration(10 * time.Second),
+						ScrapeTimeout:   model.Duration(scrapeTimeout),
+						MetricsPath:     "/metrics",
+						Scheme:          "https",
+						ServiceDiscoveryConfigs: discovery.Configs{
+							discovery.StaticConfig{
+								{
+									Targets: []model.LabelSet{
+										{model.AddressLabel: model.LabelValue("localhost:1234")},
+									},
+									Labels: model.LabelSet{},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
 	tests := []struct {
-		name   string
-		config *Config
-		want   *prometheusreceiver.Config
+		name     string
+		config   *Config
+		want     *prometheusreceiver.Config
+		wantWarn bool
 	}{
 		{
 			name: "Test without TLS",
@@ -241,12 +280,117 @@ func TestGetPrometheusConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Test with timeout unset",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(0),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithScrapeTimeout(10 * time.Second),
+		},
+		{
+			name: "Test with timeout less than collection_interval",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(5 * time.Second),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithScrapeTimeout(5 * time.Second),
+		},
+		{
+			name: "Test with timeout equal to collection_interval",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(10 * time.Second),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithScrapeTimeout(10 * time.Second),
+		},
+		{
+			name: "Test with timeout greater than collection_interval",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(30 * time.Second),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want:     wantWithScrapeTimeout(10 * time.Second),
+			wantWarn: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfig(tt.config)
+			core, logs := observer.New(zapcore.WarnLevel)
+			got, err := getPrometheusConfig(tt.config, zap.New(core))
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+			if tt.wantWarn {
+				require.Equal(t, 1, logs.Len())
+				assert.Equal(t, tt.config.ClientConfig.Timeout, logs.All()[0].ContextMap()["timeout"])
+				assert.Equal(t, tt.config.CollectionInterval, logs.All()[0].ContextMap()["collection_interval"])
+			} else {
+				assert.Equal(t, 0, logs.Len())
+			}
+
+			// The prometheus receiver re-marshals its config through YAML on
+			// start; the scrape timeout must survive that round trip.
+			wantTimeout := got.PrometheusConfig.ScrapeConfigs[0].ScrapeTimeout
+			require.NoError(t, got.PrometheusConfig.Reload())
+			require.Len(t, got.PrometheusConfig.ScrapeConfigs, 1)
+			assert.Equal(t, wantTimeout, got.PrometheusConfig.ScrapeConfigs[0].ScrapeTimeout)
+		})
+	}
+}
+
+func TestGetPrometheusConfigScheme(t *testing.T) {
+	tests := []struct {
+		name       string
+		tls        configtls.ClientConfig
+		wantScheme string
+		wantTLS    configutil.TLSConfig
+	}{
+		{
+			name:       "default insecure",
+			tls:        configtls.ClientConfig{Insecure: true},
+			wantScheme: "http",
+		},
+		{
+			name:       "insecure false",
+			tls:        configtls.ClientConfig{Insecure: false},
+			wantScheme: "https",
+		},
+		{
+			name: "ca_file with default insecure",
+			tls: configtls.ClientConfig{
+				Config:   configtls.Config{CAFile: "./testdata/test_cert.pem"},
+				Insecure: true,
+			},
+			wantScheme: "https",
+			wantTLS:    configutil.TLSConfig{CAFile: "./testdata/test_cert.pem"},
+		},
+		{
+			name: "cert_file and key_file without ca_file are not used with default insecure",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{
+					CertFile: "./testdata/test_cert.pem",
+					KeyFile:  "./testdata/test_cert.pem",
+				},
+				Insecure:           true,
+				InsecureSkipVerify: true,
+			},
+			wantScheme: "http",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.TLS = tt.tls
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			require.NoError(t, err)
+			sc := got.PrometheusConfig.ScrapeConfigs[0]
+			assert.Equal(t, tt.wantScheme, sc.Scheme)
+			assert.Equal(t, tt.wantTLS, sc.HTTPClientConfig.TLSConfig)
+			assert.Equal(t, sc.ScrapeInterval, sc.ScrapeTimeout)
 		})
 	}
 }

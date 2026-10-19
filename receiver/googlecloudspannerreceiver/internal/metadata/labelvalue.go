@@ -5,9 +5,13 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
+	"cloud.google.com/go/spanner"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -61,6 +65,11 @@ type boolLabelValue struct {
 }
 
 type stringSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+type intSliceLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
 }
@@ -160,6 +169,46 @@ func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder any) Labe
 	sortedAndConstructedValue := strings.Join(value, ",")
 
 	return stringSliceLabelValue{
+		metadata: metadata,
+		value:    sortedAndConstructedValue,
+	}
+}
+
+func (v intSliceLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v intSliceLabelValue) Value() any {
+	return v.value
+}
+
+func (v intSliceLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *intSliceLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newIntSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	value := *valueHolder.(*[]int64)
+
+	sortedValue := make([]int64, len(value))
+	copy(sortedValue, value)
+	slices.Sort(sortedValue)
+
+	var stringSlice []string
+	var lastVal *int64
+	for _, v := range sortedValue {
+		if lastVal == nil || *lastVal != v {
+			stringSlice = append(stringSlice, strconv.FormatInt(v, 10))
+			val := v
+			lastVal = &val
+		}
+	}
+	sortedAndConstructedValue := strings.Join(stringSlice, ",")
+
+	return intSliceLabelValue{
 		metadata: metadata,
 		value:    sortedAndConstructedValue,
 	}
@@ -273,6 +322,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 			var valueHolder []string
 			return &valueHolder
 		}
+	case IntSliceValueType:
+		newLabelValueFunc = newIntSliceLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder []int64
+			return &valueHolder
+		}
 	case ByteSliceValueType:
 		newLabelValueFunc = newByteSliceLabelValue
 		valueHolderFunc = func() any {
@@ -283,6 +338,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc = newLockRequestSliceLabelValue
 		valueHolderFunc = func() any {
 			var valueHolder []*lockRequest
+			return &valueHolder
+		}
+	case TimestampValueType:
+		newLabelValueFunc = newTimestampLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullTime
 			return &valueHolder
 		}
 	default:
@@ -296,4 +357,37 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc: newLabelValueFunc,
 		valueHolderFunc:   valueHolderFunc,
 	}, nil
+}
+
+type timestampLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+func (v timestampLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v timestampLabelValue) Value() any {
+	return v.value
+}
+
+func (v timestampLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *timestampLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newTimestampLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullTime := *valueHolder.(*spanner.NullTime)
+	var val string
+	if nullTime.Valid {
+		val = nullTime.Time.UTC().Format(time.RFC3339)
+	}
+	return timestampLabelValue{
+		metadata: metadata,
+		value:    val,
+	}
 }
