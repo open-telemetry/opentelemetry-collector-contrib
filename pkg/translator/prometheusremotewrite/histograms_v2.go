@@ -21,14 +21,16 @@ import (
 // histograms.go); it produces a writev2.Histogram with custom buckets.
 func explicitToNHCBHistogramV2(pt pmetric.HistogramDataPoint) (writev2.Histogram, error) {
 	timestamp := convertTimeStamp(pt.Timestamp())
+	startTimestamp := convertTimeStamp(pt.StartTimestamp())
 
 	if pt.Flags().NoRecordedValue() {
 		// Staleness is signaled by a stale-NaN Sum; Count is ignored.
 		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
 		return writev2.Histogram{
-			Schema:    histogram.CustomBucketsSchema,
-			Sum:       math.Float64frombits(value.StaleNaN),
-			Timestamp: timestamp,
+			Schema:         histogram.CustomBucketsSchema,
+			Sum:            math.Float64frombits(value.StaleNaN),
+			Timestamp:      timestamp,
+			StartTimestamp: startTimestamp,
 		}, nil
 	}
 
@@ -36,14 +38,16 @@ func explicitToNHCBHistogramV2(pt pmetric.HistogramDataPoint) (writev2.Histogram
 	if err != nil {
 		return writev2.Histogram{}, err
 	}
+	var out writev2.Histogram
 	switch {
 	case h != nil:
-		return writev2.FromIntHistogram(timestamp, h), nil
+		out = writev2.FromIntHistogram(startTimestamp, timestamp, h)
 	case fh != nil:
-		return writev2.FromFloatHistogram(timestamp, fh), nil
+		out = writev2.FromFloatHistogram(startTimestamp, timestamp, fh)
 	default:
 		return writev2.Histogram{}, errors.New("convertnhcb produced neither an integer nor a float histogram")
 	}
+	return out, nil
 }
 
 func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
@@ -122,6 +126,9 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		NegativeDeltas: nDeltas,
 
 		Timestamp: convertTimeStamp(p.Timestamp()),
+		// Cumulative histograms count from their start timestamp, which is the
+		// created timestamp Prometheus expects.
+		StartTimestamp: convertTimeStamp(p.StartTimestamp()),
 	}
 
 	if p.Flags().NoRecordedValue() {

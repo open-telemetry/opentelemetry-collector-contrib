@@ -51,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	clientConfig.HTTP2PingTimeout = 10 * time.Second
 	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
-	clientConfig.MaxIdleConns = hundred
-	clientConfig.MaxIdleConnsPerHost = hundred
-	clientConfig.IdleConnTimeout = idleConnTimeout
+	clientConfig.MaxIdleConns = hundred            //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
+	clientConfig.MaxIdleConnsPerHost = hundred     //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
+	clientConfig.IdleConnTimeout = idleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
 
 	tests := []struct {
 		id       component.ID
@@ -88,17 +88,18 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers: 2,
-					QueueSize:    1000,
-					Sizer:        exporterhelper.RequestSizerTypeItems,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: time.Second,
-						MinSize:      10,
-						MaxSize:      100,
-						Sizer:        exporterhelper.RequestSizerTypeItems,
-					}),
-				}),
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 1000
+					queue.Sizer = exporterhelper.RequestSizerTypeItems
+					batch := queue.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = time.Second
+					batch.MinSize = 10
+					batch.MaxSize = 100
+					batch.Sizer = exporterhelper.RequestSizerTypeItems
+					return queue
+				}()),
 				OtelAttrsToHec: translator.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",

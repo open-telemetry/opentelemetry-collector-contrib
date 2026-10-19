@@ -990,7 +990,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
 		},
 	}
-	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) { //nolint:unparam // result 1 is expected to always be nil
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
@@ -1007,13 +1007,13 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
 	defaultExporters := map[string]*wrappedExporter{
-		"127.0.0.1:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		"127.0.0.1:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error { //nolint:unparam // result 0 is expected to always be nil
 			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		}), "127.0.0.1"),
-		"127.0.0.2:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		"127.0.0.2:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error { //nolint:unparam // result 0 is expected to always be nil
 			counter2.Add(1)
 			return nil
 		}), "127.0.0.2"),
@@ -1203,6 +1203,23 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 						}
 					}
 				}
+			}
+		})
+	}
+}
+
+// BenchmarkConsumeMetricsManyResources models fleets where each pod reports as
+// its own resource (e.g. kubeletstats through a per-stream routing key): many
+// distinct resources, few metrics each. The per-exporter accumulated batch then
+// contains hundreds of ResourceMetrics, which makes repeated re-hashing of the
+// accumulated data the dominant cost.
+func BenchmarkConsumeMetricsManyResources(b *testing.B) {
+	for _, routingKey := range []string{resourceRoutingStr, streamIDRoutingStr} {
+		b.Run(routingKey, func(b *testing.B) {
+			for _, rmCount := range []int{100, 500, 1000} {
+				b.Run(fmt.Sprintf("%dRM", rmCount), func(b *testing.B) {
+					benchConsumeMetrics(b, routingKey, 5, rmCount, 1, 2, 2)
+				})
 			}
 		})
 	}

@@ -8,7 +8,7 @@ status:
     beta: [metrics]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, himanshu130700]
 
 tests:
   config:

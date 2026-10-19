@@ -206,12 +206,18 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 		}
 		logs := plog.NewLogs()
 		observedTime := time.Now()
+		var conversionErr error
 		for _, envelope := range envelopes {
 			if envelope != nil {
-				buildLogs(logs, envelope, observedTime)
+				if err := buildLogs(logs, envelope, observedTime); err != nil {
+					conversionErr = errors.Join(conversionErr, err)
+				}
 			}
 		}
-		if logs.ResourceLogs().Len() > 0 {
+		if conversionErr != nil {
+			cfr.settings.Logger.Error("Failed to convert Cloud Foundry log envelopes", zap.Error(conversionErr))
+		}
+		if logs.LogRecordCount() > 0 {
 			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
 			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
 			if err != nil {
@@ -222,10 +228,14 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 	}
 }
 
-func buildLogs(logs plog.Logs, envelope *loggregator_v2.Envelope, observedTime time.Time) {
+func buildLogs(logs plog.Logs, envelope *loggregator_v2.Envelope, observedTime time.Time) error {
+	if _, err := logSeverity(envelope.GetLog().GetType()); err != nil {
+		return err
+	}
+
 	resourceLogs := getResourceLogs(logs, envelope)
 	setupLogsScope(resourceLogs)
-	_ = convertEnvelopeToLogs(envelope, resourceLogs.ScopeLogs().At(0).LogRecords(), observedTime)
+	return convertEnvelopeToLogs(envelope, resourceLogs.ScopeLogs().At(0).LogRecords(), observedTime)
 }
 
 func buildMetrics(metrics pmetric.Metrics, envelope *loggregator_v2.Envelope, observedTime time.Time) {

@@ -43,6 +43,9 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 
 	optConfigs := metadata.NewDefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterHostMemoryCapacity.Enabled = true
+	optConfigs.Metrics.VcenterHostMemoryGranted.Enabled = true
+	optConfigs.Metrics.VcenterHostMemoryActive.Enabled = true
+	optConfigs.Metrics.VcenterHostMemoryBallooned.Enabled = true
 	optConfigs.Metrics.VcenterVMMemoryGranted.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true

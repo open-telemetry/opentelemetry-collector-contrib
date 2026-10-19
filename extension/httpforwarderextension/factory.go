@@ -34,11 +34,6 @@ func createDefaultConfig() component.Config {
 	httpClientSettings := confighttp.NewDefaultClientConfig()
 	httpClientSettings.Timeout = 10 * time.Second
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  defaultEndpoint,

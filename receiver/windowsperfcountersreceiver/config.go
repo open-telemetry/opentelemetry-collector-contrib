@@ -12,6 +12,8 @@ import (
 	"go.uber.org/multierr"
 )
 
+const defaultAggregationName = "_Total"
+
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
 	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
@@ -37,9 +39,24 @@ type SumMetric struct {
 
 // ObjectConfig defines configuration for a perf counter object.
 type ObjectConfig struct {
-	Object    string          `mapstructure:"object"`
-	Instances []string        `mapstructure:"instances"`
-	Counters  []CounterConfig `mapstructure:"counters"`
+	Object    string   `mapstructure:"object"`
+	Instances []string `mapstructure:"instances"`
+	// AggregationName identifies the instance that aggregates the values of all
+	// other instances. It defaults to "_Total".
+	AggregationName string          `mapstructure:"aggregation_name"`
+	Counters        []CounterConfig `mapstructure:"counters"`
+}
+
+func (oc ObjectConfig) aggregationSettings() (string, bool) {
+	aggregationName := oc.AggregationName
+	if aggregationName == "" {
+		aggregationName = defaultAggregationName
+	}
+
+	// Naming the aggregation instance alongside the wildcard is the opt-in to
+	// retain it without creating a second query.
+	includeAggregationInstance := slices.Contains(oc.Instances, "*") && slices.Contains(oc.Instances, aggregationName)
+	return aggregationName, includeAggregationInstance
 }
 
 // CounterConfig defines the individual counter in an object.

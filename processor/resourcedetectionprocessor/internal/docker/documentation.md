@@ -8,7 +8,7 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| container.image.name | The container image name | Any Str | false | - | - |
-| container.name | The container name | Any Str | false | - | - |
-| host.name | The host.name | Any Str | true | - | - |
-| os.type | The os.type | Any Str | true | - | - |
+| container.image.name | The container image name | Any Str | false | [container.image.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/container.md#container-image-name) | - |
+| container.name | The container name | Any Str | false | [container.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/container.md#container-name) | - |
+| host.name | The host.name | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/host.md#host-name) | - |
+| os.type | The os.type | Any Str | true | [os.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/os.md#os-type) | - |

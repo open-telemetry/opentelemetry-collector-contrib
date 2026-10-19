@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moby/moby/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
@@ -31,6 +32,17 @@ func TestIntegration(t *testing.T) {
 			testcontainers.ContainerRequest{
 				Image: "docker.io/library/nginx:1.17",
 				Name:  "dockerstatsreceiver-test",
+				ConfigModifier: func(cfg *container.Config) {
+					cfg.Healthcheck = &container.HealthConfig{
+						Test: []string{
+							"CMD-SHELL",
+							"cat /proc/1/status || exit 1",
+						},
+						Interval: 5 * time.Second,
+						Timeout:  3 * time.Second,
+						Retries:  3,
+					}
+				},
 			},
 		),
 		scraperinttest.WithCustomConfig(
@@ -38,6 +50,7 @@ func TestIntegration(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				rCfg.MetricsBuilderConfig.ResourceAttributes.ContainerName.MetricsInclude = []filter.Config{{Strict: "dockerstatsreceiver-test"}}
+				rCfg.MetricsBuilderConfig.Metrics.ContainerStateHealthStatus.Enabled = true
 			},
 		),
 		scraperinttest.WithCompareOptions(
@@ -47,6 +60,8 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreResourceAttributeValue("container.runtime"),
 			pmetrictest.IgnoreMetricAttributeValue("device_major", "container.blockio.io_service_bytes_recursive"),
 			pmetrictest.IgnoreMetricAttributeValue("device_minor", "container.blockio.io_service_bytes_recursive"),
+			pmetrictest.IgnoreMetricAttributeValue("operation", "container.blockio.io_service_bytes_recursive"),
+			pmetrictest.IgnoreSubsequentDataPoints("container.blockio.io_service_bytes_recursive"),
 			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),

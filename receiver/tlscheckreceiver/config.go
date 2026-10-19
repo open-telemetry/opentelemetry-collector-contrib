@@ -38,10 +38,11 @@ const (
 // CertificateTarget represents a target for certificate checking, which can be either
 // a network endpoint or a local file
 type CertificateTarget struct {
-	TCPAddrConfig confignet.TCPAddrConfig `mapstructure:",squash"`
-	FilePath      string                  `mapstructure:"file_path"`
-	FileFormat    FileFormat              `mapstructure:"file_format"`
-	Password      configopaque.String     `mapstructure:"password"`
+	TCPAddrConfig  confignet.TCPAddrConfig `mapstructure:",squash"`
+	FilePath       string                  `mapstructure:"file_path"`
+	FileFormat     FileFormat              `mapstructure:"file_format"`
+	Password       configopaque.String     `mapstructure:"password"`
+	ScrapeAllCerts bool                    `mapstructure:"scrape_all_certs"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

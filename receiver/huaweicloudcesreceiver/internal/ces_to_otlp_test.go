@@ -161,11 +161,11 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 				},
 				Datapoints: []model.Datapoint{
 					{
-						Average:   float64Ptr(0.5),
+						Average:   new(0.5),
 						Timestamp: 1056625610000,
 					},
 					{
-						Average:   float64Ptr(0.7),
+						Average:   new(0.7),
 						Timestamp: 1236625715000,
 					},
 				},
@@ -184,11 +184,11 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 				},
 				Datapoints: []model.Datapoint{
 					{
-						Average:   float64Ptr(1),
+						Average:   new(float64(1)),
 						Timestamp: 1056625612000,
 					},
 					{
-						Average:   float64Ptr(3),
+						Average:   new(float64(3)),
 						Timestamp: 1256625717000,
 					},
 				},
@@ -203,6 +203,15 @@ func TestConvertCESMetricsToOTLP(t *testing.T) {
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, got, pmetrictest.IgnoreResourceMetricsOrder()))
 }
 
-func float64Ptr(f float64) *float64 {
-	return &f
+func TestToDimensions(t *testing.T) {
+	got := ToDimensions([]model.MetricsDimensionResp{
+		{Name: new("instance_id"), Value: new("12345")},
+		{Name: new("instance_id")},
+		{},
+	})
+	assert.Equal(t, []model.MetricsDimension{
+		{Name: "instance_id", Value: "12345"},
+		{Name: "instance_id"},
+		{},
+	}, got)
 }

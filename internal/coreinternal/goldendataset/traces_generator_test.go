@@ -20,6 +20,41 @@ func TestGenerateTraces(t *testing.T) {
 	assert.Len(t, rscSpans, 32)
 }
 
+// TestGenerateTracesIsReproducible verifies that the seeded random number generator produces the
+// same trace, span, parent and link IDs on every call, which is what makes the golden dataset
+// usable for reproducible tests.
+func TestGenerateTracesIsReproducible(t *testing.T) {
+	collectIDs := func(t *testing.T) []string {
+		t.Helper()
+		tds, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt",
+			"testdata/generated_pict_pairs_spans.txt")
+		require.NoError(t, err)
+
+		var ids []string
+		for _, td := range tds {
+			for i := 0; i < td.ResourceSpans().Len(); i++ {
+				scopeSpans := td.ResourceSpans().At(i).ScopeSpans()
+				for j := 0; j < scopeSpans.Len(); j++ {
+					spans := scopeSpans.At(j).Spans()
+					for k := 0; k < spans.Len(); k++ {
+						span := spans.At(k)
+						ids = append(ids, span.TraceID().String(), span.SpanID().String(), span.ParentSpanID().String())
+						for l := 0; l < span.Links().Len(); l++ {
+							link := span.Links().At(l)
+							ids = append(ids, link.TraceID().String(), link.SpanID().String())
+						}
+					}
+				}
+			}
+		}
+		return ids
+	}
+
+	first := collectIDs(t)
+	require.NotEmpty(t, first)
+	assert.Equal(t, first, collectIDs(t))
+}
+
 func TestGenerateTracesInvalidRPCFeatureGateCombination(t *testing.T) {
 	prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled()
 	prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled()

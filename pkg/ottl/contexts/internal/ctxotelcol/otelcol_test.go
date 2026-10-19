@@ -10,14 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	featureMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestContextClientMetadata(t *testing.T) {
@@ -71,7 +68,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("auth"),
+						S: new("auth"),
 					},
 				},
 			},
@@ -98,7 +95,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("non-existent"),
+						S: new("non-existent"),
 					},
 				},
 			},
@@ -123,7 +120,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("empty-key"),
+						S: new("empty-key"),
 					},
 				},
 			},
@@ -148,7 +145,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("multi-values"),
+						S: new("multi-values"),
 					},
 				},
 			},
@@ -175,10 +172,10 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("multi-values"),
+						S: new("multi-values"),
 					},
 					&pathtest.Key[testContext]{
-						I: ottltest.Intp(0),
+						I: new(int64(0)),
 					},
 				},
 			},
@@ -229,7 +226,7 @@ func TestContextClientMetadata(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
 					&pathtest.Key[testContext]{
-						S: ottltest.Strp("auth"),
+						S: new("auth"),
 					},
 				},
 			},
@@ -364,7 +361,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 				NextPath: &pathtest.Path[testContext]{
 					N: "attributes",
 					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("subject")},
+						&pathtest.Key[testContext]{S: new("subject")},
 					},
 				},
 			},
@@ -388,8 +385,8 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 				NextPath: &pathtest.Path[testContext]{
 					N: "attributes",
 					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("roles")},
-						&pathtest.Key[testContext]{I: ottltest.Intp(1)},
+						&pathtest.Key[testContext]{S: new("roles")},
+						&pathtest.Key[testContext]{I: new(int64(1))},
 					},
 				},
 			},
@@ -413,7 +410,7 @@ func TestContextClientAuthAttributes_AllAndKey(t *testing.T) {
 				NextPath: &pathtest.Path[testContext]{
 					N: "attributes",
 					KeySlice: []ottl.Key[testContext]{
-						&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
+						&pathtest.Key[testContext]{S: new("missing")},
 					},
 				},
 			},
@@ -489,7 +486,7 @@ func TestContextGrpcMetadata(t *testing.T) {
 			NextPath: &pathtest.Path[testContext]{
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
-					&pathtest.Key[testContext]{S: ottltest.Strp("k1")},
+					&pathtest.Key[testContext]{S: new("k1")},
 				},
 			},
 		}
@@ -516,7 +513,7 @@ func TestContextGrpcMetadata(t *testing.T) {
 			NextPath: &pathtest.Path[testContext]{
 				N: "metadata",
 				KeySlice: []ottl.Key[testContext]{
-					&pathtest.Key[testContext]{S: ottltest.Strp("missing")},
+					&pathtest.Key[testContext]{S: new("missing")},
 				},
 			},
 		}
@@ -559,17 +556,6 @@ func TestContextGrpcMetadata(t *testing.T) {
 		err = getter.Set(t.Context(), testContext{}, nil)
 		require.Error(t, err)
 	})
-}
-
-func Test_enableOTelColContextFeatureGate(t *testing.T) {
-	original := featureMetadata.OttlContextsEnableOTelColContextFeatureGate.IsEnabled()
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), original))
-	}()
-
-	require.NoError(t, featuregate.GlobalRegistry().Set(featureMetadata.OttlContextsEnableOTelColContextFeatureGate.ID(), false))
-	_, err := PathGetSetter(&pathtest.Path[testContext]{})
-	assert.Equal(t, errOTelColContextDisabled, err)
 }
 
 type testContext struct{}

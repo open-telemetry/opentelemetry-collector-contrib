@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 const (
@@ -527,7 +527,7 @@ type resourceKey [16]byte
 
 func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	if len(p.resourceMetricsKeyAttributes) == 0 {
-		return pdatautil.MapHash(attr)
+		return xhash.MapHash(attr)
 	}
 	m := pcommon.NewMap()
 	attr.CopyTo(m)
@@ -535,7 +535,7 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 		_, ok := p.resourceMetricsKeyAttributes[k]
 		return !ok
 	})
-	return pdatautil.MapHash(m)
+	return xhash.MapHash(m)
 }
 
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {

@@ -72,7 +72,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/mezmo
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -111,6 +111,8 @@ body:
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/filetelemetrypolicy
+      - extension/fleettracker/redisfleettracker
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
@@ -126,12 +128,12 @@ body:
       - extension/observer/ecsobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
-      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
+      - extension/sdnotify
       - extension/sigv4auth
       - extension/solarwindsapmsettings
       - extension/storage
@@ -157,6 +159,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/natsclient
       - internal/otelarrow
       - internal/pdatautil
       - internal/rabbitmq
@@ -174,10 +177,12 @@ body:
       - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
+      - pkg/ottl/contexts/xprofile
+      - pkg/ottl/xottl
       - pkg/pdatatest
-      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
+      - pkg/semconvtest
       - pkg/stanza
       - pkg/stanza/fileconsumer
       - pkg/stanza/operator/input/journald
@@ -198,6 +203,7 @@ body:
       - pkg/winperfcounters
       - pkg/xk8stest
       - pkg/xstreamencoding
+      - processor/adaptivetailsampling
       - processor/attributes
       - processor/awsecsattributes
       - processor/cardinalityguardian
@@ -206,7 +212,6 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/drain
-      - processor/dynamicsampling
       - processor/filter
       - processor/genainormalizer
       - processor/geoip
@@ -221,6 +226,7 @@ body:
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
+      - processor/partitioning
       - processor/probabilisticsampler
       - processor/redaction
       - processor/remotetap
@@ -240,11 +246,14 @@ body:
       - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
+      - processor/rollingspanlatency
       - processor/schema
+      - processor/signing
       - processor/span
       - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
+      - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
@@ -286,6 +295,7 @@ body:
       - receiver/fluentforward
       - receiver/github
       - receiver/gitlab
+      - receiver/gnmi
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudpubsubpush
@@ -324,6 +334,7 @@ body:
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/nats
       - receiver/netflow
       - receiver/nginx
       - receiver/nsxt
@@ -367,7 +378,6 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/vcr
-      - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters

@@ -8,11 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
-// AttributeHash is used to store a hash of attributes for a metric. See pdatautil.MapHash for more details.
+// AttributeHash is used to store a hash of attributes for a metric. See xhash.MapHash for more details.
 type AttributeHash [16]byte
 
 // TimeseriesInfo contains the information necessary to adjust from the initial point and to detect resets.
@@ -119,7 +118,7 @@ func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*Timeserie
 	name := metric.Name()
 	key := TimeseriesKey{
 		Name:       name,
-		Attributes: pdatautil.MapHash(kv),
+		Attributes: xhash.MapHash(kv),
 	}
 	switch metric.Type() {
 	case pmetric.MetricTypeHistogram:

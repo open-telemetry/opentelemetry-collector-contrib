@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -19,6 +20,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
+		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+	)
+}
 
 // AttributeCPUMode specifies the value cpu.mode attribute.
 type AttributeCPUMode int
@@ -101,6 +111,12 @@ var MetricsInfo = metricsInfo{
 		Name:       "systemd.service.cpu.time",
 		Attributes: []string{"cpu.mode"},
 	},
+	SystemdServiceMemoryUsage: metricInfo{
+		Name: "systemd.service.memory.usage",
+	},
+	SystemdServiceMemoryUsageMax: metricInfo{
+		Name: "systemd.service.memory.usage.max",
+	},
 	SystemdServiceRestarts: metricInfo{
 		Name: "systemd.service.restarts",
 	},
@@ -111,9 +127,11 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	SystemdServiceCPUTime  metricInfo
-	SystemdServiceRestarts metricInfo
-	SystemdUnitState       metricInfo
+	SystemdServiceCPUTime        metricInfo
+	SystemdServiceMemoryUsage    metricInfo
+	SystemdServiceMemoryUsageMax metricInfo
+	SystemdServiceRestarts       metricInfo
+	SystemdUnitState             metricInfo
 }
 
 type metricInfo struct {
@@ -126,6 +144,7 @@ type metricSystemdServiceCPUTime struct {
 	config        SystemdServiceCPUTimeMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills systemd.service.cpu.time metric with initial data.
@@ -138,6 +157,7 @@ func (m *metricSystemdServiceCPUTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSystemdServiceCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuModeAttributeValue string) {
@@ -153,31 +173,31 @@ func (m *metricSystemdServiceCPUTime) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -212,6 +232,110 @@ func newMetricSystemdServiceCPUTime(cfg SystemdServiceCPUTimeMetricConfig) metri
 	return m
 }
 
+type metricSystemdServiceMemoryUsage struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SystemdServiceMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills systemd.service.memory.usage metric with initial data.
+func (m *metricSystemdServiceMemoryUsage) init() {
+	m.data.SetName("systemd.service.memory.usage")
+	m.data.SetDescription("Bytes of memory in use by this service.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemdServiceMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdServiceMemoryUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdServiceMemoryUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdServiceMemoryUsage(cfg SystemdServiceMemoryUsageMetricConfig) metricSystemdServiceMemoryUsage {
+	m := metricSystemdServiceMemoryUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemdServiceMemoryUsageMax struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SystemdServiceMemoryUsageMaxMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills systemd.service.memory.usage.max metric with initial data.
+func (m *metricSystemdServiceMemoryUsageMax) init() {
+	m.data.SetName("systemd.service.memory.usage.max")
+	m.data.SetDescription("Maximum memory used by this service, in bytes.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemdServiceMemoryUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdServiceMemoryUsageMax) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdServiceMemoryUsageMax) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdServiceMemoryUsageMax(cfg SystemdServiceMemoryUsageMaxMetricConfig) metricSystemdServiceMemoryUsageMax {
+	m := metricSystemdServiceMemoryUsageMax{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemdServiceRestarts struct {
 	data     pmetric.Metric                     // data buffer for generated metric.
 	config   SystemdServiceRestartsMetricConfig // metric config provided by user.
@@ -222,7 +346,7 @@ type metricSystemdServiceRestarts struct {
 func (m *metricSystemdServiceRestarts) init() {
 	m.data.SetName("systemd.service.restarts")
 	m.data.SetDescription("Number of automatic restarts for the service.")
-	m.data.SetUnit("{restarts}")
+	m.data.SetUnit("{restart}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -269,6 +393,7 @@ type metricSystemdUnitState struct {
 	config        SystemdUnitStateMetricConfig // metric config provided by user.
 	capacity      int                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills systemd.unit.state metric with initial data.
@@ -281,6 +406,7 @@ func (m *metricSystemdUnitState) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSystemdUnitState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemdUnitActiveStateAttributeValue string) {
@@ -296,31 +422,31 @@ func (m *metricSystemdUnitState) recordDataPoint(start pcommon.Timestamp, ts pco
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -358,16 +484,18 @@ func newMetricSystemdUnitState(cfg SystemdUnitStateMetricConfig) metricSystemdUn
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                         MetricsBuilderConfig // config of the metrics builder.
-	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                int                  // maximum observed number of metrics per resource.
-	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
-	metricSystemdServiceCPUTime    metricSystemdServiceCPUTime
-	metricSystemdServiceRestarts   metricSystemdServiceRestarts
-	metricSystemdUnitState         metricSystemdUnitState
+	config                             MetricsBuilderConfig // config of the metrics builder.
+	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                    int                  // maximum observed number of metrics per resource.
+	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                          component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter     map[string]filter.Filter
+	resourceAttributeExcludeFilter     map[string]filter.Filter
+	metricSystemdServiceCPUTime        metricSystemdServiceCPUTime
+	metricSystemdServiceMemoryUsage    metricSystemdServiceMemoryUsage
+	metricSystemdServiceMemoryUsageMax metricSystemdServiceMemoryUsageMax
+	metricSystemdServiceRestarts       metricSystemdServiceRestarts
+	metricSystemdUnitState             metricSystemdUnitState
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -389,15 +517,17 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                         mbc,
-		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                  pmetric.NewMetrics(),
-		buildInfo:                      settings.BuildInfo,
-		metricSystemdServiceCPUTime:    newMetricSystemdServiceCPUTime(mbc.Metrics.SystemdServiceCPUTime),
-		metricSystemdServiceRestarts:   newMetricSystemdServiceRestarts(mbc.Metrics.SystemdServiceRestarts),
-		metricSystemdUnitState:         newMetricSystemdUnitState(mbc.Metrics.SystemdUnitState),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		config:                             mbc,
+		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                      pmetric.NewMetrics(),
+		buildInfo:                          settings.BuildInfo,
+		metricSystemdServiceCPUTime:        newMetricSystemdServiceCPUTime(mbc.Metrics.SystemdServiceCPUTime),
+		metricSystemdServiceMemoryUsage:    newMetricSystemdServiceMemoryUsage(mbc.Metrics.SystemdServiceMemoryUsage),
+		metricSystemdServiceMemoryUsageMax: newMetricSystemdServiceMemoryUsageMax(mbc.Metrics.SystemdServiceMemoryUsageMax),
+		metricSystemdServiceRestarts:       newMetricSystemdServiceRestarts(mbc.Metrics.SystemdServiceRestarts),
+		metricSystemdUnitState:             newMetricSystemdUnitState(mbc.Metrics.SystemdUnitState),
+		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.SystemdUnitName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["systemd.unit.name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemdUnitName.MetricsInclude)
@@ -475,6 +605,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemdServiceCPUTime.emit(ils.Metrics())
+	mb.metricSystemdServiceMemoryUsage.emit(ils.Metrics())
+	mb.metricSystemdServiceMemoryUsageMax.emit(ils.Metrics())
 	mb.metricSystemdServiceRestarts.emit(ils.Metrics())
 	mb.metricSystemdUnitState.emit(ils.Metrics())
 
@@ -511,6 +643,16 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordSystemdServiceCPUTimeDataPoint adds a data point to systemd.service.cpu.time metric.
 func (mb *MetricsBuilder) RecordSystemdServiceCPUTimeDataPoint(ts pcommon.Timestamp, val int64, cpuModeAttributeValue AttributeCPUMode) {
 	mb.metricSystemdServiceCPUTime.recordDataPoint(mb.startTime, ts, val, cpuModeAttributeValue.String())
+}
+
+// RecordSystemdServiceMemoryUsageDataPoint adds a data point to systemd.service.memory.usage metric.
+func (mb *MetricsBuilder) RecordSystemdServiceMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemdServiceMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemdServiceMemoryUsageMaxDataPoint adds a data point to systemd.service.memory.usage.max metric.
+func (mb *MetricsBuilder) RecordSystemdServiceMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemdServiceMemoryUsageMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemdServiceRestartsDataPoint adds a data point to systemd.service.restarts metric.

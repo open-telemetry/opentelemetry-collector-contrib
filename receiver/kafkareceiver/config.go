@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -36,6 +37,10 @@ type Config struct {
 
 	// MessageMarking controls the way the messages are marked as consumed.
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// PartitionProcessing controls optional independent processing of assigned
+	// topic partitions.
+	PartitionProcessing PartitionProcessing `mapstructure:"partition_processing"`
 
 	// HeaderExtraction controls extraction of headers from Kafka records.
 	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
@@ -91,6 +96,20 @@ func (c *Config) Validate() error {
 	}
 	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
+	}
+	if c.PartitionProcessing.Independent {
+		if c.PartitionProcessing.MaxBufferedBatches <= 0 {
+			return errors.New("partition_processing.max_buffered_batches must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
+			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxInFlight.Bytes < 0 {
+			return errors.New("partition_processing.max_in_flight.bytes must not be negative")
+		}
+		if !c.ConsumerConfig.AutoCommit.Enable {
+			return errors.New("partition_processing.independent requires autocommit.enable")
+		}
 	}
 	return nil
 }
@@ -174,6 +193,36 @@ type MessageMarking struct {
 	// Note: this can block the entire partition in case a message processing returns
 	// a permanent error.
 	OnPermanentError bool `mapstructure:"on_permanent_error"`
+}
+
+// PartitionProcessing controls optional independent processing of assigned
+// Kafka partitions.
+type PartitionProcessing struct {
+	// Independent enables independent partition workers. Records stay ordered
+	// within a partition unless MaxInFlight.Records is above 1.
+	Independent bool `mapstructure:"independent"`
+
+	// MaxBufferedBatches bounds the number of fetched batches waiting for each
+	// partition worker.
+	MaxBufferedBatches int `mapstructure:"max_buffered_batches"`
+
+	// MaxInFlight limits concurrent unmarshal-plus-Consume calls for each
+	// independent partition worker.
+	MaxInFlight MaxInFlightConfig `mapstructure:"max_in_flight"`
+}
+
+// MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one
+// partition worker.
+type MaxInFlightConfig struct {
+	// Records is how many calls may run at once. Default 1.
+	Records int `mapstructure:"records"`
+
+	// Bytes caps the key and value bytes of the records in those calls, counted
+	// after decompression. Headers are not counted. 0 means no cap. A record
+	// above the cap still runs, alone. It has no effect when Records is 1.
+	Bytes int `mapstructure:"bytes"`
+
+	_ struct{} // avoids unkeyed_literal_initialization.
 }
 
 type HeaderExtraction struct {

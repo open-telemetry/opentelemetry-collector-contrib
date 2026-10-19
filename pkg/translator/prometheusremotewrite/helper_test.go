@@ -421,7 +421,9 @@ func Test_createLabelSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{
-				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
+				// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
+				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
+				UnderscoreLabelSanitization: tt.underscoreLabelSanitization, //nolint:staticcheck
 			}
 			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {
@@ -819,11 +821,31 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: 0,
 		},
+		{
+			desc: "with resource, NoTranslation strategy preserves dots in attribute names",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("service.instance.id", "my_id")
+				r.Attributes().PutStr("server.address", "oteljob")
+				r.Attributes().PutStr("server.port", "9464")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			settings:  Settings{TranslationStrategy: "NoTranslation"},
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.InstanceLabel, Value: "my_id"},
+				{Name: model.JobLabel, Value: "my_service"},
+				{Name: "server.address", Value: "oteljob"},
+				{Name: "server.port", Value: "9464"},
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
 
-			err := addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			err := converter.addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp)
 			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {

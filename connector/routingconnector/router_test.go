@@ -210,7 +210,7 @@ func TestRequestContextCannotBeInferred(t *testing.T) {
 		Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalLogs, "test")},
 	}}
 	sink := new(consumertest.LogsSink)
-	_, err := newRouter(routeTable, nil,
+	_, err := newRouter(&Config{Table: routeTable},
 		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
 		componenttest.NewNopTelemetrySettings())
 	require.ErrorContains(t, err, `request[\"X-Tenant\"] == \"acme\""`)
@@ -228,7 +228,7 @@ func TestRequestContextDeprecationWarning(t *testing.T) {
 		Pipelines: []pipeline.ID{pipeline.NewIDWithName(pipeline.SignalLogs, "test")},
 	}}
 	sink := new(consumertest.LogsSink)
-	_, err := newRouter(routeTable, nil,
+	_, err := newRouter(&Config{Table: routeTable},
 		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
 		settings)
 	require.NoError(t, err)
@@ -258,7 +258,7 @@ func TestMixedContextsInRoutingTable(t *testing.T) {
 	}
 
 	sink := new(consumertest.LogsSink)
-	router, err := newRouter(routeTable, nil,
+	router, err := newRouter(&Config{Table: routeTable},
 		func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -296,7 +296,7 @@ func TestDuplicateRouteIsIgnored(t *testing.T) {
 		return duplicateSink, nil
 	}
 
-	router, err := newRouter(routeTable, nil, consumerProvider, componenttest.NewNopTelemetrySettings())
+	router, err := newRouter(&Config{Table: routeTable}, consumerProvider, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.Len(t, router.routeSlice, 3)
 	require.Len(t, router.routes, 3)
@@ -319,7 +319,7 @@ func TestDuplicateRouteIsIgnored(t *testing.T) {
 var routerBuilders = map[pipeline.Signal]func([]RoutingTableItem) (string, int, error){
 	pipeline.SignalLogs: func(routeTable []RoutingTableItem) (string, int, error) {
 		sink := new(consumertest.LogsSink)
-		router, err := newRouter(routeTable, nil,
+		router, err := newRouter(&Config{Table: routeTable},
 			func(...pipeline.ID) (consumer.Logs, error) { return sink, nil },
 			componenttest.NewNopTelemetrySettings())
 		if err != nil {
@@ -332,7 +332,7 @@ var routerBuilders = map[pipeline.Signal]func([]RoutingTableItem) (string, int, 
 	},
 	pipeline.SignalTraces: func(routeTable []RoutingTableItem) (string, int, error) {
 		sink := new(consumertest.TracesSink)
-		router, err := newRouter(routeTable, nil,
+		router, err := newRouter(&Config{Table: routeTable},
 			func(...pipeline.ID) (consumer.Traces, error) { return sink, nil },
 			componenttest.NewNopTelemetrySettings())
 		if err != nil {
@@ -345,7 +345,7 @@ var routerBuilders = map[pipeline.Signal]func([]RoutingTableItem) (string, int, 
 	},
 	pipeline.SignalMetrics: func(routeTable []RoutingTableItem) (string, int, error) {
 		sink := new(consumertest.MetricsSink)
-		router, err := newRouter(routeTable, nil,
+		router, err := newRouter(&Config{Table: routeTable},
 			func(...pipeline.ID) (consumer.Metrics, error) { return sink, nil },
 			componenttest.NewNopTelemetrySettings())
 		if err != nil {

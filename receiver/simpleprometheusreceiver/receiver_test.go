@@ -19,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
@@ -86,16 +89,48 @@ func TestGetPrometheusConfig(t *testing.T) {
 	clientConfig.Endpoint = "localhost:1234"
 
 	clientConfigJobName := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfigJobName.MaxIdleConns = 0
-	clientConfigJobName.IdleConnTimeout = 0
-	clientConfigJobName.ForceAttemptHTTP2 = false
 	clientConfigJobName.Endpoint = "localhost:1234"
 
+	clientConfigWithTimeout := func(timeout time.Duration) confighttp.ClientConfig {
+		c := confighttp.NewDefaultClientConfig()
+		c.Endpoint = "localhost:1234"
+		c.Timeout = timeout
+		return c
+	}
+
+	wantWithScrapeTimeout := func(scrapeTimeout time.Duration) *prometheusreceiver.Config {
+		return &prometheusreceiver.Config{
+			PrometheusConfig: &prometheusreceiver.PromConfig{
+				GlobalConfig: config.DefaultGlobalConfig,
+				ScrapeConfigs: []*config.ScrapeConfig{
+					{
+						JobName:         "prometheus_simple/localhost:1234",
+						HonorTimestamps: true,
+						ScrapeInterval:  model.Duration(10 * time.Second),
+						ScrapeTimeout:   model.Duration(scrapeTimeout),
+						MetricsPath:     "/metrics",
+						Scheme:          "https",
+						ServiceDiscoveryConfigs: discovery.Configs{
+							discovery.StaticConfig{
+								{
+									Targets: []model.LabelSet{
+										{model.AddressLabel: model.LabelValue("localhost:1234")},
+									},
+									Labels: model.LabelSet{},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
 	tests := []struct {
-		name   string
-		config *Config
-		want   *prometheusreceiver.Config
+		name     string
+		config   *Config
+		want     *prometheusreceiver.Config
+		wantWarn bool
 	}{
 		{
 			name: "Test without TLS",
@@ -245,214 +280,117 @@ func TestGetPrometheusConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Test with timeout unset",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(0),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithScrapeTimeout(10 * time.Second),
+		},
+		{
+			name: "Test with timeout less than collection_interval",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(5 * time.Second),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithScrapeTimeout(5 * time.Second),
+		},
+		{
+			name: "Test with timeout equal to collection_interval",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(10 * time.Second),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithScrapeTimeout(10 * time.Second),
+		},
+		{
+			name: "Test with timeout greater than collection_interval",
+			config: &Config{
+				ClientConfig:       clientConfigWithTimeout(30 * time.Second),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want:     wantWithScrapeTimeout(10 * time.Second),
+			wantWarn: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfig(tt.config)
+			core, logs := observer.New(zapcore.WarnLevel)
+			got, err := getPrometheusConfig(tt.config, zap.New(core))
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
+			if tt.wantWarn {
+				require.Equal(t, 1, logs.Len())
+				assert.Equal(t, tt.config.ClientConfig.Timeout, logs.All()[0].ContextMap()["timeout"])
+				assert.Equal(t, tt.config.CollectionInterval, logs.All()[0].ContextMap()["collection_interval"])
+			} else {
+				assert.Equal(t, 0, logs.Len())
+			}
+
+			// The prometheus receiver re-marshals its config through YAML on
+			// start; the scrape timeout must survive that round trip.
+			wantTimeout := got.PrometheusConfig.ScrapeConfigs[0].ScrapeTimeout
+			require.NoError(t, got.PrometheusConfig.Reload())
+			require.Len(t, got.PrometheusConfig.ScrapeConfigs, 1)
+			assert.Equal(t, wantTimeout, got.PrometheusConfig.ScrapeConfigs[0].ScrapeTimeout)
 		})
 	}
 }
 
-func TestGetPrometheusConfigWrapper(t *testing.T) {
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = defaultEndpoint
-	clientConfig.TLS = configtls.ClientConfig{}
-
-	clientConfigInsecure := confighttp.NewDefaultClientConfig()
-	clientConfigInsecure.Endpoint = defaultEndpoint
-	clientConfigInsecure.TLS = configtls.ClientConfig{
-		Insecure: true,
-	}
-
-	clientConfigCA := confighttp.NewDefaultClientConfig()
-	clientConfigCA.Endpoint = defaultEndpoint
-	clientConfigCA.TLS = configtls.ClientConfig{
-		Insecure: false,
-		Config: configtls.Config{
-			CAFile: "./testdata/test_cert.pem",
-		},
-	}
-
+func TestGetPrometheusConfigScheme(t *testing.T) {
 	tests := []struct {
-		name   string
-		config *Config
-		want   *prometheusreceiver.Config
+		name       string
+		tls        configtls.ClientConfig
+		wantScheme string
+		wantTLS    configutil.TLSConfig
 	}{
 		{
-			name: "Test TLSEnable true",
-			config: &Config{
-				httpConfig: httpConfig{
-					TLSEnabled: true,
-					TLSConfig: tlsConfig{
-						CAFile:             "./testdata/test_cert.pem",
-						InsecureSkipVerify: true,
-					},
-				},
-				ClientConfig:       clientConfigInsecure,
-				CollectionInterval: 10 * time.Second,
-				MetricsPath:        "/metric",
-				Params:             url.Values{"foo": []string{"bar", "foobar"}},
-			},
-			want: &prometheusreceiver.Config{
-				PrometheusConfig: &prometheusreceiver.PromConfig{
-					GlobalConfig: config.DefaultGlobalConfig,
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(10 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							JobName:         "prometheus_simple/localhost:9090",
-							HonorTimestamps: true,
-							Scheme:          "https",
-							MetricsPath:     "/metric",
-							Params:          url.Values{"foo": []string{"bar", "foobar"}},
-							ServiceDiscoveryConfigs: discovery.Configs{
-								discovery.StaticConfig{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
-										},
-										Labels: map[model.LabelName]model.LabelValue{},
-									},
-								},
-							},
-							HTTPClientConfig: configutil.HTTPClientConfig{
-								TLSConfig: configutil.TLSConfig{
-									CAFile:             "./testdata/test_cert.pem",
-									InsecureSkipVerify: true,
-								},
-							},
-						},
-					},
-				},
-			},
+			name:       "default insecure",
+			tls:        configtls.ClientConfig{Insecure: true},
+			wantScheme: "http",
 		},
 		{
-			name: "Test TLSEnable false",
-			config: &Config{
-				httpConfig: httpConfig{
-					TLSEnabled: false,
-				},
-				ClientConfig:       clientConfigInsecure,
-				CollectionInterval: 10 * time.Second,
-				MetricsPath:        "/metric",
-				Params:             url.Values{"foo": []string{"bar", "foobar"}},
-			},
-			want: &prometheusreceiver.Config{
-				PrometheusConfig: &prometheusreceiver.PromConfig{
-					GlobalConfig: config.DefaultGlobalConfig,
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(10 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							JobName:         "prometheus_simple/localhost:9090",
-							HonorTimestamps: true,
-							Scheme:          "http",
-							MetricsPath:     "/metric",
-							Params:          url.Values{"foo": []string{"bar", "foobar"}},
-							ServiceDiscoveryConfigs: discovery.Configs{
-								discovery.StaticConfig{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
-										},
-										Labels: map[model.LabelName]model.LabelValue{},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			name:       "insecure false",
+			tls:        configtls.ClientConfig{Insecure: false},
+			wantScheme: "https",
 		},
 		{
-			name: "Test TLSEnable false but tls configured",
-			config: &Config{
-				httpConfig: httpConfig{
-					TLSEnabled: false,
-				},
-				ClientConfig:       clientConfig,
-				CollectionInterval: 10 * time.Second,
-				MetricsPath:        "/metric",
-				Params:             url.Values{"foo": []string{"bar", "foobar"}},
+			name: "ca_file with default insecure",
+			tls: configtls.ClientConfig{
+				Config:   configtls.Config{CAFile: "./testdata/test_cert.pem"},
+				Insecure: true,
 			},
-			want: &prometheusreceiver.Config{
-				PrometheusConfig: &prometheusreceiver.PromConfig{
-					GlobalConfig: config.DefaultGlobalConfig,
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(10 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							JobName:         "prometheus_simple/localhost:9090",
-							HonorTimestamps: true,
-							Scheme:          "https",
-							MetricsPath:     "/metric",
-							Params:          url.Values{"foo": []string{"bar", "foobar"}},
-							ServiceDiscoveryConfigs: discovery.Configs{
-								discovery.StaticConfig{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
-										},
-										Labels: map[model.LabelName]model.LabelValue{},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			wantScheme: "https",
+			wantTLS:    configutil.TLSConfig{CAFile: "./testdata/test_cert.pem"},
 		},
 		{
-			name: "Test TLSEnable false with tls configured with ca",
-			config: &Config{
-				httpConfig: httpConfig{
-					TLSEnabled: false,
+			name: "cert_file and key_file without ca_file are not used with default insecure",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{
+					CertFile: "./testdata/test_cert.pem",
+					KeyFile:  "./testdata/test_cert.pem",
 				},
-				ClientConfig:       clientConfigCA,
-				CollectionInterval: 10 * time.Second,
-				MetricsPath:        "/metric",
-				Params:             url.Values{"foo": []string{"bar", "foobar"}},
+				Insecure:           true,
+				InsecureSkipVerify: true,
 			},
-			want: &prometheusreceiver.Config{
-				PrometheusConfig: &prometheusreceiver.PromConfig{
-					GlobalConfig: config.DefaultGlobalConfig,
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(10 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							JobName:         "prometheus_simple/localhost:9090",
-							HonorTimestamps: true,
-							Scheme:          "https",
-							MetricsPath:     "/metric",
-							Params:          url.Values{"foo": []string{"bar", "foobar"}},
-							ServiceDiscoveryConfigs: discovery.Configs{
-								discovery.StaticConfig{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue(defaultEndpoint)},
-										},
-										Labels: map[model.LabelName]model.LabelValue{},
-									},
-								},
-							},
-							HTTPClientConfig: configutil.HTTPClientConfig{
-								TLSConfig: configutil.TLSConfig{
-									CAFile: "./testdata/test_cert.pem",
-								},
-							},
-						},
-					},
-				},
-			},
+			wantScheme: "http",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopSettings(metadata.Type))
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.TLS = tt.tls
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			sc := got.PrometheusConfig.ScrapeConfigs[0]
+			assert.Equal(t, tt.wantScheme, sc.Scheme)
+			assert.Equal(t, tt.wantTLS, sc.HTTPClientConfig.TLSConfig)
+			assert.Equal(t, sc.ScrapeInterval, sc.ScrapeTimeout)
 		})
 	}
 }

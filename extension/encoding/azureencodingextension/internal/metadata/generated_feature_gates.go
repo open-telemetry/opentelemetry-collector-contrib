@@ -8,7 +8,7 @@ import (
 
 var ExtensionAzureencodingDontEmitV0LogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.azureencoding.DontEmitV0LogConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, v0 semconv log attribute names are not emitted."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543"),
 	featuregate.WithRegisterFromVersion("v0.149.0"),
@@ -16,7 +16,7 @@ var ExtensionAzureencodingDontEmitV0LogConventionsFeatureGate = featuregate.Glob
 
 var ExtensionAzureencodingEmitV1LogConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.azureencoding.EmitV1LogConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, v1 semconv log attribute names are emitted."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543"),
 	featuregate.WithRegisterFromVersion("v0.149.0"),

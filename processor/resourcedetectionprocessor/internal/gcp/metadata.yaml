@@ -1,82 +1,121 @@
 type: resourcedetectionprocessor/gcp
+sem_conv_version: 1.40.0
 
 parent: resourcedetection
 
 resource_attributes:
   cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
     description: The cloud.account.id
     type: string
     enabled: true
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The cloud.availability_zone
     type: string
     enabled: true
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud.platform
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud.provider
     type: string
     enabled: true
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The cloud.region
     type: string
     enabled: true
   faas.instance:
+    semantic_convention:
+      ref: faas.md#faas-instance
     description: The faas.instance
     type: string
     enabled: true
   faas.name:
+    semantic_convention:
+      ref: faas.md#faas-name
     description: faas.name
     type: string
     enabled: true
   faas.version:
+    semantic_convention:
+      ref: faas.md#faas-version
     description: The faas.version
     type: string
     enabled: true
   gcp.cloud_run.job.execution:
+    semantic_convention:
+      ref: gcp.md#gcp-cloud-run-job-execution
     description: The Job execution name
     type: string
     enabled: true
   gcp.cloud_run.job.task_index:
+    semantic_convention:
+      ref: gcp.md#gcp-cloud-run-job-task-index
     description: The Job execution task index
     type: string
     enabled: true
 
   gcp.gce.instance.hostname:
+    semantic_convention:
+      ref: gcp.md#gcp-gce-instance-hostname
     description: The hostname of the GCE instance.
     type: string
     enabled: false
   gcp.gce.instance.name:
+    semantic_convention:
+      ref: gcp.md#gcp-gce-instance-name
     description: The name of the GCE instance.
     type: string
     enabled: false
   gcp.gce.instance_group_manager.name:
+    semantic_convention:
+      ref: gcp.md#gcp-gce-instance-group-manager-name
     description: The name of an instanceGroupManager.
     type: string
     enabled: true
   gcp.gce.instance_group_manager.region:
+    semantic_convention:
+      ref: gcp.md#gcp-gce-instance-group-manager-region
     description: The region of a regional instanceGroupManager.
     type: string
     enabled: true
   gcp.gce.instance_group_manager.zone:
+    semantic_convention:
+      ref: gcp.md#gcp-gce-instance-group-manager-zone
     description: The zone of a zonal instanceGroupManager.
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The host.id
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The host.name
     type: string
     enabled: true
   host.type:
+    semantic_convention:
+      ref: host.md#host-type
     description: The host.type
     type: string
     enabled: true
   k8s.cluster.name:
+    semantic_convention:
+      ref: k8s.md#k8s-cluster-name
     description: The k8s.cluster.name
     type: string
     enabled: true

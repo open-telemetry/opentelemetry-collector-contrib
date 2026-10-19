@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -275,5 +276,100 @@ func TestCommunityID(t *testing.T) {
 				assert.Equal(t, tt.expected, result)
 			}
 		})
+	}
+}
+
+func Test_CommunityIDFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewCommunityIDFactory[any]()
+		assert.Equal(t, "CommunityID", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewCommunityIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &communityIDArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"SourceIP", "SourcePort", "DestinationIP", "DestinationPort", "Protocol", "Seed"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewCommunityIDFactory[any]()
+		args := factory.CreateDefaultArguments()
+		communityIDArgs, ok := args.(*communityIDArguments[any])
+		require.True(t, ok)
+		communityIDArgs.SourceIP = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "1.2.3.4", nil
+			},
+		}
+		communityIDArgs.SourcePort = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(1234), nil
+			},
+		}
+		communityIDArgs.DestinationIP = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "5.6.7.8", nil
+			},
+		}
+		communityIDArgs.DestinationPort = &ottl.StandardIntGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return int64(5678), nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createCommunityIDFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "CommunityIDFactory args must be of type *communityIDArguments[K]")
+	})
+}
+
+func BenchmarkCommunityID(b *testing.B) {
+	sourceIP := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "1.2.3.4", nil
+		},
+	}
+	destIP := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "5.6.7.8", nil
+		},
+	}
+	sourcePort := ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(12345), nil
+		},
+	}
+	destPort := ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(80), nil
+		},
+	}
+	protocol := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "TCP", nil
+		},
+	}
+	seed := ottl.StandardIntGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(0), nil
+		},
+	}
+	protocolOpt := ottl.NewTestingOptional[ottl.StringGetter[any]](protocol)
+	seedOpt := ottl.NewTestingOptional[ottl.IntGetter[any]](seed)
+
+	exprFunc := communityID(sourceIP, sourcePort, destIP, destPort, protocolOpt, seedOpt)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

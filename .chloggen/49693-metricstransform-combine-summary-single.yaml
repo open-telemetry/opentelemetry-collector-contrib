@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: processor/metrics_transform
-
-note: combine action no longer silently drops data points when a single Summary metric matches the transform. The operation is now skipped with a warning log instead.
-
-issues: [49693]
-
-change_logs: [user]

@@ -75,10 +75,15 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) error {
 			return err
 		}
 
-		view := fmt.Sprintf(logsView, e.cfg.Table.Logs, e.cfg.Table.Logs)
-		_, err = conn.ExecContext(ctx, view)
-		if err != nil {
-			e.logger.Warn("failed to create materialized view", zap.Error(err))
+		if err = waitForPartitionsReady(ctx, conn, e.logger, e.cfg.Database, e.cfg.Table.Logs, e.cfg.expectedInitialPartitionCount()); err != nil {
+			e.logger.Warn("partitions not ready, skipping materialized view",
+				zap.String("table", e.cfg.Table.Logs), zap.Error(err))
+		} else {
+			view := fmt.Sprintf(logsView, e.cfg.Table.Logs, e.cfg.Table.Logs)
+			_, err = conn.ExecContext(ctx, view)
+			if err != nil {
+				e.logger.Warn("failed to create materialized view", zap.Error(err))
+			}
 		}
 	}
 

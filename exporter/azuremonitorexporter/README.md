@@ -6,7 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fazuremonitor%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fazuremonitor) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fazuremonitor%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fazuremonitor) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_azuremonitor)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_azuremonitor&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pcwiese](https://www.github.com/pcwiese), [@hgaol](https://www.github.com/hgaol) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hgaol](https://www.github.com/hgaol) |
+| Emeritus      | [@pcwiese](https://www.github.com/pcwiese) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -44,6 +45,8 @@ The following settings can be optionally configured:
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 - `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
 - `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
+- `telemetry_mappings.traces.http.success.server_policy` (default = unset): Set to `otel` to export HTTP server spans with 4xx response codes with Application Insights request `Success=true`, matching OpenTelemetry HTTP semantic conventions. HTTP client dependencies are unaffected.
+- `telemetry_mappings.traces.http.success.additional_success_status_codes` (default = `[]`): Additional HTTP status codes to export with Application Insights `Success=true` for both HTTP server requests and HTTP client dependencies.
 
 ### Tag mappings (alpha)
 

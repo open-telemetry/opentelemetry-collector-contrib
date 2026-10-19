@@ -47,6 +47,11 @@ type Manager struct {
 	pollsToArchive int
 	onTruncate     string
 
+	// skipUnmodifiedFiles, when set via the skip_unmodified_files config
+	// option, skips files whose path+mtime are unchanged since the previous
+	// poll: no open, no fingerprint, no read.
+	skipUnmodifiedFiles bool
+
 	telemetryBuilder *metadata.TelemetryBuilder
 
 	unreadable map[string]struct{}
@@ -197,7 +202,24 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
+	skipByMtime := m.skipUnmodifiedFiles
 	for _, path := range paths {
+		var statMtime time.Time
+		haveMtime := false
+		if skipByMtime {
+			// os.Stat (not Lstat) so symlinks resolve to the same file that
+			// the subsequent os.Open would target; otherwise a modification to
+			// the symlink target wouldn't invalidate the skip.
+			if info, err := os.Stat(path); err == nil {
+				statMtime = info.ModTime()
+				haveMtime = true
+				if m.tracker.TryReuseByPathMtime(path, statMtime) {
+					// Reader metadata promoted to knownFiles[0]; no open/fingerprint/read this poll.
+					continue
+				}
+			}
+			// Stat failure falls through to the regular open path, which will surface the real error.
+		}
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
 			continue
@@ -222,6 +244,9 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 		}
 
 		if r != nil {
+			if skipByMtime {
+				stampLastObserved(r.Metadata, path, statMtime, haveMtime, file)
+			}
 			m.tracker.Add(r)
 			continue
 		}
@@ -279,6 +304,26 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		return nil, nil
 	}
 	return fp, file
+}
+
+// stampLastObserved populates LastObservedPath and LastObservedMtime on the
+// reader metadata so a future poll can skip this file via
+// skip_unmodified_files if mtime is unchanged. When haveMtime is
+// false the file is stat'd as a fallback; stat errors here are intentionally
+// swallowed (missing stamps just fall through to the regular open path on the
+// next poll).
+func stampLastObserved(md *reader.Metadata, path string, mtime time.Time, haveMtime bool, file *os.File) {
+	if md == nil {
+		return
+	}
+	md.LastObservedPath = path
+	if haveMtime {
+		md.LastObservedMtime = mtime
+		return
+	}
+	if info, err := file.Stat(); err == nil {
+		md.LastObservedMtime = info.ModTime()
+	}
 }
 
 func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
@@ -432,6 +477,9 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 			continue
 		}
 
+		if m.skipUnmodifiedFiles {
+			stampLastObserved(reader.Metadata, file.Name(), time.Time{}, false, file)
+		}
 		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 		m.tracker.Add(reader)
 	}

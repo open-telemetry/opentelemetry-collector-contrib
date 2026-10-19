@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/expr-lang/expr"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
@@ -62,7 +60,7 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (a
 				if strings.TrimSpace(exprText) == "" {
 					return nil, errors.New("expression is empty")
 				}
-				res, err := expr.Eval(exprText, env)
+				res, err := evalConfigExpression(exprText, env)
 				if err != nil {
 					return nil, err
 				}

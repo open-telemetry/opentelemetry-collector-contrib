@@ -1,4 +1,4 @@
-FROM docker.io/library/nginx:1.31
+FROM docker.io/library/nginx:1.31@sha256:f9ea18bfa4fad859e1ed38259d711da7ccad2c3516e875cec3351a57c859f571
 
 COPY default.conf /etc/nginx/conf.d/default.conf
 RUN \

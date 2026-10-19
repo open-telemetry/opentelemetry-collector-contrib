@@ -79,7 +79,7 @@ receivers:
 
 Now that we understand how `id` and `output` work together, we can configure more complex sequences. Technically, we are only limited in that the relationship between operators must be a [directed, acyclic, graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 
-Here's a scenario where we read from a file that contains logs with two differnet formats which must be parsed differently:
+Here's a scenario where we read from a file that contains logs with two different formats which must be parsed differently:
 
 ```yaml
 receivers:

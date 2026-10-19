@@ -29,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: TlscheckTimeLeftMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []TlscheckTimeLeftMetricAttributeKey{TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San},
+						EnabledAttributes:   []TlscheckTimeLeftMetricAttributeKey{TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -44,7 +44,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: TlscheckTimeLeftMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []TlscheckTimeLeftMetricAttributeKey{TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San},
+						EnabledAttributes:   []TlscheckTimeLeftMetricAttributeKey{TlscheckTimeLeftMetricAttributeKeyTlscheckX509Issuer, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Cn, TlscheckTimeLeftMetricAttributeKeyTlscheckX509San, TlscheckTimeLeftMetricAttributeKeyTlscheckX509Fingerprint},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -66,7 +66,7 @@ func TestTlscheckTimeLeftMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []TlscheckTimeLeftMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric tlscheck.time_left doesn't have an attribute invalid, valid attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san]")
+	require.ErrorContains(t, cfg.Validate(), "metric tlscheck.time_left doesn't have an attribute invalid, valid attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san, tlscheck.x509.fingerprint]")
 
 	cfg = DefaultMetricsConfig().TlscheckTimeLeft
 	cfg.AggregationStrategy = "invalid"

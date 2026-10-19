@@ -31,6 +31,7 @@ type TelemetryBuilder struct {
 	ProcessorSpanpruningBytesProcessedInput          metric.Int64Counter
 	ProcessorSpanpruningBytesProcessedOutput         metric.Int64Counter
 	ProcessorSpanpruningBytesReceived                metric.Int64Counter
+	ProcessorSpanpruningExemplarsSampled             metric.Int64Counter
 	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
 	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
 	ProcessorSpanpruningOutliersCorrelationsDetected metric.Int64Counter
@@ -108,6 +109,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_spanpruning_bytes_received",
 		metric.WithDescription("Total bytes of serialized traces received before pruning [Development]"),
 		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningExemplarsSampled, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_exemplars_sampled",
+		metric.WithDescription("Spans randomly sampled as exemplars (excluded from aggregation) [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningLeafAttributeDiversityLoss, err = builder.meter.Int64Histogram(

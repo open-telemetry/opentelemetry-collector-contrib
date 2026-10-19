@@ -122,7 +122,64 @@ enforcement_mode: tag_only
 
 Preserves all attributes and injects `otel.metric.overflow: true` on data points that exceed the threshold. No data is modified — this is the safest mode and recommended for initial deployment.
 
-> **Note:** `tag_only` does **not** protect your TSDB on its own — high-cardinality labels still reach your backend unchanged. You must pair it with a downstream [routing processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector) to split tagged metrics to cheap storage.
+> **Note:** `tag_only` does **not** protect your TSDB on its own — high-cardinality labels still reach your backend unchanged. You must pair it with a downstream [routing connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector) to split tagged metrics to cheap storage.
+
+#### Routing tagged data points
+
+The routing connector reads the tag in a `datapoint` condition and sends tagged data points to a separate pipeline. Untagged data points use `default_pipelines`:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  cardinality_guardian:
+    max_cardinality_delta_per_epoch: 100
+    epoch_duration_seconds: 300
+    enforcement_mode: tag_only
+  batch:
+
+connectors:
+  routing:
+    default_pipelines:
+      - metrics/primary
+    table:
+      - condition: datapoint.attributes["otel.metric.overflow"] == true
+        pipelines:
+          - metrics/overflow
+
+exporters:
+  otlp/primary:
+    endpoint: primary-backend:4317
+  otlp/overflow:
+    endpoint: overflow-backend:4317
+
+service:
+  pipelines:
+    metrics/in:
+      receivers:
+        - otlp
+      processors:
+        - cardinality_guardian
+        - batch
+      exporters:
+        - routing
+    metrics/primary:
+      receivers:
+        - routing
+      exporters:
+        - otlp/primary
+    metrics/overflow:
+      receivers:
+        - routing
+      exporters:
+        - otlp/overflow
+```
+
+> **Note:** `otel.metric.overflow` is a boolean attribute, so the condition compares it with `true`, not the string `"true"`. A string comparison is valid configuration, produces no warning and never matches: every data point goes to `default_pipelines`. Prometheus renders the label value as `true` either way, which makes the mismatch easy to miss.
 
 ### Overflow Attribute
 

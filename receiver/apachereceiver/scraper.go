@@ -22,6 +22,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
+const (
+	migrationGuideURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/apachereceiver/README.md#metric-and-attribute-name-migration"
+
+	// Attribute keys used by the apache.cpu.time metric. The metric name is
+	// unchanged between the old and new formats, but its attribute keys are
+	// renamed, so the new-format keys are applied as a post-processing step.
+	cpuTimeOldLevelKey = "level"
+	cpuTimeOldModeKey  = "mode"
+	cpuTimeNewLevelKey = "apache.process.level"
+	cpuTimeNewModeKey  = "cpu.mode"
+
+	cpuTimeMetricName = "apache.cpu.time"
+)
+
 type apacheScraper struct {
 	settings   component.TelemetrySettings
 	cfg        *Config
@@ -29,6 +43,13 @@ type apacheScraper struct {
 	mb         *metadata.MetricsBuilder
 	serverName string
 	port       string
+
+	// emitOld reports whether the original metric and attribute names should be
+	// emitted. emitNew reports whether the new, consistently named metrics and
+	// attributes should be emitted. Both are derived from feature gates; by
+	// default only the old format is emitted.
+	emitOld bool
+	emitNew bool
 }
 
 func newApacheScraper(
@@ -43,12 +64,24 @@ func newApacheScraper(
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
+		emitOld:    !metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate.IsEnabled(),
+		emitNew:    metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate.IsEnabled(),
 	}
 
 	return a
 }
 
 func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
+	if !r.emitNew {
+		r.settings.Logger.Warn(
+			"The apache receiver's metric and attribute names will change in a future release to be more consistent. "+
+				"The current (original) names are still emitted by default. To preview and migrate to the new names, "+
+				"enable the receiver.apache.enableNewFormatMetrics feature gate. Review any OTTL statements, dashboards, "+
+				"alerts and routing that reference the current names before migrating.",
+			zap.String("documentation", migrationGuideURL),
+		)
+	}
+
 	httpClient, err := r.cfg.ClientConfig.ToClient(ctx, host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
@@ -75,19 +108,39 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "ServerUptimeSeconds":
 			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue))
 		case "ConnsTotal":
-			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+			if r.emitOld {
+				addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+			}
+			if r.emitNew {
+				addPartialIfError(errs, r.mb.RecordApacheConnectionActiveDataPoint(now, metricValue))
+			}
 		case "ConnsAsyncWriting":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateWriting))
+			r.recordConnectionsAsync(errs, now, metricValue, metadata.AttributeConnectionStateWriting, metadata.AttributeApacheConnectionStateWriting)
 		case "ConnsAsyncKeepAlive":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateKeepalive))
+			r.recordConnectionsAsync(errs, now, metricValue, metadata.AttributeConnectionStateKeepalive, metadata.AttributeApacheConnectionStateKeepalive)
 		case "ConnsAsyncClosing":
-			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateClosing))
+			r.recordConnectionsAsync(errs, now, metricValue, metadata.AttributeConnectionStateClosing, metadata.AttributeApacheConnectionStateClosing)
 		case "BusyWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
+			if r.emitOld {
+				addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
+			}
+			if r.emitNew {
+				addPartialIfError(errs, r.mb.RecordApacheWorkerActiveDataPoint(now, metricValue))
+			}
 		case "IdleWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
+			if r.emitOld {
+				addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
+			}
+			if r.emitNew {
+				addPartialIfError(errs, r.mb.RecordApacheWorkerIdleDataPoint(now, metricValue))
+			}
 		case "Total Accesses":
-			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue))
+			if r.emitOld {
+				addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue))
+			}
+			if r.emitNew {
+				addPartialIfError(errs, r.mb.RecordApacheRequestCountDataPoint(now, metricValue))
+			}
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
@@ -133,7 +186,12 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			r.mb.RecordApacheWorkerLimitDataPoint(now, int64(len(metricValue)))
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
-				r.mb.RecordApacheScoreboardDataPoint(now, score, state)
+				if r.emitOld {
+					r.mb.RecordApacheScoreboardDataPoint(now, score, metadata.MapAttributeScoreboardState[state])
+				}
+				if r.emitNew {
+					r.mb.RecordApacheWorkerStatusDataPoint(now, score, metadata.MapAttributeApacheWorkerState[state])
+				}
 			}
 		}
 	}
@@ -141,7 +199,80 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	rb := r.mb.NewResourceBuilder()
 	rb.SetApacheServerName(r.serverName)
 	rb.SetApacheServerPort(r.port)
-	return r.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
+	metrics := r.mb.Emit(metadata.WithResource(rb.Emit()))
+	r.applyCPUTimeNewFormat(metrics)
+	return metrics, errs.Combine()
+}
+
+// recordConnectionsAsync records the asynchronous connection count under the old
+// metric/attribute names, the new ones, or both, depending on the feature gates.
+func (r *apacheScraper) recordConnectionsAsync(
+	errs *scrapererror.ScrapeErrors,
+	now pcommon.Timestamp,
+	value string,
+	oldState metadata.AttributeConnectionState,
+	newState metadata.AttributeApacheConnectionState,
+) {
+	if r.emitOld {
+		addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, value, oldState))
+	}
+	if r.emitNew {
+		addPartialIfError(errs, r.mb.RecordApacheConnectionStatusDataPoint(now, value, newState))
+	}
+}
+
+// applyCPUTimeNewFormat renames the apache.cpu.time attribute keys to the new
+// format when the new format is enabled. The metric name itself does not change
+// between formats, so this is handled here rather than as a separate metric.
+// When both formats are enabled, new-format data points are appended alongside
+// the original ones; when only the new format is enabled, the keys are renamed
+// in place.
+func (r *apacheScraper) applyCPUTimeNewFormat(md pmetric.Metrics) {
+	if !r.emitNew {
+		return
+	}
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				if m.Name() != cpuTimeMetricName || m.Type() != pmetric.MetricTypeSum {
+					continue
+				}
+				dps := m.Sum().DataPoints()
+				// Snapshot the original count because new-format points may be appended.
+				original := dps.Len()
+				for d := range original {
+					dp := dps.At(d)
+					level, hasLevel := dp.Attributes().Get(cpuTimeOldLevelKey)
+					mode, hasMode := dp.Attributes().Get(cpuTimeOldModeKey)
+					if !hasLevel || !hasMode {
+						continue
+					}
+					levelVal, modeVal := level.Str(), mode.Str()
+					if r.emitOld {
+						// Keep the original point and add a new-format copy.
+						ndp := dps.AppendEmpty()
+						dp.CopyTo(ndp)
+						setCPUTimeNewFormatAttributes(ndp, levelVal, modeVal)
+					} else {
+						// Rename the attribute keys in place.
+						setCPUTimeNewFormatAttributes(dp, levelVal, modeVal)
+					}
+				}
+			}
+		}
+	}
+}
+
+func setCPUTimeNewFormatAttributes(dp pmetric.NumberDataPoint, level, mode string) {
+	dp.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+		return k == cpuTimeOldLevelKey || k == cpuTimeOldModeKey
+	})
+	dp.Attributes().PutStr(cpuTimeNewLevelKey, level)
+	dp.Attributes().PutStr(cpuTimeNewModeKey, mode)
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
@@ -180,50 +311,52 @@ func parseStats(resp string) map[string]string {
 	return metrics
 }
 
-type scoreboardCountsByLabel map[metadata.AttributeScoreboardState]int64
+// scoreboardCountsByLabel maps a worker state (the shared enum value, e.g.
+// "waiting") to the number of workers in that state.
+type scoreboardCountsByLabel map[string]int64
 
 // parseScoreboard quantifies the symbolic mapping of the scoreboard.
 func parseScoreboard(values string) scoreboardCountsByLabel {
 	scoreboard := scoreboardCountsByLabel{
-		metadata.AttributeScoreboardStateWaiting:     0,
-		metadata.AttributeScoreboardStateStarting:    0,
-		metadata.AttributeScoreboardStateReading:     0,
-		metadata.AttributeScoreboardStateSending:     0,
-		metadata.AttributeScoreboardStateKeepalive:   0,
-		metadata.AttributeScoreboardStateDnslookup:   0,
-		metadata.AttributeScoreboardStateClosing:     0,
-		metadata.AttributeScoreboardStateLogging:     0,
-		metadata.AttributeScoreboardStateFinishing:   0,
-		metadata.AttributeScoreboardStateIdleCleanup: 0,
-		metadata.AttributeScoreboardStateOpen:        0,
+		"waiting":      0,
+		"starting":     0,
+		"reading":      0,
+		"sending":      0,
+		"keepalive":    0,
+		"dnslookup":    0,
+		"closing":      0,
+		"logging":      0,
+		"finishing":    0,
+		"idle_cleanup": 0,
+		"open":         0,
 	}
 
 	for _, char := range values {
 		switch string(char) {
 		case "_":
-			scoreboard[metadata.AttributeScoreboardStateWaiting]++
+			scoreboard["waiting"]++
 		case "S":
-			scoreboard[metadata.AttributeScoreboardStateStarting]++
+			scoreboard["starting"]++
 		case "R":
-			scoreboard[metadata.AttributeScoreboardStateReading]++
+			scoreboard["reading"]++
 		case "W":
-			scoreboard[metadata.AttributeScoreboardStateSending]++
+			scoreboard["sending"]++
 		case "K":
-			scoreboard[metadata.AttributeScoreboardStateKeepalive]++
+			scoreboard["keepalive"]++
 		case "D":
-			scoreboard[metadata.AttributeScoreboardStateDnslookup]++
+			scoreboard["dnslookup"]++
 		case "C":
-			scoreboard[metadata.AttributeScoreboardStateClosing]++
+			scoreboard["closing"]++
 		case "L":
-			scoreboard[metadata.AttributeScoreboardStateLogging]++
+			scoreboard["logging"]++
 		case "G":
-			scoreboard[metadata.AttributeScoreboardStateFinishing]++
+			scoreboard["finishing"]++
 		case "I":
-			scoreboard[metadata.AttributeScoreboardStateIdleCleanup]++
+			scoreboard["idle_cleanup"]++
 		case ".":
-			scoreboard[metadata.AttributeScoreboardStateOpen]++
+			scoreboard["open"]++
 		default:
-			scoreboard[metadata.AttributeScoreboardStateUnknown]++
+			scoreboard["unknown"]++
 		}
 	}
 	return scoreboard
