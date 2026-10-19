@@ -99,6 +99,18 @@ func TestLockRequestSliceLabelValueMetadata(t *testing.T) {
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
 
+func TestOperationsByTableJSONLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, OperationsByTableJSONValueType)
+
+	assert.Equal(t, OperationsByTableJSONValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *string
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
 func TestUnknownLabelValueMetadata(t *testing.T) {
 	metadata, err := NewLabelValueMetadata(labelName, labelColumnName, UnknownValueType)
 
@@ -249,6 +261,26 @@ func TestLockRequestSliceLabelValue(t *testing.T) {
 	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
+func TestOperationsByTableJSONLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, OperationsByTableJSONValueType)
+	labelValue := operationsByTableJSONLabelValue{
+		metadata: metadata,
+		value:    stringValue,
+	}
+
+	assert.Equal(t, OperationsByTableJSONValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, stringValue, labelValue.Value())
+
+	attributes := pcommon.NewMap()
+
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, stringValue, attributeValue.Str())
+}
+
 func TestNewStringLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType)
 	value := stringValue
@@ -377,6 +409,105 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 
 	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, expectedValue, labelValue.Value())
+}
+
+func TestNewOperationsByTableJSONLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, OperationsByTableJSONValueType)
+
+	testCases := []struct {
+		name          string
+		inputJSON     string
+		expectedValue string
+	}{
+		{
+			name:          "Single table operation",
+			inputJSON:     `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "Uppercase JSON keys from Spanner",
+			inputJSON:     `[{"INSERT_OR_UPDATE_BYTES":10,"INSERT_OR_UPDATE_COUNT":1,"TABLE_NAME":"table1"},{"INSERT_OR_UPDATE_BYTES":20,"INSERT_OR_UPDATE_COUNT":2,"TABLE_NAME":"table2"}]`,
+			expectedValue: "{table1,1,10},{table2,2,20}",
+		},
+		{
+			name: "Duplicates and unsorted order",
+			inputJSON: `[
+				{"table_name":"table2","insert_or_update_count":2,"insert_or_update_bytes":20},
+				{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10},
+				{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10},
+				{"table_name":"table2","insert_or_update_count":2,"insert_or_update_bytes":20},
+				{"table_name":"table3","insert_or_update_count":0,"insert_or_update_bytes":0}
+			]`,
+			expectedValue: "{table1,1,10},{table2,2,20},{table3,0,0}",
+		},
+		{
+			name:          "Empty JSON array",
+			inputJSON:     "[]",
+			expectedValue: "",
+		},
+		{
+			name:          "Empty JSON object",
+			inputJSON:     "{}",
+			expectedValue: "",
+		},
+		{
+			name:          "Null JSON string",
+			inputJSON:     "null",
+			expectedValue: "",
+		},
+		{
+			name:          "Empty string",
+			inputJSON:     "",
+			expectedValue: "",
+		},
+		{
+			name:          "Invalid JSON",
+			inputJSON:     "invalid-json",
+			expectedValue: "",
+		},
+		{
+			name:          "Null element in JSON array",
+			inputJSON:     `[null, {"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "Unknown fields in JSON object",
+			inputJSON:     `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10,"extra_field":"ignored"}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "Wrong field type in JSON object",
+			inputJSON:     `[{"table_name":123,"insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "",
+		},
+		{
+			name:          "Empty JSON object in array",
+			inputJSON:     `[{}]`,
+			expectedValue: "",
+		},
+		{
+			name:          "Valid table_name only (count and bytes omitted or null)",
+			inputJSON:     `[{"table_name":"table1"},{"table_name":"table2","insert_or_update_count":null,"insert_or_update_bytes":null}]`,
+			expectedValue: "{table1,0,0},{table2,0,0}",
+		},
+		{
+			name:          "Null or empty table_name",
+			inputJSON:     `[{"table_name":null},{"table_name":""}]`,
+			expectedValue: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			value := tc.inputJSON
+			valueHolder := &value
+
+			labelValue := newOperationsByTableJSONLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, OperationsByTableJSONValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tc.expectedValue, labelValue.Value())
+		})
+	}
 }
 
 func TestTimestampLabelValueMetadata(t *testing.T) {
