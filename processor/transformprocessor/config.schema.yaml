@@ -4,6 +4,9 @@ properties:
   error_mode:
     description: ErrorMode determines how the processor reacts to errors that occur while processing a statement. Valid values are `ignore` and `propagate`. `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode. `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector. The default value is `ignore`.
     $ref: /pkg/ottl.error_mode
+  flatten_data:
+    description: FlattenData flattens the data for all supported statement groups, which are currently only log_statements groups. Requires the transform.flatten.logs feature gate.
+    type: boolean
   log_statements:
     type: array
     items:

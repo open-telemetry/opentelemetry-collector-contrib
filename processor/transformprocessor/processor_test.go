@@ -48,34 +48,47 @@ func TestProcessLogsWithoutFlatten(t *testing.T) {
 }
 
 func TestProcessLogsWithFlatten(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.LogStatements = []common.ContextStatements{
-		{
-			Context: "log",
-			Flatten: true,
-			Statements: []string{
-				`set(resource.attributes["host.name"], attributes["host.name"])`,
-				`delete_key(attributes, "host.name")`,
-			},
-		},
+	tests := []struct {
+		name         string
+		flattenData  bool
+		groupFlatten bool
+	}{
+		{name: "flatten_data", flattenData: true},
+		{name: "flatten", groupFlatten: true},
 	}
-	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, sink)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.FlattenData = tt.flattenData
+			oCfg.LogStatements = []common.ContextStatements{
+				{
+					Context: "log",
+					Flatten: tt.groupFlatten,
+					Statements: []string{
+						`set(resource.attributes["host.name"], attributes["host.name"])`,
+						`delete_key(attributes, "host.name")`,
+					},
+				},
+			}
+			sink := new(consumertest.LogsSink)
+			p, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, sink)
+			require.NoError(t, err)
 
-	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
-	require.NoError(t, err)
-	expected, err := golden.ReadLogs(filepath.Join("testdata", "logs", "expected-with-flatten.yaml"))
-	require.NoError(t, err)
+			input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+			require.NoError(t, err)
+			expected, err := golden.ReadLogs(filepath.Join("testdata", "logs", "expected-with-flatten.yaml"))
+			require.NoError(t, err)
 
-	require.NoError(t, p.ConsumeLogs(t.Context(), input))
+			require.NoError(t, p.ConsumeLogs(t.Context(), input))
 
-	actual := sink.AllLogs()
-	require.Len(t, actual, 1)
+			actual := sink.AllLogs()
+			require.Len(t, actual, 1)
 
-	require.NoError(t, plogtest.CompareLogs(expected, actual[0]))
+			require.NoError(t, plogtest.CompareLogs(expected, actual[0]))
+		})
+	}
 }
 
 func BenchmarkLogsWithoutFlatten(b *testing.B) {
@@ -104,27 +117,40 @@ func BenchmarkLogsWithoutFlatten(b *testing.B) {
 }
 
 func BenchmarkLogsWithFlatten(b *testing.B) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.LogStatements = []common.ContextStatements{
-		{
-			Context: "log",
-			Flatten: true,
-			Statements: []string{
-				`set(resource.attributes["host.name"], attributes["host.name"])`,
-				`delete_key(attributes, "host.name")`,
-			},
-		},
+	benchmarks := []struct {
+		name         string
+		flattenData  bool
+		groupFlatten bool
+	}{
+		{name: "flatten_data", flattenData: true},
+		{name: "flatten", groupFlatten: true},
 	}
-	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogs(b.Context(), processortest.NewNopSettings(metadata.Type), oCfg, sink)
-	require.NoError(b, err)
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.FlattenData = bm.flattenData
+			oCfg.LogStatements = []common.ContextStatements{
+				{
+					Context: "log",
+					Flatten: bm.groupFlatten,
+					Statements: []string{
+						`set(resource.attributes["host.name"], attributes["host.name"])`,
+						`delete_key(attributes, "host.name")`,
+					},
+				},
+			}
+			sink := new(consumertest.LogsSink)
+			p, err := factory.CreateLogs(b.Context(), processortest.NewNopSettings(metadata.Type), oCfg, sink)
+			require.NoError(b, err)
 
-	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
-	require.NoError(b, err)
+			input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+			require.NoError(b, err)
 
-	for b.Loop() {
-		require.NoError(b, p.ConsumeLogs(b.Context(), input))
+			for b.Loop() {
+				require.NoError(b, p.ConsumeLogs(b.Context(), input))
+			}
+		})
 	}
 }

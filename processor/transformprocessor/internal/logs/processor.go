@@ -27,10 +27,11 @@ type parsedContextStatements struct {
 type Processor struct {
 	contexts            []parsedContextStatements
 	logger              *zap.Logger
+	flatMode            bool
 	sharedCacheContexts []common.ContextID
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
 	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(logFunctions), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -65,20 +66,27 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 	return &Processor{
 		contexts:            contexts,
 		logger:              settings.Logger,
+		flatMode:            flatMode,
 		sharedCacheContexts: sharedCacheContexts,
 	}, nil
 }
 
 func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	if p.flatMode {
+		pdatautil.FlattenLogs(ld.ResourceLogs())
+		defer pdatautil.GroupByResourceLogs(ld.ResourceLogs())
+	}
+
 	sharedCaches := common.NewSharedCaches(p.sharedCacheContexts)
 
 	for _, c := range p.contexts {
-		if c.flatten {
+		flatten := c.flatten && !p.flatMode
+		if flatten {
 			pdatautil.FlattenLogs(ld.ResourceLogs())
 		}
 		cache := common.LoadContextCache(sharedCaches, c.Context(), c.sharedCache)
 		err := c.ConsumeLogs(ctx, ld, cache)
-		if c.flatten {
+		if flatten {
 			pdatautil.GroupByResourceLogs(ld.ResourceLogs())
 		}
 		if err != nil {
