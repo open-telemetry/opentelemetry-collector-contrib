@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/log_dedup
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `timestamp_mode` configuration option (`observed` (default) or `preserved`) and new attributes `first_event_timestamp` and `last_event_timestamp` to the logdedup processor."
+note: "Add `timestamp_mode` configuration option (`aggregated` (default) or `preserved`) and new attributes `first_event_timestamp` and `last_event_timestamp` to the logdedup processor."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43647]
@@ -16,7 +16,7 @@ issues: [43647]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - `observed` sets the emitted log's timestamp to export time (default behavior) and adds `first_event_timestamp` to capture the original timestamp.
+  - `aggregated` sets the emitted log's timestamp to export time (default behavior) and adds `first_event_timestamp` to capture the original timestamp.
   - `preserved` retains the timestamp from the first log received in the aggregation window (omitting redundant `first_event_timestamp`).
   - `last_event_timestamp` records the timestamp of the last log received in the window in all modes.
 
