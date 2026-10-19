@@ -283,7 +283,12 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 201)
+		}
 	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
@@ -334,7 +339,12 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv125.HTTPMethodKey), http.MethodGet)
 	attrMap.PutStr(string(conventionsv125.HTTPURLKey), "https://opentelemetry.io/registry/")
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 200)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 200)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 200)
+		}
 		attrMap.PutStr("http.status_text", "More Than OK")
 	}
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
@@ -359,7 +369,12 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 201)
+		}
 	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
@@ -481,7 +496,12 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 201)
+		}
 		attrMap.PutStr("http.status_text", "Created")
 	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
