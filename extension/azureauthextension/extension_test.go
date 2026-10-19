@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 )
 
 func TestNewAzureAuthenticator(t *testing.T) {
@@ -192,6 +194,41 @@ func TestGetToken(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestGetCredentialUsesConfiguredScopes(t *testing.T) {
+	t.Parallel()
+
+	expires := time.Now().Add(time.Hour)
+	m := &mockTokenCredential{}
+	m.On("GetToken", mock.Anything, policy.TokenRequestOptions{
+		Scopes: []string{"https://sql.custom-cloud.example/.default"},
+	}).Return(azcore.AccessToken{Token: "sql-token", ExpiresOn: expires}, nil).Once()
+
+	a := authenticator{
+		credential: m,
+		scopes:     []string{"https://sql.custom-cloud.example/.default"},
+	}
+	credential, err := a.GetCredential(t.Context(), dbauth.Request{Endpoint: "sql.example.com:1433"})
+	require.NoError(t, err)
+	require.Equal(t, "sql-token", credential.Secret)
+	require.Equal(t, &expires, credential.NotAfter)
+	m.AssertExpectations(t)
+}
+
+func TestGetCredentialDefaultsToAzurePublicSQLScope(t *testing.T) {
+	t.Parallel()
+
+	m := &mockTokenCredential{}
+	m.On("GetToken", mock.Anything, policy.TokenRequestOptions{
+		Scopes: []string{defaultDatabaseScope},
+	}).Return(azcore.AccessToken{Token: "sql-token"}, nil).Once()
+
+	a := authenticator{credential: m}
+	credential, err := a.GetCredential(t.Context(), dbauth.Request{})
+	require.NoError(t, err)
+	require.Equal(t, "sql-token", credential.Secret)
+	m.AssertExpectations(t)
 }
 
 func TestGetTokenForHost(t *testing.T) {

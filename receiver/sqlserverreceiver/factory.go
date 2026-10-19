@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	azcore "github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	lru "github.com/hashicorp/golang-lru/v2"
 	mssql "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/azuread"             // register "azuresql" driver for Azure AD / managed identity auth
@@ -26,14 +24,13 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
-
-// azureSQLScope is the OAuth 2.0 resource scope used to obtain tokens for Azure SQL Database.
-const azureSQLScope = "https://database.windows.net/.default"
 
 // newCache creates a new cache with the given size.
 // If the size is less or equal to 0, it will be set to 1.
@@ -148,9 +145,10 @@ func getDBConnectionString(config *Config) string {
 	if config.DataSource != "" {
 		return config.DataSource
 	}
-	if config.Auth != nil {
-		// Auth extension supplies credentials at connection time; DSN carries only server location.
-		return fmt.Sprintf("server=%s;port=%d", config.Server, config.Port)
+	if !config.DBAuth.IsEmpty() {
+		// The db_auth provider supplies the secret at connection time. Keep the
+		// configured username in the DSN because providers may use it as mint input.
+		return fmt.Sprintf("server=%s;user id=%s;port=%d", config.Server, config.Username, config.Port)
 	}
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
@@ -196,25 +194,23 @@ type dbProvider struct {
 	dsn         string
 	pool        ConnectionPool
 	numScrapers int
-	authID      *component.ID // optional: reference to an azureauthextension
+	dbAuthID    configdbauth.ID
 
-	mu                 sync.Mutex
-	db                 *sql.DB
-	openErr            error
-	opened             bool
-	closed             bool
-	closeErr           error
-	dbVersion          *string
-	versionErrReported bool
-  dbEdition               *string
+	mu                      sync.Mutex
+	db                      *sql.DB
+	openErr                 error
+	opened                  bool
+	closed                  bool
+	closeErr                error
+	dbVersion               *string
+	versionErrReported      bool
+	dbEdition               *string
 	instanceInfoErrReported bool
 
-	// cred is set by start() when authID is non-nil. Written once under mu;
-	// read by getDB() under the same lock.
-	cred      azcore.TokenCredential
-	startOnce sync.Once
-	startErr  error
-
+	// credentialProvider is set by start() when db_auth is configured.
+	credentialProvider dbauth.Provider
+	startOnce          sync.Once
+	startErr           error
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -224,33 +220,26 @@ func newDBProvider(cfg *Config, numScrapers int) *dbProvider {
 		dsn:         getDBConnectionString(cfg),
 		pool:        cfg.ConnectionPool,
 		numScrapers: numScrapers,
-		authID:      cfg.Auth,
+		dbAuthID:    cfg.DBAuth,
 	}
 }
 
-// start resolves the Azure AD credential from the auth extension referenced by
-// authID. It is idempotent and safe for concurrent calls: the extension is
+// start resolves the credential provider referenced by dbAuthID. It is idempotent and safe for concurrent calls: the extension is
 // looked up exactly once, and the result (credential or error) is cached.
-// start must be called before the first getDB() when authID is non-nil.
+// start must be called before the first getDB() when db_auth is configured.
 func (p *dbProvider) start(host component.Host) error {
-	if p.authID == nil {
+	if p.dbAuthID.IsEmpty() {
 		return nil
 	}
 	p.startOnce.Do(func() {
-		exts := host.GetExtensions()
-		ext, ok := exts[*p.authID]
-		if !ok {
-			p.startErr = fmt.Errorf("auth extension %q not found", *p.authID)
+		credentialProvider, err := p.dbAuthID.GetProvider(host.GetExtensions())
+		if err != nil {
+			p.startErr = err
 			return
 		}
-		cred, ok := ext.(azcore.TokenCredential)
-		if !ok {
-			p.startErr = fmt.Errorf("extension %q does not implement azcore.TokenCredential", *p.authID)
-			return
-		}
-		// Write under p.mu so getDB() can safely read cred under the same lock.
+		// Write under p.mu so getDB() can safely read the resolved provider.
 		p.mu.Lock()
-		p.cred = cred
+		p.credentialProvider = credentialProvider
 		p.mu.Unlock()
 	})
 	return p.startErr
@@ -262,8 +251,8 @@ func (p *dbProvider) start(host component.Host) error {
 // be created after close and leaked.
 //
 // Three connection modes are supported:
-//   - Auth extension (authID set): uses mssql.NewSecurityTokenConnector so that
-//     a fresh Azure AD token is fetched for every new physical connection.
+//   - db_auth provider set: uses mssql.NewSecurityTokenConnector so a fresh
+//     credential is fetched for every new physical connection.
 //   - DSN fedauth (datasource contains "fedauth="): opens with the "azuresql"
 //     driver, which handles token acquisition internally.
 //   - Default: opens with the "sqlserver" driver (SQL auth or Kerberos).
@@ -277,29 +266,38 @@ func (p *dbProvider) getDB() (*sql.DB, error) {
 	if !p.opened {
 		p.opened = true
 		switch {
-		case p.cred != nil:
-			// Mode 1: token injected from azureauthextension.
+		case p.credentialProvider != nil:
+			// Mode 1: token injected by the configured db_auth provider.
 			// mssql.NewSecurityTokenConnector calls the provider for every new
-			// physical connection, so tokens are refreshed automatically.
+			// physical connection, so expiring credentials are refreshed.
 			dsnConfig, err := msdsn.Parse(p.dsn)
 			if err != nil {
-				p.openErr = fmt.Errorf("failed to parse DSN for Azure AD connector: %w", err)
+				p.openErr = fmt.Errorf("failed to parse DSN for credential connector: %w", err)
 				break
 			}
-			cred := p.cred
+			credentialProvider := p.credentialProvider
+			endpoint, username := "", ""
+			if dsnConfig.Host != "" && dsnConfig.Port != 0 {
+				endpoint = fmt.Sprintf("%s:%d", dsnConfig.Host, dsnConfig.Port)
+			}
+			username = dsnConfig.User
 			connector, err := mssql.NewSecurityTokenConnector(dsnConfig,
 				func(ctx context.Context) (string, error) {
-					tok, tokErr := cred.GetToken(ctx, policy.TokenRequestOptions{
-						Scopes: []string{azureSQLScope},
+					credential, credentialErr := credentialProvider.GetCredential(ctx, dbauth.Request{
+						Endpoint: endpoint,
+						Username: username,
 					})
-					if tokErr != nil {
-						return "", tokErr
+					if credentialErr != nil {
+						return "", credentialErr
 					}
-					return tok.Token, nil
+					if credential == nil {
+						return "", errors.New("credential provider returned a nil credential")
+					}
+					return credential.Secret, nil
 				},
 			)
 			if err != nil {
-				p.openErr = fmt.Errorf("failed to create Azure AD SQL connector: %w", err)
+				p.openErr = fmt.Errorf("failed to create SQL credential connector: %w", err)
 				break
 			}
 			p.db = sql.OpenDB(connector)
@@ -454,7 +452,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
 		}
 
-		if cfg.Auth != nil {
+		if !cfg.DBAuth.IsEmpty() {
 			sqlServerScraper.startProviderFunc = provider.start
 		}
 
@@ -521,7 +519,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
 		}
 
-		if cfg.Auth != nil {
+		if !cfg.DBAuth.IsEmpty() {
 			sqlServerScraper.startProviderFunc = provider.start
 		}
 

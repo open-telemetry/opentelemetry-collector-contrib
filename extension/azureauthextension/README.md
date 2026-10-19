@@ -21,6 +21,12 @@ This extension can be used in two directions:
 
 Additionally, the extension also implements `azcore.TokenCredential` so that Azure components can get the token by running the function `GetToken`. If the component supports HTTP client, then this should not be necessary, as the token will be placed in the authorization header.
 
+The extension also implements `dbauth.Provider` for database receivers that use
+`db_auth`. In that role, it requests a token using the configured `scopes` (or
+the Azure Public SQL scope when `scopes` is unset). Set the scope explicitly for
+Azure Government, Azure China, or any other cloud with a different SQL resource
+URI; the receiver does not choose or override the token scope.
+
 It supports 4 different types of authentication:
 
 - Managed identity for Azure resources
@@ -104,6 +110,25 @@ extensions:
   azure_auth:
     scopes:
       - https://monitor.azure.com/.default
+```
+
+For SQL Server database authentication, reference the extension through the
+receiver's `db_auth` field:
+
+```yaml
+extensions:
+  azure_auth:
+    scopes: [https://database.windows.net/.default]
+    service_principal:
+      tenant_id: ${AZURE_TENANT_ID}
+      client_id: ${AZURE_CLIENT_ID}
+      client_secret: ${AZURE_CLIENT_SECRET}
+
+receivers:
+  sqlserver:
+    server: ${AZURE_SQL_SERVER}
+    port: 1433
+    db_auth: azure_auth
 ```
 
 ### Inbound JWT validation

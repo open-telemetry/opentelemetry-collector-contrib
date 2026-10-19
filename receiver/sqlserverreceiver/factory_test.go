@@ -21,8 +21,54 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
+
+type dbAuthTestHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h dbAuthTestHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+type dbAuthTestExtension struct {
+	component.Component
+	dbauth.Provider
+}
+
+func TestDBProviderStartResolvesProviderFromHost(t *testing.T) {
+	id := component.MustNewID("azure_auth")
+	extension := &dbAuthTestExtension{}
+	provider := newDBProvider(&Config{DBAuth: configdbauth.ID(id)}, 1)
+
+	err := provider.start(dbAuthTestHost{
+		extensions: map[component.ID]component.Component{id: extension},
+	})
+	require.NoError(t, err)
+	require.Same(t, dbauth.Provider(extension), provider.credentialProvider)
+}
+
+func TestDBProviderStartReportsMissingProvider(t *testing.T) {
+	id := component.MustNewID("azure_auth")
+	provider := newDBProvider(&Config{DBAuth: configdbauth.ID(id)}, 1)
+
+	err := provider.start(dbAuthTestHost{extensions: map[component.ID]component.Component{}})
+	require.ErrorContains(t, err, "db_auth: requested credential provider is not present")
+}
+
+func TestGetDBConnectionStringWithDBAuth(t *testing.T) {
+	cfg := &Config{
+		DBAuth:   configdbauth.ID(component.MustNewID("azure_auth")),
+		Server:   "sql.example.com",
+		Username: "sql-user",
+		Port:     1433,
+	}
+	require.Equal(t, "server=sql.example.com;user id=sql-user;port=1433", getDBConnectionString(cfg))
+}
 
 func TestFactory(t *testing.T) {
 	testCases := []struct {

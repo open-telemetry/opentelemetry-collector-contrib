@@ -1,7 +1,9 @@
 # Manual integration test: sqlserverreceiver with azure_auth (service principal)
 #
-# This config demonstrates the azure_auth extension injecting Azure AD credentials
+# This config demonstrates the azure_auth extension providing Azure SQL credentials
 # into the sqlserverreceiver without storing secrets in the config file.
+# Set `scopes` to the Azure SQL resource scope for the target cloud. The default
+# below is for Azure Public; Azure Government and China use different scopes.
 #
 # Prerequisites
 # -------------
@@ -30,6 +32,7 @@
 
 extensions:
   azure_auth:
+    scopes: [https://database.windows.net/.default]
     service_principal:
       tenant_id: ${AZURE_TENANT_ID}
       client_id: ${AZURE_CLIENT_ID}
@@ -40,7 +43,7 @@ receivers:
     collection_interval: 30s
     server: ${AZURE_SQL_SERVER}
     port: 1433
-    auth: azure_auth
+    db_auth: azure_auth
 
 exporters:
   debug:
