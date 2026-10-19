@@ -1161,49 +1161,49 @@ distributions can reduce their reachable dependency and linked-binary surface by
 excluding all detector implementations and then opting selected detectors back in:
 
 ```sh
-go build -tags 'remove_all_resourcedetection_detectors,enable_resourcedetection_env_detector,enable_resourcedetection_system_detector' ./...
+go build -tags 'remove_all_resourcedetection_detectors,enable_detector_env,enable_detector_system' ./...
 ```
 
 Use `remove_all_resourcedetection_detectors` together with one or more tags from this
-table. Positive tags without the removal tag do not trim the default build. Existing `omit_detector_<name>` tags remain supported and take precedence over an opt-in tag. For example, `omit_detector_aws_ec2` excludes EC2 even if `enable_resourcedetection_aws_ec2_detector` is set. Opt-in suffixes match the existing omit-tag suffixes.
+table. Positive tags without the removal tag do not trim the default build. Existing `omit_detector_<name>` tags remain supported and take precedence over an opt-in tag. For example, `omit_detector_aws_ec2` excludes EC2 even if `enable_detector_aws_ec2` is set. Opt-in suffixes match the existing omit-tag suffixes.
 
 | Detector in `detectors` | Opt-in build tag |
 | --- | --- |
-| `akamai` | `enable_resourcedetection_akamai_detector` |
-| `aks` | `enable_resourcedetection_azure_aks_detector` |
-| `alibaba_ecs` | `enable_resourcedetection_alibaba_ecs_detector` |
-| `azure` | `enable_resourcedetection_azure_detector` |
-| `azureappservice` | `enable_resourcedetection_azure_appservice_detector` |
-| `azurecontainerapps` | `enable_resourcedetection_azure_containerapps_detector` |
-| `azurefunctions` | `enable_resourcedetection_azure_functions_detector` |
-| `consul` | `enable_resourcedetection_consul_detector` |
-| `digitalocean` | `enable_resourcedetection_digitalocean_detector` |
-| `docker` | `enable_resourcedetection_docker_detector` |
-| `dynatrace` | `enable_resourcedetection_dynatrace_detector` |
-| `ec2` | `enable_resourcedetection_aws_ec2_detector` |
-| `ecs` | `enable_resourcedetection_aws_ecs_detector` |
-| `eks` | `enable_resourcedetection_aws_eks_detector` |
-| `elastic_beanstalk` | `enable_resourcedetection_aws_elastic_beanstalk_detector` |
-| `env` | `enable_resourcedetection_env_detector` |
-| `gcp` | `enable_resourcedetection_gcp_detector` |
-| `heroku` | `enable_resourcedetection_heroku_detector` |
-| `hetzner` | `enable_resourcedetection_hetzner_detector` |
-| `ibmcloud_classic` | `enable_resourcedetection_ibmcloud_classic_detector` |
-| `ibmcloud_vpc` | `enable_resourcedetection_ibmcloud_vpc_detector` |
-| `k8s_api` | `enable_resourcedetection_k8s_api_detector` |
-| `kubeadm` | `enable_resourcedetection_kubeadm_detector` |
-| `lambda` | `enable_resourcedetection_aws_lambda_detector` |
-| `nova` | `enable_resourcedetection_openstack_nova_detector` |
-| `openshift` | `enable_resourcedetection_openshift_detector` |
-| `oraclecloud` | `enable_resourcedetection_oraclecloud_detector` |
-| `scaleway` | `enable_resourcedetection_scaleway_detector` |
-| `system` | `enable_resourcedetection_system_detector` |
-| `tencent_cvm` | `enable_resourcedetection_tencent_cvm_detector` |
-| `upcloud` | `enable_resourcedetection_upcloud_detector` |
-| `vultr` | `enable_resourcedetection_vultr_detector` |
+| `akamai` | `enable_detector_akamai` |
+| `aks` | `enable_detector_azure_aks` |
+| `alibaba_ecs` | `enable_detector_alibaba_ecs` |
+| `azure` | `enable_detector_azure` |
+| `azureappservice` | `enable_detector_azure_appservice` |
+| `azurecontainerapps` | `enable_detector_azure_containerapps` |
+| `azurefunctions` | `enable_detector_azure_functions` |
+| `consul` | `enable_detector_consul` |
+| `digitalocean` | `enable_detector_digitalocean` |
+| `docker` | `enable_detector_docker` |
+| `dynatrace` | `enable_detector_dynatrace` |
+| `ec2` | `enable_detector_aws_ec2` |
+| `ecs` | `enable_detector_aws_ecs` |
+| `eks` | `enable_detector_aws_eks` |
+| `elastic_beanstalk` | `enable_detector_aws_elastic_beanstalk` |
+| `env` | `enable_detector_env` |
+| `gcp` | `enable_detector_gcp` |
+| `heroku` | `enable_detector_heroku` |
+| `hetzner` | `enable_detector_hetzner` |
+| `ibmcloud_classic` | `enable_detector_ibmcloud_classic` |
+| `ibmcloud_vpc` | `enable_detector_ibmcloud_vpc` |
+| `k8s_api` | `enable_detector_k8s_api` |
+| `kubeadm` | `enable_detector_kubeadm` |
+| `lambda` | `enable_detector_aws_lambda` |
+| `nova` | `enable_detector_openstack_nova` |
+| `openshift` | `enable_detector_openshift` |
+| `oraclecloud` | `enable_detector_oraclecloud` |
+| `scaleway` | `enable_detector_scaleway` |
+| `system` | `enable_detector_system` |
+| `tencent_cvm` | `enable_detector_tencent_cvm` |
+| `upcloud` | `enable_detector_upcloud` |
+| `vultr` | `enable_detector_vultr` |
 
 The deprecated `k8snode` detector alias is compiled by
-`enable_resourcedetection_k8s_api_detector`; it has no separate opt-in tag. The
+`enable_detector_k8s_api`; it has no separate opt-in tag. The
 `elastic_beanstalk` detector uses the `elasticbeanstalk` configuration block.
 
 The factory default is `detectors: [env]`. A trimmed build that does not include the
@@ -1218,7 +1218,7 @@ Go silently ignores unknown build tags,
 so verify tag spelling when a detector is unexpectedly unavailable.
 
 For an EC2-only distribution, build the Collector with
-`remove_all_resourcedetection_detectors,enable_resourcedetection_aws_ec2_detector` and
+`remove_all_resourcedetection_detectors,enable_detector_aws_ec2` and
 configure `detectors: [ec2]`. This excludes the EKS and Kubernetes detector
 implementations. Other enabled Collector components can still require Kubernetes
 dependencies. Build tags select compiled implementation files; they do not remove requirements

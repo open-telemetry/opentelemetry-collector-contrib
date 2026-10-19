@@ -88,7 +88,7 @@ func TestDetectorBuildTags(t *testing.T) {
 		t.Run(filepath.ToSlash(dir), func(t *testing.T) {
 			omit := omitTags[dir]
 			require.NotEmpty(t, omit, "detector needs an omit tag and complementary factory files")
-			enable := "enable_resourcedetection_" + strings.TrimPrefix(omit, "omit_detector_") + "_detector"
+			enable := "enable_detector_" + strings.TrimPrefix(omit, "omit_detector_")
 			for _, removeAll := range []bool{false, true} {
 				for _, enabled := range []bool{false, true} {
 					for _, omitted := range []bool{false, true} {
@@ -125,7 +125,7 @@ func TestEC2TrimmedBuildExcludesKubernetesDependencies(t *testing.T) {
 	// Inspect production imports, not the test binary: existing config tests
 	// import other detector implementations even in a targeted trimmed test run.
 	cmd := exec.CommandContext(t.Context(), "go", "list", "-deps",
-		"-tags=remove_all_resourcedetection_detectors,enable_resourcedetection_aws_ec2_detector", ".")
+		"-tags=remove_all_resourcedetection_detectors,enable_detector_aws_ec2", ".")
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "%s", output)
 	packages := strings.Fields(string(output))

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build (!remove_all_resourcedetection_detectors || enable_resourcedetection_scaleway_detector) && !omit_detector_scaleway
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_scaleway) && !omit_detector_scaleway
 
 package scaleway // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 

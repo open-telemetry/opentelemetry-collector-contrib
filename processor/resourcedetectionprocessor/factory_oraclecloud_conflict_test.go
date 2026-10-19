@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build omit_detector_oraclecloud && enable_resourcedetection_oraclecloud_detector
+//go:build omit_detector_oraclecloud && enable_detector_oraclecloud
 
 package resourcedetectionprocessor
 

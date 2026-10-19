@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build (remove_all_resourcedetection_detectors && !enable_resourcedetection_heroku_detector) || omit_detector_heroku
+//go:build (remove_all_resourcedetection_detectors && !enable_detector_heroku) || omit_detector_heroku
 
 package heroku // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 
