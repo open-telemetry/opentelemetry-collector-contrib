@@ -4,6 +4,7 @@
 package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -188,7 +189,7 @@ func reloadPromConfig(dst *PromConfig, src any) error {
 	yamlOut, err := yaml.MarshalWithOptions(
 		src,
 		yaml.CustomMarshaler(func(s commonconfig.Secret) ([]byte, error) {
-			return yaml.Marshal(string(s))
+			return json.Marshal(string(s))
 		}),
 	)
 	if err != nil {

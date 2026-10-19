@@ -105,4 +105,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, time.Hour, defaultCfg.TopQueryCollection.QueryPlanCacheTTL)
 
 	assert.Equal(t, int64(1000), defaultCfg.QuerySampleCollection.MaxRowsPerQuery)
+
+	assert.Equal(t, "postgres", defaultCfg.ConnectDatabase)
 }

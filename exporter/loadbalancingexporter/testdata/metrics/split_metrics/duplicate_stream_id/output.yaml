@@ -1,4 +1,4 @@
-stream/c7006b564eec22c9:
+stream/e27cc7fd0ca16890:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -45,7 +45,7 @@ stream/c7006b564eec22c9:
                       - key: aaa
                         value:
                           stringValue: bbb
-stream/e2d32621d2dcda0f:
+stream/1955925c8e58e17c:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
