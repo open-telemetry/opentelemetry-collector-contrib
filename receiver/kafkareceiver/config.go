@@ -104,6 +104,9 @@ func (c *Config) Validate() error {
 		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
 			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
 		}
+		if c.PartitionProcessing.MaxInFlight.Bytes < 0 {
+			return errors.New("partition_processing.max_in_flight.bytes must not be negative")
+		}
 		if !c.ConsumerConfig.AutoCommit.Enable {
 			return errors.New("partition_processing.independent requires autocommit.enable")
 		}
@@ -214,9 +217,10 @@ type MaxInFlightConfig struct {
 	// Records is how many calls may run at once. Default 1.
 	Records int `mapstructure:"records"`
 
-	// TODO: add Bytes to cap the fetched payload size of in-flight records.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51804
-	// Bytes int `mapstructure:"bytes"`
+	// Bytes caps the key and value bytes of the records in those calls, counted
+	// after decompression. Headers are not counted. 0 means no cap. A record
+	// above the cap still runs, alone. It has no effect when Records is 1.
+	Bytes int `mapstructure:"bytes"`
 
 	_ struct{} // avoids unkeyed_literal_initialization.
 }

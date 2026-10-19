@@ -535,6 +535,9 @@ metrics:
       value_type: int
     unit: "By"
     attributes: [db.namespace, db.collection.name, postgresql.index.name]
+    extended_documentation: |
+      No data point is reported for an index that is dropped while the receiver is collecting,
+      because its size is no longer measurable.
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -623,6 +626,9 @@ metrics:
       monotonic: false
       value_type: int
     attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      No data point is reported for a table that is dropped while the receiver is collecting,
+      because its size is no longer measurable. The table's other metrics are still reported.
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
     stability: development
