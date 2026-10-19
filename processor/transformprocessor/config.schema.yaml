@@ -1,10 +1,10 @@
 $defs:
   flatten_config:
-    description: FlattenConfig configures, per signal, whether the data is flattened for all statement groups of that signal.
+    description: FlattenConfig configures which OTTL contexts the data is flattened to before the statements run.
     type: object
     properties:
-      logs:
-        description: Logs gives each log record a distinct copy of its resource and scope for all log_statements groups. Requires the transform.flatten.logs feature gate.
+      log:
+        description: Log gives each log record a distinct copy of its resource and scope. Requires the transform.flatten.logs feature gate.
         type: boolean
 description: Config defines the configuration for the processor.
 type: object

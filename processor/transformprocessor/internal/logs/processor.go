@@ -21,7 +21,6 @@ import (
 type parsedContextStatements struct {
 	common.LogsConsumer
 	sharedCache bool
-	flatten     bool
 }
 
 type Processor struct {
@@ -47,7 +46,6 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		contexts[i] = parsedContextStatements{
 			LogsConsumer: context,
 			sharedCache:  cs.SharedCache,
-			flatten:      cs.Flatten,
 		}
 	}
 
@@ -80,15 +78,8 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 	sharedCaches := common.NewSharedCaches(p.sharedCacheContexts)
 
 	for _, c := range p.contexts {
-		flatten := c.flatten && !p.flatMode
-		if flatten {
-			pdatautil.FlattenLogs(ld.ResourceLogs())
-		}
 		cache := common.LoadContextCache(sharedCaches, c.Context(), c.sharedCache)
 		err := c.ConsumeLogs(ctx, ld, cache)
-		if flatten {
-			pdatautil.GroupByResourceLogs(ld.ResourceLogs())
-		}
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err

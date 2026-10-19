@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -26,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("flattening logs requires the 'transform.flatten.logs' feature gate to be enabled")
+var errFlatLogsGateDisabled = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -57,11 +56,11 @@ type Config struct {
 	profileFunctions   map[string]ottl.Factory[*ottlprofile.TransformContext]
 }
 
-// FlattenConfig configures, per signal, whether the data is flattened for all statement groups of that signal.
+// FlattenConfig configures which OTTL contexts the data is flattened to before the statements run.
 type FlattenConfig struct {
-	// Logs gives each log record a distinct copy of its resource and scope for all log_statements groups.
+	// Log gives each log record a distinct copy of its resource and scope.
 	// Requires the transform.flatten.logs feature gate.
-	Logs bool `mapstructure:"logs"`
+	Log bool `mapstructure:"log"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -150,10 +149,6 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 var _ component.Config = (*Config)(nil)
 
-func errFlattenUnsupportedSignal(fieldName string) error {
-	return fmt.Errorf("'flatten' is not supported in %q, it is only supported in \"log_statements\"", fieldName)
-}
-
 func (c *Config) Validate() error {
 	var errors error
 
@@ -166,9 +161,6 @@ func (c *Config) Validate() error {
 			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
 				errors = multierr.Append(errors, err)
-			}
-			if cs.Flatten {
-				errors = multierr.Append(errors, errFlattenUnsupportedSignal("trace_statements"))
 			}
 		}
 	}
@@ -183,9 +175,6 @@ func (c *Config) Validate() error {
 			if err != nil {
 				errors = multierr.Append(errors, err)
 			}
-			if cs.Flatten {
-				errors = multierr.Append(errors, errFlattenUnsupportedSignal("metric_statements"))
-			}
 		}
 	}
 
@@ -195,13 +184,9 @@ func (c *Config) Validate() error {
 			return err
 		}
 		for _, cs := range c.LogStatements {
-			consumer, err := pc.ParseContextStatements(cs)
+			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
 				errors = multierr.Append(errors, err)
-				continue
-			}
-			if cs.Flatten && consumer.Context() != common.Log {
-				errors = multierr.Append(errors, fmt.Errorf("'flatten' is only supported for statement groups in the %q context, got %q", common.Log, consumer.Context()))
 			}
 		}
 	}
@@ -216,14 +201,10 @@ func (c *Config) Validate() error {
 			if err != nil {
 				errors = multierr.Append(errors, err)
 			}
-			if cs.Flatten {
-				errors = multierr.Append(errors, errFlattenUnsupportedSignal("profile_statements"))
-			}
 		}
 	}
 
-	flatten := c.Flatten.Logs || slices.ContainsFunc(c.LogStatements, func(cs common.ContextStatements) bool { return cs.Flatten })
-	if flatten && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
+	if c.Flatten.Log && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
 		errors = multierr.Append(errors, errFlatLogsGateDisabled)
 	}
 

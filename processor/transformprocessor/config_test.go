@@ -458,16 +458,12 @@ func Test_EmptyStatementListItem(t *testing.T) {
 	}
 }
 
-func setFlattenLogsFeatureGate(t *testing.T, enabled bool) {
+func Test_LoadConfig_FlattenLog(t *testing.T) {
 	original := metadata.TransformFlattenLogsFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), enabled))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), true))
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), original))
 	})
-}
-
-func Test_LoadConfig_Flatten(t *testing.T) {
-	setFlattenLogsFeatureGate(t, true)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -478,158 +474,5 @@ func Test_LoadConfig_Flatten(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, confmap.Validate(cfg))
 
-	assert.Equal(t, []common.ContextStatements{
-		{
-			Flatten:    true,
-			Statements: []string{`set(resource.attributes["host.name"], log.attributes["host.name"])`},
-		},
-		{
-			Statements: []string{`set(log.attributes["test"], "pass")`},
-		},
-	}, cfg.(*Config).LogStatements)
-}
-
-func Test_LoadConfig_FlattenLogs(t *testing.T) {
-	setFlattenLogsFeatureGate(t, true)
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-
-	cfg := NewFactory().CreateDefaultConfig()
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_logs").String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, confmap.Validate(cfg))
-
-	assert.True(t, cfg.(*Config).Flatten.Logs)
-	assert.Equal(t, []common.ContextStatements{
-		{
-			Statements: []string{`set(resource.attributes["host.name"], log.attributes["host.name"])`},
-		},
-	}, cfg.(*Config).LogStatements)
-}
-
-func Test_Validate_FlattenRequiresGate(t *testing.T) {
-	setFlattenLogsFeatureGate(t, false)
-
-	tests := []struct {
-		name      string
-		configure func(*Config)
-	}{
-		{
-			name: "flatten.logs",
-			configure: func(c *Config) {
-				c.Flatten.Logs = true
-			},
-		},
-		{
-			name: "flatten",
-			configure: func(c *Config) {
-				c.LogStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(resource.attributes["host.name"], log.attributes["host.name"])`}},
-				}
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			tt.configure(cfg)
-			assert.ErrorIs(t, cfg.Validate(), errFlatLogsGateDisabled)
-		})
-	}
-}
-
-func Test_Validate_Flatten(t *testing.T) {
-	setFlattenLogsFeatureGate(t, true)
-
-	tests := []struct {
-		name      string
-		configure func(*Config)
-		wantErr   string
-	}{
-		{
-			name: "inferred log context",
-			configure: func(c *Config) {
-				c.LogStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(resource.attributes["host.name"], log.attributes["host.name"])`}},
-				}
-			},
-		},
-		{
-			name: "explicit log context",
-			configure: func(c *Config) {
-				c.LogStatements = []common.ContextStatements{
-					{Context: common.Log, Flatten: true, Statements: []string{`set(resource.attributes["host.name"], attributes["host.name"])`}},
-				}
-			},
-		},
-		{
-			name: "explicit resource context",
-			configure: func(c *Config) {
-				c.LogStatements = []common.ContextStatements{
-					{Context: common.Resource, Flatten: true, Statements: []string{`set(attributes["host.name"], "localhost")`}},
-				}
-			},
-			wantErr: `'flatten' is only supported for statement groups in the "log" context, got "resource"`,
-		},
-		{
-			name: "inferred resource context",
-			configure: func(c *Config) {
-				c.LogStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(resource.attributes["host.name"], "localhost")`}},
-				}
-			},
-			wantErr: `'flatten' is only supported for statement groups in the "log" context, got "resource"`,
-		},
-		{
-			name: "inferred scope context",
-			configure: func(c *Config) {
-				c.LogStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(scope.attributes["name"], "scope")`}},
-				}
-			},
-			wantErr: `'flatten' is only supported for statement groups in the "log" context, got "scope"`,
-		},
-		{
-			name: "trace statements",
-			configure: func(c *Config) {
-				c.TraceStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(resource.attributes["host.name"], span.attributes["host.name"])`}},
-				}
-			},
-			wantErr: errFlattenUnsupportedSignal("trace_statements").Error(),
-		},
-		{
-			name: "metric statements",
-			configure: func(c *Config) {
-				c.MetricStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(resource.attributes["host.name"], datapoint.attributes["host.name"])`}},
-				}
-			},
-			wantErr: errFlattenUnsupportedSignal("metric_statements").Error(),
-		},
-		{
-			name: "profile statements",
-			configure: func(c *Config) {
-				c.ProfileStatements = []common.ContextStatements{
-					{Flatten: true, Statements: []string{`set(resource.attributes["host.name"], "localhost")`}},
-				}
-			},
-			wantErr: errFlattenUnsupportedSignal("profile_statements").Error(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := NewFactory().CreateDefaultConfig().(*Config)
-			tt.configure(cfg)
-			err := cfg.Validate()
-			if tt.wantErr == "" {
-				require.NoError(t, err)
-				return
-			}
-			assert.ErrorContains(t, err, tt.wantErr)
-		})
-	}
+	assert.True(t, cfg.(*Config).Flatten.Log)
 }
