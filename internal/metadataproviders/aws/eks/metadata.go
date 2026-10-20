@@ -37,9 +37,17 @@ const (
 )
 
 // ErrClusterIdentityMismatch reports that EKS described the named cluster and
-// it is not the cluster this node is running in. It is the one ARN failure that
-// says something about the cluster name itself: the name is wrong, rather than
-// unproven, so a caller reporting the name separately can stop reporting it.
+// it is not the cluster this node is running in. It is the one failure this
+// provider reports that says something about the cluster name itself: the name
+// is wrong, rather than unproven, so a caller reporting the name separately can
+// stop reporting it.
+//
+// No other failure here carries that meaning, and a failed eks:DescribeCluster
+// in particular does not. ResourceNotFoundException reads like the name naming
+// nothing, but the request is made with this node's role in this node's
+// account, so it is equally the answer for a cluster that exists and that this
+// role or account cannot see. Treating it as a disproven name would drop a
+// correct cluster name over a missing IAM grant or a cross-account cluster.
 var ErrClusterIdentityMismatch = errors.New("the named cluster is not the cluster this node runs in")
 
 // errAmbiguousClusterName reports that a node's EC2 tags name more than one
@@ -212,6 +220,21 @@ func (c *metadataClient) GetInstanceMetadata(ctx context.Context) (InstanceMetad
 		return c.instanceMetadata, fmt.Errorf("failed to get instance metadata: %w", err)
 	}
 
+	// Discard what an earlier response established before reading this one.
+	// The provider outlives a single detection run: Detect is retried on
+	// failure and re-run on every refresh_interval tick, and the four fields
+	// below are only assigned when the response describes an instance. A later
+	// response that describes none would otherwise leave the earlier run's
+	// values in place and report them as if this response had carried them, so
+	// a successful refresh that found nothing would keep reporting the account
+	// ID, image ID, instance type, and hostname the node used to have. The
+	// cluster name is assigned unconditionally further down, so it cannot go
+	// stale this way.
+	c.instanceMetadata.AccountID = ""
+	c.instanceMetadata.ImageID = ""
+	c.instanceMetadata.InstanceType = ""
+	c.instanceMetadata.Hostname = ""
+
 	if len(instances.Reservations) > 0 && len(instances.Reservations[0].Instances) > 0 {
 		c.instanceMetadata.AccountID = aws.ToString(instances.Reservations[0].OwnerId)
 		c.instanceMetadata.ImageID = aws.ToString(instances.Reservations[0].Instances[0].ImageId)
@@ -349,8 +372,10 @@ func (c *metadataClient) ClusterARN(ctx context.Context, clusterName string) (st
 		// name it was asked about, and that name can come from a tag anyone
 		// can write. The API error code is a fixed vocabulary that carries
 		// nothing read from the node, and it is the difference between "the
-		// role is missing the grant" and "the tag names a cluster that does
-		// not exist", so it is kept.
+		// role is missing the grant" and "the name resolves to nothing this
+		// role can see", so it is kept. Neither of those disproves the name,
+		// which is why every failure here is reported as the one error and
+		// leaves the cluster name alone.
 		if apiErr, ok := errors.AsType[smithy.APIError](err); ok {
 			return "", fmt.Errorf("%w: %s", errDescribeClusterFailed, apiErr.ErrorCode())
 		}

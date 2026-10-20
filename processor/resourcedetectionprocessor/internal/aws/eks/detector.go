@@ -53,6 +53,11 @@ const (
 // cluster: no tag naming one, tags naming more than one, or a name that EKS
 // could not have issued. It does not carry the name itself, which can come
 // from an EC2 tag in a namespace a user can write to.
+//
+// A name EKS could not have issued is a disproven name rather than an unproven
+// one: no cluster of that name can exist, so no request could confirm it and
+// the tag it came from is not describing this node's cluster. A caller asking
+// for ARN confirmation treats it the way it treats a confirmed mismatch.
 var errNoUsableClusterName = errors.New("no usable cluster name on the node")
 
 // validClusterName reports whether the name is shaped like an EKS cluster name,
@@ -218,6 +223,10 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 // The returned errors never carry the cluster name: it can come from an EC2
 // tag in a namespace a user can write to, so it can name a cluster this node
 // has nothing to do with.
+//
+// A name EKS could not have issued is rejected before the request is made.
+// There is no cluster of that name for EKS to describe, so the rejection is
+// itself the answer rather than a request worth spending.
 func (d *detector) setClusterARN(ctx context.Context, clusterName string) error {
 	if !d.ra.AwsEksClusterArn.Enabled {
 		return nil
@@ -237,13 +246,27 @@ func (d *detector) setClusterARN(ctx context.Context, clusterName string) error 
 // when it was actually established.
 //
 // The ARN check runs first because it is what decides whether the name is
-// trustworthy. When EKS reports that the named cluster is not this node's
-// cluster, the name is not reported either: it came from a tag, the check just
-// proved it names someone else's cluster, and reporting it would attribute
-// this node's telemetry to that cluster. Every other ARN failure leaves the
-// name alone, because none of them prove anything about it. With the attribute
-// disabled, which is the default, no check runs and the name is reported as
-// before.
+// trustworthy. Two of its outcomes disprove the name rather than leaving it
+// unproven, and in both the name is dropped along with the ARN: the name came
+// from a tag, the check established that the tag does not describe this node's
+// cluster, and reporting it would attribute this node's telemetry to a cluster
+// that is not this one.
+//
+//   - EKS described the named cluster and it is a different cluster from the
+//     one this node runs in.
+//   - The name is not one EKS could have issued, so no cluster of that name
+//     can exist and no request could have confirmed it.
+//
+// Every other ARN failure leaves the name alone, because none of them prove
+// anything about it. A failed eks:DescribeCluster is the case worth being
+// explicit about: ResourceNotFoundException reads like the name naming
+// nothing, but the request is made with this node's role in this node's
+// account, so it is equally the answer for a cluster that exists and that this
+// role or account cannot see. Dropping the name there would lose a correct
+// k8s.cluster.name over a missing IAM grant or a cross-account cluster.
+//
+// With the attribute disabled, which is the default, no check runs, nothing is
+// disproven, and the name is reported as before.
 //
 // An empty name is never reported: the node carried no tag naming a cluster,
 // or carried tags naming more than one, and an empty attribute asserts a
@@ -260,6 +283,8 @@ func (d *detector) setClusterMetadata(ctx context.Context, meta apiprovider.Inst
 		}
 	case errors.Is(arnErr, apiprovider.ErrClusterIdentityMismatch):
 		d.logger.Debug("EKS cluster name not reported; EKS reports that the cluster named by the node's EC2 tags is not the cluster this node runs in")
+	case errors.Is(arnErr, errNoUsableClusterName):
+		d.logger.Debug("EKS cluster name not reported; the name on the node's EC2 tags is not one EKS could have issued")
 	default:
 		d.rb.SetK8sClusterName(meta.ClusterName)
 	}

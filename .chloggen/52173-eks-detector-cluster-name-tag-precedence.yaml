@@ -31,6 +31,13 @@ subtext: |
   `k8s.cluster.name` is now also left off when no cluster name was established, where
   it was previously reported as an empty string.
 
+  Enabling the new `aws.eks.cluster.arn` attribute adds a confirmation step that can
+  also leave `k8s.cluster.name` off, in the two cases where it establishes that the
+  name on the node's tags does not describe this node's cluster: the cluster's OIDC
+  issuer not matching the one the node's own Kubernetes API server publishes, and a
+  name EKS could not have issued. That attribute is disabled by default, and with it
+  disabled this behavior does not apply.
+
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.

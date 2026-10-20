@@ -505,6 +505,11 @@ that names a cluster, so they are read in a fixed order, strongest claim first:
 Tags of the same strength naming different clusters do not say which cluster the node
 is in, so no cluster name is reported rather than one of them being chosen.
 
+Enabling [`aws.eks.cluster.arn`](#cluster-arn) adds a confirmation step that can also
+suppress this attribute, in the two cases where it establishes that the name on the
+node's tags does not describe this node's cluster. With the ARN disabled, as the
+default config does, the name is reported as described above.
+
 #### Cluster ARN
 
 The cluster name on its own is not unique, so two clusters in different accounts or
@@ -559,7 +564,31 @@ A run with no single valid cluster name stops before the OIDC and
 that run are repeated: no result is cached between runs. The default leaves
 `refresh_interval` unset, so detection runs once per collector start.
 
-Nothing is reported when the node's tags name no cluster, when they name more than one
+`/.well-known/openid-configuration` is a non-resource URL, so reading it is authorized
+by the collector's Kubernetes service account rather than by the IAM role, and that
+service account needs `get` on the path. Kubernetes defines a
+`system:service-account-issuer-discovery` ClusterRole that grants exactly the issuer
+discovery endpoints. Whether your service account is already bound to it depends on
+your cluster's RBAC, so check before enabling the attribute: without that access the
+issuer read fails and no ARN is reported. A binding that grants it directly looks like
+this:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-issuer-discovery
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:service-account-issuer-discovery
+subjects:
+  - kind: ServiceAccount
+    name: <the collector's service account>
+    namespace: <the collector's namespace>
+```
+
+No ARN is reported when the node's tags name no cluster, when they name more than one
 cluster at the same precedence, when the name cannot be an EKS cluster name, when the
 cluster cannot be described, when either OIDC issuer is unavailable, or when the two
 issuers disagree. Whether that is fatal follows `fail_on_missing_metadata`, the same
@@ -567,6 +596,24 @@ as for every other attribute this detector reads: when it is set, detection fail
 when it is not, the attribute is left off and detection continues. Leaving the
 attribute disabled, as the default config does, makes no request and can never fail
 detection.
+
+Two of those outcomes also suppress `k8s.cluster.name`, because each one establishes
+that the tag the name came from does not describe this node's cluster:
+
+* the two issuers disagree, so EKS has confirmed that the named cluster is a
+  different cluster from the one this node runs in;
+* the name is not one EKS could have issued, so no cluster of that name can exist.
+
+Reporting the name in either case would attribute this node's telemetry to a cluster
+that is not this one. Every other outcome leaves `k8s.cluster.name` alone, because
+none of them establish anything about the name. A cluster that cannot be described is
+the case worth calling out: a `ResourceNotFoundException` reads like the name naming
+nothing, but the request is made with this node's role in this node's account, so it
+is equally the answer for a cluster that exists and that this role or account cannot
+see, and the name is kept. This suppression only happens while
+`aws.eks.cluster.arn` is enabled. With it disabled, as the default config does,
+nothing is checked, nothing is disproven, and `k8s.cluster.name` behaves exactly as it
+did before.
 
 Enabling the ARN does not require `k8s.cluster.name` to be reported. Hybrid nodes do
 not provide the EC2 metadata this path reads.
