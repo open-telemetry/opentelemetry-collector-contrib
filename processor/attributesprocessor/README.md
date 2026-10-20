@@ -29,7 +29,7 @@ The supported actions are:
   key does not already exist and updates an attribute in input data where the key
   does exist.
 - `delete`: Deletes an attribute from the input data.
-- `hash`: Hashes (SHA1) an existing attribute value.
+- `hash`: Hashes (SHA2-256) an existing attribute value.
 - `extract`: Extracts values using a regular expression rule from the input key
   to target keys specified in the rule. If a target key already exists, it will
   be overridden. Note: It behaves similar to the Span Processor `to_attributes`
