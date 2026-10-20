@@ -79,6 +79,28 @@ processors:
     override: false
 ```
 
+Use `attributes.included` and `attributes.excluded` to filter which keys from
+`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` (matches any run
+of characters, including none) and `?` (matches any single character) as
+wildcards. When `included` is empty every key is included by default.
+`excluded` is applied after `included`, so a key matched by both is dropped.
+
+For example, inject `deployment.environment.name` and every `k8s.*` key via
+`OTEL_RESOURCE_ATTRIBUTES` while dropping `k8s.pod.name`, so other env vars on
+the collector itself (e.g. its own pod name) don't leak into the telemetry:
+
+```yaml
+processors:
+  resource_detection/env:
+    detectors: [env]
+    env:
+      attributes:
+        included:
+          - deployment.environment.name
+          - k8s.*
+        excluded:
+          - k8s.pod.name
+```
 
 > [!NOTE]
 > The deprecated component type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
@@ -363,6 +385,12 @@ processors:
 
 > **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
 > `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the instance ID or the instance identity document cannot be retrieved from IMDS.
+> When `false` (default), those failures are logged and an empty resource is returned.
+> This matters on hosts whose metadata service implements the EC2-compatible `meta-data` tree but not the AWS-specific `dynamic/instance-identity` tree, such as OpenStack Nova based clouds.
+> A dedicated [OpenStack Nova detector](#openstack-nova) is also available.
+> The same applies to the hostname: when `fail_on_missing_metadata` is `true`, a hostname that cannot be retrieved results in an error, otherwise the failure is logged and the resource is returned without the `host.name` attribute.
 
 ### Amazon ECS
 

@@ -72,21 +72,27 @@ func (buckets *ExponentialBuckets) TrimZeros(thresholdBucket int32) uint64 {
 
 // Diff computes the delta between two sets of buckets with the same scale.
 func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out ExponentialBuckets, reset bool) {
-	for index, bucketCount := range buckets.BucketCounts {
-		if bucketCount == 0 {
-			continue
+	if buckets.Offset > old.Offset {
+		preShiftLen := min(int(buckets.Offset-old.Offset), len(old.BucketCounts))
+		for _, oldCount := range old.BucketCounts[:preShiftLen] {
+			if oldCount > 0 {
+				return out, true
+			}
 		}
+	}
+
+	for index, bucketCount := range buckets.BucketCounts {
 		bucket := int(buckets.Offset) + index
 		oldIndex := bucket - int(old.Offset)
 		oldCount := uint64(0)
 		if oldIndex >= 0 && oldIndex < len(old.BucketCounts) {
 			oldCount = old.BucketCounts[oldIndex]
 		}
-		if bucketCount == oldCount {
-			continue
-		} else if bucketCount < oldCount {
-			// reset happened
+		if bucketCount < oldCount {
 			return out, true
+		}
+		if bucketCount == oldCount || bucketCount == 0 {
+			continue
 		}
 		diff := bucketCount - oldCount
 		if out.BucketCounts == nil {
@@ -98,6 +104,18 @@ func (buckets *ExponentialBuckets) Diff(old *ExponentialBuckets) (out Exponentia
 		}
 		out.BucketCounts = append(out.BucketCounts, diff)
 	}
+
+	currentEnd := int(buckets.Offset) + len(buckets.BucketCounts)
+	oldEnd := int(old.Offset) + len(old.BucketCounts)
+	if oldEnd > currentEnd {
+		postStart := max(0, currentEnd-int(old.Offset))
+		for _, oldCount := range old.BucketCounts[postStart:] {
+			if oldCount > 0 {
+				return out, true
+			}
+		}
+	}
+
 	return out, false
 }
 

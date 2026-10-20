@@ -67,10 +67,28 @@ metadata:
           type: "gauge"
         unit: "second"
 #
+# -------------------------------------------- Oldest Active Queries -----------------------------------------------------------
+#
+  - name: "oldest active queries"
+    query: "SELECT CLIENT_IP_ADDRESS, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY CLIENT_IP_ADDRESS ORDER BY ACTIVE_QUERIES_COUNT DESC"
+    metric_name_prefix: "database/spanner/oldest_active_queries/"
+    high_cardinality: true
+    labels:
+      - name: "client_ip_address"
+        column_name: "CLIENT_IP_ADDRESS"
+        value_type: "string"
+    metrics:
+      - name: "active_queries_count"
+        column_name: "ACTIVE_QUERIES_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Queries Stats -----------------------------------------------------------
 #
   - name: "top minute query stats"
-    query: "SELECT INTERVAL_END, TEXT, REQUEST_TAG, TEXT_TRUNCATED, TEXT_FINGERPRINT, QUERY_TYPE, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
+    query: "SELECT INTERVAL_END, TEXT, REQUEST_TAG, TEXT_TRUNCATED, TEXT_FINGERPRINT, QUERY_TYPE, QUERY_OPTIMIZER_VERSIONS, STATISTICS_PACKAGE_NAMES, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, AVG_BYTES_WRITTEN, AVG_ROWS_WRITTEN, AVG_MEMORY_PEAK_USAGE_BYTES, AVG_MEMORY_USAGE_PERCENTAGE, AVG_COLUMNAR_READ_SHARE, AVG_QUERY_PLAN_CREATION_TIME_SECS, AVG_FILESYSTEM_DELAY_SECS, AVG_ROWS_SPOOLED, AVG_REMOTE_SERVER_CALLS, AVG_DISK_IO_COST, RUN_IN_RW_TRANSACTION_EXECUTION_COUNT, STATEMENT_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(CPU_SECONDS_DISTRIBUTION_JSON_STRING, 99.0) AS NINETY_NINE_PERCENTILE_CPU_SECONDS, SPANNER_SYS.DISTRIBUTION_PERCENTILE(CPU_SECONDS_DISTRIBUTION_JSON_STRING, 95.0) AS NINETY_FIVE_PERCENTILE_CPU_SECONDS, SPANNER_SYS.DISTRIBUTION_PERCENTILE(CPU_SECONDS_DISTRIBUTION_JSON_STRING, 50.0) AS FIFTY_PERCENTILE_CPU_SECONDS, SPANNER_SYS.DISTRIBUTION_PERCENTILE(ROW_SCANNED_DISTRIBUTION_JSON_STRING, 99.0) AS NINETY_NINE_PERCENTILE_ROWS_SCANNED, SPANNER_SYS.DISTRIBUTION_PERCENTILE(ROW_SCANNED_DISTRIBUTION_JSON_STRING, 95.0) AS NINETY_FIVE_PERCENTILE_ROWS_SCANNED, SPANNER_SYS.DISTRIBUTION_PERCENTILE(ROW_SCANNED_DISTRIBUTION_JSON_STRING, 50.0) AS FIFTY_PERCENTILE_ROWS_SCANNED, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION_JSON_STRING, 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION_JSON_STRING, 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION_JSON_STRING, 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
     metric_name_prefix: "database/spanner/query_stats/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
@@ -90,6 +108,12 @@ metadata:
       - name: "query_type"
         column_name: "QUERY_TYPE"
         value_type: "string"
+      - name: "query_optimizer_versions"
+        column_name: "QUERY_OPTIMIZER_VERSIONS"
+        value_type: "int_slice"
+      - name: "statistics_package_names"
+        column_name: "STATISTICS_PACKAGE_NAMES"
+        value_type: "string_slice"
     metrics:
       - name: "execution_count"
         column_name: "EXECUTION_COUNT"
@@ -151,6 +175,78 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+      - name: "avg_bytes_written"
+        column_name: "AVG_BYTES_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_rows_written"
+        column_name: "AVG_ROWS_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_memory_peak_usage_bytes"
+        column_name: "AVG_MEMORY_PEAK_USAGE_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_memory_usage_percentage"
+        column_name: "AVG_MEMORY_USAGE_PERCENTAGE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_query_plan_creation_time_secs"
+        column_name: "AVG_QUERY_PLAN_CREATION_TIME_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_filesystem_delay_secs"
+        column_name: "AVG_FILESYSTEM_DELAY_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_remote_server_calls"
+        column_name: "AVG_REMOTE_SERVER_CALLS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_rows_spooled"
+        column_name: "AVG_ROWS_SPOOLED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "statement_count"
+        column_name: "STATEMENT_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_columnar_read_share"
+        column_name: "AVG_COLUMNAR_READ_SHARE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
       - name: "ninety_nine_percentile_latency"
         column_name: "NINETY_NINE_PERCENTILE_LATENCY"
         value_type: "float"
@@ -169,8 +265,44 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "ninety_nine_percentile_cpu_seconds"
+        column_name: "NINETY_NINE_PERCENTILE_CPU_SECONDS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_cpu_seconds"
+        column_name: "NINETY_FIVE_PERCENTILE_CPU_SECONDS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_cpu_seconds"
+        column_name: "FIFTY_PERCENTILE_CPU_SECONDS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_nine_percentile_rows_scanned"
+        column_name: "NINETY_NINE_PERCENTILE_ROWS_SCANNED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "ninety_five_percentile_rows_scanned"
+        column_name: "NINETY_FIVE_PERCENTILE_ROWS_SCANNED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "fifty_percentile_rows_scanned"
+        column_name: "FIFTY_PERCENTILE_ROWS_SCANNED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
   - name: "total minute query stats"
-    query: "SELECT INTERVAL_END, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
+    query: "SELECT INTERVAL_END, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, AVG_BYTES_WRITTEN, AVG_ROWS_WRITTEN, AVG_MEMORY_PEAK_USAGE_BYTES, AVG_MEMORY_USAGE_PERCENTAGE, AVG_COLUMNAR_READ_SHARE, AVG_QUERY_PLAN_CREATION_TIME_SECS, AVG_FILESYSTEM_DELAY_SECS, AVG_ROWS_SPOOLED, AVG_REMOTE_SERVER_CALLS, AVG_DISK_IO_COST, RUN_IN_RW_TRANSACTION_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(CPU_SECONDS_DISTRIBUTION_JSON_STRING, 99.0) AS NINETY_NINE_PERCENTILE_CPU_SECONDS, SPANNER_SYS.DISTRIBUTION_PERCENTILE(CPU_SECONDS_DISTRIBUTION_JSON_STRING, 95.0) AS NINETY_FIVE_PERCENTILE_CPU_SECONDS, SPANNER_SYS.DISTRIBUTION_PERCENTILE(CPU_SECONDS_DISTRIBUTION_JSON_STRING, 50.0) AS FIFTY_PERCENTILE_CPU_SECONDS, SPANNER_SYS.DISTRIBUTION_PERCENTILE(ROW_SCANNED_DISTRIBUTION_JSON_STRING, 99.0) AS NINETY_NINE_PERCENTILE_ROW_SCANNED, SPANNER_SYS.DISTRIBUTION_PERCENTILE(ROW_SCANNED_DISTRIBUTION_JSON_STRING, 95.0) AS NINETY_FIVE_PERCENTILE_ROW_SCANNED, SPANNER_SYS.DISTRIBUTION_PERCENTILE(ROW_SCANNED_DISTRIBUTION_JSON_STRING, 50.0) AS FIFTY_PERCENTILE_ROW_SCANNED, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION_JSON_STRING, 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION_JSON_STRING, 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION_JSON_STRING, 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/query_stats/total/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: false
@@ -235,6 +367,108 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+      - name: "avg_bytes_written"
+        column_name: "AVG_BYTES_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_rows_written"
+        column_name: "AVG_ROWS_WRITTEN"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "avg_memory_peak_usage_bytes"
+        column_name: "AVG_MEMORY_PEAK_USAGE_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "avg_memory_usage_percentage"
+        column_name: "AVG_MEMORY_USAGE_PERCENTAGE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_query_plan_creation_time_secs"
+        column_name: "AVG_QUERY_PLAN_CREATION_TIME_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_filesystem_delay_secs"
+        column_name: "AVG_FILESYSTEM_DELAY_SECS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "avg_remote_server_calls"
+        column_name: "AVG_REMOTE_SERVER_CALLS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_rows_spooled"
+        column_name: "AVG_ROWS_SPOOLED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_columnar_read_share"
+        column_name: "AVG_COLUMNAR_READ_SHARE"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "ninety_nine_percentile_cpu_seconds"
+        column_name: "NINETY_NINE_PERCENTILE_CPU_SECONDS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_cpu_seconds"
+        column_name: "NINETY_FIVE_PERCENTILE_CPU_SECONDS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_cpu_seconds"
+        column_name: "FIFTY_PERCENTILE_CPU_SECONDS"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_nine_percentile_row_scanned"
+        column_name: "NINETY_NINE_PERCENTILE_ROW_SCANNED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "ninety_five_percentile_row_scanned"
+        column_name: "NINETY_FIVE_PERCENTILE_ROW_SCANNED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
+      - name: "fifty_percentile_row_scanned"
+        column_name: "FIFTY_PERCENTILE_ROW_SCANNED"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "row"
       - name: "ninety_nine_percentile_latency"
         column_name: "NINETY_NINE_PERCENTILE_LATENCY"
         value_type: "float"
@@ -268,6 +502,12 @@ metadata:
       - name: "fingerprint"
         column_name: "FPRINT"
         value_type: "int"
+      - name: "read_type"
+        column_name: "READ_TYPE"
+        value_type: "string"
+      - name: "request_tag"
+        column_name: "REQUEST_TAG"
+        value_type: "string"
     metrics:
       - name: "execution_count"
         column_name: "EXECUTION_COUNT"
@@ -311,6 +551,18 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
   - name: "total minute read stats"
     query: "SELECT * FROM SPANNER_SYS.READ_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/read_stats/total/"
@@ -359,6 +611,42 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+      - name: "run_in_rw_transaction_execution_count"
+        column_name: "RUN_IN_RW_TRANSACTION_EXECUTION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "avg_disk_io_cost"
+        column_name: "AVG_DISK_IO_COST"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- Row Deletion Policies ---------------------------------------------------
+#
+  - name: "row deletion policies"
+    query: "SELECT TABLE_NAME, PROCESSED_WATERMARK, UNDELETABLE_ROWS, MIN_UNDELETABLE_TIMESTAMP FROM SPANNER_SYS.ROW_DELETION_POLICIES ORDER BY UNDELETABLE_ROWS DESC, PROCESSED_WATERMARK ASC"
+    metric_name_prefix: "database/spanner/row_deletion_policies/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "processed_watermark"
+        column_name: "PROCESSED_WATERMARK"
+        value_type: "timestamp"
+      - name: "min_undeletable_timestamp"
+        column_name: "MIN_UNDELETABLE_TIMESTAMP"
+        value_type: "timestamp"
+    metrics:
+      - name: "undeletable_rows"
+        column_name: "UNDELETABLE_ROWS"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
 #
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
@@ -520,7 +808,7 @@ metadata:
           type: "gauge"
         unit: "second"
   - name: "total minute transaction stats"
-    query: "SELECT INTERVAL_END, COMMIT_ATTEMPT_COUNT, COMMIT_ABORT_COUNT, COMMIT_RETRY_COUNT, COMMIT_FAILED_PRECONDITION_COUNT, AVG_PARTICIPANTS, AVG_TOTAL_LATENCY_SECONDS, AVG_COMMIT_LATENCY_SECONDS, AVG_BYTES, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) ELSE NULL END AS NINETY_NINE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) ELSE NULL END AS NINETY_FIVE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) ELSE NULL END AS FIFTY_PERCENTILE_TOTAL_LATENCY FROM SPANNER_SYS.TXN_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
+    query: "SELECT INTERVAL_END, COMMIT_ATTEMPT_COUNT, COMMIT_ABORT_COUNT, COMMIT_RETRY_COUNT, COMMIT_FAILED_PRECONDITION_COUNT, AVG_PARTICIPANTS, AVG_TOTAL_LATENCY_SECONDS, AVG_COMMIT_LATENCY_SECONDS, AVG_BYTES, ATTEMPT_COUNT, SERIALIZABLE_PESSIMISTIC_TXN_COUNT, REPEATABLE_READ_OPTIMISTIC_TXN_COUNT, SERIALIZABLE_OPTIMISTIC_TXN_COUNT, REPEATABLE_READ_PESSIMISTIC_TXN_COUNT, CASE WHEN AVG_COMMIT_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(COMMIT_LATENCY_DISTRIBUTION_JSON_STRING, 99.0) ELSE NULL END AS NINETY_NINE_PERCENTILE_COMMIT_LATENCY, CASE WHEN AVG_COMMIT_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(COMMIT_LATENCY_DISTRIBUTION_JSON_STRING, 95.0) ELSE NULL END AS NINETY_FIVE_PERCENTILE_COMMIT_LATENCY, CASE WHEN AVG_COMMIT_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(COMMIT_LATENCY_DISTRIBUTION_JSON_STRING, 50.0) ELSE NULL END AS FIFTY_PERCENTILE_COMMIT_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION_JSON_STRING, 99.0) ELSE NULL END AS NINETY_NINE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION_JSON_STRING, 95.0) ELSE NULL END AS NINETY_FIVE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION_JSON_STRING, 50.0) ELSE NULL END AS FIFTY_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_PARTICIPANTS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(PARTICIPANTS_DISTRIBUTION_JSON_STRING, 99.0) ELSE NULL END AS NINETY_NINE_PERCENTILE_PARTICIPANTS, CASE WHEN AVG_PARTICIPANTS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(PARTICIPANTS_DISTRIBUTION_JSON_STRING, 95.0) ELSE NULL END AS NINETY_FIVE_PERCENTILE_PARTICIPANTS, CASE WHEN AVG_PARTICIPANTS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(PARTICIPANTS_DISTRIBUTION_JSON_STRING, 50.0) ELSE NULL END AS FIFTY_PERCENTILE_PARTICIPANTS FROM SPANNER_SYS.TXN_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/txn_stats/total/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: false
@@ -573,6 +861,72 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+      - name: "attempt_count"
+        column_name: "ATTEMPT_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "serializable_pessimistic_txn_count"
+        column_name: "SERIALIZABLE_PESSIMISTIC_TXN_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "repeatable_read_optimistic_txn_count"
+        column_name: "REPEATABLE_READ_OPTIMISTIC_TXN_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "serializable_optimistic_txn_count"
+        column_name: "SERIALIZABLE_OPTIMISTIC_TXN_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "repeatable_read_pessimistic_txn_count"
+        column_name: "REPEATABLE_READ_PESSIMISTIC_TXN_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "ninety_nine_percentile_commit_latency"
+        column_name: "NINETY_NINE_PERCENTILE_COMMIT_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_commit_latency"
+        column_name: "NINETY_FIVE_PERCENTILE_COMMIT_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_commit_latency"
+        column_name: "FIFTY_PERCENTILE_COMMIT_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_nine_percentile_participants"
+        column_name: "NINETY_NINE_PERCENTILE_PARTICIPANTS"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "ninety_five_percentile_participants"
+        column_name: "NINETY_FIVE_PERCENTILE_PARTICIPANTS"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "fifty_percentile_participants"
+        column_name: "FIFTY_PERCENTILE_PARTICIPANTS"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "one"
       - name: "ninety_nine_percentile_total_latency"
         column_name: "NINETY_NINE_PERCENTILE_TOTAL_LATENCY"
         value_type: "null_float"
@@ -610,3 +964,110 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+      - name: "used_ssd_bytes"
+        column_name: "USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "used_hdd_bytes"
+        column_name: "USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_used_bytes"
+        column_name: "COLUMNAR_USED_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_used_ssd_bytes"
+        column_name: "COLUMNAR_USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_used_hdd_bytes"
+        column_name: "COLUMNAR_USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "columnar_coverage_ratio"
+        column_name: "COLUMNAR_COVERAGE_RATIO"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "columnar_ssd_coverage_ratio"
+        column_name: "COLUMNAR_SSD_COVERAGE_RATIO"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "columnar_hdd_coverage_ratio"
+        column_name: "COLUMNAR_HDD_COVERAGE_RATIO"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- Table Operation Stats -------------------------------------------------
+#
+  - name: "minute table operation stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, WRITE_COUNT DESC"
+    metric_name_prefix: "database/spanner/table_operations/minute/top/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+    metrics:
+      - name: "read_query_count"
+        column_name: "READ_QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "delete_count"
+        column_name: "DELETE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+#----------------------------------------Split Stats-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#
+  - name: "top minute split stats"
+    query: "SELECT * FROM SPANNER_SYS.SPLIT_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, CPU_USAGE_SCORE DESC"
+    metric_name_prefix: "database/spanner/split_stats/top/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "split_start"
+        column_name: "SPLIT_START"
+        value_type: "string"
+      - name: "split_limit"
+        column_name: "SPLIT_LIMIT"
+        value_type: "string"
+      - name: "affected_tables"
+        column_name: "AFFECTED_TABLES"
+        value_type: "string_slice"
+      - name: "unsplittable_reasons"
+        column_name: "UNSPLITTABLE_REASONS"
+        value_type: "string_slice"
+    metrics:
+      - name: "cpu_usage_score"
+        column_name: "CPU_USAGE_SCORE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
