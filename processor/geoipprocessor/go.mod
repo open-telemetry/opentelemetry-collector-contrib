@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
-	github.com/oschwald/geoip2-golang/v2 v2.4.0
+	github.com/oschwald/geoip2-golang/v2 v2.5.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261015205720-932ee30af2c0
@@ -56,7 +56,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
-	github.com/oschwald/maxminddb-golang/v2 v2.6.0 // indirect
+	github.com/oschwald/maxminddb-golang/v2 v2.8.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
