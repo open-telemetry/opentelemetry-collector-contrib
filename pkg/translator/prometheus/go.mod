@@ -18,8 +18,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
-
 retract (
 	v0.76.2
 	v0.76.1
