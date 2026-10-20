@@ -1071,3 +1071,33 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+#
+# -------------------------------------------- User Split Points -------------------------------------------------------
+#
+  - name: "user split points"
+    query: "SELECT TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME, 1 AS SPLIT_POINTS_COUNT FROM SPANNER_SYS.USER_SPLIT_POINTS ORDER BY TABLE_NAME ASC, INDEX_NAME ASC"
+    metric_name_prefix: "database/spanner/user_split_points/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "index_name"
+        column_name: "INDEX_NAME"
+        value_type: "string"
+      - name: "initiator"
+        column_name: "INITIATOR"
+        value_type: "string"
+      - name: "split_key"
+        column_name: "SPLIT_KEY"
+        value_type: "string"
+      - name: "expire_time"
+        column_name: "EXPIRE_TIME"
+        value_type: "timestamp"
+    metrics:
+      - name: "split_points_count"
+        column_name: "SPLIT_POINTS_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
