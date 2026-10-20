@@ -753,6 +753,36 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "Log record body has kind=log and level=warn",
+			lr: func() plog.LogRecord {
+				record := plog.NewLogRecord()
+				record.Body().SetStr("kind=log level=warn")
+				return record
+			}(),
+			rl: pcommon.NewResource(),
+			wantPayload: faroTypes.Payload{
+				Logs: []faroTypes.Log{
+					{LogLevel: faroLogLevelWarn},
+				},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Log record body has kind=log and level=warning",
+			lr: func() plog.LogRecord {
+				record := plog.NewLogRecord()
+				record.Body().SetStr("kind=log level=warning")
+				return record
+			}(),
+			rl: pcommon.NewResource(),
+			wantPayload: faroTypes.Payload{
+				Logs: []faroTypes.Log{
+					{LogLevel: faroTypes.LogLevelWarning},
+				},
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "Log record body has kind=event",
 			lr: func() plog.LogRecord {
 				record := plog.NewLogRecord()

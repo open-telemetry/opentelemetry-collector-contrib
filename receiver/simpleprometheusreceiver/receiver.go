@@ -82,9 +82,13 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
+			CA:                 string(cfg.ClientConfig.TLS.CAPem),
+			Cert:               string(cfg.ClientConfig.TLS.CertPem),
+			Key:                configutil.Secret(cfg.ClientConfig.TLS.KeyPem),
 			CAFile:             cfg.ClientConfig.TLS.CAFile,
 			CertFile:           cfg.ClientConfig.TLS.CertFile,
 			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
+			ServerName:         cfg.ClientConfig.TLS.ServerName,
 			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
 		}
 	}

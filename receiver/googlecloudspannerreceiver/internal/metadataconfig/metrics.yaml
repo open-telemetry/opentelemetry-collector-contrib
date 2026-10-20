@@ -67,6 +67,24 @@ metadata:
           type: "gauge"
         unit: "second"
 #
+# -------------------------------------------- Oldest Active Queries -----------------------------------------------------------
+#
+  - name: "oldest active queries"
+    query: "SELECT CLIENT_IP_ADDRESS, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY CLIENT_IP_ADDRESS ORDER BY ACTIVE_QUERIES_COUNT DESC"
+    metric_name_prefix: "database/spanner/oldest_active_queries/"
+    high_cardinality: true
+    labels:
+      - name: "client_ip_address"
+        column_name: "CLIENT_IP_ADDRESS"
+        value_type: "string"
+    metrics:
+      - name: "active_queries_count"
+        column_name: "ACTIVE_QUERIES_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Queries Stats -----------------------------------------------------------
 #
   - name: "top minute query stats"
@@ -606,6 +624,54 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Row Deletion Policies ---------------------------------------------------
+#
+  - name: "row deletion policies"
+    query: "SELECT TABLE_NAME, PROCESSED_WATERMARK, UNDELETABLE_ROWS, MIN_UNDELETABLE_TIMESTAMP FROM SPANNER_SYS.ROW_DELETION_POLICIES ORDER BY UNDELETABLE_ROWS DESC, PROCESSED_WATERMARK ASC"
+    metric_name_prefix: "database/spanner/row_deletion_policies/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "processed_watermark"
+        column_name: "PROCESSED_WATERMARK"
+        value_type: "timestamp"
+      - name: "min_undeletable_timestamp"
+        column_name: "MIN_UNDELETABLE_TIMESTAMP"
+        value_type: "timestamp"
+    metrics:
+      - name: "undeletable_rows"
+        column_name: "UNDELETABLE_ROWS"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- Supported Optimizer Versions ------------------------------------------------------
+#
+  - name: "supported optimizer versions"
+    query: "SELECT 1 AS VERSION_COUNT, VERSION, RELEASE_DATE, IS_DEFAULT FROM SPANNER_SYS.SUPPORTED_OPTIMIZER_VERSIONS ORDER BY IS_DEFAULT DESC, RELEASE_DATE DESC"
+    metric_name_prefix: "database/spanner/supported_optimizer_versions/"
+    high_cardinality: true
+    labels:
+      - name: "version"
+        column_name: "VERSION"
+        value_type: "int"
+      - name: "release_date"
+        column_name: "RELEASE_DATE"
+        value_type: "date"
+      - name: "is_default"
+        column_name: "IS_DEFAULT"
+        value_type: "bool"
+    metrics:
+      - name: "version_count"
+        column_name: "VERSION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
   - name: "top minute transaction stats"
@@ -970,6 +1036,65 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+#
+# -------------------------------------------- Table Operation Stats -------------------------------------------------
+#
+  - name: "minute table operation stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, WRITE_COUNT DESC"
+    metric_name_prefix: "database/spanner/table_operations/minute/top/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+    metrics:
+      - name: "read_query_count"
+        column_name: "READ_QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "delete_count"
+        column_name: "DELETE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- Table Size Per Locality Group Stats ------------------------------------------------------
+#
+  - name: "hourly table size per locality group stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_SIZES_STATS_PER_LOCALITY_GROUP_1HOUR WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC"
+    metric_name_prefix: "database/spanner/table_sizes_per_locality_group/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "locality_group"
+        column_name: "LOCALITY_GROUP"
+        value_type: "string"
+    metrics:
+      - name: "used_ssd_bytes"
+        column_name: "USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "used_hdd_bytes"
+        column_name: "USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
 #
 #----------------------------------------Split Stats-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #
