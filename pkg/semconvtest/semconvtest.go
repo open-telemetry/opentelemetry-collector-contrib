@@ -71,12 +71,27 @@ func WithVersion(version string) WeaverOption {
 // WithRegistry sets the semantic convention registry passed to Weaver's
 // --registry flag. When unset, Weaver uses its default registry.
 func WithRegistry(registry string) WeaverOption {
-	return func(o *weaverOptions) { o.registry = registry }
+	return func(o *weaverOptions) {
+		o.registry = registry
+		o.schemaURLErr = nil
+	}
+}
+
+// WithSchemaURL sets the semantic convention registry by normalizing an
+// OpenTelemetry Schema URL (e.g. from semconv.SchemaURL or mdatagen metadata)
+// into the corresponding Weaver registry passed to Weaver's --registry flag.
+func WithSchemaURL(schemaURL string) WeaverOption {
+	return func(o *weaverOptions) {
+		reg, err := normalizeSchemaURL(schemaURL)
+		o.registry = reg
+		o.schemaURLErr = err
+	}
 }
 
 type weaverOptions struct {
-	version  string
-	registry string
+	version      string
+	registry     string
+	schemaURLErr error
 }
 
 // normalizeWeaverVersion converts a Docker tag into a "v"-prefixed string
@@ -169,7 +184,9 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 	for _, opt := range opts {
 		opt(options)
 	}
-
+	if options.schemaURLErr != nil {
+		tb.Fatal(options.schemaURLErr)
+	}
 	if err := validateWeaverVersion(options.version); err != nil {
 		tb.Fatal(err)
 	}

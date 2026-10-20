@@ -81,6 +81,10 @@ each new Weaver release). Use `WithVersion` to select a different version.
 - `WithRegistry(registry string)`: set the semantic-conventions registry
   passed to Weaver's `--registry` flag. When unset, Weaver uses its default
   registry: the latest published semantic conventions.
+- `WithSchemaURL(schemaURL string)`: set the semantic-conventions registry
+  by normalizing an OpenTelemetry Schema URL (such as `semconv.SchemaURL` or
+  `"https://opentelemetry.io/schemas/1.27.0"`) to Weaver's corresponding
+  registry syntax.
 
 ## Report types
 

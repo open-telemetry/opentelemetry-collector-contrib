@@ -34,3 +34,21 @@ func TestValidateWeaverVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestWithSchemaURLOption(t *testing.T) {
+	opts := &weaverOptions{version: defaultWeaverVersion}
+
+	// Valid schema URL sets registry
+	WithSchemaURL("https://opentelemetry.io/schemas/1.27.0")(opts)
+	require.NoError(t, opts.schemaURLErr)
+	require.Equal(t, "https://github.com/open-telemetry/semantic-conventions@v1.27.0[model]", opts.registry)
+
+	// Invalid schema URL records error
+	WithSchemaURL("invalid")(opts)
+	require.Error(t, opts.schemaURLErr)
+
+	// WithRegistry overrides earlier WithSchemaURL and clears error (last option wins)
+	WithRegistry("custom-reg")(opts)
+	require.NoError(t, opts.schemaURLErr)
+	require.Equal(t, "custom-reg", opts.registry)
+}
