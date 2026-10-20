@@ -8,6 +8,7 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| aws.eks.cluster.arn | The ARN of the EKS cluster. On the IMDS path, enabling this attribute requires permission to run the EC2:DescribeInstances action. | Any Str | false | [aws.eks.cluster.arn](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-eks-cluster-arn) | - |
 | cloud.account.id | The cloud account id | Any Str | false | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
 | cloud.availability_zone | The cloud availability zone | Any Str | false | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
 | cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |

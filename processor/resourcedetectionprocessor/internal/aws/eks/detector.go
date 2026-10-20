@@ -46,6 +46,97 @@ const (
 	imdsCheckMaxRetry = 1
 )
 
+// eksClusterARNFormat is the ARN format of an EKS cluster. The ARN is fully
+// determined by the partition, the region, the account id and the cluster name.
+// See https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonelastickubernetesservice.html#amazonelastickubernetesservice-resources-for-iam-policies
+const eksClusterARNFormat = "arn:%s:eks:%s:%s:cluster/%s"
+
+// arnPartitions maps current region prefixes to ARN partitions. Malformed
+// regions and regions with an unrecognized leading prefix are rejected rather
+// than assigned a valid-looking ARN in a guessed partition.
+var arnPartitions = []struct {
+	regionPrefix string
+	partition    string
+}{
+	{regionPrefix: "cn-", partition: "aws-cn"},
+	{regionPrefix: "us-gov-", partition: "aws-us-gov"},
+	{regionPrefix: "us-iso-", partition: "aws-iso"},
+	{regionPrefix: "us-isob-", partition: "aws-iso-b"},
+	{regionPrefix: "us-isof-", partition: "aws-iso-f"},
+	{regionPrefix: "eu-isoe-", partition: "aws-iso-e"},
+	{regionPrefix: "eusc-de-", partition: "aws-eusc"},
+	{regionPrefix: "us-", partition: "aws"},
+	{regionPrefix: "eu-", partition: "aws"},
+	{regionPrefix: "ap-", partition: "aws"},
+	{regionPrefix: "sa-", partition: "aws"},
+	{regionPrefix: "ca-", partition: "aws"},
+	{regionPrefix: "me-", partition: "aws"},
+	{regionPrefix: "af-", partition: "aws"},
+	{regionPrefix: "il-", partition: "aws"},
+	{regionPrefix: "mx-", partition: "aws"},
+}
+
+// partitionForRegion returns an empty string for an unknown or malformed region.
+func partitionForRegion(region string) string {
+	if !validRegion(region) {
+		return ""
+	}
+	for _, p := range arnPartitions {
+		if strings.HasPrefix(region, p.regionPrefix) {
+			return p.partition
+		}
+	}
+	return ""
+}
+
+func validRegion(region string) bool {
+	if len(region) < 3 || len(region) > 64 || region[0] == '-' || region[len(region)-1] == '-' || strings.Contains(region, "--") {
+		return false
+	}
+	for _, char := range region {
+		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func validAccountID(accountID string) bool {
+	if len(accountID) != 12 {
+		return false
+	}
+	for _, char := range accountID {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func validClusterName(clusterName string) bool {
+	if clusterName == "" || len(clusterName) > 100 {
+		return false
+	}
+	for i, char := range clusterName {
+		alphanumeric := char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9'
+		if !alphanumeric && (i == 0 || char != '-' && char != '_') {
+			return false
+		}
+	}
+	return true
+}
+
+// constructClusterARN builds the ARN only when every part has a valid shape.
+// The account is the EC2 node owner's account. EKS managed and self-managed
+// EC2 nodes are expected to belong to the same account as their cluster.
+func constructClusterARN(region, accountID, clusterName string) string {
+	partition := partitionForRegion(region)
+	if partition == "" || !validAccountID(accountID) || !validClusterName(clusterName) {
+		return ""
+	}
+	return fmt.Sprintf(eksClusterARNFormat, partition, region, accountID, clusterName)
+}
+
 // detector for EKS
 type detector struct {
 	cfg                   Config
@@ -151,7 +242,7 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 	}
 	d.rb.SetHostName(hostname)
 
-	if d.ra.K8sClusterName.Enabled {
+	if d.ra.K8sClusterName.Enabled || d.ra.AwsEksClusterArn.Enabled {
 		d.apiProvider.SetRegionInstanceID(imdsMeta.Region, imdsMeta.InstanceID)
 		var apiMeta apiprovider.InstanceMetadata
 		if apiMeta, err = d.apiProvider.GetInstanceMetadata(ctx); err != nil {
@@ -162,6 +253,16 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.rb.SetK8sClusterName(apiMeta.ClusterName)
+		if arn := constructClusterARN(imdsMeta.Region, imdsMeta.AccountID, apiMeta.ClusterName); arn != "" {
+			d.rb.SetAwsEksClusterArn(arn)
+		} else if d.ra.AwsEksClusterArn.Enabled {
+			d.logger.Debug(
+				"EKS cluster ARN unavailable",
+				zap.Bool("region_valid", partitionForRegion(imdsMeta.Region) != ""),
+				zap.Bool("account_id_valid", validAccountID(imdsMeta.AccountID)),
+				zap.Bool("cluster_name_valid", validClusterName(apiMeta.ClusterName)),
+			)
+		}
 	}
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
@@ -194,6 +295,16 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 	d.rb.SetHostType(apiMeta.InstanceType)
 	d.rb.SetHostName(apiMeta.Hostname)
 	d.rb.SetK8sClusterName(apiMeta.ClusterName)
+	if arn := constructClusterARN(k8sMeta.Region, apiMeta.AccountID, apiMeta.ClusterName); arn != "" {
+		d.rb.SetAwsEksClusterArn(arn)
+	} else if d.ra.AwsEksClusterArn.Enabled {
+		d.logger.Debug(
+			"EKS cluster ARN unavailable",
+			zap.Bool("region_valid", partitionForRegion(k8sMeta.Region) != ""),
+			zap.Bool("account_id_valid", validAccountID(apiMeta.AccountID)),
+			zap.Bool("cluster_name_valid", validClusterName(apiMeta.ClusterName)),
+		)
+	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }

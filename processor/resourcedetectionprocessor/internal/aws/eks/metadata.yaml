@@ -4,6 +4,12 @@ sem_conv_version: 1.40.0
 parent: resourcedetection
 
 resource_attributes:
+  aws.eks.cluster.arn:
+    semantic_convention:
+      ref: aws.md#aws-eks-cluster-arn
+    description: The ARN of the EKS cluster. On the IMDS path, enabling this attribute requires permission to run the EC2:DescribeInstances action.
+    type: string
+    enabled: false
   cloud.account.id:
     semantic_convention:
       ref: cloud.md#cloud-account-id

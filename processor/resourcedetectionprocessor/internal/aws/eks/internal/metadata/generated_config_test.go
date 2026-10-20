@@ -24,6 +24,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				AwsEksClusterArn:      ResourceAttributeConfig{Enabled: true},
 				CloudAccountID:        ResourceAttributeConfig{Enabled: true},
 				CloudAvailabilityZone: ResourceAttributeConfig{Enabled: true},
 				CloudPlatform:         ResourceAttributeConfig{Enabled: true},
@@ -39,6 +40,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				AwsEksClusterArn:      ResourceAttributeConfig{Enabled: false},
 				CloudAccountID:        ResourceAttributeConfig{Enabled: false},
 				CloudAvailabilityZone: ResourceAttributeConfig{Enabled: false},
 				CloudPlatform:         ResourceAttributeConfig{Enabled: false},

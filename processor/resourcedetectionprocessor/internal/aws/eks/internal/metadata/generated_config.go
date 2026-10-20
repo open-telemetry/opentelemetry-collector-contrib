@@ -27,6 +27,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/eks resource attributes.
 type ResourceAttributesConfig struct {
+	AwsEksClusterArn      ResourceAttributeConfig `mapstructure:"aws.eks.cluster.arn"`
 	CloudAccountID        ResourceAttributeConfig `mapstructure:"cloud.account.id"`
 	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
 	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
@@ -41,6 +42,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		AwsEksClusterArn: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		CloudAccountID: ResourceAttributeConfig{
 			Enabled: false,
 		},
