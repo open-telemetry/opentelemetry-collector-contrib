@@ -105,6 +105,7 @@ func TestGetResourceProviderLogsDetectorConfiguration(t *testing.T) {
 
 	logs := observedLogs.FilterMessage("resource detection processor detector configuration").All()
 	require.Len(t, logs, 1)
+	assert.Equal(t, zapcore.DebugLevel, logs[0].Level)
 	assert.Equal(t, map[string]any{
 		"compiled_detectors":   []any{"mock"},
 		"configured_detectors": []any{"mock"},

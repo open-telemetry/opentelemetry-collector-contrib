@@ -95,7 +95,7 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Detectors:       []string{"env"},
+		Detectors:       []string{env.TypeStr},
 		ClientConfig:    defaultClientConfig(),
 		Override:        true,
 		DetectorConfig:  detectorCreateDefaultConfig(),
@@ -291,7 +291,9 @@ func (f *factory) getResourceProvider(
 		configuredDetectorTypes = append(configuredDetectorTypes, detectorType)
 	}
 
-	logDetectorConfiguration(params.Logger, f.compiledDetectors, configuredDetectorTypes)
+	params.Logger.Debug("resource detection processor detector configuration",
+		zap.Strings("compiled_detectors", f.compiledDetectors),
+		zap.Strings("configured_detectors", configuredDetectorTypes))
 
 	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, backoffConfig, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
 	if err != nil {
