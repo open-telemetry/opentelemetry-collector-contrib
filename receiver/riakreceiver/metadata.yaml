@@ -4,10 +4,10 @@ type: riak
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [armstrmi]
+    emeritus: [armstrmi]
     seeking_new: true
 
 resource_attributes:

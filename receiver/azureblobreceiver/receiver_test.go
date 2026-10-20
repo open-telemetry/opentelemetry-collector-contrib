@@ -4,6 +4,8 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"testing"
@@ -269,12 +271,83 @@ func (fakeUnmarshalerExtension) UnmarshalTraces([]byte) (ptrace.Traces, error) {
 	return traces, nil
 }
 
+func TestConsumeCompressedLogsJSON(t *testing.T) {
+	tests := []struct {
+		name        string
+		compression string
+		data        []byte
+		expectErr   bool
+	}{
+		{name: "gzip", compression: CompressionGzip, data: gzipBytes(t, logsJSON)},
+		{name: "gzip with uncompressed payload", compression: CompressionGzip, data: logsJSON, expectErr: true},
+		{name: "auto with compressed payload", compression: CompressionAuto, data: gzipBytes(t, logsJSON)},
+		{name: "auto with uncompressed payload", compression: CompressionAuto, data: logsJSON},
+		{name: "auto with truncated payload", compression: CompressionAuto, data: gzipBytes(t, logsJSON)[:20], expectErr: true},
+		{name: "none", compression: CompressionNone, data: logsJSON},
+		{name: "none with compressed payload", compression: CompressionNone, data: gzipBytes(t, logsJSON), expectErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(tt *testing.T) {
+			receiver, err := getBlobReceiverWithCompression(tt, tc.compression)
+			require.NoError(tt, err)
+
+			logsSink := new(consumertest.LogsSink)
+			receiver.(logsDataConsumer).setNextLogsConsumer(logsSink)
+
+			err = receiver.(logsDataConsumer).consumeLogs(tt.Context(), tc.data)
+			if tc.expectErr {
+				require.Error(tt, err)
+				return
+			}
+
+			require.NoError(tt, err)
+			require.Len(tt, logsSink.AllLogs(), 1)
+			assert.Equal(tt, "Message Body", logsSink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+		})
+	}
+}
+
+func TestConsumeCompressedTracesJSON(t *testing.T) {
+	receiver, err := getBlobReceiverWithCompression(t, CompressionAuto)
+	require.NoError(t, err)
+
+	tracesSink := new(consumertest.TracesSink)
+	receiver.(tracesDataConsumer).setNextTracesConsumer(tracesSink)
+
+	require.NoError(t, receiver.(tracesDataConsumer).consumeTraces(t.Context(), gzipBytes(t, tracesJSON)))
+	require.Len(t, tracesSink.AllTraces(), 1)
+	assert.Equal(t, 2, tracesSink.AllTraces()[0].SpanCount())
+}
+
+func gzipBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	writer := gzip.NewWriter(&buf)
+	_, err := writer.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	return buf.Bytes()
+}
+
 func getBlobReceiver(t *testing.T, mode string) (component.Component, error) {
 	return getBlobReceiverWithEncodings(t, mode, EncodingOTLPJSON, EncodingOTLPJSON)
 }
 
 func getBlobReceiverWithEncodings(t *testing.T, mode, logsEncoding, tracesEncoding string) (component.Component, error) {
 	return getBlobReceiverWithHost(t, mode, logsEncoding, tracesEncoding, componenttest.NewNopHost())
+}
+
+func getBlobReceiverWithCompression(t *testing.T, compression string) (component.Component, error) {
+	set := receivertest.NewNopSettings(metadata.Type)
+	r, err := newReceiver(set, getBlobEventHandler(t, newMockBlobClient()), EncodingOTLPJSON, EncodingOTLPJSON, compression)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.(*blobReceiver).resolveUnmarshalers(componenttest.NewNopHost()); err != nil {
+		return r, err
+	}
+	return r, nil
 }
 
 // getBlobReceiverWithHost builds a receiver and resolves its unmarshalers
@@ -291,7 +364,7 @@ func getBlobReceiverWithHost(t *testing.T, mode, logsEncoding, tracesEncoding st
 		return nil, errors.New("invalid mode")
 	}
 
-	r, err := newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding)
+	r, err := newReceiver(set, blobEventHandler, logsEncoding, tracesEncoding, CompressionNone)
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,9 @@ status:
     active: [mx-psi, MoreraAlejandro]
     emeritus: [jordivilaseca]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: "http://localhost:1234"

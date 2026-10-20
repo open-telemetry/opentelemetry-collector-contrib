@@ -58,6 +58,10 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "empty_expression"),
 			expectedErr: `key "tenant_id" has an empty value expression`,
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "case_collision"),
+			expectedErr: "key names are case-insensitive",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -74,4 +78,12 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestConfig_Validate_CaseInsensitiveKeyCollision(t *testing.T) {
+	cfg := &Config{Keys: map[string]string{
+		"Tenant": `resource.attributes["a"]`,
+		"tenant": `resource.attributes["b"]`,
+	}}
+	assert.ErrorContains(t, cfg.Validate(), "case-insensitive")
 }

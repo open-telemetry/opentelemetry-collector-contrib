@@ -16,6 +16,9 @@ status:
     emeritus: [axw]
 
 tests:
+  # Each partition is forwarded with a derived context carrying its partition
+  # keys in client.Metadata, so the downstream context is not the inbound one.
+  skip_context_propagation: true
   config:
     keys:
       service: 'resource.attributes["service.name"]'
