@@ -46,10 +46,10 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-github.com/twmb/franz-go v1.22.1 h1:J7Xixbb7k0Itl39eaBot5PIblZh9IL3ZKYgo2yzlf40=
-github.com/twmb/franz-go v1.22.1/go.mod h1:b2qISbZgMTJRcIsltVqPz4+Bb2Lw/9bN+/Gd0C07kYw=
-github.com/twmb/franz-go/pkg/kmsg v1.14.0 h1:gSxrBEKWl3qnsx3QKWol5OEVujuPmIoDkhMt3didFKM=
-github.com/twmb/franz-go/pkg/kmsg v1.14.0/go.mod h1:+DPt4NC8RmI6hqb8G09+3giKObE6uD2Eya6CfqBpeJY=
+github.com/twmb/franz-go v1.22.2 h1:EdwIHGzD/4mgCpl/sNS0C74JYn6cL/r2KYS+8UC96Ww=
+github.com/twmb/franz-go v1.22.2/go.mod h1:HzZMc00pBWNfe0hNcNK4NxnsDNyKOoXnlTBkB4SUTjI=
+github.com/twmb/franz-go/pkg/kmsg v1.15.0 h1:mILdOQm4JkWojbSYVQ7KJNJ1qMdYNsLrdNOBUVKM6IA=
+github.com/twmb/franz-go/pkg/kmsg v1.15.0/go.mod h1:sGkGxKexpRLBThFHJLjjywcyfkK09qB/g+X+wFWZQ/A=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/collector/component v1.69.1-0.20261015205720-932ee30af2c0 h1:4Mi6co0pngPWPuAGs90LoaYwctf6ouUNbmkhir/6NuM=

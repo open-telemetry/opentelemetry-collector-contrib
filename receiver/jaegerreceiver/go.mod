@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger-idl v0.13.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.163.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.69.1-0.20261015205720-932ee30af2c0
@@ -55,7 +56,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.163.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/rs/cors v1.11.1 // indirect
