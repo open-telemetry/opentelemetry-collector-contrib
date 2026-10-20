@@ -1001,7 +1001,7 @@ func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
 	require.Eventually(t, func() bool { return consumer.Count() == 1 }, time.Second, 10*time.Millisecond)
 }
 
-// enableInformerObserver flips the receiver.k8s_objects.useInformerObserver gate
+// enableInformerObserver flips the receiver.k8sobjects.useInformerObserver gate
 // on for the duration of the test.
 func enableInformerObserver(t *testing.T) {
 	t.Helper()

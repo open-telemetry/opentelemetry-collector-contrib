@@ -70,7 +70,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		}
 		if objects[i].ResourceVersion != "" && metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
 			params.Logger.Warn(
-				"resource_version is deprecated and ignored when receiver.k8s_objects.useInformerObserver is enabled. Use `storage` to persist resourceVersion across restarts.",
+				"resource_version is deprecated and ignored when receiver.k8sobjects.useInformerObserver is enabled. Use `storage` to persist resourceVersion across restarts.",
 				zap.String("object", objects[i].Name),
 			)
 		}

@@ -11,5 +11,5 @@ var ReceiverK8sobjectsUseInformerObserverFeatureGate = featuregate.GlobalRegistr
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver collects objects via a shared informer factory (List+Watch backed by an in-memory cache) instead of the legacy per-object pull/watch observers. Pull mode reads from the informer cache; watch mode uses informer event handlers with automatic relist/reconnect. The `pull` RBAC now also requires the `watch` verb, `resource_version` is ignored, and `exclude_watch_type: [BOOKMARK, ERROR]` is a no-op."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43602"),
-	featuregate.WithRegisterFromVersion("v0.161.0"),
+	featuregate.WithRegisterFromVersion("v0.164.0"),
 )

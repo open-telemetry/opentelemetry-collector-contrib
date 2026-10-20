@@ -17,7 +17,7 @@ status:
 feature_gates:
   - id: receiver.k8sobjects.useInformerObserver
     stage: alpha
-    from_version: v0.161.0
+    from_version: v0.164.0
     description: >-
       When enabled, the receiver collects objects via a shared informer factory
       (List+Watch backed by an in-memory cache) instead of the legacy per-object

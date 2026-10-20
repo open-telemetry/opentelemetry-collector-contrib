@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/k8s_objects
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add an opt-in informer-based observer behind the `receiver.k8s_objects.useInformerObserver` feature gate.
+note: Add an opt-in informer-based observer behind the `receiver.k8sobjects.useInformerObserver` feature gate.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43602]
