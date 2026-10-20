@@ -810,6 +810,14 @@ func TestBuildDataSourceString(t *testing.T) {
 			expected: "sqlserver://localhost:1433?database=mydb",
 		},
 		{
+			name:        "azure sql managed identity",
+			driver:      "azuresql",
+			host:        "sql.example.database.windows.net",
+			database:    "mydb",
+			queryParams: map[string]any{"fedauth": "ActiveDirectoryManagedIdentity"},
+			expected:    "sqlserver://sql.example.database.windows.net:0?database=mydb&fedauth=ActiveDirectoryManagedIdentity",
+		},
+		{
 			name:        "sqlserver with username and password",
 			driver:      "sqlserver",
 			host:        "localhost",
@@ -1006,6 +1014,18 @@ func TestBuildDataSourceStringSQLServer(t *testing.T) {
 			},
 			expected: "sqlserver://test:password@localhost:1433?database=mydb",
 			wantErr:  false,
+		},
+		{
+			name: "Azure SQL managed identity without explicit port",
+			config: Config{
+				Host:     "sql.example.database.windows.net",
+				Database: "mydb",
+				Driver:   "azuresql",
+				AdditionalParams: map[string]any{
+					"fedauth": "ActiveDirectoryManagedIdentity",
+				},
+			},
+			expected: "sqlserver://sql.example.database.windows.net:0?database=mydb&fedauth=ActiveDirectoryManagedIdentity",
 		},
 		{
 			name: "SQL Server with instance",

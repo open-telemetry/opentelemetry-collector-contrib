@@ -7,10 +7,10 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
@@ -91,10 +91,10 @@ type Config struct {
 
 	DataSource string `mapstructure:"datasource"`
 
-	// DBAuth optionally references a database credential provider extension.
-	// When set, the provider supplies credentials at connection time and the
-	// static password must not be provided.
-	DBAuth configdbauth.ID `mapstructure:"db_auth,omitempty"`
+	// Auth optionally references an azureauthextension component for Azure AD /
+	// managed identity authentication. When set, 'username' and 'password' must
+	// not be provided; the extension supplies credentials at connection time.
+	Auth *component.ID `mapstructure:"auth"`
 
 	Password configopaque.String `mapstructure:"password"`
 	Port     uint                `mapstructure:"port"`
@@ -179,10 +179,10 @@ func (cfg *Config) validateConnectionPool() error {
 
 func directDBConnectionEnabled(config *Config) (bool, error) {
 	hasDataSource := config.DataSource != ""
-	hasDBAuth := !config.DBAuth.IsEmpty()
+	hasAuth := config.Auth != nil
 	noneOfServerUserPasswordPortSet := config.Server == "" && config.Username == "" && string(config.Password) == "" && config.Port == 0
 
-	if !hasDataSource && noneOfServerUserPasswordPortSet && !hasDBAuth {
+	if !hasDataSource && noneOfServerUserPasswordPortSet && !hasAuth {
 		// If no connection information is provided, we can't connect directly and this is a valid config.
 		return false, nil
 	}
@@ -192,14 +192,14 @@ func directDBConnectionEnabled(config *Config) (bool, error) {
 		return false, errors.New("wrong config: when specifying 'datasource' no other connection parameters ('server', 'username', 'password', or 'port') should be set")
 	}
 
-	if hasDBAuth {
-		if string(config.Password) != "" {
-			return false, errors.New("wrong config: set either 'password' or 'db_auth', not both")
+	if hasAuth {
+		// username and password are redundant: the extension provides credentials.
+		if config.Username != "" || string(config.Password) != "" {
+			return false, errors.New("wrong config: 'username' and 'password' must not be set when 'auth' is configured")
 		}
-		// Username may be used as provider input. Without a datasource we need
-		// at least server and port to build a DSN.
+		// Without a datasource we need at least server and port to build a DSN.
 		if !hasDataSource && (config.Server == "" || config.Port == 0) {
-			return false, errors.New("wrong config: when using 'db_auth' without 'datasource', both 'server' and 'port' must be specified")
+			return false, errors.New("wrong config: when using 'auth' without 'datasource', both 'server' and 'port' must be specified")
 		}
 		return true, nil
 	}

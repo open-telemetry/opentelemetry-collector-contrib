@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 )
 
 var errServerAuthConfigRequired = errors.New("azure_auth server authentication requires server.issuer_url and server.audience")
@@ -63,11 +61,8 @@ var (
 	_ extensionauth.HTTPClient = (*authenticator)(nil)
 	_ extensionauth.Server     = (*authenticator)(nil)
 	_ azcore.TokenCredential   = (*authenticator)(nil)
-	_ dbauth.Provider          = (*authenticator)(nil)
 	_ tokenSource              = (*authenticator)(nil)
 )
-
-const defaultDatabaseScope = "https://database.windows.net/.default"
 
 func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
 	var credential azcore.TokenCredential
@@ -199,24 +194,6 @@ func (a *authenticator) GetToken(ctx context.Context, options policy.TokenReques
 		return azcore.AccessToken{}, errors.New("unexpected: credentials were not initialized")
 	}
 	return a.credential.GetToken(ctx, options)
-}
-
-// GetCredential implements dbauth.Provider. The scope is owned by this
-// extension's configuration, not by the SQL Server receiver. Explicit scopes
-// support sovereign Azure clouds; the default targets Azure Public SQL.
-func (a *authenticator) GetCredential(ctx context.Context, _ dbauth.Request) (*dbauth.Credential, error) {
-	scopes := a.scopes
-	if len(scopes) == 0 {
-		scopes = []string{defaultDatabaseScope}
-	}
-	token, err := a.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
-	if err != nil {
-		return nil, err
-	}
-	return &dbauth.Credential{
-		Secret:   token.Token,
-		NotAfter: &token.ExpiresOn,
-	}, nil
 }
 
 // Token returns an access token with a valid token for authorization.

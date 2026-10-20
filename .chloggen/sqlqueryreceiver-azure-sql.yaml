@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sqlquery
+
+note: Register the `azuresql` driver to enable Azure SQL queries with Microsoft Entra authentication, including managed identities.
+
+issues: [50294]
+
+subtext:
+
+change_logs: [user]

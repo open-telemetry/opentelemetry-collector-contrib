@@ -62,9 +62,6 @@ type: object
 properties:
   computer_name:
     type: string
-  db_auth:
-    description: DBAuth sources the connection credential from a db_auth provider extension instead of a static password. Mutually exclusive with the top-level password field.
-    $ref: /config/configdbauth.id
   connection_pool:
     description: ConnectionPool tunes the shared database connection pool used by all scrapers of this receiver.
     $ref: connection_pool

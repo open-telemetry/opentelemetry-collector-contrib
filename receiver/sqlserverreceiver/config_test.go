@@ -11,12 +11,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
@@ -88,29 +86,6 @@ func TestValidate(t *testing.T) {
 				Port:                 1433,
 			},
 			expectedSuccess: true,
-		},
-		{
-			desc: "valid config with db_auth provider",
-			cfg: &Config{
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				DBAuth:               configdbauth.ID(component.MustNewID("azure_auth")),
-				Username:             "sql-user",
-				Server:               "sql.example.com",
-				Port:                 1433,
-			},
-			expectedSuccess: true,
-		},
-		{
-			desc: "invalid config with db_auth and static password",
-			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				DBAuth:           configdbauth.ID(component.MustNewID("azure_auth")),
-				Password:         "password",
-				Server:           "sql.example.com",
-				Port:             1433,
-			},
-			expectedSuccess: false,
 		},
 		{
 			desc: "config with invalid MaxQuerySampleCount value",

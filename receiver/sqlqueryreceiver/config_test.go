@@ -394,6 +394,7 @@ func TestIsValidDriver(t *testing.T) {
 		{"postgres driver", sqlquery.DriverPostgres, true},
 		{"snowflake driver", sqlquery.DriverSnowflake, true},
 		{"sqlserver driver", sqlquery.DriverSQLServer, true},
+		{"azuresql driver", sqlquery.DriverAzureSQL, true},
 		{"tds driver", sqlquery.DriverTDS, true},
 		{"invalid driver", "invalid", false},
 		{"empty driver", "", false},
