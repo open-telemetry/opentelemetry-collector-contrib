@@ -55,7 +55,7 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformFilterCoda)
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	// 'from_attributes' or 'to_attributes' under 'name' has to be set for the span
 	// processor to be valid. If not set and not enforced, the processor would do no work.
 	oCfg := cfg.(*Config)

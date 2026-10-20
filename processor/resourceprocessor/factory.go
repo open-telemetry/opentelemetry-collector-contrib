@@ -44,7 +44,7 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformFilterCoda)
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformFilterCoda)
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformFilterCoda)
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func createProfilesProcessor(
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
 ) (xprocessor.Profiles, error) {
-	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformFilterCoda)
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err

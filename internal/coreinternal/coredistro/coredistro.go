@@ -14,8 +14,8 @@ const RemovalWarning = "This component will be removed from the OpenTelemetry Co
 // JaegerZipkinCoda is the coda for the Jaeger and Zipkin components.
 const JaegerZipkinCoda = "See https://github.com/open-telemetry/opentelemetry-collector-releases/issues/1683 for more details."
 
-// TransformFilterCoda is the coda for components superseded by the transform and filter processors.
-const TransformFilterCoda = "Use the transform or filter processor instead."
+// TransformCoda is the coda for components superseded by the transform processor.
+const TransformCoda = "Use the transform processor instead."
 
 // IsCoreDistro reports whether the running collector is the core distribution.
 func IsCoreDistro(info component.BuildInfo) bool {
