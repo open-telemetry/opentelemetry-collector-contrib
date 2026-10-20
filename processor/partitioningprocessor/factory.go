@@ -96,11 +96,21 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	)
 }
 
-// NOTE: the profiles processor below is a no-op passthrough that forwards
-// telemetry unchanged. Partitioning for profiles will follow in a subsequent PR.
 func createProfilesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
-	return xprocessorhelper.NewProfiles(ctx, set, cfg, next,
+	c := cfg.(*Config)
+	keyNames, expressions := sortedPartitionKeys(c.Keys)
+	p, err := newProfilesPartitioner(expressions, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	pp := &partitioningProcessor{
+		nextProfiles:        next,
+		profilesPartitioner: p,
+		keyNames:            keyNames,
+	}
+	return xprocessorhelper.NewProfiles(ctx, set, cfg, pp,
 		func(_ context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) { return pd, nil },
+		xprocessorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
 

@@ -65,6 +65,20 @@ func TestCreateMetricsProcessor_InvalidOTTL(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateProfilesProcessor_ValidConfig(t *testing.T) {
+	f := NewFactory()
+	p, err := f.(xprocessor.Factory).CreateProfiles(t.Context(), nopSettings(), validConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, p)
+}
+
+func TestCreateProfilesProcessor_InvalidOTTL(t *testing.T) {
+	f := NewFactory()
+	cfg := &Config{Keys: map[string]string{"bad": "not_a_valid_expression("}}
+	_, err := f.(xprocessor.Factory).CreateProfiles(t.Context(), nopSettings(), cfg, consumertest.NewNop())
+	assert.Error(t, err)
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
 	assert.Equal(t, &Config{}, cfg)

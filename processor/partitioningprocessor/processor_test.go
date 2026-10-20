@@ -16,10 +16,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
@@ -40,6 +43,13 @@ func buildTracesProcessor(t *testing.T, cfg *Config, next consumer.Traces) proce
 func buildMetricsProcessor(t *testing.T, cfg *Config, next consumer.Metrics) processor.Metrics {
 	t.Helper()
 	p, err := createMetricsProcessor(t.Context(), nopSettings(), cfg, next)
+	require.NoError(t, err)
+	return p
+}
+
+func buildProfilesProcessor(t *testing.T, cfg *Config, next xconsumer.Profiles) xprocessor.Profiles {
+	t.Helper()
+	p, err := createProfilesProcessor(t.Context(), nopSettings(), cfg, next)
 	require.NoError(t, err)
 	return p
 }
@@ -621,4 +631,86 @@ func (*capturingMetricsConsumer) Capabilities() consumer.Capabilities {
 
 func (c *capturingMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return c.fn(ctx, md)
+}
+
+func TestConsumeProfiles_Basic(t *testing.T) {
+	var (
+		calls int
+		gotMD client.Metadata
+	)
+	next := &capturingProfilesConsumer{fn: func(ctx context.Context, _ pprofile.Profiles) error {
+		calls++
+		gotMD = client.FromContext(ctx).Metadata
+		return nil
+	}}
+
+	proc := buildProfilesProcessor(t, &Config{Keys: map[string]string{
+		"tenant_id": `resource.attributes["tenant.id"]`,
+	}}, next)
+
+	profiles := newTestProfiles()
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("tenant.id", "acme")
+	rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+
+	require.NoError(t, proc.ConsumeProfiles(t.Context(), profiles))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []string{"acme"}, gotMD.Get("tenant_id"))
+}
+
+func TestConsumeProfiles_OTelColContext_ClientMetadata(t *testing.T) {
+	var (
+		calls int
+		gotMD client.Metadata
+	)
+	next := &capturingProfilesConsumer{fn: func(ctx context.Context, _ pprofile.Profiles) error {
+		calls++
+		gotMD = client.FromContext(ctx).Metadata
+		return nil
+	}}
+
+	proc := buildProfilesProcessor(t, &Config{Keys: map[string]string{
+		"profiles_topic": `otelcol.client.metadata["x-tenant-id"][0]`,
+	}}, next)
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"x-tenant-id": {"acme"},
+		}),
+	})
+
+	profiles := newTestProfiles()
+	profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+
+	require.NoError(t, proc.ConsumeProfiles(ctx, profiles))
+	assert.Equal(t, 1, calls)
+	assert.Equal(t, []string{"acme"}, gotMD.Get("x-tenant-id"))
+	assert.Equal(t, []string{"acme"}, gotMD.Get("profiles_topic"))
+}
+
+func TestConsumeProfiles_NonStringKeyIsPermanentError(t *testing.T) {
+	proc := buildProfilesProcessor(t, &Config{Keys: map[string]string{
+		"count": `resource.attributes["count"]`,
+	}}, consumertest.NewNop())
+
+	profiles := newTestProfiles()
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutInt("count", 1)
+	rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+
+	err := proc.ConsumeProfiles(t.Context(), profiles)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
+type capturingProfilesConsumer struct {
+	fn func(ctx context.Context, pd pprofile.Profiles) error
+}
+
+func (*capturingProfilesConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (c *capturingProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	return c.fn(ctx, pd)
 }

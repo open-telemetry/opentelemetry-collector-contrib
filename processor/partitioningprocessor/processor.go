@@ -12,20 +12,24 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // partitioningProcessor is the consumer wrapped by processorhelper; it
 // splits each batch and fans the partitions out to the next consumer.
 type partitioningProcessor struct {
-	nextLogs           consumer.Logs
-	logsPartitioner    logsPartitioner
-	nextTraces         consumer.Traces
-	tracesPartitioner  tracesPartitioner
-	nextMetrics        consumer.Metrics
-	metricsPartitioner metricsPartitioner
+	nextLogs            consumer.Logs
+	logsPartitioner     logsPartitioner
+	nextTraces          consumer.Traces
+	tracesPartitioner   tracesPartitioner
+	nextMetrics         consumer.Metrics
+	metricsPartitioner  metricsPartitioner
+	nextProfiles        xconsumer.Profiles
+	profilesPartitioner profilesPartitioner
 
 	// keyNames holds the lower-cased partition key names in sorted order,
 	// matching the order of values produced by each partitioner.
@@ -63,6 +67,15 @@ func (p *partitioningProcessor) ConsumeMetrics(ctx context.Context, md pmetric.M
 		return consumererror.NewPermanent(err)
 	}
 	return consumePartitions(ctx, p.keyNames, parts, p.nextMetrics.ConsumeMetrics)
+}
+
+func (p *partitioningProcessor) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	parts, err := p.profilesPartitioner.partitionProfiles(ctx, pd)
+	if err != nil {
+		// Key evaluation depends only on the data, so a retry would fail the same way.
+		return consumererror.NewPermanent(err)
+	}
+	return consumePartitions(ctx, p.keyNames, parts, p.nextProfiles.ConsumeProfiles)
 }
 
 // consumePartitions forwards all partitions concurrently.
