@@ -494,6 +494,17 @@ processors:
 Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
 If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
+The cluster name is read from the node's EC2 tags. A node can carry more than one tag
+that names a cluster, so they are read in a fixed order, strongest claim first:
+
+1. `aws:eks:cluster-name`, which EKS sets in the reserved `aws:` tag namespace.
+2. `eks:cluster-name`, which EKS managed node groups set.
+3. `kubernetes.io/cluster/<name>`, which users and provisioning tools set. A tag
+   marked `owned` is preferred over one marked `shared`.
+
+Tags of the same strength naming different clusters do not say which cluster the node
+is in, so no cluster name is reported rather than one of them being chosen.
+
 #### Cluster ARN
 
 The cluster name on its own is not unique, so two clusters in different accounts or
@@ -513,18 +524,52 @@ processors:
           enabled: true
 ```
 
-The ARN is built from the Region, account ID, and cluster name. On the IMDS path,
-enabling it causes the detector to call `EC2:DescribeInstances` to find the cluster
-name. The role needs permission for that action. If `k8s.cluster.name` is already
-enabled, that request and permission are already required. The Kubernetes API
-fallback already makes the request regardless of this setting.
+The ARN is the one EKS reports for the cluster, and it is only reported once EKS has
+confirmed that the cluster the node's tags name is the cluster the node is actually
+running in.
 
-The ARN uses the EC2 node owner's account as the cluster account. EKS managed and
-self-managed EC2 nodes are expected to belong to the same account as their cluster.
-Hybrid nodes do not provide the EC2 metadata needed by this path.
+That confirmation is needed because the cluster name comes from an EC2 tag, and two
+of the three tags it can come from sit in namespaces a user can write to. A name on
+its own only establishes that some cluster of that name exists in this account and
+Region, which a tag naming any other cluster in the same account and Region satisfies
+just as well. What distinguishes two clusters is their OIDC issuer URL, which is
+unique per cluster: the node's own Kubernetes API server publishes the issuer of the
+cluster the node is in, and `DescribeCluster` reports the issuer of the cluster that
+was named. The attribute is reported only when those two agree, ignoring a trailing
+slash. If they disagree, or either is unavailable, no ARN is reported.
 
-Enabling the ARN does not require `k8s.cluster.name` to be reported. Nothing is
-reported when any of the three parts cannot be resolved.
+A detection run that reaches ARN confirmation makes these requests:
+
+* one `GET /.well-known/openid-configuration` request to the Kubernetes API server,
+  to read the issuer of the cluster the node is in. Environment detection can make
+  a separate request to the same endpoint when neither an EKS identity token path
+  nor another earlier check identifies the environment;
+* one `eks:DescribeCluster`
+  [request](https://docs.aws.amazon.com/eks/latest/APIReference/API_DescribeCluster.html),
+  which the role needs permission for;
+* one `ec2:DescribeInstances`
+  [request](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html)
+  to read the node's tags, which the role needs permission for. On the Kubernetes API
+  path this request is already made regardless of this setting, and on the IMDS path
+  it is already made when `k8s.cluster.name` is enabled.
+
+A run with no single valid cluster name stops before the OIDC and
+`eks:DescribeCluster` requests. Detection runs once when the processor starts. If
+`refresh_interval` is set, it runs again on every tick, and the requests needed by
+that run are repeated: no result is cached between runs. The default leaves
+`refresh_interval` unset, so detection runs once per collector start.
+
+Nothing is reported when the node's tags name no cluster, when they name more than one
+cluster at the same precedence, when the name cannot be an EKS cluster name, when the
+cluster cannot be described, when either OIDC issuer is unavailable, or when the two
+issuers disagree. Whether that is fatal follows `fail_on_missing_metadata`, the same
+as for every other attribute this detector reads: when it is set, detection fails;
+when it is not, the attribute is left off and detection continues. Leaving the
+attribute disabled, as the default config does, makes no request and can never fail
+detection.
+
+Enabling the ARN does not require `k8s.cluster.name` to be reported. Hybrid nodes do
+not provide the EC2 metadata this path reads.
 
 #### Node Name Env Variable
 When using the EC2 API and the Kubernetes API to retrieve resource attributes, the node name is needed. The node name is extracted from the env variable you define on the pod.

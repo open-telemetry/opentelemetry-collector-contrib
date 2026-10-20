@@ -44,97 +44,41 @@ const (
 	awsContainerAuthTokenFileEnvVar = "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE" //nolint:gosec // env var name, not a credential
 
 	imdsCheckMaxRetry = 1
+
+	// maxClusterNameLength is the longest name EKS accepts for a cluster.
+	maxClusterNameLength = 100
 )
 
-// eksClusterARNFormat is the ARN format of an EKS cluster. The ARN is fully
-// determined by the partition, the region, the account id and the cluster name.
-// See https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonelastickubernetesservice.html#amazonelastickubernetesservice-resources-for-iam-policies
-const eksClusterARNFormat = "arn:%s:eks:%s:%s:cluster/%s"
+// errNoUsableClusterName reports that the node carried nothing that can name a
+// cluster: no tag naming one, tags naming more than one, or a name that EKS
+// could not have issued. It does not carry the name itself, which can come
+// from an EC2 tag in a namespace a user can write to.
+var errNoUsableClusterName = errors.New("no usable cluster name on the node")
 
-// arnPartitions maps current region prefixes to ARN partitions. Malformed
-// regions and regions with an unrecognized leading prefix are rejected rather
-// than assigned a valid-looking ARN in a guessed partition.
-var arnPartitions = []struct {
-	regionPrefix string
-	partition    string
-}{
-	{regionPrefix: "cn-", partition: "aws-cn"},
-	{regionPrefix: "us-gov-", partition: "aws-us-gov"},
-	{regionPrefix: "us-iso-", partition: "aws-iso"},
-	{regionPrefix: "us-isob-", partition: "aws-iso-b"},
-	{regionPrefix: "us-isof-", partition: "aws-iso-f"},
-	{regionPrefix: "eu-isoe-", partition: "aws-iso-e"},
-	{regionPrefix: "eusc-de-", partition: "aws-eusc"},
-	{regionPrefix: "us-", partition: "aws"},
-	{regionPrefix: "eu-", partition: "aws"},
-	{regionPrefix: "ap-", partition: "aws"},
-	{regionPrefix: "sa-", partition: "aws"},
-	{regionPrefix: "ca-", partition: "aws"},
-	{regionPrefix: "me-", partition: "aws"},
-	{regionPrefix: "af-", partition: "aws"},
-	{regionPrefix: "il-", partition: "aws"},
-	{regionPrefix: "mx-", partition: "aws"},
-}
-
-// partitionForRegion returns an empty string for an unknown or malformed region.
-func partitionForRegion(region string) string {
-	if !validRegion(region) {
-		return ""
-	}
-	for _, p := range arnPartitions {
-		if strings.HasPrefix(region, p.regionPrefix) {
-			return p.partition
-		}
-	}
-	return ""
-}
-
-func validRegion(region string) bool {
-	if len(region) < 3 || len(region) > 64 || region[0] == '-' || region[len(region)-1] == '-' || strings.Contains(region, "--") {
-		return false
-	}
-	for _, char := range region {
-		if (char < 'a' || char > 'z') && (char < '0' || char > '9') && char != '-' {
-			return false
-		}
-	}
-	return true
-}
-
-func validAccountID(accountID string) bool {
-	if len(accountID) != 12 {
-		return false
-	}
-	for _, char := range accountID {
-		if char < '0' || char > '9' {
-			return false
-		}
-	}
-	return true
-}
-
+// validClusterName reports whether the name is shaped like an EKS cluster name,
+// so that a tag value which cannot name a cluster is rejected before it costs a
+// DescribeCluster request. A name must start with a letter or digit and may
+// then also contain dashes and underscores.
+// See https://docs.aws.amazon.com/eks/latest/APIReference/API_CreateCluster.html#AmazonEKS-CreateCluster-request-name
 func validClusterName(clusterName string) bool {
-	if clusterName == "" || len(clusterName) > 100 {
+	if clusterName == "" || len(clusterName) > maxClusterNameLength {
 		return false
 	}
-	for i, char := range clusterName {
+	// Indexed by byte so that the length check above and the position check
+	// below are in the same units. Any byte of a multi-byte character fails
+	// the alphanumeric test and is neither a dash nor an underscore, so an
+	// accepted name is ASCII only and its byte length is its character length.
+	for i := 0; i < len(clusterName); i++ {
+		char := clusterName[i]
 		alphanumeric := char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9'
-		if !alphanumeric && (i == 0 || char != '-' && char != '_') {
+		if alphanumeric {
+			continue
+		}
+		if i == 0 || char != '-' && char != '_' {
 			return false
 		}
 	}
 	return true
-}
-
-// constructClusterARN builds the ARN only when every part has a valid shape.
-// The account is the EC2 node owner's account. EKS managed and self-managed
-// EC2 nodes are expected to belong to the same account as their cluster.
-func constructClusterARN(region, accountID, clusterName string) string {
-	partition := partitionForRegion(region)
-	if partition == "" || !validAccountID(accountID) || !validClusterName(clusterName) {
-		return ""
-	}
-	return fmt.Sprintf(eksClusterARNFormat, partition, region, accountID, clusterName)
 }
 
 // detector for EKS
@@ -193,6 +137,12 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	// Discard anything left in the builder by an earlier run. Detect is retried
+	// on failure and re-run on every refresh_interval tick, and the error paths
+	// below return without calling Emit, which is what otherwise clears it. A
+	// later run would then emit attributes established by an earlier one.
+	d.rb.Emit()
+
 	// Check if running on EKS.
 	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
@@ -252,19 +202,75 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 			d.logger.Debug("EKS instance metadata unavailable", zap.Error(err))
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
-		d.rb.SetK8sClusterName(apiMeta.ClusterName)
-		if arn := constructClusterARN(imdsMeta.Region, imdsMeta.AccountID, apiMeta.ClusterName); arn != "" {
-			d.rb.SetAwsEksClusterArn(arn)
-		} else if d.ra.AwsEksClusterArn.Enabled {
-			d.logger.Debug(
-				"EKS cluster ARN unavailable",
-				zap.Bool("region_valid", partitionForRegion(imdsMeta.Region) != ""),
-				zap.Bool("account_id_valid", validAccountID(imdsMeta.AccountID)),
-				zap.Bool("cluster_name_valid", validClusterName(apiMeta.ClusterName)),
-			)
+		if err := d.setClusterMetadata(ctx, apiMeta); err != nil {
+			return pcommon.NewResource(), "", err
 		}
 	}
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+// setClusterARN records the ARN that EKS reports for the cluster the node
+// belongs to, and reports why it could not. The lookup only runs when the
+// attribute is enabled. Whether a failure is fatal is the caller's decision,
+// taken from fail_on_missing_metadata, so that this attribute follows the same
+// rule as every other piece of metadata the detector reads.
+//
+// The returned errors never carry the cluster name: it can come from an EC2
+// tag in a namespace a user can write to, so it can name a cluster this node
+// has nothing to do with.
+func (d *detector) setClusterARN(ctx context.Context, clusterName string) error {
+	if !d.ra.AwsEksClusterArn.Enabled {
+		return nil
+	}
+	if !validClusterName(clusterName) {
+		return errNoUsableClusterName
+	}
+	arn, err := d.apiProvider.ClusterARN(ctx, clusterName)
+	if err != nil {
+		return err
+	}
+	d.rb.SetAwsEksClusterArn(arn)
+	return nil
+}
+
+// setClusterMetadata records the cluster name and the cluster ARN, each only
+// when it was actually established.
+//
+// The ARN check runs first because it is what decides whether the name is
+// trustworthy. When EKS reports that the named cluster is not this node's
+// cluster, the name is not reported either: it came from a tag, the check just
+// proved it names someone else's cluster, and reporting it would attribute
+// this node's telemetry to that cluster. Every other ARN failure leaves the
+// name alone, because none of them prove anything about it. With the attribute
+// disabled, which is the default, no check runs and the name is reported as
+// before.
+//
+// An empty name is never reported: the node carried no tag naming a cluster,
+// or carried tags naming more than one, and an empty attribute asserts a
+// cluster named "" rather than saying nothing.
+func (d *detector) setClusterMetadata(ctx context.Context, meta apiprovider.InstanceMetadata) error {
+	arnErr := d.setClusterARN(ctx, meta.ClusterName)
+
+	switch {
+	case meta.ClusterName == "":
+		if meta.ClusterNameAmbiguous {
+			d.logger.Debug("EKS cluster name unavailable; the node's EC2 tags name more than one cluster at the same precedence")
+		} else {
+			d.logger.Debug("EKS cluster name unavailable; the node carries no EC2 tag naming a cluster")
+		}
+	case errors.Is(arnErr, apiprovider.ErrClusterIdentityMismatch):
+		d.logger.Debug("EKS cluster name not reported; EKS reports that the cluster named by the node's EC2 tags is not the cluster this node runs in")
+	default:
+		d.rb.SetK8sClusterName(meta.ClusterName)
+	}
+
+	if arnErr != nil {
+		if d.failOnMissingMetadata {
+			return fmt.Errorf("eks cluster ARN unavailable: %w", arnErr)
+		}
+		d.logger.Debug("EKS cluster ARN unavailable", zap.Error(arnErr))
+	}
+	return nil
 }
 
 func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string, error) {
@@ -294,16 +300,8 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 	d.rb.SetHostImageID(apiMeta.ImageID)
 	d.rb.SetHostType(apiMeta.InstanceType)
 	d.rb.SetHostName(apiMeta.Hostname)
-	d.rb.SetK8sClusterName(apiMeta.ClusterName)
-	if arn := constructClusterARN(k8sMeta.Region, apiMeta.AccountID, apiMeta.ClusterName); arn != "" {
-		d.rb.SetAwsEksClusterArn(arn)
-	} else if d.ra.AwsEksClusterArn.Enabled {
-		d.logger.Debug(
-			"EKS cluster ARN unavailable",
-			zap.Bool("region_valid", partitionForRegion(k8sMeta.Region) != ""),
-			zap.Bool("account_id_valid", validAccountID(apiMeta.AccountID)),
-			zap.Bool("cluster_name_valid", validClusterName(apiMeta.ClusterName)),
-		)
+	if err := d.setClusterMetadata(ctx, apiMeta); err != nil {
+		return pcommon.NewResource(), "", err
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil

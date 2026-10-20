@@ -16,9 +16,24 @@ issues: [52173]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The attribute is disabled by default. On the IMDS path, enabling it requires
-  the `EC2:DescribeInstances` action to find the cluster name. If cluster name
-  detection is already enabled, that request and permission are already required.
+  The attribute is disabled by default. The ARN is the one EKS reports, and it is
+  reported only once EKS has confirmed that the cluster the node's EC2 tags name is
+  the cluster the node is running in: the OIDC issuer `eks:DescribeCluster` reports
+  for the named cluster must match the one the node's own Kubernetes API server
+  publishes. The cluster name comes from a tag, and two of the three tags it can come
+  from sit in namespaces a user can write to, so a name alone would also be satisfied
+  by a tag naming any other cluster in the same account and Region.
+
+  A detection run that reaches ARN confirmation reads the Kubernetes OIDC
+  configuration and calls `eks:DescribeCluster`. Finding the name first calls
+  `ec2:DescribeInstances`. The role needs permission for both AWS actions. Detection
+  runs once per collector start, and again on every `refresh_interval` tick when that
+  option is set. A run with no single valid cluster name stops before the OIDC and
+  `eks:DescribeCluster` requests.
+
+  No ARN is reported when the tags name no single cluster, when the cluster cannot be
+  described, or when the issuers do not match. Whether that fails detection follows
+  `fail_on_missing_metadata`, the same as the detector's other attributes.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

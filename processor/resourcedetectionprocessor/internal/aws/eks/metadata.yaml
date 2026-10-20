@@ -7,7 +7,7 @@ resource_attributes:
   aws.eks.cluster.arn:
     semantic_convention:
       ref: aws.md#aws-eks-cluster-arn
-    description: The ARN of the EKS cluster. On the IMDS path, enabling this attribute requires permission to run the EC2:DescribeInstances action.
+    description: The ARN of the EKS cluster the node is running in, as reported by EKS. It is reported only when the OIDC issuer EKS reports for the cluster matches the one the node's Kubernetes API server publishes. Enabling this attribute requires permission to run the eks:DescribeCluster and ec2:DescribeInstances actions.
     type: string
     enabled: false
   cloud.account.id:
