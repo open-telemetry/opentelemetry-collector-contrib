@@ -1088,6 +1088,71 @@ func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric) pmetri
 	return md
 }
 
+func TestCumulativeToDeltaScopeAttributes(t *testing.T) {
+	now := time.Now()
+
+	// sum is a cumulative monotonic sum from a scope that only differs from the others by its "tenant" attribute.
+	sum := func(tenant string, ts, value int64) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("lib")
+		sm.Scope().SetVersion("1")
+		sm.Scope().Attributes().PutStr("tenant", tenant)
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("requests")
+		s := m.SetEmptySum()
+		s.SetIsMonotonic(true)
+		s.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := s.DataPoints().AppendEmpty()
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(ts) * time.Second)))
+		dp.SetIntValue(value)
+		return md
+	}
+
+	next := new(consumertest.MetricsSink)
+	mgp, err := NewFactory().CreateMetrics(
+		t.Context(),
+		processortest.NewNopSettings(metadata.Type),
+		&Config{InitialValue: tracking.InitialValueKeep},
+		next,
+	)
+	require.NoError(t, err)
+	require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+
+	for _, md := range []pmetric.Metrics{
+		sum("a", 1, 100),
+		sum("b", 1, 50),
+		sum("a", 2, 150),
+		sum("b", 2, 80),
+	} {
+		require.NoError(t, mgp.ConsumeMetrics(t.Context(), md))
+	}
+
+	type delta struct {
+		tenant string
+		value  int64
+	}
+	var got []delta
+	for _, md := range next.AllMetrics() {
+		for i := range md.ResourceMetrics().Len() {
+			sms := md.ResourceMetrics().At(i).ScopeMetrics()
+			for j := range sms.Len() {
+				tenant, _ := sms.At(j).Scope().Attributes().Get("tenant")
+				dps := sms.At(j).Metrics().At(0).Sum().DataPoints()
+				for k := range dps.Len() {
+					got = append(got, delta{tenant: tenant.Str(), value: dps.At(k).IntValue()})
+				}
+			}
+		}
+	}
+
+	// Scopes that differ only in their attributes are separate streams, so neither is read as a reset of the other.
+	assert.Equal(t, []delta{{"a", 100}, {"b", 50}, {"a", 50}, {"b", 30}}, got)
+
+	require.NoError(t, mgp.Shutdown(t.Context()))
+}
+
 func BenchmarkConsumeMetrics(b *testing.B) {
 	c := consumertest.NewNop()
 	params := processortest.NewNopSettings(metadata.Type)
