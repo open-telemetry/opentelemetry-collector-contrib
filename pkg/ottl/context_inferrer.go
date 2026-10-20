@@ -372,12 +372,12 @@ func (v *priorityContextInferrerHints) visitConverter(c *converter) {
 }
 
 func (v *priorityContextInferrerHints) visitArguments(args []argument) {
-	for _, arg := range args {
+	for i := range args {
 		switch {
-		case arg.FunctionName != nil:
-			v.functions[*arg.FunctionName] = struct{}{}
-		case arg.Value.Enum != nil:
-			v.ambiguousEnums[*arg.Value.Enum] = struct{}{}
+		case args[i].FunctionName != nil:
+			v.functions[*args[i].FunctionName] = struct{}{}
+		case args[i].Value.Enum != nil:
+			v.ambiguousEnums[*args[i].Value.Enum] = struct{}{}
 		}
 	}
 }
