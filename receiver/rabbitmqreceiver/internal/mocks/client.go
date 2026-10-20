@@ -15,6 +15,29 @@ type MockClient struct {
 	mock.Mock
 }
 
+// GetBindings provides a mock function with given fields: ctx
+func (_m *MockClient) GetBindings(ctx context.Context) ([]*models.Binding, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []*models.Binding
+	if rf, ok := ret.Get(0).(func(context.Context) []*models.Binding); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*models.Binding)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetClusterName provides a mock function with given fields: ctx
 func (_m *MockClient) GetClusterName(ctx context.Context) (string, error) {
 	ret := _m.Called(ctx)

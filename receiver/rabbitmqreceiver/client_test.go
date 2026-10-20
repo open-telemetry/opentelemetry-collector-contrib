@@ -28,6 +28,7 @@ const (
 	nodesAPIResponseFile       = "get_nodes_response.json"
 	exchangesAPIResponseFile   = "get_exchanges_response.json"
 	clusterNameAPIResponseFile = "get_cluster_name_response.json"
+	bindingsAPIResponseFile    = "get_bindings_response.json"
 )
 
 func TestNewClient(t *testing.T) {
@@ -292,6 +293,75 @@ func TestGetExchangesDetails(t *testing.T) {
 				exchanges, err := tc.GetExchanges(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected, exchanges)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetBindingsDetails(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Non-200 Response for GetBindings",
+			testFunc: func(t *testing.T) {
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusForbidden)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				bindings, err := tc.GetBindings(t.Context())
+				require.Nil(t, bindings)
+				require.EqualError(t, err, "non 200 code returned 403")
+			},
+		},
+		{
+			desc: "Bad payload returned for GetBindings",
+			testFunc: func(t *testing.T) {
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write([]byte("{invalid-json}"))
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				bindings, err := tc.GetBindings(t.Context())
+				require.Nil(t, bindings)
+				require.ErrorContains(t, err, "failed to decode response payload")
+			},
+		},
+		{
+			desc: "Successful GetBindings call",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, bindingsAPIResponseFile)
+
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write(data)
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				// Load the valid data into a struct to compare
+				var expected []*models.Binding
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				bindings, err := tc.GetBindings(t.Context())
+				require.NoError(t, err)
+				require.Equal(t, expected, bindings)
 			},
 		},
 	}
