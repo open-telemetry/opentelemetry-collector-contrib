@@ -48,7 +48,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -1020,40 +1019,24 @@ func Test_validateAndSanitizeExternalLabels_TranslationStrategy(t *testing.T) {
 	}
 }
 
-func Test_validateAndSanitizeExternalLabels_DropSanitizationGate(t *testing.T) {
-	t.Run("gate enabled preserves multiple underscores and leading underscore", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, true)()
+func Test_validateAndSanitizeExternalLabelsPreservesUnderscores(t *testing.T) {
+	for _, strategy := range []translationStrategy{"", underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation} {
+		t.Run(string(strategy), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = strategy
+			cfg.ExternalLabels = map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}
 
-		cfg := createDefaultConfig().(*Config)
-		cfg.ExternalLabels = map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}
-
-		newLabels, err := validateAndSanitizeExternalLabels(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}, newLabels)
-	})
-
-	t.Run("gate disabled collapses multiple underscores and sanitizes leading underscore", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, false)()
-
-		cfg := createDefaultConfig().(*Config)
-		cfg.ExternalLabels = map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}
-
-		newLabels, err := validateAndSanitizeExternalLabels(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{
-			"app_component":    "backend",
-			"key_custom_label": "val",
-		}, newLabels)
-	})
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}, newLabels)
+		})
+	}
 }
 
 // Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,
