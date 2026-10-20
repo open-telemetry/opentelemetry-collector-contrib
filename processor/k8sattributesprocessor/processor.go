@@ -48,6 +48,7 @@ type kubernetesprocessor struct {
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
 	podDeleteGracePeriod   time.Duration
+	kubelet                kube.KubeletConfig
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -55,7 +56,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod, kp.kubelet)
 		if err != nil {
 			return err
 		}

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Add new SSD, HDD, and Columnar table size metrics for Spanner."
+issues: [51269]
+subtext:
+change_logs: []
