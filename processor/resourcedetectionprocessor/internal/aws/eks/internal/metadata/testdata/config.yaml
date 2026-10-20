@@ -1,6 +1,8 @@
 default:
 all_set:
   resource_attributes:
+    aws.eks.cluster.arn:
+      enabled: true
     cloud.account.id:
       enabled: true
     cloud.availability_zone:
@@ -23,6 +25,8 @@ all_set:
       enabled: true
 none_set:
   resource_attributes:
+    aws.eks.cluster.arn:
+      enabled: false
     cloud.account.id:
       enabled: false
     cloud.availability_zone:

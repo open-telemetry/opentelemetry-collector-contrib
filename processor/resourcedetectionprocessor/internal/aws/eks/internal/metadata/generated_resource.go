@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetAwsEksClusterArn sets provided value as "aws.eks.cluster.arn" attribute.
+func (rb *ResourceBuilder) SetAwsEksClusterArn(val string) {
+	if rb.config.AwsEksClusterArn.Enabled {
+		rb.res.Attributes().PutStr("aws.eks.cluster.arn", val)
+	}
+}
+
 // SetCloudAccountID sets provided value as "cloud.account.id" attribute.
 func (rb *ResourceBuilder) SetCloudAccountID(val string) {
 	if rb.config.CloudAccountID.Enabled {

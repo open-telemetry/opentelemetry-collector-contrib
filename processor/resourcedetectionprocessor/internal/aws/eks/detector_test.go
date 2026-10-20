@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -516,6 +517,325 @@ func TestDetectFromAPI(t *testing.T) {
 			} else {
 				assert.Equal(t, 0, res.Attributes().Len())
 			}
+		})
+	}
+}
+
+func TestPartitionForRegion(t *testing.T) {
+	tests := []struct {
+		name     string
+		region   string
+		expected string
+	}{
+		{name: "US commercial", region: "us-west-2", expected: "aws"},
+		{name: "EU commercial", region: "eu-central-1", expected: "aws"},
+		{name: "AP commercial", region: "ap-southeast-1", expected: "aws"},
+		{name: "China", region: "cn-north-1", expected: "aws-cn"},
+		{name: "GovCloud", region: "us-gov-west-1", expected: "aws-us-gov"},
+		{name: "ISO", region: "us-iso-east-1", expected: "aws-iso"},
+		{name: "ISOB", region: "us-isob-east-1", expected: "aws-iso-b"},
+		{name: "ISOF", region: "us-isof-south-1", expected: "aws-iso-f"},
+		{name: "ISOE", region: "eu-isoe-west-1", expected: "aws-iso-e"},
+		{name: "EUSC", region: "eusc-de-east-1", expected: "aws-eusc"},
+		{name: "unknown", region: "new-partition-1", expected: ""},
+		{name: "empty", region: "", expected: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, partitionForRegion(tt.region))
+		})
+	}
+}
+
+func TestConstructClusterARN(t *testing.T) {
+	tests := []struct {
+		name        string
+		region      string
+		accountID   string
+		clusterName string
+		expected    string
+	}{
+		{
+			name:        "commercial partition",
+			region:      "us-west-2",
+			accountID:   "123456789012",
+			clusterName: "my-cluster_name",
+			expected:    "arn:aws:eks:us-west-2:123456789012:cluster/my-cluster_name",
+		},
+		{
+			name:        "gov partition",
+			region:      "us-gov-west-1",
+			accountID:   "123456789012",
+			clusterName: "my-cluster",
+			expected:    "arn:aws-us-gov:eks:us-gov-west-1:123456789012:cluster/my-cluster",
+		},
+		{
+			name:        "china partition",
+			region:      "cn-north-1",
+			accountID:   "123456789012",
+			clusterName: "my-cluster",
+			expected:    "arn:aws-cn:eks:cn-north-1:123456789012:cluster/my-cluster",
+		},
+		{
+			name:        "missing region",
+			accountID:   "123456789012",
+			clusterName: "my-cluster",
+			expected:    "",
+		},
+		{
+			name:        "missing account id",
+			region:      "us-west-2",
+			clusterName: "my-cluster",
+			expected:    "",
+		},
+		{
+			name:      "missing cluster name",
+			region:    "us-west-2",
+			accountID: "123456789012",
+			expected:  "",
+		},
+		{
+			name:        "unknown region",
+			region:      "new-partition-1",
+			accountID:   "123456789012",
+			clusterName: "my-cluster",
+			expected:    "",
+		},
+		{
+			name:        "invalid account id",
+			region:      "us-west-2",
+			accountID:   "12345678901a",
+			clusterName: "my-cluster",
+			expected:    "",
+		},
+		{
+			name:        "malformed region",
+			region:      "us-west-2:extra",
+			accountID:   "123456789012",
+			clusterName: "my-cluster",
+			expected:    "",
+		},
+		{
+			name:        "cluster name starts with a separator",
+			region:      "us-west-2",
+			accountID:   "123456789012",
+			clusterName: "-my-cluster",
+			expected:    "",
+		},
+		{
+			name:        "cluster name contains a slash",
+			region:      "us-west-2",
+			accountID:   "123456789012",
+			clusterName: "team/cluster",
+			expected:    "",
+		},
+		{
+			name:        "cluster name exceeds 100 characters",
+			region:      "us-west-2",
+			accountID:   "123456789012",
+			clusterName: strings.Repeat("a", 101),
+			expected:    "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, constructClusterARN(tt.region, tt.accountID, tt.clusterName))
+		})
+	}
+}
+
+func TestDetectClusterARNFromIMDS(t *testing.T) {
+	tests := []struct {
+		name           string
+		ra             metadata.ResourceAttributesConfig
+		imdsMeta       imds.InstanceIdentityDocument
+		apiMeta        apiprovider.InstanceMetadata
+		expectedOutput map[string]any
+	}{
+		{
+			name: "arn and cluster name enabled",
+			ra: metadata.ResourceAttributesConfig{
+				AwsEksClusterArn: metadata.ResourceAttributeConfig{Enabled: true},
+				K8sClusterName:   metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+				AccountID:  "123456789012",
+			},
+			apiMeta: apiprovider.InstanceMetadata{ClusterName: "my-cluster"},
+			expectedOutput: map[string]any{
+				"aws.eks.cluster.arn": "arn:aws:eks:us-west-2:123456789012:cluster/my-cluster",
+				"k8s.cluster.name":    "my-cluster",
+			},
+		},
+		{
+			// The cluster name is only needed to build the ARN here, so it must not be
+			// reported when the user did not ask for it.
+			name: "only arn enabled",
+			ra: metadata.ResourceAttributesConfig{
+				AwsEksClusterArn: metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-gov-west-1",
+				AccountID:  "123456789012",
+			},
+			apiMeta: apiprovider.InstanceMetadata{ClusterName: "my-cluster"},
+			expectedOutput: map[string]any{
+				"aws.eks.cluster.arn": "arn:aws-us-gov:eks:us-gov-west-1:123456789012:cluster/my-cluster",
+			},
+		},
+		{
+			// Without the account id the ARN cannot identify the cluster, so nothing is
+			// reported rather than a partial ARN.
+			name: "missing account id",
+			ra: metadata.ResourceAttributesConfig{
+				AwsEksClusterArn: metadata.ResourceAttributeConfig{Enabled: true},
+				K8sClusterName:   metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+			},
+			apiMeta: apiprovider.InstanceMetadata{ClusterName: "my-cluster"},
+			expectedOutput: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+			},
+		},
+		{
+			// The default config leaves the ARN disabled, so existing pipelines keep the
+			// attributes they had.
+			name: "arn disabled",
+			ra: metadata.ResourceAttributesConfig{
+				K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+				AccountID:  "123456789012",
+			},
+			apiMeta: apiprovider.InstanceMetadata{ClusterName: "my-cluster"},
+			expectedOutput: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &detector{
+				logger:       zaptest.NewLogger(t),
+				imdsProvider: &mockIMDSProvider{meta: tt.imdsMeta},
+				apiProvider:  &mockAPIProvider{apiMeta: tt.apiMeta},
+				rb:           metadata.NewResourceBuilder(tt.ra),
+				ra:           tt.ra,
+			}
+			res, schema, err := d.detectFromIMDS(t.Context())
+			require.NoError(t, err)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
+			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
+		})
+	}
+}
+
+func TestDetectClusterARNFromIMDSFailsWhenLookupIsRequired(t *testing.T) {
+	ra := metadata.ResourceAttributesConfig{
+		AwsEksClusterArn: metadata.ResourceAttributeConfig{Enabled: true},
+	}
+	d := &detector{
+		logger: zaptest.NewLogger(t),
+		imdsProvider: &mockIMDSProvider{
+			meta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+				AccountID:  "123456789012",
+			},
+		},
+		apiProvider:           &mockAPIProvider{apiErr: errors.New("describe instances failed")},
+		rb:                    metadata.NewResourceBuilder(ra),
+		ra:                    ra,
+		failOnMissingMetadata: true,
+	}
+
+	resource, schema, err := d.detectFromIMDS(t.Context())
+
+	require.ErrorContains(t, err, "describe instances failed")
+	assert.Empty(t, schema)
+	assert.Equal(t, 0, resource.Attributes().Len())
+}
+
+func TestDetectClusterARNFromAPI(t *testing.T) {
+	tests := []struct {
+		name           string
+		ra             metadata.ResourceAttributesConfig
+		k8sMeta        apiprovider.InstanceMetadata
+		apiMeta        apiprovider.InstanceMetadata
+		expectedOutput map[string]any
+	}{
+		{
+			name: "arn enabled",
+			ra: metadata.ResourceAttributesConfig{
+				AwsEksClusterArn: metadata.ResourceAttributeConfig{Enabled: true},
+				K8sClusterName:   metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			k8sMeta: apiprovider.InstanceMetadata{Region: "us-west-2", InstanceID: "i-123"},
+			apiMeta: apiprovider.InstanceMetadata{
+				Region:      "us-west-2",
+				InstanceID:  "i-123",
+				AccountID:   "123456789012",
+				ClusterName: "my-cluster",
+			},
+			expectedOutput: map[string]any{
+				"aws.eks.cluster.arn": "arn:aws:eks:us-west-2:123456789012:cluster/my-cluster",
+				"k8s.cluster.name":    "my-cluster",
+			},
+		},
+		{
+			name: "missing cluster name",
+			ra: metadata.ResourceAttributesConfig{
+				AwsEksClusterArn: metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			k8sMeta: apiprovider.InstanceMetadata{Region: "us-west-2", InstanceID: "i-123"},
+			apiMeta: apiprovider.InstanceMetadata{
+				Region:     "us-west-2",
+				InstanceID: "i-123",
+				AccountID:  "123456789012",
+			},
+			expectedOutput: map[string]any{},
+		},
+		{
+			name: "arn disabled",
+			ra: metadata.ResourceAttributesConfig{
+				K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			k8sMeta: apiprovider.InstanceMetadata{Region: "us-west-2", InstanceID: "i-123"},
+			apiMeta: apiprovider.InstanceMetadata{
+				Region:      "us-west-2",
+				InstanceID:  "i-123",
+				AccountID:   "123456789012",
+				ClusterName: "my-cluster",
+			},
+			expectedOutput: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &detector{
+				logger: zaptest.NewLogger(t),
+				apiProvider: &mockAPIProvider{
+					k8sMeta:  tt.k8sMeta,
+					apiMeta:  tt.apiMeta,
+					nodeName: "node",
+				},
+				rb: metadata.NewResourceBuilder(tt.ra),
+				ra: tt.ra,
+			}
+			res, schema, err := d.detectFromAPI(t.Context())
+			require.NoError(t, err)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
+			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
 		})
 	}
 }

@@ -496,6 +496,38 @@ processors:
 Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
 If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
+#### Cluster ARN
+
+The cluster name on its own is not unique, so two clusters in different accounts or
+different regions can report the same `k8s.cluster.name`. The `aws.eks.cluster.arn`
+attribute carries the full ARN of the cluster, which identifies exactly one cluster.
+It is disabled by default and can be enabled with the following configuration:
+
+```yaml
+processors:
+  resource_detection/eks:
+    detectors: [env, eks]
+    timeout: 15s
+    override: false
+    eks:
+      resource_attributes:
+        aws.eks.cluster.arn:
+          enabled: true
+```
+
+The ARN is built from the Region, account ID, and cluster name. On the IMDS path,
+enabling it causes the detector to call `EC2:DescribeInstances` to find the cluster
+name. The role needs permission for that action. If `k8s.cluster.name` is already
+enabled, that request and permission are already required. The Kubernetes API
+fallback already makes the request regardless of this setting.
+
+The ARN uses the EC2 node owner's account as the cluster account. EKS managed and
+self-managed EC2 nodes are expected to belong to the same account as their cluster.
+Hybrid nodes do not provide the EC2 metadata needed by this path.
+
+Enabling the ARN does not require `k8s.cluster.name` to be reported. Nothing is
+reported when any of the three parts cannot be resolved.
+
 #### Node Name Env Variable
 When using the EC2 API and the Kubernetes API to retrieve resource attributes, the node name is needed. The node name is extracted from the env variable you define on the pod.
 The node name env variable that contains the node name value can be set using the `node_from_env_var` option:
