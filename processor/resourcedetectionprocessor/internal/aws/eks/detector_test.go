@@ -531,6 +531,83 @@ func TestDetectFromAPI(t *testing.T) {
 	}
 }
 
+// TestDetectFromAPIOmitsEmptyInstanceMetadata covers an ec2:DescribeInstances
+// response that succeeded while describing no instance. The values it would
+// have carried are empty, and an empty attribute asserts a value of "" rather
+// than saying nothing, so each one is left off. The populated case is checked
+// alongside it so the omission cannot start dropping values the node has.
+func TestDetectFromAPIOmitsEmptyInstanceMetadata(t *testing.T) {
+	ra := metadata.ResourceAttributesConfig{
+		CloudAccountID: metadata.ResourceAttributeConfig{Enabled: true},
+		CloudRegion:    metadata.ResourceAttributeConfig{Enabled: true},
+		HostID:         metadata.ResourceAttributeConfig{Enabled: true},
+		HostImageID:    metadata.ResourceAttributeConfig{Enabled: true},
+		HostName:       metadata.ResourceAttributeConfig{Enabled: true},
+		HostType:       metadata.ResourceAttributeConfig{Enabled: true},
+		K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
+	}
+	tests := []struct {
+		name           string
+		apiMeta        apiprovider.InstanceMetadata
+		expectedOutput map[string]any
+	}{
+		{
+			name: "response described no instance",
+			apiMeta: apiprovider.InstanceMetadata{
+				Region:     "us-west-2",
+				InstanceID: "i-123",
+			},
+			// Only the values read from the node's providerID, which are the
+			// inputs to the call rather than anything read out of it.
+			expectedOutput: map[string]any{
+				"cloud.region": "us-west-2",
+				"host.id":      "i-123",
+			},
+		},
+		{
+			name: "response described the instance",
+			apiMeta: apiprovider.InstanceMetadata{
+				Region:       "us-west-2",
+				InstanceID:   "i-123",
+				AccountID:    "123456789012",
+				ImageID:      "ami-12345678",
+				InstanceType: "t2.micro",
+				Hostname:     "ip-192-168-1-1.us-west-2.compute.internal",
+				ClusterName:  "my-cluster",
+			},
+			expectedOutput: map[string]any{
+				"cloud.account.id": "123456789012",
+				"cloud.region":     "us-west-2",
+				"host.id":          "i-123",
+				"host.image.id":    "ami-12345678",
+				"host.name":        "ip-192-168-1-1.us-west-2.compute.internal",
+				"host.type":        "t2.micro",
+				"k8s.cluster.name": "my-cluster",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &detector{
+				logger: zaptest.NewLogger(t),
+				apiProvider: &mockAPIProvider{
+					nodeName: "node-1",
+					k8sMeta:  apiprovider.InstanceMetadata{Region: "us-west-2", InstanceID: "i-123"},
+					apiMeta:  tt.apiMeta,
+				},
+				rb: metadata.NewResourceBuilder(ra),
+				ra: ra,
+			}
+
+			res, schema, err := d.detectFromAPI(t.Context())
+
+			require.NoError(t, err)
+			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
+			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
+		})
+	}
+}
+
 func TestValidClusterName(t *testing.T) {
 	tests := []struct {
 		name        string

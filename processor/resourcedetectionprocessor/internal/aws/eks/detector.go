@@ -216,9 +216,9 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 
 // setClusterARN records the ARN that EKS reports for the cluster the node
 // belongs to, and reports why it could not. The lookup only runs when the
-// attribute is enabled. Whether a failure is fatal is the caller's decision,
-// taken from fail_on_missing_metadata, so that this attribute follows the same
-// rule as every other piece of metadata the detector reads.
+// attribute is enabled, and whether a failure is fatal is the caller's
+// decision, taken from fail_on_missing_metadata, so that this attribute
+// follows the same rule as every other piece of metadata the detector reads.
 //
 // The returned errors never carry the cluster name: it can come from an EC2
 // tag in a namespace a user can write to, so it can name a cluster this node
@@ -226,7 +226,7 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 //
 // A name EKS could not have issued is rejected before the request is made.
 // There is no cluster of that name for EKS to describe, so the rejection is
-// itself the answer rather than a request worth spending.
+// itself the answer.
 func (d *detector) setClusterARN(ctx context.Context, clusterName string) error {
 	if !d.ra.AwsEksClusterArn.Enabled {
 		return nil
@@ -247,10 +247,9 @@ func (d *detector) setClusterARN(ctx context.Context, clusterName string) error 
 //
 // The ARN check runs first because it is what decides whether the name is
 // trustworthy. Two of its outcomes disprove the name rather than leaving it
-// unproven, and in both the name is dropped along with the ARN: the name came
-// from a tag, the check established that the tag does not describe this node's
-// cluster, and reporting it would attribute this node's telemetry to a cluster
-// that is not this one.
+// unproven, and in both the name is dropped along with the ARN, because
+// reporting it would attribute this node's telemetry to a cluster that is not
+// this one:
 //
 //   - EKS described the named cluster and it is a different cluster from the
 //     one this node runs in.
@@ -262,15 +261,14 @@ func (d *detector) setClusterARN(ctx context.Context, clusterName string) error 
 // explicit about: ResourceNotFoundException reads like the name naming
 // nothing, but the request is made with this node's role in this node's
 // account, so it is equally the answer for a cluster that exists and that this
-// role or account cannot see. Dropping the name there would lose a correct
+// role or account cannot see, and dropping the name there would lose a correct
 // k8s.cluster.name over a missing IAM grant or a cross-account cluster.
 //
 // With the attribute disabled, which is the default, no check runs, nothing is
-// disproven, and the name is reported as before.
-//
-// An empty name is never reported: the node carried no tag naming a cluster,
-// or carried tags naming more than one, and an empty attribute asserts a
-// cluster named "" rather than saying nothing.
+// disproven, and the name is reported as before. An empty name is never
+// reported either way: the node carried no tag naming a cluster, or carried
+// tags naming more than one, and an empty attribute asserts a cluster named ""
+// rather than saying nothing.
 func (d *detector) setClusterMetadata(ctx context.Context, meta apiprovider.InstanceMetadata) error {
 	arnErr := d.setClusterARN(ctx, meta.ClusterName)
 
@@ -321,15 +319,25 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
-	d.rb.SetCloudAccountID(apiMeta.AccountID)
-	d.rb.SetHostImageID(apiMeta.ImageID)
-	d.rb.SetHostType(apiMeta.InstanceType)
-	d.rb.SetHostName(apiMeta.Hostname)
+	setIfNotEmpty(d.rb.SetCloudAccountID, apiMeta.AccountID)
+	setIfNotEmpty(d.rb.SetHostImageID, apiMeta.ImageID)
+	setIfNotEmpty(d.rb.SetHostType, apiMeta.InstanceType)
+	setIfNotEmpty(d.rb.SetHostName, apiMeta.Hostname)
 	if err := d.setClusterMetadata(ctx, apiMeta); err != nil {
 		return pcommon.NewResource(), "", err
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+// setIfNotEmpty leaves an attribute off rather than reporting it as an empty
+// string. An ec2:DescribeInstances response can succeed while describing no
+// instance, which leaves the values it would have carried empty, and an empty
+// attribute asserts a value of "" rather than saying nothing.
+func setIfNotEmpty(set func(string), value string) {
+	if value != "" {
+		set(value)
+	}
 }
 
 func (d *detector) isEKS(ctx context.Context) (bool, error) {
