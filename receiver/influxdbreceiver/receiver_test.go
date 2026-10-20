@@ -26,11 +26,6 @@ import (
 func TestWriteLineProtocol_v2API(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  addr,

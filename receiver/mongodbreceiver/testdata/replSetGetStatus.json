@@ -1,0 +1,62 @@
+{
+	"set": "rs0",
+	"myState": {
+		"$numberInt": "1"
+	},
+	"members": [
+		{
+			"_id": {
+				"$numberInt": "0"
+			},
+			"name": "mongo-0:27017",
+			"state": {
+				"$numberInt": "1"
+			},
+			"stateStr": "PRIMARY",
+			"self": true,
+			"optimeDate": {
+				"$date": {
+					"$numberLong": "1756512000000"
+				}
+			},
+			"lastDurableWallTime": {
+				"$date": {
+					"$numberLong": "1756512000000"
+				}
+			}
+		},
+		{
+			"_id": {
+				"$numberInt": "1"
+			},
+			"name": "mongo-1:27017",
+			"state": {
+				"$numberInt": "2"
+			},
+			"stateStr": "SECONDARY",
+			"optimeDate": {
+				"$date": {
+					"$numberLong": "1756511998500"
+				}
+			},
+			"lastDurableWallTime": {
+				"$date": {
+					"$numberLong": "1756511997000"
+				}
+			}
+		},
+		{
+			"_id": {
+				"$numberInt": "2"
+			},
+			"name": "mongo-2:27017",
+			"state": {
+				"$numberInt": "7"
+			},
+			"stateStr": "ARBITER"
+		}
+	],
+	"ok": {
+		"$numberDouble": "1.0"
+	}
+}

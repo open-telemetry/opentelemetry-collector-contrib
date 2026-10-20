@@ -48,6 +48,7 @@ type kubernetesprocessor struct {
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
 	podDeleteGracePeriod   time.Duration
+	kubelet                kube.KubeletConfig
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -55,7 +56,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod, kp.kubelet)
 		if err != nil {
 			return err
 		}
@@ -70,6 +71,16 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
+	}
+
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.logger.Error("Could not apply option", zap.Error(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
+		}
 	}
 
 	if kp.rules.ContainerImageTag {
@@ -106,16 +117,6 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 					"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
 					"See processor README section 'Semantic Conventions Compatibility' for details.",
 			)
-		}
-	}
-
-	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
-
-	for _, opt := range allOptions {
-		if err := opt(kp); err != nil {
-			kp.logger.Error("Could not apply option", zap.Error(err))
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			return err
 		}
 	}
 

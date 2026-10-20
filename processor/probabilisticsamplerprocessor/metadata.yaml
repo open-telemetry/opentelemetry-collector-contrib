@@ -13,6 +13,7 @@ status:
     seeking_new: true
 
 tests:
+  skip_context_propagation: true
   config:
 
 telemetry:

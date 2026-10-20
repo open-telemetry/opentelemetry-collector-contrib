@@ -6,12 +6,14 @@ package k8sattributesprocessor
 import (
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
@@ -54,6 +56,35 @@ func TestWithPassthrough(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withPassthrough()(p))
 	assert.True(t, p.passthroughMode)
+}
+
+func TestWithKubeletConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, true)()
+
+	p := &kubernetesprocessor{}
+	assert.NoError(t, withKubeletConfig(KubeletConfig{
+		Enabled:            true,
+		PollInterval:       time.Second,
+		RequestTimeout:     2 * time.Second,
+		Endpoint:           "https://node:10250",
+		InsecureSkipVerify: true,
+		AllowInsecureHTTP:  true,
+	})(p))
+	assert.Equal(t, kube.KubeletConfig{
+		Enabled:            true,
+		PollInterval:       time.Second,
+		RequestTimeout:     2 * time.Second,
+		Endpoint:           "https://node:10250",
+		InsecureSkipVerify: true,
+		AllowInsecureHTTP:  true,
+	}, p.kubelet)
+}
+
+func TestWithKubeletConfigRequiresFeatureGate(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, false)()
+
+	err := withKubeletConfig(KubeletConfig{Enabled: true, PollInterval: time.Second})(&kubernetesprocessor{})
+	require.EqualError(t, err, "kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
 }
 
 func TestEnabledAttributes(t *testing.T) {
@@ -801,6 +832,17 @@ func TestWithExcludes(t *testing.T) {
 			assert.Equal(t, tt.want, p.podIgnore)
 		})
 	}
+}
+
+func TestWithExcludesInvalidRegex(t *testing.T) {
+	p := &kubernetesprocessor{}
+	opt := withExcludes(ExcludeConfig{
+		Pods: []ExcludePodConfig{{Name: "[unclosed"}},
+	})
+	err := opt(p)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid pod exclude name")
+	assert.Nil(t, p.podIgnore.Pods)
 }
 
 func TestOtelAnnotations(t *testing.T) {

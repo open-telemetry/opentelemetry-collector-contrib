@@ -25,6 +25,9 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: rg
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.Compute/virtualMachines

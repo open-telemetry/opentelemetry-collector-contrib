@@ -26,10 +26,6 @@ import (
 
 func TestNewExporter(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://localhost:8080"
 	tests := []struct {
 		name   string
@@ -79,15 +75,7 @@ func TestExportTraces(t *testing.T) {
 		err      error
 	}
 	clientConfig1 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig1.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.ForceAttemptHTTP2 = false
 	clientConfig2 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig2.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.ForceAttemptHTTP2 = false
 	tests := []struct {
 		name string
 		args args
@@ -239,30 +227,10 @@ func TestExportMetrics(t *testing.T) {
 		err      error
 	}
 	clientConfig1 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig1.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.ForceAttemptHTTP2 = false
 	clientConfig2 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig2.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.ForceAttemptHTTP2 = false
 	clientConfig3 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig3.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig3.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig3.ForceAttemptHTTP2 = false
 	clientConfig4 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig4.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig4.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig4.ForceAttemptHTTP2 = false
 	clientConfig5 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig5.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig5.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig5.ForceAttemptHTTP2 = false
 	tests := []struct {
 		name string
 		args args
@@ -590,20 +558,8 @@ func TestExportLogs(t *testing.T) {
 		err      error
 	}
 	clientConfig1 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig1.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig1.ForceAttemptHTTP2 = false
 	clientConfig2 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig2.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig2.ForceAttemptHTTP2 = false
 	clientConfig3 := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig3.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig3.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig3.ForceAttemptHTTP2 = false
 	tests := []struct {
 		name string
 		args args
@@ -838,10 +794,6 @@ func TestExportErrorHandling(t *testing.T) {
 			defer server.Close()
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Endpoint = server.URL
 			config := &Config{
 				ClientConfig: clientConfig,
@@ -962,10 +914,6 @@ func TestExportBuffers(t *testing.T) {
 
 			// Create exporter with test server
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Endpoint = server.URL
 			config := &Config{
 				ClientConfig: clientConfig,

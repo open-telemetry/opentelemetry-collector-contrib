@@ -59,8 +59,7 @@ func Test_Minutes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Minutes(tt.duration)
-			require.NoError(t, err)
+			exprFunc := minutes(tt.duration)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -78,14 +77,14 @@ func Test_MinutesFactory(t *testing.T) {
 		factory := NewMinutesFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MinutesArguments[any]{}, args)
+		assert.IsType(t, &minutesArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Duration"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMinutesFactory[any]()
 		args := factory.CreateDefaultArguments()
-		minutesArgs, ok := args.(*MinutesArguments[any])
+		minutesArgs, ok := args.(*minutesArguments[any])
 		require.True(t, ok)
 		minutesArgs.Duration = ottl.StandardDurationGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -100,6 +99,21 @@ func Test_MinutesFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMinutesFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MinutesFactory args must be of type *MinutesArguments[K]")
+		assert.ErrorContains(t, err, "MinutesFactory args must be of type *minutesArguments[K]")
 	})
+}
+
+func BenchmarkMinutes(b *testing.B) {
+	exprFunc := minutes[any](&ottl.StandardDurationGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return time.ParseDuration("1h40m3s30ms100us1ns")
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -152,7 +152,7 @@ func Benchmark_ConsumerScraperFranz_Scrape(b *testing.B) {
 			}
 			cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
 
-			s, err := createConsumerScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+			s, err := createConsumerScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 			require.NoError(b, err)
 			require.NoError(b, s.Start(b.Context(), componenttest.NewNopHost()))
 			b.Cleanup(func() { require.NoError(b, s.Shutdown(b.Context())) })

@@ -24,7 +24,7 @@ func NewFactory() processor.Factory {
 }
 
 func createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	settings processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
@@ -38,7 +38,7 @@ func createLogsProcessor(
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	proc, err := newProcessor(processorCfg, nextConsumer, settings)
+	proc, err := newProcessor(ctx, processorCfg, nextConsumer, settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating processor: %w", err)
 	}
@@ -46,36 +46,34 @@ func createLogsProcessor(
 	return proc, nil
 }
 
-func newKeyMaterialProvider(_ context.Context, cfg *Config, logger *zap.Logger) (KeyMaterialProvider, error) {
+func newKeyMaterialProvider(ctx context.Context, cfg *Config, logger *zap.Logger) (KeyMaterialProvider, error) {
 	switch cfg.KeySource.Type {
 	case KeySourceK8sSecret:
-		return nil, fmt.Errorf("key_source.type %q not yet implemented", cfg.KeySource.Type)
+		logger.Info("Initializing key material provider from Kubernetes Secret",
+			zap.String("name", cfg.KeySource.K8sSecret.Name),
+			zap.String("namespace", cfg.KeySource.K8sSecret.Namespace),
+		)
+		return newK8sKeyMaterialProvider(ctx, cfg.KeySource.K8sSecret, logger)
 	case KeySourceEnv:
-		if cfg.Algorithm == AlgorithmHMACSHA256 {
-			logger.Info("Initializing HMAC key material provider from environment variable",
-				zap.String("hmac_key_env_var", cfg.KeySource.Env.HMACKeyEnvVar),
-			)
-		} else {
-			logger.Info("Initializing key material provider from environment variables",
-				zap.String("cert_env_var", cfg.KeySource.Env.CertEnvVar),
-				zap.String("key_env_var", cfg.KeySource.Env.KeyEnvVar),
-			)
-		}
-		return newEnvKeyMaterialProvider(cfg.KeySource.Env)
+		logger.Info("Initializing key material provider from inline env config (use ${env:VAR} in YAML)")
+		return newInlineKeyMaterialProvider(cfg.KeySource.Env)
 	case KeySourceFile:
 		if cfg.Algorithm == AlgorithmHMACSHA256 {
 			logger.Info("Initializing HMAC key material provider from file",
-				zap.String("hmac_key_file", cfg.KeySource.File.HMACKeyFile),
+				zap.String("hmac_key", cfg.KeySource.File.HMACKey),
 			)
 		} else {
 			logger.Info("Initializing key material provider from files",
-				zap.String("cert_file", cfg.KeySource.File.CertFile),
-				zap.String("key_file", cfg.KeySource.File.KeyFile),
+				zap.String("certificate", cfg.KeySource.File.Certificate),
+				zap.String("private_key", cfg.KeySource.File.PrivateKey),
 			)
 		}
 		return newFileKeyMaterialProvider(cfg.KeySource.File)
 	case KeySourceBao:
-		return nil, fmt.Errorf("key_source.type %q not yet implemented", cfg.KeySource.Type)
+		logger.Info("Initializing key material provider from OpenBao/Vault",
+			zap.String("secret_path", cfg.KeySource.Bao.SecretPath),
+		)
+		return newBaoKeyMaterialProvider(ctx, cfg.KeySource.Bao)
 	default:
 		return nil, fmt.Errorf("unknown key_source.type: %q", cfg.KeySource.Type)
 	}
