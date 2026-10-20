@@ -13,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/vmware/govmomi/find"
-	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/types"
@@ -76,13 +75,10 @@ func TestIntegration(t *testing.T) {
 		pw, set := simulator.DefaultLogin.Password()
 		require.True(t, set)
 
-		s := session.NewManager(c)
 		newVcenterClient = func(l *zap.Logger, cfg *Config) *vcenterClient {
 			client := &vcenterClient{
-				logger:         l,
-				cfg:            cfg,
-				sessionManager: s,
-				vimDriver:      c,
+				logger: l,
+				cfg:    cfg,
 			}
 			require.NoError(t, client.EnsureConnection(t.Context()))
 			client.vimDriver = c
