@@ -129,6 +129,14 @@ Direct connection options (optional, but all must be specified to enable):
 - `server`: IP Address or hostname of SQL Server instance to connect to.
 - `port`: Port of the SQL Server instance to connect to.
 
+For extension-provided credentials, configure `db_auth` with the component ID of
+an extension implementing `dbauth.Provider` instead of `password`. The provider
+is resolved from the Collector's `extensions` map and may refresh credentials
+for each new database connection. `db_auth` and `password` are mutually
+exclusive; `username` may still be supplied as provider input. The `azure_auth`
+extension implements this provider interface. Its `scopes` setting controls
+the token audience; when unset, Azure Public SQL is used by default.
+
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
 Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
 

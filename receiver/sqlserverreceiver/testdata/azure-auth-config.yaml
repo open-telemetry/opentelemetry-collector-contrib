@@ -30,6 +30,7 @@
 
 extensions:
   azure_auth:
+    scopes: [https://database.windows.net/.default]
     service_principal:
       tenant_id: ${AZURE_TENANT_ID}
       client_id: ${AZURE_CLIENT_ID}
@@ -40,7 +41,7 @@ receivers:
     collection_interval: 30s
     server: ${AZURE_SQL_SERVER}
     port: 1433
-    auth: azure_auth
+    db_auth: azure_auth
 
 exporters:
   debug:
