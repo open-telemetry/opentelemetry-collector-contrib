@@ -16,40 +16,10 @@ issues: [52173]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The attribute is disabled by default. The ARN is the one EKS reports, and it is
-  reported only once EKS has confirmed that the cluster the node's EC2 tags name is
-  the cluster the node is running in: the OIDC issuer `eks:DescribeCluster` reports
-  for the named cluster must match the one the node's own Kubernetes API server
-  publishes. The cluster name comes from a tag, and two of the three tags it can come
-  from sit in namespaces a user can write to, so a name alone would also be satisfied
-  by a tag naming any other cluster in the same account and Region.
-
-  A detection run that reaches ARN confirmation reads the Kubernetes OIDC
-  configuration and calls `eks:DescribeCluster`. Finding the name first calls
-  `ec2:DescribeInstances`. The role needs permission for both AWS actions. Reading the
-  OIDC configuration is a `get` on the non-resource URL
-  `/.well-known/openid-configuration`, which the collector's Kubernetes service
-  account needs: the `system:service-account-issuer-discovery` ClusterRole grants it,
-  and whether that role is already bound to the service account depends on the
-  cluster. A run with no single valid cluster name stops before those requests.
-
-  Nothing is cached between runs. Detection runs once per collector start, and again
-  on every `refresh_interval` tick when that option is set, with every collector
-  instance repeating its own requests, so a DaemonSet multiplies the
-  `eks:DescribeCluster` rate by the number of nodes. Choose `refresh_interval` with
-  EKS request quotas and fleet size in mind.
-
-  No ARN is reported when the tags name no single cluster, when the cluster cannot be
-  described, or when the issuers do not match. Whether that fails detection follows
-  `fail_on_missing_metadata`, the same as the detector's other attributes.
-
-  While this attribute is enabled, two of those outcomes also leave `k8s.cluster.name`
-  off, because each one establishes that the tag the name came from does not describe
-  this node's cluster: the two issuers disagreeing, and a name EKS could not have
-  issued, which applies EKS cluster naming rules to the tag value. A cluster that
-  cannot be described keeps the name, since that answer also covers a cluster this
-  role or account cannot see. With the attribute disabled, as the default config leaves
-  it, nothing is checked and `k8s.cluster.name` is unchanged.
+  The attribute is disabled by default and is emitted only when the live Kubernetes
+  and EKS OIDC issuers match. Enabling it requires `eks:DescribeCluster`,
+  `ec2:DescribeInstances`, and Kubernetes service account `get` permission on
+  `/.well-known/openid-configuration`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -16,17 +16,8 @@ issues: [52173]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `cloud.account.id`, `host.image.id`, `host.type`, and `host.name` were only assigned
-  when the `ec2:DescribeInstances` response described an instance, and the detector
-  keeps its provider between runs. A later response that succeeded while describing no
-  instance therefore left the previous run's values in place and reported them as if
-  that response had carried them.
-
-  These four attributes are now cleared before each response is read, and each one is
-  reported only when the response carried a value for it, so a run that establishes
-  nothing reports nothing rather than an empty string. The stale values only affected
-  the `refresh_interval` and retry paths, since a single detection run has no previous
-  response to inherit from.
+  Empty EC2 responses now omit `cloud.account.id`, `host.image.id`, `host.type`, and
+  `host.name` instead of reusing values from a previous run or emitting empty strings.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

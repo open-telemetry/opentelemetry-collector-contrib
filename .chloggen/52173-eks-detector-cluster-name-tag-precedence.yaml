@@ -16,26 +16,8 @@ issues: [52173]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  A node can carry more than one EC2 tag that names a cluster. The detector used the
-  first one it saw while walking the `ec2:DescribeInstances` response, so the reported
-  `k8s.cluster.name` depended on the order EC2 returned the tags in. A
-  `kubernetes.io/cluster/<name>` tag, which any user can add, could win over the
-  `aws:eks:cluster-name` tag that EKS sets in the reserved `aws:` namespace.
-
-  The tags are now read in a fixed order: `aws:eks:cluster-name`, then
-  `eks:cluster-name`, then `kubernetes.io/cluster/<name>` preferring `owned` over
-  `shared`. Tags of the same strength naming different clusters do not say which
-  cluster the node is in, so no cluster name is reported rather than one of them being
-  chosen.
-
-  `k8s.cluster.name` is now also left off when no cluster name was established, where
-  it was previously reported as an empty string.
-
-  Enabling the new `aws.eks.cluster.arn` attribute adds a confirmation step that can
-  also leave `k8s.cluster.name` off, in the two cases where it establishes that the
-  name on the node's tags does not describe this node's cluster: the cluster's OIDC
-  issuer not matching the one the node's own Kubernetes API server publishes, and a
-  name EKS could not have issued. That attribute is disabled by default.
+  Cluster tags now use fixed precedence. Same-level conflicts and missing names omit
+  `k8s.cluster.name` instead of choosing by response order or reporting an empty value.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
