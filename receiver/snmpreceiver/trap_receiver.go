@@ -47,6 +47,9 @@ type trapReceiver struct {
 	receiveDone chan struct{}
 	consumeDone chan struct{}
 	engines     map[string]trapEngineTime
+
+	// Owned by the receive goroutine and shared across all rejection reasons.
+	nextRejectionLog time.Time
 }
 
 func newTrapReceiver(cfg *TrapsConfig, settings receiver.Settings, next consumer.Logs) (receiver.Logs, error) {
@@ -167,25 +170,26 @@ func (r *trapReceiver) receive(ctx context.Context, host component.Host, conn ne
 		// Admission independently enforces the configured version, username,
 		// minimum security level, and authenticated engine time window.
 		if envelopeErr := checkTrapEnvelope(buffer[:n]); envelopeErr != nil {
-			r.obs.EndLogsOp(obsCtx, trapDataFormat, 1, envelopeErr)
+			r.rejectTrap(obsCtx, remote, 1, "invalid_envelope", envelopeErr)
 			continue
 		}
 		packet, err := safeUnmarshalTrap(r.parser, buffer[:n])
-		if err == nil {
-			err = admitTrap(r.cfg, packet, r.engines, received)
-		}
 		if err != nil {
-			r.obs.EndLogsOp(obsCtx, trapDataFormat, 1, err)
+			r.rejectTrap(obsCtx, remote, 1, "malformed_notification", err)
+			continue
+		}
+		if err := admitTrap(r.cfg, packet, r.engines, received); err != nil {
+			r.rejectTrap(obsCtx, remote, 1, "notification_not_allowed", err)
 			continue
 		}
 		sender, ok := remote.(*net.UDPAddr)
 		if !ok {
-			r.obs.EndLogsOp(obsCtx, trapDataFormat, 1, errors.New("SNMP notification sender is not a UDP address"))
+			r.rejectTrap(obsCtx, remote, 1, "invalid_peer", errors.New("SNMP notification sender is not a UDP address"))
 			continue
 		}
 		logs, err := decodeTrap(packet, sender, received, r.cfg.IncludeCommunity)
 		if err != nil {
-			r.obs.EndLogsOp(obsCtx, trapDataFormat, 1, err)
+			r.rejectTrap(obsCtx, remote, 1, "invalid_notification", err)
 			continue
 		}
 		for _, rl := range logs.ResourceLogs().All() {
@@ -205,7 +209,7 @@ func (r *trapReceiver) receive(ctx context.Context, host component.Host, conn ne
 				}
 			}
 		default:
-			r.obs.EndLogsOp(obsCtx, trapDataFormat, logs.LogRecordCount(), errTrapQueueFull)
+			r.rejectTrap(obsCtx, remote, logs.LogRecordCount(), "queue_full", errTrapQueueFull)
 		}
 	}
 }

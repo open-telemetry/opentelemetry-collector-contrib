@@ -92,7 +92,7 @@ func (p *trapParser) UnmarshalTrap(wire []byte, useResponseSecurityParameters bo
 		return unmarshalTrapPacket(&p.plain, parsingWire, useResponseSecurityParameters)
 	}
 	if p.cfg.V3 == nil || !slices.Contains(p.cfg.Versions, "v3") {
-		return nil, errors.New("SNMPv3 USM is not configured")
+		return nil, errTrapUSMNotConfigured
 	}
 	envelope, err := readTrapUSM(wire)
 	if err != nil {
@@ -100,18 +100,18 @@ func (p *trapParser) UnmarshalTrap(wire []byte, useResponseSecurityParameters bo
 	}
 	level := envelope.flags & gosnmp.AuthPriv
 	if level == 2 || level < p.minimum {
-		return nil, errors.New("SNMPv3 notification security level is not allowed")
+		return nil, errTrapSecurityLevelNotAllowed
 	}
 	if envelope.user != p.user {
-		return nil, errors.New("SNMPv3 notification user is not allowed")
+		return nil, errTrapUserNotAllowed
 	}
 	keys, cached := p.engines[envelope.engine]
 	if level&gosnmp.AuthNoPriv != 0 {
 		if p.auth == gosnmp.NoAuth || len(envelope.digest) != trapDigestSize(p.auth) {
-			return nil, errors.New("invalid SNMPv3 authentication parameters")
+			return nil, errTrapAuthenticationParameters
 		}
 		if envelope.boots == math.MaxInt32 {
-			return nil, errors.New("SNMPv3 notification is outside the USM time window")
+			return nil, errTrapTimeWindow
 		}
 		if !cached {
 			keys.auth = trapLocalizeKey(p.auth.HashType(), p.authKey, envelope.engine)
@@ -119,10 +119,10 @@ func (p *trapParser) UnmarshalTrap(wire []byte, useResponseSecurityParameters bo
 		// Authenticate the original message, with only its digest value zeroed.
 		// No input-dependent password hashing or cache insertion precedes this.
 		if !verifyTrapDigest(wire, envelope, p.auth.HashType(), keys.auth) {
-			return nil, errors.New("SNMPv3 notification is not authentic")
+			return nil, errTrapAuthenticationFailed
 		}
 		if !cached && len(p.engines) >= maxTrapEngines {
-			return nil, errors.New("SNMPv3 notification engine limit reached")
+			return nil, errTrapEngineLimit
 		}
 	} else if len(envelope.digest) != 0 || len(envelope.privacy) != 0 {
 		return nil, errors.New("invalid unauthenticated SNMPv3 security parameters")

@@ -39,7 +39,7 @@ func admitTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket, engines map[string]t
 		return errors.New("unsupported SNMP notification version")
 	}
 	if !slices.Contains(cfg.Versions, version) {
-		return errors.New("SNMP notification version is not enabled")
+		return errTrapVersionNotEnabled
 	}
 	if packet.Version == gosnmp.Version1 {
 		if packet.PDUType != gosnmp.Trap {
@@ -57,19 +57,19 @@ func admitTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket, engines map[string]t
 				return nil
 			}
 		}
-		return errors.New("SNMP notification community is not allowed")
+		return errTrapCommunityNotAllowed
 	}
 	if cfg.V3 == nil || packet.SecurityModel != gosnmp.UserSecurityModel {
-		return errors.New("SNMPv3 USM is not configured")
+		return errTrapUSMNotConfigured
 	}
 	// An INFORM makes the receiver authoritative. Supporting it requires a
 	// persistent local engine identity and engine boots state, unlike traps.
 	if packet.PDUType == gosnmp.InformRequest {
-		return errors.New("SNMPv3 informs are not supported")
+		return errTrapV3InformUnsupported
 	}
 	params, ok := packet.SecurityParameters.(*gosnmp.UsmSecurityParameters)
 	if !ok || params.UserName != cfg.V3.User {
-		return errors.New("SNMPv3 notification user is not allowed")
+		return errTrapUserNotAllowed
 	}
 	level := packet.MsgFlags & gosnmp.AuthPriv
 	if level == 2 {
@@ -83,7 +83,7 @@ func admitTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket, engines map[string]t
 		minimum = gosnmp.AuthPriv
 	}
 	if level < minimum {
-		return errors.New("SNMPv3 notification security level is below the configured minimum")
+		return errTrapSecurityLevelBelowMinimum
 	}
 	if len(params.AuthoritativeEngineID) < 5 || len(params.AuthoritativeEngineID) > 32 {
 		return errors.New("SNMPv3 authoritative engine ID must contain 5 to 32 bytes")
@@ -97,7 +97,7 @@ func admitTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket, engines map[string]t
 func checkTrapTime(engines map[string]trapEngineTime, params *gosnmp.UsmSecurityParameters, now time.Time) error {
 	boots, engineTime := params.AuthoritativeEngineBoots, params.AuthoritativeEngineTime
 	if boots >= math.MaxInt32 || engineTime > math.MaxInt32 {
-		return errors.New("SNMPv3 notification is outside the USM time window")
+		return errTrapTimeWindow
 	}
 	key := params.AuthoritativeEngineID
 	previous, exists := engines[key]
@@ -105,13 +105,13 @@ func checkTrapTime(engines map[string]trapEngineTime, params *gosnmp.UsmSecurity
 		// Refuse additional engines instead of evicting synchronized state and
 		// allowing an old authenticated message to establish a fresh window.
 		if len(engines) >= maxTrapEngines {
-			return errors.New("SNMPv3 notification engine limit reached")
+			return errTrapEngineLimit
 		}
 		engines[key] = trapEngineTime{boots: boots, latest: engineTime, received: now}
 		return nil
 	}
 	if boots < previous.boots {
-		return errors.New("SNMPv3 notification is outside the USM time window")
+		return errTrapTimeWindow
 	}
 	// RFC 3414 section 3.2 step 7b: only a newer engine boot or a later
 	// authenticated engine time may re-synchronize the local clock.
@@ -121,7 +121,7 @@ func checkTrapTime(engines map[string]trapEngineTime, params *gosnmp.UsmSecurity
 	}
 	expected := time.Duration(previous.latest)*time.Second + now.Sub(previous.received)
 	if expected-time.Duration(engineTime)*time.Second > trapTimeWindow {
-		return errors.New("SNMPv3 notification is outside the USM time window")
+		return errTrapTimeWindow
 	}
 	return nil
 }

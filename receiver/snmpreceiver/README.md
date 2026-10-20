@@ -126,6 +126,14 @@ The default loopback bind address accepts local traffic. For devices on another
 host, configure a reachable address such as `0.0.0.0:1620`. Listening on the
 standard UDP port `162` may require additional operating system privileges.
 
+Rejected notifications produce internal Collector debug logs with the UDP peer
+address and a bounded rejection reason, such as `authentication_failed`. Set
+`service.telemetry.logs.level` to `debug` to enable them. These entries are
+sampled to at most one per second per receiver across all senders and reasons.
+Credentials and packet contents are excluded. Receiver rejection counters
+include every rejected notification, including those whose debug entries are
+sampled out.
+
 #### Trap SNMPv3 Configuration
 
 The `traps.v3` settings are independent of the top-level polling credentials.
