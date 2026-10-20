@@ -35,6 +35,7 @@ The following settings can be optionally configured:
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
 - `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with. The client ID will be used for all produce requests.
 - `conn_idle_timeout` (default = `9m`): The time after which idle connections to Kafka brokers are not reused and may be closed.
+- `dial_timeout` (default = `10s`): The time allowed to establish a connection to a Kafka broker.
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
@@ -131,6 +132,19 @@ The following settings can be optionally configured:
   - `flush_max_messages` (default = 10000) The maximum number of messages the producer will send in a single broker request.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
+
+### Trace context propagation
+
+The exporter injects trace context from the current export span into Kafka record headers for any signal when `service::telemetry::traces::propagators` is configured, and are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted. For example, to add W3C `traceparent` and, when present, `tracestate` headers:
+
+```yaml
+service:
+  telemetry:
+    traces:
+      propagators: [tracecontext]
+```
+
+Headers are injected only when the export context has a valid span. In that case, existing `record_headers` or `include_metadata_keys` headers for all propagator fields are removed, even if the propagator does not inject a replacement value. Other headers are preserved.
 
 ### Shared signal topic
 

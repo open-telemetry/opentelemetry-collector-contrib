@@ -117,8 +117,8 @@ capabilities:
   reports_health: # true if unspecified
 
   # DEPRECATED: This option has no effect and will be removed in v0.165.0.
-  # Remote config status is reported whenever accepts_remote_config is
-  # enabled. See
+  # Setting it to true causes the Supervisor to fail to start. Remote config
+  # status is reported whenever accepts_remote_config is enabled. See
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
   reports_remote_config: # false if unspecified
 
