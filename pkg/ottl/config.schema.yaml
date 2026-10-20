@@ -17,4 +17,4 @@ $defs:
     type: string
   type_error:
     description: TypeError represents that a value was not an expected type.
-    type: string
+    $ref: ./internal/ottlerror.type_error

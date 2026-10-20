@@ -1,0 +1,4 @@
+$defs:
+  type_error:
+    description: TypeError represents that a value was not an expected type.
+    type: string
