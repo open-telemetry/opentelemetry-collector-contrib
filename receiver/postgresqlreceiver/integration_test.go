@@ -1207,11 +1207,8 @@ WHERE c.relname IN ('big_index_table', 'toasted_table') AND n.nspname = 'public'
 	}
 }
 
-// TestGetBackendsBreakdown runs the postgresql.backends query against a real server for every
-// combination of the optional grouping columns. It checks the SQL that the unit tests can only
-// compare as text: that each grouping returns the same per-database total, one row per
-// combination, a value for every grouped column, and the "unknown" values that an unprivileged
-// monitoring user gets for other roles' backends.
+// TestGetBackendsBreakdown runs getBackends on a real server for every grouping, with and without
+// pg_monitor, and checks the totals, the rows and the "unknown" values of hidden backends.
 func TestGetBackendsBreakdown(t *testing.T) {
 	t.Run("pre17", getBackendsBreakdownTest(pre17TestVersion))
 	t.Run("post17", getBackendsBreakdownTest(post17TestVersion))
@@ -1224,8 +1221,7 @@ func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
 			testcontainers.GenericContainerRequest{
 				ContainerRequest: testcontainers.ContainerRequest{
 					Image: fmt.Sprintf("postgres:%s", pgVersion),
-					// An autovacuum worker that starts mid-test would change the totals between
-					// the queries this test compares.
+					// Autovacuum workers would change the totals between queries.
 					Cmd: []string{"-c", "autovacuum=off"},
 					Env: map[string]string{
 						"POSTGRES_USER":     "root",
@@ -1238,11 +1234,7 @@ func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
 						FileMode:          700,
 					}},
 					ExposedPorts: []string{postgresqlPort},
-					// A listening port is not enough: the postgres image runs a temporary
-					// server for its init scripts, so the port accepts connections while the
-					// real server is still "starting up" (57P03). The readiness log line is
-					// emitted twice -- once for the init server, once for the real one -- so
-					// waiting for the second occurrence guarantees the DB is ready to query.
+					// The first readiness log comes from the init server; wait for the second.
 					WaitingFor: wait.ForLog("database system is ready to accept connections").
 						WithOccurrence(2).
 						WithStartupTimeout(2 * time.Minute),
@@ -1262,11 +1254,11 @@ func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
 		rootDB, err := sql.Open("postgres", rootDSN)
 		require.NoError(t, err)
 		defer rootDB.Close()
-		// A monitoring user without pg_monitor, to check what PostgreSQL hides from it.
+		// A monitoring user without pg_monitor.
 		_, err = rootDB.Exec("CREATE ROLE unprivileged LOGIN PASSWORD 'unprivilegedp'")
 		require.NoError(t, err)
 
-		// One root session holds a lock and stays idle in transaction; another waits on it.
+		// One session holds a lock (idle in transaction); another waits on it.
 		holder, err := rootDB.Begin()
 		require.NoError(t, err)
 		defer func() {
@@ -1314,7 +1306,7 @@ func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
 					},
 				}, "otel")
 				require.NoError(t, err)
-				// One connection, so the client does not add backends between the queries.
+				// One connection, so the client adds no backends between queries.
 				clientDB.SetMaxOpenConns(1)
 				client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
 				defer func() {
@@ -1328,7 +1320,7 @@ func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
 				require.NoError(t, err)
 				require.Len(t, totals["otel"], 1)
 				total := totals["otel"][0].count
-				// The client, the lock holder and the waiter, at least.
+				// At least the client, the lock holder and the waiter.
 				require.GreaterOrEqual(t, total, int64(3))
 
 				for i := range 8 {
@@ -1370,9 +1362,7 @@ func getBackendsBreakdownTest(pgVersion string) func(*testing.T) {
 						}
 						continue
 					}
-					// Without pg_monitor, the root sessions are hidden: all three columns are
-					// NULL for them and report "unknown". Only the client's own session is
-					// visible.
+					// Without pg_monitor, only the client's own session is visible.
 					if grouping.backendType {
 						require.Equal(t, total-1, backendTypes["unknown"], "grouping %+v", grouping)
 						require.Equal(t, int64(1), backendTypes["client backend"], "grouping %+v", grouping)

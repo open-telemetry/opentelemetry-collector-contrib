@@ -214,8 +214,7 @@ func TestGetBackends(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			// With no optional attribute enabled, the query is the one the receiver ran before the
-			// breakdown existed, so the default configuration costs nothing extra.
+			// The default query is the same as before the breakdown existed.
 			name:        "no grouping counts backends per database only",
 			grouping:    backendGrouping{},
 			expectedSQL: "SELECT datname, count(*) as count from pg_stat_activity GROUP BY datname;",
@@ -280,9 +279,7 @@ func TestGetBackends(t *testing.T) {
 			},
 		},
 		{
-			// Without pg_monitor, PostgreSQL hides wait_event_type and backend_type of other roles'
-			// backends. Those report "unknown", not "none", so they are not mistaken for backends
-			// that are not waiting.
+			// Hidden backends report "unknown", not "none".
 			name:        "wait event type of hidden backends is unknown",
 			grouping:    backendGrouping{waitEventType: true},
 			expectedSQL: selectDatname + selectWaitEventType + fromActivity + " GROUP BY datname, " + waitEventTypeExpr + ";",
@@ -357,8 +354,7 @@ func TestGetBackends(t *testing.T) {
 			wantErr:     true,
 		},
 		{
-			// A failed row must not leak its partially scanned values into the next row, which
-			// reuses the same scan destinations.
+			// A bad row must not leak values into the next row, which reuses the scan destinations.
 			name:        "row scan error skips only the bad row",
 			grouping:    allGrouping,
 			expectedSQL: allSQL + allGroupBy,

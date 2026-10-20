@@ -69,8 +69,7 @@ type postgreSQLScraper struct {
 	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
 	dbVersion              string
-	// backendGrouping selects the pg_stat_activity columns that postgresql.backends is counted by,
-	// derived once from the attributes enabled on the metric.
+	// backendGrouping follows the attributes enabled on postgresql.backends.
 	backendGrouping backendGrouping
 }
 
@@ -197,10 +196,8 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	return config
 }
 
-// backendGroupingFor returns the pg_stat_activity columns that getBackends must group by so that it
-// returns exactly one row per postgresql.backends data point for the given enabled attributes. A row
-// per data point means the metrics builder never merges rows, so the emitted values do not depend on
-// the metric's aggregation_strategy.
+// backendGroupingFor returns the grouping that gives one row per postgresql.backends data point,
+// so aggregation_strategy never merges rows.
 func backendGroupingFor(attributes []metadata.PostgresqlBackendsMetricAttributeKey) backendGrouping {
 	return backendGrouping{
 		backendType:   slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType),

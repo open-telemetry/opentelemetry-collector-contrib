@@ -146,8 +146,7 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 				{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
 				{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 1},
 				{backendType: "logical replication worker", state: "idle", waitEventType: "Activity", count: 1},
-				// An unprivileged monitoring user sees none of the three columns for other roles'
-				// backends, so they all report "unknown".
+				// Hidden backends (no pg_monitor) report "unknown" for all three columns.
 				{backendType: "unknown", state: "unknown", waitEventType: "unknown", count: 4},
 			},
 		},
@@ -301,8 +300,7 @@ func TestScraperRequestsBackendGroupingForEnabledAttributes(t *testing.T) {
 	}
 }
 
-// groupBackendsLikePostgres stands in for the server side of getBackends: it merges per-backend
-// rows on the columns that grouping selects and leaves the other columns empty, as the query does.
+// groupBackendsLikePostgres fakes the server side of getBackends: it sums rows on the grouped columns.
 func groupBackendsLikePostgres(backends []backendStateCount, grouping backendGrouping) []backendStateCount {
 	var grouped []backendStateCount
 	index := map[backendStateCount]int{}
@@ -329,19 +327,15 @@ func groupBackendsLikePostgres(backends []backendStateCount, grouping backendGro
 	return grouped
 }
 
-// TestRecordDatabaseBackendsIndependentOfAggregationStrategy verifies that postgresql.backends reports
-// true backend counts for every aggregation_strategy. The query returns one row per data point, so the
-// metrics builder never merges rows and the strategy has nothing to change. Before the grouping followed
-// the enabled attributes, a non-sum strategy with the default attributes reported a bucket statistic
-// (for example the largest bucket for "max") instead of the per-database total.
+// TestRecordDatabaseBackendsIndependentOfAggregationStrategy checks that every aggregation_strategy
+// reports exact counts, because the query returns one row per data point.
 func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
 	type backendKey struct {
 		backendType   string
 		state         string
 		waitEventType string
 	}
-	// The backends of one database as pg_stat_activity would list them, already counted per
-	// combination of all three columns.
+	// One database's backends, counted per combination of all three columns.
 	backends := []backendStateCount{
 		{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
 		{backendType: "client backend", state: "active", waitEventType: "Lock", count: 2},
@@ -3275,8 +3269,7 @@ func TestScraperSkipsServerWideQueriesForDisabledMetrics(t *testing.T) {
 			require.NoError(t, clientErr)
 			listClient := listClientAny.(*mockClient)
 
-			// Count calls by method name only: AssertNotCalled matches arguments too, so it
-			// would pass vacuously for a method whose arity differs from the expectation.
+			// AssertNotCalled also matches arguments, so count calls by name instead.
 			listClient.AssertNumberOfCalls(t, tc.mockMethod, 0)
 		})
 	}

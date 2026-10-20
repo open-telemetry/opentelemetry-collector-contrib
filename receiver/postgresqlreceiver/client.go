@@ -762,9 +762,8 @@ func (c *postgreSQLClient) queryDatabaseLocks(ctx context.Context, query string)
 	return dl, multierr.Combine(errs...)
 }
 
-// backendStateCount is the number of backends within a single database that share the same
-// backend type, connection state and wait event type. Fields for columns that the query did not
-// group by are left empty.
+// backendStateCount is the number of backends in one database that share the grouped column values.
+// Columns that are not grouped by stay empty.
 type backendStateCount struct {
 	backendType   string
 	state         string
@@ -772,27 +771,19 @@ type backendStateCount struct {
 	count         int64
 }
 
-// backendGrouping selects the optional pg_stat_activity columns that getBackends breaks the
-// per-database count down by. The zero value counts backends per database only.
+// backendGrouping selects the optional columns that getBackends groups by.
+// The zero value groups by database only.
 type backendGrouping struct {
 	backendType   bool
 	state         bool
 	waitEventType bool
 }
 
-// getBackends returns the number of backend processes for each database, counted from pg_stat_activity
-// and optionally broken down by backend type (e.g. client backend, autovacuum worker), connection state
-// (e.g. active, idle, idle in transaction) and wait event type (e.g. Lock, IO), as selected by grouping.
-// Grouping only by what is requested keeps the result to one row per emitted data point, so the server
-// does the counting and the receiver does not have to re-aggregate. All backend types are counted,
-// including non-client backends such as autovacuum and parallel workers. Backends with no associated
-// database (NULL datname, e.g. the background writer and WAL writer) are not attributed to any database.
+// getBackends counts pg_stat_activity backends per database, grouped only by the requested columns,
+// so each row is one data point. Backends with no database (e.g. the checkpointer) are not counted.
 //
-// All three optional columns are nullable in pg_stat_activity. wait_event_type is NULL whenever a
-// backend is not waiting, and all three are NULL for backends the monitoring user cannot inspect,
-// which is every backend but its own unless the user has been granted pg_monitor. state is also NULL
-// for auxiliary processes such as the checkpointer, but those have no database and are not counted.
-// The columns are coalesced so that they scan into strings.
+// Without pg_monitor, the optional columns are NULL for other roles' backends and report "unknown".
+// A NULL wait_event_type of a visible backend means it is not waiting and reports "none".
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string, grouping backendGrouping) (map[databaseName][]backendStateCount, error) {
 	var datname string
 	var bsc backendStateCount
@@ -810,10 +801,8 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string, 
 		dest = append(dest, &bsc.state)
 	}
 	if grouping.waitEventType {
-		// wait_event_type is NULL both when a backend is not waiting and when the monitoring user
-		// cannot inspect the backend. backend_type is NULL only in the second case, so it tells
-		// them apart. The query groups by the whole expression because it reads backend_type,
-		// which is not grouped by unless the backend type attribute is enabled too.
+		// backend_type is NULL only for hidden backends. Group by the whole expression,
+		// because backend_type may not be grouped by.
 		const waitEventType = "CASE WHEN backend_type IS NULL THEN 'unknown' ELSE coalesce(wait_event_type, 'none') END"
 		columns = append(columns, waitEventType+" as wait_event_type")
 		groupBy = append(groupBy, waitEventType)
@@ -1526,8 +1515,7 @@ func quoteDatabaseList(databases []string) string {
 	return strings.Join(quoted, ",")
 }
 
-// filterQueryByDatabases appends a "WHERE datname IN (...)" clause when databases is non-empty, and a
-// "GROUP BY" clause over groupByColumns when any are given.
+// filterQueryByDatabases adds a datname filter for databases and a GROUP BY for groupByColumns.
 func filterQueryByDatabases(baseQuery string, databases []string, groupByColumns ...string) string {
 	if len(databases) > 0 {
 		keyword := " WHERE"
