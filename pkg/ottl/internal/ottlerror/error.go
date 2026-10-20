@@ -168,3 +168,10 @@ func New(pos lexer.Position, message string) Error {
 		position: AsPosition(pos),
 	}
 }
+
+// TypeError represents that a value was not an expected type.
+type TypeError string
+
+func (t TypeError) Error() string {
+	return string(t)
+}

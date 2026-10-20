@@ -756,7 +756,7 @@ Examples:
 
 `Concat(vals[], delimiter)`
 
-The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Lists and maps are not supported and result in an error, as stringifying them may substantially increase payload size.
 
 `vals` can be a list of values or an expression/path that resolves to a slice. Its values support paths, primitive values, and byte slices (such as trace IDs or span IDs). Passing an expression/path requires the [`pkg.ottl.functions.enableDynamicSliceArguments`](../README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate, which is enabled by default.
 

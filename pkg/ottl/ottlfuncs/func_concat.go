@@ -6,14 +6,16 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 type concatArguments[K any] struct {
-	Vals      slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]]
+	Vals      slicegetter.SliceGetter[K, ottl.Getter[K]]
 	Delimiter ottl.StringGetter[K]
 }
 
@@ -30,10 +32,29 @@ func createConcatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, errors.New("ConcatFactory args must be of type *concatArguments[K]")
 	}
 
+	if _, ok := args.Vals.Len(); ok {
+		index := 0
+		var rejectErr error
+		_, err := args.Vals.Range(context.Background(), *new(K), func(g ottl.Getter[K]) bool {
+			if val, ok := ottl.GetLiteralValue(g); ok && ottlcommon.IsMapOrList(val) {
+				rejectErr = fmt.Errorf("Concat: value at index %d is a map or list, which cannot be concatenated", index)
+				return false
+			}
+			index++
+			return true
+		})
+		if err != nil {
+			return nil, err
+		}
+		if rejectErr != nil {
+			return nil, rejectErr
+		}
+	}
+
 	return concat(&args.Vals, args.Delimiter), nil
 }
 
-func concat[K any](vals *slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]], delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func concat[K any](vals *slicegetter.SliceGetter[K, ottl.Getter[K]], delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		builder := strings.Builder{}
 		delimiterVal, err := delimiter.Get(ctx, tCtx)
@@ -42,8 +63,17 @@ func concat[K any](vals *slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]], d
 		}
 		first := true
 		var concatErr error
-		_, err = vals.Range(ctx, tCtx, func(rv ottl.StringLikeGetter[K]) bool {
-			val, ok, getErr := rv.Get(ctx, tCtx)
+		_, err = vals.Range(ctx, tCtx, func(rv ottl.Getter[K]) bool {
+			raw, getErr := rv.Get(ctx, tCtx)
+			if getErr != nil {
+				concatErr = getErr
+				return false
+			}
+			if ottlcommon.IsMapOrList(raw) {
+				concatErr = ottl.TypeError(fmt.Sprintf("Concat: cannot concatenate a map or list, got %T", raw))
+				return false
+			}
+			val, ok, getErr := ottlcommon.ToString(raw)
 			if getErr != nil {
 				concatErr = getErr
 				return false

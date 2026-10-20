@@ -7,14 +7,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 
-	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/exp/constraints"
 
@@ -460,11 +458,7 @@ func newPSliceFrom[T any](source []T, set func(target *pcommon.Value, value T)) 
 }
 
 // TypeError represents that a value was not an expected type.
-type TypeError string
-
-func (t TypeError) Error() string {
-	return string(t)
-}
+type TypeError = ottlerror.TypeError
 
 // StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
@@ -852,37 +846,7 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (string, b
 	if err != nil {
 		return "", false, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
-	if val == nil {
-		return "", false, nil
-	}
-	var result string
-	switch v := val.(type) {
-	case string:
-		result = v
-	case []byte:
-		result = hex.EncodeToString(v)
-	case pcommon.Map:
-		resultBytes, err := json.Marshal(v.AsRaw())
-		if err != nil {
-			return "", false, err
-		}
-		result = string(resultBytes)
-	case pcommon.Slice:
-		resultBytes, err := json.Marshal(v.AsRaw())
-		if err != nil {
-			return "", false, err
-		}
-		result = string(resultBytes)
-	case pcommon.Value:
-		result = v.AsString()
-	default:
-		resultBytes, err := json.Marshal(v)
-		if err != nil {
-			return "", false, TypeError(fmt.Sprintf("unsupported type: %T", v))
-		}
-		result = string(resultBytes)
-	}
-	return result, true, nil
+	return ottlcommon.ToString(val)
 }
 
 // FloatLikeGetter is a Getter that returns a float64 by converting the underlying value to a float64 if necessary.

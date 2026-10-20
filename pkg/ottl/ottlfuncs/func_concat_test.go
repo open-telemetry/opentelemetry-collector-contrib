@@ -18,13 +18,14 @@ import (
 func Test_concat(t *testing.T) {
 	tests := []struct {
 		name      string
-		vals      []ottl.StandardStringLikeGetter[any]
+		vals      []ottl.StandardGetSetter[any]
 		delimiter ottl.StringGetter[any]
 		expected  string
+		wantErr   string
 	}{
 		{
 			name: "concat strings",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "hello", nil
@@ -41,7 +42,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "nil",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "hello", nil
@@ -63,7 +64,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "integers",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "hello", nil
@@ -80,7 +81,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "floats",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "hello", nil
@@ -97,7 +98,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "booleans",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "hello", nil
@@ -114,7 +115,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "byte slices",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8}, nil
@@ -126,7 +127,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "pcommon.Slice",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						s := pcommon.NewSlice()
@@ -143,11 +144,11 @@ func Test_concat(t *testing.T) {
 				},
 			},
 			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
-			expected:  "[1,2],[3,4]",
+			wantErr:   "Concat: cannot concatenate a map or list, got pcommon.Slice",
 		},
 		{
 			name: "maps",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						m := pcommon.NewMap()
@@ -164,11 +165,83 @@ func Test_concat(t *testing.T) {
 				},
 			},
 			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
-			expected:  `{"a":"b"},{"c":"d"}`,
+			wantErr:   "Concat: cannot concatenate a map or list, got pcommon.Map",
+		},
+		{
+			name: "pcommon.Value map",
+			vals: []ottl.StandardGetSetter[any]{
+				{
+					Getter: func(context.Context, any) (any, error) {
+						return pcommon.NewValueMap(), nil
+					},
+				},
+			},
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
+			wantErr:   "Concat: cannot concatenate a map or list, got pcommon.Value",
+		},
+		{
+			name: "pcommon.Value slice",
+			vals: []ottl.StandardGetSetter[any]{
+				{
+					Getter: func(context.Context, any) (any, error) {
+						return pcommon.NewValueSlice(), nil
+					},
+				},
+			},
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
+			wantErr:   "Concat: cannot concatenate a map or list, got pcommon.Value",
+		},
+		{
+			name: "pcommon.Value bytes",
+			vals: []ottl.StandardGetSetter[any]{
+				{
+					Getter: func(context.Context, any) (any, error) {
+						return pcommon.NewValueBytes(), nil
+					},
+				},
+			},
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
+			expected:  "",
+		},
+		{
+			name: "map[string]any",
+			vals: []ottl.StandardGetSetter[any]{
+				{
+					Getter: func(context.Context, any) (any, error) {
+						return map[string]any{"a": "b"}, nil
+					},
+				},
+			},
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
+			wantErr:   "Concat: cannot concatenate a map or list, got map[string]interface {}",
+		},
+		{
+			name: "[]any",
+			vals: []ottl.StandardGetSetter[any]{
+				{
+					Getter: func(context.Context, any) (any, error) {
+						return []any{"a", "b"}, nil
+					},
+				},
+			},
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
+			wantErr:   "Concat: cannot concatenate a map or list, got []interface {}",
+		},
+		{
+			name: "[]string",
+			vals: []ottl.StandardGetSetter[any]{
+				{
+					Getter: func(context.Context, any) (any, error) {
+						return []string{"a", "b"}, nil
+					},
+				},
+			},
+			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return ",", nil }},
+			wantErr:   "Concat: cannot concatenate a map or list, got []string",
 		},
 		{
 			name: "empty string values",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "", nil
@@ -190,7 +263,7 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name: "single argument",
-			vals: []ottl.StandardStringLikeGetter[any]{
+			vals: []ottl.StandardGetSetter[any]{
 				{
 					Getter: func(context.Context, any) (any, error) {
 						return "hello", nil
@@ -202,28 +275,34 @@ func Test_concat(t *testing.T) {
 		},
 		{
 			name:      "no arguments",
-			vals:      []ottl.StandardStringLikeGetter[any]{},
+			vals:      []ottl.StandardGetSetter[any]{},
 			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "-", nil }},
 			expected:  "",
 		},
 		{
 			name:      "no arguments with an empty delimiter",
-			vals:      []ottl.StandardStringLikeGetter[any]{},
+			vals:      []ottl.StandardGetSetter[any]{},
 			delimiter: ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
 			expected:  "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getters := make([]ottl.StringLikeGetter[any], len(tt.vals))
+			getters := make([]ottl.Getter[any], len(tt.vals))
 
 			for i, val := range tt.vals {
 				getters[i] = val
 			}
 
-			vals := slicegetter.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, getters)
+			vals := slicegetter.NewTestingSliceGetter[any, ottl.Getter[any]](true, getters)
 			exprFunc := concat(vals, tt.delimiter)
-			result, err := exprFunc(nil, nil)
+			result, err := exprFunc(t.Context(), nil)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				var typeErr ottl.TypeError
+				require.ErrorAs(t, err, &typeErr)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
@@ -233,11 +312,11 @@ func Test_concat(t *testing.T) {
 func Test_concat_runtime_slice(t *testing.T) {
 	t.Parallel()
 
-	getters := []ottl.StringLikeGetter[any]{
-		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
-		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
+	getters := []ottl.Getter[any]{
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
 	}
-	vals := slicegetter.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](false, getters)
+	vals := slicegetter.NewTestingSliceGetter[any, ottl.Getter[any]](false, getters)
 	delimiter := &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }}
 
 	exprFunc := concat(vals, delimiter)
@@ -246,8 +325,53 @@ func Test_concat_runtime_slice(t *testing.T) {
 	assert.Equal(t, "hello world", result)
 }
 
+func Test_concat_runtime_slice_map_item(t *testing.T) {
+	t.Parallel()
+
+	getters := []ottl.Getter[any]{
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return pcommon.NewValueMap(), nil }},
+	}
+	vals := slicegetter.NewTestingSliceGetter[any, ottl.Getter[any]](false, getters)
+	delimiter := &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }}
+
+	exprFunc := concat(vals, delimiter)
+	_, err := exprFunc(t.Context(), nil)
+	assert.ErrorContains(t, err, "Concat: cannot concatenate a map or list")
+}
+
+func Test_createConcatFunction_literal_map_or_list(t *testing.T) {
+	tests := []struct {
+		name  string
+		value any
+	}{
+		{name: "pcommon.Map", value: pcommon.NewMap()},
+		{name: "pcommon.Slice", value: pcommon.NewSlice()},
+		{name: "map[string]any", value: map[string]any{"a": "b"}},
+		{name: "[]any", value: []any{"a"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			first, err := ottl.NewTestingLiteralGetter(true, &ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) { return "a", nil },
+			})
+			require.NoError(t, err)
+			second, err := ottl.NewTestingLiteralGetter(true, &ottl.StandardGetSetter[any]{
+				Getter: func(context.Context, any) (any, error) { return tt.value, nil },
+			})
+			require.NoError(t, err)
+			args := &concatArguments[any]{
+				Vals:      *slicegetter.NewTestingSliceGetter[any, ottl.Getter[any]](true, []ottl.Getter[any]{first, second}),
+				Delimiter: &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "", nil }},
+			}
+			_, err = createConcatFunction[any](ottl.FunctionContext{}, args)
+			assert.ErrorContains(t, err, "Concat: value at index 1 is a map or list")
+		})
+	}
+}
+
 func Test_concat_error(t *testing.T) {
-	target := &ottl.StandardStringLikeGetter[any]{
+	target := &ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return make(chan int), nil
 		},
@@ -257,14 +381,14 @@ func Test_concat_error(t *testing.T) {
 			return "test", nil
 		},
 	}
-	vals := slicegetter.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{target})
+	vals := slicegetter.NewTestingSliceGetter[any](true, []ottl.Getter[any]{target})
 	exprFunc := concat(vals, delimiter)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
 
 func Test_concat_error_delimiter(t *testing.T) {
-	target := &ottl.StandardStringLikeGetter[any]{
+	target := &ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return make(chan int), nil
 		},
@@ -274,7 +398,7 @@ func Test_concat_error_delimiter(t *testing.T) {
 			return 3, nil
 		},
 	}
-	vals := slicegetter.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{target})
+	vals := slicegetter.NewTestingSliceGetter[any](true, []ottl.Getter[any]{target})
 	exprFunc := concat(vals, delimiter)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
@@ -299,8 +423,8 @@ func Test_ConcatFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 		concatArgs, ok := args.(*concatArguments[any])
 		require.True(t, ok)
-		concatArgs.Vals = *slicegetter.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, []ottl.StringLikeGetter[any]{
-			&ottl.StandardStringLikeGetter[any]{
+		concatArgs.Vals = *slicegetter.NewTestingSliceGetter[any](true, []ottl.Getter[any]{
+			&ottl.StandardGetSetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "hello", nil
 				},
@@ -324,12 +448,12 @@ func Test_ConcatFactory(t *testing.T) {
 }
 
 func BenchmarkConcat(b *testing.B) {
-	getters := []ottl.StringLikeGetter[any]{
-		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
-		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
-		&ottl.StandardStringLikeGetter[any]{Getter: func(context.Context, any) (any, error) { return int64(42), nil }},
+	getters := []ottl.Getter[any]{
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "hello", nil }},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return "world", nil }},
+		&ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) { return int64(42), nil }},
 	}
-	vals := slicegetter.NewTestingSliceGetter[any, ottl.StringLikeGetter[any]](true, getters)
+	vals := slicegetter.NewTestingSliceGetter[any](true, getters)
 	delimiter := &ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return " ", nil }}
 
 	exprFunc := concat(vals, delimiter)
