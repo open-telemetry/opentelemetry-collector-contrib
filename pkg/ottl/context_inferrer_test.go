@@ -159,6 +159,16 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			expected:   "spanevent",
 		},
 		{
+			name:     "infer from map key path",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(span.attributes["x"], {spanevent.name: 1})`},
+			expected:   "spanevent",
+		},
+		{
 			name:     "local identifiers are not candidates",
 			priority: []string{"spanevent", "span"},
 			candidates: map[string]*priorityContextInferrerCandidate{

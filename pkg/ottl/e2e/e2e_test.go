@@ -1561,6 +1561,20 @@ func Test_e2e_converters(t *testing.T) {
 			errMsg:    "provided object does not contain the path",
 		},
 		{
+			statement: `set(attributes["test"], {ToUpperCase("key"): "value", attributes["http.method"]: 1})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("KEY", "value")
+				m.PutInt("get", 1)
+			},
+		},
+		{
+			statement: `set(attributes["test"], {attributes["int_value"]: 1})`,
+			wantErr:   true,
+			want:      func(*ottllog.TransformContext) {},
+			errMsg:    "map key must evaluate to a string",
+		},
+		{
 			statement: `set(attributes["test"], {"list":[{"foo":"bar"}]})`,
 			want: func(tCtx *ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
