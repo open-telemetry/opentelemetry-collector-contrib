@@ -92,5 +92,13 @@ acknowledgment protocol: the sender includes a channel, the receiver returns an
 considers a batch complete. This lets a sender safely retry without assuming a
 lost response means the data was dropped.
 
+A single request can carry both log and metric events. The receiver hands the
+logs to the pipeline first, then the metrics. If the logs are accepted but the
+metrics are not, the receiver responds with an error and a retrying client
+resends the whole request, so the logs are delivered again. Acknowledgment does
+not flag this case: an `ackId` is only issued once the entire request has been
+accepted, so the failed attempt returns no `ackId`. Senders that need to avoid
+these duplicates should send logs and metrics in separate requests.
+
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls
 [hec-ack]: https://docs.splunk.com/Documentation/Splunk/latest/Data/AboutHECIDXAck
