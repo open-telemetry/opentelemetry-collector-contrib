@@ -143,6 +143,14 @@ func TestLoadConfig(t *testing.T) {
 			}(),
 		},
 		{
+			name: "kafka/dial_timeout",
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig.DialTimeout = 30 * time.Second
+				return cfg
+			}(),
+		},
+		{
 			name: "kafka/valid_exclude_topics_logs",
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -172,7 +180,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg.PartitionProcessing = PartitionProcessing{
 					Independent:        true,
 					MaxBufferedBatches: 2,
-					MaxInFlight:        MaxInFlightConfig{Records: 1},
+					MaxInFlight:        MaxInFlightConfig{Records: 1, Window: InFlightWindowPerFetch},
 				}
 				return cfg
 			}(),
@@ -228,6 +236,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg.PartitionProcessing.Independent = true
 				cfg.PartitionProcessing.MaxInFlight.Records = 4
 				cfg.PartitionProcessing.MaxInFlight.Bytes = 33554432
+				cfg.PartitionProcessing.MaxInFlight.Window = InFlightWindowCrossFetch
 				return cfg
 			}(),
 		},
@@ -238,6 +247,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:        "kafka/invalid_partition_processing_negative_max_in_flight_bytes",
 			expectedErr: "partition_processing.max_in_flight.bytes must not be negative",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_cross_fetch_without_bytes",
+			expectedErr: "partition_processing.max_in_flight.window cross_fetch requires records above 1 and bytes above 0",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_unknown_window",
+			expectedErr: `partition_processing.max_in_flight.window must be "per_fetch" or "cross_fetch"`,
 		},
 	}
 
