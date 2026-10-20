@@ -560,9 +560,20 @@ A detection run that reaches ARN confirmation makes these requests:
 
 A run with no single valid cluster name stops before the OIDC and
 `eks:DescribeCluster` requests. Detection runs once when the processor starts. If
-`refresh_interval` is set, it runs again on every tick, and the requests needed by
-that run are repeated: no result is cached between runs. The default leaves
+`refresh_interval` is set, it runs again on every tick and repeats the requests that
+run needs: nothing is cached between runs, so a confirmation that succeeded once is
+made again on the next tick rather than being remembered. The default leaves
 `refresh_interval` unset, so detection runs once per collector start.
+
+Set `refresh_interval` with that request rate in mind. Every collector instance with
+the attribute enabled makes its own `eks:DescribeCluster` request on every tick, so a
+collector deployed as a DaemonSet multiplies the rate by the number of nodes: 500
+nodes with `refresh_interval: 1m` make 500 `eks:DescribeCluster` requests a minute.
+EKS applies request quotas per account and Region, shared with everything else calling
+it there, so a short interval across many nodes can exhaust them and get the requests
+throttled. A throttled request reports no ARN, the same as any other failure to
+describe the cluster. The cluster a node belongs to does not normally change while the
+node exists, so leaving `refresh_interval` unset costs nothing here.
 
 `/.well-known/openid-configuration` is a non-resource URL, so reading it is authorized
 by the collector's Kubernetes service account rather than by the IAM role, and that
@@ -601,7 +612,10 @@ Two of those outcomes also suppress `k8s.cluster.name`, because each one establi
 that the tag the name came from does not describe this node's cluster:
 
 * the two issuers disagree, so EKS has confirmed that the named cluster is a
-  different cluster from the one this node runs in;
+  different cluster from the one this node runs in. This holds whichever tag the name
+  came from, the reserved `aws:eks:cluster-name` tag included: a tag records what was
+  true when it was written, and the cluster's own Kubernetes API server is the only
+  source that says which cluster the node is in now;
 * the name is not one EKS could have issued, so no cluster of that name can exist.
 
 Reporting the name in either case would attribute this node's telemetry to a cluster
@@ -614,6 +628,14 @@ see, and the name is kept. This suppression only happens while
 `aws.eks.cluster.arn` is enabled. With it disabled, as the default config does,
 nothing is checked, nothing is disproven, and `k8s.cluster.name` behaves exactly as it
 did before.
+
+While the ARN is enabled, EKS cluster naming rules therefore apply to the tag value
+before `k8s.cluster.name` can be retained. The value must be 1 to 100 characters,
+start with a letter or digit, and otherwise contain only letters, digits, dashes, and
+underscores. A value breaking any of those rules is dropped along with the ARN, and
+dropped without a request being made. This is the one case where enabling the ARN can
+change `k8s.cluster.name` for a node whose cluster is reachable and healthy but whose
+tag holds a value EKS would never have issued.
 
 Enabling the ARN does not require `k8s.cluster.name` to be reported. Hybrid nodes do
 not provide the EC2 metadata this path reads.

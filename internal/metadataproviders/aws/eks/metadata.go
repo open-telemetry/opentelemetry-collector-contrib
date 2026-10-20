@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/eks"
 	"github.com/aws/smithy-go"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -38,16 +39,16 @@ const (
 
 // ErrClusterIdentityMismatch reports that EKS described the named cluster and
 // it is not the cluster this node is running in. It is the one failure this
-// provider reports that says something about the cluster name itself: the name
-// is wrong, rather than unproven, so a caller reporting the name separately can
-// stop reporting it.
+// provider reports that disproves the cluster name itself, so a caller
+// reporting the name separately can stop reporting it. No other failure here
+// carries that meaning, and a failed eks:DescribeCluster in particular does
+// not.
 //
-// No other failure here carries that meaning, and a failed eks:DescribeCluster
-// in particular does not. ResourceNotFoundException reads like the name naming
-// nothing, but the request is made with this node's role in this node's
-// account, so it is equally the answer for a cluster that exists and that this
-// role or account cannot see. Treating it as a disproven name would drop a
-// correct cluster name over a missing IAM grant or a cross-account cluster.
+// Which tag the name came from makes no difference, the reserved
+// "aws:eks:cluster-name" tag included. A tag records what was true when it was
+// written, and the cluster's own Kubernetes API server is the only source that
+// says which cluster this node is in now, so a mismatch against it is reported
+// whatever wrote the tag.
 var ErrClusterIdentityMismatch = errors.New("the named cluster is not the cluster this node runs in")
 
 // errAmbiguousClusterName reports that a node's EC2 tags name more than one
@@ -60,8 +61,8 @@ var errAmbiguousClusterName = errors.New("node EC2 tags name more than one clust
 // name, the issuer URLs, or any other value read from the node or returned by
 // the service. Two of the three tags the cluster name can come from sit in
 // namespaces a user can write to, so the name can name a cluster this node has
-// nothing to do with, and copying it into a log line or into an error that
-// reaches the collector's own output would repeat it as if it were this node's.
+// nothing to do with, and copying it into the collector's own output would
+// repeat it as if it were this node's.
 var (
 	errNoClusterName              = errors.New("no cluster name for this node")
 	errNoRegion                   = errors.New("no region for this node")
@@ -80,10 +81,8 @@ type Provider interface {
 	// ClusterARN must return an ARN only for a cluster the implementation has
 	// confirmed is the cluster this node is running in. The cluster name is
 	// read from an EC2 tag and two of the tags it can come from are
-	// user-writable, so an implementation that returns the ARN of whatever
-	// cluster the name resolves to reports a cluster identity that was never
-	// established. Returning an ARN without that check is a defect, not a
-	// trade-off.
+	// user-writable, so returning the ARN of whatever cluster the name
+	// resolves to reports a cluster identity that was never established.
 	ClusterARN(ctx context.Context, clusterName string) (string, error)
 	SetRegionInstanceID(region, instanceID string)
 }
@@ -224,12 +223,9 @@ func (c *metadataClient) GetInstanceMetadata(ctx context.Context) (InstanceMetad
 	// The provider outlives a single detection run: Detect is retried on
 	// failure and re-run on every refresh_interval tick, and the four fields
 	// below are only assigned when the response describes an instance. A later
-	// response that describes none would otherwise leave the earlier run's
-	// values in place and report them as if this response had carried them, so
-	// a successful refresh that found nothing would keep reporting the account
-	// ID, image ID, instance type, and hostname the node used to have. The
-	// cluster name is assigned unconditionally further down, so it cannot go
-	// stale this way.
+	// response that describes none would otherwise report the values the node
+	// used to have as if this response had carried them. The cluster name is
+	// assigned unconditionally further down, so it cannot go stale this way.
 	c.instanceMetadata.AccountID = ""
 	c.instanceMetadata.ImageID = ""
 	c.instanceMetadata.InstanceType = ""
@@ -263,11 +259,9 @@ func (c *metadataClient) GetInstanceMetadata(ctx context.Context) (InstanceMetad
 // discovery tags, which users and provisioning tools write and which mark a
 // cluster as either owning the node or sharing it.
 //
-// Tags of the same precedence naming different clusters report no name and
-// set InstanceMetadata.ClusterNameAmbiguous. Ordering them by any rule,
-// including a stable one, still answers a question the tags do not answer,
-// and it lets whoever wrote the second tag decide which cluster the node is
-// reported as belonging to.
+// Tags of the same precedence naming different clusters report no name and set
+// InstanceMetadata.ClusterNameAmbiguous. Ordering them by any rule, including a
+// stable one, still answers a question the tags do not answer.
 func getClusterNameTagFromReservations(reservations []types.Reservation) (string, error) {
 	var ownedByEKS, taggedByEKS, ownedByCluster, sharedWithCluster []string
 	for _, reservation := range reservations {
@@ -328,11 +322,10 @@ func soleName(candidates []string) (string, error) {
 // has confirmed that the named cluster is the cluster this node is running in.
 //
 // The name comes from an EC2 tag, and two of the three tags it can come from
-// sit in namespaces a user can write to. That a cluster of that name exists in
-// this account and Region is therefore not evidence that it is this node's
-// cluster: a tag naming any other cluster in the same account and Region
-// satisfies it just as well, and the ARN EKS returns for that cluster is
-// well-formed and wrong.
+// sit in namespaces a user can write to, so a cluster of that name existing in
+// this account and Region is not evidence that it is this node's cluster: a tag
+// naming any other cluster there satisfies it just as well, and the ARN EKS
+// returns for that cluster is well-formed and wrong.
 //
 // What distinguishes the clusters is the OIDC issuer URL, which is unique per
 // cluster. The node's own Kubernetes API server publishes the issuer of the
@@ -355,7 +348,7 @@ func (c *metadataClient) ClusterARN(ctx context.Context, clusterName string) (st
 	// making.
 	liveIssuer, err := c.OIDCIssuer(ctx)
 	if err != nil {
-		return "", errLiveIssuerUnavailable
+		return "", liveIssuerFailure(err)
 	}
 	liveIssuer = canonicalIssuer(liveIssuer)
 	if liveIssuer == "" {
@@ -399,6 +392,34 @@ func (c *metadataClient) ClusterARN(ctx context.Context, clusterName string) (st
 		return "", errNoClusterARN
 	}
 	return arn, nil
+}
+
+// liveIssuerFailure reports why the Kubernetes API did not yield the issuer of
+// the cluster this node runs in, keeping the API's own failure vocabulary and
+// nothing read from the response.
+//
+// The Status reason and the HTTP status code are fixed sets that carry no value
+// from this node or this cluster, and they are the difference between a service
+// account that is not allowed to read issuer discovery, which needs an RBAC
+// binding, and an API server that could not be reached, which does not. The
+// Status message, the request URL, and the body are all dropped: a Forbidden
+// message names the service account, and a body that failed to parse can still
+// contain the issuer.
+func liveIssuerFailure(err error) error {
+	var status apierrors.APIStatus
+	if !errors.As(err, &status) {
+		return errLiveIssuerUnavailable
+	}
+	s := status.Status()
+	switch {
+	case s.Reason != "" && s.Code != 0:
+		return fmt.Errorf("%w: %s (HTTP %d)", errLiveIssuerUnavailable, s.Reason, s.Code)
+	case s.Reason != "":
+		return fmt.Errorf("%w: %s", errLiveIssuerUnavailable, s.Reason)
+	case s.Code != 0:
+		return fmt.Errorf("%w: HTTP %d", errLiveIssuerUnavailable, s.Code)
+	}
+	return errLiveIssuerUnavailable
 }
 
 // canonicalIssuer puts an issuer URL in the one form the two sources are

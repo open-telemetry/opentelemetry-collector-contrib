@@ -855,6 +855,138 @@ func TestClusterARN(t *testing.T) {
 	}
 }
 
+// oidcStatusClientset returns a Kubernetes client whose OIDC discovery
+// endpoint answers with the given status and body, so a failure is read over
+// the same client-go path the provider uses in a cluster.
+func oidcStatusClientset(t *testing.T, status int, body string) kubernetes.Interface {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = fmt.Fprint(w, body)
+	}))
+	t.Cleanup(srv.Close)
+	clientset, err := kubernetes.NewForConfig(&rest.Config{Host: srv.URL})
+	require.NoError(t, err)
+	return clientset
+}
+
+// TestClusterARNReportsSafeLiveIssuerDiagnostics covers the failure an operator
+// has to act on. A service account that is not allowed to read issuer discovery
+// needs an RBAC binding and an API server that could not be reached needs
+// nothing, so the reported error has to tell them apart. It does so with the
+// Kubernetes API's own failure vocabulary only: the Status reason and the HTTP
+// status code are fixed sets, while the Status message, the request path, the
+// body, the cluster name, and the issuer are all values about this deployment.
+func TestClusterARNReportsSafeLiveIssuerDiagnostics(t *testing.T) {
+	const (
+		serviceAccount   = "system:serviceaccount:opentelemetry:otel-collector"
+		clusterName      = "my-cluster"
+		discoveryPath    = "/.well-known/openid-configuration"
+		forbiddenMessage = serviceAccount + ` cannot get path "` + discoveryPath + `"`
+	)
+	forbiddenStatus := fmt.Sprintf(
+		`{"kind":"Status","apiVersion":"v1","status":"Failure","message":%q,"reason":"Forbidden","code":403}`,
+		forbiddenMessage,
+	)
+
+	tests := []struct {
+		name     string
+		status   int
+		body     string
+		contains []string
+	}{
+		{
+			name:     "service account not allowed to read issuer discovery",
+			status:   http.StatusForbidden,
+			body:     forbiddenStatus,
+			contains: []string{"Forbidden", "403"},
+		},
+		{
+			name:     "api server returned a server error",
+			status:   http.StatusInternalServerError,
+			contains: []string{"InternalError", "500"},
+		},
+		{
+			name:     "issuer discovery endpoint is not served",
+			status:   http.StatusNotFound,
+			contains: []string{"NotFound", "404"},
+		},
+		{
+			// Not an API failure, so there is no status to report. The parse
+			// error is dropped rather than reported, because the body it was
+			// reading can carry the issuer.
+			name:   "response is not a discovery document",
+			status: http.StatusOK,
+			body:   `{"issuer":` + testIssuer,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := &metadataClient{
+				instanceMetadata: InstanceMetadata{Region: "us-west-2"},
+				clientset:        oidcStatusClientset(t, tt.status, tt.body),
+				eksClient: &mockEKSClient{
+					DescribeClusterFunc: func(context.Context, *eks.DescribeClusterInput, ...func(*eks.Options)) (*eks.DescribeClusterOutput, error) {
+						t.Error("DescribeCluster called with no live issuer to check the response against")
+						return nil, nil
+					},
+				},
+			}
+
+			arn, err := provider.ClusterARN(t.Context(), clusterName)
+
+			require.ErrorIs(t, err, errLiveIssuerUnavailable)
+			assert.Empty(t, arn)
+			for _, want := range tt.contains {
+				assert.Contains(t, err.Error(), want)
+			}
+			assert.NotContains(t, err.Error(), serviceAccount)
+			assert.NotContains(t, err.Error(), discoveryPath)
+			assert.NotContains(t, err.Error(), forbiddenMessage)
+			assert.NotContains(t, err.Error(), clusterName)
+			assert.NotContains(t, err.Error(), testIssuer)
+		})
+	}
+}
+
+// TestClusterARNMismatchIsFailClosedForTheReservedTag covers the strongest
+// cluster name a node can carry: the one EKS writes in the reserved "aws:" tag
+// namespace, which no user can write to. The mismatch is still reported and
+// the name is still disproven, because a tag records what was true when it was
+// written and the live Kubernetes API is the binding statement about which
+// cluster this node is in now.
+func TestClusterARNMismatchIsFailClosedForTheReservedTag(t *testing.T) {
+	provider := &metadataClient{
+		instanceMetadata: InstanceMetadata{Region: "us-west-2", InstanceID: "i-1234567890abcdef0"},
+		clientset:        oidcClientset(t, testIssuer, http.StatusOK),
+		ec2Client: &mockEC2Client{
+			DescribeInstancesFunc: func(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
+				return &ec2.DescribeInstancesOutput{
+					Reservations: reservationWithTags(map[string]string{clusterNameAwsEksTag: "my-cluster"}),
+				}, nil
+			},
+		},
+		eksClient: &mockEKSClient{
+			DescribeClusterFunc: func(_ context.Context, params *eks.DescribeClusterInput, _ ...func(*eks.Options)) (*eks.DescribeClusterOutput, error) {
+				assert.Equal(t, "my-cluster", aws.ToString(params.Name))
+				return &eks.DescribeClusterOutput{
+					Cluster: clusterWithIssuer("arn:aws:eks:us-west-2:123456789012:cluster/my-cluster", testOtherIssuer),
+				}, nil
+			},
+		},
+	}
+
+	meta, err := provider.GetInstanceMetadata(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "my-cluster", meta.ClusterName)
+
+	arn, err := provider.ClusterARN(t.Context(), meta.ClusterName)
+
+	require.ErrorIs(t, err, ErrClusterIdentityMismatch)
+	assert.Empty(t, arn)
+}
+
 // TestGetInstanceMetadataPrefersTheEKSOwnedTag covers the whole provider path,
 // so a node carrying both an EKS-owned tag and a user-written discovery tag
 // reports the cluster EKS says it belongs to.
