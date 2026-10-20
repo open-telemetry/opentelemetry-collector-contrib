@@ -394,43 +394,6 @@ processors:
 > A dedicated [OpenStack Nova detector](#openstack-nova) is also available.
 > The same applies to the hostname: when `fail_on_missing_metadata` is `true`, a hostname that cannot be retrieved results in an error, otherwise the failure is logged and the resource is returned without the `host.name` attribute.
 
-#### Maintaining the EC2 retry defaults
-
-The defaults in [`internal/aws/ec2/config.go`](internal/aws/ec2/config.go) mirror the AWS
-SDK's [`retry.DefaultMaxAttempts` and `retry.DefaultMaxBackoff`](https://github.com/aws/aws-sdk-go-v2/blob/v1.47.1/aws/retry/standard.go#L26-L33).
-They are defined locally so builds that omit EC2 do not import the SDK through configuration code.
-The detector implementation still uses the SDK when EC2 is included.
-
-A review of the [complete history of `aws/retry/standard.go`](https://github.com/aws/aws-sdk-go-v2/commits/main/aws/retry/standard.go)
-on October 19, 2026 found that these two constants have remained at 3 attempts and 20 seconds
-since their [introduction on March 11, 2020](https://github.com/aws/aws-sdk-go-v2/commit/dc3c8762430854ca3919f8aed10372f3569d3a09).
-This applies to the standard retryer, not the different retryer used by older SDK previews.
-
-[`TestDefaultRetrySettingsMatchSDK`](internal/aws/ec2/config_test.go) compares `CreateDefaultConfig()`
-with the constants in the SDK version selected by this module. The SDK import stays in test code.
-The test runs in the normal test suite and fails if an SDK upgrade changes either constant
-without a matching local update. It does not check every aspect of SDK retry behavior.
-
-If the test fails:
-
-1. Run these commands in `processor/resourcedetectionprocessor` to reproduce the failure
-   and identify the selected SDK version and source directory:
-
-   ```sh
-   go test -count=1 ./internal/aws/ec2 -run '^TestDefaultRetrySettingsMatchSDK$'
-   go list -m -f '{{.Version}} {{.Dir}}' github.com/aws/aws-sdk-go-v2
-   ```
-
-2. Open `aws/retry/standard.go` under the reported SDK directory. Compare the two constants
-   with `defaultMaxAttempts` and `defaultMaxBackoff` in `internal/aws/ec2/config.go`.
-   Review the SDK change to confirm that the dependency upgrade and new defaults are intended.
-3. If the new defaults are intended, update the local constants, the documented values in this
-   section, and add a changelog entry for the changed defaults. Keep the SDK import in the test;
-   do not restore it in `config.go`. If the change is unexpected, resolve the dependency upgrade
-   or agree on the intended behavior with the maintainers before changing the test.
-4. Rerun the focused test, then run the module's normal tests with `go test ./...` and the
-   repository's required checks. Keep the equality assertions so later upgrades remain guarded.
-
 ### Amazon ECS
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.

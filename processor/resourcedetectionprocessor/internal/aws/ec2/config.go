@@ -13,8 +13,6 @@ import (
 // They are declared locally so that this config package does not import the AWS SDK
 // just for two constants, which would pull the SDK into every build's config schema.
 // TestDefaultRetrySettingsMatchSDK checks for drift when the SDK is upgraded.
-// For maintenance steps, see ../../../README.md#maintaining-the-ec2-retry-defaults:
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#maintaining-the-ec2-retry-defaults
 const (
 	defaultMaxAttempts = 3
 	defaultMaxBackoff  = 20 * time.Second
