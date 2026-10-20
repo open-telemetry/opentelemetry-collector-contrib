@@ -25,9 +25,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
@@ -44,11 +41,7 @@ func TestValidate(t *testing.T) {
 	httpClientConfig.ReadBufferSize = 100
 	httpClientConfig.WriteBufferSize = 200
 	httpClientConfig.Timeout = 10 * time.Second
-	httpClientConfig.IdleConnTimeout = idleConnTimeout        //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
-	httpClientConfig.MaxIdleConns = maxIdleConn               //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
-	httpClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
 	httpClientConfig.MaxConnsPerHost = maxConnPerHost
-	httpClientConfig.DisableKeepAlives = true //nolint:staticcheck // SA1019: DisableKeepAlives is deprecated, set Keepalive.Enabled to false instead.
 	httpClientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
 	unsupportedClientConfig := confighttp.NewDefaultClientConfig()
