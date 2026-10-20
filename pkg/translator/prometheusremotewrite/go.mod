@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.163.0
 	github.com/prometheus/common v0.72.1
@@ -97,8 +96,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
 retract (
 	v0.76.2
