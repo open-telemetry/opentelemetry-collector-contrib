@@ -25,7 +25,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+var (
+	errFlatLogsGateDisabled     = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlattenDataGateDisabled  = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlattenDataAndFlattenLog = errors.New("'flatten_data' and 'flatten.log' cannot both be set, use only 'flatten.log'")
+)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -45,7 +49,9 @@ type Config struct {
 	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
 	Flatten FlattenConfig `mapstructure:"flatten"`
-	logger  *zap.Logger
+	// Deprecated: [v0.164.0] use flatten.log instead.
+	FlattenData bool `mapstructure:"flatten_data"`
+	logger      *zap.Logger
 
 	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	exemplarFunctions  map[string]ottl.Factory[*ottlexemplar.TransformContext]
@@ -206,6 +212,14 @@ func (c *Config) Validate() error {
 
 	if c.Flatten.Log && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
 		errors = multierr.Append(errors, errFlatLogsGateDisabled)
+	}
+
+	if c.FlattenData && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
+		errors = multierr.Append(errors, errFlattenDataGateDisabled)
+	}
+
+	if c.FlattenData && c.Flatten.Log {
+		errors = multierr.Append(errors, errFlattenDataAndFlattenLog)
 	}
 
 	return errors

@@ -196,7 +196,10 @@ func (f *transformProcessorFactory) createLogsProcessor(
 	if f.defaultLogFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor", zap.Bool("log", f.defaultLogFunctionsOverridden))
 	}
-	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.Flatten.Log, set.TelemetrySettings, f.logFunctions)
+	if oCfg.FlattenData {
+		set.Logger.Warn("'flatten_data' is deprecated and will be removed in a future release, use 'flatten.log' instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#transformflattenlogs")
+	}
+	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.Flatten.Log || oCfg.FlattenData, set.TelemetrySettings, f.logFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

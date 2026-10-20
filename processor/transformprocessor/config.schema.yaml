@@ -14,6 +14,9 @@ properties:
     $ref: /pkg/ottl.error_mode
   flatten:
     $ref: flatten_config
+  flatten_data:
+    description: 'Deprecated: [v0.164.0] use flatten.log instead.'
+    type: boolean
   log_statements:
     type: array
     items:

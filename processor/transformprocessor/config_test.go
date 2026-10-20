@@ -458,12 +458,16 @@ func Test_EmptyStatementListItem(t *testing.T) {
 	}
 }
 
-func Test_LoadConfig_FlattenLog(t *testing.T) {
+func setFlattenLogsFeatureGate(t *testing.T, enabled bool) {
 	original := metadata.TransformFlattenLogsFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), enabled))
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), original))
 	})
+}
+
+func Test_LoadConfig_FlattenLog(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -475,4 +479,33 @@ func Test_LoadConfig_FlattenLog(t *testing.T) {
 	require.NoError(t, confmap.Validate(cfg))
 
 	assert.True(t, cfg.(*Config).Flatten.Log)
+}
+
+func Test_LoadConfig_FlattenData(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	assert.True(t, cfg.(*Config).FlattenData)
+	assert.False(t, cfg.(*Config).Flatten.Log)
+}
+
+func Test_FlattenDataAndFlattenLogCannotBothBeSet(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data_and_flatten_log").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	assert.ErrorIs(t, confmap.Validate(cfg), errFlattenDataAndFlattenLog)
 }
