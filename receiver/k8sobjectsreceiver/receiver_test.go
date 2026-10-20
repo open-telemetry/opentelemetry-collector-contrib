@@ -147,8 +147,10 @@ func TestNewReceiver(t *testing.T) {
 }
 
 func TestPullObject(t *testing.T) {
-	t.Parallel()
+	forEachObserver(t, testPullObject)
+}
 
+func testPullObject(t *testing.T) {
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{
@@ -287,8 +289,10 @@ func TestPullObjectShutdownDuringInitialDelay(t *testing.T) {
 }
 
 func TestWatchObject(t *testing.T) {
-	t.Parallel()
+	forEachObserver(t, testWatchObject)
+}
 
+func testWatchObject(t *testing.T) {
 	mockClient := newMockDynamicClient()
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{
@@ -552,6 +556,10 @@ func TestExcludeDeletedTrue(t *testing.T) {
 }
 
 func TestReceiverWithLeaderElection(t *testing.T) {
+	forEachObserver(t, testReceiverWithLeaderElection)
+}
+
+func testReceiverWithLeaderElection(t *testing.T) {
 	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
 	fakeHost := &k8sleaderelectortest.FakeHost{
 		FakeLeaderElection: fakeLeaderElection,
@@ -999,6 +1007,17 @@ func TestStoragePersistenceSuppressesReDelivery(t *testing.T) {
 	// A newer object (RV 30) is above the checkpoint → delivered.
 	mockClient.createPods(generatePod("pod3", "default", nil, "30"))
 	require.Eventually(t, func() bool { return consumer.Count() == 1 }, time.Second, 10*time.Millisecond)
+}
+
+// forEachObserver runs fn once with the legacy observers and once with the
+// informer observer gate enabled. Callers must not use t.Parallel because the
+// gate lives in the global registry.
+func forEachObserver(t *testing.T, fn func(t *testing.T)) {
+	t.Run("legacy", fn)
+	t.Run("informer", func(t *testing.T) {
+		enableInformerObserver(t)
+		fn(t)
+	})
 }
 
 // enableInformerObserver flips the receiver.k8sobjects.useInformerObserver gate
