@@ -25,7 +25,7 @@ See PostgreSQL documentation for [supported versions](https://www.postgresql.org
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
 
 The `db.server.query_sample` event requires the monitoring user to be granted `pg_monitor` (or
-`pg_read_all_stats`). The optional `postgresql.backend_type`, `postgresql.state`, and
+`pg_read_all_stats`). The optional `postgresql.backend.type`, `postgresql.state`, and
 `postgresql.wait_event_type` attributes on the `postgresql.backends` metric need the same grant to
 report values for other sessions. Without it, PostgreSQL hides those values for every backend except
 the collector's own connection; the default `postgresql.backends` total per database is unaffected.
@@ -401,7 +401,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 The `postgresql.backends` metric is broken down by backend type, connection state and wait event
 type, sourced from the same `pg_stat_activity` query that already feeds it. These three data point
-attributes — `postgresql.backend_type`, `postgresql.state` and `postgresql.wait_event_type` — are
+attributes — `postgresql.backend.type`, `postgresql.state` and `postgresql.wait_event_type` — are
 opt-in and disabled by default, so the metric reports a single series per database by default. To
 enable the breakdown, enable the attributes you want on the metric:
 
@@ -410,12 +410,12 @@ receivers:
   postgresql:
     metrics:
       postgresql.backends:
-        attributes: [db.namespace, postgresql.backend_type, postgresql.state, postgresql.wait_event_type]
+        attributes: [db.namespace, postgresql.backend.type, postgresql.state, postgresql.wait_event_type]
 ```
 
 `postgresql.wait_event_type` reports "none" for a backend that is not waiting. Without the
 `pg_monitor` role (see [Prerequisites](#prerequisites)), the monitoring user cannot inspect the
-backends of other roles, so `postgresql.backend_type`, `postgresql.state` and
+backends of other roles, so `postgresql.backend.type`, `postgresql.state` and
 `postgresql.wait_event_type` report "unknown" for them.
 
 The receiver groups the `pg_stat_activity` query by the enabled attributes only, so each data point

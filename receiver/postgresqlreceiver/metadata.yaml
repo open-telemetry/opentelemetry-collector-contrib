@@ -162,7 +162,7 @@ attributes:
   postgresql.backend.connection.start:
     description: UTC timestamp (RFC3339) when this backend was started.
     type: string
-  postgresql.backend_type:
+  postgresql.backend.type:
     description: The type of backend process, e.g. client backend, autovacuum worker, walsender, or logical replication worker. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role.
     type: string
     requirement_level: opt_in
@@ -377,7 +377,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [db.namespace, postgresql.backend_type, postgresql.state, postgresql.wait_event_type]
+    attributes: [db.namespace, postgresql.backend.type, postgresql.state, postgresql.wait_event_type]
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
     stability: development

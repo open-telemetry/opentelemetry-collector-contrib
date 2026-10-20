@@ -115,11 +115,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val", "postgresql.backend_type-val", "postgresql.state-val", "postgresql.wait_event_type-val")
+			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val", "postgresql.backend.type-val", "postgresql.state-val", "postgresql.wait_event_type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2", "postgresql.backend_type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2", "postgresql.backend.type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2", "postgresql.backend_type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2", "postgresql.backend.type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlBackends.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
@@ -595,7 +595,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.backend_type")
+						_, ok = dp.Attributes().Get("postgresql.backend.type")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("postgresql.state")
 						assert.False(t, ok)

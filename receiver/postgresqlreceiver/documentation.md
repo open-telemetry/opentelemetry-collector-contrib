@@ -25,7 +25,7 @@ The number of backend processes associated with each database, broken down by ba
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
-| postgresql.backend_type | The type of backend process, e.g. client backend, autovacuum worker, walsender, or logical replication worker. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role. | Any Str | Opt-In | - |
+| postgresql.backend.type | The type of backend process, e.g. client backend, autovacuum worker, walsender, or logical replication worker. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role. | Any Str | Opt-In | - |
 | postgresql.state | Current overall state of this backend | Any Str | Opt-In | - |
 | postgresql.wait_event_type | The type of event for which the backend is waiting, if any; otherwise NULL. | Any Str | Opt-In | - |
 

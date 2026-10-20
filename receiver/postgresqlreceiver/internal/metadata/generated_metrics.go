@@ -361,7 +361,7 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 var MetricsInfo = metricsInfo{
 	PostgresqlBackends: metricInfo{
 		Name:       "postgresql.backends",
-		Attributes: []string{"db.namespace", "postgresql.backend_type", "postgresql.state", "postgresql.wait_event_type"},
+		Attributes: []string{"db.namespace", "postgresql.backend.type", "postgresql.state", "postgresql.wait_event_type"},
 	},
 	PostgresqlBgwriterBuffersAllocated: metricInfo{
 		Name: "postgresql.bgwriter.buffers.allocated",
@@ -612,7 +612,7 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType) {
-		dp.Attributes().PutStr("postgresql.backend_type", postgresqlBackendTypeAttributeValue)
+		dp.Attributes().PutStr("postgresql.backend.type", postgresqlBackendTypeAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, PostgresqlBackendsMetricAttributeKeyPostgresqlState) {
 		dp.Attributes().PutStr("postgresql.state", postgresqlStateAttributeValue)

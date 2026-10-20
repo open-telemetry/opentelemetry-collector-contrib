@@ -15,7 +15,7 @@ type PostgresqlBackendsMetricAttributeKey string
 
 const (
 	PostgresqlBackendsMetricAttributeKeyDbNamespace             PostgresqlBackendsMetricAttributeKey = "db.namespace"
-	PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType   PostgresqlBackendsMetricAttributeKey = "postgresql.backend_type"
+	PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType   PostgresqlBackendsMetricAttributeKey = "postgresql.backend.type"
 	PostgresqlBackendsMetricAttributeKeyPostgresqlState         PostgresqlBackendsMetricAttributeKey = "postgresql.state"
 	PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType PostgresqlBackendsMetricAttributeKey = "postgresql.wait_event_type"
 )
@@ -48,7 +48,7 @@ func (ms *PostgresqlBackendsMetricConfig) Validate() error {
 		switch val {
 		case PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, PostgresqlBackendsMetricAttributeKeyPostgresqlState, PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType:
 		default:
-			return fmt.Errorf("metric postgresql.backends doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.backend_type, postgresql.state, postgresql.wait_event_type]", val)
+			return fmt.Errorf("metric postgresql.backends doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.backend.type, postgresql.state, postgresql.wait_event_type]", val)
 		}
 	}
 

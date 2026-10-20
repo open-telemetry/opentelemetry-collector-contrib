@@ -173,7 +173,7 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 		dp := dataPoints.At(i)
 		namespace, ok := dp.Attributes().Get("db.namespace")
 		require.True(t, ok)
-		backendType, ok := dp.Attributes().Get("postgresql.backend_type")
+		backendType, ok := dp.Attributes().Get("postgresql.backend.type")
 		require.True(t, ok)
 		state, ok := dp.Attributes().Get("postgresql.state")
 		require.True(t, ok)
@@ -447,7 +447,7 @@ func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
 				for i := 0; i < dataPoints.Len(); i++ {
 					dp := dataPoints.At(i)
 					key := backendKey{
-						backendType:   attributeValue(dp, "postgresql.backend_type"),
+						backendType:   attributeValue(dp, "postgresql.backend.type"),
 						state:         attributeValue(dp, "postgresql.state"),
 						waitEventType: attributeValue(dp, "postgresql.wait_event_type"),
 					}
