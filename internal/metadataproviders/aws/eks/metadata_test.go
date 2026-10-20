@@ -910,6 +910,83 @@ func TestGetInstanceMetadataWithAmbiguousClusterTags(t *testing.T) {
 	assert.Equal(t, "123456789012", meta.AccountID)
 }
 
+// TestGetInstanceMetadataDoesNotReuseAnEarlierResponse covers the provider
+// being reused across detection runs. Detect is retried on failure and re-run
+// on every refresh_interval tick against the same provider, so a later
+// ec2:DescribeInstances response that succeeds while describing no instance
+// must not be reported with the values the previous response carried.
+func TestGetInstanceMetadataDoesNotReuseAnEarlierResponse(t *testing.T) {
+	describedInstance := &ec2.DescribeInstancesOutput{
+		Reservations: []types.Reservation{
+			{
+				OwnerId: aws.String("123456789012"),
+				Instances: []types.Instance{
+					{
+						InstanceId:     aws.String("i-1234567890abcdef0"),
+						ImageId:        aws.String("ami-12345678"),
+						InstanceType:   types.InstanceType("t2.micro"),
+						PrivateDnsName: aws.String("ip-192-168-1-1.us-west-2.compute.internal"),
+						Tags: []types.Tag{
+							{Key: aws.String(clusterNameAwsEksTag), Value: aws.String("my-cluster")},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Every response an EC2 call can succeed with while describing no
+	// instance. Each one has to clear what the first response established
+	// rather than leaving it to be reported again.
+	emptyResponses := []struct {
+		name   string
+		output *ec2.DescribeInstancesOutput
+	}{
+		{name: "no reservations", output: &ec2.DescribeInstancesOutput{}},
+		{
+			name:   "reservation with no instances",
+			output: &ec2.DescribeInstancesOutput{Reservations: []types.Reservation{{OwnerId: aws.String("123456789012")}}},
+		},
+	}
+
+	for _, empty := range emptyResponses {
+		t.Run(empty.name, func(t *testing.T) {
+			response := describedInstance
+			provider := &metadataClient{
+				instanceMetadata: InstanceMetadata{Region: "us-west-2", InstanceID: "i-1234567890abcdef0"},
+				clientset:        fake.NewClientset(),
+				ec2Client: &mockEC2Client{
+					DescribeInstancesFunc: func(_ context.Context, _ *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
+						return response, nil
+					},
+				},
+			}
+
+			first, err := provider.GetInstanceMetadata(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, "123456789012", first.AccountID)
+			require.Equal(t, "ami-12345678", first.ImageID)
+			require.Equal(t, "t2.micro", first.InstanceType)
+			require.Equal(t, "ip-192-168-1-1.us-west-2.compute.internal", first.Hostname)
+			require.Equal(t, "my-cluster", first.ClusterName)
+
+			response = empty.output
+			second, err := provider.GetInstanceMetadata(t.Context())
+
+			require.NoError(t, err)
+			assert.Empty(t, second.AccountID)
+			assert.Empty(t, second.ImageID)
+			assert.Empty(t, second.InstanceType)
+			assert.Empty(t, second.Hostname)
+			assert.Empty(t, second.ClusterName)
+			// The region and instance ID are the inputs to the call rather
+			// than values read out of the response, so they are kept.
+			assert.Equal(t, "us-west-2", second.Region)
+			assert.Equal(t, "i-1234567890abcdef0", second.InstanceID)
+		})
+	}
+}
+
 // TestClusterARNFromRealSDKClient drives a real EKS client against a local
 // endpoint, so the ARN and the issuer it is checked against are read out of an
 // actual DescribeCluster response rather than values handed back by a stub.

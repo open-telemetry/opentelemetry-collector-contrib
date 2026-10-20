@@ -763,6 +763,18 @@ func TestClusterARNFailureFollowsFailOnMissingMetadata(t *testing.T) {
 			expectedOutput:  map[string]any{"k8s.cluster.name": "my-cluster"},
 		},
 		{
+			// ResourceNotFoundException reads like the name naming nothing,
+			// but the request was made with this node's role in this node's
+			// account, so it is equally the answer for a cluster that exists
+			// and that this role or account cannot see. The name is not
+			// disproven, so it is kept.
+			name:            "named cluster could not be described",
+			clusterName:     "my-cluster",
+			clusterARNErr:   errors.New("the eks:DescribeCluster request failed: ResourceNotFoundException"),
+			expectedLookups: []string{"my-cluster"},
+			expectedOutput:  map[string]any{"k8s.cluster.name": "my-cluster"},
+		},
+		{
 			// The check proved the name belongs to another cluster, so the
 			// name is dropped along with the ARN. Keeping it would attribute
 			// this node's telemetry to that cluster.
@@ -773,10 +785,13 @@ func TestClusterARNFailureFollowsFailOnMissingMetadata(t *testing.T) {
 			expectedOutput:  map[string]any{},
 		},
 		{
+			// No cluster of this name can exist, so the tag it came from is
+			// not describing this node's cluster. The name is dropped along
+			// with the ARN, and no request is spent on it.
 			name:            "cluster name cannot name a cluster",
 			clusterName:     "team/cluster",
 			expectedLookups: nil,
-			expectedOutput:  map[string]any{"k8s.cluster.name": "team/cluster"},
+			expectedOutput:  map[string]any{},
 		},
 		{
 			name:            "no single cluster name on the node",
@@ -934,6 +949,54 @@ func TestClusterNameOmittedWithARNDisabled(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, map[string]any{}, resource.Attributes().AsRaw())
+			assert.Nil(t, apiProvider.clusterARNLookups)
+		})
+	}
+}
+
+// TestInvalidClusterNameStillReportedWithARNDisabled pins the default
+// configuration against the suppression that ARN confirmation adds. With the
+// ARN left disabled nothing is checked and so nothing is disproven, and a name
+// that EKS could not have issued is reported exactly as it was before. The
+// detector has never validated the tag value for k8s.cluster.name, and
+// enabling an unrelated attribute is the only thing that may change that.
+func TestInvalidClusterNameStillReportedWithARNDisabled(t *testing.T) {
+	ra := metadata.ResourceAttributesConfig{
+		K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
+	}
+	for _, failOnMissing := range []bool{false, true} {
+		t.Run(fmt.Sprintf("fail_on_missing_metadata=%t", failOnMissing), func(t *testing.T) {
+			apiProvider := &mockAPIProvider{
+				nodeName: "node-1",
+				k8sMeta: apiprovider.InstanceMetadata{
+					Region:     "us-west-2",
+					InstanceID: "i-123",
+				},
+				apiMeta: apiprovider.InstanceMetadata{
+					Region:      "us-west-2",
+					InstanceID:  "i-123",
+					ClusterName: "team/cluster",
+				},
+			}
+			d := &detector{
+				logger: zaptest.NewLogger(t),
+				imdsProvider: &mockIMDSProvider{
+					meta: imds.InstanceIdentityDocument{
+						InstanceID: "i-123",
+						Region:     "us-west-2",
+						AccountID:  "123456789012",
+					},
+				},
+				apiProvider:           apiProvider,
+				rb:                    metadata.NewResourceBuilder(ra),
+				ra:                    ra,
+				failOnMissingMetadata: failOnMissing,
+			}
+
+			resource, _, err := d.detectFromIMDS(t.Context())
+
+			require.NoError(t, err)
+			assert.Equal(t, map[string]any{"k8s.cluster.name": "team/cluster"}, resource.Attributes().AsRaw())
 			assert.Nil(t, apiProvider.clusterARNLookups)
 		})
 	}

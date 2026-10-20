@@ -26,14 +26,25 @@ subtext: |
 
   A detection run that reaches ARN confirmation reads the Kubernetes OIDC
   configuration and calls `eks:DescribeCluster`. Finding the name first calls
-  `ec2:DescribeInstances`. The role needs permission for both AWS actions. Detection
-  runs once per collector start, and again on every `refresh_interval` tick when that
-  option is set. A run with no single valid cluster name stops before the OIDC and
-  `eks:DescribeCluster` requests.
+  `ec2:DescribeInstances`. The role needs permission for both AWS actions. Reading the
+  OIDC configuration is a `get` on the non-resource URL
+  `/.well-known/openid-configuration`, which the collector's Kubernetes service
+  account needs: the `system:service-account-issuer-discovery` ClusterRole grants it,
+  and whether that role is already bound to the service account depends on the
+  cluster. Detection runs once per collector start, and again on every
+  `refresh_interval` tick when that option is set. A run with no single valid cluster
+  name stops before the OIDC and `eks:DescribeCluster` requests.
 
   No ARN is reported when the tags name no single cluster, when the cluster cannot be
   described, or when the issuers do not match. Whether that fails detection follows
   `fail_on_missing_metadata`, the same as the detector's other attributes.
+
+  While this attribute is enabled, two of those outcomes also leave `k8s.cluster.name`
+  off, because each one establishes that the tag the name came from does not describe
+  this node's cluster: the two issuers disagreeing, and a name EKS could not have
+  issued. A cluster that cannot be described keeps the name, since that answer also
+  covers a cluster this role or account cannot see. With the attribute disabled, as the
+  default config leaves it, nothing is checked and `k8s.cluster.name` is unchanged.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
