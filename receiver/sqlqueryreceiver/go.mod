@@ -10,6 +10,8 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/moby/moby/api v1.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.163.0
@@ -22,7 +24,7 @@ require (
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261015205720-932ee30af2c0
-	go.opentelemetry.io/collector/config/configopaque v1.69.1-0.20261015205720-932ee30af2c0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/confmap v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/consumer v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/consumer/consumertest v0.163.1-0.20261015205720-932ee30af2c0
@@ -219,3 +221,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlqu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest => ../../pkg/semconvtest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth => ../../extension/dbauth
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth => ../../config/configdbauth

@@ -68,6 +68,14 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
     - `telemetry.logs.query` (optional, default `false`) If set to `true`, every time a SQL query is run, the text of the query and the values of its parameters will be logged together with the debug log `"Running query"`.
 - `max_open_conn` (optional, default `0`): The maximumn number of open connections to the sql server. <= 0 means unlimited
 
+For PostgreSQL, `db_auth` (optional) references a Collector extension implementing
+`dbauth.Provider`. The provider is resolved from the `extensions` map at receiver
+start and is called for every new physical PostgreSQL connection, so expiring
+credentials can be refreshed. It is only supported with the `postgres` driver
+and individual connection parameters; it cannot be combined with `datasource`
+or `password`. Keep `username` set to the PostgreSQL role mapped to the Entra
+identity.
+
 [storage_extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
 
 ### Queries
@@ -153,6 +161,47 @@ receivers:
         metrics:
           - metric_name: movie.genres
             value_column: "count"
+```
+
+### Azure Database for PostgreSQL with managed identity
+
+`azure_auth` can provide the short-lived Entra access token through `db_auth`.
+Configure the PostgreSQL resource scope explicitly; Azure Database for
+PostgreSQL uses `https://ossrdbms-aad.database.windows.net/.default` rather than
+the Azure SQL Database scope. The identity must be configured as a PostgreSQL
+Entra user and granted the required database permissions.
+
+```yaml
+extensions:
+  azure_auth:
+    managed_identity:
+    scopes:
+      - https://ossrdbms-aad.database.windows.net/.default
+
+receivers:
+  sql_query:
+    driver: postgres
+    host: myserver.postgres.database.azure.com
+    port: 5432
+    database: mydatabase
+    username: collector@myserver
+    db_auth: azure_auth
+    additional_params:
+      sslmode: require
+    queries:
+      - sql: "SELECT COUNT(*) AS count FROM public.my_table"
+        metrics:
+          - metric_name: my_table.rows
+            value_column: count
+            value_type: int
+            data_type: gauge
+
+service:
+  extensions: [azure_auth]
+  pipelines:
+    metrics:
+      receivers: [sql_query]
+      exporters: [debug]
 ```
 
 ### Azure SQL with managed identity
