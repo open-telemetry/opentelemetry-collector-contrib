@@ -9,8 +9,9 @@ description: |
 status:
   class: processor
   stability:
-    development: [logs, metrics, traces, profiles]
-  distributions: []
+    alpha: [logs, metrics, traces]
+    development: [profiles]
+  distributions: [contrib]
   codeowners:
     active: [paulojmdias, dmitryax]
     emeritus: [axw]
