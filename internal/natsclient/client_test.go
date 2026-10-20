@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package natsexporter
+package natsclient
 
 import (
 	"os"
@@ -9,10 +9,12 @@ import (
 	"testing"
 
 	"github.com/nats-io/jwt/v2"
+	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // newUserNKey returns a fresh user key pair and its public key / seed.
@@ -159,4 +161,34 @@ func TestSetAuthOption(t *testing.T) {
 		assert.Empty(t, options.User)
 		assert.Nil(t, options.SignatureCB)
 	})
+}
+
+func TestConnect(t *testing.T) {
+	t.Parallel()
+
+	opts := natstest.DefaultTestOptions
+	opts.Port = -1 // random free port
+	srv := natstest.RunServer(&opts)
+	defer srv.Shutdown()
+
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = srv.ClientURL()
+	cfg.Pedantic = true
+
+	conn, err := Connect(t.Context(), &cfg, "otelcol-test", zap.NewNop())
+	require.NoError(t, err)
+	defer conn.Close()
+	assert.True(t, conn.IsConnected())
+	assert.Equal(t, "otelcol-test", conn.Opts.Name)
+	assert.True(t, conn.Opts.Pedantic)
+}
+
+func TestConnectInvalidAuth(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewDefaultClientConfig()
+	cfg.Auth.Nkey = &NkeyConfig{PublicKey: "U", Seed: []byte("bad")}
+
+	_, err := Connect(t.Context(), &cfg, "otelcol-test", zap.NewNop())
+	assert.Error(t, err)
 }
