@@ -104,6 +104,20 @@ func (c *Config) Validate() error {
 		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
 			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
 		}
+		if c.PartitionProcessing.MaxInFlight.Bytes < 0 {
+			return errors.New("partition_processing.max_in_flight.bytes must not be negative")
+		}
+		switch c.PartitionProcessing.MaxInFlight.Window {
+		case InFlightWindowPerFetch:
+		case InFlightWindowCrossFetch:
+			// cross_fetch frees a records slot when Consume returns, so without a
+			// byte cap finished records behind a slow one pile up across fetches.
+			if c.PartitionProcessing.MaxInFlight.Records <= 1 || c.PartitionProcessing.MaxInFlight.Bytes <= 0 {
+				return errors.New("partition_processing.max_in_flight.window cross_fetch requires records above 1 and bytes above 0")
+			}
+		default:
+			return fmt.Errorf("partition_processing.max_in_flight.window must be %q or %q", InFlightWindowPerFetch, InFlightWindowCrossFetch)
+		}
 		if !c.ConsumerConfig.AutoCommit.Enable {
 			return errors.New("partition_processing.independent requires autocommit.enable")
 		}
@@ -214,12 +228,30 @@ type MaxInFlightConfig struct {
 	// Records is how many calls may run at once. Default 1.
 	Records int `mapstructure:"records"`
 
-	// TODO: add Bytes to cap the fetched payload size of in-flight records.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51804
-	// Bytes int `mapstructure:"bytes"`
+	// Bytes caps the bytes of the records in flight, from the start of their call
+	// until the mark passes them. A record counts its key, value, and headers
+	// after decompression, plus a fixed overhead of about 250 bytes per record
+	// and 40 per header, so empty records count too. 0 means no cap. A record above the cap still runs,
+	// alone. It has no effect when Records is 1.
+	Bytes int `mapstructure:"bytes"`
+
+	// Window is per_fetch (default) or cross_fetch. per_fetch waits for every
+	// call of a fetched batch before it starts the next batch. cross_fetch keeps
+	// starting records from later batches while both limits have room. Use it
+	// when the next consumer holds Consume open until it has a full batch, such
+	// as an exporter with wait_for_result and batch.min_size, so it sees more
+	// than one fetch at a time. More records sit unmarked behind a slow one, so
+	// more can replay after a crash or rebalance. cross_fetch requires Records
+	// above 1 and Bytes above 0.
+	Window string `mapstructure:"window"`
 
 	_ struct{} // avoids unkeyed_literal_initialization.
 }
+
+const (
+	InFlightWindowPerFetch   = "per_fetch"
+	InFlightWindowCrossFetch = "cross_fetch"
+)
 
 type HeaderExtraction struct {
 	ExtractHeaders bool     `mapstructure:"extract_headers"`

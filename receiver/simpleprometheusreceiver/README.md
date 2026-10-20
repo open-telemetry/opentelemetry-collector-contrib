@@ -22,22 +22,37 @@ receiver](../prometheusreceiver).
 
 ## Configuration
 
-The following settings are required:
+The following settings are available:
 
-- `endpoint` (default = `localhost:9090`): The endpoint from which prometheus
-metrics should be scraped.
-
-The following settings are optional:
-
-- `collection_interval` (default = `10s`): The internal at which metrics should
-be emitted by this receiver.
+- `endpoint` (default = `localhost:9090`): The `host:port` of the target to
+scrape. Do not include a scheme or a path: the scheme is selected from the `tls`
+settings (see below) and the path is set with `metrics_path`. An endpoint such
+as `http://host:9090` passes configuration validation but the target is
+dropped by the prometheus scrape manager as an invalid address.
+- `collection_interval` (default = `10s`): The interval at which the target is
+scraped.
+- `timeout` (default = `0`): The scrape timeout. It is capped at
+`collection_interval`; a larger value logs a warning and `collection_interval`
+is used. When unset, the scrape timeout is `collection_interval`.
 - `job_name` (default = `prometheus_simple/${endpoint}`): Prometheus scrape job name.
 - `labels` (default = `{}`): Static prometheus labels to assign to all metrics scraped from this endpoint.
 - `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
 - `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
 - `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.
-- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings) for the full set of available options.
+- `tls`: TLS settings for the scrape. Only the following
+[TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings)
+are used: `insecure`, `ca_file`, `cert_file`, `key_file` and
+`insecure_skip_verify`. Other `tls` options are accepted but currently have no
+effect.
+  - `insecure` (default = `true`): Unlike other HTTP clients in the Collector,
+  this receiver defaults to plain `http`. The target is scraped over `https`
+  when `insecure` is `false` or a `ca_file` is set; otherwise it is scraped over
+  `http` and the other `tls` settings, including `cert_file` and `key_file`,
+  are not used.
+
+Other HTTP client settings that the configuration accepts, such as `headers`,
+`auth`, `proxy_url` and `compression`, are not applied to the scrape.
 
 Example:
 
@@ -51,7 +66,6 @@ Example:
           ca_file: "/path/to/ca"
           cert_file: "/path/to/cert"
           key_file: "/path/to/key"
-          insecure_skip_verify: true
     exporters:
       signalfx:
         access_token: <SIGNALFX_ACCESS_TOKEN>

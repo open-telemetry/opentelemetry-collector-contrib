@@ -626,9 +626,20 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
 }
 
+// bsonObjectTooLargeCode is the MongoDB error code for a reply bigger than 16 MB.
+const bsonObjectTooLargeCode = 10334
+
 func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !s.config.MetricsBuilderConfig.Metrics.MongodbOperationTime.Enabled {
+		return
+	}
 	topStats, err := s.client.TopStats(ctx)
 	if err != nil {
+		var srvErr mongo.ServerError
+		if errors.As(err, &srvErr) && srvErr.HasErrorCode(bsonObjectTooLargeCode) {
+			s.logger.Warn("top response is larger than 16MB so mongodb.operation.time cannot be collected, disable the mongodb.operation.time metric to stop this warning", zap.Error(err))
+			return
+		}
 		errs.AddPartial(1, fmt.Errorf("failed to fetch top stats metrics: %w", err))
 		return
 	}
@@ -900,6 +911,10 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordLatencyTime(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOperationLatencyCount.Enabled {
+		s.recordLatencyCount(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled {
 		s.recordUptime(now, document, errs)
 	}
@@ -954,6 +969,10 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled {
 		s.recordQueryExecutorCollectionScans(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanNonTailableCount.Enabled {
+		s.recordQueryExecutorNonTailableCollectionScans(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {
