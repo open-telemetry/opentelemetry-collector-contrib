@@ -31,9 +31,6 @@ import (
 
 var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
 
-// azureSQLScope is the OAuth 2.0 resource scope used to obtain tokens for Azure SQL Database.
-const azureSQLScope = "https://database.windows.net/.default"
-
 // newCache creates a new cache with the given size.
 // If the size is less or equal to 0, it will be set to 1.
 // It will never return an error.
