@@ -52,7 +52,6 @@ exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
-exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
 exporter/natsexporter exporter/nats
 exporter/opensearchexporter exporter/opensearch
@@ -337,7 +336,6 @@ receiver/rabbitmqreceiver receiver/rabbitmq
 receiver/receivercreator receiver/receivercreator
 receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
-receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
 receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
@@ -374,3 +372,5 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/logicmonitorexporter exporter/logicmonitor
+receiver/riakreceiver receiver/riak
