@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -1782,8 +1783,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 func TestProfileData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 
-	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	config.MaxContentLengthLogs, config.DisableCompression = 350, true
+	// Keep the buffer large enough for the encoded profile event while avoiding request compression.
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
 
 	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
 
@@ -1809,8 +1810,12 @@ func TestProfileData(t *testing.T) {
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
-	profiles.Dictionary().StringTable().Append("foo")
+	profiles.Dictionary().StringTable().Append("")
+	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
 	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
 	s := p.Samples().AppendEmpty()
 	s.Values().Append(42)
 
@@ -1852,7 +1857,9 @@ func TestProfileDataPprofSampleLabels(t *testing.T) {
 	p := sp.Profiles().AppendEmpty()
 	p.SampleType().SetTypeStrindex(0)
 	p.SampleType().SetUnitStrindex(1)
-	p.SetPeriod(100)
+	p.PeriodType().SetTypeStrindex(0)
+	p.PeriodType().SetUnitStrindex(1)
+	p.SetPeriod(50_000_000)
 	ts := time.Date(2024, 6, 15, 12, 0, 0, 123456789, time.UTC)
 	p.SetTime(pcommon.NewTimestampFromTime(ts))
 	s := p.Samples().AppendEmpty()
@@ -1871,8 +1878,166 @@ func TestProfileDataPprofSampleLabels(t *testing.T) {
 	require.Equal(t, []int64{ts.UnixMilli()}, sample.NumLabel["source.event.time"])
 	require.Equal(t, []string{spanID.String()}, sample.Label["span_id"])
 	require.Equal(t, []string{traceID.String()}, sample.Label["trace_id"])
-	require.Equal(t, []string{"100"}, sample.Label["source.event.period"])
+	require.Equal(t, []string{"50"}, sample.Label["source.event.period"])
 	require.Equal(t, ts.UnixNano(), pprofProfile.TimeNanos)
+}
+
+func TestProfileDataTypeNormalization(t *testing.T) {
+	tests := []struct {
+		name                string
+		sampleType          string
+		sampleUnit          string
+		periodType          string
+		periodUnit          string
+		wantSupported       bool
+		wantDataType        string
+		wantPprofSampleType string
+		wantPprofUnit       string
+		wantValue           int64
+	}{
+		{
+			name:                "ebpf cpu samples",
+			sampleType:          "samples",
+			sampleUnit:          "count",
+			periodType:          "cpu",
+			periodUnit:          "nanoseconds",
+			wantSupported:       true,
+			wantDataType:        "cpu",
+			wantPprofSampleType: "samples",
+			wantPprofUnit:       "count",
+			wantValue:           3,
+		},
+		{
+			name:                "allocation bytes",
+			sampleType:          "alloc_space",
+			sampleUnit:          "bytes",
+			wantSupported:       true,
+			wantDataType:        "allocation",
+			wantPprofSampleType: "alloc_space",
+			wantPprofUnit:       "bytes",
+			wantValue:           4096,
+		},
+		{
+			name:                "allocation count",
+			sampleType:          "alloc_objects",
+			sampleUnit:          "count",
+			wantSupported:       true,
+			wantDataType:        "allocation",
+			wantPprofSampleType: "alloc_objects",
+			wantPprofUnit:       "count",
+			wantValue:           2,
+		},
+		{
+			name:       "unsupported off-cpu profile is dropped",
+			sampleType: "off_cpu",
+			sampleUnit: "nanoseconds",
+			wantValue:  100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			profiles := pprofile.NewProfiles()
+			dict := profiles.Dictionary()
+			dict.StackTable().AppendEmpty()
+			stringTable := dict.StringTable()
+			stringTable.Append("")
+			typeIndex := stringTable.Len()
+			stringTable.Append(tt.sampleType)
+			unitIndex := stringTable.Len()
+			stringTable.Append(tt.sampleUnit)
+			periodTypeIndex := stringTable.Len()
+			stringTable.Append(tt.periodType)
+			periodUnitIndex := stringTable.Len()
+			stringTable.Append(tt.periodUnit)
+
+			profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+			profile.SampleType().SetTypeStrindex(int32(typeIndex))
+			profile.SampleType().SetUnitStrindex(int32(unitIndex))
+			profile.PeriodType().SetTypeStrindex(int32(periodTypeIndex))
+			profile.PeriodType().SetUnitStrindex(int32(periodUnitIndex))
+			sample := profile.Samples().AppendEmpty()
+			sample.Values().Append(tt.wantValue)
+
+			logs, errs := buildProfilesLogs(profiles)
+			if !tt.wantSupported {
+				require.Len(t, errs, 1)
+				assert.True(t, consumererror.IsPermanent(errs[0]))
+				assert.Equal(t, 0, logs.LogRecordCount())
+				assert.Contains(t, errs[0].Error(), "unsupported profile sample type")
+				return
+			}
+			require.Empty(t, errs)
+			record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			dataType, ok := record.Attributes().Get(profilingDataTypeKey)
+			require.True(t, ok)
+			assert.Equal(t, tt.wantDataType, dataType.Str())
+
+			pprofProfile := decodePprofLogRecord(t, record)
+			require.Len(t, pprofProfile.SampleType, 1)
+			assert.Equal(t, tt.wantPprofSampleType, pprofProfile.SampleType[0].Type)
+			assert.Equal(t, tt.wantPprofUnit, pprofProfile.SampleType[0].Unit)
+			require.Len(t, pprofProfile.Sample, 1)
+			assert.Equal(t, []int64{tt.wantValue}, pprofProfile.Sample[0].Value)
+		})
+	}
+}
+
+func TestProfileDataUnsupportedProfilesAreDroppedAndCounted(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: meterProvider})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		telemetryBuilder.Shutdown()
+		require.NoError(t, meterProvider.Shutdown(t.Context()))
+	})
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+	c.telemetryBuilder = telemetryBuilder
+
+	var exportedRecords int
+	httpClient, _ := newTestClientWithBodyReader(func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) > 0 {
+				exportedRecords++
+			}
+		}
+	})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("off_cpu")
+	dict.StringTable().Append("inuse_space")
+	dict.StringTable().Append("bytes")
+
+	profileScope := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	appendProfile := func(sampleTypeIndex, unitIndex int32) {
+		profile := profileScope.Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(sampleTypeIndex)
+		profile.SampleType().SetUnitStrindex(unitIndex)
+		profile.Samples().AppendEmpty().Values().Append(1)
+	}
+	appendProfile(1, 2) // Supported on-CPU profile.
+	appendProfile(3, 2) // Unsupported off-CPU profile.
+	appendProfile(4, 5) // Unsupported retained-memory profile.
+
+	err = c.pushProfilesData(t.Context(), profiles)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.Equal(t, 1, exportedRecords, "supported profiles in the batch should still be exported")
+
+	got, err := getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{2}, got)
 }
 
 // TestProfileDataMultiValueSamples verifies the OTel profiles data model: a Sample with
@@ -1923,7 +2088,7 @@ func TestProfileDataTimestampsOnlySample(t *testing.T) {
 	dict := profiles.Dictionary()
 	dict.StackTable().AppendEmpty()
 	dict.StringTable().Append("")
-	dict.StringTable().Append("wall")
+	dict.StringTable().Append("cpu")
 	dict.StringTable().Append("nanoseconds")
 
 	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
@@ -1987,16 +2152,22 @@ func TestProfileDataMultipleResources(t *testing.T) {
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("")
 	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
 
 	rp1 := profiles.ResourceProfiles().AppendEmpty()
 	rp1.Resource().Attributes().PutStr("host.name", "host-a")
 	p1 := rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p1.SampleType().SetTypeStrindex(1)
+	p1.SampleType().SetUnitStrindex(2)
 	p1.Samples().AppendEmpty().Values().Append(1)
 
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "host-b")
 	p2 := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p2.SampleType().SetTypeStrindex(1)
+	p2.SampleType().SetUnitStrindex(2)
 	p2.Samples().AppendEmpty().Values().Append(2)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
@@ -2040,7 +2211,9 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
+	dict.StringTable().Append("")
 	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
 
 	// Add 3 empty locations (indices 0, 1, 2) so the translator can look them up.
 	dict.LocationTable().AppendEmpty()
@@ -2059,6 +2232,8 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 	stack2.LocationIndices().Append(0)
 
 	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
 
 	// Sample A: stack 1 → 3 frames
 	sA := p.Samples().AppendEmpty()
@@ -2109,12 +2284,17 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
 	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
 	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
 
 	// Resource 1: well-formed profile — should export successfully.
 	rp1 := profiles.ResourceProfiles().AppendEmpty()
 	rp1.Resource().Attributes().PutStr("host.name", "good-host")
-	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
+	goodProfile := rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	goodProfile.SampleType().SetTypeStrindex(1)
+	goodProfile.SampleType().SetUnitStrindex(2)
+	goodProfile.Samples().AppendEmpty().Values().Append(1)
 
 	// Resource 2: profile with a sample whose values and timestamps_unix_nano lengths disagree,
 	// which the spec forbids. This causes an error that is local to this profile and does not
@@ -2122,6 +2302,8 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	badProfile.SampleType().SetTypeStrindex(1)
+	badProfile.SampleType().SetUnitStrindex(2)
 	badSample := badProfile.Samples().AppendEmpty()
 	badSample.Values().Append(1)
 	badSample.Values().Append(2)                        // 2 values

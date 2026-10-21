@@ -6,9 +6,10 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -22,11 +23,12 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                             metric.Meter
-	mu                                sync.Mutex
-	registrations                     []metric.Registration
-	ExporterSplunkhecHeartbeatsFailed metric.Int64Counter
-	ExporterSplunkhecHeartbeatsSent   metric.Int64Counter
+	meter                                    metric.Meter
+	mu                                       sync.Mutex
+	registrations                            []metric.Registration
+	ExporterDroppedUnsupportedProfileRecords metric.Int64Counter
+	ExporterSplunkhecHeartbeatsFailed        metric.Int64Counter
+	ExporterSplunkhecHeartbeatsSent          metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -58,6 +60,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterDroppedUnsupportedProfileRecords, err = builder.meter.Int64Counter(
+		"otelcol_exporter_dropped_unsupported_profile_records",
+		metric.WithDescription("Number of eBPF profile records dropped during conversion because their measurement type is unsupported or ambiguous. [Development]"),
+		metric.WithUnit("{record}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterSplunkhecHeartbeatsFailed, err = builder.meter.Int64Counter(
 		"otelcol_exporter_splunkhec_heartbeats_failed",
 		metric.WithDescription("Number of heartbeats failed by the Splunk HEC exporter. [Development]"),

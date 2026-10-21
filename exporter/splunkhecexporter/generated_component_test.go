@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -23,8 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 )
 
 var typ = component.MustNewType("splunk_hec")

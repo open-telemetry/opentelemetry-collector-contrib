@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/goccy/go-json"
@@ -189,6 +190,15 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	}
 
 	ld, permanentErrors := buildProfilesLogs(pp)
+	var droppedUnsupported int64
+	for _, err := range permanentErrors {
+		if _, ok := errors.AsType[*unsupportedProfileError](err); ok {
+			droppedUnsupported++
+		}
+	}
+	if c.telemetryBuilder != nil {
+		c.telemetryBuilder.ExporterDroppedUnsupportedProfileRecords.Add(ctx, droppedUnsupported)
+	}
 
 	sendErr := c.pushLogDataInBatches(ctx, ld, localHeaders)
 	return multierr.Combine(append(permanentErrors, sendErr)...)
@@ -226,6 +236,25 @@ func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
 // profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord.
 // Returns a permanent error if translation or encoding fails; on error the returned record is unset.
 func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (plog.LogRecord, error) {
+	typeIdx := int(prof.SampleType().TypeStrindex())
+	stringTable := pp.Dictionary().StringTable()
+	if typeIdx < 0 || typeIdx >= stringTable.Len() {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
+	}
+
+	dataType, ok := normalizeProfilingDataType(pp.Dictionary(), prof)
+	if !ok {
+		unitIdx := int(prof.SampleType().UnitStrindex())
+		unit := ""
+		if unitIdx >= 0 && unitIdx < stringTable.Len() {
+			unit = stringTable.At(unitIdx)
+		}
+		return plog.LogRecord{}, consumererror.NewPermanent(&unsupportedProfileError{
+			sampleType: stringTable.At(typeIdx),
+			unit:       unit,
+		})
+	}
+
 	expanded := prepareProfilesForPprofConversion(pp, rp, scope, prof)
 	p, err := pprof.ConvertPprofileToPprof(&expanded)
 	if err != nil {
@@ -243,12 +272,7 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
 	lr.SetTimestamp(prof.Time())
 	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
-	typeIdx := int(prof.SampleType().TypeStrindex())
-	stringTable := pp.Dictionary().StringTable()
-	if typeIdx < 0 || typeIdx >= stringTable.Len() {
-		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
-	}
-	lr.Attributes().PutStr(profilingDataTypeKey, stringTable.At(typeIdx))
+	lr.Attributes().PutStr(profilingDataTypeKey, dataType)
 	lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
 	var totalFrameCount int64
 	for _, s := range prof.Samples().All() {
@@ -258,6 +282,83 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	// TODO find whether it is continuous or snapshot
 	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
 	return lr, nil
+}
+
+type unsupportedProfileError struct {
+	sampleType string
+	unit       string
+}
+
+func (e *unsupportedProfileError) Error() string {
+	return fmt.Sprintf("unsupported profile sample type %q with unit %q", e.sampleType, e.unit)
+}
+
+// normalizeProfilingDataType maps known eBPF profile measurements to the profile types accepted by
+// Splunk AlwaysOn Profiling. The pprof sample type, unit, and values remain unchanged.
+func normalizeProfilingDataType(dict pprofile.ProfilesDictionary, prof pprofile.Profile) (string, bool) {
+	stringTable := dict.StringTable()
+	getString := func(index int32) string {
+		if index < 0 || int(index) >= stringTable.Len() {
+			return ""
+		}
+		return strings.ToLower(strings.TrimSpace(stringTable.At(int(index))))
+	}
+
+	sampleType := getString(prof.SampleType().TypeStrindex())
+	sampleUnit := getString(prof.SampleType().UnitStrindex())
+	periodType := getString(prof.PeriodType().TypeStrindex())
+	periodUnit := getString(prof.PeriodType().UnitStrindex())
+	if (sampleType == "cpu" || sampleType == "cpu_time") && isTimeUnit(sampleUnit) {
+		return profilingDataTypeCPU, true
+	}
+	if sampleType == "samples" && sampleUnit == "count" && periodType == "cpu" && isTimeUnit(periodUnit) {
+		return profilingDataTypeCPU, true
+	}
+
+	switch sampleType {
+	case "allocation":
+		if isByteUnit(sampleUnit) || isCountUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	case "alloc_space", "alloc_bytes", "allocation_bytes", "allocation_size", "allocated_bytes":
+		if isByteUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	case "alloc_objects", "alloc_count", "allocation_count", "allocated_objects":
+		if isCountUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	default:
+	}
+	return "", false
+}
+
+func isTimeUnit(unit string) bool {
+	switch unit {
+	case "ns", "nanosecond", "nanoseconds", "us", "µs", "microsecond", "microseconds",
+		"ms", "millisecond", "milliseconds", "s", "sec", "second", "seconds":
+		return true
+	default:
+		return false
+	}
+}
+
+func isByteUnit(unit string) bool {
+	switch unit {
+	case "b", "byte", "bytes":
+		return true
+	default:
+		return false
+	}
+}
+
+func isCountUnit(unit string) bool {
+	switch unit {
+	case "count", "counts", "object", "objects":
+		return true
+	default:
+		return false
+	}
 }
 
 // prepareProfilesForPprofConversion wraps a single OTel pprofile.Profile into a pprofile.Profiles
@@ -290,6 +391,8 @@ const (
 	profilingLibraryName                     = "otel.profiling"
 	profilingLibraryVersion                  = "0.1.0"
 	profilingDataTypeKey                     = "profiling.data.type"
+	profilingDataTypeCPU                     = "cpu"
+	profilingDataTypeAllocation              = "allocation"
 	profilingDataFormatKey                   = "profiling.data.format"
 	profilingDataFormatPprofGzipBase64       = "pprof-gzip-base64"
 	profilingDataTotalFrameCountKey          = "profiling.data.total.frame.count"
