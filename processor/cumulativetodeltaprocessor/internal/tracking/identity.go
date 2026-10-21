@@ -44,6 +44,11 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteString(mi.InstrumentationLibrary.Name())
 	b.WriteByte(SEP)
 	b.WriteString(mi.InstrumentationLibrary.Version())
+	if mi.InstrumentationLibrary.Attributes().Len() > 0 {
+		b.WriteByte(SEP)
+		scopeAttrsHash := xhash.MapHash(mi.InstrumentationLibrary.Attributes())
+		b.Write(scopeAttrsHash[:])
+	}
 	b.WriteByte(SEP)
 	if mi.MetricIsMonotonic {
 		b.WriteByte('Y')
