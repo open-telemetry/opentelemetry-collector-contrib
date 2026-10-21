@@ -60,13 +60,13 @@ func remoteConfigStatusToString(status protobufs.RemoteConfigStatuses) string {
 
 func remoteConfigStatusFromString(status string) protobufs.RemoteConfigStatuses {
 	switch strings.ToLower(status) {
-	case "applied":
+	case "applied", "1":
 		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
-	case "applying":
+	case "applying", "2":
 		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
-	case "failed":
+	case "failed", "3":
 		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
-	case "unset":
+	case "unset", "0":
 		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET
 	default:
 		return protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET
