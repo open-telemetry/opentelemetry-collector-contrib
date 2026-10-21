@@ -41,6 +41,13 @@ type dbAuthTestExtension struct {
 	dbauth.Provider
 }
 
+func TestDBProviderStartReportsMissingProvider(t *testing.T) {
+	id := component.MustNewID("azure_auth")
+	provider := newDBProvider(&Config{DBAuth: configdbauth.ID(id)}, 1)
+	err := provider.start(dbAuthTestHost{extensions: map[component.ID]component.Component{}})
+	require.ErrorContains(t, err, `db_auth: requested credential provider is not present: "azure_auth"`)
+}
+
 func TestDBProviderStartResolvesProvider(t *testing.T) {
 	id := component.MustNewID("azure_auth")
 	extension := &dbAuthTestExtension{}
@@ -50,6 +57,21 @@ func TestDBProviderStartResolvesProvider(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Same(t, dbauth.Provider(extension), provider.credentialProvider)
+}
+
+func TestGetDBConnectionStringWithDBAuth(t *testing.T) {
+	cfg := &Config{
+		DBAuth:   configdbauth.ID(component.MustNewID("azure_auth")),
+		Server:   "sql.example.database.windows.net",
+		Username: "user",
+		Password: "static-secret",
+		Port:     1433,
+	}
+
+	dsn := getDBConnectionString(cfg)
+	require.Equal(t, "server=sql.example.database.windows.net;user id=user;port=1433", dsn)
+	require.NotContains(t, dsn, "password=")
+	require.NotContains(t, dsn, "static-secret")
 }
 
 func TestHasFedAuth(t *testing.T) {
