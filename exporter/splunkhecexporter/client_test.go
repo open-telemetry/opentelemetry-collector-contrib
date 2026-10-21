@@ -24,9 +24,6 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/google/pprof/profile"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -42,6 +39,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
@@ -2300,8 +2301,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	badProfile.SampleType().SetTypeStrindex(1)
-	badProfile.SampleType().SetTypeStrindex(2) // The string table contains indices 0 and 1.
+	badProfile.SampleType().SetTypeStrindex(3) // The string table contains indices 0 through 2.
 	badSample := badProfile.Samples().AppendEmpty()
 	badSample.Values().Append(1)
 
@@ -2317,7 +2317,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	// The combined error must be non-nil and permanent.
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
-	assert.ErrorContains(t, err, "sample_type.type_strindex")
+	assert.ErrorContains(t, err, "profile sample type string index 3 out of range")
 }
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
