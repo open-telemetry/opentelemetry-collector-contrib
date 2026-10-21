@@ -1,0 +1,6 @@
+change_type: enhancement
+component: pkg/kafka/configkafka
+note: Add `dial_timeout` configuration option to control the timeout for establishing connections to Kafka brokers.
+issues: [51910]
+subtext:
+change_logs: [user]
