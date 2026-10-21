@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Add table operations stats metrics (`read_query_count`, `write_count`, `delete_count`) to monitor how tables are accessed and modified."
+issues: [51336]
+subtext: ""
+change_logs: []

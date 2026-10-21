@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/cumulative_to_delta
+
+note: Include the scope attributes in the identity of a stream, so scopes that only differ in their attributes are no longer converted as one stream
+
+issues: [52162]
+
+subtext:
+
+change_logs: [user]

@@ -836,6 +836,8 @@ type tableStats struct {
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
 	// explicitly ignore the relations which have an active `AccessExclusiveLock`
 	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	// table_size is -1 when the table is dropped after its stats row is read, as the
+	// size function then returns NULL; the scraper skips the size for that row only
 	query := `SELECT
     s.schemaname AS schema,
     s.relname AS table,
@@ -846,7 +848,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
     s.n_tup_del AS del,
     s.n_tup_hot_upd AS hot_upd,
     s.seq_scan AS seq_scans,
-    pg_total_relation_size(s.relid) AS table_size,
+    coalesce(pg_total_relation_size(s.relid), -1) AS table_size,
     s.vacuum_count
 FROM pg_stat_user_tables s
 LEFT JOIN (
@@ -997,8 +999,10 @@ type indexStat struct {
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
 	// explicitly ignore indexes which have an active `AccessExclusiveLock`
 	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	// index_size is -1 when the index is dropped after its stats row is read, as the
+	// size function then returns NULL; the scraper skips the size for that row only
 	query := `SELECT schemaname, relname, indexrelname,
-	pg_relation_size(indexrelid) AS index_size,
+	coalesce(pg_relation_size(indexrelid), -1) AS index_size,
 	idx_scan
 	FROM pg_stat_user_indexes s
 	LEFT JOIN (
@@ -1038,7 +1042,8 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 			scans:    indexScans,
 		}
 	}
-	return stats, multierr.Combine(append(errs, rows.Err())...)
+	errs = append(errs, rows.Err())
+	return stats, multierr.Combine(errs...)
 }
 
 type functionStat struct {
