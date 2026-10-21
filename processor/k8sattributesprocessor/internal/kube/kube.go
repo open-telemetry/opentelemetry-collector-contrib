@@ -32,7 +32,9 @@ const (
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
+	MetadataFromJob = "job"
+	// MetadataFromCronJob is used to specify to extract metadata/labels/annotations from cronjob
+	MetadataFromCronJob    = "cronjob"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -93,12 +95,23 @@ type Client interface {
 	GetStatefulSet(string) (*StatefulSet, bool)
 	GetDaemonSet(string) (*DaemonSet, bool)
 	GetJob(string) (*Job, bool)
+	GetCronJob(string) (*CronJob, bool)
 	Start() error
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration, time.Duration) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration, time.Duration, time.Duration, KubeletConfig) (Client, error)
+
+// KubeletConfig configures direct kubelet /pods polling.
+type KubeletConfig struct {
+	Enabled            bool
+	PollInterval       time.Duration
+	RequestTimeout     time.Duration
+	Endpoint           string
+	InsecureSkipVerify bool
+	AllowInsecureHTTP  bool
+}
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -119,6 +132,7 @@ type Pod struct {
 	StatefulSetUID string
 	DaemonSetUID   string
 	JobUID         string
+	CronJobUID     string
 	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
@@ -258,9 +272,8 @@ type ExtractionRules struct {
 	ServiceVersion            bool
 	ServiceInstanceID         bool
 
-	Annotations                  []FieldExtractionRule
-	Labels                       []FieldExtractionRule
-	DeploymentNameFromReplicaSet bool
+	Annotations []FieldExtractionRule
+	Labels      []FieldExtractionRule
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -310,6 +323,7 @@ type FieldExtractionRule struct {
 	//  - statefulset
 	//  - daemonset
 	//  - job
+	//  - cronjob
 	From string
 }
 
@@ -358,6 +372,12 @@ func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[st
 
 func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromJob {
+		r.extractFromMetadata(metadata, tags, attrFunc)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromCronJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
+	if r.From == MetadataFromCronJob {
 		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }

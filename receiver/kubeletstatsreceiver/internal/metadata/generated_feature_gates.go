@@ -8,7 +8,7 @@ import (
 
 var ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.kubeletstats.cpuUsageScrapeBased",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477"),
 	featuregate.WithRegisterFromVersion("v0.156.0"),

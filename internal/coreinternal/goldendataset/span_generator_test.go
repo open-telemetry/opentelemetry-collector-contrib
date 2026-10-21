@@ -32,7 +32,7 @@ func TestGenerateParentSpan(t *testing.T) {
 	fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.True(t, span.ParentSpanID().IsEmpty())
-	assert.Equal(t, 11, span.Attributes().Len())
+	assert.Equal(t, 12, span.Attributes().Len())
 	assert.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
 }
 
@@ -135,7 +135,7 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 		absentKeys   []string
 	}{
 		{
-			name:         "default_v0_only",
+			name:         "v0_only",
 			dontEmitV0:   false,
 			emitV1:       false,
 			expectedKeys: []string{"messaging.destination"},
@@ -149,7 +149,7 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 			absentKeys:   []string{},
 		},
 		{
-			name:         "v1_only",
+			name:         "default_v1_only",
 			dontEmitV0:   true,
 			emitV1:       true,
 			expectedKeys: []string{"messaging.destination.name"},
@@ -159,12 +159,14 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.IsEnabled()
+			prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.IsEnabled()
 			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), tc.dontEmitV0))
 			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), tc.emitV1))
 
 			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), false))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), prevDontEmit))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), prevEmitV1))
 			})
 
 			random := rand.Reader

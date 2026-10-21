@@ -28,10 +28,9 @@ func TestClientConfig(t *testing.T) {
 		},
 		"full": {
 			expected: ClientConfig{
-				Brokers:                              []string{"foo:123", "bar:456"},
-				ResolveCanonicalBootstrapServersOnly: true,
-				ClientID:                             "vip",
-				ProtocolVersion:                      "3.1.2",
+				Brokers:         []string{"foo:123", "bar:456"},
+				ClientID:        "vip",
+				ProtocolVersion: "3.1.2",
 				TLS: &configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   "ca.pem",
@@ -57,18 +56,11 @@ func TestClientConfig(t *testing.T) {
 				RackID:          "rack1",
 				UseLeaderEpoch:  true,
 				ConnIdleTimeout: 5 * time.Minute,
+				DialTimeout:     30 * time.Second,
 			},
 		},
-		"sasl_aws_msk_iam_oauthbearer": {
-			expected: func() ClientConfig {
-				cfg := NewDefaultClientConfig()
-				cfg.Authentication.SASL = &SASLConfig{
-					Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
-				}
-				return cfg
-			}(),
-		},
-		"sasl_aws_msk_iam_oauthbearer_with_region": {
+
+		"sasl_aws_msk_iam_oauthbearer_valid_region": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
 				cfg.Authentication.SASL = &SASLConfig{
@@ -87,7 +79,6 @@ func TestClientConfig(t *testing.T) {
 					Mechanism: "PLAIN",
 					Username:  "abc",
 					Password:  "def",
-					Version:   1,
 				}
 				return cfg
 			}(),
@@ -106,6 +97,32 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"dial_timeout": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.DialTimeout = 30 * time.Second
+				return cfg
+			}(),
+		},
+		"metadata_retry_backoff": {
+			// Only backoff is configured, so the retry defaults must match the
+			// franz-go defaults these fields were unwired to.
+			expected: ClientConfig{
+				Brokers:  []string{"localhost:9092"},
+				ClientID: "otel-collector",
+				Metadata: MetadataConfig{
+					Full:            true,
+					RefreshInterval: 10 * time.Minute,
+					Retry: MetadataRetryConfig{
+						Max:     20,
+						Backoff: time.Second,
+					},
+				},
+				UseLeaderEpoch:  true,
+				ConnIdleTimeout: 9 * time.Minute,
+				DialTimeout:     10 * time.Second,
+			},
+		},
 
 		// Invalid configurations
 		"brokers_required": {
@@ -115,16 +132,28 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: `invalid protocol version: "none"`,
 		},
 		"sasl_invalid_mechanism": {
-			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
 		},
-		"sasl_invalid_version": {
-			expectedErr: "auth::sasl: version has to be either 0 or 1. configured value -1",
+		"sasl_aws_msk_iam_oauthbearer_missing_region": {
+			expectedErr: "auth::sasl: region is required for AWS_MSK_IAM_OAUTHBEARER mechanism",
 		},
 		"sasl_plain_username_required": {
 			expectedErr: "auth::sasl: username is required",
 		},
 		"sasl_plain_password_required": {
 			expectedErr: "auth::sasl: password is required",
+		},
+		"invalid_metadata_retry_max": {
+			expectedErr: "metadata::retry::max (-1) must be non-negative",
+		},
+		"invalid_metadata_retry_backoff": {
+			expectedErr: "metadata::retry::backoff (-1s) must be non-negative",
+		},
+		"sasl_and_kerberos": {
+			expectedErr: "auth: only one of sasl or kerberos authentication can be configured",
+		},
+		"invalid_dial_timeout": {
+			expectedErr: "dial_timeout (-1s) must be positive",
 		},
 	})
 }
@@ -139,19 +168,19 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"full": {
 			expected: ConsumerConfig{
-				SessionTimeout:         5 * time.Second,
-				HeartbeatInterval:      2 * time.Second,
-				GroupID:                "throng",
-				GroupRebalanceStrategy: "cooperative-sticky",
-				InitialOffset:          "earliest",
+				SessionTimeout:    5 * time.Second,
+				HeartbeatInterval: 2 * time.Second,
+				GroupID:           "throng",
+				InitialOffset:     "earliest",
 				AutoCommit: AutoCommitConfig{
 					Enable:   false,
 					Interval: 10 * time.Minute,
 				},
-				MinFetchSize:          10,
-				MaxFetchSize:          4096,
-				MaxFetchWait:          1 * time.Second,
-				MaxPartitionFetchSize: 4096,
+				MinFetchSize:            10,
+				MaxFetchSize:            4096,
+				MaxFetchWait:            1 * time.Second,
+				MaxPartitionFetchSize:   4096,
+				MaxDecompressBatchBytes: 536870912, // 512 MiB
 			},
 		},
 		"group_rebalance_strategies": {
@@ -174,11 +203,26 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
-				MinFetchSize:          0,
-				MaxFetchSize:          1048576,
-				MaxFetchWait:          250 * time.Millisecond,
-				MaxPartitionFetchSize: 1048576,
+				MinFetchSize:            0,
+				MaxFetchSize:            1048576,
+				MaxFetchWait:            250 * time.Millisecond,
+				MaxPartitionFetchSize:   1048576,
+				MaxDecompressBatchBytes: 1073741824, // 1 GiB default
 			},
+		},
+		"min_valid_max_decompress_batch_bytes": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.MaxDecompressBatchBytes = 1
+				return cfg
+			}(),
+		},
+		"max_valid_max_decompress_batch_bytes": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.MaxDecompressBatchBytes = math.MaxInt32
+				return cfg
+			}(),
 		},
 
 		// Invalid configurations
@@ -191,8 +235,11 @@ func TestConsumerConfig(t *testing.T) {
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",
 		},
-		"conflicting_group_rebalance_strategies": {
-			expectedErr: "group_rebalance_strategy and group_rebalance_strategies are mutually exclusive; group_rebalance_strategy is deprecated, prefer group_rebalance_strategies",
+		"negative_max_decompress_batch_bytes": {
+			expectedErr: "max_decompress_batch_bytes (-100) must be between 1 and 2147483647",
+		},
+		"zero_max_decompress_batch_bytes": {
+			expectedErr: "max_decompress_batch_bytes (0) must be between 1 and 2147483647",
 		},
 		"empty_group_rebalance_strategies_entry": {
 			expectedErr: "group_rebalance_strategies entries cannot be empty",
@@ -336,6 +383,27 @@ func TestProducerConfigInt32Overflow(t *testing.T) {
 		cfg.MaxBrokerWriteBytes = overflow
 		require.EqualError(t, cfg.Validate(),
 			fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
+	})
+}
+
+// TestConsumerConfigInt32Overflow verifies that max_decompress_batch_bytes
+// exceeding the int32 range used by franz-go is rejected. Values above
+// math.MaxInt32 are only representable on platforms where int is 64-bit,
+// so this is skipped elsewhere.
+func TestConsumerConfigInt32Overflow(t *testing.T) {
+	if strconv.IntSize < 64 {
+		t.Skip("int is not wide enough to exceed math.MaxInt32 on this architecture")
+	}
+	// Use a runtime int64 value so the conversion to int is not a compile-time
+	// constant (which would overflow int and fail to build on 32-bit platforms).
+	maxInt32 := int64(math.MaxInt32)
+	overflow := int(maxInt32 + 1)
+
+	t.Run("max_decompress_batch_bytes", func(t *testing.T) {
+		cfg := NewDefaultConsumerConfig()
+		cfg.MaxDecompressBatchBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_decompress_batch_bytes (%d) must be between 1 and %d", overflow, math.MaxInt32))
 	})
 }
 

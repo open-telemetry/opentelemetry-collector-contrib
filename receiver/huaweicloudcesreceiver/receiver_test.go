@@ -41,10 +41,10 @@ func TestListMetricDefinitionsSuccess(t *testing.T) {
 			{
 				Namespace:  "SYS.ECS",
 				MetricName: "cpu_util",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "instance_id",
-						Value: "12345",
+						Name:  new("instance_id"),
+						Value: new("12345"),
 					},
 				},
 			},
@@ -64,8 +64,8 @@ func TestListMetricDefinitionsSuccess(t *testing.T) {
 	assert.NotNil(t, metrics)
 	assert.Equal(t, "SYS.ECS", metrics[0].Namespace)
 	assert.Equal(t, "cpu_util", metrics[0].MetricName)
-	assert.Equal(t, "instance_id", metrics[0].Dimensions[0].Name)
-	assert.Equal(t, "12345", metrics[0].Dimensions[0].Value)
+	assert.Equal(t, "instance_id", *metrics[0].Dimensions[0].Name)
+	assert.Equal(t, "12345", *metrics[0].Dimensions[0].Value)
 	mockCes.AssertExpectations(t)
 }
 
@@ -110,10 +110,10 @@ func TestListDataPointsForMetricBackOffWIthDefaultConfig(t *testing.T) {
 	resp, err := receiver.listDataPointsForMetric(t.Context(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
 		Namespace:  "SYS.ECS",
 		MetricName: "cpu_util",
-		Dimensions: []model.MetricsDimension{
+		Dimensions: []model.MetricsDimensionResp{
 			{
-				Name:  "instance_id",
-				Value: "12345",
+				Name:  new("instance_id"),
+				Value: new("12345"),
 			},
 		},
 	})
@@ -140,10 +140,10 @@ func TestListDataPointsForMetricBackOffFails(t *testing.T) {
 	resp, err := receiver.listDataPointsForMetric(t.Context(), time.Now().Add(10*time.Minute), time.Now(), model.MetricInfoList{
 		Namespace:  "SYS.ECS",
 		MetricName: "cpu_util",
-		Dimensions: []model.MetricsDimension{
+		Dimensions: []model.MetricsDimensionResp{
 			{
-				Name:  "instance_id",
-				Value: "12345",
+				Name:  new("instance_id"),
+				Value: new("12345"),
 			},
 		},
 	})
@@ -169,10 +169,10 @@ func TestPollMetricsAndConsumeSuccess(t *testing.T) {
 			{
 				Namespace:  "SYS.ECS",
 				MetricName: "cpu_util",
-				Dimensions: []model.MetricsDimension{
+				Dimensions: []model.MetricsDimensionResp{
 					{
-						Name:  "instance_id",
-						Value: "12345",
+						Name:  new("instance_id"),
+						Value: new("12345"),
 					},
 				},
 			},
@@ -215,10 +215,10 @@ func TestStartReadingMetrics(t *testing.T) {
 						{
 							Namespace:  "SYS.ECS",
 							MetricName: "cpu_util",
-							Dimensions: []model.MetricsDimension{
+							Dimensions: []model.MetricsDimensionResp{
 								{
-									Name:  "instance_id",
-									Value: "12345",
+									Name:  new("instance_id"),
+									Value: new("12345"),
 								},
 							},
 						},

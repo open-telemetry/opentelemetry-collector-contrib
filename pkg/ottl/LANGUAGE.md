@@ -66,7 +66,7 @@ Example Converters
 
 ### Function parameters
 
-The following types are supported for single-value parameters in OTTL functions:
+The following types are supported for parameters in OTTL functions:
 
 - `Setter`
 - `GetSetter`
@@ -75,6 +75,7 @@ The following types are supported for single-value parameters in OTTL functions:
 - `PMapGetSetter`
 - `PSliceGetter`
 - `PSliceGetSetter`
+- `SliceGetter` (experimental, from the `xottl` module)
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -87,14 +88,14 @@ The following types are supported for single-value parameters in OTTL functions:
 - `DurationGetter`
 - `TimeGetter`
 - `FunctionGetter`
-- `LambdaExpression`
+- `LambdaExpression` (provided by the `xottl` module)
 - `Enum`
 - `string`
 - `float64`
 - `int64`
 - `bool`
 
-For slice parameters, the following types are supported:
+Bare slice parameters (`[]T`) accept only literal lists. The following element types are supported:
 
 - `Getter`
 - `PMapGetter`
@@ -111,6 +112,11 @@ For slice parameters, the following types are supported:
 - `float64`
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by OTTL.
+
+To accept lists that are not known until runtime, use an `xottl.SliceGetter` parameter. Unlike bare slice
+parameters, it can accept either a literal list or a path or converter that evaluates to a slice.
+Stable functions only accept a path or converter for these parameters when the
+[`pkg.ottl.functions.enableDynamicSliceArguments`](README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate is enabled.
 
 To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
 parameter type. For example, an optional string parameter would be specified as `Optional[string]`.

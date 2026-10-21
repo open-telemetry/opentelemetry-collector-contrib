@@ -332,3 +332,62 @@ func TestS3ManagerUpload(t *testing.T) {
 		})
 	}
 }
+
+func TestS3ManagerUploadRequestChecksumCalculation(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name                string
+		checksumCalculation aws.RequestChecksumCalculation
+		wantChecksumAlgo    string
+	}{
+		{
+			name:                "when supported sends CRC32 checksum",
+			checksumCalculation: aws.RequestChecksumCalculationWhenSupported,
+			wantChecksumAlgo:    "CRC32",
+		},
+		{
+			name:                "when required omits checksum",
+			checksumCalculation: aws.RequestChecksumCalculationWhenRequired,
+			wantChecksumAlgo:    "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var gotChecksumAlgo string
+			s := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				gotChecksumAlgo = r.Header.Get("X-Amz-Sdk-Checksum-Algorithm")
+				_, _ = io.Copy(io.Discard, r.Body)
+				_ = r.Body.Close()
+			}))
+			t.Cleanup(s.Close)
+
+			sm := NewS3Manager(
+				zap.NewNop(),
+				"my-bucket",
+				&PartitionKeyBuilder{
+					PartitionPrefix:       "telemetry",
+					PartitionFormat:       "year=%Y",
+					FilePrefix:            "signal-data-",
+					FileFormat:            "metrics",
+					UniqueKeyFunc:         func() string { return "random" },
+					PartitionTimeLocation: time.Local,
+				},
+				s3.New(s3.Options{
+					BaseEndpoint:               aws.String(s.URL),
+					Region:                     "local",
+					RequestChecksumCalculation: tc.checksumCalculation,
+				}),
+				"STANDARD",
+			)
+
+			err := sm.Upload(t.Context(), []byte("hello world"), nil)
+			assert.NoError(t, err)
+			// If the transfer manager did not take the setting from the client,
+			// this header would still come back as CRC32 even when we asked for
+			// "when required".
+			assert.Equal(t, tc.wantChecksumAlgo, gotChecksumAlgo)
+		})
+	}
+}

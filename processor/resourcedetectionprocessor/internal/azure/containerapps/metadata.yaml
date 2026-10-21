@@ -1,5 +1,5 @@
 type: resourcedetectionprocessor/azurecontainerapps
-sem_conv_version: 1.40.0
+sem_conv_version: 1.43.0
 
 parent: resourcedetection
 

@@ -1208,6 +1208,23 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	}
 }
 
+// BenchmarkConsumeMetricsManyResources models fleets where each pod reports as
+// its own resource (e.g. kubeletstats through a per-stream routing key): many
+// distinct resources, few metrics each. The per-exporter accumulated batch then
+// contains hundreds of ResourceMetrics, which makes repeated re-hashing of the
+// accumulated data the dominant cost.
+func BenchmarkConsumeMetricsManyResources(b *testing.B) {
+	for _, routingKey := range []string{resourceRoutingStr, streamIDRoutingStr} {
+		b.Run(routingKey, func(b *testing.B) {
+			for _, rmCount := range []int{100, 500, 1000} {
+				b.Run(fmt.Sprintf("%dRM", rmCount), func(b *testing.B) {
+					benchConsumeMetrics(b, routingKey, 5, rmCount, 1, 2, 2)
+				})
+			}
+		})
+	}
+}
+
 func endpoint2Config() *Config {
 	return &Config{
 		Resolver: ResolverSettings{

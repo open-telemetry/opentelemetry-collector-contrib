@@ -61,6 +61,7 @@ var allMetricGroups = map[kubelet.MetricGroup]bool{
 }
 
 func TestScraper(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -185,6 +186,7 @@ func TestScraperWithCPUUsageScrapeBasedSecondScrape(t *testing.T) {
 }
 
 func TestScraperWithSystemContainerMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -223,6 +225,7 @@ func TestScraperWithSystemContainerMetrics(t *testing.T) {
 }
 
 func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -258,6 +261,7 @@ func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
 }
 
 func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -293,7 +297,45 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
+func TestScraperWithRlimitMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sNodePidUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodePidLimit.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+2, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_rlimit_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
 func TestScraperWithInterfacesMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 		allNetworkInterfaces: map[kubelet.MetricGroup]bool{
@@ -330,6 +372,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 }
 
 func TestScraperWithCPUNodeUtilization(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
 	client := fake.NewClientset()
@@ -488,6 +531,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 }
 
 func TestScraperWithMetadata(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	tests := []struct {
 		name           string
 		metadataLabels []kubelet.MetadataLabel
@@ -555,6 +599,7 @@ func TestScraperWithMetadata(t *testing.T) {
 }
 
 func TestScraperWithPercentMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 			kubelet.ContainerMetricGroup: true,
@@ -737,6 +782,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 }
 
 func TestScraperWithMetricGroups(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	tests := []struct {
 		name         string
 		metricGroups map[kubelet.MetricGroup]bool

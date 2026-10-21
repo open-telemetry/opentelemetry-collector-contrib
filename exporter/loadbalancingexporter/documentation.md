@@ -2,6 +2,29 @@
 
 # load_balancing
 
+## Sending Queue
+
+**Support:** This component uses the default QueueBatch configuration.
+
+```yaml
+sending_queue:
+    enabled: true              # default
+    wait_for_result: false     # default
+    sizer: requests            # default
+    queue_size: 1000           # default
+    block_on_overflow: false   # default
+    storage: null              # default
+    num_consumers: 10          # default
+    batch:
+        enabled: true          # FEATURE(pkg.exporterhelper.queueBatchEnabled)
+        flush_timeout: 200ms   # default
+        sizer: items           # default
+        min_size: 8192         # default
+        max_size: 0            # default
+        partition:
+            metadata_keys: []  # default
+```
+
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
@@ -76,3 +99,13 @@ Number of times the resolver has triggered new resolutions.
 | ---- | ----------- | ------ | ------------------- |
 | success | Whether an outcome was successful | Any Bool | - |
 | resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` | - |
+
+### otelcol_loadbalancer_randomness_tracestate_unparseable
+
+Number of traces that fell back to trace ID randomness because their tracestate carried an explicit randomness value (rv) that was lost to a parse error. Counted once per trace per batch (the first span resolved for the trace), not per span. Parse errors where a valid rv survives are not counted (routing still uses the rv), and neither are unparseable tracestates that never carried an rv (the trace would have routed by trace ID regardless).
+
+Only produced when routing_key is "randomness".
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |

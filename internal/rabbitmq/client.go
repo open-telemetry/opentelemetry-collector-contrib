@@ -41,6 +41,7 @@ type DeferredConfirmation interface {
 type connectionHolder struct {
 	url              string
 	config           amqp.Config
+	authFactory      func() amqp.Authentication
 	connection       *amqp.Connection
 	logger           *zap.Logger
 	connLock         *sync.Mutex
@@ -56,9 +57,13 @@ type deferredConfirmationHolder struct {
 }
 
 type DialConfig struct {
-	URL               string
-	Vhost             string
-	Auth              amqp.Authentication
+	URL   string
+	Vhost string
+	// Auth builds a fresh Authentication value for every dial attempt. amqp091-go
+	// zeroes out a PlainAuth/AMQPlainAuth's password in place after a successful
+	// connection, so reusing a single Authentication instance across reconnects
+	// would send an empty password on the second attempt.
+	Auth              func() amqp.Authentication
 	ConnectionTimeout time.Duration
 	Heartbeat         time.Duration
 	TLS               *tls.Config
@@ -79,13 +84,13 @@ func (c *client) DialConfig(config DialConfig) (Connection, error) {
 	ch := &connectionHolder{
 		url: config.URL,
 		config: amqp.Config{
-			SASL:            []amqp.Authentication{config.Auth},
 			Vhost:           config.Vhost,
 			TLSClientConfig: config.TLS,
 			Heartbeat:       config.Heartbeat,
 			Dial:            amqp.DefaultDial(config.ConnectionTimeout),
 			Properties:      properties,
 		},
+		authFactory:      config.Auth,
 		logger:           c.logger,
 		connLock:         &sync.Mutex{},
 		connectionErrors: make(chan *amqp.Error, 1),
@@ -131,6 +136,11 @@ func (c *connectionHolder) ReconnectIfUnhealthy() error {
 func (c *connectionHolder) connect() error {
 	c.logger.Debug("Connecting to rabbitmq")
 
+	// Rebuild SASL from scratch on every dial attempt: amqp091-go zeroes out a
+	// PlainAuth/AMQPlainAuth's password in place once a connection is opened
+	// successfully, so a stale amqp.Config reused across reconnects would send
+	// an empty password.
+	c.config.SASL = []amqp.Authentication{c.authFactory()}
 	connection, err := amqp.DialConfig(c.url, c.config)
 	if connection != nil {
 		c.connection = connection

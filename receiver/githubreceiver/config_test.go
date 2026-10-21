@@ -44,10 +44,6 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultServerConfig.ReadHeaderTimeout = 0
-	defaultServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	defaultServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -78,10 +74,6 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	expectedServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	expectedServerConfig.ReadHeaderTimeout = 0
-	expectedServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	expectedServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	expectedServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",

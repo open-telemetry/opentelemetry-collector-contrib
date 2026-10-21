@@ -422,7 +422,7 @@ func newBenchmarkMetricContext(attributeCount int) *ottlmetric.TransformContext 
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
-	return ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
+	return ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
 }
 
 func buildLogStatements(count int) []string {
@@ -504,7 +504,7 @@ func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
 
 	logRecord.Body().SetStr("benchmark log record")
 
-	return ottllog.NewTransformContextPtr(resourceLogs, scopeLogs, logRecord)
+	return ottllog.NewTransformContext(resourceLogs, scopeLogs, logRecord)
 }
 
 func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
@@ -534,7 +534,7 @@ func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
+	return ottlspan.NewTransformContext(resourceSpans, scopeSpans, span)
 }
 
 func BenchmarkSliceToMap(b *testing.B) {
@@ -643,7 +643,7 @@ func newSliceContextWithPrimitiveArr(arrSize int) *ottllog.TransformContext {
 		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContextPtr(rl, sl, lr)
+	return ottllog.NewTransformContext(rl, sl, lr)
 }
 
 func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
@@ -666,7 +666,7 @@ func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
 		nm.PutStr("k", "v_"+strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContextPtr(rl, sl, lr)
+	return ottllog.NewTransformContext(rl, sl, lr)
 }
 
 func BenchmarkStringifyAll(b *testing.B) {
@@ -702,7 +702,7 @@ func BenchmarkStringifyAll(b *testing.B) {
 			lr := sl.LogRecords().AppendEmpty()
 			lr.Body().SetStr("benchmark")
 			scenario.template.CopyTo(lr.Attributes())
-			tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
+			tCtx := ottllog.NewTransformContext(rl, sl, lr)
 
 			b.ReportAllocs()
 			b.ResetTimer()

@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/multierr"
@@ -37,9 +36,9 @@ type HealthCheckExtension struct {
 }
 
 var (
-	_ component.Component                   = (*HealthCheckExtension)(nil)
-	_ extensioncapabilities.ConfigWatcher   = (*HealthCheckExtension)(nil)
-	_ extensioncapabilities.PipelineWatcher = (*HealthCheckExtension)(nil)
+	_ component.Component                         = (*HealthCheckExtension)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher = (*HealthCheckExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher       = (*HealthCheckExtension)(nil)
 )
 
 func NewHealthCheckExtension(
@@ -147,12 +146,12 @@ func (hc *HealthCheckExtension) ComponentStatusChanged(
 	hc.eventCh <- &eventSourcePair{source: source, event: event}
 }
 
-// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
-func (hc *HealthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
+// NotifyConfigSnapshot implements the extensioncapabilities.ConfigSnapshotWatcher interface.
+func (hc *HealthCheckExtension) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
 	var err error
 	for _, comp := range hc.subcomponents {
-		if cw, ok := comp.(extensioncapabilities.ConfigWatcher); ok {
-			err = multierr.Append(err, cw.NotifyConfig(ctx, conf))
+		if cw, ok := comp.(extensioncapabilities.ConfigSnapshotWatcher); ok {
+			err = multierr.Append(err, cw.NotifyConfigSnapshot(ctx, configSnapshot))
 		}
 	}
 	return err

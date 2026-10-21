@@ -20,6 +20,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -47,6 +48,7 @@ type WatchClient struct {
 	statefulsetInformer    cache.SharedInformer
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
+	cronJobInformer        cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
@@ -55,6 +57,11 @@ type WatchClient struct {
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
 	podDeleteGracePeriod   time.Duration
+	kubelet                KubeletConfig
+	kubeletPods            map[string]*api_v1.Pod
+	kubeletPodLister       podLister
+	podLabelSelector       labels.Selector
+	podFieldSelector       fields.Selector
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -87,6 +94,10 @@ type WatchClient struct {
 	// A map containing job related data, used to associate them with resources.
 	// Key is job uid
 	Jobs map[string]*Job
+
+	// A map containing CronJob related data, used to associate them with resources.
+	// Key is cronjob uid
+	CronJobs map[string]*CronJob
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -137,6 +148,7 @@ func New(
 	waitForMetadataTimeout time.Duration,
 	watchSyncPeriod time.Duration,
 	podDeleteGracePeriod time.Duration,
+	kubelet KubeletConfig,
 ) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
@@ -156,6 +168,7 @@ func New(
 		waitForMetadataTimeout: waitForMetadataTimeout,
 		watchSyncPeriod:        watchSyncPeriod,
 		podDeleteGracePeriod:   podDeleteGracePeriod,
+		kubelet:                kubelet,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -166,27 +179,29 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
-
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClientBundle
-	}
-	bundle, err := newClientSet(apiCfg)
-	if err != nil {
-		return nil, err
-	}
-	c.kc = bundle.K8s
-	c.mc = bundle.Meta
+	c.CronJobs = map[string]*CronJob{}
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
 		return nil, err
 	}
+	c.podLabelSelector = labelSelector
+	c.podFieldSelector = fieldSelector
 	set.Logger.Info(
 		"k8s filtering",
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
-	if informersFactory.newInformer == nil {
+	if kubelet.Enabled {
+		if kubelet.Endpoint == "" && c.Filters.Node == "" {
+			return nil, errors.New("kubelet requires filter.node or kubelet.endpoint")
+		}
+		c.kubeletPods = map[string]*api_v1.Pod{}
+		c.kubeletPodLister, err = newKubeletPodLister(apiCfg, kubelet, c.Filters.Node, c.logger)
+		if err != nil {
+			return nil, err
+		}
+	} else if informersFactory.newInformer == nil {
 		informersFactory.newInformer = func(client kubernetes.Interface, ns string, ls labels.Selector, fs fields.Selector) cache.SharedInformer {
 			return newSharedInformer(client, ns, ls, fs, watchSyncPeriod)
 		}
@@ -211,32 +226,63 @@ func New(
 		}
 	}
 
-	c.informer = informersFactory.newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	err = c.informer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
+	// Enable the ReplicaSet informer when any of the following applies:
+	//   1) DeploymentUID is enabled
+	//   2) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
+	// For DeploymentName only, deployment names are always derived from the ReplicaSet name heuristic,
+	// so no informer is needed.
+	needReplicaSetInformer := c.Rules.DeploymentUID ||
+		c.extractDeploymentLabelsAnnotations() ||
+		c.extractReplicaSetLabelsAnnotations()
+	needNamespaceInformer := c.extractNamespaceLabelsAnnotations() || rules.ClusterUID
+	needNodeInformer := c.extractNodeLabelsAnnotations() || c.extractNodeUID()
+	needDeploymentInformer := c.extractDeploymentLabelsAnnotations()
+	needStatefulSetInformer := c.extractStatefulSetLabelsAnnotations()
+	needDaemonSetInformer := c.extractDaemonSetLabelsAnnotations()
+	needJobInformer := c.extractJobLabelsAnnotations() || rules.CronJobUID || c.extractCronJobLabelsAnnotations()
+	needCronJobInformer := c.extractCronJobLabelsAnnotations()
+	needAPIClient := !kubelet.Enabled ||
+		needNamespaceInformer ||
+		needReplicaSetInformer ||
+		needNodeInformer ||
+		needDeploymentInformer ||
+		needStatefulSetInformer ||
+		needDaemonSetInformer ||
+		needJobInformer ||
+		needCronJobInformer
 
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
-	)
-	if err != nil {
-		return nil, err
+	if needAPIClient {
+		if newClientSet == nil {
+			newClientSet = k8sconfig.MakeClientBundle
+		}
+		var bundle k8sconfig.ClientBundle
+		bundle, err = newClientSet(apiCfg)
+		if err != nil {
+			return nil, err
+		}
+		c.kc = bundle.K8s
+		c.mc = bundle.Meta
+	}
+
+	if !kubelet.Enabled {
+		c.informer = informersFactory.newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+		err = c.informer.SetTransform(
+			func(object any) (any, error) {
+				originalPod, success := object.(*api_v1.Pod)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryPodData(originalPod, c.Rules), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
-
-	// Enable the ReplicaSet informer when any of the following applies:
-	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
-	//   2) DeploymentUID is enabled
-	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
-	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
-	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
-		c.Rules.DeploymentUID ||
-		c.extractDeploymentLabelsAnnotations() ||
-		c.extractReplicaSetLabelsAnnotations()
 
 	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
@@ -251,24 +297,30 @@ func New(
 		}
 	}
 
-	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
+	if needNodeInformer {
 		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node, watchSyncPeriod)
 	}
 
-	if c.extractDeploymentLabelsAnnotations() {
+	if needDeploymentInformer {
 		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractStatefulSetLabelsAnnotations() {
+	if needStatefulSetInformer {
 		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractDaemonSetLabelsAnnotations() {
+	if needDaemonSetInformer {
 		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
+	// The Job informer is also required to resolve CronJob label/annotation extraction, since a
+	// Pod's CronJob UID is only available via the owning Job's owner references.
+	if needJobInformer {
 		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+	}
+
+	if needCronJobInformer {
+		c.cronJobInformer = newCronJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
 }
@@ -370,17 +422,36 @@ func (c *WatchClient) Start() error {
 		go c.jobInformer.Run(c.stopCh)
 	}
 
-	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		return err
+	if c.cronJobInformer != nil {
+		reg, err = c.cronJobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleCronJobAdd,
+			UpdateFunc: c.handleCronJobUpdate,
+			DeleteFunc: c.handleCronJobDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.cronJobInformer.Run(c.stopCh)
 	}
 
-	// start the podInformer with the prerequisite of the other informers to be finished first
-	go c.runInformerWithDependencies(c.informer, synced)
+	var podSynced cache.InformerSynced
+	if c.kubelet.Enabled {
+		podSynced = c.startKubeletPolling(synced)
+	} else {
+		reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handlePodAdd,
+			UpdateFunc: c.handlePodUpdate,
+			DeleteFunc: c.handlePodDelete,
+		})
+		if err != nil {
+			return err
+		}
+		podSynced = reg.HasSynced
+
+		// start the podInformer with the prerequisite of the other informers to be finished first
+		go c.runInformerWithDependencies(c.informer, synced)
+	}
 
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
@@ -391,11 +462,141 @@ func (c *WatchClient) Start() error {
 		// Wait for the Pod informer to be completed.
 		// The other informers will already be finished at this point, as the pod informer
 		// waits for them be finished before it can run
-		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
+		if !cache.WaitForCacheSync(timeoutCh, podSynced) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
 	return nil
+}
+
+type podLister interface {
+	listPods(context.Context) (*api_v1.PodList, error)
+}
+
+func (c *WatchClient) startKubeletPolling(synced []cache.InformerSynced) cache.InformerSynced {
+	var once sync.Once
+	ready := make(chan struct{})
+	markReady := func() { once.Do(func() { close(ready) }) }
+
+	go func() {
+		if cache.WaitForCacheSync(c.stopCh, synced...) {
+			c.pollKubeletPods(markReady)
+		}
+	}()
+
+	return func() bool {
+		select {
+		case <-ready:
+			return true
+		default:
+			return false
+		}
+	}
+}
+
+func (c *WatchClient) pollKubeletPods(markReady func()) {
+	ticker := time.NewTicker(c.kubelet.PollInterval)
+	defer ticker.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		<-c.stopCh
+		cancel()
+	}()
+
+	for {
+		if err := c.listKubeletPods(ctx); err != nil {
+			c.logger.Warn("failed to list kubelet pods", zap.Error(err))
+		} else {
+			markReady()
+		}
+
+		select {
+		case <-ticker.C:
+		case <-c.stopCh:
+			return
+		}
+	}
+}
+
+func (c *WatchClient) listKubeletPods(ctx context.Context) error {
+	podList, err := c.kubeletPodLister.listPods(ctx)
+	if err != nil {
+		return err
+	}
+	if podList == nil {
+		return errors.New("kubelet pod lister returned nil pod list")
+	}
+	c.reconcileKubeletPods(podList.Items)
+	return nil
+}
+
+func (c *WatchClient) reconcileKubeletPods(pods []api_v1.Pod) {
+	current := make(map[string]*api_v1.Pod, len(pods))
+	for i := range pods {
+		if !c.matchesPodFilters(&pods[i]) {
+			continue
+		}
+		// Static pods served by kubelet /pods come from the node's manifest files, not the API
+		// server, so they carry no metadata.creationTimestamp. Fall back to status.startTime so
+		// k8s.pod.start_time and the creation-time heuristics behave like the informer source.
+		if pods[i].CreationTimestamp.IsZero() && pods[i].Status.StartTime != nil {
+			pods[i].CreationTimestamp = *pods[i].Status.StartTime
+		}
+		pod := removeUnnecessaryPodData(&pods[i], c.Rules)
+		uid := string(pod.UID)
+		if uid == "" {
+			continue
+		}
+		current[uid] = pod
+		prev, seen := c.kubeletPods[uid]
+		switch {
+		case !seen:
+			c.handlePodAdd(pod)
+		case equality.Semantic.DeepEqual(prev, pod):
+			// Kubelet /pods returns the full list on every poll; an unchanged pod is not an update.
+		default:
+			c.handlePodUpdate(prev, pod)
+		}
+	}
+	for uid, pod := range c.kubeletPods {
+		if _, ok := current[uid]; !ok {
+			c.handlePodDelete(pod)
+		}
+	}
+	c.kubeletPods = current
+}
+
+// matchesPodFilters applies the configured filters to a pod listed from kubelet. The namespace
+// filter is checked directly (the informer scopes it via the list namespace); label and field
+// filters, including filter.node as spec.nodeName, use the selectors built once in New.
+func (c *WatchClient) matchesPodFilters(pod *api_v1.Pod) bool {
+	if c.Filters.Namespace != "" && pod.Namespace != c.Filters.Namespace {
+		return false
+	}
+	return c.podLabelSelector.Matches(labels.Set(pod.Labels)) && c.podFieldSelector.Matches(podFieldsSet(pod))
+}
+
+func podFieldsSet(pod *api_v1.Pod) fields.Set {
+	// Kubelet /pods returns plain pod objects without apiserver field-selector support,
+	// so mirror the apiserver's selectable pod fields (pkg/registry/core/pod.ToSelectableFields)
+	// to apply the same filters locally.
+	podIP := pod.Status.PodIP
+	if len(pod.Status.PodIPs) > 0 {
+		podIP = pod.Status.PodIPs[0].IP
+	}
+	return fields.Set{
+		"metadata.name":            pod.Name,
+		"metadata.namespace":       pod.Namespace,
+		podNodeField:               pod.Spec.NodeName,
+		"spec.restartPolicy":       string(pod.Spec.RestartPolicy),
+		"spec.schedulerName":       pod.Spec.SchedulerName,
+		"spec.serviceAccountName":  pod.Spec.ServiceAccountName,
+		"spec.hostNetwork":         strconv.FormatBool(pod.Spec.HostNetwork),
+		"status.phase":             string(pod.Status.Phase),
+		"status.podIP":             podIP,
+		"status.nominatedNodeName": pod.Status.NominatedNodeName,
+	}
 }
 
 // Stop signals the k8s watcher/informer to stop watching for new events.
@@ -750,6 +951,37 @@ func (c *WatchClient) handleJobDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleCronJobAdd(obj any) {
+	c.telemetryBuilder.K8sWatcherCronjobAdded.Add(context.Background(), 1)
+	if cronJob, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
+		c.addOrUpdateCronJob(cronJob)
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for CronJob", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleCronJobUpdate(_, newCronJob any) {
+	c.telemetryBuilder.K8sWatcherCronjobUpdated.Add(context.Background(), 1)
+	if cronJob, ok := newCronJob.(*meta_v1.PartialObjectMetadata); ok {
+		c.addOrUpdateCronJob(cronJob)
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for CronJob", zap.Any("received", newCronJob))
+	}
+}
+
+func (c *WatchClient) handleCronJobDelete(obj any) {
+	c.telemetryBuilder.K8sWatcherCronjobDeleted.Add(context.Background(), 1)
+	if cronJob, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
+		c.m.Lock()
+		if n, ok := c.CronJobs[string(cronJob.UID)]; ok {
+			delete(c.CronJobs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for CronJob", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -903,6 +1135,16 @@ func (c *WatchClient) GetJob(jobUID string) (*Job, bool) {
 	return nil, false
 }
 
+func (c *WatchClient) GetCronJob(cronJobUID string) (*CronJob, bool) {
+	c.m.RLock()
+	cronJob, ok := c.CronJobs[cronJobUID]
+	c.m.RUnlock()
+	if ok {
+		return cronJob, ok
+	}
+	return nil, false
+}
+
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
@@ -966,7 +1208,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					// Attempt to use the ReplicaSet informer when it is running (e.g. DeploymentUID,
-					// deployment_name_from_replicaset: false, or from: deployment label/annotation extraction).
+					// or from: deployment label/annotation extraction).
 					// Otherwise fall back to heuristics using the ReplicaSet name and pod-template-hash label.
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						deploymentName = replicaset.Deployment.Name
@@ -1453,6 +1695,20 @@ func (c *WatchClient) extractJobAttributes(d *meta_v1.PartialObjectMetadata) map
 	return tags
 }
 
+func (c *WatchClient) extractCronJobAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromCronJobMetadata(d.Labels, tags, conventions.K8SCronJobLabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromCronJobMetadata(d.Annotations, tags, conventions.K8SCronJobAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
@@ -1485,6 +1741,9 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 	if job, ok := c.GetJob(getPodJobUID(pod)); ok {
 		newPod.JobUID = job.UID
+		if job.CronJob.UID != "" {
+			newPod.CronJobUID = job.CronJob.UID
+		}
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -1921,6 +2180,22 @@ func (c *WatchClient) extractJobLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractCronJobLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromCronJob {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromCronJob {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -2017,6 +2292,20 @@ func (c *WatchClient) addOrUpdateJob(job *meta_v1.PartialObjectMetadata) {
 	c.m.Lock()
 	if job.UID != "" {
 		c.Jobs[string(job.UID)] = newJob
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateCronJob(cronJob *meta_v1.PartialObjectMetadata) {
+	newCronJob := &CronJob{
+		Name: cronJob.Name,
+		UID:  string(cronJob.UID),
+	}
+	newCronJob.Attributes = c.extractCronJobAttributes(cronJob)
+
+	c.m.Lock()
+	if cronJob.UID != "" {
+		c.CronJobs[string(cronJob.UID)] = newCronJob
 	}
 	c.m.Unlock()
 }

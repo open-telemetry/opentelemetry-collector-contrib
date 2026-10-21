@@ -13,9 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func hello() (ExprFunc[any], error) {
@@ -135,8 +132,6 @@ func returnsBoolKey() (ExprFunc[any], error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	t.Cleanup(ottltest.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
-
 	tests := []struct {
 		name        string
 		val         value
@@ -872,37 +867,6 @@ func Test_newGetter(t *testing.T) {
 				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
 			},
 		},
-		{
-			name: "lambda",
-			val: value{
-				Lambda: &lambdaExpr{
-					Params: []localIdentifierDecl{"value"},
-					Body: lambdaBody{
-						Value: &value{
-							Literal: &mathExprLiteral{
-								Path: &path{Fields: []field{{Name: "value"}}},
-							},
-						},
-					},
-				},
-			},
-			wantLiteral: true,
-			assertValue: func(t *testing.T, a any) bool {
-				expected := newLambdaExpression[any](
-					makeLocalIdentifiers("value"),
-					&localIdentifierGetter[any]{identifier: &basePath[any]{name: "value", localIdentifier: true, fetched: true, originalText: "value"}},
-					nil,
-				)
-				assert.NotNil(t, expected.activationPool)
-				expected.activationPool = nil
-				if v, ok := a.(*LambdaExpression[any]); ok {
-					assert.NotNil(t, v.activationPool)
-					v.activationPool = nil
-					return assert.Equal(t, expected, v)
-				}
-				return assert.Fail(t, "expected LambdaExpression")
-			},
-		},
 	}
 
 	functions := CreateFactoryMap(
@@ -962,6 +926,31 @@ func Test_newGetter(t *testing.T) {
 	t.Run("empty value", func(t *testing.T) {
 		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
+	})
+
+	t.Run("lambda", func(t *testing.T) {
+		lambdaValue := value{
+			Lambda: &lambdaExpr{
+				Params: []localIdentifierDecl{{Identifier: "value"}},
+				Body: lambdaBody{
+					Value: &value{
+						Literal: &mathExprLiteral{
+							Path: &path{Fields: []field{{Name: "value"}}},
+						},
+					},
+				},
+			},
+		}
+		for name, val := range map[string]value{
+			"bare":    lambdaValue,
+			"in list": {List: &list{Values: []value{lambdaValue}}},
+			"in map":  {Map: &mapValue{Values: []mapItem{{Key: new("key"), Value: &lambdaValue}}}},
+		} {
+			t.Run(name, func(t *testing.T) {
+				_, err := p.newParseContext().newGetter(val)
+				assert.EqualError(t, err, "lambda expressions can only be passed to function arguments that accept them")
+			})
+		}
 	})
 }
 
@@ -1599,13 +1588,14 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -1623,7 +1613,7 @@ func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -1855,13 +1845,14 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -1879,7 +1870,7 @@ func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2111,13 +2102,14 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -2135,10 +2127,43 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
+}
+
+func Test_StandardIntLikeGetter_UnparsableString(t *testing.T) {
+	tests := []struct {
+		name   string
+		getter IntLikeGetter[any]
+	}{
+		{
+			name: "string type",
+			getter: StandardIntLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "not an int", nil
+				},
+			},
+		},
+		{
+			name: "pcommon.value type string",
+			getter: StandardIntLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return pcommon.NewValueStr("not an int"), nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, ok, err := tt.getter.Get(t.Context(), nil)
+			require.Error(t, err)
+			assert.False(t, ok)
+			assert.Zero(t, val)
+		})
+	}
 }
 
 func Test_StandardByteSliceLikeGetter(t *testing.T) {
@@ -2311,12 +2336,14 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
+					assert.False(t, ok)
 					assert.Nil(t, val)
 				} else {
+					assert.True(t, ok)
 					assert.Equal(t, tt.want, val)
 				}
 			} else {
@@ -2335,7 +2362,7 @@ func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -2546,13 +2573,14 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, err := tt.getter.Get(t.Context(), nil)
+			val, ok, err := tt.getter.Get(t.Context(), nil)
 			if tt.valid {
 				require.NoError(t, err)
 				if tt.want == nil {
-					assert.Nil(t, val)
+					assert.False(t, ok)
 				} else {
-					assert.Equal(t, tt.want, *val)
+					assert.True(t, ok)
+					assert.Equal(t, tt.want, val)
 				}
 			} else {
 				var typeErr TypeError
@@ -2570,7 +2598,7 @@ func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 			return nil, TypeError("")
 		},
 	}
-	_, err := getter.Get(t.Context(), nil)
+	_, _, err := getter.Get(t.Context(), nil)
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
@@ -3161,9 +3189,10 @@ func Test_newStandardStringLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, "foo", *val)
+			assert.True(t, ok)
+			assert.Equal(t, "foo", val)
 		})
 	}
 }
@@ -3265,9 +3294,10 @@ func Test_newStandardIntLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, int64(1), *val)
+			assert.True(t, ok)
+			assert.Equal(t, int64(1), val)
 		})
 	}
 }
@@ -3369,9 +3399,10 @@ func Test_newStandardFloatLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.Equal(t, float64(1), *val)
+			assert.True(t, ok)
+			assert.Equal(t, float64(1), val)
 		})
 	}
 }
@@ -3473,9 +3504,10 @@ func Test_newStandardBoolLikeGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
-			assert.True(t, *val)
+			assert.True(t, ok)
+			assert.True(t, val)
 		})
 	}
 }
@@ -3630,8 +3662,9 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
 
-			val, err := g.Get(t.Context(), nil)
+			val, ok, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
+			assert.True(t, ok)
 			assert.Equal(t, []byte{0, 1}, val)
 		})
 	}

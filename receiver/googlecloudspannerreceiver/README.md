@@ -6,8 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglecloudspanner%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglecloudspanner) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglecloudspanner%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglecloudspanner) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_googlecloudspanner)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_googlecloudspanner&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole), [@KiranmayiB](https://www.github.com/KiranmayiB), [@nsj07](https://www.github.com/nsj07) |
-| Emeritus      | [@architjugran](https://www.github.com/architjugran), [@varunraiko](https://www.github.com/varunraiko), [@harishbohara11](https://www.github.com/harishbohara11), [@dsimil](https://www.github.com/dsimil) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole), [@nsj07](https://www.github.com/nsj07) |
+| Emeritus      | [@architjugran](https://www.github.com/architjugran), [@dsimil](https://www.github.com/dsimil), [@harishbohara11](https://www.github.com/harishbohara11), [@KiranmayiB](https://www.github.com/KiranmayiB), [@varunraiko](https://www.github.com/varunraiko) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -44,6 +44,8 @@ receivers:
     backfill_enabled: true
     cardinality_total_limit: 200000
     hide_topn_lockstats_rowrangestartkey: false
+    hide_split_stats_keys: false
+    hide_client_ip_address: false
     truncate_text: false
     projects:
       - project_id: "spanner project 1"
@@ -78,6 +80,8 @@ Brief description of configuration properties:
 - **backfill_enabled** - turn on/off 1-hour data backfill(by default it is turned off)
 - **cardinality_total_limit** - limit of active series per 24 hours period. If specified, turns on cardinality filtering and handling. If zero or not specified, cardinality is not handled. You can read [this document](cardinality.md) for more information about cardinality handling and filtering.
 - **hide_topn_lockstats_rowrangestartkey** - if true, masks PII (key values) in row_range_start_key label for the "top minute lock stats" metric
+- **hide_split_stats_keys** - if true, masks sensitive values by hashing them using SHA256 for supported split stats labels (e.g., split_start, split_limit)
+- **hide_client_ip_address** - if true, masks PII (IP address) in client_ip_address label for the "oldest active queries" metric by hashing it
 - **truncate_text** - if true, the query text is truncated to 1024 characters.
 - **projects** - list of GCP projects
     - **project_id** - identifier of GCP project

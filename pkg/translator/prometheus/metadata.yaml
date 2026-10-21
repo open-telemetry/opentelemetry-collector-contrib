@@ -9,6 +9,6 @@ status:
 feature_gates:
   - id: pkg.translator.prometheus.PermissiveLabelSanitization
     description: Controls whether to change labels starting with '_' to 'key_'.
-    stage: alpha
+    stage: beta
     from_version: v0.55.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950

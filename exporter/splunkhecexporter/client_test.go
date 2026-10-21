@@ -197,6 +197,13 @@ type receivedRequest struct {
 	headers http.Header
 }
 
+// receivedRequestChanBuffer is the capacity given to receivedRequest channels.
+// The ServeHTTP handler records requests synchronously to preserve their order,
+// so the channel must be buffered enough that the send never blocks the exporter
+// before the test's collecting loop starts reading. It comfortably exceeds the
+// number of batches any test in this package produces.
+const receivedRequestChanBuffer = 1024
+
 type capturingData struct {
 	testing          *testing.T
 	receivedRequest  chan receivedRequest
@@ -214,11 +221,14 @@ func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	go func() {
-		if c.receivedRequest != nil {
-			c.receivedRequest <- receivedRequest{body, r.Header}
-		}
-	}()
+	// Record the request synchronously so that batches are captured in the exact
+	// order the client sent them. Spawning a goroutine per request here would let
+	// requests race onto the channel and be collected out of order, causing flaky
+	// assertions on per-batch contents. The channel is buffered by the callers so
+	// this send never blocks the exporter.
+	if c.receivedRequest != nil {
+		c.receivedRequest <- receivedRequest{body, r.Header}
+	}
 	w.WriteHeader(c.statusCode)
 }
 
@@ -233,7 +243,7 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -286,7 +296,7 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -346,7 +356,7 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -1302,7 +1312,7 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 }
 
 func TestErrorReceived(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 500}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1354,7 +1364,7 @@ func TestErrorReceived(t *testing.T) {
 }
 
 func TestErrorReceivedForbidden(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1489,7 +1499,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1772,8 +1782,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 func TestProfileData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 
-	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	config.MaxContentLengthLogs, config.DisableCompression = 350, true
+	// Allow enough room for the serialized profiling event.
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
 
 	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
 
@@ -2106,16 +2116,14 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	rp1.Resource().Attributes().PutStr("host.name", "good-host")
 	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
 
-	// Resource 2: profile with a sample whose values and timestamps_unix_nano lengths disagree,
-	// which the spec forbids. This causes an error that is local to this profile and does not
-	// affect the shared dictionary used by the good profile.
+	// Resource 2: profile with an out-of-range sample type string index. This
+	// must be rejected without affecting the shared dictionary or good profile.
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	badProfile.SampleType().SetTypeStrindex(2) // The string table contains indices 0 and 1.
 	badSample := badProfile.Samples().AppendEmpty()
 	badSample.Values().Append(1)
-	badSample.Values().Append(2)                        // 2 values
-	badSample.TimestampsUnixNano().Append(uint64(1000)) // but only 1 timestamp → mismatch error
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
@@ -2129,6 +2137,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	// The combined error must be non-nil and permanent.
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
+	assert.ErrorContains(t, err, "sample_type.type_strindex")
 }
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
@@ -2550,7 +2559,7 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	// Buffered channel so the async handler goroutines never block.
+	// Buffered channel so the handler's synchronous send never blocks the exporter.
 	rr := make(chan receivedRequest, 64)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
@@ -2575,7 +2584,7 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	require.NoError(t, exp.Shutdown(t.Context()))
 
 	// Collect exactly expectedBatchesNum requests, with a generous timeout to
-	// account for the async handler goroutine scheduling.
+	// account for batcher flush scheduling.
 	var requests []receivedRequest
 	deadline := time.After(10 * time.Second)
 	for len(requests) < expectedBatchesNum {
@@ -2597,11 +2606,10 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 func TestBatcherPartitionsByHecToken(t *testing.T) {
 	makeCfg := func() *Config {
 		cfg := createDefaultConfig().(*Config)
-		cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      2,
-		})
+		batch := cfg.QueueSettings.Get().Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 2
 		return cfg
 	}
 

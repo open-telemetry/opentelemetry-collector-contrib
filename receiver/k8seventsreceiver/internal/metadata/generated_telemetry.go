@@ -60,7 +60,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.K8sEventsModifiedFiltered, err = builder.meter.Int64Counter(
 		"otelcol.k8s.events.modified.filtered",
 		metric.WithDescription("Number of MODIFIED watch events filtered out by dedup_interval. Always 0 when dedup_interval is not set. [Development]"),
-		metric.WithUnit("{events}"),
+		metric.WithUnit("{event}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

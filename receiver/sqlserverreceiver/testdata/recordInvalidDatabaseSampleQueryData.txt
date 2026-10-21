@@ -11,7 +11,7 @@
     "request_status": "running",
     "host_name": "DESKTOP-GHAEGRD",
     "command": "SELECT",
-    "statement_text": "SELECT cpu_time AS [CPU Usage (time)",
+    "statement_text": "SELECT cpu_time AS [CPU Usage (time)]",
     "blocking_session_id": "a71",
     "blocking_start_time": "2025-02-12T16:37:52.393+08:00",
     "resource_id": "72057594043359232",

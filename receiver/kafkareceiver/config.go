@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -36,6 +37,10 @@ type Config struct {
 
 	// MessageMarking controls the way the messages are marked as consumed.
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// PartitionProcessing controls optional independent processing of assigned
+	// topic partitions.
+	PartitionProcessing PartitionProcessing `mapstructure:"partition_processing"`
 
 	// HeaderExtraction controls extraction of headers from Kafka records.
 	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
@@ -91,6 +96,31 @@ func (c *Config) Validate() error {
 	}
 	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
+	}
+	if c.PartitionProcessing.Independent {
+		if c.PartitionProcessing.MaxBufferedBatches <= 0 {
+			return errors.New("partition_processing.max_buffered_batches must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
+			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxInFlight.Bytes < 0 {
+			return errors.New("partition_processing.max_in_flight.bytes must not be negative")
+		}
+		switch c.PartitionProcessing.MaxInFlight.Window {
+		case InFlightWindowPerFetch:
+		case InFlightWindowCrossFetch:
+			// cross_fetch frees a records slot when Consume returns, so without a
+			// byte cap finished records behind a slow one pile up across fetches.
+			if c.PartitionProcessing.MaxInFlight.Records <= 1 || c.PartitionProcessing.MaxInFlight.Bytes <= 0 {
+				return errors.New("partition_processing.max_in_flight.window cross_fetch requires records above 1 and bytes above 0")
+			}
+		default:
+			return fmt.Errorf("partition_processing.max_in_flight.window must be %q or %q", InFlightWindowPerFetch, InFlightWindowCrossFetch)
+		}
+		if !c.ConsumerConfig.AutoCommit.Enable {
+			return errors.New("partition_processing.independent requires autocommit.enable")
+		}
 	}
 	return nil
 }
@@ -175,6 +205,53 @@ type MessageMarking struct {
 	// a permanent error.
 	OnPermanentError bool `mapstructure:"on_permanent_error"`
 }
+
+// PartitionProcessing controls optional independent processing of assigned
+// Kafka partitions.
+type PartitionProcessing struct {
+	// Independent enables independent partition workers. Records stay ordered
+	// within a partition unless MaxInFlight.Records is above 1.
+	Independent bool `mapstructure:"independent"`
+
+	// MaxBufferedBatches bounds the number of fetched batches waiting for each
+	// partition worker.
+	MaxBufferedBatches int `mapstructure:"max_buffered_batches"`
+
+	// MaxInFlight limits concurrent unmarshal-plus-Consume calls for each
+	// independent partition worker.
+	MaxInFlight MaxInFlightConfig `mapstructure:"max_in_flight"`
+}
+
+// MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one
+// partition worker.
+type MaxInFlightConfig struct {
+	// Records is how many calls may run at once. Default 1.
+	Records int `mapstructure:"records"`
+
+	// Bytes caps the bytes of the records in flight, from the start of their call
+	// until the mark passes them. A record counts its key, value, and headers
+	// after decompression, plus a fixed overhead of about 250 bytes per record
+	// and 40 per header, so empty records count too. 0 means no cap. A record above the cap still runs,
+	// alone. It has no effect when Records is 1.
+	Bytes int `mapstructure:"bytes"`
+
+	// Window is per_fetch (default) or cross_fetch. per_fetch waits for every
+	// call of a fetched batch before it starts the next batch. cross_fetch keeps
+	// starting records from later batches while both limits have room. Use it
+	// when the next consumer holds Consume open until it has a full batch, such
+	// as an exporter with wait_for_result and batch.min_size, so it sees more
+	// than one fetch at a time. More records sit unmarked behind a slow one, so
+	// more can replay after a crash or rebalance. cross_fetch requires Records
+	// above 1 and Bytes above 0.
+	Window string `mapstructure:"window"`
+
+	_ struct{} // avoids unkeyed_literal_initialization.
+}
+
+const (
+	InFlightWindowPerFetch   = "per_fetch"
+	InFlightWindowCrossFetch = "cross_fetch"
+)
 
 type HeaderExtraction struct {
 	ExtractHeaders bool     `mapstructure:"extract_headers"`

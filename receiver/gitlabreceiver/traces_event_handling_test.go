@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -491,6 +491,9 @@ func TestSetAttributes(t *testing.T) {
 
 	visibility, _ := attrs.Get(AttributeVCSRepositoryVisibility)
 	require.Equal(t, "private", visibility.Str())
+
+	projectID, _ := attrs.Get(AttributeGitLabProjectID)
+	require.Equal(t, int64(123), projectID.Int())
 
 	namespace, _ := attrs.Get(AttributeGitLabProjectNamespace)
 	require.Equal(t, "test", namespace.Str())

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
@@ -617,13 +618,13 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			rLogs, sLogs, log := createTelemetry(tt.bodyType)
 
-			tCtx := NewTransformContextPtr(rLogs, sLogs, log)
+			tCtx := NewTransformContext(rLogs, sLogs, log)
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			newCtx := NewTransformContextPtr(rLogs, sLogs, log)
+			newCtx := NewTransformContext(rLogs, sLogs, log)
 			defer newCtx.Close()
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
@@ -640,7 +641,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	rLogs, sLogs, log := createTelemetry("string")
-	ctx := NewTransformContextPtr(rLogs, sLogs, log)
+	ctx := NewTransformContext(rLogs, sLogs, log)
 	defer ctx.Close()
 
 	tests := []struct {
@@ -786,12 +787,12 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 
 	rLogs, sLogs, log := createTelemetry("string")
 
-	tCtx := NewTransformContextPtr(rLogs, sLogs, log)
+	tCtx := NewTransformContext(rLogs, sLogs, log)
 	defer tCtx.Close()
 	_, err = accessor.Get(t.Context(), tCtx)
 	assert.Error(t, err)
 
-	newCtx := NewTransformContextPtr(rLogs, sLogs, log)
+	newCtx := NewTransformContext(rLogs, sLogs, log)
 	defer newCtx.Close()
 	err = accessor.Set(t.Context(), tCtx, nil)
 	assert.Error(t, err)
@@ -933,4 +934,21 @@ func Test_ParseEnum_False(t *testing.T) {
 			assert.Nil(t, actual)
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(plog.NewResourceLogs(), plog.NewScopeLogs(), plog.NewLogRecord(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }
