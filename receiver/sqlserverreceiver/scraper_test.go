@@ -2235,16 +2235,17 @@ func TestSetupResourceBuilder(t *testing.T) {
 	}
 }
 
-func TestDetectSQLServerVersion_WarnOnScanFailure(t *testing.T) {
+func TestDetectSQLServerInstanceInfo_WarnOnScanFailure(t *testing.T) {
 	// Open a real *sql.DB, then close it before querying so that
 	// QueryRowContext returns an error — triggering the warning path.
 	db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	v, err := detectSQLServerVersion(t.Context(), db)
+	v, e, err := detectSQLServerInstanceInfo(t.Context(), db)
 
 	assert.Nil(t, v)
+	assert.Nil(t, e)
 	assert.Error(t, err)
 }
 
@@ -2300,6 +2301,60 @@ func TestDetectSQLServerVersion_NotEmittedWhenEmpty(t *testing.T) {
 
 	_, exists := resource.Attributes().Get("db.system.version")
 	assert.False(t, exists, "db.system.version should not be emitted when version detection failed")
+}
+
+func TestDetectSQLServerEdition_EmittedInResourceBuilder(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = "testserver.example.com"
+	cfg.Port = 1433
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = true
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	scraper := newSQLServerScraper(
+		settings.ID,
+		"SELECT 1",
+		sqlquery.TelemetryConfig{},
+		func() (*sql.DB, error) { return nil, nil },
+		func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient { return nil },
+		settings,
+		cfg,
+		nil,
+	)
+	scraper.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+	scraper.dbEdition = "enterprise"
+
+	row := sqlquery.StringMap{computerNameKey: "test-computer", instanceNameKey: "test-instance"}
+	resource := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row).Emit()
+
+	edition, exists := resource.Attributes().Get("sqlserver.db.edition")
+	assert.True(t, exists)
+	assert.Equal(t, "enterprise", edition.AsString())
+}
+
+func TestDetectSQLServerEdition_NotEmittedWhenEmpty(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Server = "testserver.example.com"
+	cfg.Port = 1433
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	scraper := newSQLServerScraper(
+		settings.ID,
+		"SELECT 1",
+		sqlquery.TelemetryConfig{},
+		func() (*sql.DB, error) { return nil, nil },
+		func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient { return nil },
+		settings,
+		cfg,
+		nil,
+	)
+	scraper.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+	// dbEdition deliberately left as ""
+
+	row := sqlquery.StringMap{computerNameKey: "test-computer", instanceNameKey: "test-instance"}
+	resource := scraper.setupResourceBuilder(scraper.mb.NewResourceBuilder(), row).Emit()
+
+	_, exists := resource.Attributes().Get("sqlserver.db.edition")
+	assert.False(t, exists, "sqlserver.db.edition should not be emitted when edition detection failed")
 }
 
 func TestRecordDatabaseSampleQueryUsesResourceBuilderForLogs(t *testing.T) {
@@ -2917,5 +2972,49 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 		got := scraper.procedureLookbackSeconds()
 		assert.GreaterOrEqual(t, got, 75, "expected roughly 65s elapsed plus a 10s buffer")
 		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
+	})
+}
+
+func TestEngineEditionToString(t *testing.T) {
+	tests := []struct {
+		edition       string
+		engineEdition int
+		expected      string
+	}{
+		{"Standard Edition", 2, "standard"},
+		{"Enterprise Edition", 3, "enterprise"},
+		{"Express Edition", 4, "express"},
+		{"SQL Azure", 5, "azure_sql_database"},
+		{"SQL Azure", 8, "managed_instance"},
+		{"", 0, "unknown"},
+		{"Unknown Edition", 0, "unknown"},
+	}
+	for _, tc := range tests {
+		require.Equal(t, tc.expected, engineEditionToString(tc.edition, tc.engineEdition), "edition %q engineEdition %d", tc.edition, tc.engineEdition)
+	}
+}
+
+func TestDetectSQLServerInstanceInfo(t *testing.T) {
+	t.Run("db nil returns nil nil nil", func(t *testing.T) {
+		v, e, err := detectSQLServerInstanceInfo(t.Context(), nil)
+		require.NoError(t, err)
+		require.Nil(t, v)
+		require.Nil(t, e)
+	})
+
+	t.Run("stub returns version and edition", func(t *testing.T) {
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			ver := "15.0.4261.1"
+			ed := "enterprise"
+			return &ver, &ed, nil
+		}
+		v, e, err := detectSQLServerInstanceInfo(t.Context(), &sql.DB{})
+		require.NoError(t, err)
+		require.NotNil(t, v)
+		require.NotNil(t, e)
+		require.Equal(t, "15.0.4261.1", *v)
+		require.Equal(t, "enterprise", *e)
 	})
 }

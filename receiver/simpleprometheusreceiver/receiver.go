@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -37,7 +38,7 @@ func newPrometheusReceiverWrapper(params receiver.Settings, cfg *Config, consume
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfig(prw.config)
+	pConfig, err := getPrometheusConfig(prw.config, prw.params.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
@@ -56,7 +57,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 	return prw.prometheusReceiver.Start(ctx, host)
 }
 
-func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
+func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
 	var bearerToken string
 	if cfg.UseServiceAccount {
 		restConfig, err := rest.InClusterConfig()
@@ -81,9 +82,13 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
+			CA:                 string(cfg.ClientConfig.TLS.CAPem),
+			Cert:               string(cfg.ClientConfig.TLS.CertPem),
+			Key:                configutil.Secret(cfg.ClientConfig.TLS.KeyPem),
 			CAFile:             cfg.ClientConfig.TLS.CAFile,
 			CertFile:           cfg.ClientConfig.TLS.CertFile,
 			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
+			ServerName:         cfg.ClientConfig.TLS.ServerName,
 			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
 		}
 	}
@@ -99,9 +104,23 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	if jobName == "" {
 		jobName = fmt.Sprintf("%s/%s", metadata.Type, cfg.ClientConfig.Endpoint)
 	}
+	// Prometheus rejects a scrape timeout greater than the scrape interval, so
+	// cap the configured timeout at the interval. An unset timeout keeps the
+	// scrape timeout equal to the interval.
+	scrapeTimeout := cfg.CollectionInterval
+	if timeout := cfg.ClientConfig.Timeout; timeout > 0 {
+		if timeout > cfg.CollectionInterval {
+			logger.Warn("timeout is greater than collection_interval; using collection_interval as the scrape timeout",
+				zap.Duration("timeout", timeout),
+				zap.Duration("collection_interval", cfg.CollectionInterval))
+		} else {
+			scrapeTimeout = timeout
+		}
+	}
+
 	scrapeConfig := &config.ScrapeConfig{
 		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
-		ScrapeTimeout:   model.Duration(cfg.CollectionInterval),
+		ScrapeTimeout:   model.Duration(scrapeTimeout),
 		JobName:         jobName,
 		HonorTimestamps: true,
 		Scheme:          scheme,

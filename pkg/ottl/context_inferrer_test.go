@@ -124,7 +124,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 		{
 			name:       "inferred path context with missing enum",
 			priority:   []string{"foo", "bar"},
-			statements: []string{`set(foo.name, FOO) where IsFoo() == true`},
+			statements: []string{`set(foo.name, "x") where IsFoo() == FOO`},
 			candidates: map[string]*priorityContextInferrerCandidate{
 				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
 				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
@@ -789,6 +789,35 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			},
 			expected: "metric",
 		},
+		{
+			name: "function name as uppercase argument",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"log": {
+					hasFunctionName:  func(name string) bool { return name == "Foo" || name == "SHA256" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+					getLowerContexts: func(string) []string { return []string{} },
+				},
+			},
+			conditions: []string{`Foo(log.attributes, SHA256) == true`},
+			expected:   "log",
+		},
+		{
+			name: "function name as uppercase argument inferred from lower context",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": {
+					hasFunctionName:  func(name string) bool { return name == "Foo" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+					getLowerContexts: func(string) []string { return []string{"foo", "bar"} },
+				},
+				"bar": {
+					hasFunctionName:  func(name string) bool { return name == "Foo" || name == "SHA256" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+					getLowerContexts: func(string) []string { return []string{} },
+				},
+			},
+			conditions: []string{`Foo(foo.attributes, SHA256) == true`},
+			expected:   "bar",
+		},
 	}
 
 	for _, tt := range tests {
@@ -800,6 +829,42 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			inferredContext, err := inferrer.infer(tt.statements, tt.conditions, tt.expressions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
+		})
+	}
+}
+
+func Test_NewPriorityContextInferrer_Infer_UppercaseArgumentErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		hasFunction func(string) bool
+		condition   string
+	}{
+		{
+			name:        "uppercase operand outside arguments is not a function name",
+			hasFunction: func(string) bool { return true },
+			condition:   `log.attributes["a"] == SHA256`,
+		},
+		{
+			name:        "uppercase argument that is neither enum nor function",
+			hasFunction: func(name string) bool { return name == "Foo" },
+			condition:   `Foo(log.attributes, SHA256) == true`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferrer := newPriorityContextInferrer(
+				componenttest.NewNopTelemetrySettings(),
+				map[string]*priorityContextInferrerCandidate{
+					"log": {
+						hasFunctionName:  tt.hasFunction,
+						hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+						getLowerContexts: func(string) []string { return []string{} },
+					},
+				},
+			)
+			_, err := inferrer.infer(nil, []string{tt.condition}, nil)
+			require.EqualError(t, err, `inferred context "log" does not support the enum symbol "SHA256"`)
 		})
 	}
 }
