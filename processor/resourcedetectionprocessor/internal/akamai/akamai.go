@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_akamai
+
 package akamai // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
 
 import (
@@ -16,11 +18,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai/internal/metadata"
-)
-
-const (
-	// TypeStr is type of detector.
-	TypeStr = "akamai"
 )
 
 var _ internal.Detector = (*Detector)(nil)

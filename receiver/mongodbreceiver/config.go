@@ -117,6 +117,21 @@ func (c *Config) Validate() error {
 	return err
 }
 
+// secondaryDiscoverySkipReason reports why replica set secondary discovery should be skipped for
+// this configuration, or an empty string when it should proceed.
+func (c *Config) secondaryDiscoverySkipReason() string {
+	if c.DirectConnection {
+		return "direct_connection is enabled"
+	}
+	// The driver enables TLS implicitly for the mongodb+srv scheme when it applies the URI, but
+	// secondary connections are built from a host list rather than a URI and would not pick that
+	// up, so they would reach the same deployment in plaintext.
+	if c.Scheme == "mongodb+srv" {
+		return "the mongodb+srv scheme applies TLS that secondary connections cannot inherit"
+	}
+	return ""
+}
+
 func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 	if secondary {
 		// For secondary nodes, create a direct connection
@@ -127,6 +142,11 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 
 		if c.Timeout > 0 {
 			clientOptions.SetConnectTimeout(c.Timeout)
+			// A secondary that connects but stops responding would otherwise stall a scrape
+			// indefinitely, because the scrape context carries no deadline unless one is
+			// configured. The driver honors an operation's own deadline over this value, so
+			// a configured scrape timeout still wins.
+			clientOptions.SetTimeout(c.Timeout)
 		}
 
 		// Set up authentication if username/password are provided or if an auth mechanism is specified
@@ -134,6 +154,12 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
 			credential := c.buildCredential()
 			clientOptions.SetAuth(credential)
+		}
+
+		// Secondaries are members of the same deployment as the primary, so they need the
+		// same transport security.
+		if tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background()); err == nil && tlsConfig != nil {
+			clientOptions.SetTLSConfig(tlsConfig)
 		}
 
 		return clientOptions

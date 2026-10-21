@@ -1,0 +1,6 @@
+change_type: deprecation
+component: processor/probabilistic_sampler
+note: "Add the `otelcol_processor_probabilistic_sampler_count_spans_processed` metric and deprecate `otelcol_processor_probabilistic_sampler_count_traces_sampled` in favor of it."
+issues: [50954]
+subtext: "The deprecated metric remains available for compatibility."
+change_logs: [user]
