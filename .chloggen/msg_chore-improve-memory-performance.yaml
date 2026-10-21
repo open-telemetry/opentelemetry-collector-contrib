@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/cardinality_guardian 
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Reducing overall memory pressure
+note: Reuse sparse HLL sketches on epoch rotation to cut allocations
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51059]

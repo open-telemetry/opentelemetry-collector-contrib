@@ -667,35 +667,56 @@ func TestTrackerRotateReusesPreviousSketch(t *testing.T) {
 	require.GreaterOrEqual(t, prev, uint64(2))
 }
 
-func TestTrackerRotateReplacesDenseSketch(t *testing.T) {
-	tracker := newTracker()
-	const valuesPerSketch = 10000
-	for value := range valuesPerSketch {
-		hashValue := rotationBenchmarkHash(0, value)
-		tracker.current.InsertHash(hashValue)
-		tracker.previous.InsertHash(hashValue)
+func TestTrackerRotateAcrossEpochs(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		insertCount     int
+		wantDense       bool
+		wantReplacement bool
+	}{
+		{name: "sparse", insertCount: 32},
+		{name: "sparse_bound", insertCount: maxSparseSketchInsertCount},
+		{name: "above_sparse_bound", insertCount: maxSparseSketchInsertCount + 1, wantReplacement: true},
+		{name: "dense", insertCount: 10000, wantDense: true, wantReplacement: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tracker := newTracker()
+			for value := range test.insertCount {
+				tracker.insert(rotationBenchmarkHash(0, value))
+			}
+			verifyRotationBenchmarkSketch(t, tracker.current, test.wantDense)
+			oldCurrent := tracker.current
+			oldPrevious := tracker.previous
+			cachedCurrent := tracker.cachedCurr
+
+			require.False(t, tracker.rotate())
+			require.Same(t, oldCurrent, tracker.previous)
+			require.Same(t, oldPrevious, tracker.current)
+			require.Equal(t, cachedCurrent, tracker.cachedPrev)
+			require.Zero(t, tracker.current.Estimate())
+
+			// The first epoch's count must follow its sketch into previous so
+			// the second rotation can decide whether to reuse or replace it.
+			tracker.insert(rotationBenchmarkHash(1, 0))
+			require.False(t, tracker.rotate())
+			if test.wantReplacement {
+				require.NotSame(t, oldCurrent, tracker.current)
+			} else {
+				require.Same(t, oldCurrent, tracker.current)
+			}
+			verifyRotationBenchmarkSketch(t, tracker.current, false)
+			require.Zero(t, tracker.current.Estimate())
+			require.Zero(t, tracker.cachedCurr)
+			require.Same(t, oldPrevious, tracker.previous)
+			require.Equal(t, uint64(1), tracker.previous.Estimate())
+			require.Equal(t, uint64(1), tracker.cachedPrev)
+
+			// A quiet epoch must still be reusable after a busy one.
+			require.True(t, tracker.rotate())
+			require.Same(t, oldPrevious, tracker.current)
+			require.Zero(t, tracker.current.Estimate())
+		})
 	}
-	tracker.insertCount = valuesPerSketch
-	tracker.previousInsertCount = valuesPerSketch
-	verifyRotationBenchmarkSketch(t, tracker.current, true)
-	verifyRotationBenchmarkSketch(t, tracker.previous, true)
-
-	oldCurrent := tracker.current
-	oldPrevious := tracker.previous
-	tracker.rotate()
-
-	require.NotSame(t, oldPrevious, tracker.current)
-	verifyRotationBenchmarkSketch(t, tracker.current, false)
-	require.Same(t, oldCurrent, tracker.previous)
-	require.Zero(t, tracker.current.Estimate())
-	require.Positive(t, tracker.previous.Estimate())
-
-	tracker.current.InsertHash(1)
-	require.GreaterOrEqual(t, tracker.current.Estimate(), uint64(1))
-
-	tracker.rotate()
-	require.NotSame(t, oldCurrent, tracker.current)
-	require.Zero(t, tracker.current.Estimate())
 }
 
 // TestTopOffenders verifies that the otelcol_processor_cardinality_top.offenders gauge correctly
