@@ -4,9 +4,11 @@
 package reader
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -415,5 +417,203 @@ func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
 		Attributes: attrs.Resolver{
 			IncludeFileName: true,
 		},
+	}
+}
+
+func TestReadContentsCancelledDuringEmit(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name              string
+		content           string
+		maxBatchSize      int
+		cancelOnCall      int
+		expectedOffset    int64
+		expectedRecordNum int64
+	}{
+		{
+			name:              "full_batch",
+			content:           "line1\nline2\nline3\nline4\n",
+			maxBatchSize:      2,
+			cancelOnCall:      2,
+			expectedOffset:    int64(len("line1\nline2\n")),
+			expectedRecordNum: 2,
+		},
+		{
+			name:              "end_of_file",
+			content:           "line1\nline2\n",
+			maxBatchSize:      100,
+			cancelOnCall:      1,
+			expectedOffset:    0,
+			expectedRecordNum: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			filetest.WriteString(t, temp, tc.content)
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			var calls int
+			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				calls++
+				if calls == tc.cancelOnCall {
+					// Simulate Stop() cancelling the context while the emit is blocked.
+					cancel()
+					return ctx.Err()
+				}
+				return nil
+			})
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+			reader.maxBatchSize = tc.maxBatchSize
+
+			reader.ReadToEnd(ctx)
+
+			assert.Equal(t, tc.cancelOnCall, calls)
+			assert.Equal(t, tc.expectedOffset, reader.Offset)
+			assert.Equal(t, tc.expectedRecordNum, reader.RecordNum)
+		})
+	}
+}
+
+func TestDeleteAtEOFCancelledDuringEmit(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		cancel         bool
+		expectDeleted  bool
+		expectedOffset int64
+	}{
+		{
+			name:           "emit_cancelled",
+			cancel:         true,
+			expectDeleted:  false,
+			expectedOffset: 0,
+		},
+		{
+			name:           "emit_succeeded",
+			cancel:         false,
+			expectDeleted:  true,
+			expectedOffset: int64(len("line1\nline2\n")),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			filetest.WriteString(t, temp, "line1\nline2\n")
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				if tc.cancel {
+					// Simulate Stop() cancelling the context while the emit is blocked.
+					cancel()
+					return ctx.Err()
+				}
+				return nil
+			})
+			f.DeleteAtEOF = true
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			require.NoError(t, temp.Close())
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			reader.ReadToEnd(ctx)
+
+			assert.Equal(t, tc.expectedOffset, reader.Offset)
+			if tc.expectDeleted {
+				assert.NoFileExists(t, temp.Name())
+			} else {
+				assert.FileExists(t, temp.Name())
+			}
+		})
+	}
+}
+
+func TestGzipCancelledDuringEmit(t *testing.T) {
+	t.Parallel()
+
+	for _, deleteAtEOF := range []bool{false, true} {
+		t.Run(fmt.Sprintf("delete_at_eof_%t", deleteAtEOF), func(t *testing.T) {
+			t.Parallel()
+
+			path := filepath.Join(t.TempDir(), "test.log.gz")
+			gzipFile, err := os.Create(path)
+			require.NoError(t, err)
+			gzipWriter := gzip.NewWriter(gzipFile)
+			_, err = gzipWriter.Write([]byte("line1\nline2\nline3\nline4\n"))
+			require.NoError(t, err)
+			require.NoError(t, gzipWriter.Close())
+			require.NoError(t, gzipFile.Close())
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			var calls int
+			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				calls++
+				if calls == 2 {
+					// Simulate Stop() cancelling the context while the emit is blocked.
+					cancel()
+					return ctx.Err()
+				}
+				return nil
+			})
+			f.Compression = "gzip"
+			f.DeleteAtEOF = deleteAtEOF
+
+			file, err := os.Open(path)
+			require.NoError(t, err)
+			fp, err := f.NewFingerprint(file)
+			require.NoError(t, err)
+			reader, err := f.NewReader(file, fp)
+			require.NoError(t, err)
+			reader.maxBatchSize = 2
+
+			reader.ReadToEnd(ctx)
+			metadata := reader.Close()
+
+			// The interrupted chunk must not be checkpointed.
+			assert.Equal(t, int64(0), metadata.Offset)
+			assert.Equal(t, int64(0), metadata.RecordNum)
+			assert.FileExists(t, path)
+
+			// After a restart the whole chunk is read again.
+			restarted, sink := testFactory(t, withCompression("gzip"))
+			restarted.DeleteAtEOF = deleteAtEOF
+			file, err = os.Open(path)
+			require.NoError(t, err)
+			reader, err = restarted.NewReaderFromMetadata(file, metadata)
+			require.NoError(t, err)
+
+			reader.ReadToEnd(t.Context())
+			sink.ExpectTokens(t, []byte("line1"), []byte("line2"), []byte("line3"), []byte("line4"))
+			assert.Equal(t, int64(4), reader.RecordNum)
+			reader.Close()
+
+			if deleteAtEOF {
+				assert.NoFileExists(t, path)
+			} else {
+				assert.FileExists(t, path)
+			}
+		})
 	}
 }
