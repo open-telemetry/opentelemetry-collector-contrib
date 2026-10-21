@@ -10,7 +10,7 @@ component: receiver/postgresql
 note: Extract the trace context of `db.server.query_sample` records from a SQLCommenter `traceparent` comment in the sampled query.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [44868]
+issues: [52227]
 
 # (Optional) One or more lines of additional information to render under the main note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
