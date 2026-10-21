@@ -970,3 +970,83 @@ func TestNormalize_OpenLLMetry_StructuredMessagesPassThrough(t *testing.T) {
 	assert.Equal(t, "user", role.Str())
 	assert.Equal(t, "hi", content.Str())
 }
+
+// TestNormalize_SpringAI_ChatSpan feeds a chat span shaped like Spring AI's
+// Micrometer bridge output, where every value is a string.
+func TestNormalize_SpringAI_ChatSpan(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceSpringAI}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	attrs := span.Attributes()
+	attrs.PutStr("gen_ai.operation.name", "chat")
+	attrs.PutStr("gen_ai.system", "anthropic")
+	attrs.PutStr("gen_ai.request.model", "claude-sonnet-4-5")
+	attrs.PutStr("gen_ai.request.max_tokens", "4096")
+	attrs.PutStr("gen_ai.request.temperature", "0.7")
+	attrs.PutStr("gen_ai.response.finish_reasons", `["tool_use"]`)
+	attrs.PutStr("gen_ai.usage.input_tokens", "758")
+	attrs.PutStr("gen_ai.usage.output_tokens", "43")
+	attrs.PutStr("gen_ai.usage.cache_read.input_tokens", "200")
+	attrs.PutStr("gen_ai.usage.cache_creation.input_tokens", "0")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	assert.Equal(t, map[string]any{
+		"gen_ai.operation.name":                    "chat",
+		"gen_ai.system":                            "anthropic",
+		"gen_ai.provider.name":                     "anthropic",
+		"gen_ai.request.model":                     "claude-sonnet-4-5",
+		"gen_ai.request.max_tokens":                int64(4096),
+		"gen_ai.request.temperature":               0.7,
+		"gen_ai.response.finish_reasons":           []any{"tool_use"},
+		"gen_ai.usage.input_tokens":                int64(958),
+		"gen_ai.usage.output_tokens":               int64(43),
+		"gen_ai.usage.cache_read.input_tokens":     int64(200),
+		"gen_ai.usage.cache_creation.input_tokens": int64(0),
+	}, out.AsRaw())
+}
+
+// TestNormalize_SpringAI_ToolSpan asserts that spring.ai.tool.* keys land on
+// their gen_ai.tool.* targets and that Spring AI's own gen_ai.system value
+// does not become a provider name.
+func TestNormalize_SpringAI_ToolSpan(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceSpringAI, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	attrs := span.Attributes()
+	attrs.PutStr("gen_ai.operation.name", "execute_tool")
+	attrs.PutStr("gen_ai.system", "spring_ai")
+	attrs.PutStr("spring.ai.kind", "tool_call")
+	attrs.PutStr("spring.ai.tool.type", "function")
+	attrs.PutStr("spring.ai.tool.definition.name", "get_weather")
+	attrs.PutStr("spring.ai.tool.definition.description", "Current weather for a city.")
+	attrs.PutStr("spring.ai.tool.call.id", "call_1")
+	attrs.PutStr("spring.ai.tool.call.arguments", `{"city":"Berlin"}`)
+	attrs.PutStr("spring.ai.tool.call.result", `{"celsius":12}`)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	assert.Equal(t, map[string]any{
+		"gen_ai.operation.name":      "execute_tool",
+		"gen_ai.system":              "spring_ai",
+		"spring.ai.kind":             "tool_call",
+		"gen_ai.tool.type":           "function",
+		"gen_ai.tool.name":           "get_weather",
+		"gen_ai.tool.description":    "Current weather for a city.",
+		"gen_ai.tool.call.id":        "call_1",
+		"gen_ai.tool.call.arguments": `{"city":"Berlin"}`,
+		"gen_ai.tool.call.result":    `{"celsius":12}`,
+	}, out.AsRaw())
+}
