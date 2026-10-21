@@ -12,7 +12,7 @@ jobs:
     cache-mode: none
     permissions:
       pull-requests: write # required by the workflow to post the welcome comment
-    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@c717adbcb56efc45c5dea293accfc6c3462bcdd1 # v0.19.0
+    uses: open-telemetry/shared-workflows/.github/workflows/first-time-pr.yml@f09a36e1fa2576787fe05cbc1313ef6066918c78 # v0.23.0
     with:
       label: "first-time contributor"
       custom_message: |
