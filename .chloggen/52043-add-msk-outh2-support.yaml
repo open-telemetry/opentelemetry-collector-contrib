@@ -1,0 +1,6 @@
+change_type: enhancement
+component: extension/sigv4auth
+note: "Add generic OAuth2 token support to the `sigv4auth` extension for AWS MSK IAM authentication, allowing it to be used as an `oauthbearer_token_source` with Kafka receivers and exporters."
+issues: [52039]
+subtext:
+change_logs: [user]
