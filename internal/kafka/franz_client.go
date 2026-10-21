@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -307,7 +305,7 @@ func commonOpts(
 		}
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(ctx, clientCfg.Authentication.SASL, host)
+		saslOpt, err := configureKgoSASL(ctx, clientCfg.Authentication.SASL, host, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -389,21 +387,7 @@ func newRetryBackoffFn(minBackoff time.Duration) func(int) time.Duration {
 	}
 }
 
-// loadAWSCredentialsProvider resolves the default AWS credentials provider.
-// LoadDefaultConfig wraps it in an aws.CredentialsCache. It is a variable so
-// tests can replace it.
-var loadAWSCredentialsProvider = func(ctx context.Context, region string) (aws.CredentialsProvider, error) {
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region),
-		awsconfig.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
-			o.ExpiryWindow = time.Minute
-		}))
-	if err != nil {
-		return nil, err
-	}
-	return awsCfg.Credentials, nil
-}
-
-func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
+func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host component.Host, logger *zap.Logger) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -415,7 +399,7 @@ func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host com
 	case AWSMSKIAMOAUTHBEARER:
 		// Resolve the credentials provider once per client so cached
 		// credentials are reused across SASL authentications.
-		credsProvider, err := loadAWSCredentialsProvider(ctx, cfg.AWSMSK.Region)
+		credsProvider, err := loadAWSCredentialsProvider(ctx, cfg.AWSMSK.Region, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load AWS config: %w", err)
 		}
