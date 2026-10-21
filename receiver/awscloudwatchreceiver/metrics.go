@@ -374,6 +374,7 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 	s.setResourceAttributes(rm.Resource())
 	sm := rm.ScopeMetrics().AppendEmpty()
 	sm.Scope().SetName(metadata.ScopeName)
+	sm.Scope().SetVersion(s.settings.BuildInfo.Version)
 
 	periodNano := pcommon.Timestamp(s.period.Nanoseconds())
 

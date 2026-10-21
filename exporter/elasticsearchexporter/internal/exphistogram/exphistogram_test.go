@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -210,6 +212,105 @@ func TestToRaw(t *testing.T) {
 			counts, values := ToRaw(dp)
 			assert.Equal(t, tc.expectedCounts, counts)
 			assert.Equal(t, tc.expectedValues, values)
+		})
+	}
+}
+
+func TestToNativeExponentialHistogram(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		scale           int32
+		zeroCount       uint64
+		zeroThreshold   float64
+		positiveOffset  int32
+		positiveBuckets []uint64
+		negativeOffset  int32
+		negativeBuckets []uint64
+		sum, min, max   *float64
+
+		expected map[string]any
+	}{
+		{
+			name:     "empty",
+			scale:    0,
+			expected: map[string]any{"scale": 0},
+		},
+		{
+			name:            "positive only with zero-count buckets dropped",
+			scale:           2,
+			positiveOffset:  3,
+			positiveBuckets: []uint64{1, 0, 4},
+			expected: map[string]any{
+				"scale":    2,
+				"positive": map[string]any{"indices": []any{3, 5}, "counts": []any{1, 4}},
+			},
+		},
+		{
+			name:            "negative only",
+			negativeOffset:  0,
+			negativeBuckets: []uint64{3, 4},
+			expected: map[string]any{
+				"scale":    0,
+				"negative": map[string]any{"indices": []any{0, 1}, "counts": []any{3, 4}},
+			},
+		},
+		{
+			name:            "both positive and negative",
+			positiveOffset:  3,
+			positiveBuckets: []uint64{1, 4},
+			negativeOffset:  0,
+			negativeBuckets: []uint64{3, 4},
+			expected: map[string]any{
+				"scale":    0,
+				"negative": map[string]any{"indices": []any{0, 1}, "counts": []any{3, 4}},
+				"positive": map[string]any{"indices": []any{3, 4}, "counts": []any{1, 4}},
+			},
+		},
+		{
+			name:          "zero count with threshold",
+			zeroCount:     5,
+			zeroThreshold: 0.001,
+			expected: map[string]any{
+				"scale": 0,
+				"zero":  map[string]any{"count": 5, "threshold": 0.001},
+			},
+		},
+		{
+			name:      "zero count without threshold",
+			zeroCount: 5,
+			expected: map[string]any{
+				"scale": 0,
+				"zero":  map[string]any{"count": 5},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dp := pmetric.NewExponentialHistogramDataPoint()
+			dp.SetScale(tc.scale)
+			dp.SetZeroCount(tc.zeroCount)
+			if tc.zeroThreshold != 0 {
+				dp.SetZeroThreshold(tc.zeroThreshold)
+			}
+			dp.Positive().SetOffset(tc.positiveOffset)
+			dp.Positive().BucketCounts().FromRaw(tc.positiveBuckets)
+			dp.Negative().SetOffset(tc.negativeOffset)
+			dp.Negative().BucketCounts().FromRaw(tc.negativeBuckets)
+
+			if tc.sum != nil {
+				dp.SetSum(*tc.sum)
+			}
+			if tc.min != nil {
+				dp.SetMin(*tc.min)
+			}
+			if tc.max != nil {
+				dp.SetMax(*tc.max)
+			}
+
+			actual := ToNativeExponentialHistogram(dp)
+
+			expected := pcommon.NewValueMap()
+			require.NoError(t, expected.FromRaw(tc.expected))
+			assert.True(t, expected.Equal(actual), "expected %v, got %v", tc.expected, actual)
 		})
 	}
 }

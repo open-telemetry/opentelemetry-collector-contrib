@@ -4,6 +4,7 @@
 package fileexporter
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -203,6 +204,22 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "group_by_empty_resource_attribute"),
 			errorMessage: "resource_attribute must not be empty when group_by is enabled",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "group_by_zero_max_open_files"),
+			errorMessage: "max_open_files must be positive when group_by is enabled",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "rotation_negative_max_megabytes"),
+			errorMessage: "rotation max_megabytes, max_days and max_backups must not be negative",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "rotation_negative_max_days"),
+			errorMessage: "rotation max_megabytes, max_days and max_backups must not be negative",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "rotation_negative_max_backups"),
+			errorMessage: "rotation max_megabytes, max_days and max_backups must not be negative",
+		},
 	}
 
 	for _, tt := range tests {
@@ -236,4 +253,37 @@ func TestDirectoryPermissionsWithoutCreateDirectory(t *testing.T) {
 	err := cfg.Validate()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "directory_permissions requires create_directory")
+}
+
+func TestDirPermissions(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		perms   string
+		want    os.FileMode
+		wantErr error
+	}{
+		{perms: "", want: 0o755},
+		{perms: "0700", want: 0o700},
+		{perms: "abc", wantErr: errInvalidOctal},
+		{perms: "01777", wantErr: errInvalidPermissionBits},
+	}
+	for _, tt := range tests {
+		t.Run(tt.perms, func(t *testing.T) {
+			cfg := &Config{DirectoryPermissions: tt.perms}
+			got, err := cfg.dirPermissions()
+			require.ErrorIs(t, err, tt.wantErr)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestValidateDoesNotMutateConfig(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{
+		Path:            "./foo",
+		FormatType:      formatTypeJSON,
+		CreateDirectory: true,
+	}
+	require.NoError(t, cfg.Validate())
+	assert.Empty(t, cfg.DirectoryPermissions)
 }
