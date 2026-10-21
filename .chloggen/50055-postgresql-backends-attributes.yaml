@@ -17,6 +17,7 @@ issues: [50055]
 # Use pipe (|) for multiline entries.
 subtext: |
   The `postgresql.backend.type`, `postgresql.state`, and `postgresql.wait_event_type` attributes are opt-in.
+  Enabling them splits the per-database total into several data points; sum over them to get the total.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
