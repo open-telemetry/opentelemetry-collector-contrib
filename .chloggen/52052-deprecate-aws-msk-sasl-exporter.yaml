@@ -1,0 +1,5 @@
+change_type: deprecation
+component: exporter/kafka
+note: "Deprecate the `AWS_MSK_IAM_OAUTHBEARER` SASL mechanism and `auth.sasl.aws_msk.region` configuration in favor of the standard `OAUTHBEARER` mechanism with the `sigv4auth` extension configured as `oauthbearer_token_source`."
+issues: [52039]
+change_logs: [user]
