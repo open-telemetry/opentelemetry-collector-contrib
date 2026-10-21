@@ -335,6 +335,12 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
+			// Keep the Datadog span type (web, sql, cache, ...). The Datadog exporter and the
+			// Datadog Agent's OTLP intake read it from span.type; without it they derive a
+			// different type from the span kind and attributes.
+			if span.Type != "" {
+				newSpan.Attributes().PutStr("span.type", span.Type)
+			}
 			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}

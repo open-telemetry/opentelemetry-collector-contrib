@@ -100,7 +100,9 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
 	assert.Equal(t, "my-name", span.Name())
-	assert.Equal(t, 10, span.Attributes().Len(), "missing attributes")
+	assert.Equal(t, 11, span.Attributes().Len(), "missing attributes")
+	spanType, _ := span.Attributes().Get("span.type")
+	assert.Equal(t, "sql", spanType.Str())
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name attribute value incorrect")
@@ -546,6 +548,33 @@ func TestToTracesServiceName(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestToTracesKeepsSpanType checks that the Datadog span type is kept as span.type, which
+// the Datadog exporter and the Datadog Agent's OTLP intake read back into the span's type.
+func TestToTracesKeepsSpanType(t *testing.T) {
+	payload := &pb.TracerPayload{
+		Chunks: traceChunksFromSpans([]pb.Span{
+			{Name: "rack.request", Type: "web", SpanID: 1},
+			{Name: "mysql2.query", Type: "sql", SpanID: 2},
+			{Name: "custom", SpanID: 3},
+		}),
+	}
+
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, nil)
+	require.NoError(t, err)
+
+	types := map[string]string{}
+	for _, rs := range traces.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				if v, ok := span.Attributes().Get("span.type"); ok {
+					types[span.Name()] = v.Str()
+				}
+			}
+		}
+	}
+	assert.Equal(t, map[string]string{"rack.request": "web", "mysql2.query": "sql"}, types)
 }
 
 // TestToTracesBaseServicePreservesPerSpanServiceName verifies the DD→OTEL→DD
