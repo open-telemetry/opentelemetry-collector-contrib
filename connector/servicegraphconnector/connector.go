@@ -106,9 +106,6 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	var bounds []float64
 	if pConfig.ExponentialHistogramMaxSize == 0 {
 		bounds = defaultLatencyHistogramBuckets
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			bounds = legacyDefaultLatencyHistogramBuckets
-		}
 		if pConfig.LatencyHistogramBuckets != nil {
 			bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
 		}
@@ -671,11 +668,6 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 }
 
 func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	// TODO: Remove this once legacy metric names are removed
-	if legacyMetricNamesFeatureGate.IsEnabled() {
-		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration")
-	}
-
 	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server"); err != nil {
 		return err
 	}
@@ -688,9 +680,6 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName("traces_service_graph_request_client")
 	mDuration.SetUnit(secondsUnit)
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		mDuration.SetUnit(millisecondsUnit)
-	}
 
 	if p.reqDurationBounds == nil {
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -741,9 +730,6 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName(mName)
 	mDuration.SetUnit(secondsUnit)
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		mDuration.SetUnit(millisecondsUnit)
-	}
 
 	if p.reqDurationBounds == nil {
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -878,24 +864,13 @@ func (p *serviceGraphConnector) cleanCache() {
 
 // spanDuration returns the duration of the given span in seconds (legacy ms).
 func spanDuration(span ptrace.Span) float64 {
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-	}
 	return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Second.Nanoseconds())
-}
-
-// durationToFloat converts the given duration to the number of seconds (legacy ms) it represents.
-func durationToFloat(d time.Duration) float64 {
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		return float64(d.Milliseconds())
-	}
-	return d.Seconds()
 }
 
 func mapDurationsToFloat(vs []time.Duration) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToFloat(v)
+		vsm[i] = v.Seconds()
 	}
 	return vsm
 }
