@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Keep the Datadog span type (for example `web` or `sql`) as the `span.type` span attribute.
+note: Keep the Datadog span type, operation name and resource name as the `span.type`, `operation.name` and `resource.name` span attributes.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52245]
