@@ -91,7 +91,10 @@ func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
 	t.current.InsertHash(hashVal)
 	t.insertCount++
 	if t.insertCount <= estimateInterval || t.insertCount&(estimateInterval-1) == 0 {
-		t.cachedCurr = t.current.Estimate()
+		u := t.previous.Clone()
+		if err := u.Merge(t.current); err == nil {
+		    t.cachedCurr = u.Estimate()
+		}
 	}
 	return t.cachedCurr, t.cachedPrev
 }
@@ -111,7 +114,10 @@ func (t *tracker) rotate(fresh *hyperloglog.Sketch) (idle bool) {
 	t.cachedPrev = t.cachedCurr
 	t.cachedCurr = 0
 	t.insertCount = 0
-	t.previous = t.current
+	// previous becomes CUMULATIVE: everything ever seen
+	if err := t.previous.Merge(t.current); err != nil { _ = err }
+	t.cachedPrev = t.previous.Estimate()
+	t.cachedCurr = 0
 	t.current = fresh
 	t.mu.Unlock()
 	return idle
