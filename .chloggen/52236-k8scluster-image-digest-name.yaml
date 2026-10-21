@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/k8s_cluster
+note: Use the pod spec image for container image name and tag metadata.
+issues: [52236]
+subtext: A CRI can report a digest-pinned container status image as an image ID. The receiver now reads the repository and tag from the pod spec.
+change_logs: [user]

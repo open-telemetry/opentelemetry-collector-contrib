@@ -157,7 +157,13 @@ func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger)
 	mdata := map[string]string{}
 
 	imageStr := cs.Image
-	image, err := docker.ParseImageName(cs.Image)
+	for i := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Name == cs.Name {
+			imageStr = pod.Spec.Containers[i].Image
+			break
+		}
+	}
+	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
 		docker.LogParseError(err, imageStr, logger)
 	} else {

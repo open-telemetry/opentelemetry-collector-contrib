@@ -50,6 +50,29 @@ var testPod = &corev1.Pod{
 	},
 }
 
+func TestGetMetadataUsesPodSpecImageForDigestPinnedContainer(t *testing.T) {
+	const digest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	pod := &corev1.Pod{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "app",
+					Image: "registry.example.com/team/app:1.2.3@" + digest,
+				},
+			},
+		},
+	}
+	cs := corev1.ContainerStatus{
+		Name:  "app",
+		Image: digest,
+	}
+
+	md := GetMetadata(pod, cs, zap.NewNop())
+
+	assert.Equal(t, "registry.example.com/team/app", md.Metadata[containerImageName])
+	assert.Equal(t, "1.2.3", md.Metadata[containerImageTag])
+}
+
 func TestRecordSpecMetrics(t *testing.T) {
 	tests := []struct {
 		name            string
