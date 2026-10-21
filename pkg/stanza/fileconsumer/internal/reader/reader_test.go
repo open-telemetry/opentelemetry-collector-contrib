@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -417,6 +418,117 @@ func TestReadGzipIncompleteStream(t *testing.T) {
 	require.Equal(t, info.Size(), reader.Offset)
 	require.Zero(t, reader.DecompressedBytesToSkip)
 	require.Zero(t, reader.incompleteGzipSize)
+}
+
+func TestReadGzipOffsetFromEarlierVersion(t *testing.T) {
+	t.Parallel()
+
+	f, sink := testFactory(t, withCompression("gzip"))
+	temp := filetest.OpenTemp(t, t.TempDir())
+
+	// A complete gzip member, followed by a gzip member that is still being written.
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog2\ntestlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	// Earlier versions read all of it and saved the end of the file as the offset, inside the second gzip member.
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	_, err = writer.Write([]byte("testlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	reader, err := f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), &Metadata{Fingerprint: fp, Offset: info.Size(), FileType: gzipExtension})
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// Only the line written after that offset is read.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog4"))
+	sink.ExpectNoCalls(t)
+	info, err = temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.Offset)
+	require.Zero(t, reader.DecompressedBytesToSkip)
+}
+
+func TestReadGzipOffsetFromEarlierVersionNotRecoverable(t *testing.T) {
+	t.Parallel()
+
+	f, sink := testFactory(t, withCompression("gzip"))
+	core, logs := observer.New(zap.WarnLevel)
+	f.Logger = zap.New(core)
+	temp := filetest.OpenTemp(t, t.TempDir())
+
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	// The gzip member that contains the offset cannot be decompressed because its checksum is wrong.
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	_, err = temp.WriteAt([]byte{0xff}, info.Size()-8)
+	require.NoError(t, err)
+
+	reader, err := f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), &Metadata{Fingerprint: fp, Offset: info.Size() / 2, FileType: gzipExtension})
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// Reading continues from the end of the file.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectNoCalls(t)
+	require.Equal(t, info.Size(), reader.Offset)
+	require.Equal(t, 1, logs.FilterMessageSnippet("cannot be recovered").Len())
+}
+
+func TestUpdateGzipOffsetWhenReadingStopped(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	writer := gzip.NewWriter(&buf)
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	firstMember := int64(buf.Len())
+	writer = gzip.NewWriter(&buf)
+	_, err = writer.Write([]byte("testlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	for name, tc := range map[string]struct {
+		read, offset, skip int64
+	}{
+		"inside the first member": {read: 9, offset: 0, skip: 9},
+		"end of the first member": {read: 18, offset: firstMember, skip: 0},
+		"inside the last member":  {read: 20, offset: firstMember, skip: 2},
+		"everything":              {read: 27, offset: int64(buf.Len()), skip: 0},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			g, err := newGzipMembersReader(bytes.NewReader(buf.Bytes()), 0, int64(buf.Len()))
+			require.NoError(t, err)
+			_, err = io.Copy(io.Discard, g)
+			require.NoError(t, err)
+			require.ErrorIs(t, g.err, io.EOF)
+
+			// The whole file was decompressed, but reading stopped early, for example because the collector is shutting down.
+			r := &Reader{Metadata: &Metadata{Offset: tc.read}}
+			r.updateGzipOffset(g)
+			require.Equal(t, tc.offset, r.Offset)
+			require.Equal(t, tc.skip, r.DecompressedBytesToSkip)
+		})
+	}
 }
 
 func TestReadGzipInvalidStream(t *testing.T) {

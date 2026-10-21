@@ -18,7 +18,8 @@ issues: [51923]
 subtext: |
   Lines of a gzip member that is still being written are still read as they are written. The stored offset now stays
   at the start of that gzip member, together with the number of its decompressed bytes that were already read,
-  instead of pointing into the middle of the compressed data.
+  instead of pointing into the middle of the compressed data. An offset saved by an earlier version that points into
+  the middle of a gzip member is recovered by continuing from the start of that gzip member.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
