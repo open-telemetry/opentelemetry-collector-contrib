@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 			CardinalityTotalLimit:             200000,
 			HideTopnLockstatsRowrangestartkey: true,
 			HideSplitStatsKeys:                true,
+			HideClientIPAddress:               true,
 			TruncateText:                      true,
 			Projects: []Project{
 				{
