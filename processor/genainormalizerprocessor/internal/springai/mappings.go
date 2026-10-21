@@ -25,4 +25,6 @@ var LookupTable = map[string]string{
 
 	// Only set when the application passes ChatMemory.CONVERSATION_ID.
 	"spring.ai.chat.client.conversation.id": otelsemconv.GenAIConversationID,
+
+	"gen_ai.request.embedding.dimensions": otelsemconv.GenAIEmbeddingsDimensionCount,
 }

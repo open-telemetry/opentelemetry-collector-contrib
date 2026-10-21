@@ -345,11 +345,12 @@ Attribute renames:
 | `spring.ai.tool.call.arguments` | `gen_ai.tool.call.arguments` | |
 | `spring.ai.tool.call.result` | `gen_ai.tool.call.result` | |
 | `spring.ai.chat.client.conversation.id` | `gen_ai.conversation.id` | only present when the application passes `ChatMemory.CONVERSATION_ID` |
+| `gen_ai.request.embedding.dimensions` | `gen_ai.embeddings.dimension.count` | parsed as int |
 
 In-place changes:
 
-- String values of `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` and `gen_ai.request.max_tokens` are parsed as int, and `gen_ai.request.temperature`, `top_p`, `top_k`, `frequency_penalty` and `presence_penalty` as double. Unparsable values are left unchanged.
-- `gen_ai.response.finish_reasons` and `gen_ai.request.stop_sequences` arrive as a string such as `["stop", "tool_use"]` and are parsed into a `string[]`. A value that is not a JSON array is wrapped into a single-element `string[]`.
+- String values of `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` and `gen_ai.request.max_tokens` are parsed as int, and `gen_ai.request.temperature`, `top_p`, `top_k`, `frequency_penalty` and `presence_penalty` as double. `gen_ai.request.stream` is parsed as bool. Unparsable values are left unchanged.
+- `gen_ai.response.finish_reasons` and `gen_ai.request.stop_sequences` arrive as a string such as `["stop", "tool_use"]`, with each element quoted but not escaped, and are split into a `string[]` with the elements unchanged. An element that itself contains `", "` is split in two. A value not in this shape is wrapped into a single-element `string[]`.
 - `gen_ai.system` is copied to `gen_ai.provider.name`, except for `spring_ai`, which Spring AI sets on its own chat client, advisor and tool spans. `bedrock_converse`, `vertex_ai` and `google_genai` become `aws.bedrock`, `gcp.vertex_ai` and `gcp.gen_ai`. With `remove_originals`, `gen_ai.system` is removed once copied.
 - For `gen_ai.system` `anthropic`, the cache read and cache creation tokens are added to `gen_ai.usage.input_tokens`. Spring AI reports Anthropic's count, which excludes them, while the semantic conventions include them. This only happens while `input_tokens` is still a string, so a span is not counted twice.
 

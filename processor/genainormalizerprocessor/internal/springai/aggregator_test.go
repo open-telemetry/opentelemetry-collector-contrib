@@ -4,6 +4,7 @@
 package springai
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -80,31 +81,75 @@ func TestAggregate_KeepsAlreadyTypedValues(t *testing.T) {
 	assert.Equal(t, int64(12), v.Int())
 }
 
-func TestAggregate_ParsesStringListsIntoSlices(t *testing.T) {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("gen_ai.response.finish_reasons", `["tool_use", "tool_use"]`)
-	attrs.PutStr("gen_ai.request.stop_sequences", `["\n\n"]`)
-
-	aggregate(attrs, false)
-
-	v, _ := attrs.Get("gen_ai.response.finish_reasons")
-	require.Equal(t, pcommon.ValueTypeSlice, v.Type())
-	assert.Equal(t, []any{"tool_use", "tool_use"}, v.Slice().AsRaw())
-
-	v, _ = attrs.Get("gen_ai.request.stop_sequences")
-	require.Equal(t, pcommon.ValueTypeSlice, v.Type())
-	assert.Equal(t, []any{"\n\n"}, v.Slice().AsRaw())
+// concatenateStrings is Spring AI's ObservabilityHelper.concatenateStrings.
+func concatenateStrings(items []string) string {
+	quoted := make([]string, len(items))
+	for i, item := range items {
+		quoted[i] = `"` + item + `"`
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
-func TestAggregate_WrapsAStringListThatIsNotJSON(t *testing.T) {
+func TestAggregate_DecodesSpringListsWithoutChangingTheElements(t *testing.T) {
+	tests := map[string][]string{
+		"finish reasons":      {"tool_use", "tool_use"},
+		"real newlines":       {"\n\n", "END"},
+		"literal backslash-n": {`\n`},
+		"quotes":              {`say "hi"`},
+		"brackets":            {"[x]"},
+		"one empty element":   {""},
+		"no elements":         {},
+	}
+	for name, items := range tests {
+		t.Run(name, func(t *testing.T) {
+			attrs := pcommon.NewMap()
+			attrs.PutStr("gen_ai.request.stop_sequences", concatenateStrings(items))
+
+			aggregate(attrs, false)
+
+			v, _ := attrs.Get("gen_ai.request.stop_sequences")
+			require.Equal(t, pcommon.ValueTypeSlice, v.Type())
+			got := make([]string, 0, v.Slice().Len())
+			for i := range v.Slice().Len() {
+				got = append(got, v.Slice().At(i).Str())
+			}
+			assert.Equal(t, items, got)
+		})
+	}
+}
+
+func TestAggregate_WrapsAValueThatIsNotASpringList(t *testing.T) {
 	attrs := pcommon.NewMap()
-	attrs.PutStr("gen_ai.response.finish_reasons", `["say "hi"", "stop"]`)
+	attrs.PutStr("gen_ai.response.finish_reasons", "stop")
 
 	aggregate(attrs, false)
 
 	v, _ := attrs.Get("gen_ai.response.finish_reasons")
 	require.Equal(t, pcommon.ValueTypeSlice, v.Type())
-	assert.Equal(t, []any{`["say "hi"", "stop"]`}, v.Slice().AsRaw())
+	assert.Equal(t, []any{"stop"}, v.Slice().AsRaw())
+}
+
+func TestAggregate_RetypesStream(t *testing.T) {
+	for in, want := range map[string]bool{"true": true, "false": false} {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("gen_ai.request.stream", in)
+
+		assert.True(t, aggregate(attrs, false))
+
+		v, _ := attrs.Get("gen_ai.request.stream")
+		require.Equal(t, pcommon.ValueTypeBool, v.Type(), in)
+		assert.Equal(t, want, v.Bool(), in)
+	}
+}
+
+func TestAggregate_LeavesUnparsableStreamAlone(t *testing.T) {
+	attrs := pcommon.NewMap()
+	attrs.PutStr("gen_ai.request.stream", "sometimes")
+
+	assert.False(t, aggregate(attrs, false))
+
+	v, _ := attrs.Get("gen_ai.request.stream")
+	assert.Equal(t, "sometimes", v.Str())
 }
 
 func TestAggregate_ProviderName(t *testing.T) {

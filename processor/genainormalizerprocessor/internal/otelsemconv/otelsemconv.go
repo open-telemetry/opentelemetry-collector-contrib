@@ -81,6 +81,9 @@ var (
 	// gen_ai.conversation.*
 	GenAIConversationID = typed(conventions.GenAIConversationID)
 
+	// gen_ai.embeddings.*
+	GenAIEmbeddingsDimensionCount = typed(conventions.GenAIEmbeddingsDimensionCount)
+
 	// gen_ai.input.*
 	GenAIInputMessages = string(conventions.GenAIInputMessagesKey)
 

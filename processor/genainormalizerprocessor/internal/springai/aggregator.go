@@ -4,7 +4,8 @@
 package springai // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/springai"
 
 import (
-	"encoding/json"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -24,6 +25,10 @@ const (
 	// cacheExclusiveSystem reports input_tokens without the cached tokens:
 	// https://github.com/spring-projects/spring-ai/blob/cba03cdd219d9ee45d30c691349bfc733f6d1110/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatModel.java#L1413-L1419
 	cacheExclusiveSystem = "anthropic"
+
+	// genAIRequestStream is a boolean in the GenAI registry, newer than the
+	// semconv version this processor pins.
+	genAIRequestStream = "gen_ai.request.stream"
 )
 
 // scalarKeys are canonical keys Spring AI writes under their own name, but as
@@ -42,8 +47,8 @@ var scalarKeys = []string{
 }
 
 // listKeys are written by Spring AI's ObservabilityHelper.concatenateStrings,
-// which quotes each element without escaping it, so a value is JSON only when
-// no element contains a quote.
+// which quotes each element without escaping it:
+// https://github.com/spring-projects/spring-ai/blob/cba03cdd219d9ee45d30c691349bfc733f6d1110/spring-ai-commons/src/main/java/org/springframework/ai/observation/ObservabilityHelper.java#L39-L43
 var listKeys = []string{
 	otelsemconv.GenAIResponseFinishReasons,
 	otelsemconv.GenAIRequestStopSequences,
@@ -80,6 +85,7 @@ func (Aggregator) AggregateAttributes(attrs pcommon.Map, removeOriginals, overwr
 	if foldCache {
 		includeCachedInputTokens(attrs)
 	}
+	wrote = retype(attrs, genAIRequestStream, parseBool) || wrote
 	for _, key := range listKeys {
 		wrote = retype(attrs, key, parseList) || wrote
 	}
@@ -100,16 +106,34 @@ func retype(attrs pcommon.Map, key string, parse func(src, dst pcommon.Value) bo
 	return true
 }
 
-func parseList(src, dst pcommon.Value) bool {
-	var elems []string
-	if json.Unmarshal([]byte(src.Str()), &elems) != nil {
-		elems = []string{src.Str()}
+func parseBool(src, dst pcommon.Value) bool {
+	b, err := strconv.ParseBool(src.Str())
+	if err != nil {
+		return false
 	}
+	dst.SetBool(b)
+	return true
+}
+
+func parseList(src, dst pcommon.Value) bool {
 	slice := dst.SetEmptySlice()
-	for _, e := range elems {
+	for _, e := range splitList(src.Str()) {
 		slice.AppendEmpty().SetStr(e)
 	}
 	return true
+}
+
+// splitList decodes concatenateStrings output. A value not in that shape
+// becomes a single element; an element that itself contains `", "` is split
+// in two.
+func splitList(s string) []string {
+	if s == "[]" {
+		return nil
+	}
+	if len(s) < len(`[""]`) || !strings.HasPrefix(s, `["`) || !strings.HasSuffix(s, `"]`) {
+		return []string{s}
+	}
+	return strings.Split(s[len(`["`):len(s)-len(`"]`)], `", "`)
 }
 
 // includeCachedInputTokens makes input_tokens include the cached tokens, as

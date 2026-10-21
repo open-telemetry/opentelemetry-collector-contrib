@@ -1050,3 +1050,27 @@ func TestNormalize_SpringAI_ToolSpan(t *testing.T) {
 		"gen_ai.tool.call.result":    `{"celsius":12}`,
 	}, out.AsRaw())
 }
+
+// TestNormalize_SpringAI_EmbeddingSpan asserts that Spring AI's embedding
+// dimensions land on the semconv key as an int.
+func TestNormalize_SpringAI_EmbeddingSpan(t *testing.T) {
+	cfg := &Config{
+		Sources: []Source{{Name: SourceSpringAI, RemoveOriginals: true}},
+	}
+	sink := new(consumertest.TracesSink)
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	td, span := newSpan()
+	attrs := span.Attributes()
+	attrs.PutStr("gen_ai.operation.name", "embedding")
+	attrs.PutStr("gen_ai.request.embedding.dimensions", "1536")
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+	out := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	assert.Equal(t, map[string]any{
+		"gen_ai.operation.name":             "embeddings",
+		"gen_ai.embeddings.dimension.count": int64(1536),
+	}, out.AsRaw())
+}
