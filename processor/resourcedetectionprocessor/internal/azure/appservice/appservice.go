@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_azure_appservice
+
 package appservice // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
 
 import (
@@ -17,9 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
-
-// TypeStr is the detector type string.
-const TypeStr = "azureappservice"
 
 // newResourceDetector is overridden in tests to substitute a fake SDK detector.
 var newResourceDetector = func() sdkresource.Detector {

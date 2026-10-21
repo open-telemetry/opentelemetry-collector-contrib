@@ -475,6 +475,9 @@ exclusions:
       - name: processor.k8sattributes.EmitV1K8sConventions
         validation:
           enabled: false
+      - name: processor.k8sattributes.EnableKubeletPodSource
+        validation:
+          enabled: false
       - name: processor.k8sattributes.ShareProcessorBetweenPipelines
         validation:
           enabled: false
@@ -772,9 +775,6 @@ exclusions:
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
     feature_gates:
       - name: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
-        validation:
-          enabled: false
-      - name: receiver.prometheusreceiver.IgnoreScopeInfoMetric
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver

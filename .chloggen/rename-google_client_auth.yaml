@@ -1,0 +1,4 @@
+change_type: deprecation
+component: extension/google_client_auth
+note: "Rename the googleclientauth extension to google_client_auth. The old name remains available as a deprecated alias."
+issues: [45339]

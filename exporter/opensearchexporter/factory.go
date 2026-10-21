@@ -38,7 +38,7 @@ func newDefaultConfig() component.Config {
 		BulkAction:       defaultBulkAction,
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
-		QueueConfig:      configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 

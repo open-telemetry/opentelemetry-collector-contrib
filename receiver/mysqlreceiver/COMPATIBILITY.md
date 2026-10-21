@@ -6,7 +6,7 @@ This document lists every version-gated capability in the MySQL receiver. Versio
 
 | Predicate | Minimum Version | Fallback Behavior |
 |---|---|---|
-| `supportsQuerySampleText()` | MySQL 8.0.3+ | Top-query scraper uses 5-column fallback template (`topQueryNoSampleText.tmpl`); `querySampleText` is empty and `EXPLAIN` is skipped |
+| `supportsQuerySampleText()` | MySQL 8.0.3+ | Top-query scraper uses the fallback template (`topQueryNoSampleText.tmpl`), which omits `query_sample_text`; `querySampleText` is empty and `EXPLAIN` is skipped |
 | `supportsReplicaStatus()` | MySQL 8.0.22+ | `SHOW SLAVE STATUS` is used instead of `SHOW REPLICA STATUS` |
 | `supportsProcesslist()` | MySQL 8.0.22+ | `client.port` and `network.peer.port` remain `0`; `information_schema.PROCESSLIST` is **not** used as a fallback (it holds a global mutex, was deprecated in MySQL 8.0, removed in MySQL 9.0, and has already been removed from this receiver) |
 | `supportsInnodbRedoLogStats()` | MySQL 8.0.11+ | InnoDB redo-log LSN and checkpoint-age metrics are not emitted |
@@ -89,3 +89,12 @@ after each restart. The receiver user needs `UPDATE ON performance_schema.setup_
 | MariaDB (all versions) | Tier 1 or 3 | Tier 2 is not used — MariaDB `statement.TIMER_WAIT` is stale during active execution; falls through to integer-second `processlist_time` |
 
 See the Timer Wait Tiers section above for tier definitions.
+
+## `session_connect_attrs` (`mysql.client.name`)
+
+`mysql.client.name` is read from `performance_schema.session_connect_attrs`, which is populated by the
+client driver at connect time. The server-side limit on this table,
+`performance_schema_session_connect_attrs_size`, defaults to a non-zero value on MySQL and MariaDB but
+can be set to `0`, which disables it. When disabled, or when the client sends no connect attributes,
+the row is simply absent — `mysql.client.name` comes through as an empty string either way, with no
+way to distinguish "not reported" from "disabled server-side".

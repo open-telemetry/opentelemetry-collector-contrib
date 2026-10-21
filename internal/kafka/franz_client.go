@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	krb5client "github.com/jcmturner/gokrb5/v8/client"
 	krb5config "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -117,6 +119,7 @@ func NewFranzConsumerGroup(
 		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
 		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
 		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
+		kgo.MaxDecompressBatchBytes(consumerCfg.MaxDecompressBatchBytes),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
@@ -304,7 +307,7 @@ func commonOpts(
 		}
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
+		saslOpt, err := configureKgoSASL(ctx, clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -338,6 +341,10 @@ func commonOpts(
 	// Configure connection idle timeout
 	if clientCfg.ConnIdleTimeout > 0 {
 		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
+	}
+	// Configure dial timeout
+	if clientCfg.DialTimeout > 0 {
+		opts = append(opts, kgo.DialTimeout(clientCfg.DialTimeout))
 	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
@@ -382,7 +389,21 @@ func newRetryBackoffFn(minBackoff time.Duration) func(int) time.Duration {
 	}
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
+// loadAWSCredentialsProvider resolves the default AWS credentials provider.
+// LoadDefaultConfig wraps it in an aws.CredentialsCache. It is a variable so
+// tests can replace it.
+var loadAWSCredentialsProvider = func(ctx context.Context, region string) (aws.CredentialsProvider, error) {
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region),
+		awsconfig.WithCredentialsCacheOptions(func(o *aws.CredentialsCacheOptions) {
+			o.ExpiryWindow = time.Minute
+		}))
+	if err != nil {
+		return nil, err
+	}
+	return awsCfg.Credentials, nil
+}
+
+func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -392,8 +413,14 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt
 	case SCRAMSHA512:
 		m = scram.Auth{User: cfg.Username, Pass: cfg.Password}.AsSha512Mechanism()
 	case AWSMSKIAMOAUTHBEARER:
+		// Resolve the credentials provider once per client so cached
+		// credentials are reused across SASL authentications.
+		credsProvider, err := loadAWSCredentialsProvider(ctx, cfg.AWSMSK.Region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		}
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
+			token, _, err := signer.GenerateAuthTokenFromCredentialsProvider(ctx, cfg.AWSMSK.Region, credsProvider)
 			return oauth.Auth{Token: token}, err
 		})
 	case OAUTHBEARER:
@@ -402,10 +429,12 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt
 		if !exists {
 			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource)
 		}
+		ts, ok := oauthExt.(contextTokenSource)
+		if !ok {
+			return nil, fmt.Errorf("oauthbearer_token_source extension %q does not implement Token(context.Context)", cfg.OAuthBearerTokenSource)
+		}
 
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			ts := oauthExt.(contextTokenSource)
-
 			token, err := ts.Token(ctx)
 			if err != nil {
 				return oauth.Auth{}, err
