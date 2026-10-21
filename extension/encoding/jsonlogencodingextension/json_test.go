@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,7 +79,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 			expected, err := golden.ReadLogs(tt.logsPath)
 			assert.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expected, logs))
+			require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 
 			buf, err := e.MarshalLogs(logs)
 			assert.NoError(t, err)
@@ -111,6 +112,48 @@ func TestMarshalUnmarshal(t *testing.T) {
 			for i, line := range inputDocuments {
 				assert.Equal(t, line, outputDocuments[i])
 			}
+		})
+	}
+}
+
+func TestUnmarshalLogsObservedTimestamp(t *testing.T) {
+	tests := []struct {
+		name      string
+		arrayMode bool
+		input     string
+	}{
+		{
+			name:      "array mode",
+			arrayMode: true,
+			input:     `[{"key":"value1"},{"key":"value2"}]`,
+		},
+		{
+			name:      "JSON mode",
+			arrayMode: false,
+			input:     "{\"key\":\"value1\"}\n{\"key\":\"value2\"}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			extension := &jsonLogExtension{
+				config: &Config{
+					Mode:      JSONEncodingModeBody,
+					ArrayMode: tt.arrayMode,
+				},
+			}
+
+			before := time.Now()
+			logs, err := extension.UnmarshalLogs([]byte(tt.input))
+			after := time.Now()
+			require.NoError(t, err)
+
+			records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			require.Equal(t, 2, records.Len())
+			observed := records.At(0).ObservedTimestamp()
+			assert.WithinRange(t, observed.AsTime(), before, after)
+			assert.Equal(t, observed, records.At(1).ObservedTimestamp())
+			assert.Zero(t, records.At(0).Timestamp())
 		})
 	}
 }
