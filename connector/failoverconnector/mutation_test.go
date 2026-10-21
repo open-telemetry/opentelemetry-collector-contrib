@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,171 +23,165 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
-func TestLogsPreservedAcrossFailoverAttempts(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		retry bool
+type preservationTest struct {
+	connector    component.Component
+	prepareRetry func()
+	consume      func() (inputCount int, err error)
+	batchCount   func() int
+	itemCount    func(int) int
+}
+
+func TestDataPreservedAcrossFailoverAttempts(t *testing.T) {
+	for _, signalTest := range []struct {
+		signal pipeline.Signal
+		setup  func(*testing.T, *Config, error) preservationTest
 	}{
-		{name: "failover"},
-		{name: "recovery_probe", retry: true},
+		{signal: pipeline.SignalLogs, setup: setupLogsPreservationTest},
+		{signal: pipeline.SignalTraces, setup: setupTracesPreservationTest},
+		{signal: pipeline.SignalMetrics, setup: setupMetricsPreservationTest},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			downstreamErr := errors.New("connection refused")
-			primary, err := consumer.NewLogs(func(_ context.Context, data plog.Logs) error {
-				data.MoveTo(plog.NewLogs())
-				return downstreamErr
-			}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
-			require.NoError(t, err)
+		t.Run(signalTest.signal.String(), func(t *testing.T) {
+			for _, tc := range []struct {
+				name  string
+				retry bool
+			}{
+				{name: "failover"},
+				{name: "recovery_probe", retry: true},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					firstID := pipeline.NewIDWithName(signalTest.signal, "first")
+					secondID := pipeline.NewIDWithName(signalTest.signal, "second")
+					cfg := &Config{
+						PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
+						RetryInterval:    time.Hour,
+					}
+					test := signalTest.setup(t, cfg, errors.New("connection refused"))
+					defer func() {
+						require.NoError(t, test.connector.Shutdown(t.Context()))
+					}()
+					if tc.retry {
+						test.prepareRetry()
+					}
 
-			firstID := pipeline.NewIDWithName(pipeline.SignalLogs, "first")
-			secondID := pipeline.NewIDWithName(pipeline.SignalLogs, "second")
-			cfg := &Config{
-				PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
-				RetryInterval:    time.Hour,
-			}
+					for i := range 2 {
+						inputCount, err := test.consume()
+						require.NoError(t, err)
 
-			var backup consumertest.LogsSink
-			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
-				firstID:  primary,
-				secondID: &backup,
-			})
-
-			conn, err := NewFactory().CreateLogsToLogs(
-				t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
-			)
-			require.NoError(t, err)
-			defer func() {
-				require.NoError(t, conn.Shutdown(t.Context()))
-			}()
-
-			f := conn.(*logsFailover).failover
-			if tc.retry {
-				f.reportConsumerError(0, downstreamErr)
-				f.notifyRetry <- struct{}{}
-			}
-
-			for i := range 2 {
-				data := sampleLog()
-				require.NoError(t, conn.ConsumeLogs(t.Context(), data))
-
-				require.Len(t, backup.AllLogs(), i+1)
-				require.Equal(t, 1, backup.AllLogs()[i].LogRecordCount(), "the healthy backup must receive the original data")
-
-				require.Equal(t, 1, data.LogRecordCount(), "the connector must preserve its non-mutating contract")
+						require.Equal(t, i+1, test.batchCount())
+						require.Equal(t, 1, test.itemCount(i), "the healthy backup must receive the original data")
+						require.Equal(t, 1, inputCount, "the connector must preserve its non-mutating contract")
+					}
+				})
 			}
 		})
 	}
 }
 
-func TestTracesPreservedAcrossFailoverAttempts(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		retry bool
-	}{
-		{name: "failover"},
-		{name: "recovery_probe", retry: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			downstreamErr := errors.New("connection refused")
-			primary, err := consumer.NewTraces(func(_ context.Context, data ptrace.Traces) error {
-				data.MoveTo(ptrace.NewTraces())
-				return downstreamErr
-			}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
-			require.NoError(t, err)
+func setupLogsPreservationTest(t *testing.T, cfg *Config, downstreamErr error) preservationTest {
+	t.Helper()
+	primary, err := consumer.NewLogs(func(_ context.Context, data plog.Logs) error {
+		data.MoveTo(plog.NewLogs())
+		return downstreamErr
+	}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
 
-			firstID := pipeline.NewIDWithName(pipeline.SignalTraces, "first")
-			secondID := pipeline.NewIDWithName(pipeline.SignalTraces, "second")
-			cfg := &Config{
-				PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
-				RetryInterval:    time.Hour,
-			}
+	var backup consumertest.LogsSink
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		cfg.PipelinePriority[0][0]: primary,
+		cfg.PipelinePriority[1][0]: &backup,
+	})
 
-			var backup consumertest.TracesSink
-			router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
-				firstID:  primary,
-				secondID: &backup,
-			})
+	conn, err := NewFactory().CreateLogsToLogs(
+		t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
+	)
+	require.NoError(t, err)
 
-			conn, err := NewFactory().CreateTracesToTraces(
-				t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
-			)
-			require.NoError(t, err)
-			defer func() {
-				require.NoError(t, conn.Shutdown(t.Context()))
-			}()
-
-			f := conn.(*tracesFailover).failover
-			if tc.retry {
-				f.reportConsumerError(0, downstreamErr)
-				f.notifyRetry <- struct{}{}
-			}
-
-			for i := range 2 {
-				data := sampleTrace()
-				require.NoError(t, conn.ConsumeTraces(t.Context(), data))
-
-				require.Len(t, backup.AllTraces(), i+1)
-				require.Equal(t, 1, backup.AllTraces()[i].SpanCount(), "the healthy backup must receive the original data")
-
-				require.Equal(t, 1, data.SpanCount(), "the connector must preserve its non-mutating contract")
-			}
-		})
+	f := conn.(*logsFailover).failover
+	return preservationTest{
+		connector: conn,
+		prepareRetry: func() {
+			f.reportConsumerError(0, downstreamErr)
+			f.notifyRetry <- struct{}{}
+		},
+		consume: func() (int, error) {
+			data := sampleLog()
+			err := conn.ConsumeLogs(t.Context(), data)
+			return data.LogRecordCount(), err
+		},
+		batchCount: func() int { return len(backup.AllLogs()) },
+		itemCount:  func(i int) int { return backup.AllLogs()[i].LogRecordCount() },
 	}
 }
 
-func TestMetricsPreservedAcrossFailoverAttempts(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		retry bool
-	}{
-		{name: "failover"},
-		{name: "recovery_probe", retry: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			downstreamErr := errors.New("connection refused")
-			primary, err := consumer.NewMetrics(func(_ context.Context, data pmetric.Metrics) error {
-				data.MoveTo(pmetric.NewMetrics())
-				return downstreamErr
-			}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
-			require.NoError(t, err)
+func setupTracesPreservationTest(t *testing.T, cfg *Config, downstreamErr error) preservationTest {
+	t.Helper()
+	primary, err := consumer.NewTraces(func(_ context.Context, data ptrace.Traces) error {
+		data.MoveTo(ptrace.NewTraces())
+		return downstreamErr
+	}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
 
-			firstID := pipeline.NewIDWithName(pipeline.SignalMetrics, "first")
-			secondID := pipeline.NewIDWithName(pipeline.SignalMetrics, "second")
-			cfg := &Config{
-				PipelinePriority: [][]pipeline.ID{{firstID}, {secondID}},
-				RetryInterval:    time.Hour,
-			}
+	var backup consumertest.TracesSink
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		cfg.PipelinePriority[0][0]: primary,
+		cfg.PipelinePriority[1][0]: &backup,
+	})
 
-			var backup consumertest.MetricsSink
-			router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
-				firstID:  primary,
-				secondID: &backup,
-			})
+	conn, err := NewFactory().CreateTracesToTraces(
+		t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
+	)
+	require.NoError(t, err)
 
-			conn, err := NewFactory().CreateMetricsToMetrics(
-				t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
-			)
-			require.NoError(t, err)
-			defer func() {
-				require.NoError(t, conn.Shutdown(t.Context()))
-			}()
+	f := conn.(*tracesFailover).failover
+	return preservationTest{
+		connector: conn,
+		prepareRetry: func() {
+			f.reportConsumerError(0, downstreamErr)
+			f.notifyRetry <- struct{}{}
+		},
+		consume: func() (int, error) {
+			data := sampleTrace()
+			err := conn.ConsumeTraces(t.Context(), data)
+			return data.SpanCount(), err
+		},
+		batchCount: func() int { return len(backup.AllTraces()) },
+		itemCount:  func(i int) int { return backup.AllTraces()[i].SpanCount() },
+	}
+}
 
-			f := conn.(*metricsFailover).failover
-			if tc.retry {
-				f.reportConsumerError(0, downstreamErr)
-				f.notifyRetry <- struct{}{}
-			}
+func setupMetricsPreservationTest(t *testing.T, cfg *Config, downstreamErr error) preservationTest {
+	t.Helper()
+	primary, err := consumer.NewMetrics(func(_ context.Context, data pmetric.Metrics) error {
+		data.MoveTo(pmetric.NewMetrics())
+		return downstreamErr
+	}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	require.NoError(t, err)
 
-			for i := range 2 {
-				data := sampleMetric()
-				data.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().AppendEmpty().SetIntValue(1)
-				require.NoError(t, conn.ConsumeMetrics(t.Context(), data))
+	var backup consumertest.MetricsSink
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		cfg.PipelinePriority[0][0]: primary,
+		cfg.PipelinePriority[1][0]: &backup,
+	})
 
-				require.Len(t, backup.AllMetrics(), i+1)
-				require.Equal(t, 1, backup.AllMetrics()[i].DataPointCount(), "the healthy backup must receive the original data")
+	conn, err := NewFactory().CreateMetricsToMetrics(
+		t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
+	)
+	require.NoError(t, err)
 
-				require.Equal(t, 1, data.DataPointCount(), "the connector must preserve its non-mutating contract")
-			}
-		})
+	f := conn.(*metricsFailover).failover
+	return preservationTest{
+		connector: conn,
+		prepareRetry: func() {
+			f.reportConsumerError(0, downstreamErr)
+			f.notifyRetry <- struct{}{}
+		},
+		consume: func() (int, error) {
+			data := sampleMetric()
+			data.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().AppendEmpty().SetIntValue(1)
+			err := conn.ConsumeMetrics(t.Context(), data)
+			return data.DataPointCount(), err
+		},
+		batchCount: func() int { return len(backup.AllMetrics()) },
+		itemCount:  func(i int) int { return backup.AllMetrics()[i].DataPointCount() },
 	}
 }
