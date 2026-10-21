@@ -15,9 +15,7 @@ issues: [52227]
 # (Optional) One or more lines of additional information to render under the main note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  `application_name` keeps precedence. The comment is read before obfuscation, so the trace context is no longer
-  limited to clients that set `application_name` to a `traceparent`.
+subtext: A `traceparent` in `application_name` keeps precedence.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should use `user` or `api`. If unsure, use `user`.
