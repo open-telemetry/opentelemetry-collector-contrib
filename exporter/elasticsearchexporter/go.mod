@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elastic/elastic-transport-go/v8 v8.8.0
-	github.com/elastic/go-docappender/v2 v2.14.1
+	github.com/elastic/go-docappender/v2 v2.15.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.20.3
