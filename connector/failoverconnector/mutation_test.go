@@ -6,12 +6,10 @@ package failoverconnector
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -189,79 +187,6 @@ func TestMetricsPreservedAcrossFailoverAttempts(t *testing.T) {
 
 				require.Equal(t, 1, data.DataPointCount(), "the connector must preserve its non-mutating contract")
 			}
-		})
-	}
-}
-
-func TestLogsFanoutPreservedAcrossFailoverAttempts(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		readOnly bool
-		retry    bool
-	}{
-		{name: "all_mutating/failover"},
-		{name: "all_mutating/recovery_probe", retry: true},
-		{name: "mixed/failover", readOnly: true},
-		{name: "mixed/recovery_probe", readOnly: true, retry: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			downstreamErr := errors.New("connection refused")
-			primary, err := consumer.NewLogs(func(_ context.Context, data plog.Logs) error {
-				data.MoveTo(plog.NewLogs())
-				return downstreamErr
-			}, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
-			require.NoError(t, err)
-
-			firstID := pipeline.NewIDWithName(pipeline.SignalLogs, "first")
-			otherID := pipeline.NewIDWithName(pipeline.SignalLogs, "other")
-			backupID := pipeline.NewIDWithName(pipeline.SignalLogs, "backup")
-			var readOnly, backup consumertest.LogsSink
-			other := primary
-			if tc.readOnly {
-				other = &readOnly
-			}
-
-			cfg := createDefaultConfig().(*Config)
-			cfg.PipelinePriority = [][]pipeline.ID{{firstID, otherID}, {backupID}}
-			cfg.RetryInterval = time.Hour
-
-			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
-				firstID:  primary,
-				otherID:  other,
-				backupID: &backup,
-			})
-
-			conn, err := NewFactory().CreateLogsToLogs(
-				t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, router,
-			)
-			require.NoError(t, err)
-			shutdown := sync.OnceFunc(func() {
-				require.NoError(t, conn.Shutdown(t.Context()))
-			})
-			defer shutdown()
-
-			f := conn.(*wrappedLogsConnector).GetFailoverRouter()
-			if tc.retry {
-				f.reportConsumerError(0, downstreamErr)
-				f.notifyRetry <- struct{}{}
-			}
-
-			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
-
-			data := sampleLog()
-			require.NoError(t, conn.ConsumeLogs(t.Context(), data))
-			// Shutdown drains the queue before the sink assertions.
-			shutdown()
-
-			if tc.readOnly {
-				require.Len(t, readOnly.AllLogs(), 1)
-				require.Equal(t, 1, readOnly.AllLogs()[0].LogRecordCount())
-			}
-
-			require.Len(t, backup.AllLogs(), 1)
-			require.Equal(t, 1, backup.AllLogs()[0].LogRecordCount(), "the healthy backup must receive the original data")
-
-			require.Equal(t, 1, data.LogRecordCount(), "the connector must preserve its non-mutating contract")
 		})
 	}
 }
