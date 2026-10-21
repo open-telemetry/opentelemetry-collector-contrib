@@ -169,7 +169,7 @@ Available only for logs:
 
 - `raw`: the payload's bytes are inserted as the body of a log record.
 - `text`: the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
-- `json`: the payload is decoded as JSON and inserted as the body of a log record.
+- `json` (Deprecated [v0.164.0]: use [`jsonlogencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/jsonlogencodingextension) with `array_mode: false`): the payload is decoded as JSON and inserted as the body of a log record.
 - `azure_resource_logs` (Deprecated [v0.149.0]: use [`azureencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/azureencodingextension)): the payload is converted from Azure Resource Logs format to OTel format.
 
 ### Message metadata propagation
