@@ -57,6 +57,16 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 	return prw.prometheusReceiver.Start(ctx, host)
 }
 
+// toPromTLSVersion maps a TLS version parsed by configtls onto the Prometheus TLSVersion.
+func toPromTLSVersion(v uint16) (configutil.TLSVersion, error) {
+	for _, pv := range configutil.TLSVersions {
+		if uint16(pv) == v {
+			return pv, nil
+		}
+	}
+	return 0, fmt.Errorf("TLS version %#04x is not supported by the Prometheus scrape config", v)
+}
+
 func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
 	var bearerToken string
 	if cfg.UseServiceAccount {
@@ -90,6 +100,21 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
 			ServerName:         cfg.ClientConfig.TLS.ServerName,
 			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
+		}
+		// Forward the versions only when set, so the defaults stay unchanged.
+		if cfg.ClientConfig.TLS.MinVersion != "" {
+			v, err := toPromTLSVersion(tlsConfig.MinVersion)
+			if err != nil {
+				return nil, fmt.Errorf("invalid tls min_version: %w", err)
+			}
+			httpConfig.TLSConfig.MinVersion = v
+		}
+		if cfg.ClientConfig.TLS.MaxVersion != "" {
+			v, err := toPromTLSVersion(tlsConfig.MaxVersion)
+			if err != nil {
+				return nil, fmt.Errorf("invalid tls max_version: %w", err)
+			}
+			httpConfig.TLSConfig.MaxVersion = v
 		}
 	}
 

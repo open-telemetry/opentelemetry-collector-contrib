@@ -42,8 +42,8 @@ is used. When unset, the scrape timeout is `collection_interval`.
 Kubernetes Pod service account for authentication.
 - `tls`: TLS settings for the scrape. Only the following
 [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings)
-are used: `insecure`, `ca_file`, `cert_file`, `key_file` and
-`insecure_skip_verify`. Other `tls` options are accepted but currently have no
+are used: `insecure`, `ca_file`, `cert_file`, `key_file`,
+`insecure_skip_verify`, `min_version` and `max_version`. Other `tls` options are accepted but currently have no
 effect.
   - `insecure` (default = `true`): Unlike other HTTP clients in the Collector,
   this receiver defaults to plain `http`. The target is scraped over `https`

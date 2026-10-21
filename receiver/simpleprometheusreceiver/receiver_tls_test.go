@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	configutil "github.com/prometheus/common/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -57,6 +58,58 @@ func TestGetPrometheusConfigInlineTLS(t *testing.T) {
 	tlsCfg := got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig.TLSConfig
 	assert.Equal(t, string(caPem), tlsCfg.CA, "inline CA PEM (ca_pem) must be forwarded to the prometheus scrape config")
 	assert.Equal(t, "example.com", tlsCfg.ServerName, "server_name must be forwarded to the prometheus scrape config")
+}
+
+// TestGetPrometheusConfigTLSVersions proves that min_version and max_version
+// are forwarded to the prometheus scrape config only when set, and survive the
+// reload that the prometheus receiver runs.
+func TestGetPrometheusConfigTLSVersions(t *testing.T) {
+	tests := []struct {
+		name                   string
+		minVersion, maxVersion string
+		wantMin, wantMax       configutil.TLSVersion
+		wantErr                string
+	}{
+		{name: "unset keeps prometheus defaults"},
+		{name: "min 1.3", minVersion: "1.3", wantMin: configutil.TLSVersions["TLS13"]},
+		{
+			name: "min 1.0 max 1.2", minVersion: "1.0", maxVersion: "1.2",
+			wantMin: configutil.TLSVersions["TLS10"], wantMax: configutil.TLSVersions["TLS12"],
+		},
+		{name: "max only", maxVersion: "1.2", wantMax: configutil.TLSVersions["TLS12"]},
+		{name: "unknown version", minVersion: "1.4", wantErr: `unsupported TLS version: "1.4"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = "localhost:1234"
+			clientConfig.TLS = configtls.ClientConfig{
+				Config: configtls.Config{
+					MinVersion: tt.minVersion,
+					MaxVersion: tt.maxVersion,
+				},
+			}
+
+			cfg := &Config{
+				ClientConfig:       clientConfig,
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			}
+
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.NoError(t, got.PrometheusConfig.Reload())
+
+			tlsCfg := got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig.TLSConfig
+			assert.Equal(t, tt.wantMin, tlsCfg.MinVersion)
+			assert.Equal(t, tt.wantMax, tlsCfg.MaxVersion)
+		})
+	}
 }
 
 // TestStartInlineTLS runs the forwarded TLS settings through the real
