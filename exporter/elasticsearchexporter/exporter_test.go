@@ -1313,9 +1313,9 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("exponential histogram falls back to t-digest in ECS mode on ES >= 9.3.0", func(t *testing.T) {
+	t.Run("exponential histogram falls back to t-digest in ECS mode on ES >= 9.4.0", func(t *testing.T) {
 		rec := newBulkRecorder()
-		server := newESTestServerWithVersion(t, "9.3.0", func(docs []itemRequest) ([]itemResponse, error) {
+		server := newESTestServerWithVersion(t, "9.4.0", func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -1350,7 +1350,7 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("exponential histogram falls back to t-digest in ECS mode on ES < 9.3.0", func(t *testing.T) {
+	t.Run("exponential histogram falls back to t-digest in ECS mode on ES < 9.4.0", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServerWithVersion(t, "7.0.0", func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -1387,7 +1387,7 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("exponential histogram falls back to t-digest when mode is otel and ES < 9.3.0", func(t *testing.T) {
+	t.Run("exponential histogram falls back to t-digest when mode is otel and ES < 9.4.0", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServerWithVersion(t, "7.0.0", func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -1423,9 +1423,9 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("publishes exponential histogram when mode is otel and ES >= 9.3.0", func(t *testing.T) {
+	t.Run("publishes exponential histogram when mode is otel and ES >= 9.4.0", func(t *testing.T) {
 		rec := newBulkRecorder()
-		server := newESTestServerWithVersion(t, "9.3.0", func(docs []itemRequest) ([]itemResponse, error) {
+		server := newESTestServerWithVersion(t, "9.4.0", func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -4016,23 +4016,23 @@ func TestResolveDefaultHistogramMapping(t *testing.T) {
 		expectSemverError bool
 	}{
 		{
-			name: "exponential histogram is returned when version is 9.3.0",
+			name: "exponential histogram is returned when version is 9.4.0",
 			cfg: &Config{
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
 			},
-			v:        "9.3.0",
+			v:        "9.4.0",
 			expected: datapoints.HistogramMappingExponential,
 		},
 		{
-			name: "exponential histogram is returned when version is 9.3.0-SNAPSHOT",
+			name: "exponential histogram is returned when version is 9.4.0-SNAPSHOT",
 			cfg: &Config{
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
 			},
-			v:        "9.3.0-SNAPSHOT",
+			v:        "9.4.0-SNAPSHOT",
 			expected: datapoints.HistogramMappingExponential,
 		},
 		{
@@ -4046,7 +4046,7 @@ func TestResolveDefaultHistogramMapping(t *testing.T) {
 			expected: datapoints.HistogramMappingTDigest,
 		},
 		{
-			name: "T-Digest is returned when ES version is less than 9.3.0",
+			name: "T-Digest is returned when ES version is less than 9.4.0",
 			cfg: &Config{
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
