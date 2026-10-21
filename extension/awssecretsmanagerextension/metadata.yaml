@@ -1,0 +1,16 @@
+display_name: AWS Secrets Manager Secret Extension
+type: aws_secrets_manager
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [meebok, thomasbaldwin, donny-z]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    skip: true
