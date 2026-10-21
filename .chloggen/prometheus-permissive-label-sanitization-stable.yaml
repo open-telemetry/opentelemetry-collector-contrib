@@ -1,0 +1,7 @@
+change_type: breaking
+component: exporter/prometheus
+note: Always preserve leading and consecutive underscores in label names.
+issues: [50429]
+subtext: |
+  Remove `-pkg.translator.prometheus.PermissiveLabelSanitization` from `--feature-gates`; disabling this gate now causes a startup error.
+change_logs: [user]
