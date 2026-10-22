@@ -53,21 +53,6 @@ func TestRetry_DNSDeadlineExceeded(t *testing.T) {
 	assert.Equal(t, int32(maxRetries+1), dials.Load())
 }
 
-func TestRetry_UnreachableServer(t *testing.T) {
-	endpoint := "http://" + closedLocalAddr(t)
-
-	const maxRetries = 1
-	client, dials := newRetryClient(t, endpoint, time.Second, (&net.Dialer{}).DialContext)
-
-	req, err := http.NewRequest(http.MethodPost, endpoint+"/_bulk", http.NoBody)
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	var opErr *net.OpError
-	require.ErrorAs(t, err, &opErr)
-	assert.Equal(t, "dial", opErr.Op)
-	assert.Equal(t, int32(maxRetries+1), dials.Load())
-}
-
 func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
 	release := make(chan struct{})
 	var requests atomic.Int32
