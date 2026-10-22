@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -60,24 +61,37 @@ func TestGetPrometheusConfigInlineTLS(t *testing.T) {
 	assert.Equal(t, "example.com", tlsCfg.ServerName, "server_name must be forwarded to the prometheus scrape config")
 }
 
-// TestGetPrometheusConfigTLSVersions proves that min_version and max_version
-// are forwarded to the prometheus scrape config only when set, and survive the
-// reload that the prometheus receiver runs.
+// TestGetPrometheusConfigTLSVersions proves that the resolved min_version and
+// max_version are forwarded to the prometheus scrape config, so the defaults
+// match other collector HTTP clients, and survive the reload that the
+// prometheus receiver runs.
 func TestGetPrometheusConfigTLSVersions(t *testing.T) {
 	tests := []struct {
 		name                   string
 		minVersion, maxVersion string
 		wantMin, wantMax       configutil.TLSVersion
+		wantValidateErr        string
 		wantErr                string
 	}{
-		{name: "unset keeps prometheus defaults"},
+		{name: "unset uses collector defaults", wantMin: configutil.TLSVersions["TLS12"]},
 		{name: "min 1.3", minVersion: "1.3", wantMin: configutil.TLSVersions["TLS13"]},
 		{
 			name: "min 1.0 max 1.2", minVersion: "1.0", maxVersion: "1.2",
 			wantMin: configutil.TLSVersions["TLS10"], wantMax: configutil.TLSVersions["TLS12"],
 		},
-		{name: "max only", maxVersion: "1.2", wantMax: configutil.TLSVersions["TLS12"]},
-		{name: "unknown version", minVersion: "1.4", wantErr: `unsupported TLS version: "1.4"`},
+		{
+			name: "max only", maxVersion: "1.2",
+			wantMin: configutil.TLSVersions["TLS12"], wantMax: configutil.TLSVersions["TLS12"],
+		},
+		{
+			name: "unknown version", minVersion: "1.4",
+			wantValidateErr: `invalid TLS min_version: unsupported TLS version: "1.4"`,
+			wantErr:         `unsupported TLS version: "1.4"`,
+		},
+		{
+			name: "min greater than max", minVersion: "1.3", maxVersion: "1.2",
+			wantValidateErr: "invalid TLS configuration: min_version cannot be greater than max_version",
+		},
 	}
 
 	for _, tt := range tests {
@@ -95,6 +109,17 @@ func TestGetPrometheusConfigTLSVersions(t *testing.T) {
 				ClientConfig:       clientConfig,
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
+			}
+
+			// The collector validates the full config before the receiver
+			// starts; that is where an inconsistent min/max pair is rejected.
+			if err := confmap.Validate(cfg); tt.wantValidateErr != "" {
+				require.ErrorContains(t, err, tt.wantValidateErr)
+				if tt.wantErr == "" {
+					return
+				}
+			} else {
+				require.NoError(t, err)
 			}
 
 			got, err := getPrometheusConfig(cfg, zap.NewNop())
