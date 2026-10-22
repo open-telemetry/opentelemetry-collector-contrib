@@ -430,24 +430,40 @@ func TestNewOperationsByTableJSONLabelValue(t *testing.T) {
 			expectedValue: "{table1,1,10},{table2,2,20}",
 		},
 		{
-			name: "Duplicates and unsorted order",
+			name: "Duplicates, unsorted order, and case-sensitive table names",
 			inputJSON: `[
 				{"table_name":"table2","insert_or_update_count":2,"insert_or_update_bytes":20},
 				{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10},
 				{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10},
+				{"table_name":"Table1","insert_or_update_count":1,"insert_or_update_bytes":10},
 				{"table_name":"table2","insert_or_update_count":2,"insert_or_update_bytes":20},
 				{"table_name":"table3","insert_or_update_count":0,"insert_or_update_bytes":0}
 			]`,
-			expectedValue: "{table1,1,10},{table2,2,20},{table3,0,0}",
+			expectedValue: "{Table1,1,10},{table1,1,10},{table2,2,20},{table3,0,0}",
+		},
+		{
+			name:          "Valid table_name only (count and bytes omitted or null)",
+			inputJSON:     `[{"table_name":"table1"},{"table_name":"table2","insert_or_update_count":null,"insert_or_update_bytes":null}]`,
+			expectedValue: "{table1,0,0},{table2,0,0}",
+		},
+		{
+			name:          "Mixed valid and skipped elements (null, empty object, empty or null table_name)",
+			inputJSON:     `[null, {}, {"table_name":null}, {"table_name":""}, {"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "Unknown fields in JSON object",
+			inputJSON:     `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10,"extra_field":"ignored"}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "All elements skipped (no valid table_name)",
+			inputJSON:     `[null, {}, {"table_name":null}, {"table_name":""}]`,
+			expectedValue: "",
 		},
 		{
 			name:          "Empty JSON array",
 			inputJSON:     "[]",
-			expectedValue: "",
-		},
-		{
-			name:          "Empty JSON object",
-			inputJSON:     "{}",
 			expectedValue: "",
 		},
 		{
@@ -466,33 +482,13 @@ func TestNewOperationsByTableJSONLabelValue(t *testing.T) {
 			expectedValue: "",
 		},
 		{
-			name:          "Null element in JSON array",
-			inputJSON:     `[null, {"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
-			expectedValue: "{table1,1,10}",
-		},
-		{
-			name:          "Unknown fields in JSON object",
-			inputJSON:     `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10,"extra_field":"ignored"}]`,
-			expectedValue: "{table1,1,10}",
+			name:          "Empty JSON object",
+			inputJSON:     "{}",
+			expectedValue: "",
 		},
 		{
 			name:          "Wrong field type in JSON object",
 			inputJSON:     `[{"table_name":123,"insert_or_update_count":1,"insert_or_update_bytes":10}]`,
-			expectedValue: "",
-		},
-		{
-			name:          "Empty JSON object in array",
-			inputJSON:     `[{}]`,
-			expectedValue: "",
-		},
-		{
-			name:          "Valid table_name only (count and bytes omitted or null)",
-			inputJSON:     `[{"table_name":"table1"},{"table_name":"table2","insert_or_update_count":null,"insert_or_update_bytes":null}]`,
-			expectedValue: "{table1,0,0},{table2,0,0}",
-		},
-		{
-			name:          "Null or empty table_name",
-			inputJSON:     `[{"table_name":null},{"table_name":""}]`,
 			expectedValue: "",
 		},
 	}
