@@ -496,28 +496,9 @@ processors:
 Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
 If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
-The cluster name is read from the node's EC2 tags. A node can carry more than one tag
-that names a cluster, so they are read in a fixed order, strongest claim first:
-
-1. `aws:eks:cluster-name`, which EKS sets in the reserved `aws:` tag namespace.
-2. `eks:cluster-name`, which EKS managed node groups set.
-3. `kubernetes.io/cluster/<name>`, which users and provisioning tools set. A tag
-   marked `owned` is preferred over one marked `shared`.
-
-Tags of the same strength naming different clusters do not say which cluster the node
-is in, so no cluster name is reported rather than one of them being chosen.
-
-Enabling [`aws.eks.cluster.arn`](#cluster-arn) adds a confirmation step that can also
-suppress this attribute, in the two cases where it establishes that the name on the
-node's tags does not describe this node's cluster. With the ARN disabled, as the
-default config does, the name is reported as described above.
-
 #### Cluster ARN
 
-The cluster name on its own is not unique, so two clusters in different accounts or
-different regions can report the same `k8s.cluster.name`. The `aws.eks.cluster.arn`
-attribute carries the full ARN of the cluster, which identifies exactly one cluster.
-It is disabled by default and can be enabled with the following configuration:
+To report the full EKS cluster identity, enable `aws.eks.cluster.arn`:
 
 ```yaml
 processors:
@@ -531,116 +512,18 @@ processors:
           enabled: true
 ```
 
-The ARN is the one EKS reports for the cluster, and it is only reported once EKS has
-confirmed that the cluster the node's tags name is the cluster the node is actually
-running in.
-
-That confirmation is needed because the cluster name comes from an EC2 tag, and two
-of the three tags it can come from sit in namespaces a user can write to. A name on
-its own only establishes that some cluster of that name exists in this account and
-Region, which a tag naming any other cluster in the same account and Region satisfies
-just as well. What distinguishes two clusters is their OIDC issuer URL, which is
-unique per cluster: the node's own Kubernetes API server publishes the issuer of the
-cluster the node is in, and `DescribeCluster` reports the issuer of the cluster that
-was named. The attribute is reported only when those two agree, ignoring a trailing
-slash. If they disagree, or either is unavailable, no ARN is reported.
-
-A detection run that reaches ARN confirmation makes these requests:
-
-* one `GET /.well-known/openid-configuration` request to the Kubernetes API server,
-  to read the issuer of the cluster the node is in. Environment detection can make
-  a separate request to the same endpoint when neither an EKS identity token path
-  nor another earlier check identifies the environment;
-* one `eks:DescribeCluster`
-  [request](https://docs.aws.amazon.com/eks/latest/APIReference/API_DescribeCluster.html),
-  which the role needs permission for;
-* one `ec2:DescribeInstances`
-  [request](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html)
-  to read the node's tags, which the role needs permission for. On the Kubernetes API
-  path this request is already made regardless of this setting, and on the IMDS path
-  it is already made when `k8s.cluster.name` is enabled.
-
-A run with no single valid cluster name stops before the OIDC and
-`eks:DescribeCluster` requests. Detection runs once when the processor starts. If
-`refresh_interval` is set, it runs again on every tick and repeats the requests that
-run needs: nothing is cached between runs, so a confirmation that succeeded once is
-made again on the next tick rather than being remembered. The default leaves
-`refresh_interval` unset, so detection runs once per collector start.
-
-Set `refresh_interval` with that request rate in mind. Every collector instance with
-the attribute enabled makes its own `eks:DescribeCluster` request on every tick, so a
-collector deployed as a DaemonSet multiplies the rate by the number of nodes: 500
-nodes with `refresh_interval: 1m` make 500 `eks:DescribeCluster` requests a minute.
-EKS applies request quotas per account and Region, shared with everything else calling
-it there, so a short interval across many nodes can exhaust them and get the requests
-throttled. A throttled request reports no ARN, the same as any other failure to
-describe the cluster. The cluster a node belongs to does not normally change while the
-node exists, so leaving `refresh_interval` unset costs nothing here.
-
-`/.well-known/openid-configuration` is a non-resource URL, so reading it is authorized
-by the collector's Kubernetes service account rather than by the IAM role, and that
-service account needs `get` on the path. Kubernetes defines a
-`system:service-account-issuer-discovery` ClusterRole that grants exactly the issuer
-discovery endpoints. Whether your service account is already bound to it depends on
-your cluster's RBAC, so check before enabling the attribute: without that access the
-issuer read fails and no ARN is reported. A binding that grants it directly looks like
-this:
-
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: otel-collector-issuer-discovery
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: system:service-account-issuer-discovery
-subjects:
-  - kind: ServiceAccount
-    name: <the collector's service account>
-    namespace: <the collector's namespace>
-```
-
-No ARN is reported when the node's tags name no cluster, when they name more than one
-cluster at the same precedence, when the name cannot be an EKS cluster name, when the
-cluster cannot be described, when either OIDC issuer is unavailable, or when the two
-issuers disagree. Whether that is fatal follows `fail_on_missing_metadata`, the same
-as for every other attribute this detector reads: when it is set, detection fails;
-when it is not, the attribute is left off and detection continues. Leaving the
-attribute disabled, as the default config does, makes no request and can never fail
-detection.
-
-Two of those outcomes also suppress `k8s.cluster.name`, because each one establishes
-that the tag the name came from does not describe this node's cluster:
-
-* the two issuers disagree, so EKS has confirmed that the named cluster is a
-  different cluster from the one this node runs in. This holds whichever tag the name
-  came from, the reserved `aws:eks:cluster-name` tag included: a tag records what was
-  true when it was written, and the cluster's own Kubernetes API server is the only
-  source that says which cluster the node is in now;
-* the name is not one EKS could have issued, so no cluster of that name can exist.
-
-Reporting the name in either case would attribute this node's telemetry to a cluster
-that is not this one. Every other outcome leaves `k8s.cluster.name` alone, because
-none of them establish anything about the name. A cluster that cannot be described is
-the case worth calling out: a `ResourceNotFoundException` reads like the name naming
-nothing, but the request is made with this node's role in this node's account, so it
-is equally the answer for a cluster that exists and that this role or account cannot
-see, and the name is kept. This suppression only happens while
-`aws.eks.cluster.arn` is enabled. With it disabled, as the default config does,
-nothing is checked, nothing is disproven, and `k8s.cluster.name` behaves exactly as it
-did before.
-
-While the ARN is enabled, EKS cluster naming rules therefore apply to the tag value
-before `k8s.cluster.name` can be retained. The value must be 1 to 100 characters,
-start with a letter or digit, and otherwise contain only letters, digits, dashes, and
-underscores. A value breaking any of those rules is dropped along with the ARN, and
-dropped without a request being made. This is the one case where enabling the ARN can
-change `k8s.cluster.name` for a node whose cluster is reachable and healthy but whose
-tag holds a value EKS would never have issued.
-
-Enabling the ARN does not require `k8s.cluster.name` to be reported. Hybrid nodes do
-not provide the EC2 metadata this path reads.
+The detector reads the ARN from `eks:DescribeCluster` and reports it only when
+the returned OIDC issuer matches the issuer published by the live Kubernetes API
+server. This requires `eks:DescribeCluster`, the existing
+`ec2:DescribeInstances` access used to find the cluster name, and Kubernetes
+service-account access to `/.well-known/openid-configuration`, such as a binding
+to the built-in `system:service-account-issuer-discovery` ClusterRole. The OIDC
+and EKS calls share the detector's configured `timeout`; increase it if they
+cannot complete in time. A failed check leaves the ARN absent. With
+`fail_on_missing_metadata: true`, a failed OIDC, EC2, or EKS request, or an OIDC
+issuer mismatch, fails the whole detection. A missing cluster-name tag is the
+exception: it leaves the optional ARN absent even in strict mode. The attribute
+is disabled by default and adds no request when disabled.
 
 #### Node Name Env Variable
 When using the EC2 API and the Kubernetes API to retrieve resource attributes, the node name is needed. The node name is extracted from the env variable you define on the pod.
