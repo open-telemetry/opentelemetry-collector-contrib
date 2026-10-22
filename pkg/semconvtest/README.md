@@ -61,16 +61,19 @@ validates it.
 
 ## Source of truth
 
-By default the check runs against the newest published semantic-conventions
-registry: Weaver downloads it when the container starts. As a consequence, a
-test can start to fail without any code change, when the conventions evolve.
-That is the compliance signal: the telemetry no longer matches the current
-specification. For deterministic results, pin the registry with
-`WithRegistry`.
+The check runs against a pinned pair, and both parts update deliberately:
 
-The Weaver image itself does not float: the package pins a tested
-`otel/weaver` version and updates it deliberately (Renovate opens a PR for
-each new Weaver release). Use `WithVersion` to select a different version.
+- The registry: the package pins a released semantic-conventions version
+  and passes it to Weaver. Renovate opens a PR for each new release; new
+  conventions arrive in that PR, and a test that fails there shows
+  telemetry that no longer matches them.
+- The tool: the package pins a tested `otel/weaver` image version, also
+  updated through Renovate PRs.
+
+A pinned pair is compatible by construction: a published registry release
+was built with an already-released Weaver. An unpinned registry can require
+a newer Weaver than the pinned one at any time, which fails every test at
+container start. Use the options below to select other versions.
 
 ## Options
 
@@ -79,8 +82,9 @@ each new Weaver release). Use `WithVersion` to select a different version.
   that are not semver (for example, `latest`) pass through to Docker
   unchecked.
 - `WithRegistry(registry string)`: set the semantic-conventions registry
-  passed to Weaver's `--registry` flag. When unset, Weaver uses its default
-  registry: the latest published semantic conventions.
+  passed to Weaver's `--registry` flag. The default is the pinned release.
+  An empty string restores Weaver's own default: the unreleased registry on
+  semantic-conventions main.
 
 ## Report types
 
