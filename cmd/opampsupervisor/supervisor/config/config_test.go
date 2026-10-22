@@ -1004,6 +1004,16 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 	}
 }
 
+func TestCapabilities_Validate(t *testing.T) {
+	require.NoError(t, Capabilities{AcceptsRemoteConfig: true}.Validate())
+	require.ErrorContains(t, Capabilities{ReportsRemoteConfig: true}.Validate(), "reports_remote_config is deprecated")
+
+	// confmap.Validate at the supervisor-config root surfaces the error so NewSupervisor fails.
+	cfg := DefaultSupervisor()
+	cfg.Capabilities.ReportsRemoteConfig = true
+	require.ErrorContains(t, confmap.Validate(cfg), "reports_remote_config is deprecated")
+}
+
 func TestLoad(t *testing.T) {
 	tmpDir := t.TempDir()
 
