@@ -173,9 +173,13 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			priority: []string{"spanevent", "span"},
 			candidates: map[string]*priorityContextInferrerCandidate{
 				"spanevent": defaultDummyPriorityContextInferrerCandidate,
-				"span":      defaultDummyPriorityContextInferrerCandidate,
+				"span": {
+					hasFunctionName:  func(name string) bool { return name != "Concat" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return true },
+					getLowerContexts: func(string) []string { return []string{"spanevent"} },
+				},
 			},
-			statements: []string{`set(span.attributes["x"], {Concat([spanevent.name, "a"], "-"): 1})`},
+			statements: []string{`set(span.attributes["x"], {Concat(["a", "b"], "-"): 1})`},
 			expected:   "spanevent",
 		},
 		{
