@@ -48,7 +48,7 @@ exporter/alibabacloudlogserviceexporter/                         @open-telemetry
 exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @yaten2302
 exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
-exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @pdelewski @Erog38
+exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @Erog38
 exporter/awsxrayexporter/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 exporter/azureblobexporter/                                      @open-telemetry/collector-contrib-approvers @hgaol @MovieStoreGuy
 exporter/azuredataexplorerexporter/                              @open-telemetry/collector-contrib-approvers @ag-ramachandran
@@ -58,7 +58,7 @@ exporter/cassandraexporter/                                      @open-telemetry
 exporter/clickhouseexporter/                                     @open-telemetry/collector-contrib-approvers @Frapschen @SpencerTorres
 exporter/coralogixexporter/                                      @open-telemetry/collector-contrib-approvers @povilasv @iblancasa @douglascamata
 exporter/datadogexporter/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @jade-guiton-dd @IbraheemA
-exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1
+exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme
 exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @joker-star-l
 exporter/elasticsearchexporter/                                  @open-telemetry/collector-contrib-approvers @JaredTan95 @blakerouse @carsonip @lahsivjar
 exporter/faroexporter/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
@@ -350,8 +350,8 @@ receiver/pprofreceiver/                                          @open-telemetry
 receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens @krajorama
 receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens @perebaj @himanshu130700
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dao-jun
-receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
-receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
+receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @chrroberts-pure
+receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @chrroberts-pure
 receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed @khushijain21
