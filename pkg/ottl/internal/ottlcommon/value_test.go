@@ -345,6 +345,30 @@ func TestCopyValueTo_containers(t *testing.T) {
 			want:  map[string]any{"v": "x"},
 		},
 		{
+			name:  "any slice with nested typed slices",
+			value: func(*testing.T) any { return []any{[]any{[]string{"a", "b"}}, []int64{1}} },
+			want:  []any{[]any{[]any{"a", "b"}}, []any{int64(1)}},
+		},
+		{
+			name: "map with typed slices at depth",
+			value: func(*testing.T) any {
+				return map[string]any{
+					"s": []string{"a"},
+					"b": []bool{true},
+					"f": []float64{1.5},
+					"i": []int64{2},
+					"n": []any{map[string]any{"m": []string{"x", "y"}}},
+				}
+			},
+			want: map[string]any{
+				"s": []any{"a"},
+				"b": []any{true},
+				"f": []any{1.5},
+				"i": []any{int64(2)},
+				"n": []any{map[string]any{"m": []any{"x", "y"}}},
+			},
+		},
+		{
 			name: "nested combination",
 			value: func(t *testing.T) any {
 				return map[string]any{

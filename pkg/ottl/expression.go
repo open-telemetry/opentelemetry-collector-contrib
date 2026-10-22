@@ -296,19 +296,8 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch typedVal := val.(type) {
-		case pcommon.Map:
-			target := result.PutEmpty(k).SetEmptyMap()
-			typedVal.CopyTo(target)
-		case []any:
-			if err := ottlcommon.CopyAnySliceTo(typedVal, result.PutEmpty(k).SetEmptySlice()); err != nil {
-				return nil, err
-			}
-		default:
-			err := result.PutEmpty(k).FromRaw(val)
-			if err != nil {
-				return nil, err
-			}
+		if err := ottlcommon.CopyValueTo(val, result.PutEmpty(k)); err != nil {
+			return nil, err
 		}
 	}
 	return result, nil

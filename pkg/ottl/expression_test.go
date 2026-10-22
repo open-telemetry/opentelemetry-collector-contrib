@@ -4165,9 +4165,12 @@ func Test_mapGetter_Get_nestedSlices(t *testing.T) {
 			srcSlice,
 			srcValue,
 			[]any{map[string]any{"in": "ner"}},
+			[]any{[]string{"a", "b"}},
 			"str",
 		}),
-		"dyn": &exprGetter[any]{expr: Expr[any]{exprFunc: func(context.Context, any) (any, error) { return "x", nil }}},
+		"typed": newLiteral[any, any]([]string{"x", "y"}),
+		"slice": newLiteral[any, any](srcSlice),
+		"dyn":   &exprGetter[any]{expr: Expr[any]{exprFunc: func(context.Context, any) (any, error) { return "x", nil }}},
 	})
 	require.NoError(t, err)
 
@@ -4182,9 +4185,12 @@ func Test_mapGetter_Get_nestedSlices(t *testing.T) {
 			[]any{"s"},
 			map[string]any{"n": int64(1)},
 			[]any{map[string]any{"in": "ner"}},
+			[]any{[]any{"a", "b"}},
 			"str",
 		},
-		"dyn": "x",
+		"typed": []any{"x", "y"},
+		"slice": []any{"s"},
+		"dyn":   "x",
 	}, result.AsRaw())
 
 	// Mutating the result must not affect the sources.

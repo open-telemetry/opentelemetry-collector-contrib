@@ -100,15 +100,15 @@ func CopyValueTo(value any, dest pcommon.Value) error {
 	case pcommon.Value:
 		typedVal.CopyTo(dest)
 	case []any:
-		if !containsPdata(typedVal) {
-			return dest.FromRaw(typedVal)
+		if cannotUseFromRaw(typedVal) {
+			return CopyAnySliceTo(typedVal, dest.SetEmptySlice())
 		}
-		return CopyAnySliceTo(typedVal, dest.SetEmptySlice())
+		return dest.FromRaw(typedVal)
 	case map[string]any:
-		if !containsPdata(typedVal) {
-			return dest.FromRaw(typedVal)
+		if cannotUseFromRaw(typedVal) {
+			return copyAnyMapTo(typedVal, dest.SetEmptyMap())
 		}
-		return copyAnyMapTo(typedVal, dest.SetEmptyMap())
+		return dest.FromRaw(typedVal)
 	case []string:
 		return copyValuesTo(typedVal, dest.SetEmptySlice())
 	case []bool:
@@ -123,17 +123,18 @@ func CopyValueTo(value any, dest pcommon.Value) error {
 	return nil
 }
 
-// containsPdata reports whether value is, or contains at any nesting level of []any and
-// map[string]any, a pcommon.Map, pcommon.Slice or pcommon.Value.
-func containsPdata(value any) bool {
+// cannotUseFromRaw reports whether value is, or contains at any nesting level of []any and
+// map[string]any, a type that pcommon.Value.FromRaw does not accept: a pcommon.Map,
+// pcommon.Slice, pcommon.Value, []string, []bool, []float64 or []int64.
+func cannotUseFromRaw(value any) bool {
 	switch typedVal := value.(type) {
-	case pcommon.Map, pcommon.Slice, pcommon.Value:
+	case pcommon.Map, pcommon.Slice, pcommon.Value, []string, []bool, []float64, []int64:
 		return true
 	case []any:
-		return slices.ContainsFunc(typedVal, containsPdata)
+		return slices.ContainsFunc(typedVal, cannotUseFromRaw)
 	case map[string]any:
 		for _, el := range typedVal {
-			if containsPdata(el) {
+			if cannotUseFromRaw(el) {
 				return true
 			}
 		}

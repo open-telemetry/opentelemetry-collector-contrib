@@ -1588,6 +1588,77 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], {"k": attributes["things"]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				attrs := tCtx.GetLogRecord().Attributes()
+				things := pcommon.NewSlice()
+				if v, ok := attrs.Get("things"); ok {
+					v.Slice().CopyTo(things)
+				}
+				things.CopyTo(attrs.PutEmptyMap("test").PutEmptySlice("k"))
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": Split("a,b", ",")})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptyMap("test").PutEmptySlice("k")
+				s.AppendEmpty().SetStr("a")
+				s.AppendEmpty().SetStr("b")
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": [{"m": Split("a,b", ",")}]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptyMap("test").PutEmptySlice("k").AppendEmpty().SetEmptyMap().PutEmptySlice("m")
+				s.AppendEmpty().SetStr("a")
+				s.AppendEmpty().SetStr("b")
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": [[Split("a,b", ",")]]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptyMap("test").PutEmptySlice("k").AppendEmpty().SetEmptySlice().AppendEmpty().SetEmptySlice()
+				s.AppendEmpty().SetStr("a")
+				s.AppendEmpty().SetStr("b")
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": TypedSlice("bool"), "n": [{"m": [TypedSlice("bool")]}]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				s := m.PutEmptySlice("k")
+				s.AppendEmpty().SetBool(true)
+				s.AppendEmpty().SetBool(false)
+				s = m.PutEmptySlice("n").AppendEmpty().SetEmptyMap().PutEmptySlice("m").AppendEmpty().SetEmptySlice()
+				s.AppendEmpty().SetBool(true)
+				s.AppendEmpty().SetBool(false)
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": TypedSlice("int64"), "n": [{"m": [TypedSlice("int64")]}]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				s := m.PutEmptySlice("k")
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetInt(2)
+				s = m.PutEmptySlice("n").AppendEmpty().SetEmptyMap().PutEmptySlice("m").AppendEmpty().SetEmptySlice()
+				s.AppendEmpty().SetInt(1)
+				s.AppendEmpty().SetInt(2)
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": TypedSlice("float64"), "n": [{"m": [TypedSlice("float64")]}]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				s := m.PutEmptySlice("k")
+				s.AppendEmpty().SetDouble(1.5)
+				s.AppendEmpty().SetDouble(2.5)
+				s = m.PutEmptySlice("n").AppendEmpty().SetEmptyMap().PutEmptySlice("m").AppendEmpty().SetEmptySlice()
+				s.AppendEmpty().SetDouble(1.5)
+				s.AppendEmpty().SetDouble(2.5)
+			},
+		},
+		{
 			statement: `set(attributes["test"], {"k": [[{"a": "1"}]]})`,
 			want: func(tCtx *ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
@@ -2806,6 +2877,7 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 	settings := componenttest.NewNopTelemetrySettings()
 	functions := ottlfuncs.StandardFuncs[*ottllog.TransformContext]()
 	functions["SliceGetter"] = newSliceGetterFactory[*ottllog.TransformContext]()
+	functions["TypedSlice"] = newTypedSliceFactory[*ottllog.TransformContext]()
 	parserWithoutPathCtx, err := ottllog.NewParser(functions, settings)
 	if err != nil {
 		return nil, err
@@ -3225,6 +3297,34 @@ func createSliceGetterFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 			}
 		}
 		return sl, nil
+	}, nil
+}
+
+type typedSliceArguments struct {
+	Kind string
+}
+
+// newTypedSliceFactory creates a test-only function that returns a []bool, []int64 or []float64,
+// which no standard function returns.
+func newTypedSliceFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TypedSlice", &typedSliceArguments{}, createTypedSliceFunction[K])
+}
+
+func createTypedSliceFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*typedSliceArguments)
+	if !ok {
+		return nil, errors.New("typedSliceArguments args must be of type *typedSliceArguments")
+	}
+	return func(context.Context, K) (any, error) {
+		switch args.Kind {
+		case "bool":
+			return []bool{true, false}, nil
+		case "int64":
+			return []int64{1, 2}, nil
+		case "float64":
+			return []float64{1.5, 2.5}, nil
+		}
+		return nil, errors.New("unsupported kind: " + args.Kind)
 	}, nil
 }
 
