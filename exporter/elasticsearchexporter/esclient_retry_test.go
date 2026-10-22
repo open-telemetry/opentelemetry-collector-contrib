@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net"
@@ -53,10 +54,7 @@ func TestRetry_DNSDeadlineExceeded(t *testing.T) {
 }
 
 func TestRetry_UnreachableServer(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	endpoint := "http://" + ln.Addr().String()
-	require.NoError(t, ln.Close())
+	endpoint := "http://" + closedLocalAddr(t)
 
 	const maxRetries = 1
 	client, dials := newRetryClient(t, endpoint, time.Second, (&net.Dialer{}).DialContext)
@@ -88,6 +86,8 @@ func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
 	require.NoError(t, err)
 	_, err = client.Perform(req)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
+	var setupErr *connSetupTimeoutError
+	require.NotErrorAs(t, err, &setupErr)
 	assert.Equal(t, int32(1), dials.Load())
 	assert.Equal(t, int32(1), requests.Load())
 }
@@ -137,7 +137,10 @@ func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
 		}
 	})
 
-	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", http.NoBody)
+	// Larger than the transport's 4KiB write buffer, so the deadline fires inside
+	// Request.write, before WroteRequest.
+	payload := bytes.Repeat([]byte("{\"index\":{}}\n"), 1024)
+	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", bytes.NewReader(payload))
 	require.NoError(t, err)
 	_, err = client.Perform(req)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
