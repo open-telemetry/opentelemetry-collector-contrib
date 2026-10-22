@@ -1781,6 +1781,73 @@ func TestArchive(t *testing.T) {
 	sink.ExpectCalls(t, log3, log4)
 }
 
+// TestTruncateResetsDecompressedBytesToSkip tests that when a gzip file's stored offset exceeds the current
+// file size (it was truncated and rewritten from scratch), the decompressed-bytes-to-skip count is reset along
+// with the offset, so the new content is not missing its first bytes.
+// TestTruncateResetsDecompressedBytesToSkip tests that when a gzip file's stored offset exceeds the current
+// file size (it was truncated and rewritten with new, shorter content), the decompressed-bytes-to-skip count is
+// reset along with the offset, so the new content is not missing its first bytes.
+func TestTruncateResetsDecompressedBytesToSkip(t *testing.T) {
+	t.Parallel()
+
+	// A prefix identical before and after truncation, so the file's fingerprint still matches and it is
+	// recognized as the same tracked file.
+	const commonPrefix = "identicalprefix\n"
+
+	tempDir := t.TempDir()
+	log := filetest.OpenTemp(t, tempDir)
+
+	cfg := NewConfig().withGzip()
+	cfg.Include = append(cfg.Include, log.Name())
+	cfg.StartAt = "beginning"
+	cfg.FingerprintSize = helper.ByteSize(len(commonPrefix))
+	cfg.OnTruncate = OnTruncateReadWholeFile
+
+	op1, sink1 := testManager(t, cfg)
+	op1.persister = testutil.NewUnscopedMockPersister()
+
+	// A complete gzip member with 2 lines, followed by a member that is not finished yet. The stored offset
+	// will point to the start of the second member, with its one line counted as decompressed bytes to skip.
+	writer := gzip.NewWriter(log)
+	_, err := writer.Write([]byte(commonPrefix + "second\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	writer = gzip.NewWriter(log)
+	_, err = writer.Write([]byte("third\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+
+	op1.poll(t.Context())
+	sink1.ExpectTokens(t, []byte("identicalprefix"), []byte("second"), []byte("third"))
+
+	metadata := op1.tracker.GetMetadata()
+	require.NotEmpty(t, metadata)
+	require.NotZero(t, metadata[0].DecompressedBytesToSkip)
+
+	// The file is truncated and rewritten with new, shorter content starting with the same prefix, so its
+	// fingerprint still matches, but the stored offset (which pointed past the longer first member) now
+	// exceeds the file size.
+	require.NoError(t, log.Truncate(0))
+	_, err = log.Seek(0, 0)
+	require.NoError(t, err)
+	writer = gzip.NewWriter(log)
+	_, err = writer.Write([]byte(commonPrefix))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	info, err := log.Stat()
+	require.NoError(t, err)
+	require.Less(t, info.Size(), metadata[0].Offset)
+
+	op2, sink2 := testManager(t, cfg)
+	op2.persister = testutil.NewUnscopedMockPersister()
+	op2.tracker.LoadMetadata(metadata)
+
+	// With read_whole_file, the offset resets to 0. The decompressed-bytes-to-skip count must reset too, or the
+	// new content would have its only line skipped as if it were already read.
+	op2.poll(t.Context())
+	sink2.ExpectToken(t, []byte("identicalprefix"))
+}
+
 func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	t.Parallel()
 
