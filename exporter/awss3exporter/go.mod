@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/component v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/configcompression v1.69.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/config/configopaque v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/configoptional v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/configretry v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/confmap v1.69.1-0.20261015205720-932ee30af2c0
@@ -86,7 +87,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.69.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.163.1-0.20261015205720-932ee30af2c0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.69.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.163.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.69.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.69.1-0.20261015205720-932ee30af2c0 // indirect
