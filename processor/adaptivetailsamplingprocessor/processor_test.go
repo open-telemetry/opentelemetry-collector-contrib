@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -117,6 +118,25 @@ func buildTrace(traceID pcommon.TraceID, statusCode ptrace.StatusCode, root bool
 	}
 	span.SetName("op")
 	span.Status().SetCode(statusCode)
+	return td
+}
+
+// newRootTraceWithSpans builds a single trace containing spanCount spans: one
+// root span plus spanCount-1 children of it.
+func newRootTraceWithSpans(traceID pcommon.TraceID, spanCount int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	rootSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+	for i := range spanCount {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{byte(i + 1), 2, 3, 4, 5, 6, 7, 8}))
+		if i > 0 {
+			span.SetParentSpanID(rootSpanID)
+		}
+		span.SetName("op")
+	}
 	return td
 }
 
@@ -495,6 +515,110 @@ func TestProcessor_EvictionMetrics(t *testing.T) {
 	)
 }
 
+func TestProcessor_SamplerMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	// WindowedThroughput only recomputes keyspace_size on its background
+	// update-frequency tick, so use a short one and wait for it below instead
+	// of asserting a possibly-stale value.
+	const (
+		windowedUpdateFrequency = 10 * time.Millisecond
+		tracesPerRule           = 5
+		spansPerTrace           = 5
+	)
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:  time.Hour,
+		DecisionDelay: time.Millisecond,
+		NumTraces:     10,
+		DecisionCache: DecisionCacheConfig{SampledCacheSize: 10, NonSampledCacheSize: 10},
+		Rules: []RuleConfig{
+			{Name: "ema", Conditions: []string{`resource.attributes["service.name"] == "svc-ema"`}, Sampler: SamplerConfig{
+				Type:                  AdaptivePercentage,
+				GoalPercentage:        100,
+				FingerprintAttributes: []string{`resource.attributes["fingerprint.key"]`},
+			}},
+			{Name: "windowed", Sampler: SamplerConfig{
+				Type:                      AdaptiveThroughput,
+				Algorithm:                 AlgorithmWindowed,
+				GoalThroughput:            1000,
+				UpdateFrequency:           windowedUpdateFrequency,
+				InitialSamplingPercentage: new(100.0),
+				FingerprintAttributes:     []string{`resource.attributes["fingerprint.key"]`},
+			}},
+		},
+	}
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
+
+	emaAttrs := attribute.NewSet(attribute.String("rule", "ema"), attribute.String("sampler_type", "adaptive_percentage"), attribute.String("sampler_algorithm", "ema"))
+	windowedAttrs := attribute.NewSet(attribute.String("rule", "windowed"), attribute.String("sampler_type", "adaptive_throughput"), attribute.String("sampler_algorithm", "windowed"))
+
+	// Each trace carries its own fingerprint.key, so the two samplers'
+	// keyspaces grow to tracesPerRule distinct keys instead of staying at 1.
+	for i := range byte(tracesPerRule) {
+		emaTrace := newRootTraceWithSpans(pcommon.TraceID([16]byte{0xC1, i}), spansPerTrace)
+		emaRes := emaTrace.ResourceSpans().At(0).Resource().Attributes()
+		emaRes.PutStr("service.name", "svc-ema")
+		emaRes.PutStr("fingerprint.key", "ema-"+strconv.Itoa(int(i)))
+		require.NoError(t, p.ConsumeTraces(t.Context(), emaTrace))
+
+		windowedTrace := newRootTraceWithSpans(pcommon.TraceID([16]byte{0xC2, i}), spansPerTrace)
+		windowedRes := windowedTrace.ResourceSpans().At(0).Resource().Attributes()
+		windowedRes.PutStr("service.name", "svc-windowed")
+		windowedRes.PutStr("fingerprint.key", "windowed-"+strconv.Itoa(int(i)))
+		require.NoError(t, p.ConsumeTraces(t.Context(), windowedTrace))
+	}
+
+	require.Eventually(t, func() bool {
+		return sink.SpanCount() == 2*tracesPerRule*spansPerTrace
+	}, time.Second, 10*time.Millisecond)
+
+	require.Eventually(t, func() bool {
+		m, err := tt.GetMetric("otelcol_processor_adaptive_tail_sampling_sampler_keyspace_size")
+		if err != nil {
+			return false
+		}
+		gauge, ok := m.Data.(metricdata.Gauge[int64])
+		if !ok {
+			return false
+		}
+		for _, dp := range gauge.DataPoints {
+			if dp.Attributes.Equals(&windowedAttrs) && dp.Value == tracesPerRule {
+				return true
+			}
+		}
+		return false
+	}, time.Second, windowedUpdateFrequency, "windowed rule's keyspace_size should reach tracesPerRule after an update-frequency tick")
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerRequestCount(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{Value: tracesPerRule, Attributes: emaAttrs},
+			{Value: tracesPerRule, Attributes: windowedAttrs},
+		},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
+	)
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerKeyspaceSize(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{Value: tracesPerRule, Attributes: emaAttrs},
+			{Value: tracesPerRule, Attributes: windowedAttrs},
+		},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(),
+	)
+	// adaptive_throughput_windowed does not track burst counts, so only the
+	// ema rule contributes a data point to this metric.
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingSamplerBurstCount(t, tt,
+		[]metricdata.DataPoint[int64]{{Attributes: emaAttrs}},
+		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue(),
+	)
+}
+
 func TestProcessor_RootSpanTriggersEarlyDecision(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{
@@ -513,6 +637,55 @@ func TestProcessor_RootSpanTriggersEarlyDecision(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sink.SpanCount() == 1
 	}, time.Second, 10*time.Millisecond, "root span should trigger decision before trace_timeout")
+}
+
+func TestProcessor_CustomRootSpanConditionTriggersEarlyDecision(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      time.Hour,
+		DecisionDelay:     50 * time.Millisecond,
+		NumTraces:         10,
+		RootSpanCondition: `span.attributes["trigger"] == true`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	})
+
+	traceID := pcommon.TraceID([16]byte{0xAC})
+	td := newTrace(traceID, ptrace.StatusCodeUnset)
+
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	span.Attributes().PutBool("trigger", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 1
+	}, time.Second, 10*time.Millisecond,
+		"custom root_span_condition should trigger the decision")
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingDecisionTriggers(t, tt,
+		[]metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("trigger", "root_span"),
+			),
+		}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 }
 
 func TestProcessor_RootSpanTriggerIsIdempotent(t *testing.T) {
@@ -538,6 +711,79 @@ func TestProcessor_RootSpanTriggerIsIdempotent(t *testing.T) {
 	// Only one decision should have fired: total traces forwarded is one batch
 	// for the trace, containing all three spans accumulated.
 	assert.Len(t, sink.AllTraces(), 1)
+}
+
+func TestProcessor_RootSpanConditionMultipleMatches(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tt.Shutdown(context.Background())) //nolint:usetesting // cleanup after ctx cancel
+	})
+
+	sink := &consumertest.TracesSink{}
+	cfg := &Config{
+		TraceTimeout:      time.Hour,
+		DecisionDelay:     500 * time.Millisecond,
+		NumTraces:         10,
+		RootSpanCondition: `span.attributes["trigger"] == true`,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+
+	p, err := newProcessor(metadatatest.NewSettings(tt), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), nil))
+	t.Cleanup(func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	})
+
+	traceID := pcommon.TraceID([16]byte{0xAD})
+
+	first := newTrace(traceID, ptrace.StatusCodeUnset)
+	firstSpan := first.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	firstSpan.SetSpanID(pcommon.SpanID([8]byte{1}))
+	firstSpan.Attributes().PutBool("trigger", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), first))
+
+	// The first matching span triggers the decision-delay timer.
+	require.Never(t, func() bool {
+		return sink.SpanCount() > 0
+	}, 20*time.Millisecond, 5*time.Millisecond)
+
+	second := newTrace(traceID, ptrace.StatusCodeUnset)
+	secondSpan := second.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	secondSpan.SetSpanID(pcommon.SpanID([8]byte{2}))
+	secondSpan.Attributes().PutBool("trigger", true)
+
+	third := newTrace(traceID, ptrace.StatusCodeUnset)
+	thirdSpan := third.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	thirdSpan.SetSpanID(pcommon.SpanID([8]byte{3}))
+	thirdSpan.Attributes().PutBool("trigger", true)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), second))
+	require.NoError(t, p.ConsumeTraces(t.Context(), third))
+
+	assert.Eventually(t, func() bool {
+		return sink.SpanCount() == 3
+	}, 3*time.Second, 10*time.Millisecond)
+
+	metadatatest.AssertEqualProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches(
+		t,
+		tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Count:        1,
+				Sum:          3,
+				Min:          metricdata.NewExtrema(int64(3)),
+				Max:          metricdata.NewExtrema(int64(3)),
+				Bounds:       []float64{2, 3, 5, 10, 25, 100},
+				BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0},
+			},
+		},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreExemplars(),
+	)
 }
 
 func TestProcessor_TraceTimeoutFiresWithoutRootSpan(t *testing.T) {
@@ -1567,7 +1813,7 @@ func TestProcessor_RootScopedFingerprint(t *testing.T) {
 			{Name: "default", Sampler: SamplerConfig{
 				Type:                  AdaptivePercentage,
 				GoalPercentage:        100,
-				FingerprintAttributes: []string{`root.attributes["http.route"]`, `resource.attributes["service.name"]`},
+				FingerprintAttributes: []string{`root.span.attributes["http.route"]`, `resource.attributes["service.name"]`},
 			}},
 		},
 	}

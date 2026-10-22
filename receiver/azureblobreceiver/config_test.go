@@ -64,57 +64,112 @@ func TestLoadConfig(t *testing.T) {
 	)
 }
 
-func TestMissingConnectionString(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	err := confmap.Validate(cfg)
-	assert.EqualError(t, err, `"ConnectionString" is not specified in config`)
-}
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		mutate      func(cfg *Config)
+		expectedErr []string
+		equalErr    string
+	}{
+		{
+			name:     "missing connection string",
+			mutate:   func(_ *Config) {},
+			equalErr: `"ConnectionString" is not specified in config`,
+		},
+		{
+			name: "missing service principal credentials",
+			mutate: func(cfg *Config) {
+				cfg.Authentication = ServicePrincipalAuth
+			},
+			equalErr: `"TenantID" is not specified in config; "ClientID" is not specified in config; "ClientSecret" is not specified in config; "StorageAccountURL" is not specified in config`,
+		},
+		{
+			name: "invalid encoding",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				// Values that are neither a built-in encoding nor a syntactically valid
+				// encoding extension ID are rejected during validation.
+				cfg.Logs.Encoding = "not a valid id"
+				cfg.Traces.Encoding = "also not valid"
+			},
+			expectedErr: []string{
+				`logs.encoding "not a valid id" is not a supported built-in encoding`,
+				`traces.encoding "also not valid" is not a supported built-in encoding`,
+			},
+		},
+		{
+			name: "encoding extension ID accepted by validation",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				// An encoding extension ID is syntactically valid; its existence is only
+				// checked when the receiver starts.
+				cfg.Logs.Encoding = "myencoding"
+				cfg.Traces.Encoding = "myencoding/traces"
+			},
+		},
+		{
+			name: "blank encoding",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				// A blank encoding is neither a built-in nor a valid extension ID, since an
+				// empty component ID is rejected.
+				cfg.Logs.Encoding = ""
+				cfg.Traces.Encoding = ""
+			},
+			expectedErr: []string{
+				`logs.encoding "" is not a supported built-in encoding`,
+				`traces.encoding "" is not a supported built-in encoding`,
+			},
+		},
+		{
+			name: "invalid compression",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = "snappy"
+			},
+			expectedErr: []string{
+				`compression "snappy" is not supported`,
+			},
+		},
+		{
+			name: "valid compression none",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = CompressionNone
+			},
+		},
+		{
+			name: "valid compression gzip",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = CompressionGzip
+			},
+		},
+		{
+			name: "valid compression auto",
+			mutate: func(cfg *Config) {
+				cfg.ConnectionString = goodConnectionString
+				cfg.Compression = CompressionAuto
+			},
+		},
+	}
 
-func TestMissingServicePrincipalCredentials(t *testing.T) {
-	var err error
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Authentication = ServicePrincipalAuth
-	err = confmap.Validate(cfg)
-	assert.EqualError(t, err, `"TenantID" is not specified in config; "ClientID" is not specified in config; "ClientSecret" is not specified in config; "StorageAccountURL" is not specified in config`)
-}
-
-func TestInvalidEncoding(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ConnectionString = goodConnectionString
-	// Values that are neither a built-in encoding nor a syntactically valid
-	// encoding extension ID are rejected during validation.
-	cfg.Logs.Encoding = "not a valid id"
-	cfg.Traces.Encoding = "also not valid"
-	err := confmap.Validate(cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `logs.encoding "not a valid id" is not a supported built-in encoding`)
-	assert.Contains(t, err.Error(), `traces.encoding "also not valid" is not a supported built-in encoding`)
-}
-
-func TestEncodingExtensionIDAcceptedByValidation(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ConnectionString = goodConnectionString
-	// An encoding extension ID is syntactically valid; its existence is only
-	// checked when the receiver starts.
-	cfg.Logs.Encoding = "myencoding"
-	cfg.Traces.Encoding = "myencoding/traces"
-	require.NoError(t, confmap.Validate(cfg))
-}
-
-func TestBlankEncoding(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ConnectionString = goodConnectionString
-	// A blank encoding is neither a built-in nor a valid extension ID, since an
-	// empty component ID is rejected.
-	cfg.Logs.Encoding = ""
-	cfg.Traces.Encoding = ""
-	err := confmap.Validate(cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `logs.encoding "" is not a supported built-in encoding`)
-	assert.Contains(t, err.Error(), `traces.encoding "" is not a supported built-in encoding`)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			tt.mutate(cfg)
+			err := confmap.Validate(cfg)
+			switch {
+			case tt.equalErr != "":
+				assert.EqualError(t, err, tt.equalErr)
+			case len(tt.expectedErr) > 0:
+				require.Error(t, err)
+				for _, expected := range tt.expectedErr {
+					assert.Contains(t, err.Error(), expected)
+				}
+			default:
+				require.NoError(t, err)
+			}
+		})
+	}
 }

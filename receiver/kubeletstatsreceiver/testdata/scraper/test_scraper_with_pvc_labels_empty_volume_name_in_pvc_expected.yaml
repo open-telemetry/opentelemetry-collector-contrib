@@ -16,6 +16,7 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: secret
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -78,6 +79,7 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: configMap
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -140,6 +142,7 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: configMap
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -202,6 +205,7 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: secret
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -264,6 +268,7 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: secret
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -338,6 +343,7 @@ resourceMetrics:
         - key: partition
           value:
             stringValue: "10"
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -412,6 +418,7 @@ resourceMetrics:
         - key: partition
           value:
             stringValue: "10"
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.

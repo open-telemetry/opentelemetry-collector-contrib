@@ -465,7 +465,6 @@ func Test_MergeDataPoints(t *testing.T) {
 				d := s.DataPoints().AppendEmpty()
 				d.Attributes().PutStr("attr1", "val1")
 				d.SetCount(3)
-				d.SetSum(0)
 				return m
 			},
 			in: func() pmetric.Metric {
@@ -488,7 +487,6 @@ func Test_MergeDataPoints(t *testing.T) {
 				d := s.DataPoints().AppendEmpty()
 				d.Attributes().PutStr("attr1", "val1")
 				d.SetCount(16)
-				d.SetSum(0)
 				d.SetZeroCount(3)
 				d.Positive().BucketCounts().Append(0, 2, 4, 3)
 				d.Negative().BucketCounts().Append(0, 2, 2)
@@ -514,7 +512,6 @@ func Test_MergeDataPoints(t *testing.T) {
 				d := s.DataPoints().AppendEmpty()
 				d.Attributes().PutStr("attr1", "val1")
 				d.SetCount(12)
-				d.SetSum(0)
 				d.SetZeroCount(3)
 				// First datapoint: positive offset 0, buckets [1, 2]
 				// Second datapoint: positive offset 1, buckets [3, 4] (represents [0, 3, 4])
@@ -546,6 +543,83 @@ func Test_MergeDataPoints(t *testing.T) {
 			require.Equal(t, tt.want(), m)
 		})
 	}
+}
+
+// Test_MergeDataPoints_SumPresence is a regression test for #49379: merging
+// histogram datapoints must add their sums when all of them carry one, and must
+// leave the merged datapoint without a sum as soon as any contributor lacks one
+// (rather than reporting a fabricated sum of 0).
+func Test_MergeDataPoints_SumPresence(t *testing.T) {
+	mapAttr := pcommon.NewMap()
+	mapAttr.PutStr("attr1", "val1")
+	hashHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), false, false, 0)
+	hashExpHistogram := dataPointHashKey(mapAttr, pcommon.NewTimestampFromTime(time.Time{}), 0, false, false, 0)
+
+	histogramPair := func(setSum0, setSum1 bool) pmetric.HistogramDataPointSlice {
+		s := pmetric.NewHistogramDataPointSlice()
+		d0 := s.AppendEmpty()
+		d0.Attributes().PutStr("attr1", "val1")
+		d0.SetCount(2)
+		if setSum0 {
+			d0.SetSum(1.5)
+		}
+		d1 := s.AppendEmpty()
+		d1.SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
+		d1.Attributes().PutStr("attr1", "val1")
+		d1.SetCount(1)
+		if setSum1 {
+			d1.SetSum(2.5)
+		}
+		return s
+	}
+	expHistogramPair := func(setSum0, setSum1 bool) pmetric.ExponentialHistogramDataPointSlice {
+		s := pmetric.NewExponentialHistogramDataPointSlice()
+		d0 := s.AppendEmpty()
+		d0.Attributes().PutStr("attr1", "val1")
+		d0.SetCount(2)
+		if setSum0 {
+			d0.SetSum(1.5)
+		}
+		d1 := s.AppendEmpty()
+		d1.SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
+		d1.Attributes().PutStr("attr1", "val1")
+		d1.SetCount(1)
+		if setSum1 {
+			d1.SetSum(2.5)
+		}
+		return s
+	}
+
+	t.Run("histogram both have sum -> sum added", func(t *testing.T) {
+		m := pmetric.NewMetric()
+		m.SetEmptyHistogram()
+		MergeDataPoints(m, Sum, AggGroups{histogram: map[string]pmetric.HistogramDataPointSlice{hashHistogram: histogramPair(true, true)}})
+		d := m.Histogram().DataPoints().At(0)
+		require.True(t, d.HasSum())
+		require.Equal(t, 4.0, d.Sum())
+	})
+	t.Run("histogram one missing sum -> sum absent", func(t *testing.T) {
+		m := pmetric.NewMetric()
+		m.SetEmptyHistogram()
+		MergeDataPoints(m, Sum, AggGroups{histogram: map[string]pmetric.HistogramDataPointSlice{hashHistogram: histogramPair(true, false)}})
+		d := m.Histogram().DataPoints().At(0)
+		require.False(t, d.HasSum())
+	})
+	t.Run("exp histogram both have sum -> sum added", func(t *testing.T) {
+		m := pmetric.NewMetric()
+		m.SetEmptyExponentialHistogram()
+		MergeDataPoints(m, Sum, AggGroups{expHistogram: map[string]pmetric.ExponentialHistogramDataPointSlice{hashExpHistogram: expHistogramPair(true, true)}})
+		d := m.ExponentialHistogram().DataPoints().At(0)
+		require.True(t, d.HasSum())
+		require.Equal(t, 4.0, d.Sum())
+	})
+	t.Run("exp histogram one missing sum -> sum absent", func(t *testing.T) {
+		m := pmetric.NewMetric()
+		m.SetEmptyExponentialHistogram()
+		MergeDataPoints(m, Sum, AggGroups{expHistogram: map[string]pmetric.ExponentialHistogramDataPointSlice{hashExpHistogram: expHistogramPair(false, true)}})
+		d := m.ExponentialHistogram().DataPoints().At(0)
+		require.False(t, d.HasSum())
+	})
 }
 
 func testDataNumber() pmetric.NumberDataPointSlice {

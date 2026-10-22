@@ -62,19 +62,22 @@ validates it.
 ## Source of truth
 
 By default the check runs against the newest published semantic-conventions
-registry: Weaver downloads it when the container starts, and the container
-runs the `otel/weaver:latest` image. Two consequences follow:
+registry: Weaver downloads it when the container starts. As a consequence, a
+test can start to fail without any code change, when the conventions evolve.
+That is the compliance signal: the telemetry no longer matches the current
+specification. For deterministic results, pin the registry with
+`WithRegistry`.
 
-- A test can start to fail without any code change, when the conventions
-  evolve. That is the compliance signal: the telemetry no longer matches the
-  current specification.
-- For deterministic results, pin both floating parts with the options below.
+The Weaver image itself does not float: the package pins a tested
+`otel/weaver` version and updates it deliberately (Renovate opens a PR for
+each new Weaver release). Use `WithVersion` to select a different version.
 
 ## Options
 
 - `WithVersion(version string)`: select the `otel/weaver` image version.
-  The default is `latest`; the minimum is v0.22.1. Tags that are not semver
-  pass through to Docker unchecked.
+  The default is the pinned, tested version; the minimum is v0.22.1. Tags
+  that are not semver (for example, `latest`) pass through to Docker
+  unchecked.
 - `WithRegistry(registry string)`: set the semantic-conventions registry
   passed to Weaver's `--registry` flag. When unset, Weaver uses its default
   registry: the latest published semantic conventions.

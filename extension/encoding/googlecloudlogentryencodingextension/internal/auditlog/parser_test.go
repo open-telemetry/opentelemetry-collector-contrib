@@ -7,7 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/metadata"
 )
 
 func TestIsValid(t *testing.T) {
@@ -92,15 +95,17 @@ func TestHandleResourceLocation(t *testing.T) {
 }
 
 func TestHandleStatus(t *testing.T) {
+	// not parallel: mutates the global featuregate registry
 	tests := map[string]struct {
 		status       *status
+		dontEmitV0   bool
 		expectedAttr map[string]any
 	}{
 		"nil": {
 			status:       nil,
 			expectedAttr: map[string]any{},
 		},
-		"not nil": {
+		"not nil, don't emit v0 (default)": {
 			status: &status{
 				Code: func() *int64 {
 					v := int64(6)
@@ -108,6 +113,20 @@ func TestHandleStatus(t *testing.T) {
 				}(),
 				Message: "RESOURCE_ALREADY_EXISTS",
 			},
+			dontEmitV0: true,
+			expectedAttr: map[string]any{
+				"rpc.response.status_code": "6",
+			},
+		},
+		"not nil, emit v0": {
+			status: &status{
+				Code: func() *int64 {
+					v := int64(6)
+					return &v
+				}(),
+				Message: "RESOURCE_ALREADY_EXISTS",
+			},
+			dontEmitV0: false,
 			expectedAttr: map[string]any{
 				"rpc.jsonrpc.error_code":    int64(6),
 				"rpc.response.status_code":  "6",
@@ -118,7 +137,11 @@ func TestHandleStatus(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			registry := featuregate.GlobalRegistry()
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingGooglecloudlogentryencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
+			t.Cleanup(func() {
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingGooglecloudlogentryencodingDontEmitV0RPCConventionsFeatureGate.ID(), true))
+			})
 
 			attr := pcommon.NewMap()
 			handleStatus(tt.status, attr)

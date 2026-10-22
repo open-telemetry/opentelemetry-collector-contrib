@@ -1,0 +1,19 @@
+display_name: Telemetry Policy Processor
+type: telemetry_policy
+
+description: |
+  The `telemetry_policy` processor natively interprets and enforces standardized,
+  declarative Telemetry Policies across traces, metrics, and logs for sampling,
+  filtering, and scoped transformations, with built-in hit/miss observability.
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics, traces]
+  distributions: []
+  codeowners:
+    active: [dashpole, jaronoff97, mx-psi]
+
+tests:
+  config:
+    providers: [file_telemetry_policy]

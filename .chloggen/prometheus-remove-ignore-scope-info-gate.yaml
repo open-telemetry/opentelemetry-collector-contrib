@@ -1,0 +1,4 @@
+change_type: breaking
+component: receiver/prometheus
+note: Remove the stable `receiver.prometheusreceiver.IgnoreScopeInfoMetric` feature gate.
+issues: [47312]

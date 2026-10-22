@@ -10,10 +10,64 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
+
+func TestLimit(t *testing.T) {
+	t.Parallel()
+
+	const maxBuckets = 160
+	cases := []struct {
+		name        string
+		lo, hi      int32
+		wantScale   expo.Scale
+		wantBuckets int
+	}{
+		{name: "within_limit", lo: 1, hi: 160, wantScale: 0, wantBuckets: 160},
+		{name: "aligned", lo: 0, hi: 319, wantScale: -1, wantBuckets: 160},
+		{name: "positive_odd_upper", lo: 0, hi: 320, wantScale: -2, wantBuckets: 81},
+		{name: "positive_odd_bounds", lo: 1, hi: 320, wantScale: -2, wantBuckets: 81},
+		{name: "negative_odd_lower", lo: -321, hi: -2, wantScale: -2, wantBuckets: 81},
+		{name: "negative_odd_upper", lo: -320, hi: -2, wantScale: -1, wantBuckets: 160},
+		{name: "cross_zero", lo: -161, hi: 160, wantScale: -2, wantBuckets: 82},
+		{name: "multiple_scales", lo: 1, hi: 1280, wantScale: -4, wantBuckets: 81},
+	}
+	for _, cs := range cases {
+		t.Run(cs.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Two observations at the endpoints require all intervening buckets.
+			a := pmetric.NewExponentialHistogramDataPointBuckets()
+			a.SetOffset(cs.lo)
+			a.BucketCounts().Append(1)
+			b := pmetric.NewExponentialHistogramDataPointBuckets()
+			b.SetOffset(cs.hi)
+			b.BucketCounts().Append(1)
+
+			to := expo.Limit(maxBuckets, 0, a, b)
+			assert.Equal(t, cs.wantScale, to)
+			assert.Equal(t, to, expo.Limit(maxBuckets, 0, b, a))
+
+			expo.Downscale(a, 0, to)
+			expo.Downscale(b, 0, to)
+			expo.Merge(a, b)
+
+			counts := a.BucketCounts()
+			assert.LessOrEqual(t, counts.Len(), maxBuckets)
+			require.Equal(t, cs.wantBuckets, counts.Len())
+			assert.Equal(t, uint64(1), counts.At(0))
+			assert.Equal(t, uint64(1), counts.At(counts.Len()-1))
+			var total uint64
+			for _, count := range counts.All() {
+				total += count
+			}
+			assert.Equal(t, uint64(2), total)
+		})
+	}
+}
 
 func TestDownscale(t *testing.T) {
 	type Repr[T any] struct {

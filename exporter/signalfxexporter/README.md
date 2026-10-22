@@ -95,9 +95,10 @@ The following configuration options can also be configured:
 - `http2_ping_timeout` (default = 10s): Triggered by `http2_read_idle_timeout`; When there's no response to the ping within the configured value, 
   the connection will be closed. If this value is set to 0, it will default to 15s. 
 - `headers` (no default): Headers to pass in the payload.
-- `max_idle_conns` (default = 100): The maximum idle HTTP connections the client can keep open.
-- `max_idle_conns_per_host` (default = 100): The maximum idle HTTP connections the client can keep open per host.
-- `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
+- `keepalive`: Contains the HTTP keep-alive settings of the client.
+  - `max_idle_conns` (default = 100): The maximum idle HTTP connections the client can keep open.
+  - `max_idle_conns_per_host` (default = 100): The maximum idle HTTP connections the client can keep open per host.
+  - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
 - More HTTP settings are available, see 
   [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md).
 - `sync_host_metadata`: Defines whether the exporter should scrape host metadata
@@ -249,7 +250,8 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
-    max_idle_conns: 80
+    keepalive:
+      max_idle_conns: 80
     sending_queue:
       batch:
 ```

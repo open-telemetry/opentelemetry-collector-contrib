@@ -6,8 +6,7 @@ package pdatautil // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 // FlattenResourceLogs moves each LogRecord onto a dedicated ResourceLogs and ScopeLogs.
@@ -38,7 +37,7 @@ func GroupByResourceLogs(rls plog.ResourceLogsSlice) {
 	// Hash each ResourceLogs based on identifying information.
 	resourceHashes := make([][16]byte, rls.Len())
 	for i := 0; i < rls.Len(); i++ {
-		resourceHashes[i] = pdatautil.MapHash(rls.At(i).Resource().Attributes())
+		resourceHashes[i] = xhash.MapHash(rls.At(i).Resource().Attributes())
 	}
 
 	// Find the first occurrence of each hash and note the index.
@@ -120,7 +119,7 @@ func HashScopeLogs(sl plog.ScopeLogs) [16]byte {
 	scopeHash.PutStr("schema_url", sl.SchemaUrl())
 	scopeHash.PutStr("name", sl.Scope().Name())
 	scopeHash.PutStr("version", sl.Scope().Version())
-	attrHash := pdatautil.MapHash(sl.Scope().Attributes())
+	attrHash := xhash.MapHash(sl.Scope().Attributes())
 	scopeHash.PutStr("attributes_hash", string(attrHash[:]))
-	return pdatautil.MapHash(scopeHash)
+	return xhash.MapHash(scopeHash)
 }

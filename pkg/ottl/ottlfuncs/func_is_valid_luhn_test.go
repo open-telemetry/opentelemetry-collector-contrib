@@ -119,14 +119,14 @@ func Test_IsValidLuhnFactory(t *testing.T) {
 		factory := NewIsValidLuhnFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsValidLuhnArguments[any]{}, args)
+		assert.IsType(t, &isValidLuhnArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsValidLuhnFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isValidLuhnArgs, ok := args.(*IsValidLuhnArguments[any])
+		isValidLuhnArgs, ok := args.(*isValidLuhnArguments[any])
 		require.True(t, ok)
 		isValidLuhnArgs.Target = &ottl.StandardStringLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -141,6 +141,21 @@ func Test_IsValidLuhnFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsValidLuhnFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsValidLuhnFactory args must be of type *IsValidLuhnArguments[K]")
+		assert.ErrorContains(t, err, "IsValidLuhnFactory args must be of type *isValidLuhnArguments[K]")
 	})
+}
+
+func BenchmarkIsValidLuhn(b *testing.B) {
+	exprFunc := isValidLuhnFunc[any](&ottl.StandardStringLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "17893729974", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

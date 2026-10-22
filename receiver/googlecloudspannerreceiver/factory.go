@@ -22,6 +22,8 @@ const (
 	defaultTopMetricsQueryMaxRows            = 100
 	defaultBackfillEnabled                   = false
 	defaultHideTopnLockstatsRowrangestartkey = false
+	defaultHideSplitStatsKeys                = false
+	defaultHideClientIPAddress               = false
 	defaultTruncateText                      = false
 )
 
@@ -40,6 +42,8 @@ func createDefaultConfig() component.Config {
 		TopMetricsQueryMaxRows:            defaultTopMetricsQueryMaxRows,
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
+		HideSplitStatsKeys:                defaultHideSplitStatsKeys,
+		HideClientIPAddress:               defaultHideClientIPAddress,
 		TruncateText:                      defaultTruncateText,
 	}
 }

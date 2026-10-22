@@ -219,11 +219,11 @@ type baseContext interface {
 
 func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
-		rp, err := ottlresource.NewParser(ResourceFunctions(), pc.Settings, ottlresource.EnablePathContextNames())
+		rp, err := ottlresource.NewParser(ResourceFunctions(), pc.Settings(), ottlresource.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		sp, err := ottlscope.NewParser(ScopeFunctions(), pc.Settings, ottlscope.EnablePathContextNames())
+		sp, err := ottlscope.NewParser(ScopeFunctions(), pc.Settings(), ottlscope.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
@@ -251,7 +251,7 @@ func parseResourceContextStatements[R any](
 	if err != nil {
 		return *new(R), err
 	}
-	errorMode := pc.ErrorMode
+	errorMode := pc.ErrorMode()
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
@@ -259,11 +259,11 @@ func parseResourceContextStatements[R any](
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlresource.EnablePathContextNames())
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForResourceWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardResourceFuncs(), parserOptions)
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForResourceWithOptions, contextStatements.Conditions, errorMode, pc.Settings(), filterottl.StandardResourceFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return *new(R), errGlobalBoolExpr
 	}
-	rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.Settings, ottlresource.WithStatementSequenceErrorMode(errorMode))
+	rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.Settings(), ottlresource.WithStatementSequenceErrorMode(errorMode))
 	result := baseContext(resourceStatements{rStatements, globalExpr})
 	return result.(R), nil
 }
@@ -277,7 +277,7 @@ func parseScopeContextStatements[R any](
 	if err != nil {
 		return *new(R), err
 	}
-	errorMode := pc.ErrorMode
+	errorMode := pc.ErrorMode()
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
@@ -285,11 +285,11 @@ func parseScopeContextStatements[R any](
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlscope.EnablePathContextNames())
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForScopeWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardScopeFuncs(), parserOptions)
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForScopeWithOptions, contextStatements.Conditions, errorMode, pc.Settings(), filterottl.StandardScopeFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return *new(R), errGlobalBoolExpr
 	}
-	sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.Settings, ottlscope.WithStatementSequenceErrorMode(errorMode))
+	sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.Settings(), ottlscope.WithStatementSequenceErrorMode(errorMode))
 	result := baseContext(scopeStatements{sStatements, globalExpr})
 	return result.(R), nil
 }

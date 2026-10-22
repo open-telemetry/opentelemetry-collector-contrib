@@ -4,6 +4,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -31,6 +32,16 @@ const (
 type Client interface {
 	Get(path string) ([]byte, error)
 }
+
+// ContextClient is implemented by clients whose requests can be canceled or
+// bounded through a context. Callers that need cancellation should type-assert
+// the Client returned by a ClientProvider to this interface.
+type ContextClient interface {
+	Client
+	GetWithContext(ctx context.Context, path string) ([]byte, error)
+}
+
+var _ ContextClient = (*clientImpl)(nil)
 
 func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
 	switch cfg.AuthType {
@@ -265,7 +276,14 @@ type clientImpl struct {
 }
 
 func (c *clientImpl) Get(path string) ([]byte, error) {
-	req, err := c.buildReq(path)
+	return c.GetWithContext(context.Background(), path)
+}
+
+// GetWithContext performs a GET request against the kubelet. The request is
+// canceled when ctx is done, so callers can bound how long a stalled kubelet
+// connection blocks them.
+func (c *clientImpl) GetWithContext(ctx context.Context, path string) ([]byte, error) {
+	req, err := c.buildReq(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -293,12 +311,12 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	return body, nil
 }
 
-func (c *clientImpl) buildReq(p string) (*http.Request, error) {
+func (c *clientImpl) buildReq(ctx context.Context, p string) (*http.Request, error) {
 	reqURL, err := url.JoinPath(c.baseURL, p)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodGet, reqURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
