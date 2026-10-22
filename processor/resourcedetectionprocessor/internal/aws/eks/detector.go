@@ -44,47 +44,7 @@ const (
 	awsContainerAuthTokenFileEnvVar = "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE" //nolint:gosec // env var name, not a credential
 
 	imdsCheckMaxRetry = 1
-
-	// maxClusterNameLength is the longest name EKS accepts for a cluster.
-	maxClusterNameLength = 100
 )
-
-// errNoUsableClusterName reports that the node carried nothing that can name a
-// cluster: no tag naming one, tags naming more than one, or a name that EKS
-// could not have issued. It does not carry the name itself, which can come
-// from an EC2 tag in a namespace a user can write to.
-//
-// A name EKS could not have issued is a disproven name rather than an unproven
-// one: no cluster of that name can exist, so no request could confirm it and
-// the tag it came from is not describing this node's cluster. A caller asking
-// for ARN confirmation treats it the way it treats a confirmed mismatch.
-var errNoUsableClusterName = errors.New("no usable cluster name on the node")
-
-// validClusterName reports whether the name is shaped like an EKS cluster name,
-// so that a tag value which cannot name a cluster is rejected before it costs a
-// DescribeCluster request. A name must start with a letter or digit and may
-// then also contain dashes and underscores.
-// See https://docs.aws.amazon.com/eks/latest/APIReference/API_CreateCluster.html#AmazonEKS-CreateCluster-request-name
-func validClusterName(clusterName string) bool {
-	if clusterName == "" || len(clusterName) > maxClusterNameLength {
-		return false
-	}
-	// Indexed by byte so that the length check above and the position check
-	// below are in the same units. Any byte of a multi-byte character fails
-	// the alphanumeric test and is neither a dash nor an underscore, so an
-	// accepted name is ASCII only and its byte length is its character length.
-	for i := 0; i < len(clusterName); i++ {
-		char := clusterName[i]
-		alphanumeric := char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9'
-		if alphanumeric {
-			continue
-		}
-		if i == 0 || char != '-' && char != '_' {
-			return false
-		}
-	}
-	return true
-}
 
 // detector for EKS
 type detector struct {
@@ -142,12 +102,6 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	// Discard anything left in the builder by an earlier run. Detect is retried
-	// on failure and re-run on every refresh_interval tick, and the error paths
-	// below return without calling Emit, which is what otherwise clears it. A
-	// later run would then emit attributes established by an earlier one.
-	d.rb.Emit()
-
 	// Check if running on EKS.
 	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
@@ -207,93 +161,12 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 			d.logger.Debug("EKS instance metadata unavailable", zap.Error(err))
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
-		if err := d.setClusterMetadata(ctx, apiMeta); err != nil {
+		d.rb.SetK8sClusterName(apiMeta.ClusterName)
+		if err := d.setClusterARN(ctx, imdsMeta.Region, apiMeta.ClusterName); err != nil {
 			return pcommon.NewResource(), "", err
 		}
 	}
 	return d.rb.Emit(), conventions.SchemaURL, nil
-}
-
-// setClusterARN records the ARN that EKS reports for the cluster the node
-// belongs to, and reports why it could not. The lookup only runs when the
-// attribute is enabled, and whether a failure is fatal is the caller's
-// decision, taken from fail_on_missing_metadata, so that this attribute
-// follows the same rule as every other piece of metadata the detector reads.
-//
-// The returned errors never carry the cluster name: it can come from an EC2
-// tag in a namespace a user can write to, so it can name a cluster this node
-// has nothing to do with.
-//
-// A name EKS could not have issued is rejected before the request is made.
-// There is no cluster of that name for EKS to describe, so the rejection is
-// itself the answer.
-func (d *detector) setClusterARN(ctx context.Context, clusterName string) error {
-	if !d.ra.AwsEksClusterArn.Enabled {
-		return nil
-	}
-	if !validClusterName(clusterName) {
-		return errNoUsableClusterName
-	}
-	arn, err := d.apiProvider.ClusterARN(ctx, clusterName)
-	if err != nil {
-		return err
-	}
-	d.rb.SetAwsEksClusterArn(arn)
-	return nil
-}
-
-// setClusterMetadata records the cluster name and the cluster ARN, each only
-// when it was actually established.
-//
-// The ARN check runs first because it is what decides whether the name is
-// trustworthy. Two of its outcomes disprove the name rather than leaving it
-// unproven, and in both the name is dropped along with the ARN, because
-// reporting it would attribute this node's telemetry to a cluster that is not
-// this one:
-//
-//   - EKS described the named cluster and it is a different cluster from the
-//     one this node runs in.
-//   - The name is not one EKS could have issued, so no cluster of that name
-//     can exist and no request could have confirmed it.
-//
-// Every other ARN failure leaves the name alone, because none of them prove
-// anything about it. A failed eks:DescribeCluster is the case worth being
-// explicit about: ResourceNotFoundException reads like the name naming
-// nothing, but the request is made with this node's role in this node's
-// account, so it is equally the answer for a cluster that exists and that this
-// role or account cannot see, and dropping the name there would lose a correct
-// k8s.cluster.name over a missing IAM grant or a cross-account cluster.
-//
-// With the attribute disabled, which is the default, no check runs, nothing is
-// disproven, and the name is reported as before. An empty name is never
-// reported either way: the node carried no tag naming a cluster, or carried
-// tags naming more than one, and an empty attribute asserts a cluster named ""
-// rather than saying nothing.
-func (d *detector) setClusterMetadata(ctx context.Context, meta apiprovider.InstanceMetadata) error {
-	arnErr := d.setClusterARN(ctx, meta.ClusterName)
-
-	switch {
-	case meta.ClusterName == "":
-		if meta.ClusterNameAmbiguous {
-			d.logger.Debug("EKS cluster name unavailable; the node's EC2 tags name more than one cluster at the same precedence")
-		} else {
-			d.logger.Debug("EKS cluster name unavailable; the node carries no EC2 tag naming a cluster")
-		}
-	case errors.Is(arnErr, apiprovider.ErrClusterIdentityMismatch):
-		d.logger.Debug("EKS cluster name not reported; EKS reports that the cluster named by the node's EC2 tags is not the cluster this node runs in")
-	case errors.Is(arnErr, errNoUsableClusterName):
-		d.logger.Debug("EKS cluster name not reported; the name on the node's EC2 tags is not one EKS could have issued")
-	default:
-		d.rb.SetK8sClusterName(meta.ClusterName)
-	}
-
-	if arnErr != nil {
-		if d.failOnMissingMetadata {
-			return fmt.Errorf("eks cluster ARN unavailable: %w", arnErr)
-		}
-		d.logger.Debug("EKS cluster ARN unavailable", zap.Error(arnErr))
-	}
-	return nil
 }
 
 func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string, error) {
@@ -319,25 +192,33 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 		return d.rb.Emit(), conventions.SchemaURL, nil
 	}
 
-	setIfNotEmpty(d.rb.SetCloudAccountID, apiMeta.AccountID)
-	setIfNotEmpty(d.rb.SetHostImageID, apiMeta.ImageID)
-	setIfNotEmpty(d.rb.SetHostType, apiMeta.InstanceType)
-	setIfNotEmpty(d.rb.SetHostName, apiMeta.Hostname)
-	if err := d.setClusterMetadata(ctx, apiMeta); err != nil {
+	d.rb.SetCloudAccountID(apiMeta.AccountID)
+	d.rb.SetHostImageID(apiMeta.ImageID)
+	d.rb.SetHostType(apiMeta.InstanceType)
+	d.rb.SetHostName(apiMeta.Hostname)
+	d.rb.SetK8sClusterName(apiMeta.ClusterName)
+	if err := d.setClusterARN(ctx, apiMeta.Region, apiMeta.ClusterName); err != nil {
 		return pcommon.NewResource(), "", err
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
-// setIfNotEmpty leaves an attribute off rather than reporting it as an empty
-// string. An ec2:DescribeInstances response can succeed while describing no
-// instance, which leaves the values it would have carried empty, and an empty
-// attribute asserts a value of "" rather than saying nothing.
-func setIfNotEmpty(set func(string), value string) {
-	if value != "" {
-		set(value)
+func (d *detector) setClusterARN(ctx context.Context, region, clusterName string) error {
+	if !d.ra.AwsEksClusterArn.Enabled || clusterName == "" {
+		return nil
 	}
+
+	arn, err := d.apiProvider.ClusterARN(ctx, region, clusterName)
+	if err != nil {
+		if d.failOnMissingMetadata {
+			return fmt.Errorf("eks cluster ARN unavailable: %w", err)
+		}
+		d.logger.Debug("EKS cluster ARN unavailable", zap.Error(err))
+		return nil
+	}
+	d.rb.SetAwsEksClusterArn(arn)
+	return nil
 }
 
 func (d *detector) isEKS(ctx context.Context) (bool, error) {
