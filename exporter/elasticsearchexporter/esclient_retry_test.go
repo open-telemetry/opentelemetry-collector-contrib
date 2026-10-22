@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -47,6 +48,25 @@ func TestRetry_DNSDeadlineExceeded(t *testing.T) {
 	require.ErrorAs(t, err, &setupErr)
 	var dnsErr *net.DNSError
 	require.ErrorAs(t, err, &dnsErr)
+	var opErr *net.OpError
+	require.ErrorAs(t, err, &opErr)
+	assert.Equal(t, "dial", opErr.Op)
+	assert.Equal(t, int32(maxRetries+1), dials.Load())
+}
+
+func TestRetry_UnreachableServer(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	endpoint := "http://" + ln.Addr().String()
+	require.NoError(t, ln.Close())
+
+	const maxRetries = 1
+	client, dials := newRetryClient(t, endpoint, time.Second, (&net.Dialer{}).DialContext)
+
+	req, err := http.NewRequest(http.MethodPost, endpoint+"/_bulk", http.NoBody)
+	require.NoError(t, err)
+	_, err = client.Perform(req)
+	require.ErrorIs(t, err, syscall.ECONNREFUSED)
 	var opErr *net.OpError
 	require.ErrorAs(t, err, &opErr)
 	assert.Equal(t, "dial", opErr.Op)
