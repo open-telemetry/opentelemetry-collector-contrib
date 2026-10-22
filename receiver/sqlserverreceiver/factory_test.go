@@ -285,6 +285,29 @@ func TestFactory(t *testing.T) {
 	}
 }
 
+func TestTopQueryPlanCacheEnabled(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Server = "localhost"
+		cfg.Username = "sa"
+		cfg.Password = "password"
+		cfg.Port = 1433
+		if enabled {
+			cfg.TopQueryCollection.QueryPlanCache.Enabled = true
+		}
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+		require.NoError(t, cfg.Validate())
+
+		scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.Len(t, scrapers, 1)
+		if !enabled {
+			require.Nil(t, scrapers[0].obfuscator.xmlPlanCache)
+		} else {
+			require.NotNil(t, scrapers[0].obfuscator.xmlPlanCache)
+		}
+	}
+}
+
 func TestNewCache(t *testing.T) {
 	var cache *lru.Cache[string, int64]
 	// even when size is less than 0, cache should be created with size 1.

@@ -111,6 +111,15 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			desc: "query plan cache disabled",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopQueryCollection:   TopQueryCollection{QueryPlanCache: QueryPlanCache{Enabled: false}},
+			},
+			expectedSuccess: true,
+		},
+		{
 			desc: "config with invalid MaxProcedureSampleCount value",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
@@ -247,6 +256,17 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	})
 
+	t.Run("top query collection without cache override", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		cfg := NewFactory().CreateDefaultConfig()
+		sub, err := cm.Sub("sql_server/omitted_cache")
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.False(t, cfg.(*Config).TopQueryCollection.QueryPlanCache.Enabled)
+		require.NoError(t, confmap.Validate(cfg))
+	})
+
 	t.Run("named", func(t *testing.T) {
 		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 		require.NoError(t, err)
@@ -320,6 +340,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.TopQueryCollection.TopQueryCount = 200
 		expected.TopQueryCollection.MaxQuerySampleCount = 1000
 		expected.TopQueryCollection.CollectionInterval = 80 * time.Second
+		expected.TopQueryCollection.QueryPlanCache.Enabled = true
 
 		expected.QuerySample = QuerySample{
 			MaxRowsPerQuery: 1450,
