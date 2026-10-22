@@ -1,0 +1,21 @@
+change_type: enhancement
+
+component: receiver/kafka
+
+note: Add `on_decompress_too_large` consumer setting to control how a fetched
+  record batch that decompresses beyond `max_decompress_batch_bytes` is
+  handled, so a single oversized batch no longer silently stalls its
+  partition.
+
+issues: [51845]
+
+subtext: |
+  `on_decompress_too_large` accepts three values:
+    `stall` (default, previous behavior): keep polling, partition stays
+      blocked on the batch until `max_decompress_batch_bytes` is raised or
+      the consumer is recreated.
+    `skip`: drop the oversized batch with `SetOffsets` and keep consuming.
+      Data loss on the dropped batch.
+    `fatal`: report a permanent error and stop the receiver.
+  Also reports the `kafka_receiver_fetch_err_decompress_too_large` counter
+  with a per-batch `action` attribute for observability into dropped batches.
