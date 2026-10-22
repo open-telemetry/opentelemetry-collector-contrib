@@ -479,6 +479,10 @@ connected Elasticsearch is older than 9.4.0, exponential histograms fall back to
 a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
 `histogram` field.
 
+Explicit-bounds histograms are converted to exponential histograms
+when the Elasticsearch version is 9.4.0 or later. This can be disabled via `version_detection.enabled: false`, which stores
+explicit-bounds histograms as `histogram` field.
+
 Per-data-point mapping hints still apply and take precedence: `histogram:raw`
 stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
 stores a `{sum, value_count}` summary. The native `exponential_histogram` field
