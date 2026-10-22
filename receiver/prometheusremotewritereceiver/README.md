@@ -99,6 +99,10 @@ As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 
+When the sender includes metadata (see [Metadata WAL Records feature flag](#metadata-wal-records-feature-flag)), the series of a Classic Histogram (`_bucket`, `_sum`, `_count`) and of a Summary (quantiles, `_sum`, `_count`) are dropped and nothing is emitted for them. The receiver still accepts the request, so their samples are counted in the `X-Prometheus-Remote-Write-Samples-Written` response header, in line with the [specification's definition of "written"](https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#glossary). Otherwise a Prometheus sender would count them as failed samples and report a partial write. The drops are logged at most once per minute. To keep histograms, configure Prometheus to convert Classic Histograms into Native Histograms with custom buckets (`convert_classic_histograms_to_nhcb`); to avoid sending Summaries, drop their series with `write_relabel_configs`.
+
+Without metadata, every series arrives untyped, and the ones carrying samples, including the series of Classic Histograms and Summaries, are translated into gauges.
+
 ### Native Histogram expansion limits
 
 Prometheus sends Native Histogram buckets as spans of populated buckets separated by gaps, while OTLP wants one contiguous list, so a short list of spans can describe a very wide one. Two limits bound what that expansion is allowed to cost:

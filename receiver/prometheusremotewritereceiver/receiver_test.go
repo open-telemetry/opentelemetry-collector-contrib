@@ -1446,9 +1446,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			// The sample is dropped by design, so the receiver accepts it and counts it as written.
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    0,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -1480,9 +1481,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			// The sample is dropped by design, so the receiver accepts it and counts it as written.
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    0,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -5089,4 +5091,177 @@ func TestInvalidSchemaLogging(t *testing.T) {
 	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
 	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
 	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
+}
+
+// droppedSeriesRequest builds a request carrying a classic histogram family, a summary family and
+// a counter. With typed metadata the first two families are dropped by design; without it every
+// series is translated to an untyped gauge. The two shapes share the samples and exemplars so
+// that the written stats can be compared against the same sent counts.
+func droppedSeriesRequest(typed bool) *writev2.Request {
+	symbols := []string{
+		"",
+		"__name__",              // 1
+		"test_histogram_bucket", // 2
+		"test_histogram_sum",    // 3
+		"test_histogram_count",  // 4
+		"test_summary",          // 5
+		"test_summary_sum",      // 6
+		"test_summary_count",    // 7
+		"test_counter_total",    // 8
+		"job", "test_job",       // 9, 10
+		"instance", "test_instance", // 11, 12
+		"le", "1", "+Inf", // 13, 14, 15
+		"quantile", "0.5", "0.99", // 16, 17, 18
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 19, 20
+	}
+	metricType := func(typed bool, t writev2.Metadata_MetricType) writev2.Metadata {
+		if !typed {
+			return writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED}
+		}
+		return writev2.Metadata{Type: t}
+	}
+	sample := []writev2.Sample{{Value: 1, Timestamp: 1}}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{19, 20}, Value: 1.5, Timestamp: 1}}
+	histogram := metricType(typed, writev2.Metadata_METRIC_TYPE_HISTOGRAM)
+	summary := metricType(typed, writev2.Metadata_METRIC_TYPE_SUMMARY)
+	counter := metricType(typed, writev2.Metadata_METRIC_TYPE_COUNTER)
+	return &writev2.Request{
+		Symbols: symbols,
+		Timeseries: []writev2.TimeSeries{
+			{Metadata: histogram, LabelsRefs: []uint32{1, 2, 11, 12, 9, 10, 13, 14}, Samples: sample},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 2, 11, 12, 9, 10, 13, 15}, Samples: sample, Exemplars: exemplar},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 3, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 4, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 17}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 6, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 7, 11, 12, 9, 10}, Samples: sample},
+			{
+				Metadata:   counter,
+				LabelsRefs: []uint32{1, 8, 11, 12, 9, 10},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}, {Value: 2, Timestamp: 2}},
+				Exemplars:  exemplar,
+			},
+		},
+	}
+}
+
+// sentStats counts what a sender puts in a request. Prometheus subtracts the Written response
+// headers from these counts and reports any positive difference as failed samples.
+func sentStats(req *writev2.Request) remote.WriteResponseStats {
+	stats := remote.WriteResponseStats{Confirmed: true}
+	for i := range req.Timeseries {
+		ts := &req.Timeseries[i]
+		stats.Samples += len(ts.Samples)
+		stats.Histograms += len(ts.Histograms)
+		stats.Exemplars += len(ts.Exemplars)
+	}
+	return stats
+}
+
+func TestDroppedSeriesAreCountedAsWritten(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		// typed sends the metadata a Prometheus started with --enable-feature=metadata-wal-records sends.
+		typed               bool
+		expectedMetricNames map[string]pmetric.MetricType
+		expectedDataPoints  int
+	}{
+		{
+			name:  "with metadata the classic histogram and summary series are dropped but still counted",
+			typed: true,
+			expectedMetricNames: map[string]pmetric.MetricType{
+				"test_counter_total": pmetric.MetricTypeSum,
+			},
+			expectedDataPoints: 2,
+		},
+		{
+			// Nothing changes without metadata: every series is an untyped gauge and was already
+			// counted before this regression test existed.
+			name:  "without metadata every series is written as an untyped gauge",
+			typed: false,
+			expectedMetricNames: map[string]pmetric.MetricType{
+				"test_histogram_bucket": pmetric.MetricTypeGauge,
+				"test_histogram_sum":    pmetric.MetricTypeGauge,
+				"test_histogram_count":  pmetric.MetricTypeGauge,
+				"test_summary":          pmetric.MetricTypeGauge,
+				"test_summary_sum":      pmetric.MetricTypeGauge,
+				"test_summary_count":    pmetric.MetricTypeGauge,
+				"test_counter_total":    pmetric.MetricTypeGauge,
+			},
+			expectedDataPoints: 10,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := droppedSeriesRequest(tc.typed)
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+			pBuf := proto.NewBuffer(nil)
+			require.NoError(t, pBuf.Marshal(request))
+			// handlePRW is called without the confighttp middleware, so the body is not compressed.
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+			req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, req)
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			// The headers are what the sender compares against what it sent: any difference is
+			// reported as failed samples and logged as a partial write.
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, sentStats(request), written)
+
+			require.Len(t, sink.AllMetrics(), 1)
+			metrics := sink.AllMetrics()[0]
+			assert.Equal(t, tc.expectedDataPoints, metrics.DataPointCount())
+			gotMetricNames := make(map[string]pmetric.MetricType)
+			for _, rm := range metrics.ResourceMetrics().All() {
+				for _, sm := range rm.ScopeMetrics().All() {
+					for _, m := range sm.Metrics().All() {
+						gotMetricNames[m.Name()] = m.Type()
+					}
+				}
+			}
+			assert.Equal(t, tc.expectedMetricNames, gotMetricNames)
+		})
+	}
+}
+
+func TestDroppedSeriesLogIsRateLimited(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	factory := NewFactory()
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, factory.CreateDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	// Nothing is dropped without metadata, so nothing is logged.
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(false))
+	require.NoError(t, err)
+	assert.Empty(t, obs.All())
+
+	// Eight series are dropped per request: one line for the first request, none for the
+	// repeats within the sampling interval, instead of one line per dropped series per request.
+	// The sampler resets its counter one interval after the first entry, so consecutive calls
+	// here cannot cross a reset.
+	for range 3 {
+		_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+		require.NoError(t, err)
+	}
+	logs := obs.All()
+	require.Len(t, logs, 1)
+	assert.Equal(t, zapcore.WarnLevel, logs[0].Level)
+	assert.Equal(t, "Dropped classic histogram and summary series, which are not supported; they are counted as written", logs[0].Message)
+	assert.Equal(t, int64(4), logs[0].ContextMap()["classic_histogram_series"])
+	assert.Equal(t, "test_histogram_bucket", logs[0].ContextMap()["classic_histogram_example"])
+	assert.Equal(t, int64(4), logs[0].ContextMap()["summary_series"])
+	assert.Equal(t, "test_summary", logs[0].ContextMap()["summary_example"])
 }
