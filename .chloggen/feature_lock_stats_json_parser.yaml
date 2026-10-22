@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add `sample_lock_requests_json_string` label with `lock_request_json` value type to top minute lock stats
+issues: [51637]
+subtext: ""
+change_logs: []

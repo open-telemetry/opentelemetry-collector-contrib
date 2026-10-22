@@ -4,6 +4,7 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
@@ -80,6 +81,11 @@ type byteSliceLabelValue struct {
 }
 
 type lockRequestSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+type lockRequestJSONLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
 }
@@ -293,6 +299,64 @@ func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any)
 	}
 }
 
+func (v lockRequestJSONLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v lockRequestJSONLabelValue) Value() any {
+	return v.value
+}
+
+func (v lockRequestJSONLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+type lockRequestJSON struct {
+	LockMode       string `json:"lock_mode"`
+	Column         string `json:"column"`
+	TransactionTag string `json:"transaction_tag"`
+}
+
+func newLockRequestJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	rawJSON := *valueHolder.(*string)
+	var value []*lockRequestJSON
+	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
+		return lockRequestJSONLabelValue{
+			metadata: metadata,
+			value:    "",
+		}
+	}
+
+	uniqueValueItems := make(map[string]struct{})
+	var convertedValue []string
+
+	for _, valueItem := range value {
+		if valueItem == nil || (valueItem.LockMode == "" && valueItem.Column == "") {
+			continue
+		}
+		var valueItemString string
+		if valueItem.TransactionTag == "" {
+			valueItemString = fmt.Sprintf("{%v,%v}", valueItem.LockMode, valueItem.Column)
+		} else {
+			valueItemString = fmt.Sprintf("{%v,%v,%v}", valueItem.LockMode, valueItem.Column, valueItem.TransactionTag)
+		}
+
+		if _, contains := uniqueValueItems[valueItemString]; !contains {
+			uniqueValueItems[valueItemString] = struct{}{}
+			convertedValue = append(convertedValue, valueItemString)
+		}
+	}
+
+	sort.Strings(convertedValue)
+
+	constructedValue := strings.Join(convertedValue, ",")
+
+	return lockRequestJSONLabelValue{
+		metadata: metadata,
+		value:    constructedValue,
+	}
+}
+
 func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelValueMetadata, error) {
 	var newLabelValueFunc newLabelValueFunction
 	var valueHolderFunc valueHolderFunction
@@ -338,6 +402,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc = newLockRequestSliceLabelValue
 		valueHolderFunc = func() any {
 			var valueHolder []*lockRequest
+			return &valueHolder
+		}
+	case LockRequestJSONValueType:
+		newLabelValueFunc = newLockRequestJSONLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder string
 			return &valueHolder
 		}
 	case TimestampValueType:
