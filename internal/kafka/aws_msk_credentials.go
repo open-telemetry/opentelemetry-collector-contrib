@@ -1,18 +1,21 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafka
+package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
 	"context"
 	"errors"
 	"math/rand/v2"
+	"net"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"go.uber.org/zap"
 )
 
@@ -86,7 +89,9 @@ func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, 
 	p.logger.Debug("AWS MSK credential refresh started")
 	creds, err := p.provider.Retrieve(ctx)
 	if err != nil {
-		p.logger.Warn("AWS MSK credential refresh failed", zap.Duration("duration", time.Since(started)))
+		fields := []zap.Field{zap.Duration("duration", time.Since(started))}
+		fields = append(fields, awsMSKRefreshErrorFields(err)...)
+		p.logger.Warn("AWS MSK credential refresh failed", fields...)
 		return aws.Credentials{}, err
 	}
 	if creds.CanExpire && !creds.Expires.After(time.Now()) {
@@ -100,6 +105,32 @@ func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, 
 		zap.Duration("duration", time.Since(started)),
 		zap.Duration("credential_time_to_expiry", time.Until(creds.Expires)))
 	return creds, nil
+}
+
+func awsMSKRefreshErrorFields(err error) []zap.Field {
+	netErr, isNetErr := errors.AsType[net.Error](err)
+	if errors.Is(err, context.DeadlineExceeded) || (isNetErr && netErr.Timeout()) {
+		return []zap.Field{zap.String("error_kind", "timeout")}
+	}
+	if apiErr, ok := errors.AsType[smithy.APIError](err); ok {
+		code := apiErr.ErrorCode()
+		// Log only recognized codes, never response messages or arbitrary codes
+		// that could contain token, request, or other sensitive contents.
+		switch code {
+		case "AccessDenied", "AccessDeniedException", "ExpiredToken", "ExpiredTokenException", "InvalidClientTokenId",
+			"IDPCommunicationError", "IDPRejectedClaim", "InvalidIdentityToken",
+			"MalformedPolicyDocument", "PackedPolicyTooLarge", "RegionDisabled", "RegionDisabledException",
+			"Throttling", "ThrottlingException", "RequestTimeout", "RequestTimeoutException",
+			"ServiceUnavailable", "InternalFailure", "InternalError":
+		default:
+			code = "unknown"
+		}
+		return []zap.Field{zap.String("error_kind", "sts_api_error"), zap.String("aws_error_code", code)}
+	}
+	if _, ok := errors.AsType[*smithyhttp.RequestSendError](err); isNetErr || ok {
+		return []zap.Field{zap.String("error_kind", "network")}
+	}
+	return []zap.Field{zap.String("error_kind", "unknown")}
 }
 
 func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current aws.Credentials, refreshErr error) (aws.Credentials, error) {
