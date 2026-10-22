@@ -931,16 +931,18 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 // warning only when the deprecated field is set.
 func TestConsumerWarnsMaxBufferedBatchesDeprecated(t *testing.T) {
 	cases := []struct {
-		name        string
-		prefetch    int
-		deprecated  int
-		wantWarning int
+		name          string
+		prefetch      int
+		deprecated    int
+		deprecatedSet bool
+		wantWarning   int
 	}{
 		{
-			name:        "max_buffered_batches set",
-			deprecated:  2,
-			prefetch:    2,
-			wantWarning: 1,
+			name:          "max_buffered_batches set",
+			deprecated:    2,
+			deprecatedSet: true,
+			prefetch:      2,
+			wantWarning:   1,
 		},
 		{
 			name:     "only max_prefetch set",
@@ -953,6 +955,7 @@ func TestConsumerWarnsMaxBufferedBatchesDeprecated(t *testing.T) {
 			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 			cfg.PartitionProcessing.Independent = true
 			cfg.PartitionProcessing.MaxBufferedBatches = tc.deprecated
+			cfg.PartitionProcessing.maxBufferedBatchesSet = tc.deprecatedSet
 			cfg.PartitionProcessing.MaxPrefetch.Batches = tc.prefetch
 			settings, _, logs := mustNewSettings(t)
 			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {

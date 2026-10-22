@@ -207,7 +207,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		close(c.started)
 	}
 
-	if c.config.PartitionProcessing.MaxBufferedBatches != 0 {
+	if c.config.PartitionProcessing.maxBufferedBatchesSet {
 		c.settings.Logger.Warn("partition_processing.max_buffered_batches is deprecated, use partition_processing.max_prefetch.batches instead")
 	}
 

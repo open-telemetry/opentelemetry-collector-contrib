@@ -67,6 +67,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		if pp.IsSet("max_prefetch::batches") {
 			return errors.New("partition_processing.max_buffered_batches and partition_processing.max_prefetch.batches are mutually exclusive")
 		}
+		c.PartitionProcessing.maxBufferedBatchesSet = true
 		c.PartitionProcessing.MaxPrefetch.Batches = c.PartitionProcessing.MaxBufferedBatches
 	}
 
@@ -233,6 +234,10 @@ type PartitionProcessing struct {
 	//
 	// Deprecated [v0.164.0]: use partition_processing.max_prefetch.batches instead. Will be removed in v0.166.0.
 	MaxBufferedBatches int `mapstructure:"max_buffered_batches"`
+
+	// maxBufferedBatchesSet records whether max_buffered_batches appeared in the
+	// config, so the deprecation warning fires even when its value is 0.
+	maxBufferedBatchesSet bool
 
 	// MaxPrefetch limits the fetched batches waiting for each independent
 	// partition worker.

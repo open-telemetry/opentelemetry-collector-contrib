@@ -180,10 +180,11 @@ func TestLoadConfig(t *testing.T) {
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.PartitionProcessing = PartitionProcessing{
-					Independent:        true,
-					MaxBufferedBatches: 2,
-					MaxPrefetch:        MaxPrefetchConfig{Batches: 2},
-					MaxInFlight:        MaxInFlightConfig{Records: 1, Window: InFlightWindowPerFetch},
+					Independent:           true,
+					MaxBufferedBatches:    2,
+					maxBufferedBatchesSet: true,
+					MaxPrefetch:           MaxPrefetchConfig{Batches: 2},
+					MaxInFlight:           MaxInFlightConfig{Records: 1, Window: InFlightWindowPerFetch},
 				}
 				return cfg
 			}(),
@@ -216,6 +217,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "kafka/non_independent_zero_max_buffered_batches",
 			expected: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing.maxBufferedBatchesSet = true
 				cfg.PartitionProcessing.MaxPrefetch.Batches = 0
 				return cfg
 			}(),
