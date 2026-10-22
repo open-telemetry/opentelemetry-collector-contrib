@@ -190,12 +190,12 @@ func TestSupportsExponentialHistograms(t *testing.T) {
 	}{
 		{
 			name:            "exponential histograms are supported",
-			v:               "9.3.0",
+			v:               "9.4.0",
 			expectedSupport: true,
 		},
 		{
-			name:            "exponential histograms are supported for 9.3.0 SNAPSHOT",
-			v:               "9.3.0-SNAPSHOT",
+			name:            "exponential histograms are supported for 9.4.0 SNAPSHOT",
+			v:               "9.4.0-SNAPSHOT",
 			expectedSupport: true,
 		},
 		{

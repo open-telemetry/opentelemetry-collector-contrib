@@ -164,5 +164,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/m
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

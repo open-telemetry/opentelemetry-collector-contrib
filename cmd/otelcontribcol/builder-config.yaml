@@ -137,6 +137,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.163.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor v0.163.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.163.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/partitioningprocessor v0.163.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.163.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.163.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.163.0
