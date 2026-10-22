@@ -263,6 +263,24 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimVolumeAvailableDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimVolumeCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimVolumeInodeCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimVolumeInodeFreeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimVolumeInodeUsedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimVolumeUsageDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordK8sPodCPUNodeUtilizationDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
@@ -364,6 +382,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeSystemContainerName("k8s.node.system_container.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sVolumeName("k8s.volume.name-val")
@@ -1020,6 +1039,80 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The time since the node started", mi.Description())
 					assert.Equal(t, "s", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.volume.available":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.volume.available"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.volume.available")
+					validatedMetrics["k8s.persistentvolumeclaim.volume.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of available bytes in the volume backing the PersistentVolumeClaim.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.volume.capacity":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.volume.capacity"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.volume.capacity")
+					validatedMetrics["k8s.persistentvolumeclaim.volume.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The total capacity in bytes of the volume backing the PersistentVolumeClaim.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.volume.inode.count":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.volume.inode.count"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.volume.inode.count")
+					validatedMetrics["k8s.persistentvolumeclaim.volume.inode.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The total inodes in the filesystem of the volume backing the PersistentVolumeClaim.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.volume.inode.free":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.volume.inode.free"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.volume.inode.free")
+					validatedMetrics["k8s.persistentvolumeclaim.volume.inode.free"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The free inodes in the filesystem of the volume backing the PersistentVolumeClaim.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.volume.inode.used":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.volume.inode.used"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.volume.inode.used")
+					validatedMetrics["k8s.persistentvolumeclaim.volume.inode.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The inodes used by the filesystem of the volume backing the PersistentVolumeClaim.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.volume.usage":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.volume.usage"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.volume.usage")
+					validatedMetrics["k8s.persistentvolumeclaim.volume.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of used bytes in the volume backing the PersistentVolumeClaim.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

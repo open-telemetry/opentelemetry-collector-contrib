@@ -315,6 +315,48 @@ $defs:
           enabled:
             type: boolean
             default: false
+      k8s.persistentvolumeclaim.volume.available:
+        description: "K8sPersistentvolumeclaimVolumeAvailableMetricConfig provides config for the k8s.persistentvolumeclaim.volume.available metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.persistentvolumeclaim.volume.capacity:
+        description: "K8sPersistentvolumeclaimVolumeCapacityMetricConfig provides config for the k8s.persistentvolumeclaim.volume.capacity metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.persistentvolumeclaim.volume.inode.count:
+        description: "K8sPersistentvolumeclaimVolumeInodeCountMetricConfig provides config for the k8s.persistentvolumeclaim.volume.inode.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.persistentvolumeclaim.volume.inode.free:
+        description: "K8sPersistentvolumeclaimVolumeInodeFreeMetricConfig provides config for the k8s.persistentvolumeclaim.volume.inode.free metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.persistentvolumeclaim.volume.inode.used:
+        description: "K8sPersistentvolumeclaimVolumeInodeUsedMetricConfig provides config for the k8s.persistentvolumeclaim.volume.inode.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.persistentvolumeclaim.volume.usage:
+        description: "K8sPersistentvolumeclaimVolumeUsageMetricConfig provides config for the k8s.persistentvolumeclaim.volume.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       k8s.pod.cpu.node.utilization:
         description: "K8sPodCPUNodeUtilizationMetricConfig provides config for the k8s.pod.cpu.node.utilization metric."
         type: object
@@ -714,6 +756,23 @@ $defs:
           enabled:
             type: boolean
             default: true
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      k8s.persistentvolumeclaim.uid:
+        description: ResourceAttributeConfig provides common config for a k8s.persistentvolumeclaim.uid resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array

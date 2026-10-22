@@ -72,6 +72,10 @@ resource_attributes:
     description: "The name of the Persistent Volume Claim"
     enabled: true
     type: string
+  k8s.persistentvolumeclaim.uid:
+    description: "The UID of the Persistent Volume Claim. Requires `k8s_api_config` to be set."
+    enabled: false
+    type: string
   k8s.pod.name:
     description: "The name of the Pod"
     enabled: true
@@ -474,6 +478,56 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+    attributes: []
+  k8s.persistentvolumeclaim.volume.available:
+    enabled: false
+    description: "The number of available bytes in the volume backing the PersistentVolumeClaim."
+    unit: By
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.persistentvolumeclaim.volume.capacity:
+    enabled: false
+    description: "The total capacity in bytes of the volume backing the PersistentVolumeClaim."
+    unit: By
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.persistentvolumeclaim.volume.inode.count:
+    enabled: false
+    description: "The total inodes in the filesystem of the volume backing the PersistentVolumeClaim."
+    unit: "{inode}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.persistentvolumeclaim.volume.inode.free:
+    enabled: false
+    description: "The free inodes in the filesystem of the volume backing the PersistentVolumeClaim."
+    unit: "{inode}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.persistentvolumeclaim.volume.inode.used:
+    enabled: false
+    description: "The inodes used by the filesystem of the volume backing the PersistentVolumeClaim."
+    unit: "{inode}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.persistentvolumeclaim.volume.usage:
+    enabled: false
+    description: "The number of used bytes in the volume backing the PersistentVolumeClaim."
+    unit: By
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: []
   k8s.pod.cpu.node.utilization:
     enabled: false

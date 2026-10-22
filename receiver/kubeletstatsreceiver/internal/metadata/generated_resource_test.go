@@ -24,6 +24,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeSystemContainerName("k8s.node.system_container.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sVolumeName("k8s.volume.name-val")
@@ -37,7 +38,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 10, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 16, res.Attributes().Len())
+				assert.Equal(t, 17, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -98,6 +99,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "k8s.persistentvolumeclaim.name-val", k8sPersistentvolumeclaimNameAttrVal.Str())
+			}
+			k8sPersistentvolumeclaimUIDAttrVal, ok := res.Attributes().Get("k8s.persistentvolumeclaim.uid")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.persistentvolumeclaim.uid-val", k8sPersistentvolumeclaimUIDAttrVal.Str())
 			}
 			k8sPodNameAttrVal, ok := res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
