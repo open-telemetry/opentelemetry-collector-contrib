@@ -357,8 +357,7 @@ func retryOnError(_ *http.Request, err error) bool {
 	if errors.Is(err, context.Canceled) {
 		return false
 	}
-	var setupErr *connSetupTimeoutError
-	if errors.As(err, &setupErr) {
+	if _, ok := errors.AsType[*connSetupTimeoutError](err); ok {
 		return true
 	}
 	return !errors.Is(err, context.DeadlineExceeded)
