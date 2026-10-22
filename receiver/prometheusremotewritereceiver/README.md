@@ -118,3 +118,9 @@ This approach has some limitations, for example:
     - If the process dies or restarts, the cache will be lost.
     - Some inconsistencies can happen according to the order of the requests and the current cache size.
     - The limit of 1000 resource metrics is hardcoded and not configurable for now.
+
+The receiver reports every eviction in the `otelcol_receiver_prometheusremotewrite_resource_cache_evictions` internal metric. A counter that keeps growing means the cache is smaller than the number of job/instance pairs sent to the receiver.
+
+## Internal Telemetry
+
+See [documentation.md](./documentation.md) for the list of internal metrics emitted by this receiver.
