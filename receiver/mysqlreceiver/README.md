@@ -36,6 +36,7 @@ behavior accordingly.
 | MySQL | 9.x | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
 | MariaDB | 10.5.x–10.11.x | No | Yes | 0 | `SHOW SLAVE STATUS` |
 | MariaDB | 11.x (LTS: 11.4, 11.8) | No | Yes | 0 | `SHOW SLAVE STATUS` |
+| MariaDB | 12.x | No | Yes | 0 | `SHOW SLAVE STATUS` |
 
 See [COMPATIBILITY.md](./COMPATIBILITY.md) for full details on version-gated behavior and fallbacks.
 

@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/mysql
+note: Handle MariaDB 12 replica status columns and safely ignore unknown columns during replica status collection.
+issues: [52276]
+subtext:
+change_logs: [user]
