@@ -58,12 +58,12 @@ func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
 		for value := range valuesPerSketch {
 			hashValue := rotationBenchmarkHash(i, value)
 			tracker.current.InsertHash(hashValue)
-			tracker.previous.InsertHash(hashValue)
+			tracker.window.InsertHash(hashValue)
 		}
 		tracker.insertCount = uint64(valuesPerSketch)
-		tracker.previousInsertCount = uint64(valuesPerSketch)
+		tracker.cachedWindow = uint64(valuesPerSketch) // drives rotate's reuse decision
 		verifyRotationBenchmarkSketch(b, tracker.current, dense)
-		verifyRotationBenchmarkSketch(b, tracker.previous, dense)
+		verifyRotationBenchmarkSketch(b, tracker.window, dense)
 
 		key := trackerKey{
 			metricName: fmt.Sprintf("rotation_benchmark_metric_%d", i),
@@ -76,7 +76,7 @@ func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
 	p.trackerCount.Store(int64(len(trackers)))
 
 	// Keep the sparse case aligned so repeated iterations remain sparse. The
-	// dense benchmark measures one rotation with a dense previous sketch; run it
+	// dense benchmark measures one rotation with a dense window sketch; run it
 	// with -benchtime=1x so later iterations cannot silently become sparse.
 	if !dense {
 		p.rotate()
@@ -90,7 +90,7 @@ func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
 		// benchmark after two iterations.
 		b.StopTimer()
 		for trackerIndex, tracker := range trackers {
-			tracker.insert(rotationBenchmarkHash(i, trackerIndex))
+			tracker.insert(rotationBenchmarkHash(i, trackerIndex), 1_000_000)
 		}
 		b.StartTimer()
 		p.rotate()

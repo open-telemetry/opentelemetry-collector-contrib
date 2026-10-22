@@ -25,7 +25,7 @@ import (
 
 // staleSweepEpochs is how many consecutive zero-insert epochs a tracker must
 // see before eviction. Two epochs so a tracker that fired at the tail of one
-// epoch (and is rotated into "previous") isn't reaped before traffic resumes.
+// epoch isn't reaped before traffic resumes.
 const staleSweepEpochs = 2
 
 // numShards must be a power of two so getShard reduces to a bitmask AND.
@@ -54,63 +54,103 @@ type trackerKey struct {
 	attrKey    string
 }
 
-// estimateInterval is how often Sketch.Estimate() is recomputed in the hot
-// path. Estimate() allocates ~5 heap objects per call in sparse mode; running
-// it every 64 inserts amortizes that to ~0.08 allocs/op. Power-of-two ⇒
-// bitmask check. The two-phase strategy in tracker.insert keeps the estimate
-// accurate while the sketch grows through the configured limit.
-const estimateInterval = 64
+// refreshBackoff is the least number of inserts between two estimate refreshes
+// of a tracker whose growth has already been measured within reach of its
+// limit (see tracker.insert). Without it a label sitting at its limit would
+// re-estimate on every repeated insert. Detection lags by at most this many
+// inserts, the same lag as a fixed refresh every 64 inserts.
+const refreshBackoff = 64
 
-// maxSparseSketchInsertCount is the largest number of insert calls guaranteed
+// maxSparseSketchEntries is the largest number of distinct values guaranteed
 // to leave a precision-14 HLL++ sketch sparse. The sparse buffer converts to
-// dense after it exceeds 1<<14 bytes, and each value can take up to five bytes.
-// Above this conservative bound, rotation replaces the sketch instead of
-// clearing a potentially dense one.
-const maxSparseSketchInsertCount = (1 << 14) / 5
+// dense after it exceeds 1<<14 bytes, and each entry takes at most five bytes.
+// rotate reuses a sketch only when its distinct count is within this bound;
+// otherwise it replaces the sketch rather than clear a potentially dense one.
+const maxSparseSketchEntries = (1 << 14) / 5
 
 // tracker holds two HLL++ sketches for a (metric_name, label_key) pair plus
 // a fine-grained mutex so the shard-level lock can be released before HLL
 // work begins. Hot fields are at the front for cache-line locality.
+//
+// current holds the values seen this epoch; window holds the union of the
+// previous epoch and this one. The delta compared against the limit is
+// |window| − |previous epoch|: the values that are new this epoch.
 type tracker struct {
-	mu       sync.Mutex
-	current  *hyperloglog.Sketch
-	previous *hyperloglog.Sketch
-	// cachedCurr/cachedPrev: see two-phase strategy in insert(). cachedPrev
-	// is only updated in rotate().
-	cachedCurr  uint64
-	cachedPrev  uint64
-	insertCount uint64
-	// previousInsertCount tracks insert calls into previous, so rotation can
-	// avoid clearing the dense register array when reusing a sketch.
-	previousInsertCount uint64
+	mu      sync.Mutex
+	current *hyperloglog.Sketch
+	window  *hyperloglog.Sketch
+	// cachedWindow is the last estimate of |window|; cachedPrevEpoch is the
+	// baseline |previous epoch|, set by the first insert after a rotation.
+	cachedWindow    uint64
+	cachedPrevEpoch uint64
+	// insertCount is inserts this epoch; sinceRefresh is inserts since
+	// cachedWindow was last refreshed.
+	insertCount  uint64
+	sinceRefresh uint64
+	// needBaseline is set by rotate so the next insert snapshots |window| as
+	// the new baseline before adding to it. refreshed records whether insert
+	// has refreshed cachedWindow this epoch.
+	needBaseline bool
+	refreshed    bool
 	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
 }
 
-// insert feeds a pre-hashed value into the current sketch via InsertHash —
-// the []byte path would escape to the heap because the library's `hash`
-// indirection blocks escape analysis.
+// insert feeds a pre-hashed value into both sketches and reports whether this
+// epoch's growth exceeds limit. InsertHash is used because the []byte path
+// would escape to the heap: the library's `hash` indirection blocks escape
+// analysis.
 //
-// Two-phase estimate refresh: while insertCount ≤ estimateInterval, refresh
-// on every insert so the limit can't be overshot by up to estimateInterval
-// elements before drops activate. After that, refresh every estimateInterval
-// inserts (bitmask check). cachedPrev is only updated in rotate().
-func (t *tracker) insert(hashVal uint64) (curr, prev uint64) {
+// The cached window estimate is refreshed only when a refresh could change
+// the answer. The window gains at most one distinct value per insert, so
+// while cachedDelta+sinceRefresh ≤ limit the answer is "no", and once
+// cachedDelta > limit it stays "yes" for the rest of the epoch: growth within
+// an epoch cannot shrink. In between — a label within reach of its limit —
+// insert refreshes before deciding, at most once per refreshBackoff inserts
+// after the first refresh of the epoch.
+func (t *tracker) insert(hashVal, limit uint64) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.current.InsertHash(hashVal)
-	t.insertCount++
-	if t.insertCount <= estimateInterval || t.insertCount&(estimateInterval-1) == 0 {
-		t.cachedCurr = t.current.Estimate()
+	if t.needBaseline {
+		t.cachedPrevEpoch = t.window.Estimate()
+		t.cachedWindow = t.cachedPrevEpoch
+		t.needBaseline = false
 	}
-	return t.cachedCurr, t.cachedPrev
+	t.current.InsertHash(hashVal)
+	t.window.InsertHash(hashVal)
+	t.insertCount++
+	t.sinceRefresh++
+
+	delta := t.delta()
+	if delta > limit {
+		return true
+	}
+	if delta+t.sinceRefresh <= limit {
+		return false
+	}
+	if t.refreshed && t.sinceRefresh < refreshBackoff {
+		return false
+	}
+	t.cachedWindow = t.window.Estimate()
+	t.sinceRefresh = 0
+	t.refreshed = true
+	return t.delta() > limit
 }
 
-// rotate promotes current → previous, reuses the old previous sketch when it
-// is guaranteed sparse, and replaces it otherwise. It carries cachedCurr
-// forward as cachedPrev so the new epoch has its baseline without another
-// Estimate() call. Returns true when this tracker received zero inserts during
-// the epoch that just ended.
+// delta is the cached growth this epoch, clamped at zero: HLL estimates of a
+// dense window can read slightly below the baseline taken while it was sparse.
+func (t *tracker) delta() uint64 {
+	if t.cachedWindow <= t.cachedPrevEpoch {
+		return 0
+	}
+	return t.cachedWindow - t.cachedPrevEpoch
+}
+
+// rotate promotes current → window, reuses the retired window sketch when its
+// distinct count guarantees it stayed sparse, and replaces it otherwise. No
+// estimate runs here: the next insert snapshots the new window as the
+// baseline before adding to it. Returns true when this tracker received zero
+// inserts during the epoch that just ended.
 func (t *tracker) rotate() (idle bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -121,30 +161,29 @@ func (t *tracker) rotate() (idle bool) {
 	} else {
 		t.idleEpochs = 0
 	}
-	currentInsertCount := t.insertCount
-	t.cachedPrev = t.cachedCurr
-	t.cachedCurr = 0
 
-	oldCurrent := t.current
-	oldPrevious := t.previous
-	if t.previousInsertCount <= maxSparseSketchInsertCount {
-		oldPrevious.Reset()
+	// The window gains at most one distinct value per insert, so this is an
+	// upper bound on its entries.
+	if t.cachedWindow+t.sinceRefresh <= maxSparseSketchEntries {
+		t.window.Reset()
 	} else {
 		// Reset clears all 1<<14 dense registers; replace dense sketches to
 		// avoid making that work part of every epoch rotation.
-		oldPrevious = mustGetSketch()
+		t.window = mustGetSketch()
 	}
-	t.current = oldPrevious
-	t.previous = oldCurrent
-	t.previousInsertCount = currentInsertCount
-	t.insertCount = 0
+	t.current, t.window = t.window, t.current
+	// No growth to report until the next insert takes the new baseline.
+	t.cachedPrevEpoch = t.cachedWindow
+	t.needBaseline = true
+	t.refreshed = false
+	t.insertCount, t.sinceRefresh = 0, 0
 	return idle
 }
 
 func newTracker() *tracker {
 	return &tracker{
-		current:  mustGetSketch(),
-		previous: mustGetSketch(),
+		current: mustGetSketch(),
+		window:  mustGetSketch(),
 	}
 }
 
@@ -544,7 +583,7 @@ func (p *cardinalityProcessor) isProtected(key string) bool {
 // shards. It runs on the background ticker goroutine, never on the hot path.
 //
 // Per shard: snapshot tracker pointers under a brief RLock, release, then call
-// tracker.rotate on each — which resets and reuses the old previous sketch under
+// tracker.rotate on each — which resets and reuses the retired window sketch under
 // the fine-grained per-tracker mutex. The shard-level write lock is never held
 // during sketch reset.
 func (p *cardinalityProcessor) rotate() {
@@ -572,7 +611,7 @@ func (p *cardinalityProcessor) rotate() {
 		}
 		shard.mu.RUnlock()
 
-		// Snapshot deltas before rotation resets the cached estimates.
+		// Snapshot deltas before rotation collapses them to zero.
 		topBuf = collectShardDeltas(entries, topBuf, topN)
 
 		// Rotate each tracker under its own fine-grained per-tracker lock,
@@ -631,7 +670,13 @@ func collectShardDeltas(entries []trackerEntry, topBuf []offenderEntry, topN int
 	}
 	for _, e := range entries {
 		e.t.mu.Lock()
-		curr, prev := e.t.cachedCurr, e.t.cachedPrev
+		if e.t.sinceRefresh > 0 {
+			// insert refreshes only when the limit is within reach, so the
+			// cache of a label well under its limit may be stale.
+			e.t.cachedWindow = e.t.window.Estimate()
+			e.t.sinceRefresh = 0
+		}
+		curr, prev := e.t.cachedWindow, e.t.cachedPrevEpoch
 		e.t.mu.Unlock()
 		if curr <= prev {
 			continue
@@ -811,15 +856,7 @@ func (p *cardinalityProcessor) shouldDrop(metricName, attrKey string, attrVal pc
 
 	// HLL insert and estimate happen under the per-tracker lock, completely
 	// independent of the shard lock.
-	currCount, prevCount := t.insert(hashVal)
-
-	// Guard against uint64 underflow caused by HLL probabilistic estimation
-	// variance — if the current count has not grown, nothing should be dropped.
-	if currCount <= prevCount {
-		return false
-	}
-
-	return (currCount - prevCount) > p.getLimit(metricName)
+	return t.insert(hashVal, p.getLimit(metricName))
 }
 
 // getLimit returns the per-metric cardinality limit for the given metric name,
