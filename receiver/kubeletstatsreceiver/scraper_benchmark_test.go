@@ -4,7 +4,6 @@
 package kubeletstatsreceiver
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -62,7 +61,7 @@ func BenchmarkKubeletStatsReceiverScrapeMetrics(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	ctx := context.Background()
+	ctx := b.Context()
 
 	b.ReportAllocs()
 	b.ResetTimer()
