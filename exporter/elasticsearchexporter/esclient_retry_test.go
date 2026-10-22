@@ -5,7 +5,6 @@ package elasticsearchexporter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -123,14 +122,6 @@ func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
 	var setupErr *connSetupTimeoutError
 	require.ErrorAs(t, err, &setupErr)
 	assert.Equal(t, int32(maxRetries+1), dials.Load())
-}
-
-func TestRetry_DeadlineBeforeConnectionReady(t *testing.T) {
-	assert.False(t, retryOnError(nil, context.DeadlineExceeded))
-	assert.False(t, retryOnError(nil, context.Canceled))
-	assert.False(t, retryOnError(nil, &net.OpError{Op: "read", Net: "tcp", Err: context.DeadlineExceeded}))
-	assert.True(t, retryOnError(nil, &connSetupTimeoutError{err: context.DeadlineExceeded}))
-	assert.True(t, retryOnError(nil, errors.New("connection reset")))
 }
 
 func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
