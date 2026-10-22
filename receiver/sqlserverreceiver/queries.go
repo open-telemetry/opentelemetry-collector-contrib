@@ -1438,12 +1438,11 @@ valid_pages AS (
 	SELECT page_id FROM tempdb_pagelatch_waits WHERE page_id IS NOT NULL
 ),
 classified AS (
-	-- First PFS page is 1, next is 8088 (not 8089) -- verified via sys.dm_db_page_info.
 	SELECT
 		CASE
-			WHEN page_id % 511230 = 2 THEN 'gam'
-			WHEN page_id % 511230 = 3 THEN 'sgam'
 			WHEN page_id = 1 OR page_id % 8088 = 0 THEN 'pfs'
+			WHEN page_id = 2 OR page_id % 511232 = 0 THEN 'gam'
+			WHEN page_id = 3 OR page_id % 511232 = 1 THEN 'sgam'
 			ELSE 'other'
 		END AS page_type
 	FROM valid_pages
