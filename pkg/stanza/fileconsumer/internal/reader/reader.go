@@ -419,6 +419,13 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 		r.Offset = s.Pos()
 	}
 
+	// The header scanner may have read further into a gzip stream than the header itself, buffering decompressed
+	// bytes immediately after the header that it never returned as a token. Move the offset to that true position,
+	// so the content scanner resumes from there instead of re-reading and re-emitting lines already consumed.
+	if g, ok := r.reader.(*gzipMembersReader); ok {
+		r.Offset = g.start + g.decompressed
+	}
+
 	// Clean up the header machinery
 	if err := r.headerReader.Stop(); err != nil {
 		r.set.Logger.Error("failed to stop header pipeline during finalization", zap.Error(err))
