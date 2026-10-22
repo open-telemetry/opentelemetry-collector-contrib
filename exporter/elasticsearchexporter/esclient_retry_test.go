@@ -107,6 +107,7 @@ func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
 			return nil, context.DeadlineExceeded
 		}
 	})
+	// The dial keeps running after the test returns. Wait for it so goleak passes.
 	t.Cleanup(func() {
 		require.Eventually(t, func() bool {
 			return dials.Load() > maxRetries && finished.Load() == dials.Load()
@@ -156,6 +157,7 @@ func TestRetry_CallerDeadlineDuringDial_NoRetry(t *testing.T) {
 			return nil, context.DeadlineExceeded
 		}
 	})
+	// The dial keeps running after the test returns. Wait for it so goleak passes.
 	t.Cleanup(func() {
 		require.Eventually(t, func() bool {
 			return finished.Load() == dials.Load() && dials.Load() > 0
