@@ -111,7 +111,7 @@ func newKubeletScraper(
 	)
 }
 
-func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (r *kubeletScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
@@ -135,7 +135,9 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
 	if r.needsPVCUID {
-		metaD.PVCUIDGetter = r.pvcUIDGetter
+		metaD.PVCUIDGetter = func(namespace, name string) (string, error) {
+			return r.pvcUIDGetter(ctx, namespace, name)
+		}
 	}
 
 	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs, r.cpuUsageCalculator)
@@ -179,8 +181,8 @@ func (r *kubeletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBui
 
 // pvcUIDGetter looks up the PVC UID without caching across scrapes, so a PVC
 // recreated under the same name reports its new UID on the next scrape.
-func (r *kubeletScraper) pvcUIDGetter(namespace, name string) (string, error) {
-	pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(context.Background(), name, metav1.GetOptions{})
+func (r *kubeletScraper) pvcUIDGetter(ctx context.Context, namespace, name string) (string, error) {
+	pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

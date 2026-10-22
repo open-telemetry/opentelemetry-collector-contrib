@@ -13,47 +13,52 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
-          - description: The number of available bytes in the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.available
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "7000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.available
             unit: By
-          - description: The total capacity in bytes of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The total capacity in bytes of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.capacity
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "10000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.capacity
             unit: By
-          - description: The total inodes in the filesystem of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The total inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.inode.count
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "1000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.inode.count
             unit: '{inode}'
-          - description: The free inodes in the filesystem of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The free inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.inode.free
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "900"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.inode.free
             unit: '{inode}'
-          - description: The inodes used by the filesystem of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The inodes used by the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.inode.used
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "100"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.inode.used
             unit: '{inode}'
-          - description: The number of used bytes in the volume backing the PersistentVolumeClaim.
+          - description: The number of used bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
             name: k8s.persistentvolumeclaim.volume.usage
             sum:
               aggregationTemporality: 2
@@ -79,47 +84,52 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
-          - description: The number of available bytes in the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.available
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "4000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.available
             unit: By
-          - description: The total capacity in bytes of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The total capacity in bytes of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.capacity
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "5000"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.capacity
             unit: By
-          - description: The total inodes in the filesystem of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The total inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.inode.count
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "500"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.inode.count
             unit: '{inode}'
-          - description: The free inodes in the filesystem of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The free inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.inode.free
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "450"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.inode.free
             unit: '{inode}'
-          - description: The inodes used by the filesystem of the volume backing the PersistentVolumeClaim.
-            gauge:
+          - description: The inodes used by the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+            name: k8s.persistentvolumeclaim.volume.inode.used
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "50"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: k8s.persistentvolumeclaim.volume.inode.used
             unit: '{inode}'
-          - description: The number of used bytes in the volume backing the PersistentVolumeClaim.
+          - description: The number of used bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
             name: k8s.persistentvolumeclaim.volume.usage
             sum:
               aggregationTemporality: 2

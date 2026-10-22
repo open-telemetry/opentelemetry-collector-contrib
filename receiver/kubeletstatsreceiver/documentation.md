@@ -530,47 +530,47 @@ The time since the node started
 
 ### k8s.persistentvolumeclaim.volume.available
 
-The number of available bytes in the volume backing the PersistentVolumeClaim.
+The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### k8s.persistentvolumeclaim.volume.capacity
 
-The total capacity in bytes of the volume backing the PersistentVolumeClaim.
+The total capacity in bytes of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### k8s.persistentvolumeclaim.volume.inode.count
 
-The total inodes in the filesystem of the volume backing the PersistentVolumeClaim.
+The total inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {inode} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
 
 ### k8s.persistentvolumeclaim.volume.inode.free
 
-The free inodes in the filesystem of the volume backing the PersistentVolumeClaim.
+The free inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {inode} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
 
 ### k8s.persistentvolumeclaim.volume.inode.used
 
-The inodes used by the filesystem of the volume backing the PersistentVolumeClaim.
+The inodes used by the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {inode} | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
 
 ### k8s.persistentvolumeclaim.volume.usage
 
-The number of used bytes in the volume backing the PersistentVolumeClaim.
+The number of used bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

@@ -2602,16 +2602,18 @@ type metricK8sPersistentvolumeclaimVolumeAvailable struct {
 // init fills k8s.persistentvolumeclaim.volume.available metric with initial data.
 func (m *metricK8sPersistentvolumeclaimVolumeAvailable) init() {
 	m.data.SetName("k8s.persistentvolumeclaim.volume.available")
-	m.data.SetDescription("The number of available bytes in the volume backing the PersistentVolumeClaim.")
+	m.data.SetDescription("The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.")
 	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sPersistentvolumeclaimVolumeAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2619,14 +2621,14 @@ func (m *metricK8sPersistentvolumeclaimVolumeAvailable) recordDataPoint(start pc
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricK8sPersistentvolumeclaimVolumeAvailable) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sPersistentvolumeclaimVolumeAvailable) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2652,16 +2654,18 @@ type metricK8sPersistentvolumeclaimVolumeCapacity struct {
 // init fills k8s.persistentvolumeclaim.volume.capacity metric with initial data.
 func (m *metricK8sPersistentvolumeclaimVolumeCapacity) init() {
 	m.data.SetName("k8s.persistentvolumeclaim.volume.capacity")
-	m.data.SetDescription("The total capacity in bytes of the volume backing the PersistentVolumeClaim.")
+	m.data.SetDescription("The total capacity in bytes of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.")
 	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sPersistentvolumeclaimVolumeCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2669,14 +2673,14 @@ func (m *metricK8sPersistentvolumeclaimVolumeCapacity) recordDataPoint(start pco
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricK8sPersistentvolumeclaimVolumeCapacity) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sPersistentvolumeclaimVolumeCapacity) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2702,16 +2706,18 @@ type metricK8sPersistentvolumeclaimVolumeInodeCount struct {
 // init fills k8s.persistentvolumeclaim.volume.inode.count metric with initial data.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeCount) init() {
 	m.data.SetName("k8s.persistentvolumeclaim.volume.inode.count")
-	m.data.SetDescription("The total inodes in the filesystem of the volume backing the PersistentVolumeClaim.")
+	m.data.SetDescription("The total inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.")
 	m.data.SetUnit("{inode}")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sPersistentvolumeclaimVolumeInodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2719,14 +2725,14 @@ func (m *metricK8sPersistentvolumeclaimVolumeInodeCount) recordDataPoint(start p
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2752,16 +2758,18 @@ type metricK8sPersistentvolumeclaimVolumeInodeFree struct {
 // init fills k8s.persistentvolumeclaim.volume.inode.free metric with initial data.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeFree) init() {
 	m.data.SetName("k8s.persistentvolumeclaim.volume.inode.free")
-	m.data.SetDescription("The free inodes in the filesystem of the volume backing the PersistentVolumeClaim.")
+	m.data.SetDescription("The free inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.")
 	m.data.SetUnit("{inode}")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sPersistentvolumeclaimVolumeInodeFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2769,14 +2777,14 @@ func (m *metricK8sPersistentvolumeclaimVolumeInodeFree) recordDataPoint(start pc
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeFree) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeFree) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2802,16 +2810,18 @@ type metricK8sPersistentvolumeclaimVolumeInodeUsed struct {
 // init fills k8s.persistentvolumeclaim.volume.inode.used metric with initial data.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeUsed) init() {
 	m.data.SetName("k8s.persistentvolumeclaim.volume.inode.used")
-	m.data.SetDescription("The inodes used by the filesystem of the volume backing the PersistentVolumeClaim.")
+	m.data.SetDescription("The inodes used by the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.")
 	m.data.SetUnit("{inode}")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricK8sPersistentvolumeclaimVolumeInodeUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -2819,14 +2829,14 @@ func (m *metricK8sPersistentvolumeclaimVolumeInodeUsed) recordDataPoint(start pc
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeUsed) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sPersistentvolumeclaimVolumeInodeUsed) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2852,7 +2862,7 @@ type metricK8sPersistentvolumeclaimVolumeUsage struct {
 // init fills k8s.persistentvolumeclaim.volume.usage metric with initial data.
 func (m *metricK8sPersistentvolumeclaimVolumeUsage) init() {
 	m.data.SetName("k8s.persistentvolumeclaim.volume.usage")
-	m.data.SetDescription("The number of used bytes in the volume backing the PersistentVolumeClaim.")
+	m.data.SetDescription("The number of used bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
