@@ -30,11 +30,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	otelattr "go.opentelemetry.io/otel/attribute"
+	otelmetric "go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
+)
+
+// droppedClassicHistogramAttrs and droppedSummaryAttrs are the precomputed attribute sets of the
+// dropped series counter, one per value of the metric_type enum declared in metadata.yaml.
+var (
+	droppedClassicHistogramAttrs = otelmetric.WithAttributeSet(otelattr.NewSet(otelattr.String("metric_type", "classic_histogram")))
+	droppedSummaryAttrs          = otelmetric.WithAttributeSet(otelattr.NewSet(otelattr.String("metric_type", "summary")))
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -333,7 +343,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
@@ -358,6 +368,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
 		bucketBudget = histogramBucketBudget{remaining: maxExponentialHistogramBucketsPerRequest}
+
+		// Series the receiver drops by design (see "Known Limitations" in the README). They are
+		// accepted rather than rejected, so the specification's definition of "written" covers
+		// them: their samples are counted in the response stats like target_info's, otherwise the
+		// sender would take the difference for a partial write and report failed samples.
+		droppedClassicHistogramSeries int64
+		droppedSummarySeries          int64
 	)
 
 	for i := range req.Timeseries {
@@ -418,6 +435,14 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
+			// A histogram series carrying samples is a classic histogram, which is dropped whole.
+			if len(ts.Samples) != 0 {
+				stats.Samples += len(ts.Samples)
+				stats.Histograms += len(ts.Histograms)
+				droppedClassicHistogramSeries++
+				prw.logDroppedSeries(ls, "classic_histogram")
+				continue
+			}
 			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget)
 			continue
 		}
@@ -476,7 +501,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
 				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
-				// Drop summary series as we will not handle them.
+				// Drop summary series as we will not handle them. A summary metric is never cached,
+				// so every summary series goes through here.
+				stats.Samples += len(ts.Samples)
+				droppedSummarySeries++
+				prw.logDroppedSeries(ls, "summary")
 				continue
 			default:
 				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
@@ -519,10 +548,28 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			zapcore.Field{Key: "max_buckets", Type: zapcore.Int64Type, Integer: maxExponentialHistogramBucketsPerRequest})
 	}
 
+	// One Add per kind and request; the Debug log above names every series.
+	if droppedClassicHistogramSeries > 0 {
+		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedClassicHistogramSeries, droppedClassicHistogramAttrs)
+	}
+	if droppedSummarySeries > 0 {
+		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedSummarySeries, droppedSummaryAttrs)
+	}
+
 	return otelMetrics, stats, badRequestErrors
 }
 
+// logDroppedSeries logs a series dropped by design at Debug, since a sender keeps sending these
+// series with every request; the dropped series counter is what shows them by default.
+// Logger.Check skips building the fields when Debug is off.
+func (prw *prometheusRemoteWriteReceiver) logDroppedSeries(ls labels.Labels, metricType string) {
+	if ce := prw.settings.Logger.Check(zap.DebugLevel, "Dropped series of a type the receiver does not support; its samples are counted as written"); ce != nil {
+		ce.Write(zap.String("series", ls.String()), zap.String("metric_type", metricType))
+	}
+}
+
 // processHistogramTimeSeries handles all histogram processing, including validation and mixed schemas.
+// The caller has already set aside classic histogram series, so ts carries native histograms only.
 func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	otelMetrics pmetric.Metrics,
 	ls labels.Labels,
@@ -536,12 +583,6 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
 	bucketBudget *histogramBucketBudget,
 ) {
-	// Drop classic histogram series (those with samples)
-	if len(ts.Samples) != 0 {
-		prw.settings.Logger.Info("Dropping classic histogram series. Please configure Prometheus to convert classic histograms into Native Histograms Custom Buckets",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
-	}
 	attrs := extractAttributes(ls)
 
 	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
