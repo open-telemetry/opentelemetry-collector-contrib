@@ -33,7 +33,6 @@ const (
 	clientKind         = "client"
 	serverKind         = "server"
 	virtualNodeLabel   = "virtual_node"
-	millisecondsUnit   = "ms"
 	secondsUnit        = "s"
 )
 
