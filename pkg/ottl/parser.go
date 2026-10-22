@@ -558,6 +558,7 @@ type ConditionSequence[K any] struct {
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 	logicOp           LogicOperation
+	failureCounter    metric.Int64Counter
 }
 
 // ConditionSequenceOption is an option for a ConditionSequence
@@ -576,6 +577,18 @@ func WithConditionSequenceErrorMode[K any](errorMode ErrorMode) ConditionSequenc
 func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K] {
 	return func(c *ConditionSequence[K]) {
 		c.logicOp = logicOp
+	}
+}
+
+// WithConditionSequenceFailureCounter sets a counter that is incremented by 1 each time a call to Eval
+// ignores at least one condition error, which happens when the ErrorMode is `ignore` or `silent`.
+// A call to Eval in which several conditions fail is counted once. Errors are never counted
+// when the ErrorMode is `propagate`, as they are returned to the caller.
+// The counter measures OTTL evaluations only, not records: Eval is called once per item of the
+// OTTL context being processed (e.g. per span, per resource), so the rate depends on that context.
+func WithConditionSequenceFailureCounter[K any](counter metric.Int64Counter) ConditionSequenceOption[K] {
+	return func(c *ConditionSequence[K]) {
+		c.failureCounter = counter
 	}
 }
 
@@ -603,8 +616,17 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
 // When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
+// When ignoring errors and a failure counter is set (see WithConditionSequenceFailureCounter), the counter is incremented once per call that had at least one error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
+	var failed bool
+	if c.failureCounter != nil {
+		defer func() {
+			if failed {
+				c.failureCounter.Add(ctx, 1)
+			}
+		}()
+	}
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
 		if c.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
@@ -615,6 +637,7 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
 				return false, err
 			}
+			failed = true
 			if c.errorMode == IgnoreError {
 				c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
 			}

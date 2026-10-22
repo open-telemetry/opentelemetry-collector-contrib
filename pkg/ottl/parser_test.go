@@ -3786,6 +3786,57 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 	}
 }
 
+func Test_ConditionSequence_Eval_FailureCounter(t *testing.T) {
+	failing := &Condition[any]{condition: newErrExpr[any](errors.New("test"))}
+	matching := &Condition[any]{condition: newAlwaysTrue[any]()}
+	notMatching := &Condition[any]{condition: newAlwaysFalse[any]()}
+	tests := []struct {
+		name       string
+		conditions []*Condition[any]
+		errorMode  ErrorMode
+		logicOp    LogicOperation
+		expected   int64
+	}{
+		{name: "ignore with failure", conditions: []*Condition[any]{failing}, errorMode: IgnoreError, logicOp: Or, expected: 1},
+		{name: "silent with failure", conditions: []*Condition[any]{failing}, errorMode: SilentError, logicOp: Or, expected: 1},
+		{name: "several failures count once", conditions: []*Condition[any]{failing, failing}, errorMode: IgnoreError, logicOp: Or, expected: 1},
+		{name: "failure then early OR match", conditions: []*Condition[any]{failing, matching}, errorMode: IgnoreError, logicOp: Or, expected: 1},
+		{name: "failure then AND completes", conditions: []*Condition[any]{failing, matching}, errorMode: IgnoreError, logicOp: And, expected: 1},
+		{name: "failure then early AND false", conditions: []*Condition[any]{failing, notMatching}, errorMode: IgnoreError, logicOp: And, expected: 1},
+		{name: "no failure", conditions: []*Condition[any]{matching}, errorMode: IgnoreError, logicOp: Or, expected: 0},
+		{name: "propagate is not counted", conditions: []*Condition[any]{failing}, errorMode: PropagateError, logicOp: Or, expected: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			counter, sum := newTestFailureCounter(t)
+			seq := NewConditionSequence(
+				tt.conditions,
+				componenttest.NewNopTelemetrySettings(),
+				WithConditionSequenceErrorMode[any](tt.errorMode),
+				WithLogicOperation[any](tt.logicOp),
+				WithConditionSequenceFailureCounter[any](counter),
+			)
+			_, err := seq.Eval(t.Context(), nil)
+			if tt.errorMode == PropagateError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.expected, sum())
+		})
+	}
+
+	t.Run("no counter set", func(t *testing.T) {
+		seq := NewConditionSequence(
+			[]*Condition[any]{failing},
+			componenttest.NewNopTelemetrySettings(),
+			WithConditionSequenceErrorMode[any](IgnoreError),
+		)
+		_, err := seq.Eval(t.Context(), nil)
+		require.NoError(t, err)
+	})
+}
+
 func Test_ConditionSequence_Eval_Error(t *testing.T) {
 	tests := []struct {
 		name       string
