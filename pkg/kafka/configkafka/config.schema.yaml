@@ -109,6 +109,9 @@ $defs:
         description: The minimum bytes per fetch from Kafka (default "1")
         type: integer
         x-customType: int32
+      on_decompress_too_large:
+        description: OnDecompressTooLarge controls what happens when a fetched record batch decompresses beyond max_decompress_batch_bytes. Must be one of "stall", "skip", or "fatal" (default "stall", which keeps existing behavior). "skip" drops the oversized batch and advances the partition. "fatal" reports a permanent error and stops the receiver.
+        type: string
       session_timeout:
         description: SessionTimeout controls the Kafka consumer group session timeout. The session timeout is used to detect the consumer's liveness.
         type: string

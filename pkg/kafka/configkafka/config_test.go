@@ -181,6 +181,7 @@ func TestConsumerConfig(t *testing.T) {
 				MaxFetchWait:            1 * time.Second,
 				MaxPartitionFetchSize:   4096,
 				MaxDecompressBatchBytes: 536870912, // 512 MiB
+				OnDecompressTooLarge:    OnDecompressTooLargeSkip,
 			},
 		},
 		"group_rebalance_strategies": {
@@ -208,6 +209,7 @@ func TestConsumerConfig(t *testing.T) {
 				MaxFetchWait:            250 * time.Millisecond,
 				MaxPartitionFetchSize:   1048576,
 				MaxDecompressBatchBytes: 1073741824, // 1 GiB default
+				OnDecompressTooLarge:    OnDecompressTooLargeStall,
 			},
 		},
 		"min_valid_max_decompress_batch_bytes": {
@@ -224,10 +226,34 @@ func TestConsumerConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"on_decompress_too_large_stall": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.OnDecompressTooLarge = OnDecompressTooLargeStall
+				return cfg
+			}(),
+		},
+		"on_decompress_too_large_skip": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.OnDecompressTooLarge = OnDecompressTooLargeSkip
+				return cfg
+			}(),
+		},
+		"on_decompress_too_large_fatal": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.OnDecompressTooLarge = OnDecompressTooLargeFatal
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"invalid_initial_offset": {
 			expectedErr: "initial_offset should be one of 'latest' or 'earliest'. configured value middle",
+		},
+		"invalid_on_decompress_too_large": {
+			expectedErr: "on_decompress_too_large should be one of 'stall', 'skip', or 'fatal'. configured value ignore",
 		},
 		"invalid_fetch_size": {
 			expectedErr: "max_fetch_size (100) cannot be less than min_fetch_size (1000)",

@@ -22,6 +22,27 @@ const (
 	EarliestOffset = "earliest"
 )
 
+// OnDecompressTooLargeAction defines the action to take when a fetched Kafka
+// record batch decompresses beyond MaxDecompressBatchBytes.
+type OnDecompressTooLargeAction string
+
+const (
+	// OnDecompressTooLargeStall keeps the current franz-go behavior: log the
+	// error, report it as recoverable, and keep polling. The partition does
+	// not advance past the oversized batch until the limit is raised or the
+	// consumer is recreated.
+	OnDecompressTooLargeStall OnDecompressTooLargeAction = "stall"
+	// OnDecompressTooLargeSkip advances the partition past the oversized
+	// batch by calling SetOffsets with the batch's next offset. Data in the
+	// oversized batch is lost and never delivered to the pipeline.
+	OnDecompressTooLargeSkip OnDecompressTooLargeAction = "skip"
+	// OnDecompressTooLargeFatal reports a permanent error and stops the
+	// receiver so an operator can investigate. Consumer group rebalance
+	// moves the partition assignment to another consumer, which will hit
+	// the same error unless the limit is raised first.
+	OnDecompressTooLargeFatal OnDecompressTooLargeAction = "fatal"
+)
+
 // GroupRebalanceStrategy defines the strategy to use for partition assignment.
 type GroupRebalanceStrategy string
 
@@ -159,6 +180,13 @@ type ConsumerConfig struct {
 	// which limit compressed bytes on the wire.
 	MaxDecompressBatchBytes int `mapstructure:"max_decompress_batch_bytes"`
 
+	// OnDecompressTooLarge controls what happens when a fetched record batch
+	// decompresses beyond MaxDecompressBatchBytes. Must be one of "stall",
+	// "skip", or "fatal" (default "stall", which keeps existing behavior).
+	// "skip" drops the oversized batch and advances the partition.
+	// "fatal" reports a permanent error and stops the receiver.
+	OnDecompressTooLarge OnDecompressTooLargeAction `mapstructure:"on_decompress_too_large"`
+
 	// GroupRebalanceStrategies specifies the ordered strategies to advertise
 	// for partition assignment. Kafka selects the first strategy supported by
 	// every member of the consumer group. Built-in values are "range",
@@ -188,6 +216,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		MaxFetchWait:            250 * time.Millisecond,
 		MaxPartitionFetchSize:   1048576,
 		MaxDecompressBatchBytes: 1073741824, // 1 GiB
+		OnDecompressTooLarge:    OnDecompressTooLargeStall,
 	}
 }
 
@@ -223,6 +252,15 @@ func (c ConsumerConfig) Validate() error {
 	}
 	if c.MaxDecompressBatchBytes < 1 || c.MaxDecompressBatchBytes > math.MaxInt32 {
 		return fmt.Errorf("max_decompress_batch_bytes (%d) must be between 1 and %d", c.MaxDecompressBatchBytes, math.MaxInt32)
+	}
+	switch c.OnDecompressTooLarge {
+	case OnDecompressTooLargeStall, OnDecompressTooLargeSkip, OnDecompressTooLargeFatal:
+		// Valid.
+	default:
+		return fmt.Errorf(
+			"on_decompress_too_large should be one of 'stall', 'skip', or 'fatal'. configured value %v",
+			c.OnDecompressTooLarge,
+		)
 	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(
