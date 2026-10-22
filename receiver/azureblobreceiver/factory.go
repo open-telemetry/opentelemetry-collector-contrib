@@ -108,7 +108,7 @@ func (f *blobReceiverFactory) getReceiver(
 		}
 
 		var receiver component.Component
-		receiver, err = newReceiver(set, beh, receiverConfig.Logs.Encoding, receiverConfig.Traces.Encoding)
+		receiver, err = newReceiver(set, beh, receiverConfig.Logs.Encoding, receiverConfig.Traces.Encoding, receiverConfig.Compression)
 		return receiver
 	})
 

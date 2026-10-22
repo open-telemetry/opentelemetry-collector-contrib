@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_azure_aks
+
 package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 
 import (
@@ -18,13 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr = "aks"
-
-	// Environment variable that is set when running on Kubernetes
-	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
-)
+// Environment variable that is set when running on Kubernetes
+const kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 
 type Detector struct {
 	provider              azure.Provider

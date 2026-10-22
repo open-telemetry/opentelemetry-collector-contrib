@@ -4,6 +4,7 @@
 package snmpreceiver
 
 import (
+	"math"
 	"testing"
 
 	"github.com/gosnmp/gosnmp"
@@ -37,4 +38,13 @@ func TestCloseIsIdempotent(t *testing.T) {
 	require.NotPanics(t, func() {
 		require.NoError(t, w.Close())
 	})
+}
+
+func TestGoSNMPWrapperMaxRepetitions(t *testing.T) {
+	w := newGoSNMPWrapper()
+	require.Equal(t, uint32(defaultMaxRepetitions), w.GetMaxRepetitions())
+	w.SetMaxRepetitions(10)
+	require.Equal(t, uint32(10), w.GetMaxRepetitions())
+	w.SetMaxRepetitions(math.MaxInt32)
+	require.Equal(t, uint32(math.MaxInt32), w.GetMaxRepetitions())
 }
