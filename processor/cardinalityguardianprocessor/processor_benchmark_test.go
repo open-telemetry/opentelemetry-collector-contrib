@@ -54,7 +54,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	keys := make([]string, numKeys)
 	for i := range keys {
 		keys[i] = fmt.Sprintf("bench_key_%d", i)
-		p.shouldDrop("bench_metric", keys[i], val)
+		p.shouldDrop("bench_metric", keys[i], val, metricInfo{})
 	}
 
 	b.ReportAllocs()
@@ -67,7 +67,7 @@ func BenchmarkShouldDrop_HighThroughput(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		key := keys[int(counter.Add(1))%numKeys]
 		for pb.Next() {
-			p.shouldDrop("bench_metric", key, val)
+			p.shouldDrop("bench_metric", key, val, metricInfo{})
 		}
 	})
 }
@@ -111,10 +111,22 @@ func BenchmarkConsumeMetrics_Passthrough(b *testing.B) {
 // pipeline cost when every data point triggers a cardinality-limit drop.
 // This exercises the most expensive path: HLL estimation + attribute removal.
 func BenchmarkConsumeMetrics_HighCardinality(b *testing.B) {
-	cfg := &Config{
+	benchmarkHighCardinality(b, &Config{
 		MaxCardinalityDeltaPerEpoch: 5, // Tiny limit — almost everything gets dropped
 		EpochDurationSeconds:        300,
-	}
+	})
+}
+
+// BenchmarkConsumeMetrics_ReadOnly runs the HighCardinality payload in read-only mode.
+func BenchmarkConsumeMetrics_ReadOnly(b *testing.B) {
+	benchmarkHighCardinality(b, &Config{
+		MaxCardinalityDeltaPerEpoch: 5,
+		EpochDurationSeconds:        300,
+		ReadOnly:                    true,
+	})
+}
+
+func benchmarkHighCardinality(b *testing.B, cfg *Config) {
 	next := new(consumertest.MetricsSink)
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, next)
