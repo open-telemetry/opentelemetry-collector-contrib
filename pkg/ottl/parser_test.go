@@ -17,6 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -3452,6 +3455,80 @@ func Test_Condition_Eval(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+// newTestFailureCounter returns a counter and a function returning the sum of everything recorded on it.
+func newTestFailureCounter(t *testing.T) (metric.Int64Counter, func() int64) {
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	t.Cleanup(func() { assert.NoError(t, mp.Shutdown(context.Background())) })
+	counter, err := mp.Meter("test").Int64Counter("failures")
+	require.NoError(t, err)
+	return counter, func() int64 {
+		var rm metricdata.ResourceMetrics
+		require.NoError(t, reader.Collect(context.Background(), &rm))
+		var total int64
+		for _, sm := range rm.ScopeMetrics {
+			for _, m := range sm.Metrics {
+				for _, dp := range m.Data.(metricdata.Sum[int64]).DataPoints {
+					total += dp.Value
+				}
+			}
+		}
+		return total
+	}
+}
+
+func Test_Statements_Execute_FailureCounter(t *testing.T) {
+	failing := &Statement[any]{
+		condition:         newAlwaysTrue[any](),
+		function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return nil, errors.New("test") }},
+		telemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+	passing := &Statement[any]{
+		condition:         newAlwaysTrue[any](),
+		function:          Expr[any]{exprFunc: func(context.Context, any) (any, error) { return 1, nil }},
+		telemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+	tests := []struct {
+		name       string
+		statements []*Statement[any]
+		errorMode  ErrorMode
+		expected   int64
+	}{
+		{name: "ignore with failure", statements: []*Statement[any]{passing, failing}, errorMode: IgnoreError, expected: 1},
+		{name: "silent with failure", statements: []*Statement[any]{failing}, errorMode: SilentError, expected: 1},
+		{name: "ignore with several failures counts once", statements: []*Statement[any]{failing, passing, failing}, errorMode: IgnoreError, expected: 1},
+		{name: "ignore without failure", statements: []*Statement[any]{passing}, errorMode: IgnoreError, expected: 0},
+		{name: "propagate is not counted", statements: []*Statement[any]{failing}, errorMode: PropagateError, expected: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			counter, sum := newTestFailureCounter(t)
+			seq := NewStatementSequence(
+				tt.statements,
+				componenttest.NewNopTelemetrySettings(),
+				WithStatementSequenceErrorMode[any](tt.errorMode),
+				WithStatementSequenceFailureCounter[any](counter),
+			)
+			err := seq.Execute(t.Context(), nil)
+			if tt.errorMode == PropagateError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.expected, sum())
+		})
+	}
+
+	t.Run("no counter set", func(t *testing.T) {
+		seq := NewStatementSequence(
+			[]*Statement[any]{failing},
+			componenttest.NewNopTelemetrySettings(),
+			WithStatementSequenceErrorMode[any](IgnoreError),
+		)
+		require.NoError(t, seq.Execute(t.Context(), nil))
+	})
 }
 
 func Test_Statements_Execute_Error(t *testing.T) {

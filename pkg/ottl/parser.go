@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
@@ -480,6 +481,7 @@ type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
+	failureCounter    metric.Int64Counter
 }
 
 // StatementSequenceOption is an option for a StatementSequence
@@ -489,6 +491,18 @@ type StatementSequenceOption[K any] func(*StatementSequence[K])
 func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenceOption[K] {
 	return func(s *StatementSequence[K]) {
 		s.errorMode = errorMode
+	}
+}
+
+// WithStatementSequenceFailureCounter sets a counter that is incremented by 1 each time a call to Execute
+// ignores at least one statement error, which happens when the ErrorMode is `ignore` or `silent`.
+// A call to Execute in which several statements fail is counted once. Errors are never counted
+// when the ErrorMode is `propagate`, as they are returned to the caller.
+// The counter measures OTTL executions only, not records: Execute is called once per item of the
+// OTTL context being processed (e.g. per span, per resource), so the rate depends on that context.
+func WithStatementSequenceFailureCounter[K any](counter metric.Int64Counter) StatementSequenceOption[K] {
+	return func(s *StatementSequence[K]) {
+		s.failureCounter = counter
 	}
 }
 
@@ -511,10 +525,12 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
+// When ignoring errors and a failure counter is set (see WithStatementSequenceFailureCounter), the counter is incremented once per call that had at least one error.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	}
+	var failed bool
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
@@ -522,10 +538,14 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
+			failed = true
 			if s.errorMode == IgnoreError {
 				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 			}
 		}
+	}
+	if failed && s.failureCounter != nil {
+		s.failureCounter.Add(ctx, 1)
 	}
 	return nil
 }
