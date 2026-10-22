@@ -70,10 +70,11 @@ The check runs against a pinned pair, and both parts update deliberately:
 - The tool: the package pins a tested `otel/weaver` image version, also
   updated through Renovate PRs.
 
-A pinned pair is compatible by construction: a published registry release
-was built with an already-released Weaver. An unpinned registry can require
-a newer Weaver than the pinned one at any time, which fails every test at
-container start. Use the options below to select other versions.
+CI validates each new pair: the integration tests run in the Renovate bump
+PR, so a registry release that needs a newer Weaver fails that PR instead
+of main, and the fix is to update both pins together. An unpinned registry
+can require a newer Weaver at any time, which fails every test at container
+start. Use the options below to select other versions.
 
 ## Options
 
