@@ -397,6 +397,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
+	rw2Gate := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate
+	originalRW2Enabled := rw2Gate.IsEnabled()
+	t.Cleanup(func() {
+		assert.Equal(t, originalRW2Enabled, rw2Gate.IsEnabled(), "RW2 feature gate must be restored after the subtests")
+	})
+
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
@@ -740,7 +746,10 @@ func Test_PushMetrics(t *testing.T) {
 					t.Skip("test not supported when using WAL")
 				}
 				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
+					// RW2 cases mutate a global feature gate and must run serially.
+					if !tt.enableSendingRW2 {
+						t.Parallel()
+					}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker, tt.enableSendingRW2)
