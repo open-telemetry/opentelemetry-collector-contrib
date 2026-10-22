@@ -3,10 +3,9 @@
 
 //go:build linux
 
-// This file is Linux-only. net.Listen completes the TCP handshake in the kernel
-// before Accept, so a portable test server cannot stall the handshake. The stall
-// below uses a zero-length accept queue and SOCK_CLOEXEC, which are Linux-specific.
-// The refused-port test uses those socket calls to bind without listening.
+// These tests run only on Linux. They open a TCP socket with SOCK_CLOEXEC and
+// bind it themselves. net.Listen cannot do that: it completes the handshake
+// before Accept.
 package elasticsearchexporter
 
 import (
