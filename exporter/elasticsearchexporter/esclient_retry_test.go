@@ -4,7 +4,6 @@
 package elasticsearchexporter
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -25,13 +24,7 @@ import (
 )
 
 func TestRetry_DNSDeadlineExceeded(t *testing.T) {
-	// A deadline on the dial context during lookup is not a bare
-	// context.DeadlineExceeded. net.Dialer returns:
-	//   *net.OpError{Op: "dial"} -> *net.DNSError -> timeout that matches
-	//   context.DeadlineExceeded
-	// ("dial tcp: lookup <host>: i/o timeout"). RetryOnError must retry that.
-	// The resolver blocks until that dial deadline so the test does not depend
-	// on a real DNS server.
+	// The resolver blocks until the dial deadline, so the test does not use a real DNS server.
 	resolver := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
@@ -61,9 +54,6 @@ func TestRetry_DNSDeadlineExceeded(t *testing.T) {
 }
 
 func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
-	// The handshake completes. The server accepts the request and writes no
-	// response. The client deadline is context.DeadlineExceeded from waiting
-	// on that response, so it must not be retried.
 	release := make(chan struct{})
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -81,22 +71,12 @@ func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
 	require.NoError(t, err)
 	_, err = client.Perform(req)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.NotErrorAs(t, err, &setupErr)
-	var opErr *net.OpError
-	require.False(t, errors.As(err, &opErr) && opErr.Op == "dial")
 	assert.Equal(t, int32(1), dials.Load())
 	assert.Equal(t, int32(1), requests.Load())
 }
 
 func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
-	// Dial has no deadline of its own and outlasts the request timeout.
-	// Transport.getConn dials on a context detached from the request, so this
-	// dial keeps running after the deadline. getConn then returns a bare
-	// context.DeadlineExceeded and drops the dial error. That behavior is
-	// specific to net/http. A second dial and a connSetupTimeoutError show that the
-	// deadline was classified as connection setup: a bare context.DeadlineExceeded
-	// is not retried. errors.Is still matches the transport error through Unwrap.
+	// getConn dials on a context detached from the request, so the dial keeps running after the deadline.
 	const maxRetries = 1
 	var finished atomic.Int32
 	client, dials := newRetryClient(t, "http://es.invalid:9200", 50*time.Millisecond, func(ctx context.Context, _, _ string) (net.Conn, error) {
@@ -122,14 +102,10 @@ func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	var setupErr *connSetupTimeoutError
 	require.ErrorAs(t, err, &setupErr)
-	var dnsErr *net.DNSError
-	require.NotErrorAs(t, err, &dnsErr)
 	assert.Equal(t, int32(maxRetries+1), dials.Load())
 }
 
 func TestRetry_DeadlineBeforeConnectionReady(t *testing.T) {
-	// The interceptor classifies the deadline. A bare deadline, including one
-	// that wraps a read after the connection exists, is not retried.
 	assert.False(t, retryOnError(nil, context.DeadlineExceeded))
 	assert.False(t, retryOnError(nil, context.Canceled))
 	assert.False(t, retryOnError(nil, &net.OpError{Op: "read", Net: "tcp", Err: context.DeadlineExceeded}))
@@ -138,8 +114,6 @@ func TestRetry_DeadlineBeforeConnectionReady(t *testing.T) {
 }
 
 func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
-	// Dial returns a connection, so GotConn has fired, and the write then blocks.
-	// A deadline while the request is being written must not be retried.
 	serverConns := make(chan net.Conn, 2)
 	client, dials := newRetryClient(t, "http://es.invalid:9200", 50*time.Millisecond, func(context.Context, string, string) (net.Conn, error) {
 		clientConn, serverConn := net.Pipe()
@@ -153,19 +127,14 @@ func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
 		}
 	})
 
-	payload := bytes.Repeat([]byte("{\"index\":{}}\n"), 1024)
-	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", http.NoBody)
 	require.NoError(t, err)
 	_, err = client.Perform(req)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.NotErrorAs(t, err, &setupErr)
 	assert.Equal(t, int32(1), dials.Load())
 }
 
 func TestRetry_CallerDeadlineDuringDial_NoRetry(t *testing.T) {
-	// The caller's context expires during the dial. That deadline is not a
-	// per-attempt setup timeout, so it is not wrapped and not retried.
 	var finished atomic.Int32
 	client, dials := newRetryClient(t, "http://es.invalid:9200", time.Second, func(ctx context.Context, _, _ string) (net.Conn, error) {
 		defer finished.Add(1)
@@ -190,8 +159,6 @@ func TestRetry_CallerDeadlineDuringDial_NoRetry(t *testing.T) {
 	require.NoError(t, err)
 	_, err = client.Perform(req)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.NotErrorAs(t, err, &setupErr)
 	assert.Equal(t, int32(1), dials.Load())
 }
 

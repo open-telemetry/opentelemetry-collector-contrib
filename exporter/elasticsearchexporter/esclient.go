@@ -57,10 +57,8 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 	}
 }
 
-// connSetupTimeoutError marks a context.DeadlineExceeded that fired before
-// http.Transport obtained a connection. retryOnError retries this wrapper and
-// leaves every other deadline alone. Unwrap keeps errors.Is and errors.As
-// working for the transport error, so callers do not need the wrapper removed.
+// connSetupTimeoutError is a context.DeadlineExceeded from before GotConn.
+// Unwrap preserves the transport error.
 type connSetupTimeoutError struct {
 	err error
 }
@@ -68,15 +66,9 @@ type connSetupTimeoutError struct {
 func (e *connSetupTimeoutError) Error() string { return e.err.Error() }
 func (e *connSetupTimeoutError) Unwrap() error { return e.err }
 
-// timeoutInterceptor injects a context that enforces a timeout per http request over the wire.
-// A context.DeadlineExceeded is marked for retry only when GotConn has not fired
-// and the caller's context is still active. http.Transport calls GotConn on the
-// RoundTrip goroutine after dialConn returns, which is after DNS, TCP, proxy
-// CONNECT, and the TLS handshake, and before writeLoop receives the request.
-// A deadline already present on the caller's context is left unchanged, so
-// retryOnError does not depend on the retry backoff to stop it. The per-attempt
-// timeout is a child context and must not replace req, or canceling it would
-// stop elastictransport's retry backoff.
+// timeoutInterceptor enforces the per-attempt timeout on a child context.
+// Canceling that context must not cancel req, or elastictransport's retry backoff stops.
+// A context.DeadlineExceeded before GotConn, with the caller's context still active, is wrapped for retry.
 func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
 	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
 		return func(req *http.Request) (*http.Response, error) {
@@ -359,19 +351,8 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 	return urls, nil
 }
 
-// retryOnError reports whether an HTTP transport error should be retried.
-//
-// context.Canceled is never retried. A connSetupTimeoutError is retried: the
-// interceptor adds it when context.DeadlineExceeded fires before GotConn and
-// the caller's context is still active. That includes a dialer timeout and a
-// per-attempt deadline during DNS, TCP, or TLS. Transport drops an in-flight
-// dial error when the request deadline wins and returns a bare
-// context.DeadlineExceeded, which the interceptor wraps. Any other
-// context.DeadlineExceeded is after the connection was obtained, including
-// while the request is written or while waiting for the response, and is not
-// retried. Errors that are not context.DeadlineExceeded are retried even after
-// the connection is ready, including os.ErrDeadlineExceeded from a connection
-// read deadline and the transport response-header timeout.
+// retryOnError retries connSetupTimeoutError. Other context.DeadlineExceeded
+// errors and context.Canceled are not retried.
 func retryOnError(_ *http.Request, err error) bool {
 	if errors.Is(err, context.Canceled) {
 		return false

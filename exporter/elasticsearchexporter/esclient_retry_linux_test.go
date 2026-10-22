@@ -3,6 +3,9 @@
 
 //go:build linux
 
+// This file is Linux-only. net.Listen completes the TCP handshake in the kernel
+// before Accept, so a portable test server cannot stall the handshake. The stall
+// below uses a zero-length accept queue and SOCK_CLOEXEC, which are Linux-specific.
 package elasticsearchexporter
 
 import (
@@ -18,9 +21,6 @@ import (
 )
 
 func TestRetry_TCPHandshakeDeadlineExceeded(t *testing.T) {
-	// net.Listen completes the handshake before Accept, so this stalls the SYN
-	// with a zero-length accept queue. That queue behavior is Linux-specific.
-	// The dialer may report context.DeadlineExceeded or the poller's i/o timeout.
 	addr := listenIgnoringHandshake(t)
 	dialer := &net.Dialer{Timeout: 200 * time.Millisecond}
 	const maxRetries = 1
@@ -30,9 +30,6 @@ func TestRetry_TCPHandshakeDeadlineExceeded(t *testing.T) {
 	req, err := http.NewRequest(http.MethodPost, endpoint+"/_bulk", http.NoBody)
 	require.NoError(t, err)
 	_, err = client.Perform(req)
-	// The connect deadline is either context.DeadlineExceeded or the poller's
-	// "i/o timeout". Both are a dial timeout and are retried. Which one is
-	// returned depends on which deadline the runtime observes first.
 	var opErr *net.OpError
 	require.ErrorAs(t, err, &opErr)
 	assert.Equal(t, "dial", opErr.Op)
@@ -44,9 +41,6 @@ func TestRetry_TCPHandshakeDeadlineExceeded(t *testing.T) {
 	assert.Equal(t, int32(maxRetries+1), dials.Load())
 }
 
-// listenIgnoringHandshake listens on 127.0.0.1 with a backlog of 0 and holds
-// the one connection that fills the accept queue. The kernel then does not
-// answer further SYNs, so a dial times out during the TCP handshake.
 func listenIgnoringHandshake(t *testing.T) string {
 	t.Helper()
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM|syscall.SOCK_CLOEXEC, 0)
