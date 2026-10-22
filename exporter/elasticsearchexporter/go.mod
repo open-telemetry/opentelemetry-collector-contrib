@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/configcompression v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/confighttp v0.163.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/config/configmiddleware v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/configopaque v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/config/configoptional v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/confmap v1.69.1-0.20261015205720-932ee30af2c0
@@ -34,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.163.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/extension v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/extension/extensionauth v1.69.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.163.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/extension/xextension v0.163.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/featuregate v1.69.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/pdata v1.69.1-0.20261015205720-932ee30af2c0
@@ -81,7 +83,6 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.elastic.co/fastjson v1.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v1.69.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.69.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.69.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.69.1-0.20261015205720-932ee30af2c0 // indirect
@@ -89,7 +90,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.163.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.163.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.163.1-0.20261015205720-932ee30af2c0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.163.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.163.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.163.1-0.20261015205720-932ee30af2c0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.69.1-0.20261015205720-932ee30af2c0 // indirect

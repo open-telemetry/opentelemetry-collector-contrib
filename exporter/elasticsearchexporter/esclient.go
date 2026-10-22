@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -56,23 +57,53 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 	}
 }
 
+// connSetupTimeoutError marks a context.DeadlineExceeded that fired before
+// http.Transport obtained a connection. retryOnError retries this wrapper and
+// leaves every other deadline alone. Unwrap keeps errors.Is and errors.As
+// working for the transport error, so callers do not need the wrapper removed.
+type connSetupTimeoutError struct {
+	err error
+}
+
+func (e *connSetupTimeoutError) Error() string { return e.err.Error() }
+func (e *connSetupTimeoutError) Unwrap() error { return e.err }
+
 // timeoutInterceptor injects a context that enforces a timeout per http request over the wire.
+// A context.DeadlineExceeded is marked for retry only when GotConn has not fired
+// and the caller's context is still active. http.Transport calls GotConn on the
+// RoundTrip goroutine after dialConn returns, which is after DNS, TCP, proxy
+// CONNECT, and the TLS handshake, and before writeLoop receives the request.
+// A deadline already present on the caller's context is left unchanged, so
+// retryOnError does not depend on the retry backoff to stop it. The per-attempt
+// timeout is a child context and must not replace req, or canceling it would
+// stop elastictransport's retry backoff.
 func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
 	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
 		return func(req *http.Request) (*http.Response, error) {
-			if perRequestTimeout <= 0 {
-				return next(req)
+			var gotConn atomic.Bool
+			// ctx is not reused across retries.
+			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout.
+			ctx := httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+				GotConn: func(httptrace.GotConnInfo) { gotConn.Store(true) },
+			})
+			var cancel context.CancelFunc
+			if perRequestTimeout > 0 {
+				ctx, cancel = context.WithTimeout(ctx, perRequestTimeout)
 			}
-			// ctx is not reused across retries
-			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout
-			ctx, cancel := context.WithTimeout(req.Context(), perRequestTimeout)
 			res, err := next(req.WithContext(ctx))
 			if err != nil {
-				cancel()
+				if cancel != nil {
+					cancel()
+				}
+				if errors.Is(err, context.DeadlineExceeded) && !gotConn.Load() && req.Context().Err() == nil {
+					err = &connSetupTimeoutError{err: err}
+				}
 				return res, err
 			}
-			// Cancel the context once the body is read/discarded.
-			res.Body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
+			if cancel != nil {
+				// Cancel the context once the body is read/discarded.
+				res.Body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
+			}
 			return res, nil
 		}
 	}
@@ -277,11 +308,9 @@ func newElasticsearchClient(
 
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
-		RetryOnError: func(_ *http.Request, err error) bool {
-			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
-		},
-		MaxRetries:   maxRetries,
-		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnError:  retryOnError,
+		MaxRetries:    maxRetries,
+		RetryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
 
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
@@ -328,6 +357,30 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 		urls = append(urls, u)
 	}
 	return urls, nil
+}
+
+// retryOnError reports whether an HTTP transport error should be retried.
+//
+// context.Canceled is never retried. A connSetupTimeoutError is retried: the
+// interceptor adds it when context.DeadlineExceeded fires before GotConn and
+// the caller's context is still active. That includes a dialer timeout and a
+// per-attempt deadline during DNS, TCP, or TLS. Transport drops an in-flight
+// dial error when the request deadline wins and returns a bare
+// context.DeadlineExceeded, which the interceptor wraps. Any other
+// context.DeadlineExceeded is after the connection was obtained, including
+// while the request is written or while waiting for the response, and is not
+// retried. Errors that are not context.DeadlineExceeded are retried even after
+// the connection is ready, including os.ErrDeadlineExceeded from a connection
+// read deadline and the transport response-header timeout.
+func retryOnError(_ *http.Request, err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	var setupErr *connSetupTimeoutError
+	if errors.As(err, &setupErr) {
+		return true
+	}
+	return !errors.Is(err, context.DeadlineExceeded)
 }
 
 // createElasticsearchBackoffFunc creates an exponential backoff with equal jitter.
