@@ -947,21 +947,6 @@ func TestUnmarshalLogs_FeatureGates(t *testing.T) {
 	}
 }
 
-func TestUnmarshalLogs_GateValidationError(t *testing.T) {
-	setFeatureGatesForTest(t, false, true)
-
-	u := &ResourceLogsUnmarshaler{
-		Version: testBuildInfo.Version,
-		Logger:  zap.NewNop(),
-	}
-
-	data, err := os.ReadFile("testdata/cornercases/minimum.json")
-	require.NoError(t, err)
-
-	_, err = u.UnmarshalLogs(data)
-	require.ErrorIs(t, err, errInvalidFeatureGates)
-}
-
 func TestCheckFeatureGates(t *testing.T) {
 	tests := map[string]struct {
 		emitV1      bool

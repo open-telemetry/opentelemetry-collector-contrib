@@ -188,10 +188,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	if err := validateFeatureGates(); err != nil {
-		return plog.Logs{}, err
-	}
-
 	var rawRecordMap map[int]json.RawMessage
 	getRawRecord := func(index int) json.RawMessage {
 		if rawRecordMap == nil {
