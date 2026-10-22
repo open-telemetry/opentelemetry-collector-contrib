@@ -355,3 +355,18 @@ rules:
     resources: ["persistentvolumes"]
     verbs: ["get"]
 ```
+## Performance
+
+### Metrics Benchmark
+
+The Kubelet Stats Receiver includes a benchmark for its metrics scraping path using representative kubelet statistics fixtures.
+
+Run the benchmark from the receiver module directory:
+
+```bash
+go test -run '^$' -bench '^BenchmarkKubeletStatsReceiverScrapeMetrics$' -benchmem
+```
+
+The benchmark reports execution time and memory allocations. Results can vary depending on the Go version, hardware, and system load.
+
+For CI workflow runs, see the [build-and-test workflow](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
