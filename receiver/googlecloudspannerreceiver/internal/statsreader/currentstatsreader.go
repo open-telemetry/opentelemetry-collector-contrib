@@ -26,6 +26,7 @@ const (
 	// to read data from stale replica nodes(at this time replica node will contain required data), since we are
 	// requesting data for mm:00. Also stale reads are faster than reads from main node.
 	dataStalenessSafeThresholdSeconds = 2 * dataStalenessSeconds
+	oldestActiveQueriesMetricName     = "oldest active queries"
 )
 
 type currentStatsReader struct {
@@ -34,6 +35,7 @@ type currentStatsReader struct {
 	metricsMetadata        *metadata.MetricsMetadata
 	topMetricsQueryMaxRows int
 	hideClientIPAddress    bool
+	truncateText           bool
 	statement              func(args statementArgs) statsStatement
 }
 
@@ -50,6 +52,7 @@ func newCurrentStatsReader(
 		statement:              currentStatsStatement,
 		topMetricsQueryMaxRows: config.TopMetricsQueryMaxRows,
 		hideClientIPAddress:    config.HideClientIPAddress,
+		truncateText:           config.TruncateText,
 	}
 }
 
@@ -71,6 +74,12 @@ func (reader *currentStatsReader) Read(ctx context.Context) ([]*metadata.Metrics
 	if reader.hideClientIPAddress {
 		for _, dataPoint := range dataPoints {
 			dataPoint.HideClientIPAddressPII()
+		}
+	}
+
+	if reader.truncateText && reader.metricsMetadata != nil && reader.metricsMetadata.Name == oldestActiveQueriesMetricName {
+		for _, dataPoint := range dataPoints {
+			dataPoint.TruncateQueryText(maxLengthTruncateText)
 		}
 	}
 
