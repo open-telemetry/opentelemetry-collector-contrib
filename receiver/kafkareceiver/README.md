@@ -127,7 +127,10 @@ The following settings can be optionally configured:
     **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
 - `partition_processing`:
   - `independent` (default = false): Process each assigned topic partition sequentially in its own worker so a blocked partition does not block polling healthy partitions. Requires `autocommit.enable` to be true.
-  - `max_buffered_batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
+  - `max_prefetch`:
+    - `batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
+    - `bytes` (default = 0, no cap): Fetching for a partition pauses once the batches waiting for its worker reach this many bytes. Bytes are counted as in `max_in_flight.bytes`. A batch that crosses the cap is still admitted, so the overshoot is at most one batch. Must not be negative. Applies only when `independent` is true and `batches` is above 1.
+  - `max_buffered_batches` (deprecated, use `max_prefetch.batches`): Same as `max_prefetch.batches`. Setting both is an error. Will be removed in v0.166.0.
   - `max_in_flight`:
     - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Applies only when `independent` is true. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
     - `bytes` (default = 0, no cap): Maximum bytes held by the records of each partition worker that have started and are not marked yet. A record counts its key, value, and headers after decompression, plus a fixed overhead of about 250 bytes per record and 40 per header. Must not be negative. Applies only when `independent` is true and `records` is above 1. A record above the cap still runs, alone.
@@ -320,11 +323,13 @@ In the example above:
 
 Independent partition processing runs each assigned partition in its own worker. A blocked partition does not block polling or workers for other partitions.
 
-Each partition has one worker and one mailbox. `max_buffered_batches` is how many fetched batches may wait in that mailbox. It is not a record count or a worker count. A full mailbox pauses only that partition. The partition resumes when a slot is free.
+Each partition has one worker and one mailbox. `max_prefetch.batches` is how many fetched batches may wait in that mailbox. It is not a record count or a worker count. A full mailbox pauses only that partition. The partition resumes when a slot is free.
+
+`max_prefetch.bytes` (default 0, no cap) also limits the bytes of the batches waiting in the mailbox. A partition pauses once those bytes reach the cap, and it resumes once they drop below it and a batch slot is free. It has no effect with the default `batches: 1`, because an empty mailbox always admits a batch and the batch count then pauses fetching.
 
 `max_in_flight.records` (default 1) is how many unmarshal-plus-Consume calls one partition worker may run at once. With the default `window: per_fetch`, the worker starts those calls only for records in the current fetched batch, and waits for all of them before it takes the next batch. An idle partition still has one worker. At 1, records stay in offset order inside the partition. Above 1, later records can reach Consume before earlier ones finish.
 
-`max_in_flight.bytes` (default 0, no cap) also limits the bytes of the records the worker has started and not yet marked: key, value, and headers after decompression, plus about 250 bytes per record and 40 per header, so empty records count too. A finished record keeps its bytes until the mark passes it, so `bytes` also bounds how much finished data can pile up behind a slow record. The worker starts a record only when both limits have room. Use it to size memory when record sizes vary. The fetched batch and the mailbox stay in memory outside this cap. With `cross_fetch`, so does the rest of the Kafka record batch the oldest unmarked record was decoded from, which can come from an earlier fetch.
+`max_in_flight.bytes` (default 0, no cap) also limits the bytes of the records the worker has started and not yet marked: key, value, and headers after decompression, plus about 250 bytes per record and 40 per header, so empty records count too. A finished record keeps its bytes until the mark passes it, so `bytes` also bounds how much finished data can pile up behind a slow record. The worker starts a record only when both limits have room. Use it to size memory when record sizes vary. The batches waiting in the mailbox are bounded by `max_prefetch` instead, and the batch the worker is processing is outside both caps. With `cross_fetch`, the Kafka record batch the oldest unmarked record was decoded from is also outside this cap, and it can come from an earlier fetch.
 
 `max_in_flight.window: cross_fetch` lets the worker take the next batch while calls from earlier batches still run, up to `records` and `bytes` for the whole partition. Use it when the next consumer holds Consume open until it has aggregated enough data, for example an exporter with `sending_queue.wait_for_result: true` and `batch.min_size` set. With `per_fetch`, such a consumer never sees more than one fetched batch at once and flushes undersized batches on its timeout. Marking is the same in both modes: the worker marks only the contiguous accepted prefix, in fetch order. The cost is a larger replay window. Records that finished above a slow or failed record stay unmarked, and a crash or rebalance replays them. After a revoke, data already accepted by a batching exporter can still export while the next owner replays it. Under `wait_for_result`, the sending queue also limits the window, so `sending_queue.queue_size` must exceed `batch.min_size` by at least the largest record.
 
@@ -336,7 +341,7 @@ When `max_in_flight.records` is above 1, the worker marks the contiguous accepte
 
 Above 1, an unmarked failure stops new calls on that partition. The worker waits for calls already in Consume, then rewinds or pauses. Before a rewind, it remembers offsets it already finished above the failed record and skips Consume for them on the next fetch. A new owner after pause or rebalance does not skip those offsets, so they can reach Consume again. While the failed call still runs, including backoff, other slots can start more records from the same fetch, or from later fetches with `cross_fetch`.
 
-Resource usage grows with the number of assigned partitions and `max_buffered_batches`. A larger mailbox keeps more fetched data in memory. A larger `max_in_flight.records` starts more in-flight pipeline calls per partition.
+Resource usage grows with the number of assigned partitions and `max_prefetch`. Queued data per partition stays below `max_prefetch.bytes` plus one batch when `bytes` is set. Total memory per partition is roughly that bound, plus the batch the worker is processing, plus `max_in_flight.bytes` for the window. A larger `max_in_flight.records` starts more in-flight pipeline calls per partition.
 
 When a partition is revoked, its worker is cancelled and queued batches are discarded. The next owner fetches from the committed offset. Standard Kafka at-least-once delivery still applies.
 
@@ -345,7 +350,9 @@ receivers:
   kafka:
     partition_processing:
       independent: true
-      max_buffered_batches: 1
+      max_prefetch:
+        batches: 2
+        bytes: 33554432
       max_in_flight:
         records: 4
         bytes: 33554432

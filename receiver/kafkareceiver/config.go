@@ -58,6 +58,18 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
+	// max_buffered_batches is deprecated; copy it into max_prefetch.batches.
+	pp, err := conf.Sub("partition_processing")
+	if err != nil {
+		return err
+	}
+	if pp.IsSet("max_buffered_batches") {
+		if pp.IsSet("max_prefetch::batches") {
+			return errors.New("partition_processing.max_buffered_batches and partition_processing.max_prefetch.batches are mutually exclusive")
+		}
+		c.PartitionProcessing.MaxPrefetch.Batches = c.PartitionProcessing.MaxBufferedBatches
+	}
+
 	// Check if deprecated fields have been explicitly set
 	// give them  precedence
 	var zeroConfig Config
@@ -98,8 +110,11 @@ func (c *Config) Validate() error {
 		return err
 	}
 	if c.PartitionProcessing.Independent {
-		if c.PartitionProcessing.MaxBufferedBatches <= 0 {
-			return errors.New("partition_processing.max_buffered_batches must be greater than zero")
+		if c.PartitionProcessing.MaxPrefetch.Batches <= 0 {
+			return errors.New("partition_processing.max_prefetch.batches must be greater than zero")
+		}
+		if c.PartitionProcessing.MaxPrefetch.Bytes < 0 {
+			return errors.New("partition_processing.max_prefetch.bytes must not be negative")
 		}
 		if c.PartitionProcessing.MaxInFlight.Records <= 0 {
 			return errors.New("partition_processing.max_in_flight.records must be greater than zero")
@@ -215,11 +230,32 @@ type PartitionProcessing struct {
 
 	// MaxBufferedBatches bounds the number of fetched batches waiting for each
 	// partition worker.
+	//
+	// Deprecated [v0.164.0]: use partition_processing.max_prefetch.batches instead. Will be removed in v0.166.0.
 	MaxBufferedBatches int `mapstructure:"max_buffered_batches"`
+
+	// MaxPrefetch limits the fetched batches waiting for each independent
+	// partition worker.
+	MaxPrefetch MaxPrefetchConfig `mapstructure:"max_prefetch"`
 
 	// MaxInFlight limits concurrent unmarshal-plus-Consume calls for each
 	// independent partition worker.
 	MaxInFlight MaxInFlightConfig `mapstructure:"max_in_flight"`
+}
+
+// MaxPrefetchConfig limits the fetched batches waiting for one partition worker.
+type MaxPrefetchConfig struct {
+	// Batches is how many fetched batches may wait for each partition worker.
+	// Default 1. Must be greater than zero when independent processing is enabled.
+	Batches int `mapstructure:"batches"`
+
+	// Bytes caps the bytes of the waiting batches, counted the way
+	// max_in_flight.bytes counts records. Fetching pauses once the waiting batches
+	// reach the cap, so a batch that crosses it is still admitted and the overshoot
+	// is at most one batch. 0 means no cap. It has no effect when Batches is 1.
+	Bytes int `mapstructure:"bytes"`
+
+	_ struct{} // avoids unkeyed_literal_initialization.
 }
 
 // MaxInFlightConfig limits concurrent unmarshal-plus-Consume calls for one

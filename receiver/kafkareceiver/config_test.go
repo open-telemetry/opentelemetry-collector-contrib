@@ -25,7 +25,9 @@ func loadConfig(t *testing.T, name string) (*Config, error) {
 	cfg := NewFactory().CreateDefaultConfig()
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
+	if err := sub.Unmarshal(cfg); err != nil {
+		return nil, err
+	}
 	return cfg.(*Config), confmap.Validate(cfg)
 }
 
@@ -180,8 +182,41 @@ func TestLoadConfig(t *testing.T) {
 				cfg.PartitionProcessing = PartitionProcessing{
 					Independent:        true,
 					MaxBufferedBatches: 2,
+					MaxPrefetch:        MaxPrefetchConfig{Batches: 2},
 					MaxInFlight:        MaxInFlightConfig{Records: 1, Window: InFlightWindowPerFetch},
 				}
+				return cfg
+			}(),
+		},
+		{
+			name: "kafka/partition_processing_max_prefetch",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing = PartitionProcessing{
+					Independent: true,
+					MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+					MaxInFlight: MaxInFlightConfig{Records: 1, Window: InFlightWindowPerFetch},
+				}
+				return cfg
+			}(),
+		},
+		{
+			name: "kafka/partition_processing_max_prefetch_bytes",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing = PartitionProcessing{
+					Independent: true,
+					MaxPrefetch: MaxPrefetchConfig{Batches: 2, Bytes: 33554432},
+					MaxInFlight: MaxInFlightConfig{Records: 1, Window: InFlightWindowPerFetch},
+				}
+				return cfg
+			}(),
+		},
+		{
+			name: "kafka/non_independent_zero_max_buffered_batches",
+			expected: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.PartitionProcessing.MaxPrefetch.Batches = 0
 				return cfg
 			}(),
 		},
@@ -223,7 +258,19 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "kafka/invalid_partition_processing_zero_buffered_batches",
-			expectedErr: "partition_processing.max_buffered_batches must be greater than zero",
+			expectedErr: "partition_processing.max_prefetch.batches must be greater than zero",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_zero_max_prefetch_batches",
+			expectedErr: "partition_processing.max_prefetch.batches must be greater than zero",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_negative_max_prefetch_bytes",
+			expectedErr: "partition_processing.max_prefetch.bytes must not be negative",
+		},
+		{
+			name:        "kafka/invalid_partition_processing_max_buffered_batches_and_max_prefetch",
+			expectedErr: "partition_processing.max_buffered_batches and partition_processing.max_prefetch.batches are mutually exclusive",
 		},
 		{
 			name:        "kafka/invalid_partition_processing_manual_commit",
