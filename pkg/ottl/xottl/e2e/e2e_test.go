@@ -92,6 +92,65 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["x"], Filter([{"a": "1"}], (_, v) => true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptyMap().PutStr("a", "1")
+			},
+		},
+		{
+			statement: `set(attributes["x"], Filter(["s", {"a": "1"}], (_, v) => true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				x := tCtx.GetLogRecord().Attributes().PutEmptySlice("x")
+				x.AppendEmpty().SetStr("s")
+				x.AppendEmpty().SetEmptyMap().PutStr("a", "1")
+			},
+		},
+		{
+			statement: `set(attributes["x"], Filter([[{"a": "1"}]], (_, v) => true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptySlice().AppendEmpty().SetEmptyMap().PutStr("a", "1")
+			},
+		},
+		{
+			statement: `set(attributes["x"], MapEach([{"a": "1"}], (_, v) => v))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptyMap().PutStr("a", "1")
+			},
+		},
+		{
+			statement: `set(attributes["x"], MapEach([attributes["foo"]], (_, v) => v))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				foo, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				foo.Map().CopyTo(tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptyMap())
+			},
+		},
+		{
+			statement: `set(attributes["x"], MapEach([attributes["things"]], (_, v) => v))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				things, _ := tCtx.GetLogRecord().Attributes().Get("things")
+				things.Slice().CopyTo(tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptySlice())
+			},
+		},
+		{
+			statement: `set(attributes["x"], MapEach(["1"], (_, v) => [{"a": v}]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptySlice().AppendEmpty().SetEmptyMap().PutStr("a", "1")
+			},
+		},
+		{
+			statement: `set(attributes["x"], MapEach(["1"], (_, v) => [attributes["foo"]]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				foo, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				foo.Map().CopyTo(tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptySlice().AppendEmpty().SetEmptyMap())
+			},
+		},
+		{
+			statement: `set(attributes["x"], MapEach(["1"], (_, v) => {"a": [{"b": v}]}))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptySlice("x").AppendEmpty().SetEmptyMap().PutEmptySlice("a").AppendEmpty().SetEmptyMap().PutStr("b", "1")
+			},
+		},
+		{
 			statement: `set(attributes["all_slice"], All(attributes["primitiveValuesSlice"], (_, v) => v == "value1"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("all_slice", false)

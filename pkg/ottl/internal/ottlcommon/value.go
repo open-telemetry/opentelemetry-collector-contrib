@@ -4,6 +4,8 @@
 package ottlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -84,7 +86,11 @@ func convertAnySlice[Slice ~[]E, E any](s Slice) []any {
 }
 
 // CopyValueTo copies the value to the dest pcommon.Value overriding the destination.
-// It handles known types that are not compatible with pcommon.Value.FromRaw.
+// Unlike pcommon.Value.FromRaw, it also accepts pdata types (pcommon.Map, pcommon.Slice and
+// pcommon.Value), including as elements of []any and map[string]any at any nesting level. pdata
+// values are copied, so dest never aliases the source.
+// When pdata types are present, the first conversion error is returned, rather than aggregating
+// all errors like pcommon.Value.FromRaw does.
 func CopyValueTo(value any, dest pcommon.Value) error {
 	switch typedVal := value.(type) {
 	case pcommon.Map:
@@ -93,6 +99,16 @@ func CopyValueTo(value any, dest pcommon.Value) error {
 		typedVal.CopyTo(dest.SetEmptySlice())
 	case pcommon.Value:
 		typedVal.CopyTo(dest)
+	case []any:
+		if !containsPdata(typedVal) {
+			return dest.FromRaw(typedVal)
+		}
+		return CopyAnySliceTo(typedVal, dest.SetEmptySlice())
+	case map[string]any:
+		if !containsPdata(typedVal) {
+			return dest.FromRaw(typedVal)
+		}
+		return copyAnyMapTo(typedVal, dest.SetEmptyMap())
 	case []string:
 		return copyValuesTo(typedVal, dest.SetEmptySlice())
 	case []bool:
@@ -107,11 +123,51 @@ func CopyValueTo(value any, dest pcommon.Value) error {
 	return nil
 }
 
+// containsPdata reports whether value is, or contains at any nesting level of []any and
+// map[string]any, a pcommon.Map, pcommon.Slice or pcommon.Value.
+func containsPdata(value any) bool {
+	switch typedVal := value.(type) {
+	case pcommon.Map, pcommon.Slice, pcommon.Value:
+		return true
+	case []any:
+		return slices.ContainsFunc(typedVal, containsPdata)
+	case map[string]any:
+		for _, el := range typedVal {
+			if containsPdata(el) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func copyValuesTo[Slice ~[]E, E any](s Slice, dest pcommon.Slice) error {
 	dest.EnsureCapacity(len(s))
 	for _, v := range s {
 		err := dest.AppendEmpty().FromRaw(v)
 		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CopyAnySliceTo appends the elements of src to dest, which is expected to be empty.
+// Elements are converted with CopyValueTo, so pdata types are accepted at any nesting level.
+func CopyAnySliceTo(src []any, dest pcommon.Slice) error {
+	dest.EnsureCapacity(len(src))
+	for _, el := range src {
+		if err := CopyValueTo(el, dest.AppendEmpty()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyAnyMapTo(src map[string]any, dest pcommon.Map) error {
+	dest.EnsureCapacity(len(src))
+	for k, el := range src {
+		if err := CopyValueTo(el, dest.PutEmpty(k)); err != nil {
 			return err
 		}
 	}

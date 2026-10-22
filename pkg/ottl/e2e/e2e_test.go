@@ -1561,11 +1561,55 @@ func Test_e2e_converters(t *testing.T) {
 			errMsg:    "provided object does not contain the path",
 		},
 		{
+			statement: `set(attributes["test"], SliceToMap([{"name": "k", "v": "1"}], ["name"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test").PutEmptyMap("k")
+				m.PutStr("name", "k")
+				m.PutStr("v", "1")
+			},
+		},
+		{
 			statement: `set(attributes["test"], {"list":[{"foo":"bar"}]})`,
 			want: func(tCtx *ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m2 := m.PutEmptySlice("list").AppendEmpty().SetEmptyMap()
 				m2.PutStr("foo", "bar")
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": [attributes["things"]]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				attrs := tCtx.GetLogRecord().Attributes()
+				things := pcommon.NewSlice()
+				if v, ok := attrs.Get("things"); ok {
+					v.Slice().CopyTo(things)
+				}
+				things.CopyTo(attrs.PutEmptyMap("test").PutEmptySlice("k").AppendEmpty().SetEmptySlice())
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": [[{"a": "1"}]]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("k").AppendEmpty().SetEmptySlice().AppendEmpty().SetEmptyMap().PutStr("a", "1")
+			},
+		},
+		{
+			statement: `set(attributes["test"], {"k": [attributes["foo"], attributes["array"], {"a": "1"}, "lit", 1]})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				attrs := tCtx.GetLogRecord().Attributes()
+				foo, _ := attrs.Get("foo")
+				arr, _ := attrs.Get("array")
+				fooCopy := pcommon.NewMap()
+				foo.Map().CopyTo(fooCopy)
+				arrCopy := pcommon.NewSlice()
+				arr.Slice().CopyTo(arrCopy)
+				l := attrs.PutEmptyMap("test").PutEmptySlice("k")
+				fooCopy.CopyTo(l.AppendEmpty().SetEmptyMap())
+				arrCopy.CopyTo(l.AppendEmpty().SetEmptySlice())
+				l.AppendEmpty().SetEmptyMap().PutStr("a", "1")
+				l.AppendEmpty().SetStr("lit")
+				l.AppendEmpty().SetInt(1)
 			},
 		},
 		{
@@ -1834,6 +1878,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "where clause with ContainsValue floats return value",
 			statement: `set(attributes["test"], "pass") where ContainsValue([1.1, 2.2, 3.3, 4.4], 4.4)`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "where clause with ContainsValue list literal containing a map",
+			statement: `set(attributes["test"], "pass") where ContainsValue([{"a": "1"}], {"a": "1"})`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},

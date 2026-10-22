@@ -2789,6 +2789,167 @@ func Test_StandardPSliceGetter(t *testing.T) {
 	}
 }
 
+func Test_StandardPSliceGetter_AnySliceWithPdataElements(t *testing.T) {
+	newMap := func() pcommon.Map {
+		m := pcommon.NewMap()
+		m.PutStr("a", "1")
+		return m
+	}
+	newSlice := func() pcommon.Slice {
+		s := pcommon.NewSlice()
+		s.AppendEmpty().SetStr("x")
+		return s
+	}
+	wantMapSlice := func() pcommon.Slice {
+		s := pcommon.NewSlice()
+		newMap().CopyTo(s.AppendEmpty().SetEmptyMap())
+		return s
+	}
+
+	tests := []struct {
+		name    string
+		input   func() []any
+		want    func() pcommon.Slice
+		wantErr string
+	}{
+		{
+			name:  "pcommon.Map element",
+			input: func() []any { return []any{newMap()} },
+			want:  wantMapSlice,
+		},
+		{
+			name:  "pcommon.Slice element",
+			input: func() []any { return []any{newSlice()} },
+			want: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				newSlice().CopyTo(s.AppendEmpty().SetEmptySlice())
+				return s
+			},
+		},
+		{
+			name: "pcommon.Value elements",
+			input: func() []any {
+				vm := pcommon.NewValueMap()
+				newMap().CopyTo(vm.Map())
+				vs := pcommon.NewValueSlice()
+				newSlice().CopyTo(vs.Slice())
+				return []any{vm, vs, pcommon.NewValueStr("s"), pcommon.NewValueInt(2)}
+			},
+			want: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				newMap().CopyTo(s.AppendEmpty().SetEmptyMap())
+				newSlice().CopyTo(s.AppendEmpty().SetEmptySlice())
+				s.AppendEmpty().SetStr("s")
+				s.AppendEmpty().SetInt(2)
+				return s
+			},
+		},
+		{
+			name:  "nested []any with a map",
+			input: func() []any { return []any{[]any{newMap()}} },
+			want: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				wantMapSlice().CopyTo(s.AppendEmpty().SetEmptySlice())
+				return s
+			},
+		},
+		{
+			name:  "map[string]any containing pdata",
+			input: func() []any { return []any{map[string]any{"m": newMap(), "l": []any{newMap()}}} },
+			want: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				m := s.AppendEmpty().SetEmptyMap()
+				newMap().CopyTo(m.PutEmpty("m").SetEmptyMap())
+				wantMapSlice().CopyTo(m.PutEmpty("l").SetEmptySlice())
+				return s
+			},
+		},
+		{
+			name:  "mixed scalars and maps",
+			input: func() []any { return []any{"s", int64(1), newMap(), 1.5, true, nil} },
+			want: func() pcommon.Slice {
+				s := pcommon.NewSlice()
+				s.AppendEmpty().SetStr("s")
+				s.AppendEmpty().SetInt(1)
+				newMap().CopyTo(s.AppendEmpty().SetEmptyMap())
+				s.AppendEmpty().SetDouble(1.5)
+				s.AppendEmpty().SetBool(true)
+				s.AppendEmpty()
+				return s
+			},
+		},
+		{
+			name:    "invalid element type",
+			input:   func() []any { return []any{newMap(), make(chan int)} },
+			wantErr: "Invalid value type chan int",
+		},
+		{
+			name:    "invalid nested element type",
+			input:   func() []any { return []any{[]any{make(chan int)}} },
+			wantErr: "Invalid value type chan int",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			getter := StandardPSliceGetter[any]{
+				Getter: func(context.Context, any) (any, error) { return tt.input(), nil },
+			}
+			got, err := getter.Get(t.Context(), nil)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			// Compare raw values because keys copied from a map[string]any have no stable order.
+			assert.Equal(t, tt.want().AsRaw(), got.AsRaw())
+		})
+	}
+}
+
+func Test_StandardPSliceGetter_AnySliceDoesNotAliasSource(t *testing.T) {
+	srcMap := pcommon.NewMap()
+	srcMap.PutStr("a", "1")
+	srcSlice := pcommon.NewSlice()
+	srcSlice.AppendEmpty().SetStr("x")
+	srcValMap := pcommon.NewValueMap()
+	srcValMap.Map().PutStr("a", "1")
+	srcValSlice := pcommon.NewValueSlice()
+	srcValSlice.Slice().AppendEmpty().SetStr("x")
+	nestedMap := pcommon.NewMap()
+	nestedMap.PutStr("a", "1")
+
+	getter := StandardPSliceGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{srcMap, srcSlice, srcValMap, srcValSlice, []any{nestedMap}}, nil
+		},
+	}
+	got, err := getter.Get(t.Context(), nil)
+	require.NoError(t, err)
+	require.Equal(t, 5, got.Len())
+
+	// mutate the result
+	got.At(0).Map().PutStr("a", "changed")
+	got.At(1).Slice().At(0).SetStr("changed")
+	got.At(2).Map().PutStr("a", "changed")
+	got.At(3).Slice().At(0).SetStr("changed")
+	got.At(4).Slice().At(0).Map().PutStr("a", "changed")
+
+	// the source is untouched
+	v, _ := srcMap.Get("a")
+	assert.Equal(t, "1", v.Str())
+	assert.Equal(t, "x", srcSlice.At(0).Str())
+	v, _ = srcValMap.Map().Get("a")
+	assert.Equal(t, "1", v.Str())
+	assert.Equal(t, "x", srcValSlice.Slice().At(0).Str())
+	v, _ = nestedMap.Get("a")
+	assert.Equal(t, "1", v.Str())
+
+	// and mutating the source does not leak into the result
+	srcMap.PutStr("b", "2")
+	_, ok := got.At(0).Map().Get("b")
+	assert.False(t, ok)
+}
+
 func Test_StandardPSliceGetter_WrappedError(t *testing.T) {
 	getter := StandardPSliceGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
@@ -3988,4 +4149,50 @@ func Test_StandardPMapGetSetter(t *testing.T) {
 
 	require.NoError(t, gs.Set(t.Context(), nil, want))
 	assert.Equal(t, want, got)
+}
+
+func Test_mapGetter_Get_nestedSlices(t *testing.T) {
+	srcMap := pcommon.NewMap()
+	srcMap.PutStr("m", "v")
+	srcSlice := pcommon.NewSlice()
+	srcSlice.AppendEmpty().SetStr("s")
+	srcValue := pcommon.NewValueMap()
+	srcValue.Map().PutInt("n", 1)
+
+	getter, err := newMapGetter(map[string]Getter[any]{
+		"k": newLiteral[any, any]([]any{
+			srcMap,
+			srcSlice,
+			srcValue,
+			[]any{map[string]any{"in": "ner"}},
+			"str",
+		}),
+		"dyn": &exprGetter[any]{expr: Expr[any]{exprFunc: func(context.Context, any) (any, error) { return "x", nil }}},
+	})
+	require.NoError(t, err)
+
+	got, err := getter.Get(t.Context(), nil)
+	require.NoError(t, err)
+	result, ok := got.(pcommon.Map)
+	require.True(t, ok)
+
+	assert.Equal(t, map[string]any{
+		"k": []any{
+			map[string]any{"m": "v"},
+			[]any{"s"},
+			map[string]any{"n": int64(1)},
+			[]any{map[string]any{"in": "ner"}},
+			"str",
+		},
+		"dyn": "x",
+	}, result.AsRaw())
+
+	// Mutating the result must not affect the sources.
+	k, _ := result.Get("k")
+	k.Slice().At(0).Map().PutStr("m", "changed")
+	k.Slice().At(1).Slice().At(0).SetStr("changed")
+	k.Slice().At(2).Map().PutInt("n", 99)
+	assert.Equal(t, map[string]any{"m": "v"}, srcMap.AsRaw())
+	assert.Equal(t, []any{"s"}, srcSlice.AsRaw())
+	assert.Equal(t, map[string]any{"n": int64(1)}, srcValue.Map().AsRaw())
 }
