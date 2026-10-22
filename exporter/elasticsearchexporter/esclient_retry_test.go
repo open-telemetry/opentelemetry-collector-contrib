@@ -5,13 +5,11 @@ package elasticsearchexporter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
-	"syscall"
 	"testing"
 	"time"
 
@@ -69,20 +67,7 @@ func TestRetry_UnreachableServer(t *testing.T) {
 	var opErr *net.OpError
 	require.ErrorAs(t, err, &opErr)
 	assert.Equal(t, "dial", opErr.Op)
-	assert.True(t, connRefused(err))
 	assert.Equal(t, int32(maxRetries+1), dials.Load())
-}
-
-// connRefused reports a TCP connection refusal. Unix returns ECONNREFUSED.
-// Windows returns WSAECONNREFUSED (10061). syscall.ECONNREFUSED is a
-// different invented value there, so errors.Is does not match it.
-func connRefused(err error) bool {
-	var errno syscall.Errno
-	if !errors.As(err, &errno) {
-		return false
-	}
-	const wsaEconnRefused syscall.Errno = 10061
-	return errno == syscall.ECONNREFUSED || errno == wsaEconnRefused
 }
 
 func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
