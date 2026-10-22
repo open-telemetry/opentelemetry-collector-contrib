@@ -317,6 +317,17 @@ receivers:
           enabled: true
 ```
 
+
+> **Deprecation notice:** The `k8s.container.cpu.node.utilization`,
+> `k8s.pod.cpu.node.utilization`, `k8s.container.memory.node.utilization`,
+> and `k8s.pod.memory.node.utilization` metrics are deprecated.
+> They calculate utilization relative to total node capacity.
+> Consider using the corresponding CPU or memory usage metrics together
+> with `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory`,
+> as appropriate. These alternatives use allocatable capacity and do not
+> produce an equivalent node-capacity-based utilization value.
+
+
 ### Optional parameters
 
 The following parameters can also be specified:
@@ -326,6 +337,48 @@ The following parameters can also be specified:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+
+## Configuration Options Reference
+
+The Kubelet Stats Receiver supports the following configuration options. Options inherited from the Collector's scraper, network, kubelet client, and metric-builder configuration are included where applicable. See [config.go](./config.go) and the referenced configuration definitions for implementation details.
+
+| Option | Description | Default |
+|---|---|---|
+| `collection_interval` | Interval between collection attempts. | `10s` |
+| `initial_delay` | Delay before the first collection. Non-positive values start collection immediately. | `1s` |
+| `timeout` | Optional deadline for a collection operation. | `0` (no timeout configured) |
+| `endpoint` | Kubelet endpoint to scrape. When omitted, the hostname and port are derived from the selected authentication method. | `https://<hostname>:10250` with `tls`; `http://<hostname>:10255` with `none` |
+| `auth_type` | Authentication method for kubelet access: `tls`, `serviceAccount`, `kubeConfig`, or `none`. | `tls` |
+| `context` | Kubeconfig context override when `auth_type` is `kubeConfig`. | Empty |
+| `insecure_skip_verify` | Skips verification of the kubelet server certificate chain and hostname when enabled. | `false` |
+| `ca_file` | Path to the CA certificate used to verify the server certificate. | Empty |
+| `ca_pem` | PEM-encoded CA certificate supplied directly in configuration. | Empty |
+| `cert_file` | Path to the client TLS certificate. | Empty |
+| `cert_pem` | PEM-encoded client TLS certificate. | Empty |
+| `key_file` | Path to the client TLS private key. | Empty |
+| `key_pem` | PEM-encoded client TLS private key. | Empty |
+| `cipher_suites` | TLS cipher suites available to the client. | Go TLS defaults |
+| `include_insecure_cipher_suites` | Enables insecure TLS cipher suites. | `false` |
+| `curve_preferences` | Preferred elliptic curves for TLS key exchange. | Go TLS defaults |
+| `include_system_ca_certs_pool` | Includes system CA certificates in the certificate pool. | `false` |
+| `min_version` | Minimum acceptable TLS version. | TLS 1.2 |
+| `max_version` | Maximum acceptable TLS version. | Go TLS default |
+| `reload_interval` | Interval for reloading certificates. | Not configured |
+| `dialer.timeout` | Maximum time allowed to establish a network connection. | No timeout |
+| `kube_api_qps` | Maximum queries per second for the Kubernetes API client configuration. | Client-go default: `5` |
+| `kube_api_burst` | Maximum burst of requests for the Kubernetes API client configuration. | Client-go default: `10` |
+| `node` | Node name used to limit node discovery. Required for certain deprecated node-utilization metrics. | Empty |
+| `metric_groups` | Metric groups to collect: `container`, `pod`, `node`, and `volume`. | `container`, `pod`, `node` |
+| `extra_metadata_labels` | Additional metadata to retrieve from the kubelet `/pods` endpoint. | Empty |
+| `k8s_api_config` | Configures the optional Kubernetes API client for additional metadata lookups. | Not configured |
+| `collect_all_network_interfaces.pod` | Collects pod network metrics from all network interfaces. | `false` |
+| `collect_all_network_interfaces.node` | Collects node network metrics from all network interfaces. | `false` |
+| `metrics` | Configures individual metrics, including metric enablement. See [metadata.yaml](./metadata.yaml). | Receiver-defined defaults |
+| `resource_attributes` | Configures resource attributes emitted by the receiver. | Receiver-defined defaults |
+
+
+Some options are inherited from the Collector's scraper, network, kubelet client, and metric-builder configuration structs. Consult [config.go](./config.go) and the linked configuration definitions for the complete inherited option set.
 
 ### Role-based access control
 
@@ -363,6 +416,7 @@ rules:
 
 See [documentation.md](./documentation.md#feature-gates) for the feature
 gates supported by this receiver.
+
 
 ### `receiver.kubeletstats.cpuUsageScrapeBased`
 
@@ -408,6 +462,18 @@ see the [Collector internal telemetry documentation](https://opentelemetry.io/do
 
 The Kubelet Stats Receiver collects metrics by querying the kubelet associated with a Kubernetes node. For node-level collection in Kubernetes, a common deployment pattern is to run the OpenTelemetry Collector as a DaemonSet, with each Collector instance configured to scrape the kubelet on its own node.
 
+## Graceful Shutdown and Statefulness
+
+When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, the receiver retains previous CPU-time samples in memory to calculate CPU usage from consecutive scrapes. These samples are transient calculation state and are not persisted across restarts.
+
+After a Collector restart, the receiver needs to establish a new baseline from subsequent scrapes before it can calculate CPU usage. As a result, CPU usage values may be temporarily unavailable.
+
+The receiver does not require persistent storage to preserve these CPU-time samples, and persistent storage is not supported for this calculation state.
+
+## Deployment and scaling
+
+The Kubelet Stats Receiver collects metrics by querying the kubelet associated with a Kubernetes node. For node-level collection in Kubernetes, a common deployment pattern is to run the OpenTelemetry Collector as a DaemonSet, with each Collector instance configured to scrape the kubelet on its own node. For Helm-based Kubernetes deployments, see the [OpenTelemetry Kube Stack chart](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-kube-stack) for deployment examples. A Collector DaemonSet is a common deployment pattern for scraping the kubelet on each node.
+
 Use the Kubernetes downward API to set the `K8S_NODE_NAME` environment variable to `spec.nodeName`, then configure the receiver endpoint to use that node name. See the [Service Account Authentication Example](#service-account-authentication-example) for an example configuration.
 
 Ensure that each kubelet is scraped by the intended Collector instance. Configuring multiple Collector instances to scrape the same kubelet for the same metrics can result in duplicate telemetry unless duplicate collection is intentional.
@@ -419,6 +485,33 @@ When tuning collection for larger clusters, consider the following:
 - **Kubernetes API access:** Configuring `k8s_api_config` enables additional Kubernetes API lookups for detailed persistent-volume metadata and node capacity used to calculate the `k8s.{container,pod}.{cpu,memory}.node utilization` metrics. Ensure the required permissions are configured.
 - **Network metric cardinality:** By default, node and pod network metrics are collected only for the default network interface. Enabling `collect_all_network_interfaces` increases the number of emitted metrics and their cardinality because metrics include the `interface` attribute.
 - **Metric selection:** Use `metric_groups` and the individual metric enablement settings to limit the telemetry emitted to what your monitoring requirements need.
+- **Additional metadata:** Configuring `extra_metadata_labels` causes the receiver to fetch additional metadata from the kubelet `/pods` endpoint.
+- **Kubernetes API access:** Configuring `k8s_api_config` enables additional Kubernetes API lookups for features that require Kubernetes metadata, including node-capacity information used by the deprecated node-utilization metrics. The `k8s.{container,pod}.{cpu,memory}.node.utilization` metrics are deprecated. Prefer the corresponding CPU or memory usage metrics and `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory` where appropriate. These alternatives use allocatable capacity and are not equivalent to the deprecated node-capacity-based calculation. Configure the required permissions for the features you enable.
+- **Network metric cardinality:** By default, node and pod network metrics are collected only for the default network interface. Enabling `collect_all_network_interfaces` increases the number of emitted metrics and their cardinality because metrics include the `interface` attribute.
+- **Metric selection:** Use `metric_groups` and the individual metric enablement settings to limit the telemetry emitted to what your monitoring requirements need.
+
+## Warnings
+
+- **Read-only kubelet endpoint:** With `auth_type: none`, the receiver uses the unauthenticated HTTP endpoint on port `10255` when no endpoint is configured. This endpoint may be unavailable or disabled in your cluster. Verify your Kubernetes distribution's security requirements before using it; prefer the secured kubelet endpoint when possible.
+
+- **TLS certificate verification:** Setting `insecure_skip_verify: true` disables verification of the kubelet server certificate chain and hostname. Avoid this setting in production when certificate verification can be configured.
+
+- **Duplicate collection:** Ensure that each kubelet is scraped by the intended Collector instance. Multiple Collectors scraping the same kubelet for the same metrics can produce duplicate telemetry.
+
+- **Scrape-based CPU usage gaps:** When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, CPU usage is calculated from consecutive CPU-time samples. A value may be unavailable on the first scrape for a resource, after a Collector restart, or after a container restart or CPU-time counter reset. A subsequent valid sample is needed before usage can be calculated again.
+
+- **Deprecated node-utilization metrics:** `k8s.container.cpu.node.utilization`, `k8s.pod.cpu.node.utilization`, `k8s.container.memory.node.utilization`, and `k8s.pod.memory.node.utilization` are deprecated. Consider the corresponding CPU or memory usage metrics and `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory`, as appropriate. These alternatives use allocatable capacity and are not equivalent to the deprecated node-capacity-based calculation.
+
+## Self-observability
+
+The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. Use the Collector's standard scraper-level metrics and logs to monitor collection activity and investigate failures.
+
+The `otelcol_scraper_scraped_metric_points` and `otelcol_scraper_errored_metric_points` metrics provide information about scraped metric points and scraping errors, respectively.
+
+Failures when requesting the kubelet `/stats/summary` or `/pods` endpoints are reported through the scraping operation and Collector logs. Use the Collector's internal telemetry and logs to investigate scraping failures.
+
+For details on configuring and monitoring Collector internal telemetry, see the [Collector internal telemetry documentation](https://opentelemetry.io/docs/collector/internal-telemetry/).
+
 ## Available Benchmarks
 
 The Kubelet Stats Receiver is benchmarked as part of the Collector Contrib testbed load tests. The test scrapes a mock kubelet endpoint with increasing pod counts and records Collector CPU and memory consumption.
