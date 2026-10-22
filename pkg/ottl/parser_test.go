@@ -3461,12 +3461,12 @@ func Test_Condition_Eval(t *testing.T) {
 func newTestFailureCounter(t *testing.T) (metric.Int64Counter, func() int64) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	t.Cleanup(func() { assert.NoError(t, mp.Shutdown(context.Background())) })
+	t.Cleanup(func() { assert.NoError(t, mp.Shutdown(context.WithoutCancel(t.Context()))) })
 	counter, err := mp.Meter("test").Int64Counter("failures")
 	require.NoError(t, err)
 	return counter, func() int64 {
 		var rm metricdata.ResourceMetrics
-		require.NoError(t, reader.Collect(context.Background(), &rm))
+		require.NoError(t, reader.Collect(t.Context(), &rm))
 		var total int64
 		for _, sm := range rm.ScopeMetrics {
 			for _, m := range sm.Metrics {
