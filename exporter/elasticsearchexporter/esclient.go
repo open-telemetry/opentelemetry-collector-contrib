@@ -59,6 +59,8 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 
 // connSetupTimeoutError is a context.DeadlineExceeded from before GotConn.
 // Unwrap preserves the transport error.
+//
+// These are safe to retry without risking duplicates because no request body has been sent.
 type connSetupTimeoutError struct {
 	err error
 }
