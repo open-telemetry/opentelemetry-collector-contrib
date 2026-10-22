@@ -467,6 +467,114 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(t3), dp3.Timestamp())
 }
 
+// TestAzureScraperBatchScrape_LateArrivingPoint verifies that the lookback window
+// recovers late Azure data. Azure may first return [t1, _, t3], then backfill the
+// gap as [t1, t2, t3]. The second scrape must emit t2.
+// In other terms: "older than the latest point" DOES NOT MEAN "already emitted" with Azure API...
+func TestAzureScraperBatchScrape_LateArrivingPoint(t *testing.T) {
+	const (
+		subscriptionID = "subscriptionId1"
+		resourceID     = "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
+		metricName     = "metric1"
+	)
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{subscriptionID}
+	cfg.Metrics = NestedListAlias{
+		"namespace1": {
+			metricName: {"Average"},
+		},
+	}
+
+	now := time.Now().UTC().Truncate(time.Minute)
+	t1 := now.Add(-3 * time.Minute)
+	t2 := now.Add(-2 * time.Minute)
+	t3 := now.Add(-time.Minute)
+	value1 := 10.0
+	value2 := 20.0
+	value3 := 30.0
+
+	queryResponse := func(values ...azmetrics.MetricValue) []queryResourcesResponseMock {
+		return []queryResourcesResponseMock{{
+			params: queryResourcesResponseMockParams{
+				subscriptionID:  subscriptionID,
+				metricNamespace: "namespace1",
+				metricNames:     []string{metricName},
+				resourceIDs: []string{
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
+					"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3",
+				},
+			},
+			response: newQueryResourcesResponseMockData([]queryResourceMockInput{{
+				ResourceID: resourceID,
+				Metrics: []metricMockInput{{
+					Name: metricName,
+					Unit: azmetrics.MetricUnitPercent,
+					TimeSeries: []azmetrics.TimeSeriesElement{{
+						Data: values,
+					}},
+				}},
+			}}),
+		}}
+	}
+
+	newOptionsResolver := func(response []queryResourcesResponseMock) ClientOptionsResolver {
+		return newMockClientOptionsResolver(
+			getSubscriptionByIDMockData(),
+			getSubscriptionsMockData(),
+			getResourcesMockData(),
+			getMetricsDefinitionsMockData(),
+			nil,
+			response,
+		)
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	mockTime := &timeMock{time: now}
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         mockTime,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+		regions:                      map[string]map[string]struct{}{},
+		resourceTypes:                map[string]map[string]*azureType{},
+	}
+
+	// During the first scrape Azure returns t1, and t3.
+	// t2 is not yet computed and missing.
+	s.clientOptionsResolver = newOptionsResolver(queryResponse(
+		azmetrics.MetricValue{TimeStamp: &t1, Average: &value1},
+		azmetrics.MetricValue{TimeStamp: &t3, Average: &value3},
+	))
+
+	first, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 2, first.DataPointCount())
+
+	// During the next scrape Azure returns t2, which was missing from the first
+	// response, alongside the already emitted t1 and t3 points.
+	s.clientOptionsResolver = newOptionsResolver(queryResponse(
+		azmetrics.MetricValue{TimeStamp: &t1, Average: &value1},
+		azmetrics.MetricValue{TimeStamp: &t2, Average: &value2},
+		azmetrics.MetricValue{TimeStamp: &t3, Average: &value3},
+	))
+	mockTime.time = now.Add(time.Minute)
+
+	second, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, second.DataPointCount(), "the late t2 point should be emitted exactly once")
+
+	dp := second.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, value2, dp.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp.Timestamp())
+}
+
 // TestAzureScraperBatchScrapeCustomNamespaceMetrics verifies that the batch scraper discovers and
 // collects metrics from custom metric namespaces (e.g. "azure.vm.linux.guestmetrics" published by
 // Azure Monitor Agent / MetricsExtension). The MetricDefinitions API only returns such metrics when
