@@ -561,6 +561,7 @@ func Test_e2e_editors(t *testing.T) {
 }
 
 func Test_e2e_converters(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, true))
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
@@ -3237,4 +3238,32 @@ func Test_e2e_slice_arguments_reject_non_slice_literals(t *testing.T) {
 			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
+}
+
+func Test_e2e_dynamic_map_keys_feature_gate(t *testing.T) {
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	t.Run("disabled", func(t *testing.T) {
+		t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, false))
+		for _, statement := range []string{
+			`set(attributes["test"], {ToUpperCase("key"): "value"})`,
+			`set(attributes["test"], {attributes["http.method"]: "value"})`,
+		} {
+			_, err := parser.ParseStatement(statement)
+			require.ErrorContains(t, err, metadata.PkgOttlEnableDynamicMapKeysFeatureGate.ID())
+		}
+	})
+
+	t.Run("string literal keys are always allowed", func(t *testing.T) {
+		t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, false))
+		_, err := parser.ParseStatement(`set(attributes["test"], {"key": "value"})`)
+		require.NoError(t, err)
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, true))
+		_, err := parser.ParseStatement(`set(attributes["test"], {ToUpperCase("key"): "value"})`)
+		require.NoError(t, err)
+	})
 }

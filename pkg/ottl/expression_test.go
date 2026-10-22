@@ -13,6 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func hello() (ExprFunc[any], error) {
@@ -3991,6 +3994,7 @@ func Test_StandardPMapGetSetter(t *testing.T) {
 }
 
 func Test_newGetter_dynamic_map_keys(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, true))
 	keyName := func() (ExprFunc[any], error) {
 		return func(context.Context, any) (any, error) {
 			return "converted", nil
@@ -4073,13 +4077,13 @@ func Test_newGetter_dynamic_map_keys(t *testing.T) {
 			name:    "nil key errors",
 			expr:    `{name: 1}`,
 			tCtx:    nil,
-			wantErr: errNilKeyExpressionResult.Error(),
+			wantErr: errNilMapKeyExpressionResult.Error(),
 		},
 		{
 			name:    "nil string pointer key errors",
 			expr:    `{name: 1}`,
 			tCtx:    nilStr,
-			wantErr: errNilKeyExpressionResult.Error(),
+			wantErr: errNilMapKeyExpressionResult.Error(),
 		},
 		{
 			name: "duplicate keys last wins",

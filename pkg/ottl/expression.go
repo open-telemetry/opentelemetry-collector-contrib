@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/exp/constraints"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
@@ -183,6 +184,13 @@ func resolveIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error
 
 var errNilKeyExpressionResult = errors.New("key expression returned nil, expected an int or string")
 
+var errNilMapKeyExpressionResult = errors.New("map key expression returned nil, expected a string")
+
+var errDynamicMapKeysDisabled = fmt.Errorf(
+	"map keys must be string literals; using a path or converter as a map key requires the `%s` feature gate to be enabled",
+	metadata.PkgOttlEnableDynamicMapKeysFeatureGate.ID(),
+)
+
 func resolveExpressionIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error) {
 	keyGetter, err := key.ExpressionGetter(ctx, tCtx)
 	if err != nil {
@@ -302,14 +310,14 @@ func coerceToMapKey(val any) (string, error) {
 		if v != nil {
 			return *v, nil
 		}
-		return "", errNilKeyExpressionResult
+		return "", errNilMapKeyExpressionResult
 	case pcommon.Value:
 		if v.Type() == pcommon.ValueTypeStr {
 			return v.Str(), nil
 		}
 		return "", fmt.Errorf("map key must evaluate to a string, got %s", v.Type().String())
 	case nil:
-		return "", errNilKeyExpressionResult
+		return "", errNilMapKeyExpressionResult
 	}
 	return "", fmt.Errorf("map key must evaluate to a string, got %T", val)
 }
@@ -1457,8 +1465,14 @@ func (p *parseContext[K]) newMapKeyGetter(k *mapKey) (Getter[K], error) {
 	case k.String != nil:
 		return newLiteral[K, any](*k.String), nil
 	case k.Converter != nil:
+		if !metadata.PkgOttlEnableDynamicMapKeysFeatureGate.IsEnabled() {
+			return nil, ottlerror.FromError(k.Converter.Pos, errDynamicMapKeysDisabled)
+		}
 		return p.newGetterFromConverter(*k.Converter)
 	case k.Path != nil:
+		if !metadata.PkgOttlEnableDynamicMapKeysFeatureGate.IsEnabled() {
+			return nil, ottlerror.FromError(k.Path.Pos, errDynamicMapKeysDisabled)
+		}
 		return p.buildGetSetterFromPath(k.Path)
 	case k.Editor != nil:
 		return nil, ottlerror.Errorf(k.Editor.Pos, "converter names must start with an uppercase letter but got '%v'", k.Editor.Function)

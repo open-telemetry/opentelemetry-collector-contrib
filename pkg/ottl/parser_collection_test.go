@@ -465,6 +465,7 @@ func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 }
 
 func Test_ParseStatementsWithContext_PrependPathContext(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, true))
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	pc, err := NewParserCollection(

@@ -4235,6 +4235,7 @@ func Test_parseValueExpression_mapKeys(t *testing.T) {
 		},
 		{name: "int key", expr: `{1: 1}`, err: "invalid syntax"},
 		{name: "float key", expr: `{1.5: 1}`, err: "invalid syntax"},
+		{name: "enum key", expr: `{SEVERITY_NUMBER_INFO: 1}`, err: "invalid syntax"},
 		{name: "map key", expr: `{{"a": 1}: 1}`, err: "invalid syntax"},
 		{name: "list key", expr: `{["a"]: 1}`, err: "invalid syntax"},
 		{name: "lowercase function key", expr: `{foo(): 1}`, err: "converter names must start with an uppercase letter"},
