@@ -110,6 +110,7 @@ body:
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/filetelemetrypolicy
+      - extension/fleettracker/redisfleettracker
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
@@ -156,6 +157,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/natsclient
       - internal/otelarrow
       - internal/pdatautil
       - internal/rabbitmq
@@ -253,6 +255,7 @@ body:
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
+      - processor/verify
       - receiver/activedirectoryds
       - receiver/activedirectoryinv
       - receiver/aerospike
@@ -330,6 +333,7 @@ body:
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/nats
       - receiver/netflow
       - receiver/nginx
       - receiver/nsxt

@@ -119,6 +119,7 @@ func NewFranzConsumerGroup(
 		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
 		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
 		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
+		kgo.MaxDecompressBatchBytes(consumerCfg.MaxDecompressBatchBytes),
 	}, opts...)...)
 	if err != nil {
 		return nil, err
@@ -341,6 +342,10 @@ func commonOpts(
 	if clientCfg.ConnIdleTimeout > 0 {
 		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
 	}
+	// Configure dial timeout
+	if clientCfg.DialTimeout > 0 {
+		opts = append(opts, kgo.DialTimeout(clientCfg.DialTimeout))
+	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
 		keyVersions := make(map[string]any)
@@ -424,10 +429,12 @@ func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host com
 		if !exists {
 			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource)
 		}
+		ts, ok := oauthExt.(contextTokenSource)
+		if !ok {
+			return nil, fmt.Errorf("oauthbearer_token_source extension %q does not implement Token(context.Context)", cfg.OAuthBearerTokenSource)
+		}
 
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			ts := oauthExt.(contextTokenSource)
-
 			token, err := ts.Token(ctx)
 			if err != nil {
 				return oauth.Auth{}, err
