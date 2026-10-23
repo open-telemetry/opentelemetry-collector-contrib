@@ -46,6 +46,77 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	dockerConfig := config.(*Config)
+
+	if metadata.ReceiverDockerstatsreceiverEnableSemConvMetricsFeatureGate.IsEnabled() {
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsage.Enabled = true
+		}
+		dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryAvailable.Enabled = true
+		dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryWorkingSet.Enabled = true
+		dockerConfig.MetricsBuilderConfig.Metrics.ContainerDiskIo.Enabled = true
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryTotalPgfault.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryPagingFaults.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIo.Enabled = true
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled {
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled = false
+			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIo.Enabled = true
+		}
+	} else {
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled {
+			params.Logger.Warn("The default container.cpu.usage.total metric is being replaced by the container.cpu.time metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled {
+			params.Logger.Warn("The default container.cpu.usage.system metric is being replaced by the container.cpu.time{cpu.mode=system} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled {
+			params.Logger.Warn("The default container.cpu.usage.usermode metric is being replaced by the container.cpu.time{cpu.mode=user} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled {
+			params.Logger.Warn("The default container.cpu.usage.kernelmode metric is being replaced by the container.cpu.time{cpu.mode=kernel} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
+			params.Logger.Warn("The default container.cpu.utilization metric is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
+			params.Logger.Warn("The default container.memory.usage.total metric is being replaced by the container.memory.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
+			params.Logger.Warn("The default container.memory.total_pgfault metric is being replaced by the container.memory.paging.faults metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled {
+			params.Logger.Warn("The default container.network.io.usage.rx_bytes metric is being replaced by the container.network.io{network.io.direction=receive} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled {
+			params.Logger.Warn("The default container.network.io.usage.tx_bytes metric is being replaced by the container.network.io{network.io.direction=transmit} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
+		}
+	}
+
 	dsr := newMetricsReceiver(params, dockerConfig)
 
 	scrp, err := scraper.NewMetrics(dsr.scrapeV2, scraper.WithStart(dsr.start), scraper.WithShutdown(dsr.shutdown))
