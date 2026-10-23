@@ -57,7 +57,7 @@ type metricGroup struct {
 	fhValue        *histogram.FloatHistogram
 	complexValue   []dataPoint
 	exemplarOff    int32
-	exemplarLen    uint16
+	exemplarLen    int32
 	mtype          pmetric.MetricType
 	hasCount       bool
 	hasSum         bool
