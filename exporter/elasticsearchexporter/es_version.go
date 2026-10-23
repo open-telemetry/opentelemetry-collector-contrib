@@ -108,7 +108,7 @@ func getElasticsearchVersions(ctx context.Context, cfg *Config, set exporter.Set
 	return lowest
 }
 
-var minExponentialHistogramVersion = semver.MustParse("9.3.0")
+var minExponentialHistogramVersion = semver.New(9, 4, 0, "", "")
 
 func supportsExponentialHistograms(v *semver.Version) bool {
 	if v == nil {

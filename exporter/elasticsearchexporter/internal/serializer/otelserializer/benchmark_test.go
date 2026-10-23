@@ -185,7 +185,7 @@ func BenchmarkSerializeMetrics(b *testing.B) {
 				dp.ExplicitBounds().FromRaw([]float64{0.005, 0.01, 0.025, 0.05, 0.1})
 				dp.Attributes().PutStr("http.method", "GET")
 				dp.Attributes().PutInt("http.status_code", 200)
-				return metrics, []datapoints.DataPoint{datapoints.NewHistogram(m, dp)}, elasticsearch.Index{}
+				return metrics, []datapoints.DataPoint{datapoints.NewHistogram(m, dp, datapoints.HistogramMappingRaw)}, elasticsearch.Index{}
 			},
 		},
 		{
