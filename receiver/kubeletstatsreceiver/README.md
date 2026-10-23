@@ -355,18 +355,10 @@ rules:
     resources: ["persistentvolumes"]
     verbs: ["get"]
 ```
-## Performance
+## Available Benchmarks
 
-### Metrics Benchmark
+The Kubelet Stats Receiver is benchmarked as part of the Collector Contrib testbed load tests. The test scrapes a mock kubelet endpoint with increasing pod counts and records Collector CPU and memory consumption.
 
-The Kubelet Stats Receiver includes a benchmark for its metrics scraping path using representative kubelet statistics fixtures.
+Results are published on the [Collector Contrib load-test benchmark dashboard](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests).
 
-Run the benchmark from the receiver module directory:
-
-```bash
-go test -run '^$' -bench '^BenchmarkKubeletStatsReceiverScrapeMetrics$' -benchmem
-```
-
-The benchmark reports execution time and memory allocations. Results can vary depending on the Go version, hardware, and system load.
-
-For CI workflow runs, see the [build-and-test workflow](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
+See the [testbed benchmark](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/testbed/tests/kubeletstats_receiver_test.go) for the workload and setup details.
