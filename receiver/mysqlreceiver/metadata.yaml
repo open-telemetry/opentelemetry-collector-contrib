@@ -79,6 +79,10 @@ attributes:
   client.port:
     description: TCP port used by the client.
     type: int
+  column_name:
+    description: The name of the table column.
+    type: string
+    requirement_level: recommended
   command:
     description: The command types.
     type: string
@@ -950,6 +954,14 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
+  mysql.table.auto_increment.usage:
+    enabled: false
+    description: The percentage of the auto_increment column's integer range currently in use for a given table.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, column_name]
   mysql.table.average_row_length:
     enabled: false
     description: The average row length in bytes for a given table.

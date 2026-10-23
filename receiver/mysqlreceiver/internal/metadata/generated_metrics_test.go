@@ -97,6 +97,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["mysql.sorts"] = mb.metricMysqlSorts.config.AggregationStrategy
 			aggMap["mysql.statement_event.count"] = mb.metricMysqlStatementEventCount.config.AggregationStrategy
 			aggMap["mysql.statement_event.wait.time"] = mb.metricMysqlStatementEventWaitTime.config.AggregationStrategy
+			aggMap["mysql.table.auto_increment.usage"] = mb.metricMysqlTableAutoIncrementUsage.config.AggregationStrategy
 			aggMap["mysql.table.average_row_length"] = mb.metricMysqlTableAverageRowLength.config.AggregationStrategy
 			aggMap["mysql.table.io.wait.count"] = mb.metricMysqlTableIoWaitCount.config.AggregationStrategy
 			aggMap["mysql.table.io.wait.time"] = mb.metricMysqlTableIoWaitTime.config.AggregationStrategy
@@ -467,6 +468,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordMysqlTableAutoIncrementUsageDataPoint(ts, 1, "table_name-val", "schema-val", "column_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMysqlTableAutoIncrementUsageDataPoint(ts, 3, "table_name-val-2", "schema-val-2", "column_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMysqlTableAutoIncrementUsageDataPoint(ts+1, 3, "table_name-val-2", "schema-val-2", "column_name-val-2")
+				assert.Equal(t, 2, mb.metricMysqlTableAutoIncrementUsage.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
 			mb.RecordMysqlTableAverageRowLengthDataPoint(ts, 1, "table_name-val", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordMysqlTableAverageRowLengthDataPoint(ts, 3, "table_name-val-2", "schema-val-2")
@@ -625,6 +635,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMysqlSorts.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlStatementEventCount.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlStatementEventWaitTime.aggDataPoints)
+				assert.Empty(t, mb.metricMysqlTableAutoIncrementUsage.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlTableAverageRowLength.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlTableIoWaitCount.aggDataPoints)
 				assert.Empty(t, mb.metricMysqlTableIoWaitTime.aggDataPoints)
@@ -2432,6 +2443,58 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("digest")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("digest_text")
+						assert.False(t, ok)
+					}
+				case "mysql.table.auto_increment.usage":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mysql.table.auto_increment.usage"], "Found a duplicate in the metrics slice: mysql.table.auto_increment.usage")
+						validatedMetrics["mysql.table.auto_increment.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The percentage of the auto_increment column's integer range currently in use for a given table.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						tableNameAttrVal, ok := dp.Attributes().Get("table")
+						assert.True(t, ok)
+						assert.Equal(t, "table_name-val", tableNameAttrVal.Str())
+						schemaAttrVal, ok := dp.Attributes().Get("schema")
+						assert.True(t, ok)
+						assert.Equal(t, "schema-val", schemaAttrVal.Str())
+						columnNameAttrVal, ok := dp.Attributes().Get("column_name")
+						assert.True(t, ok)
+						assert.Equal(t, "column_name-val", columnNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mysql.table.auto_increment.usage"], "Found a duplicate in the metrics slice: mysql.table.auto_increment.usage")
+						validatedMetrics["mysql.table.auto_increment.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The percentage of the auto_increment column's integer range currently in use for a given table.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["mysql.table.auto_increment.usage"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("table")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("schema")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("column_name")
 						assert.False(t, ok)
 					}
 				case "mysql.table.average_row_length":

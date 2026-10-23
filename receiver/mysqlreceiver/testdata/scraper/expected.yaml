@@ -1388,6 +1388,24 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The percentage of the auto_increment column's integer range currently in use for a given table.
+            gauge:
+              dataPoints:
+                - asDouble: 0.5
+                  attributes:
+                    - key: column_name
+                      value:
+                        stringValue: id
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.table.auto_increment.usage
+            unit: "%"
           - description: The average row length in bytes for a given table.
             name: mysql.table.average_row_length
             sum:
