@@ -36,9 +36,9 @@ import (
 )
 
 const (
-	seriesCacheSets = 16384
-	seriesCacheWays = 4
-	seriesCacheMask = seriesCacheSets - 1
+	minSeriesCacheSets = 64
+	maxSeriesCacheSets = 16384
+	seriesCacheWays    = 4
 )
 
 // seriesCacheEntry caches the label-derived metadata and OTel attribute map for
@@ -69,10 +69,38 @@ type resourceCacheEntry struct {
 	resource pcommon.Resource
 }
 
+type seriesCacheTable struct {
+	mask uint64
+	sets [][seriesCacheWays]atomic.Pointer[seriesCacheEntry]
+}
+
+func newSeriesCacheTable(numSets int) *seriesCacheTable {
+	return &seriesCacheTable{
+		mask: uint64(numSets - 1),
+		sets: make([][seriesCacheWays]atomic.Pointer[seriesCacheEntry], numSets),
+	}
+}
+
+func storeInSeriesCacheSet(set *[seriesCacheWays]atomic.Pointer[seriesCacheEntry], entry *seriesCacheEntry) {
+	for i := range seriesCacheWays {
+		if set[i].Load() == nil {
+			set[i].Store(entry)
+			return
+		}
+	}
+	for i := seriesCacheWays - 1; i > 0; i-- {
+		set[i].Store(set[i-1].Load())
+	}
+	set[0].Store(entry)
+}
+
 // seriesCache is a per-target lock-free 4-way set-associative cache of series
-// metadata and OTel attribute maps.
+// metadata and OTel attribute maps. The underlying set table starts at
+// minSeriesCacheSets (2 KiB) and grows up to maxSeriesCacheSets as the target's
+// series count increases.
 type seriesCache struct {
-	sets              [seriesCacheSets][seriesCacheWays]atomic.Pointer[seriesCacheEntry]
+	table             atomic.Pointer[seriesCacheTable]
+	count             atomic.Int32
 	lastResource      atomic.Pointer[resourceCacheEntry]
 	lastFamilyCount   atomic.Int32
 	lastGroupCount    atomic.Int32
@@ -80,7 +108,11 @@ type seriesCache struct {
 }
 
 func (c *seriesCache) lookup(hash uint64, ls, externalLabels labels.Labels) *seriesCacheEntry {
-	set := &c.sets[hash&seriesCacheMask]
+	t := c.table.Load()
+	if t == nil {
+		return nil
+	}
+	set := &t.sets[hash&t.mask]
 	for i := range seriesCacheWays {
 		e := set[i].Load()
 		if e == nil {
@@ -94,18 +126,49 @@ func (c *seriesCache) lookup(hash uint64, ls, externalLabels labels.Labels) *ser
 }
 
 func (c *seriesCache) put(entry *seriesCacheEntry) {
-	set := &c.sets[entry.hash&seriesCacheMask]
+	t := c.table.Load()
+	if t == nil {
+		newT := newSeriesCacheTable(minSeriesCacheSets)
+		if c.table.CompareAndSwap(nil, newT) {
+			t = newT
+		} else {
+			t = c.table.Load()
+		}
+	}
+	set := &t.sets[entry.hash&t.mask]
 	for i := range seriesCacheWays {
 		e := set[i].Load()
-		if e == nil || (e.hash == entry.hash && labels.Equal(e.ls, entry.ls) && labels.Equal(e.externalLabels, entry.externalLabels)) {
+		if e == nil {
+			break
+		}
+		if e.hash == entry.hash && labels.Equal(e.ls, entry.ls) && labels.Equal(e.externalLabels, entry.externalLabels) {
 			set[i].Store(entry)
 			return
 		}
 	}
-	for i := seriesCacheWays - 1; i > 0; i-- {
-		set[i].Store(set[i-1].Load())
+	if int(c.count.Add(1)) > len(t.sets)*(seriesCacheWays/2) && len(t.sets) < maxSeriesCacheSets {
+		t = c.grow(t)
+		set = &t.sets[entry.hash&t.mask]
 	}
-	set[0].Store(entry)
+	storeInSeriesCacheSet(set, entry)
+}
+
+func (c *seriesCache) grow(oldT *seriesCacheTable) *seriesCacheTable {
+	nextSets := min(len(oldT.sets)*4, maxSeriesCacheSets)
+	newT := newSeriesCacheTable(nextSets)
+	for i := range oldT.sets {
+		for w := range seriesCacheWays {
+			e := oldT.sets[i][w].Load()
+			if e == nil {
+				break
+			}
+			storeInSeriesCacheSet(&newT.sets[e.hash&newT.mask], e)
+		}
+	}
+	if c.table.CompareAndSwap(oldT, newT) {
+		return newT
+	}
+	return c.table.Load()
 }
 
 func (c *seriesCache) getOrCreateResource(rKey resourceKey, target *scrape.Target) pcommon.Resource {
