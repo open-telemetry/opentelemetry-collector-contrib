@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -100,6 +101,46 @@ func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
 	})
 
 	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", http.NoBody)
+	require.NoError(t, err)
+	_, err = client.Perform(req)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	var setupErr *connSetupTimeoutError
+	require.ErrorAs(t, err, &setupErr)
+	assert.Equal(t, int32(maxRetries+1), dials.Load())
+}
+
+func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
+	// The server accepts TCP and sends nothing, so the deadline fires during
+	// the TLS handshake, before GotConn.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	var mu sync.Mutex
+	var accepted []net.Conn
+	go func() {
+		for {
+			conn, aerr := ln.Accept()
+			if aerr != nil {
+				return
+			}
+			mu.Lock()
+			accepted = append(accepted, conn)
+			mu.Unlock()
+		}
+	}()
+	t.Cleanup(func() {
+		_ = ln.Close()
+		mu.Lock()
+		defer mu.Unlock()
+		for _, conn := range accepted {
+			_ = conn.Close()
+		}
+	})
+
+	endpoint := "https://" + ln.Addr().String()
+	const maxRetries = 1
+	client, dials := newRetryClient(t, endpoint, 50*time.Millisecond, (&net.Dialer{}).DialContext)
+
+	req, err := http.NewRequest(http.MethodPost, endpoint+"/_bulk", http.NoBody)
 	require.NoError(t, err)
 	_, err = client.Perform(req)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
