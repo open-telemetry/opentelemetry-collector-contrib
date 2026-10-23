@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -27,6 +28,7 @@ const (
 type Provider interface {
 	ClusterVersion() (string, error)
 	OIDCIssuer(ctx context.Context) (string, error)
+	ClusterARN(ctx context.Context, region, clusterName string) (string, error)
 	GetK8sInstanceMetadata(ctx context.Context) (InstanceMetadata, error)
 	GetInstanceMetadata(ctx context.Context) (InstanceMetadata, error)
 	SetRegionInstanceID(region, instanceID string)
@@ -36,10 +38,15 @@ type ec2Client interface {
 	DescribeInstances(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 }
 
+type eksClient interface {
+	DescribeCluster(ctx context.Context, params *eks.DescribeClusterInput, optFns ...func(*eks.Options)) (*eks.DescribeClusterOutput, error)
+}
+
 type metadataClient struct {
 	instanceMetadata InstanceMetadata
 	clientset        kubernetes.Interface
 	ec2Client        ec2Client
+	eksClient        eksClient
 	nodeName         string
 }
 
@@ -72,6 +79,7 @@ func NewProvider(cfg aws.Config, nodeName string) (Provider, error) {
 		nodeName:         nodeName,
 		clientset:        clientset,
 		ec2Client:        ec2.NewFromConfig(cfg),
+		eksClient:        eks.NewFromConfig(cfg),
 	}, nil
 }
 
@@ -95,6 +103,55 @@ func (c *metadataClient) OIDCIssuer(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to parse OIDC configuration: %w", err)
 	}
 	return oidcConfig.Issuer, nil
+}
+
+// ClusterARN returns the ARN EKS reports for the discovered cluster after
+// verifying that the cluster's OIDC issuer matches the issuer published by the
+// live Kubernetes API server.
+func (c *metadataClient) ClusterARN(ctx context.Context, region, clusterName string) (string, error) {
+	if clusterName == "" {
+		return "", errors.New("eks cluster name is empty")
+	}
+	if region == "" {
+		return "", errors.New("eks cluster region is empty")
+	}
+
+	liveIssuer, err := c.OIDCIssuer(ctx)
+	if err != nil {
+		return "", err
+	}
+	liveIssuer = normalizeIssuer(liveIssuer)
+	if liveIssuer == "" {
+		return "", errors.New("live EKS OIDC issuer is empty")
+	}
+
+	out, err := c.eksClient.DescribeCluster(ctx, &eks.DescribeClusterInput{
+		Name: aws.String(clusterName),
+	}, func(options *eks.Options) {
+		options.Region = region
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to describe EKS cluster: %w", err)
+	}
+	if out == nil || out.Cluster == nil {
+		return "", errors.New("eks DescribeCluster response has no cluster")
+	}
+	if out.Cluster.Identity == nil || out.Cluster.Identity.Oidc == nil {
+		return "", errors.New("eks cluster response has no OIDC issuer")
+	}
+	if normalizeIssuer(aws.ToString(out.Cluster.Identity.Oidc.Issuer)) != liveIssuer {
+		return "", errors.New("eks cluster OIDC issuer does not match the live cluster")
+	}
+
+	arn := aws.ToString(out.Cluster.Arn)
+	if arn == "" {
+		return "", errors.New("eks cluster response has no ARN")
+	}
+	return arn, nil
+}
+
+func normalizeIssuer(issuer string) string {
+	return strings.TrimRight(strings.TrimSpace(issuer), "/")
 }
 
 // GetK8sInstanceMetadata retrieves region, instanceID, and availabilityZone attributes from the K8s node's providerID.

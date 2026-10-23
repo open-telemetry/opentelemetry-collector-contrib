@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.1
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.336.1
+	github.com/aws/aws-sdk-go-v2/service/eks v1.103.0
 	github.com/hashicorp/consul/api v1.34.4
 	github.com/moby/moby/api v1.56.0
 	github.com/moby/moby/client v0.6.0

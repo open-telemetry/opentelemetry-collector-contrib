@@ -151,7 +151,7 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 	}
 	d.rb.SetHostName(hostname)
 
-	if d.ra.K8sClusterName.Enabled {
+	if d.ra.K8sClusterName.Enabled || d.ra.AwsEksClusterArn.Enabled {
 		d.apiProvider.SetRegionInstanceID(imdsMeta.Region, imdsMeta.InstanceID)
 		var apiMeta apiprovider.InstanceMetadata
 		if apiMeta, err = d.apiProvider.GetInstanceMetadata(ctx); err != nil {
@@ -162,6 +162,9 @@ func (d *detector) detectFromIMDS(ctx context.Context) (pcommon.Resource, string
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.rb.SetK8sClusterName(apiMeta.ClusterName)
+		if err := d.setClusterARN(ctx, imdsMeta.Region, apiMeta.ClusterName); err != nil {
+			return pcommon.NewResource(), "", err
+		}
 	}
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
@@ -194,8 +197,28 @@ func (d *detector) detectFromAPI(ctx context.Context) (pcommon.Resource, string,
 	d.rb.SetHostType(apiMeta.InstanceType)
 	d.rb.SetHostName(apiMeta.Hostname)
 	d.rb.SetK8sClusterName(apiMeta.ClusterName)
+	if err := d.setClusterARN(ctx, apiMeta.Region, apiMeta.ClusterName); err != nil {
+		return pcommon.NewResource(), "", err
+	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+func (d *detector) setClusterARN(ctx context.Context, region, clusterName string) error {
+	if !d.ra.AwsEksClusterArn.Enabled || clusterName == "" {
+		return nil
+	}
+
+	arn, err := d.apiProvider.ClusterARN(ctx, region, clusterName)
+	if err != nil {
+		if d.failOnMissingMetadata {
+			return fmt.Errorf("eks cluster ARN unavailable: %w", err)
+		}
+		d.logger.Debug("EKS cluster ARN unavailable", zap.Error(err))
+		return nil
+	}
+	d.rb.SetAwsEksClusterArn(arn)
+	return nil
 }
 
 func (d *detector) isEKS(ctx context.Context) (bool, error) {

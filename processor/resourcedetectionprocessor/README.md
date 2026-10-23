@@ -494,6 +494,35 @@ processors:
 Note: The kubernetes cluster name is only available when running on EC2 instances, and requires permission to run the `EC2:DescribeInstances` [action](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html).
 If you see an error with the message `context deadline exceeded`, please increase the timeout setting in your config.
 
+#### Cluster ARN
+
+To report the full EKS cluster identity, enable `aws.eks.cluster.arn`:
+
+```yaml
+processors:
+  resource_detection/eks:
+    detectors: [env, eks]
+    timeout: 15s
+    override: false
+    eks:
+      resource_attributes:
+        aws.eks.cluster.arn:
+          enabled: true
+```
+
+The detector reads the ARN from `eks:DescribeCluster` and reports it only when
+the returned OIDC issuer matches the issuer published by the live Kubernetes API
+server. This requires `eks:DescribeCluster`, the existing
+`ec2:DescribeInstances` access used to find the cluster name, and Kubernetes
+service-account access to `/.well-known/openid-configuration`, such as a binding
+to the built-in `system:service-account-issuer-discovery` ClusterRole. The OIDC
+and EKS calls share the detector's configured `timeout`; increase it if they
+cannot complete in time. A failed check leaves the ARN absent. With
+`fail_on_missing_metadata: true`, a failed OIDC, EC2, or EKS request, or an OIDC
+issuer mismatch, fails the whole detection. A missing cluster-name tag is the
+exception: it leaves the optional ARN absent even in strict mode. The attribute
+is disabled by default and adds no request when disabled.
+
 #### Node Name Env Variable
 When using the EC2 API and the Kubernetes API to retrieve resource attributes, the node name is needed. The node name is extracted from the env variable you define on the pod.
 The node name env variable that contains the node name value can be set using the `node_from_env_var` option:
