@@ -12,6 +12,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/microsoft/go-mssqldb/msdsn"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -21,8 +22,83 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
+
+type dbAuthTestHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h dbAuthTestHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+type dbAuthTestExtension struct {
+	component.Component
+	dbauth.Provider
+}
+
+func TestDBProviderStartReportsMissingProvider(t *testing.T) {
+	id := component.MustNewID("azure_auth")
+	provider := newDBProvider(&Config{DBAuth: configdbauth.ID(id)}, 1)
+	err := provider.start(dbAuthTestHost{extensions: map[component.ID]component.Component{}})
+	require.ErrorContains(t, err, `db_auth: requested credential provider is not present: "azure_auth"`)
+}
+
+func TestDBProviderStartResolvesProvider(t *testing.T) {
+	id := component.MustNewID("azure_auth")
+	extension := &dbAuthTestExtension{}
+	provider := newDBProvider(&Config{DBAuth: configdbauth.ID(id)}, 1)
+	err := provider.start(dbAuthTestHost{
+		extensions: map[component.ID]component.Component{id: extension},
+	})
+	require.NoError(t, err)
+	require.Same(t, dbauth.Provider(extension), provider.credentialProvider)
+}
+
+func TestGetDBConnectionStringWithDBAuth(t *testing.T) {
+	cfg := &Config{
+		DBAuth:   configdbauth.ID(component.MustNewID("azure_auth")),
+		Server:   "sql.example.database.windows.net",
+		Username: "user",
+		Password: "static-secret",
+		Port:     1433,
+	}
+
+	dsn := getDBConnectionString(cfg)
+	require.Equal(t, "server=sql.example.database.windows.net;user id=user;port=1433", dsn)
+	require.NotContains(t, dsn, "password=")
+	require.NotContains(t, dsn, "static-secret")
+}
+
+func TestHasFedAuth(t *testing.T) {
+	tests := []struct {
+		name     string
+		dsn      string
+		expected bool
+	}{
+		{
+			name:     "fedauth parameter selects Azure SQL driver",
+			dsn:      "server=sql.example.database.windows.net;fedauth=ActiveDirectoryManagedIdentity",
+			expected: true,
+		},
+		{
+			name:     "password containing fedauth text does not select Azure SQL driver",
+			dsn:      "server=sql.example.database.windows.net;user id=user;password=fedauth=ActiveDirectoryManagedIdentity",
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed, err := msdsn.Parse(tt.dsn)
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, hasFedAuth(parsed))
+		})
+	}
+}
 
 func TestFactory(t *testing.T) {
 	testCases := []struct {
