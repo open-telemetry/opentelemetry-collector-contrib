@@ -96,7 +96,8 @@ func (c *seriesCache) lookup(hash uint64, ls, externalLabels labels.Labels) *ser
 func (c *seriesCache) put(entry *seriesCacheEntry) {
 	set := &c.sets[entry.hash&seriesCacheMask]
 	for i := range seriesCacheWays {
-		if set[i].Load() == nil {
+		e := set[i].Load()
+		if e == nil || (e.hash == entry.hash && labels.Equal(e.ls, entry.ls) && labels.Equal(e.externalLabels, entry.externalLabels)) {
 			set[i].Store(entry)
 			return
 		}
