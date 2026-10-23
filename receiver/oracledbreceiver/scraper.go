@@ -562,16 +562,16 @@ func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []pr
 	var args []any
 
 	if s.useCDBProceduresView {
-		for i, hit := range hits {
+		for i := range hits {
 			base := i * 4
 			placeholders = append(placeholders, fmt.Sprintf("(:%d,:%d,:%d,:%d)", base+1, base+2, base+3, base+4))
-			args = append(args, hit.schemaName, hit.objectName, hit.procedureType, hit.conID)
+			args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID)
 		}
 	} else {
-		for i, hit := range hits {
+		for i := range hits {
 			base := i * 3
 			placeholders = append(placeholders, fmt.Sprintf("(:%d,:%d,:%d)", base+1, base+2, base+3))
-			args = append(args, hit.schemaName, hit.objectName, hit.procedureType)
+			args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType)
 		}
 	}
 
@@ -2296,7 +2296,6 @@ type procedureMetricCacheHit struct {
 	conID          string
 	firstLoadTime  string
 	lastActiveTime string
-	definition     string
 	metrics        map[string]int64
 }
 

@@ -93,30 +93,51 @@ func newProcedureMetricsScraperWithSeeds(t *testing.T, dbclientFn clientProvider
 
 func procedureMetricsDbClientFn(t *testing.T) clientProviderFunc {
 	t.Helper()
-	return func(*sql.DB, string, *zap.Logger) dbClient {
-		var rows []metricRow
-		require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &rows))
-		return &fakeDbClient{Responses: [][]metricRow{rows}}
+	var metricsRows []metricRow
+	require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &metricsRows))
+	sourceRows := []metricRow{procedureSourceRow("")}
+	return func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Responses: [][]metricRow{sourceRows}}
+		}
+		return &fakeDbClient{Responses: [][]metricRow{metricsRows}}
 	}
 }
 
 func procedureRow(service string, overrides map[string]string) metricRow {
 	row := metricRow{
-		"SCHEMA_NAME": "ADMIN", "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
+		"SCHEMA_NAME": "ADMIN", "OBJECT_NAME": "MY_PROCEDURE", "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
 		"PROCEDURE_TYPE": "PROCEDURE", "PROGRAM_ID": "98765",
 		"DB_NAMESPACE": "ORCLPDB1", "SERVICE": service,
 		"EXECUTIONS": "300413", "CPU_TIME": "39736887", "ELAPSED_TIME": "99172810",
 		"BUFFER_GETS": "3997614", "DISK_READS": "15", "DIRECT_WRITES": "10",
 		"ROWS_PROCESSED": "399856", "PHYSICAL_READ_BYTES": "400", "PHYSICAL_WRITE_BYTES": "18",
 		"FIRST_LOAD_TIME": "2025-12-31T23:00:00Z", "LAST_ACTIVE_TIME": "2026-01-01T12:00:00Z",
-		"DEFINITION": "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;",
 	}
 	maps.Copy(row, overrides)
 	return row
 }
 
-func staticProcedureRowsFn(rows []metricRow) clientProviderFunc {
-	return func(*sql.DB, string, *zap.Logger) dbClient {
+// procedureSourceRow returns a DBA_SOURCE row for the default test procedure.
+func procedureSourceRow(textOverride string) metricRow {
+	text := "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
+	if textOverride != "" {
+		text = textOverride
+	}
+	return metricRow{
+		"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": text,
+	}
+}
+
+func staticProcedureRowsFn(rows []metricRow, srcRows ...[]metricRow) clientProviderFunc {
+	var source []metricRow
+	if len(srcRows) > 0 {
+		source = srcRows[0]
+	}
+	return func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Responses: [][]metricRow{source}}
+		}
 		return &fakeDbClient{Responses: [][]metricRow{rows}}
 	}
 }
@@ -492,9 +513,8 @@ func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
 }
 
 func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
-	row := maps.Clone(procedureRow("ORCLPDB1", nil))
-	row["DEFINITION"] = ""
-	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{row}), procedureCacheValue)
+	// Pass empty source rows so fetchProcedureDefinitions returns no results → empty definition.
+	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, []metricRow{}), procedureCacheValue)
 	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
 	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
 
