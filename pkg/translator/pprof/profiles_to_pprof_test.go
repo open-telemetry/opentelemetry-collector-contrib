@@ -178,6 +178,111 @@ func TestSampleValueTimestampShapes(t *testing.T) {
 	})
 }
 
+func TestConvertPprofileToPprofReferenceHandling(t *testing.T) {
+	tests := []struct {
+		name            string
+		mutate          func(*pprofile.Profiles)
+		field           string
+		usedByConverter bool
+	}{
+		{"sample type string", func(p *pprofile.Profiles) {
+			profileAt(p).SampleType().SetTypeStrindex(3)
+		}, "sample_type.type_strindex", true},
+		{"empty string table", func(p *pprofile.Profiles) {
+			p.Dictionary().StringTable().RemoveIf(func(string) bool { return true })
+		}, "out of range", true},
+		{"period type string", func(p *pprofile.Profiles) {
+			profileAt(p).PeriodType().SetUnitStrindex(3)
+		}, "period_type.unit_strindex", true},
+		{"mapping filename", func(p *pprofile.Profiles) {
+			p.Dictionary().MappingTable().AppendEmpty().SetFilenameStrindex(3)
+		}, "filename_strindex", true},
+		{"function name", func(p *pprofile.Profiles) {
+			p.Dictionary().FunctionTable().At(1).SetNameStrindex(3)
+		}, "name_strindex", true},
+		{"sample stack", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).SetStackIndex(3)
+		}, "stack_index", true},
+		{"negative sample stack", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).SetStackIndex(-1)
+		}, "stack_index", true},
+		{"stack location", func(p *pprofile.Profiles) {
+			p.Dictionary().StackTable().At(1).LocationIndices().SetAt(0, 3)
+		}, "location_indices", true},
+		{"location mapping", func(p *pprofile.Profiles) {
+			p.Dictionary().LocationTable().At(1).SetMappingIndex(3)
+		}, "mapping_index", true},
+		{"line function", func(p *pprofile.Profiles) {
+			p.Dictionary().LocationTable().At(1).Lines().At(0).SetFunctionIndex(3)
+		}, "function_index", true},
+		{"attribute key string", func(p *pprofile.Profiles) {
+			p.Dictionary().AttributeTable().AppendEmpty().SetKeyStrindex(3)
+		}, "key_strindex", true},
+		{"attribute unit string", func(p *pprofile.Profiles) {
+			attr := p.Dictionary().AttributeTable().AppendEmpty()
+			attr.SetKeyStrindex(1)
+			attr.SetUnitStrindex(3)
+			attr.Value().SetInt(7)
+			profileAt(p).Samples().At(0).AttributeIndices().Append(1)
+		}, "unit_strindex", true},
+		{"mapping attribute", func(p *pprofile.Profiles) {
+			p.Dictionary().MappingTable().AppendEmpty().AttributeIndices().Append(1)
+		}, "attribute_indices", true},
+		{"location attribute", func(p *pprofile.Profiles) {
+			p.Dictionary().LocationTable().At(1).AttributeIndices().Append(1)
+		}, "attribute_indices", true},
+		{"profile attribute", func(p *pprofile.Profiles) {
+			profileAt(p).AttributeIndices().Append(1)
+		}, "attribute_indices", false},
+		{"sample attribute", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).AttributeIndices().Append(3)
+		}, "attribute_indices", true},
+		{"link index", func(p *pprofile.Profiles) {
+			profileAt(p).Samples().At(0).SetLinkIndex(1)
+		}, "link_index", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			profiles := buildMinimalProfiles(t, []int64{1}, nil)
+			tt.mutate(profiles)
+
+			requireProfilesConformanceError(t, profiles)
+
+			var err error
+			require.NotPanics(t, func() {
+				_, err = ConvertPprofileToPprof(profiles)
+			})
+			if tt.usedByConverter {
+				require.ErrorContains(t, err, tt.field)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+// requireProfilesConformanceError uses the Profiling SIG checker in tests to
+// verify invalid fixtures without running a full conformance scan in the
+// production conversion path.
+func requireProfilesConformanceError(t *testing.T, profiles *pprofile.Profiles) {
+	t.Helper()
+
+	b, err := (&pprofile.ProtoMarshaler{}).MarshalProfiles(*profiles)
+	require.NoError(t, err)
+	data := &otlpprofiles.ProfilesData{}
+	require.NoError(t, proto.Unmarshal(b, data))
+	checker := profcheck.ConformanceChecker{
+		CheckSampleTimestampShape: true,
+		CheckDictionaryDuplicates: true,
+	}
+	require.Error(t, checker.Check(data))
+}
+
+func profileAt(profiles *pprofile.Profiles) pprofile.Profile {
+	return profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+}
+
 func TestSampleLabelsWithMultipleProfiles(t *testing.T) {
 	t.Run("string labels from multiple profiles merged", func(t *testing.T) {
 		attributes := []*otlpprofiles.KeyValueAndUnit{
