@@ -133,7 +133,6 @@ func TestExtractYANGFromFiles_DuplicateModuleWarningAndLastWriteWins(t *testing.
 	assert.Equal(t, "colliding-module", context["module"])
 	assert.Equal(t, file1, context["previous_path"])
 	assert.Equal(t, file2, context["new_path"])
-	assert.Equal(t, file2, context["winner"])
 
 	// Assert last-write-wins
 	assert.Equal(t, "key-v2", parser.GetKeyForPath("colliding-module", "/entry"))
@@ -164,7 +163,6 @@ func TestExtractYANGFromFiles_RecursiveDirectoryTraversal(t *testing.T) {
 	assert.Equal(t, "colliding-module", context["module"])
 	assert.Equal(t, file1, context["previous_path"])
 	assert.Equal(t, file2, context["new_path"])
-	assert.Equal(t, file2, context["winner"])
 	assert.Equal(t, file2, parser.GetModuleSource("colliding-module"))
 }
 
@@ -200,7 +198,6 @@ module Cisco-IOS-XE-interfaces-oper {
 	assert.Equal(t, "Cisco-IOS-XE-interfaces-oper", context["module"])
 	assert.Equal(t, "<builtin>", context["previous_path"])
 	assert.Equal(t, customFile, context["new_path"])
-	assert.Equal(t, customFile, context["winner"])
 
 	assert.Equal(t, "custom-key", parser.GetKeyForPath("Cisco-IOS-XE-interfaces-oper", "/interface"))
 	assert.Equal(t, customFile, parser.GetModuleSource("Cisco-IOS-XE-interfaces-oper"))
@@ -226,7 +223,6 @@ func TestExtractYANGFromFiles_IdenticalPathLoadedTwice(t *testing.T) {
 	assert.Equal(t, "test-module-a", context["module"])
 	assert.Equal(t, filePath, context["previous_path"])
 	assert.Equal(t, filePath, context["new_path"])
-	assert.Equal(t, filePath, context["winner"])
 }
 
 func TestExtractYANGFromFiles_MalformedAndNonExistent(t *testing.T) {
@@ -253,18 +249,11 @@ func TestExtractYANGFromFiles_MalformedAndNonExistent(t *testing.T) {
 
 func TestNewYANGParser(t *testing.T) {
 	logger := zap.NewNop()
-	p1 := NewYANGParser(logger)
-	require.NotNil(t, p1)
-	assert.NotNil(t, p1.modules)
-	assert.NotNil(t, p1.moduleSources)
-	assert.Equal(t, logger, p1.logger)
-
-	// Nil logger falls back to nop without panic
-	p2 := NewYANGParser(nil)
-	require.NotNil(t, p2)
-	assert.NotNil(t, p2.modules)
-	assert.NotNil(t, p2.moduleSources)
-	assert.NotNil(t, p2.logger)
+	p := NewYANGParser(logger)
+	require.NotNil(t, p)
+	assert.NotNil(t, p.modules)
+	assert.NotNil(t, p.moduleSources)
+	assert.Equal(t, logger, p.logger)
 }
 
 func TestExtractYANGFromFiles_MultipleConfiguredPaths(t *testing.T) {
@@ -290,7 +279,6 @@ func TestExtractYANGFromFiles_MultipleConfiguredPaths(t *testing.T) {
 	assert.Equal(t, "colliding-module", context["module"])
 	assert.Equal(t, file1, context["previous_path"])
 	assert.Equal(t, file2, context["new_path"])
-	assert.Equal(t, file2, context["winner"])
 	assert.Equal(t, "key-v2", parser.GetKeyForPath("colliding-module", "/entry"))
 }
 

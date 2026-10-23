@@ -51,9 +51,6 @@ type YANGParser struct {
 
 // NewYANGParser creates a new YANG parser instance
 func NewYANGParser(logger *zap.Logger) *YANGParser {
-	if logger == nil {
-		logger = zap.NewNop()
-	}
 	return &YANGParser{
 		modules:       make(map[string]*YANGModule),
 		moduleSources: make(map[string]string),
@@ -500,7 +497,6 @@ func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
 					zap.String("module", module.Name),
 					zap.String("previous_path", prevPath),
 					zap.String("new_path", path),
-					zap.String("winner", path),
 				)
 			}
 			p.modules[module.Name] = module

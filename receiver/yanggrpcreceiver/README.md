@@ -111,8 +111,8 @@ When `module_paths` is configured:
 * **Recursive scanning**: Each configured directory path is scanned recursively for files ending in `.yang`.
 * **Keyed by module name**: Parsed modules are stored in a map keyed strictly by the YANG module name.
 * **Last-write-wins collision resolution**: If duplicate definitions with the same module name are encountered across configured paths or nested directories, the last loaded module definition replaces any previously loaded definition.
-* **Collision warning**: When a duplicate module is detected during loading, the receiver logs a warning containing the module name, the previously loaded source path, the new source path, and the winning file. If identical files or directories are scanned multiple times, each encounter redefines the module and logs a warning.
-* **No multi-release disambiguation**: Loading schemas from multiple device platform releases concurrently does not provide release-aware or stream-aware lookup, as lookup APIs resolve globally by module name.
+* **Collision warning**: When a duplicate module is detected during loading, the receiver logs a warning containing the module name, the previously loaded source path, and the new source path. If identical files or directories are scanned multiple times, each encounter redefines the module and logs a warning.
+* **Single active schema per module**: Because schemas are resolved globally by module name, different versions of the same module cannot be used simultaneously for different devices.
 
 ### Security Hardening Settings (`security`)
 
