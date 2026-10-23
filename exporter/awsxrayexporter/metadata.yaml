@@ -19,7 +19,7 @@ feature_gates:
     description: "X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "
     stage: beta
     from_version: v0.97.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31732
 
 tests:
   config:
