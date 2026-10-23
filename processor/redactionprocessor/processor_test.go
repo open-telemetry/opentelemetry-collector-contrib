@@ -5,6 +5,7 @@ package redactionprocessor
 
 import (
 	"context"
+	"crypto/sha3"
 	"errors"
 	"fmt"
 	"sort"
@@ -1827,6 +1828,73 @@ func TestLogBodyMaskBlockedKeyPatterns(t *testing.T) {
 	val, found = outLogAttrs.Get(redactionBodyMaskedCount)
 	require.True(t, found)
 	assert.Equal(t, int64(2), val.Int())
+}
+
+// TestBlockedKeyPatternMasksMultilineValueWhole validates that a value whose key
+// matches blocked_key_patterns is replaced once, including when it spans lines.
+// A blank line is included because ".*" matches the empty string, so the old
+// pattern inserted an extra mask there as well as one per line.
+func TestBlockedKeyPatternMasksMultilineValueWhole(t *testing.T) {
+	const multiline = "-----BEGIN PRIVATE KEY-----\nsecret\n\n-----END PRIVATE KEY-----"
+
+	t.Run("attributes", func(t *testing.T) {
+		processor := newMultilineMaskProcessor(t, None)
+		attrs := pcommon.NewMap()
+		attrs.PutStr("private_key", multiline)
+		attrs.PutStr("name", "kept")
+		processor.processAttrs(t.Context(), attrs)
+
+		val, found := attrs.Get("private_key")
+		require.True(t, found)
+		assert.Equal(t, "****", val.Str())
+		name, found := attrs.Get("name")
+		require.True(t, found)
+		assert.Equal(t, "kept", name.Str())
+	})
+
+	t.Run("log body", func(t *testing.T) {
+		processor := newMultilineMaskProcessor(t, None)
+		body := pcommon.NewValueMap()
+		body.Map().PutStr("private_key", multiline)
+		nested := body.Map().PutEmptyMap("nested")
+		nested.PutStr("private_key", multiline)
+		nested.PutStr("id", "user123")
+		processor.processLogBody(t.Context(), body, pcommon.NewMap())
+
+		masked, ok := body.Map().Get("private_key")
+		require.True(t, ok)
+		assert.Equal(t, "****", masked.Str())
+		nestedVal, ok := body.Map().Get("nested")
+		require.True(t, ok)
+		masked, ok = nestedVal.Map().Get("private_key")
+		require.True(t, ok)
+		assert.Equal(t, "****", masked.Str())
+		id, ok := nestedVal.Map().Get("id")
+		require.True(t, ok)
+		assert.Equal(t, "user123", id.Str())
+	})
+
+	t.Run("hash", func(t *testing.T) {
+		processor := newMultilineMaskProcessor(t, SHA3)
+		attrs := pcommon.NewMap()
+		attrs.PutStr("private_key", multiline)
+		processor.processAttrs(t.Context(), attrs)
+
+		val, found := attrs.Get("private_key")
+		require.True(t, found)
+		assert.Equal(t, hashString(multiline, sha3.New256()), val.Str())
+	})
+}
+
+func newMultilineMaskProcessor(t *testing.T, hash HashFunction) *redaction {
+	t.Helper()
+	processor, err := newRedaction(t.Context(), &Config{
+		AllowAllKeys:       true,
+		BlockedKeyPatterns: []string{".*private_key.*"},
+		HashFunction:       hash,
+	}, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	return processor
 }
 
 // runTest transforms the test input data and passes it through the processor
