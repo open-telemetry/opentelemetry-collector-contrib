@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -769,6 +770,33 @@ func Test_consumer_err(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
+
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, map[string]any{"text": "Server is busy", "code": float64(9)}, body)
+}
+
+func Test_consumer_err_permanent(t *testing.T) {
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMsg(currentTime, 5)
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	assert.NoError(t, err)
+	rcv.logsConsumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("poison batch")))
+
+	w := httptest.NewRecorder()
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
+	rcv.handleReq(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+	respBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
 	var bodyStr string
 	assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
 
@@ -797,11 +825,34 @@ func Test_consumer_err_metrics(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
-	var bodyStr string
-	assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
 
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	assert.Equal(t, "Internal Server Error", bodyStr)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, map[string]any{"text": "Server is busy", "code": float64(9)}, body)
+}
+
+func Test_consumer_err_raw(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.ServerConfig.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
+	assert.NoError(t, err)
+	rcv.logsConsumer = consumertest.NewErr(errors.New("bad consumer"))
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", strings.NewReader("raw log line"))
+	rcv.handleRawReq(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+	respBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal(respBytes, &body))
+
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, map[string]any{"text": "Server is busy", "code": float64(9)}, body)
 }
 
 func Test_splunkhecReceiver_TLS(t *testing.T) {

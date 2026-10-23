@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -45,6 +46,7 @@ const (
 	responseErrGzipReader             = `"Error on gzip body"`
 	responseErrUnmarshalBody          = `"Failed to unmarshal message body"`
 	responseErrInternalServerError    = `"Internal Server Error"`
+	responseServerBusy                = `{"text":"Server is busy","code":9}`
 	responseErrUnsupportedMetricEvent = `"Unsupported metric event"`
 	responseErrUnsupportedLogEvent    = `"Unsupported log event"`
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
@@ -74,6 +76,7 @@ var (
 	errGzipReaderRespBody         = []byte(responseErrGzipReader)
 	errUnmarshalBodyRespBody      = []byte(responseErrUnmarshalBody)
 	errInternalServerError        = []byte(responseErrInternalServerError)
+	serverBusyRespBody            = []byte(responseServerBusy)
 	errUnsupportedMetricEvent     = []byte(responseErrUnsupportedMetricEvent)
 	errUnsupportedLogEvent        = []byte(responseErrUnsupportedLogEvent)
 	noDataRespBody                = []byte(responseNoData)
@@ -315,7 +318,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, consumerErr)
+		r.failConsumerError(resp, consumerErr)
 	} else {
 		var ackErr error
 		if channelID != "" && r.ackExt != nil {
@@ -555,7 +558,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
 		if decodeErr != nil {
-			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
+			r.failConsumerError(resp, decodeErr)
 			return
 		}
 	}
@@ -566,7 +569,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
 		if decodeErr != nil {
-			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
+			r.failConsumerError(resp, decodeErr)
 			return
 		}
 	}
@@ -620,6 +623,16 @@ func (r *splunkReceiver) failRequest(
 			zap.Error(err), // It handles nil error
 		)
 	}
+}
+
+// failConsumerError maps a permanent consumer error to 500, and a transient one
+// to 503 "Server is busy" (Splunk code 9) so the client retries with backoff.
+func (r *splunkReceiver) failConsumerError(resp http.ResponseWriter, err error) {
+	if consumererror.IsPermanent(err) {
+		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
+		return
+	}
+	r.failRequest(resp, http.StatusServiceUnavailable, serverBusyRespBody, err)
 }
 
 func (*splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
