@@ -369,6 +369,8 @@ FROM (
 	// Procedure metrics columns
 	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
 	definitionAttr      = "DEFINITION"
+	innerObjectNameAttr = "OBJECT_NAME"
+	conIDAttr           = "CON_ID"
 )
 
 var (
@@ -390,6 +392,10 @@ var (
 	oracleProcedureMetricsSQL string
 	//go:embed templates/oracleProcedureMetricsCDBSql.tmpl
 	oracleProcedureMetricsCDBSQL string
+	//go:embed templates/oracleProcedureSourceSql.tmpl
+	oracleProcedureSourceSQL string
+	//go:embed templates/oracleProcedureSourceCDBSql.tmpl
+	oracleProcedureSourceCDBSQL string
 )
 
 // sgaComponentNames maps V$SGAINFO.NAME values to the snake_case enum keys
@@ -542,6 +548,63 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 		return oracleProcedureMetricsCDBSQL
 	}
 	return oracleProcedureMetricsSQL
+}
+
+// fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
+// IN-clause query (one DB roundtrip) and concatenates per-procedure in Go.
+// Key format: "owner|name|type|conID" — conID is empty string for PDB connections.
+func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[string]string, error) {
+	if len(hits) == 0 {
+		return nil, nil
+	}
+
+	var placeholders []string
+	var args []any
+
+	if s.useCDBProceduresView {
+		for i, hit := range hits {
+			base := i * 4
+			placeholders = append(placeholders, fmt.Sprintf("(:%d,:%d,:%d,:%d)", base+1, base+2, base+3, base+4))
+			args = append(args, hit.schemaName, hit.objectName, hit.procedureType, hit.conID)
+		}
+	} else {
+		for i, hit := range hits {
+			base := i * 3
+			placeholders = append(placeholders, fmt.Sprintf("(:%d,:%d,:%d)", base+1, base+2, base+3))
+			args = append(args, hit.schemaName, hit.objectName, hit.procedureType)
+		}
+	}
+
+	tmpl := oracleProcedureSourceSQL
+	if s.useCDBProceduresView {
+		tmpl = oracleProcedureSourceCDBSQL
+	}
+	sqlQuery := fmt.Sprintf(tmpl, strings.Join(placeholders, ","))
+
+	sourceRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	builders := make(map[string]*strings.Builder, len(hits))
+	for _, row := range sourceRows {
+		owner := row["OWNER"]
+		name := row["NAME"]
+		objType := row["TYPE"]
+		conID := row["CON_ID"] // empty string for PDB rows
+		text := row["TEXT"]
+		key := owner + "|" + name + "|" + objType + "|" + conID
+		if builders[key] == nil {
+			builders[key] = &strings.Builder{}
+		}
+		builders[key].WriteString(text)
+	}
+
+	result := make(map[string]string, len(builders))
+	for k, v := range builders {
+		result[k] = v.String()
+	}
+	return result, nil
 }
 
 func (s *oracleScraper) buildTopQuerySQL() string {
@@ -2224,11 +2287,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 
 type procedureMetricCacheHit struct {
 	schemaName     string
+	objectName     string
 	procedureName  string
 	procedureType  string
 	programID      int64
 	dbNamespace    string
 	service        string
+	conID          string
 	firstLoadTime  string
 	lastActiveTime string
 	definition     string
@@ -2286,13 +2351,14 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 		if oldCacheVal, ok := s.procedureMetricCache.Get(cacheKey); ok {
 			hit := procedureMetricCacheHit{
 				schemaName:     row[schemaNameAttr],
+				objectName:     row[innerObjectNameAttr],
 				procedureName:  row[objectNameAttr],
 				procedureType:  row[objectTypeAttr],
 				dbNamespace:    row[dbNamespaceAttr],
 				service:        row[serviceAttr],
+				conID:          row[conIDAttr],
 				firstLoadTime:  row[firstLoadTimeAttr],
 				lastActiveTime: row[lastActiveTimeAttr],
-				definition:     row[definitionAttr],
 				metrics:        make(map[string]int64, len(metricNames)),
 			}
 			if row[objectIDAttr] != "" {
@@ -2347,6 +2413,16 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	maxHitsSize := min(len(hits), int(s.procedureMetricsCfg.TopProcedureCount))
 	hits = hits[:maxHitsSize]
 
+	// Fetch all procedure definitions in one query if the event is enabled.
+	var definitions map[string]string
+	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+		var defErr error
+		definitions, defErr = s.fetchProcedureDefinitions(ctx, hits)
+		if defErr != nil {
+			errs = append(errs, fmt.Errorf("failed to fetch procedure definitions: %w", defErr))
+		}
+	}
+
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for i := range hits {
@@ -2375,13 +2451,14 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.lastActiveTime)
 
 		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+			key := hit.schemaName + "|" + hit.objectName + "|" + hit.procedureType + "|" + hit.conID
 			s.lb.RecordDbServerProcedureDefinitionEvent(context.Background(),
 				pcommon.NewTimestampFromTime(collectionTime),
 				dbSystemNameVal,
 				hit.dbNamespace,
 				hit.programID,
 				hit.procedureName,
-				hit.definition)
+				definitions[key])
 		}
 	}
 
