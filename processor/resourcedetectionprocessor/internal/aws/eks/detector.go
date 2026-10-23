@@ -83,7 +83,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	}
 
 	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName)
+	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName, cfg.APIConfig)
 	if err != nil {
 		return nil, err
 	}

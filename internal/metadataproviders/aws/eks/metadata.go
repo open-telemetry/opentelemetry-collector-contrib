@@ -57,8 +57,8 @@ type InstanceMetadata struct {
 
 var _ Provider = (*metadataClient)(nil)
 
-func NewProvider(cfg aws.Config, nodeName string) (Provider, error) {
-	conf, err := k8sconfig.CreateRestConfig(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount})
+func NewProvider(cfg aws.Config, nodeName string, apiConf k8sconfig.APIConfig) (Provider, error) {
+	conf, err := k8sconfig.CreateRestConfig(apiConf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize provider. Could not load cluster config: %w", err)
 	}
