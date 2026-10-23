@@ -42,7 +42,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
 	}
-	cache, err := lru.NewWithEvict(1000, func(uint64, pmetric.ResourceMetrics) {
+	cache, err := lru.NewWithEvict(cfg.ResourceCacheSize, func(uint64, pmetric.ResourceMetrics) {
 		// The cache does not carry a request context, and evictions are counted
 		// regardless of which request triggered them.
 		telemetryBuilder.ReceiverPrometheusremotewriteResourceCacheEvictions.Add(context.Background(), 1)
