@@ -8,12 +8,12 @@ require (
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.69.1-0.20261022201525-42ee5d39b18f
-	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/config/configopaque v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/config/configtls v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/confmap v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/extension v1.69.1-0.20261022201525-42ee5d39b18f
-	go.opentelemetry.io/collector/extension/extensiontest v0.163.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/extension/extensiontest v0.163.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/pdata v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
@@ -42,7 +42,7 @@ require (
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.69.1-0.20261022201525-42ee5d39b18f // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.163.1-0.20261015205720-932ee30af2c0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.163.1-0.20261022201525-42ee5d39b18f // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
