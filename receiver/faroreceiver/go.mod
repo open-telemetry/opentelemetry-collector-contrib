@@ -18,7 +18,7 @@ require (
 require go.opentelemetry.io/collector/extension/extensionauth v1.69.1-0.20261022201525-42ee5d39b18f // indirect
 
 require (
-	github.com/Microsoft/go-winio v0.6.3 // indirect
+	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect

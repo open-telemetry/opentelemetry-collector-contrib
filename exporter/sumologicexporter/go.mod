@@ -31,7 +31,7 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.6.3 // indirect
+	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v7 v7.0.1 // indirect

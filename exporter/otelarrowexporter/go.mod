@@ -41,7 +41,7 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.2.0 // indirect
-	github.com/Microsoft/go-winio v0.6.3 // indirect
+	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/apache/arrow-go/v18 v18.6.0 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
 	github.com/cenkalti/backoff/v7 v7.0.1 // indirect

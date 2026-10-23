@@ -45,7 +45,7 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.6.3 // indirect
+	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/elastic/lunes v0.2.2 // indirect
 	github.com/expr-lang/expr v1.17.8 // indirect
