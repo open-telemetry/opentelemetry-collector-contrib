@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableRows.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableAverageRowLength.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableSize.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUsage.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUtilization.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlClientNetworkIo.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
@@ -1488,7 +1488,7 @@ func (c *mockClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
 		s.schema = text[0]
 		s.table = text[1]
 		s.column = text[2]
-		s.usageRatio, _ = strconv.ParseFloat(text[3], 64)
+		s.utilizationRatio, _ = strconv.ParseFloat(text[3], 64)
 
 		stats = append(stats, s)
 	}
@@ -2785,7 +2785,7 @@ type queryGuardGroup struct {
 var queryGuardGroups = []queryGuardGroup{
 	{
 		name:      "autoIncrementStats",
-		fields:    []string{"MysqlTableAutoIncrementUsage"},
+		fields:    []string{"MysqlTableAutoIncrementUtilization"},
 		guard:     (*mySQLScraper).autoIncrementStatsMetricsEnabled,
 		callCount: func(c *mockClient) int { return c.autoIncrementStatsCallCount },
 	},

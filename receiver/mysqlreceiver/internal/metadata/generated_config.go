@@ -1982,25 +1982,25 @@ func (ms *MysqlStatementEventWaitTimeMetricConfig) Validate() error {
 	return nil
 }
 
-// MysqlTableAutoIncrementUsageMetricAttributeKey specifies the key of an attribute for the mysql.table.auto_increment.usage metric.
-type MysqlTableAutoIncrementUsageMetricAttributeKey string
+// MysqlTableAutoIncrementUtilizationMetricAttributeKey specifies the key of an attribute for the mysql.table.auto_increment.utilization metric.
+type MysqlTableAutoIncrementUtilizationMetricAttributeKey string
 
 const (
-	MysqlTableAutoIncrementUsageMetricAttributeKeyTableName  MysqlTableAutoIncrementUsageMetricAttributeKey = "table"
-	MysqlTableAutoIncrementUsageMetricAttributeKeySchema     MysqlTableAutoIncrementUsageMetricAttributeKey = "schema"
-	MysqlTableAutoIncrementUsageMetricAttributeKeyColumnName MysqlTableAutoIncrementUsageMetricAttributeKey = "column_name"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName       MysqlTableAutoIncrementUtilizationMetricAttributeKey = "table"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema          MysqlTableAutoIncrementUtilizationMetricAttributeKey = "schema"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName MysqlTableAutoIncrementUtilizationMetricAttributeKey = "mysql.column.name"
 )
 
-// MysqlTableAutoIncrementUsageMetricConfig provides config for the mysql.table.auto_increment.usage metric.
-type MysqlTableAutoIncrementUsageMetricConfig struct {
+// MysqlTableAutoIncrementUtilizationMetricConfig provides config for the mysql.table.auto_increment.utilization metric.
+type MysqlTableAutoIncrementUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []MysqlTableAutoIncrementUsageMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableAutoIncrementUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MysqlTableAutoIncrementUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MysqlTableAutoIncrementUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2014,12 +2014,12 @@ func (ms *MysqlTableAutoIncrementUsageMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *MysqlTableAutoIncrementUsageMetricConfig) Validate() error {
+func (ms *MysqlTableAutoIncrementUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case MysqlTableAutoIncrementUsageMetricAttributeKeyTableName, MysqlTableAutoIncrementUsageMetricAttributeKeySchema, MysqlTableAutoIncrementUsageMetricAttributeKeyColumnName:
+		case MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName:
 		default:
-			return fmt.Errorf("metric mysql.table.auto_increment.usage doesn't have an attribute %v, valid attributes: [table, schema, column_name]", val)
+			return fmt.Errorf("metric mysql.table.auto_increment.utilization doesn't have an attribute %v, valid attributes: [table, schema, mysql.column.name]", val)
 		}
 	}
 
@@ -2742,7 +2742,7 @@ type MetricsConfig struct {
 	MysqlSorts                              MysqlSortsMetricConfig                              `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount                MysqlStatementEventCountMetricConfig                `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime             MysqlStatementEventWaitTimeMetricConfig             `mapstructure:"mysql.statement_event.wait.time"`
-	MysqlTableAutoIncrementUsage            MysqlTableAutoIncrementUsageMetricConfig            `mapstructure:"mysql.table.auto_increment.usage"`
+	MysqlTableAutoIncrementUtilization      MysqlTableAutoIncrementUtilizationMetricConfig      `mapstructure:"mysql.table.auto_increment.utilization"`
 	MysqlTableAverageRowLength              MysqlTableAverageRowLengthMetricConfig              `mapstructure:"mysql.table.average_row_length"`
 	MysqlTableIoWaitCount                   MysqlTableIoWaitCountMetricConfig                   `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime                    MysqlTableIoWaitTimeMetricConfig                    `mapstructure:"mysql.table.io.wait.time"`
@@ -2990,10 +2990,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlStatementEventWaitTimeMetricAttributeKey{MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText},
 		},
-		MysqlTableAutoIncrementUsage: MysqlTableAutoIncrementUsageMetricConfig{
+		MysqlTableAutoIncrementUtilization: MysqlTableAutoIncrementUtilizationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []MysqlTableAutoIncrementUsageMetricAttributeKey{MysqlTableAutoIncrementUsageMetricAttributeKeyTableName, MysqlTableAutoIncrementUsageMetricAttributeKeySchema, MysqlTableAutoIncrementUsageMetricAttributeKeyColumnName},
+			EnabledAttributes:   []MysqlTableAutoIncrementUtilizationMetricAttributeKey{MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName},
 		},
 		MysqlTableAverageRowLength: MysqlTableAverageRowLengthMetricConfig{
 			Enabled:             false,

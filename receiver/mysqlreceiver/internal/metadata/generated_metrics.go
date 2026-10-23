@@ -1385,9 +1385,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.statement_event.wait.time",
 		Attributes: []string{"schema", "digest", "digest_text"},
 	},
-	MysqlTableAutoIncrementUsage: metricInfo{
-		Name:       "mysql.table.auto_increment.usage",
-		Attributes: []string{"table_name", "schema", "column_name"},
+	MysqlTableAutoIncrementUtilization: metricInfo{
+		Name:       "mysql.table.auto_increment.utilization",
+		Attributes: []string{"table_name", "schema", "mysql.column.name"},
 	},
 	MysqlTableAverageRowLength: metricInfo{
 		Name:       "mysql.table.average_row_length",
@@ -1505,7 +1505,7 @@ type metricsInfo struct {
 	MysqlSorts                              metricInfo
 	MysqlStatementEventCount                metricInfo
 	MysqlStatementEventWaitTime             metricInfo
-	MysqlTableAutoIncrementUsage            metricInfo
+	MysqlTableAutoIncrementUtilization      metricInfo
 	MysqlTableAverageRowLength              metricInfo
 	MysqlTableIoWaitCount                   metricInfo
 	MysqlTableIoWaitTime                    metricInfo
@@ -5674,17 +5674,17 @@ func newMetricMysqlStatementEventWaitTime(cfg MysqlStatementEventWaitTimeMetricC
 	return m
 }
 
-type metricMysqlTableAutoIncrementUsage struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        MysqlTableAutoIncrementUsageMetricConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
-	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
+type metricMysqlTableAutoIncrementUtilization struct {
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        MysqlTableAutoIncrementUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
-// init fills mysql.table.auto_increment.usage metric with initial data.
-func (m *metricMysqlTableAutoIncrementUsage) init() {
-	m.data.SetName("mysql.table.auto_increment.usage")
+// init fills mysql.table.auto_increment.utilization metric with initial data.
+func (m *metricMysqlTableAutoIncrementUtilization) init() {
+	m.data.SetName("mysql.table.auto_increment.utilization")
 	m.data.SetDescription("The percentage of the auto_increment column's integer range currently in use for a given table.")
 	m.data.SetUnit("%")
 	m.data.SetEmptyGauge()
@@ -5693,7 +5693,7 @@ func (m *metricMysqlTableAutoIncrementUsage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricMysqlTableAutoIncrementUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, columnNameAttributeValue string) {
+func (m *metricMysqlTableAutoIncrementUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5701,14 +5701,14 @@ func (m *metricMysqlTableAutoIncrementUsage) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUsageMetricAttributeKeyTableName) {
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName) {
 		dp.Attributes().PutStr("table", tableNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUsageMetricAttributeKeySchema) {
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema) {
 		dp.Attributes().PutStr("schema", schemaAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUsageMetricAttributeKeyColumnName) {
-		dp.Attributes().PutStr("column_name", columnNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName) {
+		dp.Attributes().PutStr("mysql.column.name", mysqlColumnNameAttributeValue)
 	}
 
 	var s string
@@ -5741,14 +5741,14 @@ func (m *metricMysqlTableAutoIncrementUsage) recordDataPoint(start pcommon.Times
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlTableAutoIncrementUsage) updateCapacity() {
+func (m *metricMysqlTableAutoIncrementUtilization) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlTableAutoIncrementUsage) emit(metrics pmetric.MetricSlice) {
+func (m *metricMysqlTableAutoIncrementUtilization) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -5761,8 +5761,8 @@ func (m *metricMysqlTableAutoIncrementUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMysqlTableAutoIncrementUsage(cfg MysqlTableAutoIncrementUsageMetricConfig) metricMysqlTableAutoIncrementUsage {
-	m := metricMysqlTableAutoIncrementUsage{config: cfg}
+func newMetricMysqlTableAutoIncrementUtilization(cfg MysqlTableAutoIncrementUtilizationMetricConfig) metricMysqlTableAutoIncrementUtilization {
+	m := metricMysqlTableAutoIncrementUtilization{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -7155,7 +7155,7 @@ type MetricsBuilder struct {
 	metricMysqlSorts                              metricMysqlSorts
 	metricMysqlStatementEventCount                metricMysqlStatementEventCount
 	metricMysqlStatementEventWaitTime             metricMysqlStatementEventWaitTime
-	metricMysqlTableAutoIncrementUsage            metricMysqlTableAutoIncrementUsage
+	metricMysqlTableAutoIncrementUtilization      metricMysqlTableAutoIncrementUtilization
 	metricMysqlTableAverageRowLength              metricMysqlTableAverageRowLength
 	metricMysqlTableIoWaitCount                   metricMysqlTableIoWaitCount
 	metricMysqlTableIoWaitTime                    metricMysqlTableIoWaitTime
@@ -7252,7 +7252,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlSorts:                              newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
 		metricMysqlStatementEventCount:                newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
 		metricMysqlStatementEventWaitTime:             newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
-		metricMysqlTableAutoIncrementUsage:            newMetricMysqlTableAutoIncrementUsage(mbc.Metrics.MysqlTableAutoIncrementUsage),
+		metricMysqlTableAutoIncrementUtilization:      newMetricMysqlTableAutoIncrementUtilization(mbc.Metrics.MysqlTableAutoIncrementUtilization),
 		metricMysqlTableAverageRowLength:              newMetricMysqlTableAverageRowLength(mbc.Metrics.MysqlTableAverageRowLength),
 		metricMysqlTableIoWaitCount:                   newMetricMysqlTableIoWaitCount(mbc.Metrics.MysqlTableIoWaitCount),
 		metricMysqlTableIoWaitTime:                    newMetricMysqlTableIoWaitTime(mbc.Metrics.MysqlTableIoWaitTime),
@@ -7444,7 +7444,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlStatementEventCount.emit(ils.Metrics())
 	mb.metricMysqlStatementEventWaitTime.emit(ils.Metrics())
-	mb.metricMysqlTableAutoIncrementUsage.emit(ils.Metrics())
+	mb.metricMysqlTableAutoIncrementUtilization.emit(ils.Metrics())
 	mb.metricMysqlTableAverageRowLength.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
@@ -7946,9 +7946,9 @@ func (mb *MetricsBuilder) RecordMysqlStatementEventWaitTimeDataPoint(ts pcommon.
 	mb.metricMysqlStatementEventWaitTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, digestAttributeValue, digestTextAttributeValue)
 }
 
-// RecordMysqlTableAutoIncrementUsageDataPoint adds a data point to mysql.table.auto_increment.usage metric.
-func (mb *MetricsBuilder) RecordMysqlTableAutoIncrementUsageDataPoint(ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, columnNameAttributeValue string) {
-	mb.metricMysqlTableAutoIncrementUsage.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue, columnNameAttributeValue)
+// RecordMysqlTableAutoIncrementUtilizationDataPoint adds a data point to mysql.table.auto_increment.utilization metric.
+func (mb *MetricsBuilder) RecordMysqlTableAutoIncrementUtilizationDataPoint(ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	mb.metricMysqlTableAutoIncrementUtilization.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue, mysqlColumnNameAttributeValue)
 }
 
 // RecordMysqlTableAverageRowLengthDataPoint adds a data point to mysql.table.average_row_length metric.

@@ -216,10 +216,10 @@ type tableStats struct {
 }
 
 type autoIncrementStats struct {
-	schema     string
-	table      string
-	column     string
-	usageRatio float64
+	schema           string
+	table            string
+	column           string
+	utilizationRatio float64
 }
 
 type innodbTransactionStats struct {
@@ -629,8 +629,8 @@ const autoIncrementColumnMaxValueCase = `CASE
 	ELSE NULL
 END`
 
-// getAutoIncrementStats queries the db for how full each auto_increment
-// column is, as a percentage of its type's max value.
+// getAutoIncrementStats queries the db for how much of each auto_increment
+// column's integer range is used, as a percentage of its type's max value.
 //
 // This query is slower than most others in this file: MySQL/MariaDB have to
 // look up every table's metadata to fill in AUTO_INCREMENT, no matter how we
@@ -638,7 +638,7 @@ END`
 // especially right after a restart.
 func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
 	query := "SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, " +
-		"LEAST(t.AUTO_INCREMENT / (" + autoIncrementColumnMaxValueCase + ") * 100, 100) AS USAGE_RATIO " +
+		"LEAST(t.AUTO_INCREMENT / (" + autoIncrementColumnMaxValueCase + ") * 100, 100) AS UTILIZATION_RATIO " +
 		"FROM information_schema.COLUMNS c " +
 		"JOIN information_schema.TABLES t " +
 		"ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME " +
@@ -654,7 +654,7 @@ func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
 	var stats []autoIncrementStats
 	for rows.Next() {
 		var s autoIncrementStats
-		if err := rows.Scan(&s.schema, &s.table, &s.column, &s.usageRatio); err != nil {
+		if err := rows.Scan(&s.schema, &s.table, &s.column, &s.utilizationRatio); err != nil {
 			return nil, err
 		}
 		stats = append(stats, s)

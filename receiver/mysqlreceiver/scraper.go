@@ -712,7 +712,7 @@ func (m *mySQLScraper) tableStatsMetricsEnabled() bool {
 // autoIncrementStatsMetricsEnabled reports whether any metric fed by the
 // auto_increment usage query is enabled.
 func (m *mySQLScraper) autoIncrementStatsMetricsEnabled() bool {
-	return m.config.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUsage.Enabled
+	return m.config.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUtilization.Enabled
 }
 
 // tableIoWaitsMetricsEnabled reports whether any metric fed by the table
@@ -787,14 +787,14 @@ func (m *mySQLScraper) scrapeAutoIncrementStats(now pcommon.Timestamp, errs *scr
 
 	autoIncrementStats, err := m.sqlclient.getAutoIncrementStats()
 	if err != nil {
-		m.logger.Error("Failed to fetch auto_increment usage stats", zap.Error(err))
+		m.logger.Error("Failed to fetch auto_increment utilization stats", zap.Error(err))
 		errs.AddPartial(1, err)
 		return
 	}
 
 	for i := range autoIncrementStats {
 		s := autoIncrementStats[i]
-		m.mb.RecordMysqlTableAutoIncrementUsageDataPoint(now, s.usageRatio, s.table, s.schema, s.column)
+		m.mb.RecordMysqlTableAutoIncrementUtilizationDataPoint(now, s.utilizationRatio, s.table, s.schema, s.column)
 	}
 }
 

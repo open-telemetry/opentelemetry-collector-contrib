@@ -1393,7 +1393,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 0.5
                   attributes:
-                    - key: column_name
+                    - key: mysql.column.name
                       value:
                         stringValue: id
                     - key: schema
@@ -1404,7 +1404,7 @@ resourceMetrics:
                         stringValue: a_table
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: mysql.table.auto_increment.usage
+            name: mysql.table.auto_increment.utilization
             unit: "%"
           - description: The average row length in bytes for a given table.
             name: mysql.table.average_row_length
