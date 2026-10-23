@@ -1,11 +1,17 @@
 description: Config defines configuration for TencentCloud Log Service exporter.
 type: object
 properties:
+  endpoint:
+    description: LogService's Endpoint, https://cloud.tencent.com/document/product/614/18940 for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com; others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com. Takes precedence over Region when set.
+    type: string
+  is_intranet:
+    description: Whether to use the TencentCloud intranet endpoint, only used when Endpoint is empty
+    type: boolean
   logset:
     description: LogService's LogSet Name
     type: string
   region:
-    description: LogService's Region, https://cloud.tencent.com/document/product/614/18940 for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com; others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com
+    description: LogService's Region, https://cloud.tencent.com/document/product/614/18940 for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com; others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com. Optional if Endpoint is set.
     type: string
   secret_id:
     description: TencentCloud access key id
