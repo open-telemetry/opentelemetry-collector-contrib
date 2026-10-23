@@ -18,6 +18,7 @@ func ExperimentalConverters[K any]() []ottl.Factory[K] {
 		NewFindFactory[K](),
 		NewMapEachFactory[K](),
 		NewMapKeysFactory[K](),
+		NewMergeFactory[K](),
 		NewReduceFactory[K](),
 		NewWhenFactory[K](),
 	}

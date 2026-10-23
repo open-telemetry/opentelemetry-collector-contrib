@@ -10,14 +10,17 @@ them available by merging `ExperimentalConverters` into their function set, for 
 
 Available Converters:
 
-- [All](#all)
-- [Any](#any)
-- [Filter](#filter)
-- [Find](#find)
-- [MapEach](#mapeach)
-- [MapKeys](#mapkeys)
-- [Reduce](#reduce)
-- [When](#when)
+- [Experimental OTTL Functions](#experimental-ottl-functions)
+  - [Converters](#converters)
+    - [All](#all)
+    - [Any](#any)
+    - [Filter](#filter)
+    - [Find](#find)
+    - [MapEach](#mapeach)
+    - [MapKeys](#mapkeys)
+    - [Merge](#merge)
+    - [Reduce](#reduce)
+    - [When](#when)
 
 ### All
 
@@ -230,6 +233,53 @@ Derive keys from key and value:
 Store the result:
 
 - `set(log.attributes["prefixed"], MapKeys(log.attributes, (k, _) => Concat(["http.", k], "")))`
+
+### Merge
+
+> [!IMPORTANT]
+> This function is experimental and may change in future releases. It requires the [`pkg.ottl.functions.enableExperimental`](../../documentation.md#feature-gates) feature gate to be enabled. The optional `resolver` argument additionally requires the [`ottl.functions.enableLambda`](../../documentation.md#feature-gates) feature gate to be enabled.
+
+`Merge(maps, Optional[resolver])`
+
+The `Merge` converter merges a list of maps into a new `pcommon.Map`. None of the input maps are modified.
+
+`Merge` is the map analogue of [`Concat`](../../ottlfuncs/README.md#concat), and is intended for use when merging maps is a composition step inside a larger expression (for example within a lambda or as an argument to another function), as opposed to being a step itself. To merge one map into another in place as its own statement, use the [`merge_maps`](../../ottlfuncs/README.md#merge_maps) editor.
+
+`maps` is a list of maps, or a path expression or another getter that resolves to a list of maps. Each element must be a map, otherwise it returns an error. An empty list produces an empty map.
+
+The maps are merged from left to right, and the keys of the result are in the order in which they were first inserted. The merge is shallow: nested maps are ordinary values and are not merged recursively.
+
+When the same key appears in more than one map, the value from the last map wins by default.
+
+`resolver` is an optional lambda expression with exactly three parameters `(key, merged, next)` that customizes how conflicting keys are resolved.
+It is called only when a key already exists in the result. The first parameter is the conflicting key (`string`), the second parameter is the value accumulated so far in the result (which may be the result of a previous call to `resolver`), and the third parameter is the value from the map currently being merged.
+The value returned by `resolver` becomes the new value for the key; if it returns `nil` the key is kept with an empty value.
+Use `_` as a parameter name to ignore unused parameters. If `resolver` returns an error, `Merge` returns an error.
+
+> [!NOTE]
+> `Merge` without a `resolver` does not use lambdas, but it is still an experimental converter and requires the experimental functions feature gate.
+
+Examples:
+
+Merge resource and log attributes, where log attributes win on conflicts:
+
+- `Merge([resource.attributes, log.attributes])`
+
+Keep the first value on conflicts:
+
+- `Merge([log.attributes, {"env": "prod"}], (_, merged, next) => merged)`
+
+Combine conflicting values:
+
+- `Merge([resource.attributes, log.attributes], (k, merged, next) => Concat([merged, next], ","))`
+
+Merge inside another lambda:
+
+- `MapEach(log.attributes["items"], (_, v) => Merge([v, {"source": "otel"}]))`
+
+Store the merged result:
+
+- `set(log.attributes["merged"], Merge([resource.attributes, log.attributes]))`
 
 ### Reduce
 

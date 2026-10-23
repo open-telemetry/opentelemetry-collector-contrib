@@ -35,6 +35,7 @@ var (
 
 func Test_e2e_converters(t *testing.T) {
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true))
 
 	tests := []struct {
 		statement string
@@ -173,6 +174,73 @@ func Test_e2e_converters(t *testing.T) {
 				s.AppendEmpty().SetStr("val")
 				nested := renamed.PutEmptyMap(`nested:{"test":"pass"}`)
 				nested.PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["merged"], Merge([{"a": "1"}, {"b": "2"}]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				merged := tCtx.GetLogRecord().Attributes().PutEmptyMap("merged")
+				merged.PutStr("a", "1")
+				merged.PutStr("b", "2")
+			},
+		},
+		{
+			statement: `set(attributes["merged"], Merge([attributes["foo"], {"bar": "override", "extra": "new"}]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				merged := tCtx.GetLogRecord().Attributes().PutEmptyMap("merged")
+				merged.PutStr("bar", "override")
+				merged.PutStr("flags", "pass")
+				s := merged.PutEmptySlice("slice")
+				s.AppendEmpty().SetStr("val")
+				merged.PutEmptyMap("nested").PutStr("test", "pass")
+				merged.PutStr("extra", "new")
+			},
+		},
+		{
+			statement: `set(attributes["merged"], Merge([attributes["foo"], {"bar": "other", "extra": "new"}], (_, merged, _) => merged))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				merged := tCtx.GetLogRecord().Attributes().PutEmptyMap("merged")
+				merged.PutStr("bar", "pass")
+				merged.PutStr("flags", "pass")
+				s := merged.PutEmptySlice("slice")
+				s.AppendEmpty().SetStr("val")
+				merged.PutEmptyMap("nested").PutStr("test", "pass")
+				merged.PutStr("extra", "new")
+			},
+		},
+		{
+			statement: `set(attributes["merged"], Merge([{"a": "x"}, {"a": "y"}, {"a": "z", "b": "w"}], (k, merged, next) => Concat([merged, next], ",")))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				merged := tCtx.GetLogRecord().Attributes().PutEmptyMap("merged")
+				merged.PutStr("a", "x,y,z")
+				merged.PutStr("b", "w")
+			},
+		},
+		{
+			statement: `set(attributes["merged"], Merge([{"n": 1}, {"n": 2}, {"n": 3}], (_, merged, next) => Int(merged) + Int(next)))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutEmptyMap("merged").PutInt("n", 6)
+			},
+		},
+		{
+			statement: `set(attributes["items"], MapEach(["1", "2"], (_, v) => Merge([{"value": v}, {"source": "otel"}])))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				items := tCtx.GetLogRecord().Attributes().PutEmptySlice("items")
+				first := items.AppendEmpty().SetEmptyMap()
+				first.PutStr("value", "1")
+				first.PutStr("source", "otel")
+				second := items.AppendEmpty().SetEmptyMap()
+				second.PutStr("value", "2")
+				second.PutStr("source", "otel")
+			},
+		},
+		{
+			statement: `set(attributes["things"], MapEach(attributes["things"], (_, v) => Merge([v, {"source": "otel"}])))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				things, _ := tCtx.GetLogRecord().Attributes().Get("things")
+				for _, thing := range things.Slice().All() {
+					thing.Map().PutStr("source", "otel")
+				}
 			},
 		},
 		{
