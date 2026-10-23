@@ -483,22 +483,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
 	curMf, ok := scopeMap[mfKey]
 	if !ok {
-		var md scrape.MetricMetadata
-		var isInternal, hasExactMeta, hasNormMeta bool
-		fn := mn
-		if md, isInternal = lookupInternalMetricMetadata(mn); !isInternal {
-			if md, hasExactMeta = t.mc.GetMetadata(mn); !hasExactMeta {
-				fn = normalizeMetricName(mn)
-				if fn != mn {
-					md, hasNormMeta = t.mc.GetMetadata(fn)
-					// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
-					if hasNormMeta && md.Type == model.MetricTypeCounter && strings.HasSuffix(mn, metricSuffixCreated) {
-						fn += metricSuffixTotal
-					}
-					// END NB (eriksywu)
-				}
-			}
-		}
+		md, fn := metadataForMetric(mn, t.mc)
 		if fn != mn {
 			fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 			if mf, exists := scopeMap[fnKey]; exists && mf.includesMetric(mn) {
@@ -506,20 +491,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 			}
 		}
 		if curMf == nil {
-			familyName := mn
-			switch {
-			case isInternal || hasExactMeta:
-			case hasNormMeta:
-				if md.Type != model.MetricTypeCounter || strings.HasSuffix(mn, metricSuffixCreated) {
-					familyName = fn
-				}
-			default:
-				md = scrape.MetricMetadata{
-					MetricFamily: mn,
-					Type:         model.MetricTypeUnknown,
-				}
-			}
-			curMf = t.allocMetricFamily(mn, familyName, md)
+			curMf = t.allocMetricFamily(mn, fn, md)
 			scopeMap[metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 			if t.seriesCache != nil {
 				if n := int32(len(scopeMap)); n > t.seriesCache.lastFamilyCount.Load() {
