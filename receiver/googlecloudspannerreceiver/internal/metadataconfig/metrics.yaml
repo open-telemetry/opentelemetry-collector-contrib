@@ -1075,7 +1075,7 @@ metadata:
 # -------------------------------------------- User Split Points -------------------------------------------------------
 #
   - name: "user split points"
-    query: "SELECT TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME, 1 AS SPLIT_POINTS_COUNT FROM SPANNER_SYS.USER_SPLIT_POINTS ORDER BY TABLE_NAME ASC, INDEX_NAME ASC"
+    query: "SELECT TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME, COUNT(*) AS USER_SPLIT_POINTS_COUNT FROM SPANNER_SYS.USER_SPLIT_POINTS WHERE EXPIRE_TIME > CURRENT_TIMESTAMP() GROUP BY TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME ORDER BY TABLE_NAME ASC, INDEX_NAME ASC"
     metric_name_prefix: "database/spanner/user_split_points/"
     high_cardinality: true
     labels:
@@ -1096,7 +1096,7 @@ metadata:
         value_type: "timestamp"
     metrics:
       - name: "split_points_count"
-        column_name: "SPLIT_POINTS_COUNT"
+        column_name: "USER_SPLIT_POINTS_COUNT"
         value_type: "int"
         data:
           type: "gauge"
