@@ -32,3 +32,12 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+feature_gates:
+  - id: receiver.k8sevents.useInformerObserver
+    stage: alpha
+    from_version: v0.158.0
+    description: >-
+      When enabled, the receiver collects events via a shared informer factory
+      instead of the legacy watch observer.
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51982

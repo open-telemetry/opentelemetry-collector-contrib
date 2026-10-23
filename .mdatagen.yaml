@@ -791,6 +791,11 @@ exclusions:
       - name: domainControllers.autodiscovery
         validation:
           enabled: false
+  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+    feature_gates:
+      - name: receiver.k8sevents.useInformerObserver
+        validation:
+          enabled: false
 
 stability:
   coverage:
