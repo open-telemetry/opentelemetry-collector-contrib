@@ -1,16 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build omit_detector_azure_aks
+//go:build (remove_all_resourcedetection_detectors && !enable_detector_azure_aks) || omit_detector_azure_aks
 
 package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 
-import (
-	"go.opentelemetry.io/collector/processor"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-)
-
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
-	return nil, nil
-}
+// NewDetector is unavailable when this detector is excluded at build time.
+var NewDetector internal.DetectorFactory

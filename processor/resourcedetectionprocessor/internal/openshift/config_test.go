@@ -25,7 +25,7 @@ func TestMergeWithDefaults(t *testing.T) {
 		{
 			name:     "explicit values kept and default CA applied",
 			cfg:      Config{Address: "https://api:6443", Token: "token"},
-			expected: Config{Address: "https://api:6443", Token: "token", TLSs: configtls.ClientConfig{Config: configtls.Config{CAFile: defaultCAPath}}},
+			expected: Config{Address: "https://api:6443", Token: "token", TLSs: configtls.ClientConfig{Config: configtls.Config{CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"}}},
 		},
 		{
 			name:     "insecure skips default CA",
@@ -59,7 +59,7 @@ func TestMergeWithDefaults(t *testing.T) {
 		{
 			name:    "missing token and no in-cluster token file",
 			cfg:     Config{Address: "https://api:6443"},
-			wantErr: defaultServiceTokenPath,
+			wantErr: "/var/run/secrets/kubernetes.io/serviceaccount/token",
 		},
 	}
 	for _, tc := range tt {

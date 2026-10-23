@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_kubeadm) && !omit_detector_kubeadm
+
 package kubeadm
 
 import (
@@ -16,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 )
 
 const (
@@ -126,4 +129,29 @@ func TestNewDetectorError(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.ErrorContains(t, err, "failed creating Kubernetes client")
 	assert.Nil(t, d)
+}
+
+func TestNewDetectorPreservesAPIConfig(t *testing.T) {
+	orig := makeClient
+	t.Cleanup(func() { makeClient = orig })
+	makeClient = func(cfg k8sconfig.APIConfig) (k8s.Interface, error) {
+		assert.Equal(t, k8sconfig.APIConfig{
+			AuthType:     k8sconfig.AuthTypeKubeConfig,
+			Context:      "custom-context",
+			KubeAPIQPS:   12.5,
+			KubeAPIBurst: 25,
+		}, cfg)
+		return fake.NewClientset(), nil
+	}
+
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig = k8sconfigtypes.APIConfig{
+		AuthType:     k8sconfigtypes.AuthTypeKubeConfig,
+		Context:      "custom-context",
+		KubeAPIQPS:   12.5,
+		KubeAPIBurst: 25,
+	}
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	assert.NotNil(t, d)
 }

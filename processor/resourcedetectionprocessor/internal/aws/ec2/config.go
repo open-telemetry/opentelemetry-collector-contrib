@@ -6,9 +6,15 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws/retry"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
+)
+
+// These mirror aws-sdk-go-v2's retry.DefaultMaxAttempts and retry.DefaultMaxBackoff.
+// They are declared locally so that this config package does not import the AWS SDK
+// just for two constants, which would pull the SDK into every build's config schema.
+const (
+	defaultMaxAttempts = 3
+	defaultMaxBackoff  = 20 * time.Second
 )
 
 // Config defines user-specified configurations unique to the EC2 detector
@@ -35,7 +41,7 @@ func CreateDefaultConfig() Config {
 	return Config{
 		Tags:               []string{},
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
-		MaxAttempts:        retry.DefaultMaxAttempts,
-		MaxBackoff:         retry.DefaultMaxBackoff,
+		MaxAttempts:        defaultMaxAttempts,
+		MaxBackoff:         defaultMaxBackoff,
 	}
 }
