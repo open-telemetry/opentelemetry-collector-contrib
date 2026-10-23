@@ -170,6 +170,12 @@ correlation between the query sample and the originating trace. `application_nam
 before the query text is obfuscated; text inside string literals, quoted identifiers and dollar-quoted strings is ignored,
 and a query with more than one `traceparent` value or a nested comment yields no trace context.
 
+`pg_stat_activity` truncates query text at
+[`track_activity_query_size`](https://www.postgresql.org/docs/current/runtime-config-statistics.html#GUC-TRACK-ACTIVITY-QUERY-SIZE)
+(1024 bytes by default). An appended comment is cut off on longer statements, so only shorter queries get trace
+context. Raise `track_activity_query_size` (requires a server restart) or have the instrumentation put the comment at the
+start of the statement.
+
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
 against `pg_stat_activity`.

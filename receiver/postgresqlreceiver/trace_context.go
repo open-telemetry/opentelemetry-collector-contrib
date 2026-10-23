@@ -45,7 +45,9 @@ func sqlCommentTraceparent(query string) string {
 		case sqllexer.EOF:
 			return value
 		case sqllexer.ERROR, sqllexer.INCOMPLETE_STRING:
-			return ""
+			// pg_stat_activity truncates query text at track_activity_query_size, often
+			// inside a literal. Keep a traceparent already read from an earlier comment.
+			return value
 		case sqllexer.MULTILINE_COMMENT:
 			content := strings.TrimSuffix(strings.TrimPrefix(token.Value, "/*"), "*/")
 			// The lexer does not balance nested block comments. Reject the query
