@@ -15,7 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const (
@@ -57,7 +58,7 @@ type InstanceMetadata struct {
 var _ Provider = (*metadataClient)(nil)
 
 func NewProvider(cfg aws.Config, nodeName string) (Provider, error) {
-	conf, err := rest.InClusterConfig()
+	conf, err := k8sconfig.CreateRestConfig(k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount})
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize provider. Could not load cluster config: %w", err)
 	}
