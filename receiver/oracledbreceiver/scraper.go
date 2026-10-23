@@ -550,61 +550,70 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
+// buildProcedureSourceQueryPDB builds the DBA_SOURCE IN-clause query and bind args
+// for a PDB connection. Each tuple (OWNER, NAME, TYPE) maps to 3 consecutive bind params.
+func buildProcedureSourceQueryPDB(hits []procedureMetricCacheHit) (string, []any) {
+	placeholders := make([]string, len(hits))
+	args := make([]any, 0, len(hits)*3)
+	for i := range hits {
+		base := i * 3
+		placeholders[i] = fmt.Sprintf("(:%d,:%d,:%d)", base+1, base+2, base+3)
+		args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType)
+	}
+	return fmt.Sprintf(oracleProcedureSourceSQL, strings.Join(placeholders, ",")), args
+}
+
+// buildProcedureSourceQueryCDB builds the CDB_SOURCE IN-clause query and bind args
+// for a CDB root connection. Each tuple (OWNER, NAME, TYPE, CON_ID) maps to 4 consecutive bind params.
+func buildProcedureSourceQueryCDB(hits []procedureMetricCacheHit) (string, []any) {
+	placeholders := make([]string, len(hits))
+	args := make([]any, 0, len(hits)*4)
+	for i := range hits {
+		base := i * 4
+		placeholders[i] = fmt.Sprintf("(:%d,:%d,:%d,:%d)", base+1, base+2, base+3, base+4)
+		args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID)
+	}
+	return fmt.Sprintf(oracleProcedureSourceCDBSQL, strings.Join(placeholders, ",")), args
+}
+
+// groupSourceRowsByKey concatenates source lines per procedure into a definition map.
+// Key format: "owner|name|type|conID" — conID is empty string for PDB rows.
+func groupSourceRowsByKey(sourceRows []metricRow) map[string]string {
+	builders := make(map[string]*strings.Builder)
+	for _, row := range sourceRows {
+		key := row["OWNER"] + "|" + row["NAME"] + "|" + row["TYPE"] + "|" + row["CON_ID"]
+		if builders[key] == nil {
+			builders[key] = &strings.Builder{}
+		}
+		builders[key].WriteString(row["TEXT"])
+	}
+	result := make(map[string]string, len(builders))
+	for k, v := range builders {
+		result[k] = v.String()
+	}
+	return result
+}
+
 // fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
 // IN-clause query (one DB roundtrip) and concatenates per-procedure in Go.
-// Key format: "owner|name|type|conID" — conID is empty string for PDB connections.
 func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[string]string, error) {
 	if len(hits) == 0 {
 		return nil, nil
 	}
 
-	var placeholders []string
+	var sqlQuery string
 	var args []any
-
 	if s.useCDBProceduresView {
-		for i := range hits {
-			base := i * 4
-			placeholders = append(placeholders, fmt.Sprintf("(:%d,:%d,:%d,:%d)", base+1, base+2, base+3, base+4))
-			args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID)
-		}
+		sqlQuery, args = buildProcedureSourceQueryCDB(hits)
 	} else {
-		for i := range hits {
-			base := i * 3
-			placeholders = append(placeholders, fmt.Sprintf("(:%d,:%d,:%d)", base+1, base+2, base+3))
-			args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType)
-		}
+		sqlQuery, args = buildProcedureSourceQueryPDB(hits)
 	}
-
-	tmpl := oracleProcedureSourceSQL
-	if s.useCDBProceduresView {
-		tmpl = oracleProcedureSourceCDBSQL
-	}
-	sqlQuery := fmt.Sprintf(tmpl, strings.Join(placeholders, ","))
 
 	sourceRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, args...)
 	if err != nil {
 		return nil, err
 	}
-
-	builders := make(map[string]*strings.Builder, len(hits))
-	for _, row := range sourceRows {
-		owner := row["OWNER"]
-		name := row["NAME"]
-		objType := row["TYPE"]
-		conID := row["CON_ID"] // empty string for PDB rows
-		text := row["TEXT"]
-		key := owner + "|" + name + "|" + objType + "|" + conID
-		if builders[key] == nil {
-			builders[key] = &strings.Builder{}
-		}
-		builders[key].WriteString(text)
-	}
-
-	result := make(map[string]string, len(builders))
-	for k, v := range builders {
-		result[k] = v.String()
-	}
-	return result, nil
+	return groupSourceRowsByKey(sourceRows), nil
 }
 
 func (s *oracleScraper) buildTopQuerySQL() string {
