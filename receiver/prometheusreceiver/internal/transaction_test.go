@@ -6,6 +6,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -2343,4 +2344,189 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	errField, ok := logs[0].ContextMap()["error"]
 	assert.True(t, ok)
 	assert.Equal(t, "connection refused", errField)
+}
+
+func TestSeriesCacheSetEvictionAndDynamicGrowth(t *testing.T) {
+	sc := &seriesCache{}
+	ext := labels.EmptyLabels()
+
+	// Insert 150 distinct entries (> minSeriesCacheSets*(seriesCacheWays/2) = 128)
+	// to trigger dynamic table growth from 64 sets to 256 sets without losing entries.
+	entries := make([]*seriesCacheEntry, 150)
+	for i := range entries {
+		name := "metric_" + strconv.Itoa(i)
+		ls := labels.FromStrings(model.MetricNameLabel, name, "idx", strconv.Itoa(i))
+		entries[i] = &seriesCacheEntry{
+			// Spread hashes evenly across sets so no 4-way set overflows before the resize threshold (128).
+			hash:           uint64(i),
+			ls:             ls,
+			externalLabels: ext,
+			metricName:     name,
+			mtype:          pmetric.MetricTypeGauge,
+		}
+		sc.put(entries[i])
+	}
+	tbl := sc.table.Load()
+	require.NotNil(t, tbl)
+	require.Equal(t, minSeriesCacheSets*4, len(tbl.sets))
+	for _, e := range entries {
+		require.Same(t, e, sc.lookup(e.hash, e.ls, ext))
+	}
+
+	// Re-inserting an entry with identical (hash, ls, externalLabels) replaces in-place without growing count.
+	beforeCount := sc.count.Load()
+	updated := *entries[0]
+	updated.mtype = pmetric.MetricTypeSum
+	sc.put(&updated)
+	require.Equal(t, beforeCount, sc.count.Load())
+	require.Same(t, &updated, sc.lookup(updated.hash, updated.ls, ext))
+
+	// Exercise 4-way set-associative shift + eviction within a single set on a fresh table.
+	evictCache := &seriesCache{}
+	var colliding [seriesCacheWays + 1]*seriesCacheEntry
+	for i := range colliding {
+		ls := labels.FromStrings(model.MetricNameLabel, "colliding_metric", "way", strconv.Itoa(i))
+		// Construct hashes that all map to set 7 across growth steps.
+		h := uint64(7) + uint64(i)*uint64(maxSeriesCacheSets)
+		colliding[i] = &seriesCacheEntry{
+			hash:           h,
+			ls:             ls,
+			externalLabels: ext,
+			metricName:     "colliding_metric",
+		}
+		evictCache.put(colliding[i])
+	}
+	// The first 4 inserted entries filled ways 0..3; the 5th shifted ways 0..2 to 1..3 and evicted colliding[3].
+	require.Same(t, colliding[4], evictCache.lookup(colliding[4].hash, colliding[4].ls, ext))
+	require.Same(t, colliding[0], evictCache.lookup(colliding[0].hash, colliding[0].ls, ext))
+	require.Same(t, colliding[1], evictCache.lookup(colliding[1].hash, colliding[1].ls, ext))
+	require.Same(t, colliding[2], evictCache.lookup(colliding[2].hash, colliding[2].ls, ext))
+	require.Nil(t, evictCache.lookup(colliding[3].hash, colliding[3].ls, ext))
+}
+
+func TestTransactionSeriesCacheAcrossScrapes(t *testing.T) {
+	tgt := scrape.NewTarget(
+		labels.FromMap(map[string]string{
+			model.InstanceLabel: "localhost:8080",
+			model.JobLabel:      "test-job",
+		}),
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
+			model.AddressLabel: "localhost:8080",
+			model.SchemeLabel:  "http",
+		},
+		nil,
+	)
+	metaMap := map[string]scrape.MetricMetadata{
+		"req_duration_seconds": {
+			MetricFamily: "req_duration_seconds",
+			Type:         model.MetricTypeHistogram,
+			Help:         "request duration",
+		},
+	}
+	store := newFakeMetadataStore(metaMap)
+	ctx := scrape.ContextWithMetricMetadataStore(scrape.ContextWithTarget(t.Context(), tgt), store)
+	extLabels := labels.FromStrings("cluster", "eu-west-1")
+
+	lsCounter := labels.FromStrings(
+		model.JobLabel, "test-job",
+		model.InstanceLabel, "localhost:8080",
+		model.MetricNameLabel, "requests_total",
+		"method", "GET",
+		prometheus.ScopeNameLabelKey, "otel.scope",
+		prometheus.ScopeVersionLabelKey, "v1",
+		"otel_scope_env", "prod",
+	)
+	lsCounterR2 := labels.FromStrings(
+		model.JobLabel, "federated-job",
+		model.InstanceLabel, "10.0.0.2:9090",
+		model.MetricNameLabel, "requests_total",
+		"method", "POST",
+	)
+	lsHistBucket := labels.FromStrings(
+		model.JobLabel, "test-job",
+		model.InstanceLabel, "localhost:8080",
+		model.MetricNameLabel, "req_duration_seconds_bucket",
+		model.BucketLabel, "0.5",
+		"method", "GET",
+	)
+	lsHistCount := labels.FromStrings(
+		model.JobLabel, "test-job",
+		model.InstanceLabel, "localhost:8080",
+		model.MetricNameLabel, "req_duration_seconds_count",
+		"method", "GET",
+	)
+	lsHistSum := labels.FromStrings(
+		model.JobLabel, "test-job",
+		model.InstanceLabel, "localhost:8080",
+		model.MetricNameLabel, "req_duration_seconds_sum",
+		"method", "GET",
+	)
+	lsTargetInfo := labels.FromStrings(
+		model.JobLabel, "test-job",
+		model.InstanceLabel, "localhost:8080",
+		model.MetricNameLabel, prometheus.TargetInfoMetricName,
+		"host.arch", "amd64",
+	)
+
+	// Scrape 1: cold cache, no metadata yet for requests_total (treated as Gauge), plus target_info and multi-resource series.
+	sink1 := new(consumertest.MetricsSink)
+	tr1 := newTransaction(ctx, sink1, extLabels, receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+	refC1, err := tr1.Append(0, lsCounter, 0, 1000, 10, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	refR2_1, err := tr1.Append(0, lsCounterR2, 0, 1000, 5, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	refHB1, err := tr1.Append(0, lsHistBucket, 0, 1000, 3, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	refHC1, err := tr1.Append(0, lsHistCount, 0, 1000, 4, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	refHS1, err := tr1.Append(0, lsHistSum, 0, 1000, 1.5, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	_, err = tr1.Append(0, lsTargetInfo, 0, 1000, 1, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.NoError(t, tr1.Commit())
+
+	// Verify target_info mutated tr1's cloned resource but did not pollute seriesCache.lastResource.
+	sc := getTargetSeriesCache(tgt)
+	require.NotNil(t, sc)
+	cachedRes := sc.lastResource.Load()
+	require.NotNil(t, cachedRes)
+	_, leaked := cachedRes.resource.Attributes().Get("host.arch")
+	require.False(t, leaked, "AddTargetInfo must clone resource before mutating attributes")
+
+	// Scrape 2: warm cache for histogram & multi-resource rKey2; metadata now declares requests_total as Counter (mtype transition Gauge -> Sum).
+	store.data["requests_total"] = scrape.MetricMetadata{
+		MetricFamily: "requests_total",
+		Type:         model.MetricTypeCounter,
+		Help:         "total requests",
+	}
+	sink2 := new(consumertest.MetricsSink)
+	tr2 := newTransaction(ctx, sink2, extLabels, receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+	refC2, err := tr2.Append(refC1, lsCounter, 0, 2000, 15, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.Equal(t, refC1, refC2)
+	refR2_2, err := tr2.Append(refR2_1, lsCounterR2, 0, 2000, 8, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.Equal(t, refR2_1, refR2_2)
+	_, err = tr2.Append(refHB1, lsHistBucket, 0, 2000, 6, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	_, err = tr2.Append(refHC1, lsHistCount, 0, 2000, 8, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	_, err = tr2.Append(refHS1, lsHistSum, 0, 2000, 3.0, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.NoError(t, tr2.Commit())
+
+	// Scrape 3: warm cache with empty externalLabels and a synthetic/mismatched SeriesRef to verify inputHash fallback.
+	sink3 := new(consumertest.MetricsSink)
+	tr3 := newTransaction(ctx, sink3, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+	refSynthetic, err := tr3.Append(storage.SeriesRef(12345), lsCounter, 0, 3000, 20, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.Equal(t, storage.SeriesRef(lsCounter.Hash()), refSynthetic)
+	// Subsequent scrape with the returned SeriesRef hits the warm cache entry stored under lsCounter.Hash().
+	sink4 := new(consumertest.MetricsSink)
+	tr4 := newTransaction(ctx, sink4, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+	refWarm, err := tr4.Append(refSynthetic, lsCounter, 0, 4000, 25, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.Equal(t, refSynthetic, refWarm)
+	require.NoError(t, tr4.Commit())
 }
