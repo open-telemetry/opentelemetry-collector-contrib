@@ -58,11 +58,6 @@ func NewYANGParser(logger *zap.Logger) *YANGParser {
 	}
 }
 
-// GetModuleSource returns the source path of a loaded module, or empty string if not found
-func (p *YANGParser) GetModuleSource(moduleName string) string {
-	return p.moduleSources[moduleName]
-}
-
 // LoadBuiltinModules loads pre-analyzed YANG modules for Cisco IOS XE 17.18.1
 func (p *YANGParser) LoadBuiltinModules() {
 	// Cisco-IOS-XE-interfaces-oper module based on analysis

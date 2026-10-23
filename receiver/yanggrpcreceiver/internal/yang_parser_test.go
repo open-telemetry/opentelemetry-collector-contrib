@@ -83,7 +83,7 @@ func TestExtractYANGFromFiles_SingleModuleNoWarning(t *testing.T) {
 
 	assert.Equal(t, 0, recorded.Len(), "Expected no warnings for a single unique module")
 	assert.Contains(t, parser.GetAvailableModules(), "test-module-a")
-	assert.Equal(t, yangFile, parser.GetModuleSource("test-module-a"))
+	assert.Equal(t, yangFile, parser.moduleSources["test-module-a"])
 	assert.Equal(t, "id", parser.GetKeyForPath("test-module-a", "/item"))
 }
 
@@ -103,8 +103,8 @@ func TestExtractYANGFromFiles_DistinctModulesNoWarning(t *testing.T) {
 	assert.Equal(t, 0, recorded.Len(), "Expected no warnings for distinct modules")
 	assert.Contains(t, parser.GetAvailableModules(), "test-module-a")
 	assert.Contains(t, parser.GetAvailableModules(), "test-module-b")
-	assert.Equal(t, fileA, parser.GetModuleSource("test-module-a"))
-	assert.Equal(t, fileB, parser.GetModuleSource("test-module-b"))
+	assert.Equal(t, fileA, parser.moduleSources["test-module-a"])
+	assert.Equal(t, fileB, parser.moduleSources["test-module-b"])
 }
 
 func TestExtractYANGFromFiles_DuplicateModuleWarningAndLastWriteWins(t *testing.T) {
@@ -122,7 +122,7 @@ func TestExtractYANGFromFiles_DuplicateModuleWarningAndLastWriteWins(t *testing.
 	require.NoError(t, parser.ExtractYANGFromFiles(dir1))
 	require.Equal(t, 0, recorded.Len())
 	assert.Equal(t, "key-v1", parser.GetKeyForPath("colliding-module", "/entry"))
-	assert.Equal(t, file1, parser.GetModuleSource("colliding-module"))
+	assert.Equal(t, file1, parser.moduleSources["colliding-module"])
 
 	require.NoError(t, parser.ExtractYANGFromFiles(dir2))
 	require.Equal(t, 1, recorded.Len(), "Expected exactly 1 warning on duplicate module")
@@ -136,7 +136,7 @@ func TestExtractYANGFromFiles_DuplicateModuleWarningAndLastWriteWins(t *testing.
 
 	// Assert last-write-wins
 	assert.Equal(t, "key-v2", parser.GetKeyForPath("colliding-module", "/entry"))
-	assert.Equal(t, file2, parser.GetModuleSource("colliding-module"))
+	assert.Equal(t, file2, parser.moduleSources["colliding-module"])
 }
 
 func TestExtractYANGFromFiles_RecursiveDirectoryTraversal(t *testing.T) {
@@ -163,7 +163,7 @@ func TestExtractYANGFromFiles_RecursiveDirectoryTraversal(t *testing.T) {
 	assert.Equal(t, "colliding-module", context["module"])
 	assert.Equal(t, file1, context["previous_path"])
 	assert.Equal(t, file2, context["new_path"])
-	assert.Equal(t, file2, parser.GetModuleSource("colliding-module"))
+	assert.Equal(t, file2, parser.moduleSources["colliding-module"])
 }
 
 func TestExtractYANGFromFiles_OverwriteBuiltinModule(t *testing.T) {
@@ -171,7 +171,7 @@ func TestExtractYANGFromFiles_OverwriteBuiltinModule(t *testing.T) {
 	parser := NewYANGParser(zap.New(core))
 	parser.LoadBuiltinModules()
 
-	assert.Equal(t, "<builtin>", parser.GetModuleSource("Cisco-IOS-XE-interfaces-oper"))
+	assert.Equal(t, "<builtin>", parser.moduleSources["Cisco-IOS-XE-interfaces-oper"])
 
 	customInterfaceYang := `
 module Cisco-IOS-XE-interfaces-oper {
@@ -200,7 +200,7 @@ module Cisco-IOS-XE-interfaces-oper {
 	assert.Equal(t, customFile, context["new_path"])
 
 	assert.Equal(t, "custom-key", parser.GetKeyForPath("Cisco-IOS-XE-interfaces-oper", "/interface"))
-	assert.Equal(t, customFile, parser.GetModuleSource("Cisco-IOS-XE-interfaces-oper"))
+	assert.Equal(t, customFile, parser.moduleSources["Cisco-IOS-XE-interfaces-oper"])
 }
 
 func TestExtractYANGFromFiles_IdenticalPathLoadedTwice(t *testing.T) {

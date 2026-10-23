@@ -200,5 +200,4 @@ module test-dup {
 	assert.Equal(t, f2, ctxMap["new_path"])
 
 	assert.Equal(t, "k2", parser.GetKeyForPath("test-dup", "/item"))
-	assert.Equal(t, f2, parser.GetModuleSource("test-dup"))
 }
