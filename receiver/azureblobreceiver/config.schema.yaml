@@ -47,6 +47,9 @@ properties:
   cloud:
     description: Azure Cloud to authenticate against, used with Service Principal authentication
     $ref: cloud_type
+  compression:
+    description: Compression format of blob payloads (default = "", meaning none). Options are "", "gzip", or "auto", which detects gzip per blob from its header.
+    type: string
   connection_string:
     description: Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
     type: string

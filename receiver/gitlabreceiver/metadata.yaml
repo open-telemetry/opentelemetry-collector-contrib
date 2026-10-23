@@ -7,7 +7,9 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [adrielp, atoulme, niwoerner]
+    active: [adrielp, niwoerner]
+    emeritus: [atoulme]
+    seeking_new: true
 tests:
   config:
     webhook:

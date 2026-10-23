@@ -34,7 +34,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPSERT,
+			strategy: upsert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
@@ -50,7 +50,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPSERT,
+			strategy: upsert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value3")
 				expectedValue.PutStr("attr2", "value2")
@@ -65,7 +65,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: INSERT,
+			strategy: insert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
@@ -81,7 +81,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: INSERT,
+			strategy: insert,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
@@ -96,7 +96,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPDATE,
+			strategy: update,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 			},
@@ -110,7 +110,7 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
-			strategy: UPDATE,
+			strategy: update,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value3")
 			},
@@ -204,14 +204,14 @@ func Test_MergeMapsFactory(t *testing.T) {
 		factory := NewMergeMapsFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &MergeMapsArguments[any]{}, args)
+		assert.IsType(t, &mergeMapsArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Source", "Strategy"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewMergeMapsFactory[any]()
 		args := factory.CreateDefaultArguments()
-		mergeMapsArgs, ok := args.(*MergeMapsArguments[any])
+		mergeMapsArgs, ok := args.(*mergeMapsArguments[any])
 		require.True(t, ok)
 		mergeMapsArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -223,7 +223,7 @@ func Test_MergeMapsFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		mergeMapsArgs.Strategy = INSERT
+		mergeMapsArgs.Strategy = insert
 
 		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
 		require.NoError(t, err)
@@ -232,6 +232,35 @@ func Test_MergeMapsFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createMergeMapsFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "MergeMapsFactory args must be of type *MergeMapsArguments[K]")
+		assert.ErrorContains(t, err, "MergeMapsFactory args must be of type *mergeMapsArguments[K]")
 	})
+}
+
+func BenchmarkMergeMaps(b *testing.B) {
+	source := ottl.StandardPMapGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			m := pcommon.NewMap()
+			m.PutStr("attr2", "value2")
+			return m, nil
+		},
+	}
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) {
+			m := pcommon.NewMap()
+			m.PutStr("attr1", "value1")
+			return m, nil
+		},
+		Setter: func(context.Context, any, any) error {
+			return nil
+		},
+	}
+	exprFunc, err := mergeMaps[any](target, source, upsert)
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

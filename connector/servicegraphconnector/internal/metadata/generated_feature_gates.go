@@ -23,12 +23,3 @@ var ConnectorServicegraphLegacyLatencyUnitMsFeatureGate = featuregate.GlobalRegi
 	featuregate.WithRegisterFromVersion("v0.89.0"),
 	featuregate.WithRegisterToVersion("v0.154.0"),
 )
-
-var ConnectorServicegraphVirtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"connector.servicegraph.virtualNode",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled and setting `virtual_node_peer_attributes` is not empty, the connector looks for the presence of these attributes in span to create virtual server nodes."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
-	featuregate.WithRegisterFromVersion("v0.73.0"),
-	featuregate.WithRegisterToVersion("v0.154.0"),
-)

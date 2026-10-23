@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -163,6 +164,16 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			OnMessage: o.onMessage,
 			OnCommand: o.onCommand,
 		},
+	}
+
+	// When configured with a local IPC socket (Unix domain socket or Windows
+	// named pipe), dial it instead of TCP. Both OpAMP transports honor
+	// DialContext. The OpAMPServerURL endpoint then only supplies the URL
+	// scheme, request path, and Host header; its host:port is ignored.
+	if socket := o.cfg.Server.GetSocket(); socket != nil {
+		settings.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return socket.Dial(ctx)
+		}
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -466,7 +477,7 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 		return nil
 	}
 
-	configMap := map[string]*protobufs.AgentConfigFile{
+	configMap := map[string]*protobufs.AgentConfigObject{
 		"": {
 			Body:        conf,
 			ContentType: "text/yaml",
@@ -481,7 +492,7 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 		if err != nil {
 			o.logger.Error("cannot marshal raw config", zap.Any("conf", o.rawConfig), zap.Error(err))
 		} else {
-			configMap[rawConfigMapKey] = &protobufs.AgentConfigFile{
+			configMap[rawConfigMapKey] = &protobufs.AgentConfigObject{
 				Body:        rawConf,
 				ContentType: "text/yaml",
 			}
@@ -710,8 +721,9 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 	var (
 		lastStatus componentstatus.Status
 		lastErr    string
-		currentErr string
+		lastAttrs  pcommon.Map
 	)
+	lastAttrs = pcommon.NewMap()
 
 	for {
 		select {
@@ -727,16 +739,18 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 			}
 
 			currentStatus := statusUpdate.Status()
+			currentErr := ""
 			if statusUpdate.Err() != nil {
 				currentErr = statusUpdate.Err().Error()
 			}
 
-			if currentStatus == lastStatus && currentErr == lastErr {
+			if currentStatus == lastStatus && currentErr == lastErr && statusUpdate.Attributes().Equal(lastAttrs) {
 				continue
 			}
 
 			lastStatus = currentStatus
 			lastErr = currentErr
+			statusUpdate.Attributes().CopyTo(lastAttrs)
 
 			componentHealth := convertComponentHealth(statusUpdate)
 
@@ -761,6 +775,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 
 	if statusUpdate.Err() != nil {
 		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
 	}
 
 	if len(statusUpdate.ComponentStatusMap) > 0 {

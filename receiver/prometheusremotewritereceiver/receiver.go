@@ -33,20 +33,29 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
+	}
+	cache, err := lru.NewWithEvict(cfg.ResourceCacheSize, func(uint64, pmetric.ResourceMetrics) {
+		// The cache does not carry a request context, and evictions are counted
+		// regardless of which request triggered them.
+		telemetryBuilder.ReceiverPrometheusremotewriteResourceCacheEvictions.Add(context.Background(), 1)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
 	}
 	return &prometheusRemoteWriteReceiver{
-		settings:     settings,
-		nextConsumer: nextConsumer,
-		config:       cfg,
-		rmCache:      cache,
+		settings:         settings,
+		nextConsumer:     nextConsumer,
+		config:           cfg,
+		rmCache:          cache,
+		telemetryBuilder: telemetryBuilder,
 		bodyBufferPool: &sync.Pool{
 			New: func() any {
 				// Pre-allocate 4KiB
@@ -64,8 +73,9 @@ type prometheusRemoteWriteReceiver struct {
 	server *http.Server
 	wg     sync.WaitGroup
 
-	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
-	obsrecv *receiverhelper.ObsReport
+	rmCache          *lru.Cache[uint64, pmetric.ResourceMetrics]
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	bodyBufferPool *sync.Pool
 }
@@ -117,6 +127,10 @@ func createMetricIdentity(res identity.Resource, metricName, unit string, si sco
 	}
 }
 
+// sep is a byte that is not valid UTF-8, used as a field separator to prevent
+// hash collisions between different field boundary combinations (e.g. "ab"+"c" vs "a"+"bc").
+var sep = []byte{0xff}
+
 // Hash generates a unique hash for the metric identity using the identity library's hasher
 // as a foundation, extended with scope and metric fields.
 func (mi metricIdentity) Hash() uint64 {
@@ -162,6 +176,7 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 }
 
 func (prw *prometheusRemoteWriteReceiver) Shutdown(ctx context.Context) error {
+	prw.telemetryBuilder.Shutdown()
 	if prw.server == nil {
 		return nil
 	}
@@ -337,7 +352,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 
-		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
+		// exemplarMap holds exemplars under the series key collectExemplars builds.
 		exemplarMap = collectExemplars(req, prw.settings, &stats)
 
 		// bucketBudget bounds what every Native Histogram in this request may expand into
@@ -358,6 +373,18 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
+			continue
+		}
+
+		// The target_info branch continues without reading either reference, so these sit above it
+		// and a reference past the symbol table is refused under every metric name.
+		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
+			continue
+		}
+
+		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
 			continue
 		}
 
@@ -385,16 +412,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		si := prw.extractScopeInfo(ls)
 		metricName := metadata.Name
-		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
-			continue
-		}
-
-		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
-			continue
-		}
-
 		unit := req.Symbols[ts.Metadata.UnitRef]
 		description := req.Symbols[ts.Metadata.HelpRef]
 
@@ -476,22 +493,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
-			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
-			attrsHash := pdatautil.MapHash(extractAttributes(ls))
-			key := exemplarKey{
-				ScopeName:    si.Name,
-				ScopeVersion: si.Version,
-				MetricName:   metricName,
-				MetricType:   ts.Metadata.Type,
-				AttrsHash:    attrsHash,
-			}
-			if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
-				dataPoints := metric.Sum().DataPoints()
-				for i := 0; i < dataPoints.Len(); i++ {
-					if pdatautil.MapHash(dataPoints.At(i).Attributes()) == attrsHash {
-						ex.CopyTo(dataPoints.At(i).Exemplars())
-						break
-					}
+			dataPoints := metric.Sum().DataPoints()
+			before := dataPoints.Len()
+			addNumberDatapoints(dataPoints, ls, ts, &stats)
+			// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
+			// metric built from the same labels, differing only by type or unit, from publishing a copy.
+			if len(exemplarMap) > 0 && dataPoints.Len() > before {
+				key := makeExemplarKey(ls)
+				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+					ex.CopyTo(dataPoints.At(before).Exemplars())
+					delete(exemplarMap, key)
 				}
 			}
 
@@ -522,7 +533,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	scopeCache map[scopeCacheKey]pmetric.ScopeMetrics,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
-	exemplarMap map[uint64]pmetric.ExemplarSlice,
+	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
 	bucketBudget *histogramBucketBudget,
 ) {
 	// Drop classic histogram series (those with samples)
@@ -532,6 +543,20 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		return
 	}
 	attrs := extractAttributes(ls)
+
+	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
+	// collected under.
+	var (
+		exemplars     pmetric.ExemplarSlice
+		exemplarsKey  exemplarKey
+		haveExemplars bool
+	)
+	if len(exemplarMap) > 0 {
+		exemplarsKey = makeExemplarKey(ls)
+		if ex, ok := exemplarMap[exemplarsKey]; ok && ex.Len() > 0 {
+			exemplars, haveExemplars = ex, true
+		}
+	}
 
 	var (
 		hashedLabels uint64
@@ -652,31 +677,37 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-		// all the exemplars for a given histogram are attached to first data point.
-		exemplarSlice := pmetric.NewExemplarSlice()
+		// One metric holds the data points of every series with its identity, so only the point
+		// the conversion appends below is known to be this histogram's.
+		var (
+			exemplarSlice pmetric.ExemplarSlice
+			appended      bool
+		)
 		// Process the individual histogram
 		if histogramType == "nhcb" {
-			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, attrs, stats)
-			if histMetric.Histogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.Histogram().DataPoints()
+			before := dps.Len()
+			prw.addNHCBDatapoint(dps, histogram, attrs, stats)
+			if appended = dps.Len() > before; appended {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		} else {
-			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, expLayout, attrs, ls, stats)
-			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
-				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
+			dps := histMetric.ExponentialHistogram().DataPoints()
+			before := dps.Len()
+			prw.addExponentialHistogramDatapoint(dps, histogram, expLayout, attrs, ls, stats)
+			if appended = dps.Len() > before; appended {
+				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
 		}
 
-		key := exemplarKey{
-			ScopeName:    si.Name,
-			ScopeVersion: si.Version,
-			MetricName:   metricName,
-			MetricType:   ts.Metadata.Type,
+		// A dropped histogram has no data point of its own, so attaching here would land on one
+		// built for an earlier series. Its exemplars stay in the map for a later one to claim.
+		if !appended || !haveExemplars {
+			continue
 		}
-
-		if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
-			ex.CopyTo(exemplarSlice)
-		}
+		exemplars.CopyTo(exemplarSlice)
+		delete(exemplarMap, exemplarsKey)
+		haveExemplars = false
 	}
 }
 

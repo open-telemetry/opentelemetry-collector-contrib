@@ -26,7 +26,7 @@ func Test_ParseCSV(t *testing.T) {
 		/* Test default mode */
 		{
 			name: "Parse comma separated values",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3", nil
@@ -46,7 +46,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with newline in first field",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1\nnewline,val2,val3", nil
@@ -66,7 +66,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with newline in middle field",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2\nnewline,val3", nil
@@ -86,7 +86,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with newline in last field",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3\nnewline", nil
@@ -106,7 +106,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with newline in multiple fields",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1\nnewline1,val2\nnewline2,val3\nnewline3", nil
@@ -126,7 +126,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with leading newline",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "\nval1,val2,val3", nil
@@ -146,7 +146,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with trailing newline",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3\n", nil
@@ -166,7 +166,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse with newline at end of field",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1\n,val2,val3", nil
@@ -186,7 +186,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse comma separated values with explicit mode",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3", nil
@@ -207,7 +207,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse tab separated values",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1\tval2\tval3", nil
@@ -228,7 +228,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Header delimiter is different from row delimiter",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1\tval2\tval3", nil
@@ -250,7 +250,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Invalid target (strict mode)",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return nil, errors.New("cannot get")
@@ -266,7 +266,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Invalid header (strict mode)",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,val2`, nil
@@ -283,11 +283,11 @@ func Test_ParseCSV(t *testing.T) {
 		{
 			name:        "Invalid args",
 			oArgs:       nil,
-			createError: "ParseCSVFactory args must be of type *ParseCSVArguments[K]",
+			createError: "ParseCSVFactory args must be of type *parseCSVArguments[K]",
 		},
 		{
 			name: "Parse fails due to header/row column mismatch",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,val2,val3`, nil
@@ -303,7 +303,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse fails due to header/row column mismatch",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,val2,val3`, nil
@@ -319,7 +319,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Empty header string (strict)",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1`, nil
@@ -335,7 +335,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse fails due to empty row",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "", nil
@@ -351,7 +351,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse fails for row with bare quotes",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,val2,v"al3`, nil
@@ -369,7 +369,7 @@ func Test_ParseCSV(t *testing.T) {
 		/* Test parsing with lazy quotes */
 		{
 			name: "Parse lazyQuotes with quote in row",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,val2,v"al3`, nil
@@ -390,7 +390,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Parse lazyQuotes invalid csv",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,"val2,"val3,val4"`, nil
@@ -408,7 +408,7 @@ func Test_ParseCSV(t *testing.T) {
 		/* Test parsing ignoring quotes */
 		{
 			name: "Parse quotes invalid csv",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,"val2,"val3,val4"`, nil
@@ -430,7 +430,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Invalid target (ignoreQuotes mode)",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return nil, errors.New("cannot get")
@@ -447,7 +447,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Invalid header (ignoreQuotes mode)",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1,val2`, nil
@@ -464,7 +464,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Empty header string (ignoreQuotes)",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return `val1`, nil
@@ -482,7 +482,7 @@ func Test_ParseCSV(t *testing.T) {
 		/* Validation tests */
 		{
 			name: "Delimiter is greater than one character",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3", nil
@@ -499,7 +499,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "HeaderDelimiter is greater than one character",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3", nil
@@ -516,7 +516,7 @@ func Test_ParseCSV(t *testing.T) {
 		},
 		{
 			name: "Bad mode",
-			oArgs: &ParseCSVArguments[any]{
+			oArgs: &parseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return "val1,val2,val3", nil
@@ -569,14 +569,14 @@ func Test_ParseCSVFactory(t *testing.T) {
 		factory := NewParseCSVFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ParseCSVArguments[any]{}, args)
+		assert.IsType(t, &parseCSVArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Header", "Delimiter", "HeaderDelimiter", "Mode"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewParseCSVFactory[any]()
 		args := factory.CreateDefaultArguments()
-		csvArgs, ok := args.(*ParseCSVArguments[any])
+		csvArgs, ok := args.(*parseCSVArguments[any])
 		require.True(t, ok)
 		csvArgs.Target = ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -596,6 +596,27 @@ func Test_ParseCSVFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createParseCSVFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ParseCSVFactory args must be of type *ParseCSVArguments[K]")
+		assert.ErrorContains(t, err, "ParseCSVFactory args must be of type *parseCSVArguments[K]")
 	})
+}
+
+func BenchmarkParseCSV(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "val1,val2,val3", nil
+		},
+	}
+	header := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "col1,col2,col3", nil
+		},
+	}
+	exprFunc := parseCSV[any](target, header, parseCSVDefaultDelimiter, string(parseCSVDefaultDelimiter), parseCSVRow(false))
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

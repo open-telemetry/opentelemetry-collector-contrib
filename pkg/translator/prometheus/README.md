@@ -77,28 +77,22 @@ No processing of the unit is performed, and `_total` is not appended for *Counte
 
 ## Labels
 
-OpenTelemetry *Attributes* are converted to Prometheus labels and normalized to follow the [Prometheus labels naming rules](https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels).
+OpenTelemetry attributes are converted to Prometheus label names according to the `translation_strategy` setting:
 
-The following transformations are performed on OpenTelemetry *Attributes* to produce Prometheus labels:
+* `UnderscoreEscapingWithSuffixes` and `UnderscoreEscapingWithoutSuffixes` replace unsupported characters with underscores and prefix names starting with a digit with `key_`.
+* `NoUTF8EscapingWithSuffixes` and `NoTranslation` preserve label names without escaping.
 
-* Drop unsupported characters and replace with underscores (`_`)
-* Prefix label with `key_` if it doesn't start with a letter, except if it's already prefixed with double-underscore (`__`). This is to provide compatibility with OpenMetrics 1.0.
+All four strategies preserve leading and consecutive underscores. Suffix options affect metric names, not label names.
 
-By default, labels that start with a simple underscore (`_`) are prefixed with `key`, which is strictly unnecessary to follow Prometheus labels naming rules. This behavior can be disabled with the feature `pkg.translator.prometheus.PermissiveLabelSanitization`, which must be activated with the feature gate option of the collector:
+| OpenTelemetry attribute | With underscore escaping | Without escaping |
+|---|---|---|
+| `name` | `name` | `name` |
+| `host.name` | `host_name` | `host.name` |
+| `host_name` | `host_name` | `host_name` |
+| `name (of the host)` | `name__of_the_host_` | `name (of the host)` |
+| `2 cents` | `key_2_cents` | `2 cents` |
+| `__name` | `__name` | `__name` |
+| `_name` | `_name` | `_name` |
+| `a__b` | `a__b` | `a__b` |
 
-```shell-session
-$ otelcol --config=config.yaml --feature-gates=pkg.translator.prometheus.PermissiveLabelSanitization
-```
-
-Examples:
-
-| OpenTelemetry Attribute | Prometheus Label |
-|---|---|
-| `name` | `name` |
-| `host.name` | `host_name` |
-| `host_name` | `host_name` |
-| `name (of the host)` | `name__of_the_host_` |
-| `2 cents` | `key_2_cents` |
-| `__name` | `__name` |
-| `_name` | `key_name` |
-| `_name` | `_name` (if `PermissiveLabelSanitization` is enabled) |
+See the [Prometheus exporter](../../../exporter/prometheusexporter/README.md) and [Prometheus remote-write exporter](../../../exporter/prometheusremotewriteexporter/README.md) documentation for configuration details.

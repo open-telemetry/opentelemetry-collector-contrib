@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -544,4 +547,41 @@ func TestConfig_Validate(t *testing.T) {
 			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
+}
+
+func TestSamplerConfig_effectiveMaxKeys(t *testing.T) {
+	tests := []struct {
+		name string
+		set  *int
+		want int
+	}{
+		{name: "omitted_defaults_to_500", set: nil, want: defaultMaxKeys},
+		{name: "explicit_zero_is_unlimited", set: new(0), want: 0},
+		{name: "explicit_default_value_unchanged", set: new(500), want: 500},
+		{name: "explicit_non_default_value_unchanged", set: new(999), want: 999},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := SamplerConfig{MaxKeys: tt.set}
+			assert.Equal(t, tt.want, s.effectiveMaxKeys())
+		})
+	}
+}
+
+func TestConfig_FleetTrackerID_Unmarshal(t *testing.T) {
+	cfg := &Config{
+		TraceTimeout:  time.Second,
+		DecisionDelay: time.Second,
+		NumTraces:     10,
+		Rules: []RuleConfig{
+			{Name: "default", Sampler: SamplerConfig{Type: AlwaysSample}},
+		},
+	}
+	cm := confmap.NewFromStringMap(map[string]any{
+		"fleet_tracker": "my_tracker/prod",
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
+	require.NotNil(t, cfg.FleetTrackerID)
+	assert.Equal(t, component.MustNewIDWithName("my_tracker", "prod"), *cfg.FleetTrackerID)
+	assert.NoError(t, cfg.Validate())
 }

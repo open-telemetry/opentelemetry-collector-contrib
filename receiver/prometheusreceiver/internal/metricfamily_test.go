@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type testMetadataStore map[string]scrape.MetricMetadata
@@ -288,6 +290,130 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			got := hdpL.At(0)
 			want := tt.want()
 			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toDistributionDropsNegativeOverflow(t *testing.T) {
+	mg := metricGroup{
+		hasCount: true,
+		count:    10,
+		complexValue: []dataPoint{
+			{boundary: 1, value: 5},
+			{boundary: 2, value: 11},
+		},
+	}
+
+	core, observed := observer.New(zap.DebugLevel)
+	dest := pmetric.NewHistogramDataPointSlice()
+	mg.toDistributionPoint(dest, zap.New(core))
+
+	require.Zero(t, dest.Len())
+	require.Equal(t, 1, observed.Len(), "expected a debug log for the dropped point")
+}
+
+func TestMetricGroupData_toDistributionDropsNegativeBucketDelta(t *testing.T) {
+	mg := metricGroup{
+		hasCount: true,
+		count:    12,
+		complexValue: []dataPoint{
+			{boundary: 1, value: 10},
+			{boundary: 2, value: 9},
+		},
+	}
+
+	dest := pmetric.NewHistogramDataPointSlice()
+	mg.toDistributionPoint(dest, zap.NewNop())
+
+	require.Zero(t, dest.Len())
+}
+
+func TestMetricGroupData_toDistributionDropsNaNBucketValue(t *testing.T) {
+	mg := metricGroup{
+		hasCount: true,
+		count:    12,
+		complexValue: []dataPoint{
+			{boundary: 1, value: math.NaN()},
+			{boundary: 2, value: 12},
+		},
+	}
+
+	dest := pmetric.NewHistogramDataPointSlice()
+	mg.toDistributionPoint(dest, zap.NewNop())
+
+	require.Zero(t, dest.Len())
+}
+
+func TestMetricGroupData_toDistributionDropsNaNCount(t *testing.T) {
+	mg := metricGroup{
+		hasCount: true,
+		count:    math.NaN(),
+		complexValue: []dataPoint{
+			{boundary: 1, value: 5},
+			{boundary: 2, value: 10},
+		},
+	}
+
+	dest := pmetric.NewHistogramDataPointSlice()
+	mg.toDistributionPoint(dest, zap.NewNop())
+
+	require.Zero(t, dest.Len())
+}
+
+func TestMetricGroupData_toNHCBDistributionDropsInvalidBuckets(t *testing.T) {
+	tests := []struct {
+		name             string
+		integerHistogram *histogram.Histogram
+		floatHistogram   *histogram.FloatHistogram
+	}{
+		{
+			name: "integer NHCB with negative bucket count",
+			integerHistogram: &histogram.Histogram{
+				Schema:          -53,
+				Count:           10,
+				Sum:             100.5,
+				CustomValues:    []float64{1.0, 2.0},
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 3}},
+				PositiveBuckets: []int64{10, -15, 15},
+			},
+		},
+		{
+			name: "float NHCB with negative bucket count",
+			floatHistogram: &histogram.FloatHistogram{
+				Schema:          -53,
+				Count:           10,
+				Sum:             100.5,
+				CustomValues:    []float64{1.0, 2.0},
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 3}},
+				PositiveBuckets: []float64{15.0, -5.0, 0.0},
+			},
+		},
+		{
+			name: "float NHCB with NaN bucket count",
+			floatHistogram: &histogram.FloatHistogram{
+				Schema:          -53,
+				Count:           10,
+				Sum:             100.5,
+				CustomValues:    []float64{1.0, 2.0},
+				PositiveSpans:   []histogram.Span{{Offset: 0, Length: 3}},
+				PositiveBuckets: []float64{5.0, math.NaN(), 5.0},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lbls := labels.FromMap(map[string]string{"a": "A"})
+			mp := newMetricFamily("histogram", mc, zap.NewNop(), false, false)
+			sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
+
+			err := mp.addNHCBSeries(sRef, "histogram", lbls, 11, tt.integerHistogram, tt.floatHistogram)
+			require.NoError(t, err)
+
+			sl := pmetric.NewMetricSlice()
+			mp.appendMetric(sl, false)
+
+			require.Zero(t, sl.Len(), "invalid NHCB point should be dropped")
 		})
 	}
 }
@@ -1392,6 +1518,21 @@ func TestConvertExemplar(t *testing.T) {
 				return e
 			},
 		},
+		{
+			name: "valid ids with no extra labels leave filtered attributes empty",
+			labels: labels.New(
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.SetTraceID(validTraceIDBytes)
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1404,6 +1545,31 @@ func TestConvertExemplar(t *testing.T) {
 			got := pmetric.NewExemplar()
 			convertExemplar(pe, got)
 			require.Equal(t, tt.want(), got)
+		})
+	}
+}
+
+func TestPopulateAttributes(t *testing.T) {
+	for _, keptCount := range []int{0, 5, 16, 20} {
+		t.Run(fmt.Sprintf("kept=%d", keptCount), func(t *testing.T) {
+			lb := labels.NewBuilder(labels.EmptyLabels())
+			lb.Set(model.MetricNameLabel, "http_requests_total")
+			lb.Set(model.JobLabel, "api")
+			lb.Set(model.InstanceLabel, "localhost:8080")
+			lb.Set(model.BucketLabel, "0.5")
+			lb.Set("otel_scope_name", "my.scope")
+			lb.Set("empty_label", "")
+			want := pcommon.NewMap()
+			for i := range keptCount {
+				k := fmt.Sprintf("label_%02d", i)
+				v := fmt.Sprintf("val_%02d", i)
+				lb.Set(k, v)
+				want.PutStr(k, v)
+			}
+
+			got := pcommon.NewMap()
+			populateAttributes(pmetric.MetricTypeHistogram, lb.Labels(), got)
+			require.Equal(t, want, got)
 		})
 	}
 }

@@ -294,8 +294,9 @@ func BenchmarkLogsReceiverPartitionProcessing(b *testing.B) {
 			autocommit:       "enabled",
 			autoCommitConfig: defaultConfig.ConsumerConfig.AutoCommit,
 			partitionProcessing: PartitionProcessing{
-				Independent:        true,
-				MaxBufferedBatches: 1,
+				Independent: true,
+				MaxPrefetch: MaxPrefetchConfig{Batches: 1},
+				MaxInFlight: MaxInFlightConfig{Records: 1},
 			},
 		},
 		{
@@ -315,7 +316,8 @@ func BenchmarkLogsReceiverPartitionProcessing(b *testing.B) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = logger
 
-	for _, tc := range cases {
+	for i := range cases {
+		tc := &cases[i]
 		b.Run(fmt.Sprintf("mode=%s/autocommit=%s", tc.mode, tc.autocommit), func(b *testing.B) {
 			cfg, client := newBenchConfigClient(
 				b,

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !freebsd && !solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata"
 )
@@ -27,6 +28,24 @@ type factory struct {
 	onceProvider   sync.Once
 	sourceProvider source.Provider
 	providerErr    error
+
+	// Host-supplied, appended to the extension's own. See WithConfigOptions.
+	configOptions []agentcomponents.ConfigOption
+}
+
+// Option configures the Datadog extension factory.
+type Option func(*factory)
+
+// WithConfigOptions appends options to those the extension uses to build its internal
+// Agent config component, letting an embedding host keep that config in sync with its
+// own — for example to propagate an API key rotation.
+//
+// They are applied after the extension's own, so a value they set wins. They run before
+// the config component's schema is built, so they may Set values but not read them.
+func WithConfigOptions(o ...agentcomponents.ConfigOption) Option {
+	return func(f *factory) {
+		f.configOptions = append(f.configOptions, o...)
+	}
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
@@ -38,7 +57,16 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 
 // NewFactory creates a factory for the Datadog extension.
 func NewFactory() extension.Factory {
+	return NewFactoryWithOptions()
+}
+
+// NewFactoryWithOptions creates a factory for the Datadog extension. With no options it
+// is equivalent to NewFactory.
+func NewFactoryWithOptions(opts ...Option) extension.Factory {
 	f := &factory{}
+	for _, opt := range opts {
+		opt(f)
+	}
 	return extension.NewFactory(
 		metadata.Type,
 		f.createDefaultConfig,
@@ -52,11 +80,6 @@ func (*factory) createDefaultConfig() component.Config {
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = httpserver.DefaultServerEndpoint
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = netAddr
 	return &Config{
 		ClientConfig: confighttp.NewDefaultClientConfig(),
@@ -84,5 +107,5 @@ func (f *factory) create(ctx context.Context, set extension.Settings, cfg compon
 	// Create the real UUID provider for the extension
 	uuidProvider := &realUUIDProvider{}
 
-	return newExtension(ctx, extensionConfig, set, hostProvider, uuidProvider)
+	return newExtension(ctx, extensionConfig, set, hostProvider, uuidProvider, f.configOptions...)
 }

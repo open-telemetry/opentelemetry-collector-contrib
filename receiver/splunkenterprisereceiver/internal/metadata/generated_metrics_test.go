@@ -122,306 +122,459 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkAggregationQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkAggregationQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkAggregationQueueRatioDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkAggregationQueueRatio.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkBucketsSearchableStatusDataPoint(ts, 1, "splunk.host-val", "splunk.indexer.searchable-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkBucketsSearchableStatusDataPoint(ts, 3, "splunk.host-val-2", "splunk.indexer.searchable-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkBucketsSearchableStatusDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.indexer.searchable-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkBucketsSearchableStatus.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedBucketCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedBucketEventCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedBucketHotCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.bucket.dir-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedBucketWarmCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedEventCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedRawSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkDataIndexesExtendedTotalSize.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkHealthDataPoint(ts, 3, "splunk.feature-val-2", "splunk.feature.health-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkHealthDataPoint(ts+1, 3, "splunk.feature-val-2", "splunk.feature.health-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkHealth.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerAvgRateDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexerAvgRateDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexerAvgRateDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexerAvgRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerCPUTimeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexerCPUTimeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexerCPUTimeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexerCPUTime.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexerQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexerQueueRatioDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexerQueueRatio.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexerRawWriteTime.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 1, false, false, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 3, true, true, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts+1, 3, true, true, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexerRollingrestartStatus.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexerThroughputDataPoint(ts, 3, "splunk.indexer.status-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexerThroughputDataPoint(ts+1, 3, "splunk.indexer.status-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexerThroughput.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesAvgSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexesAvgSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexesAvgSizeDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexesAvgSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesAvgUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexesAvgUsageDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexesAvgUsageDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexesAvgUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesBucketCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexesBucketCountDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexesBucketCountDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexesBucketCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesMedianDataAgeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexesMedianDataAgeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexesMedianDataAgeDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexesMedianDataAge.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIndexesSizeDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIndexesSizeDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIndexesSizeDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIndexesSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkIoAvgIopsDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkIoAvgIopsDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkIoAvgIopsDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkIoAvgIops.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 3, "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkKvstoreBackupStatusDataPoint(ts+1, 3, "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkKvstoreBackupStatus.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.kvstore.storage_engine-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 3, "splunk.kvstore.status.value-val-2", "splunk.kvstore.storage_engine-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts+1, 3, "splunk.kvstore.status.value-val-2", "splunk.kvstore.storage_engine-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkKvstoreReplicationStatus.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage_engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkKvstoreStatusDataPoint(ts, 3, "splunk.kvstore.storage_engine-val-2", "splunk.kvstore.external-val-2", "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkKvstoreStatusDataPoint(ts+1, 3, "splunk.kvstore.storage_engine-val-2", "splunk.kvstore.external-val-2", "splunk.kvstore.status.value-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkKvstoreStatus.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts, 1, "splunk.license.status-val", "splunk.license.label-val", "splunk.license.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts, 3, "splunk.license.status-val-2", "splunk.license.label-val-2", "splunk.license.type-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts+1, 3, "splunk.license.status-val-2", "splunk.license.label-val-2", "splunk.license.type-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkLicenseExpirationSecondsRemaining.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkLicenseIndexUsageDataPoint(ts+1, 3, "splunk.index.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkLicenseIndexUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkParseQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkParseQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkParseQueueRatioDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkParseQueueRatio.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkPipelineSetCountDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkPipelineSetCountDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkPipelineSetCountDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkPipelineSetCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSchedulerAvgExecutionLatency.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSchedulerAvgRunTime.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSchedulerCompletionRatio.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchDurationDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSearchDurationDataPoint(ts, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSearchDurationDataPoint(ts+1, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSearchDuration.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchInitiationDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSearchInitiationDataPoint(ts, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSearchInitiationDataPoint(ts+1, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSearchInitiation.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchStatusDataPoint(ts, 1, "splunk.search.state-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSearchStatusDataPoint(ts, 3, "splunk.search.state-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSearchStatusDataPoint(ts+1, 3, "splunk.search.state-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSearchStatus.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkSearchSuccessDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkSearchSuccessDataPoint(ts, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkSearchSuccessDataPoint(ts+1, 3, "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkSearchSuccess.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 1, "splunk.queue.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 3, "splunk.queue.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts+1, 3, "splunk.queue.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerIntrospectionQueuesCurrent.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 1, "splunk.queue.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 3, "splunk.queue.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts+1, 3, "splunk.queue.name-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerIntrospectionQueuesCurrentBytes.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsAdhoc.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsAdhocSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsCompleted.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsCompletedSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsIncomplete.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsIncompleteSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsInvalid.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsJobCacheCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts, 1, "splunk.host-val", "splunk.searchartifacts.cache.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.searchartifacts.cache.type-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.searchartifacts.cache.type-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsJobCacheSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsSavedsearches.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsScheduled.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkServerSearchartifactsScheduledSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSplunkTypingQueueRatioDataPoint(ts, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSplunkTypingQueueRatioDataPoint(ts+1, 3, "splunk.host-val-2", "splunk.splunkd.build-val-2", "splunk.splunkd.version-val-2")
+				assert.Equal(t, 2, mb.metricSplunkTypingQueueRatio.data.Gauge().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -531,7 +684,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.aggregation.queue.ratio"], "Found a duplicate in the metrics slice: splunk.aggregation.queue.ratio")
 						validatedMetrics["splunk.aggregation.queue.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{%}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -584,7 +739,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.buckets.searchable.status"], "Found a duplicate in the metrics slice: splunk.buckets.searchable.status")
 						validatedMetrics["splunk.buckets.searchable.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{count}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -636,7 +793,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of buckets per index", mi.Description())
 						assert.Equal(t, "{buckets}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -689,7 +848,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.", mi.Description())
 						assert.Equal(t, "{events}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -744,7 +905,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "(If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.", mi.Description())
 						assert.Equal(t, "{buckets}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -799,7 +962,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
 						validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "(If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "{buckets}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -851,7 +1016,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
 						validatedMetrics["splunk.data.indexes.extended.event.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "{events}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -901,7 +1068,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
 						validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -951,7 +1120,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
 						validatedMetrics["splunk.data.indexes.extended.total.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1004,7 +1175,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.health"], "Found a duplicate in the metrics slice: splunk.health")
 						validatedMetrics["splunk.health"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1056,7 +1229,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
 						validatedMetrics["splunk.indexer.avg.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "kBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1106,7 +1281,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
 						validatedMetrics["splunk.indexer.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the number of indexing process cpu seconds per instance", mi.Description())
 						assert.Equal(t, "{s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1156,7 +1333,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexer.queue.ratio"], "Found a duplicate in the metrics slice: splunk.indexer.queue.ratio")
 						validatedMetrics["splunk.indexer.queue.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{%}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1206,7 +1385,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
 						validatedMetrics["splunk.indexer.raw.write.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the number of raw write seconds per instance", mi.Description())
 						assert.Equal(t, "{s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1259,7 +1440,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexer.rollingrestart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rollingrestart.status")
 						validatedMetrics["splunk.indexer.rollingrestart.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The status of a rolling restart.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1311,7 +1494,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 						validatedMetrics["splunk.indexer.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1361,7 +1546,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexes.avg.size"], "Found a duplicate in the metrics slice: splunk.indexes.avg.size")
 						validatedMetrics["splunk.indexes.avg.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "Gb", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1411,7 +1598,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexes.avg.usage"], "Found a duplicate in the metrics slice: splunk.indexes.avg.usage")
 						validatedMetrics["splunk.indexes.avg.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{%}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1461,7 +1650,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexes.bucket.count"], "Found a duplicate in the metrics slice: splunk.indexes.bucket.count")
 						validatedMetrics["splunk.indexes.bucket.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{count}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1511,7 +1702,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexes.median.data.age"], "Found a duplicate in the metrics slice: splunk.indexes.median.data.age")
 						validatedMetrics["splunk.indexes.median.data.age"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{days}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1561,7 +1754,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.indexes.size"], "Found a duplicate in the metrics slice: splunk.indexes.size")
 						validatedMetrics["splunk.indexes.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "Gb", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1611,7 +1806,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
 						validatedMetrics["splunk.io.avg.iops"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average IOPs used per instance", mi.Description())
 						assert.Equal(t, "{iops}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1661,7 +1858,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
 						validatedMetrics["splunk.kvstore.backup.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Backup and restore status of the KV store.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1714,7 +1913,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
 						validatedMetrics["splunk.kvstore.replication.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Replication status of the KV store.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1772,7 +1973,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
 						validatedMetrics["splunk.kvstore.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "This is the overall status of the kvstore for the given deployment.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1832,7 +2035,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.license.expiration.seconds_remaining"], "Found a duplicate in the metrics slice: splunk.license.expiration.seconds_remaining")
 						validatedMetrics["splunk.license.expiration.seconds_remaining"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{seconds}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1886,7 +2091,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
 						validatedMetrics["splunk.license.index.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the indexed license usage per index", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1936,7 +2143,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.parse.queue.ratio"], "Found a duplicate in the metrics slice: splunk.parse.queue.ratio")
 						validatedMetrics["splunk.parse.queue.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{%}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1986,7 +2195,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.pipeline.set.count"], "Found a duplicate in the metrics slice: splunk.pipeline.set.count")
 						validatedMetrics["splunk.pipeline.set.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "kBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2036,7 +2247,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
 						validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average execution latency of scheduled searches", mi.Description())
 						assert.Equal(t, "{ms}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2086,7 +2299,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
 						validatedMetrics["splunk.scheduler.avg.run.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average runtime of scheduled searches", mi.Description())
 						assert.Equal(t, "{ms}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2136,7 +2351,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.scheduler.completion.ratio"], "Found a duplicate in the metrics slice: splunk.scheduler.completion.ratio")
 						validatedMetrics["splunk.scheduler.completion.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the ratio of completed to skipped scheduled searches", mi.Description())
 						assert.Equal(t, "{%}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2183,7 +2400,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.search.duration"], "Found a duplicate in the metrics slice: splunk.search.duration")
 						validatedMetrics["splunk.search.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the duration in seconds of the last search probe call.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2228,7 +2447,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.search.initiation"], "Found a duplicate in the metrics slice: splunk.search.initiation")
 						validatedMetrics["splunk.search.initiation"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking whether the last search probe successfully initiated a search.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2276,7 +2497,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.search.status"], "Found a duplicate in the metrics slice: splunk.search.status")
 						validatedMetrics["splunk.search.status"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the dispatch status of the last search probe.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2323,7 +2546,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.search.success"], "Found a duplicate in the metrics slice: splunk.search.success")
 						validatedMetrics["splunk.search.success"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.", mi.Description())
 						assert.Equal(t, "{status}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2371,7 +2596,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
 						validatedMetrics["splunk.server.introspection.queues.current"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "{queues}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2421,7 +2648,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
 						validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2471,7 +2700,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
 						validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2521,7 +2752,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc.size")
 						validatedMetrics["splunk.server.searchartifacts.adhoc.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2571,7 +2804,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
 						validatedMetrics["splunk.server.searchartifacts.completed"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2621,7 +2856,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed.size")
 						validatedMetrics["splunk.server.searchartifacts.completed.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2671,7 +2908,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
 						validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2721,7 +2960,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete.size")
 						validatedMetrics["splunk.server.searchartifacts.incomplete.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2771,7 +3012,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
 						validatedMetrics["splunk.server.searchartifacts.invalid"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2821,7 +3064,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.count"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.count")
 						validatedMetrics["splunk.server.searchartifacts.job.cache.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2874,7 +3119,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
 						validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{mb}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2926,7 +3173,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
 						validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2976,7 +3225,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
 						validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3026,7 +3277,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled.size")
 						validatedMetrics["splunk.server.searchartifacts.scheduled.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.", mi.Description())
 						assert.Equal(t, "{search_artifacts}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3076,7 +3329,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
 						validatedMetrics["splunk.typing.queue.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.", mi.Description())
 						assert.Equal(t, "{%}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
