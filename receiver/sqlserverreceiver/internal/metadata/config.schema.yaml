@@ -32,6 +32,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.connection.reset.rate:
+        description: "SqlserverConnectionResetRateMetricConfig provides config for the sqlserver.connection.reset.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.cpu.count:
         description: "SqlserverCPUCountMetricConfig provides config for the sqlserver.cpu.count metric."
         type: object
@@ -207,8 +214,239 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.error.rate:
+        description: "SqlserverErrorRateMetricConfig provides config for the sqlserver.error.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.index.fragmentation:
+        description: "SqlserverIndexFragmentationMetricConfig provides config for the sqlserver.index.fragmentation metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.page.count:
+        description: "SqlserverIndexPageCountMetricConfig provides config for the sqlserver.index.page.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.page.utilization:
+        description: "SqlserverIndexPageUtilizationMetricConfig provides config for the sqlserver.index.page.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.index.record.count:
+        description: "SqlserverIndexRecordCountMetricConfig provides config for the sqlserver.index.record.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
       sqlserver.index.search.rate:
         description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.index.size:
+        description: "SqlserverIndexSizeMetricConfig provides config for the sqlserver.index.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "db.namespace"
+                - "sqlserver.index.id"
+                - "sqlserver.object.name"
+                - "sqlserver.schema.name"
+            default:
+              - "db.namespace"
+              - "sqlserver.index.id"
+              - "sqlserver.object.name"
+              - "sqlserver.schema.name"
+      sqlserver.latch.superlatch.count:
+        description: "SqlserverLatchSuperlatchCountMetricConfig provides config for the sqlserver.latch.superlatch.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.superlatch.transition.rate:
+        description: "SqlserverLatchSuperlatchTransitionRateMetricConfig provides config for the sqlserver.latch.superlatch.transition.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "transition.direction"
+            default:
+              - "transition.direction"
+      sqlserver.latch.wait.rate:
+        description: "SqlserverLatchWaitRateMetricConfig provides config for the sqlserver.latch.wait.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.wait_time.avg:
+        description: "SqlserverLatchWaitTimeAvgMetricConfig provides config for the sqlserver.latch.wait_time.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.latch.wait_time.total:
+        description: "SqlserverLatchWaitTimeTotalMetricConfig provides config for the sqlserver.latch.wait_time.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.block.count:
+        description: "SqlserverLockBlockCountMetricConfig provides config for the sqlserver.lock.block.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.escalation.rate:
+        description: "SqlserverLockEscalationRateMetricConfig provides config for the sqlserver.lock.escalation.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.memory:
+        description: "SqlserverLockMemoryMetricConfig provides config for the sqlserver.lock.memory metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.lock.request.rate:
+        description: "SqlserverLockRequestRateMetricConfig provides config for the sqlserver.lock.request.rate metric."
         type: object
         properties:
           enabled:
@@ -242,6 +480,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      sqlserver.lock.wait_time.total:
+        description: "SqlserverLockWaitTimeTotalMetricConfig provides config for the sqlserver.lock.wait_time.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.login.rate:
         description: "SqlserverLoginRateMetricConfig provides config for the sqlserver.login.rate metric."
         type: object
@@ -256,6 +501,52 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.memory.area:
+        description: "SqlserverMemoryAreaMetricConfig provides config for the sqlserver.memory.area metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory.pool"
+            default:
+              - "memory.pool"
+      sqlserver.memory.cache.object.count:
+        description: "SqlserverMemoryCacheObjectCountMetricConfig provides config for the sqlserver.memory.cache.object.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache.state"
+            default:
+              - "cache.state"
       sqlserver.memory.grants.pending.count:
         description: "SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric."
         type: object
@@ -263,6 +554,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.memory.page.count:
+        description: "SqlserverMemoryPageCountMetricConfig provides config for the sqlserver.memory.page.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "page.pool"
+            default:
+              - "page.pool"
       sqlserver.memory.usage:
         description: "SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric."
         type: object

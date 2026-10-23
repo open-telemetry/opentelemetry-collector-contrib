@@ -24,14 +24,14 @@ import (
 )
 
 func TestSocketConnectionLogs(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:12001",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:12001",
-			},
-		},
-		Limit: 1,
+		ServerConfig: serverConfig,
+		Limit:        1,
 	}
 	logSink := &consumertest.LogsSink{}
 	processor, err := NewFactory().CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
@@ -68,14 +68,14 @@ func TestSocketConnectionLogs(t *testing.T) {
 }
 
 func TestSocketConnectionMetrics(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:12002",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:12002",
-			},
-		},
-		Limit: 1,
+		ServerConfig: serverConfig,
+		Limit:        1,
 	}
 	metricsSink := &consumertest.MetricsSink{}
 	processor, err := NewFactory().CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
@@ -112,14 +112,14 @@ func TestSocketConnectionMetrics(t *testing.T) {
 }
 
 func TestSocketConnectionTraces(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:12003",
+	}
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:12003",
-			},
-		},
-		Limit: 1,
+		ServerConfig: serverConfig,
+		Limit:        1,
 	}
 	tracesSink := &consumertest.TracesSink{}
 	processor, err := NewFactory().CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,

@@ -5,6 +5,7 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"slices"
 	"strings"
@@ -24,6 +25,7 @@ const (
 	defaultSecurityLevel      = "no_auth_no_priv"
 	defaultAuthType           = "MD5"
 	defaultPrivacyType        = "DES"
+	defaultMaxRepetitions     = 25
 )
 
 var (
@@ -53,6 +55,7 @@ var (
 	errMsgMultipleKeysSetOnResourceAttribute        = `resource attribute '%s' must have only one of oid, scalar_oid, or indexed_value_prefix`
 	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute '%s' has scalar_oid '%s' that ends in a nonzero digit (scalar oids should not be indexed)`
 	errColumnOIDResourceAttributeEndsInZero         = `resource attribute '%s' has oid '%s' that ends in a zero (column oids should be indexed)`
+	errMsgMaxRepetitionsTooLarge                    = `max_repetitions (%d) must not exceed %d`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -73,7 +76,7 @@ var (
 
 // Config defines the configuration for the various elements of the receiver.
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// Endpoint is the SNMP target to request data from. Must be formatted as [udp|tcp|][4|6|]://{host}:{port}.
 	// Default: udp://localhost:161
@@ -120,6 +123,11 @@ type Config struct {
 	// PrivacyPassword is the authentication password used for this SNMP connection.
 	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
 	PrivacyPassword configopaque.String `mapstructure:"privacy_password"`
+
+	// MaxRepetitions is the maximum number of iterations over the repeating variable list for GETBULK requests.
+	// Only valid for versions "v2c" and "v3".
+	// Default: 25
+	MaxRepetitions uint32 `mapstructure:"max_repetitions"`
 
 	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
 	// of resource attribute names along with their resource attribute configurations
@@ -262,6 +270,7 @@ func (cfg *Config) Validate() error {
 	if strings.EqualFold(cfg.Version, "V3") {
 		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
+	combinedErr = errors.Join(combinedErr, validateMaxRepetitions(cfg))
 	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
 
 	return combinedErr
@@ -303,6 +312,15 @@ func validateVersion(cfg *Config) error {
 	case "V1", "V2C", "V3": // ok
 	default:
 		return errBadVersion
+	}
+
+	return nil
+}
+
+// validateMaxRepetitions validates the MaxRepetitions
+func validateMaxRepetitions(cfg *Config) error {
+	if cfg.MaxRepetitions > math.MaxInt32 {
+		return fmt.Errorf(errMsgMaxRepetitionsTooLarge, cfg.MaxRepetitions, math.MaxInt32)
 	}
 
 	return nil

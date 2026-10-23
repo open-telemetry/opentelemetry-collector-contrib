@@ -40,7 +40,7 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, handlePull
 	return o, nil
 }
 
-func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} {
+func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}, error) {
 	resource := o.client.Resource(o.config.Gvr)
 	o.logger.Info("Started collecting",
 		zap.Any("gvr", o.config.Gvr),
@@ -59,7 +59,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 		}
 	}
 
-	return stopperChan
+	return stopperChan, nil
 }
 
 func (o *Observer) startPull(ctx context.Context, resource dynamic.ResourceInterface, stopperChan chan struct{}, wg *sync.WaitGroup) {

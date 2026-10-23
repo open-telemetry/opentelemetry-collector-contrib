@@ -158,6 +158,30 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestZookeeperFollowerCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ZookeeperFollowerCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ZookeeperFollowerCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric zookeeper.follower.count doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().ZookeeperFollowerCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestZookeeperPacketCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ZookeeperPacketCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ZookeeperPacketCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric zookeeper.packet.count doesn't have an attribute invalid, valid attributes: [direction]")
+
+	cfg = DefaultMetricsConfig().ZookeeperPacketCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

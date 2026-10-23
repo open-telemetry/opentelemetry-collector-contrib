@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -21,6 +22,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 // AttributeCheckpoint specifies the value checkpoint attribute.
 type AttributeCheckpoint int
@@ -114,7 +124,8 @@ var MapAttributeRecord = map[string]AttributeRecord{
 
 var MetricsInfo = metricsInfo{
 	FlinkJobCheckpointCount: metricInfo{
-		Name: "flink.job.checkpoint.count",
+		Name:       "flink.job.checkpoint.count",
+		Attributes: []string{"checkpoint"},
 	},
 	FlinkJobCheckpointInProgress: metricInfo{
 		Name: "flink.job.checkpoint.in_progress",
@@ -138,10 +149,12 @@ var MetricsInfo = metricsInfo{
 		Name: "flink.jvm.cpu.time",
 	},
 	FlinkJvmGcCollectionsCount: metricInfo{
-		Name: "flink.jvm.gc.collections.count",
+		Name:       "flink.jvm.gc.collections.count",
+		Attributes: []string{"garbage_collector_name"},
 	},
 	FlinkJvmGcCollectionsTime: metricInfo{
-		Name: "flink.jvm.gc.collections.time",
+		Name:       "flink.jvm.gc.collections.time",
+		Attributes: []string{"garbage_collector_name"},
 	},
 	FlinkJvmMemoryDirectTotalCapacity: metricInfo{
 		Name: "flink.jvm.memory.direct.total_capacity",
@@ -192,13 +205,16 @@ var MetricsInfo = metricsInfo{
 		Name: "flink.memory.managed.used",
 	},
 	FlinkOperatorRecordCount: metricInfo{
-		Name: "flink.operator.record.count",
+		Name:       "flink.operator.record.count",
+		Attributes: []string{"operator_name", "record"},
 	},
 	FlinkOperatorWatermarkOutput: metricInfo{
-		Name: "flink.operator.watermark.output",
+		Name:       "flink.operator.watermark.output",
+		Attributes: []string{"operator_name"},
 	},
 	FlinkTaskRecordCount: metricInfo{
-		Name: "flink.task.record.count",
+		Name:       "flink.task.record.count",
+		Attributes: []string{"record"},
 	},
 }
 
@@ -235,7 +251,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricFlinkJobCheckpointCount struct {
@@ -1597,6 +1614,7 @@ type metricFlinkOperatorRecordCount struct {
 	config        FlinkOperatorRecordCountMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills flink.operator.record.count metric with initial data.
@@ -1609,6 +1627,7 @@ func (m *metricFlinkOperatorRecordCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operatorNameAttributeValue string, recordAttributeValue string) {
@@ -1627,31 +1646,31 @@ func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1691,6 +1710,7 @@ type metricFlinkOperatorWatermarkOutput struct {
 	config        FlinkOperatorWatermarkOutputMetricConfig // metric config provided by user.
 	capacity      int                                      // max observed number of data points added to the metric.
 	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills flink.operator.watermark.output metric with initial data.
@@ -1703,6 +1723,7 @@ func (m *metricFlinkOperatorWatermarkOutput) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operatorNameAttributeValue string) {
@@ -1718,31 +1739,31 @@ func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Times
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 

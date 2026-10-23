@@ -10,7 +10,7 @@ import (
 
 // Config relating to Network Metric Scraper.
 type Config struct {
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Include specifies a filter on the network interfaces that should be included from the generated metrics.
 	Include MatchConfig `mapstructure:"include"`
 	// Exclude specifies a filter on the network interfaces that should be excluded from the generated metrics.
@@ -18,7 +18,7 @@ type Config struct {
 }
 
 type MatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
+	Config filterset.Config `mapstructure:",squash"`
 
 	Interfaces []string `mapstructure:"interfaces"`
 }

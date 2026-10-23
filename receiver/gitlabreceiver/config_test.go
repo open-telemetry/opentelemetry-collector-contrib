@@ -24,18 +24,18 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  defaultEndpoint,
+	}
+	serverConfig.ReadTimeout = defaultReadTimeout
+	serverConfig.WriteTimeout = defaultWriteTimeout
 	expectedConfig := &Config{
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  defaultEndpoint,
-				},
-				ReadTimeout:  defaultReadTimeout,
-				WriteTimeout: defaultWriteTimeout,
-			},
-			Path:       defaultPath,
-			HealthPath: defaultHealthPath,
+			ServerConfig: serverConfig,
+			Path:         defaultPath,
+			HealthPath:   defaultHealthPath,
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
@@ -70,18 +70,18 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Len(t, cfg.Receivers, 2)
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
+	serverConfig.ReadTimeout = 500 * time.Millisecond
+	serverConfig.WriteTimeout = 500 * time.Millisecond
 	expectedConfig := &Config{
 		WebHook: WebHook{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:8080",
-				},
-				ReadTimeout:  500 * time.Millisecond,
-				WriteTimeout: 500 * time.Millisecond,
-			},
-			Path:       "some/path",
-			HealthPath: "health/path",
+			ServerConfig: serverConfig,
+			Path:         "some/path",
+			HealthPath:   "health/path",
 			RequiredHeaders: map[string]configopaque.String{
 				"key1-present": "value1-present",
 			},

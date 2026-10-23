@@ -1,7 +1,7 @@
-sqlserver:
+sql_server:
   collection_interval: 10s
 
-sqlserver/named:
+sql_server/named:
   collection_interval: 10s
   computer_name: CustomServer
   instance_name: CustomInstance
@@ -13,6 +13,8 @@ sqlserver/named:
     server.port:
       enabled: true
     server.address:
+      enabled: true
+    service.name:
       enabled: true
     service.instance.id:
       enabled: false

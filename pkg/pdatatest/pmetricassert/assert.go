@@ -6,6 +6,9 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"math"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -23,16 +26,19 @@ func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	actualDoc := normalize(actual)
+	actualDoc := normalize(actual, writeOptions{includeValues: true})
 	return compareDocuments(expected, actualDoc)
 }
 
 func compareDocuments(expected, actual *document) error {
 	var errs []error
+	if err := expected.ResourcesMatch.count.check("resources", len(actual.Resources)); err != nil {
+		errs = append(errs, err)
+	}
 	matched := make([]bool, len(actual.Resources))
 
 	for _, er := range expected.Resources {
-		idx := findMatchingAttributes(er.Attributes, matched, len(actual.Resources), func(i int) map[string]any {
+		idx := findMatchingAttributes(er.Attributes, er.AttributeMode, matched, len(actual.Resources), func(i int) map[string]any {
 			return actual.Resources[i].Attributes
 		})
 		if idx < 0 {
@@ -44,9 +50,12 @@ func compareDocuments(expected, actual *document) error {
 			errs = append(errs, fmt.Errorf("resource %v: %w", er.Attributes, err))
 		}
 	}
-	for i, ar := range actual.Resources {
-		if !matched[i] {
-			errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+	// Under /include, actual resources with no expected counterpart are allowed.
+	if expected.ResourcesMatch.mode == collectionModeExact {
+		for i, ar := range actual.Resources {
+			if !matched[i] {
+				errs = append(errs, fmt.Errorf("unexpected resource: %v", ar.Attributes))
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -54,41 +63,97 @@ func compareDocuments(expected, actual *document) error {
 
 func compareResource(expected, actual resourceAssertion) error {
 	var errs []error
-	expScopes := indexScopes(expected.Scopes)
-	actScopes := indexScopes(actual.Scopes)
+	if err := expected.ScopesMatch.count.check("scopes", len(actual.Scopes)); err != nil {
+		errs = append(errs, err)
+	}
+	matched := make([]bool, len(actual.Scopes))
 
-	for key, es := range expScopes {
-		as, ok := actScopes[key]
-		if !ok {
-			errs = append(errs, fmt.Errorf("missing expected scope name=%q version=%q", es.Name, es.Version))
+	for _, es := range expected.Scopes {
+		idx := findMatchingScope(es, matched, actual.Scopes)
+		if idx < 0 {
+			errs = append(errs, fmt.Errorf("missing expected scope %s", scopeIdentityString(es)))
 			continue
 		}
-		if err := compareScope(es, as); err != nil {
-			errs = append(errs, fmt.Errorf("scope name=%q: %w", es.Name, err))
+		matched[idx] = true
+		if err := compareScope(es, actual.Scopes[idx]); err != nil {
+			errs = append(errs, fmt.Errorf("scope %s: %w", scopeIdentityString(es), err))
 		}
 	}
-	for key, as := range actScopes {
-		if _, ok := expScopes[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version))
+	if expected.ScopesMatch.mode == collectionModeExact {
+		for i, as := range actual.Scopes {
+			if !matched[i] {
+				errs = append(errs, fmt.Errorf("unexpected scope name=%q version=%q", as.Name, as.Version.value))
+			}
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func indexScopes(ss []scopeAssertion) map[string]scopeAssertion {
-	out := make(map[string]scopeAssertion, len(ss))
-	for _, s := range ss {
-		out[s.Name+"|"+s.Version] = s
+// findMatchingScope returns the first unmatched index whose scope satisfies the
+// expected name and version matcher, or -1 if none do.
+func findMatchingScope(expected scopeAssertion, matched []bool, actual []scopeAssertion) int {
+	for i := range actual {
+		if matched[i] {
+			continue
+		}
+
+		if expected.Name == actual[i].Name &&
+			matchVersion(expected.Version, actual[i].Version.value) == nil {
+			return i
+		}
 	}
-	return out
+	return -1
+}
+
+func matchVersion(m versionMatcher, actual string) error {
+	switch m.op {
+	case matchExists:
+		if actual == "" {
+			return errors.New("required by /exists but not present")
+		}
+		return nil
+	case matchRegex:
+		re, err := regexp.Compile("^(?:" + m.value + ")$")
+		if err != nil {
+			return fmt.Errorf("/regex has invalid pattern %q: %w", m.value, err)
+		}
+		if !re.MatchString(actual) {
+			return fmt.Errorf("value %q does not match regex %q", actual, m.value)
+		}
+		return nil
+	default: // matchExact
+		if actual != m.value {
+			return fmt.Errorf("expected %q, got %q", m.value, actual)
+		}
+		return nil
+	}
+}
+
+func scopeIdentityString(s scopeAssertion) string {
+	return fmt.Sprintf("name=%q version=%s", s.Name, versionMatcherString(s.Version))
+}
+
+func versionMatcherString(m versionMatcher) string {
+	switch m.op {
+	case matchExists:
+		return "<exists>"
+	case matchRegex:
+		return fmt.Sprintf("/regex %q", m.value)
+	default:
+		return fmt.Sprintf("%q", m.value)
+	}
 }
 
 func compareScope(expected, actual scopeAssertion) error {
 	var errs []error
+	if err := expected.MetricsMatch.count.check("metrics", len(actual.Metrics)); err != nil {
+		errs = append(errs, err)
+	}
 	expMetrics := indexMetrics(expected.Metrics)
 	actMetrics := indexMetrics(actual.Metrics)
 
-	for name, em := range expMetrics {
+	for name := range expMetrics {
+		em := expMetrics[name]
 		am, ok := actMetrics[name]
 		if !ok {
 			errs = append(errs, fmt.Errorf("missing expected metric %q", name))
@@ -98,9 +163,11 @@ func compareScope(expected, actual scopeAssertion) error {
 			errs = append(errs, fmt.Errorf("metric %q: %w", name, err))
 		}
 	}
-	for name := range actMetrics {
-		if _, ok := expMetrics[name]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected metric %q", name))
+	if expected.MetricsMatch.mode == collectionModeExact {
+		for name := range actMetrics {
+			if _, ok := expMetrics[name]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected metric %q", name))
+			}
 		}
 	}
 	return errors.Join(errs...)
@@ -108,7 +175,8 @@ func compareScope(expected, actual scopeAssertion) error {
 
 func indexMetrics(ms []metricAssertion) map[string]metricAssertion {
 	out := make(map[string]metricAssertion, len(ms))
-	for _, m := range ms {
+	for i := range ms {
+		m := ms[i]
 		out[m.Name] = m
 	}
 	return out
@@ -129,37 +197,49 @@ func compareMetric(expected, actual metricAssertion) error {
 		errs = append(errs, fmt.Errorf("monotonic mismatch: expected %v, got %v",
 			boolPtrString(expected.Monotonic), boolPtrString(actual.Monotonic)))
 	}
-	if err := compareDatapoints(expected.Datapoints, actual.Datapoints); err != nil {
+	if err := expected.DatapointsMatch.count.check("datapoints", len(actual.Datapoints)); err != nil {
+		errs = append(errs, err)
+	}
+	if err := compareDatapoints(expected.Datapoints, expected.DatapointsMatch.mode, actual.Datapoints); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
 }
 
-func compareDatapoints(expected, actual []datapointAssertion) error {
+func compareDatapoints(expected []datapointAssertion, mode collectionMode, actual []datapointAssertion) error {
 	matched := make([]bool, len(actual))
 	var missing, unexpected []string
+	var valErrs []error
 
-	for _, edp := range expected {
-		idx := findMatchingAttributes(edp.Attributes, matched, len(actual), func(i int) map[string]any {
-			return actual[i].Attributes
+	for i := range expected {
+		edp := &expected[i]
+		idx := findMatchingAttributes(edp.Attributes, edp.AttributeMode, matched, len(actual), func(k int) map[string]any {
+			return actual[k].Attributes
 		})
 		if idx < 0 {
 			missing = append(missing, canonKey(edp.Attributes))
 			continue
 		}
 		matched[idx] = true
-	}
-	for i, adp := range actual {
-		if !matched[i] {
-			unexpected = append(unexpected, canonKey(adp.Attributes))
+
+		if err := compareDatapointValues(*edp, actual[idx]); err != nil {
+			valErrs = append(valErrs, fmt.Errorf("datapoint %s: %w", canonKey(edp.Attributes), err))
 		}
 	}
-	if len(missing) == 0 && len(unexpected) == 0 {
+	if mode == collectionModeExact {
+		for i := range actual {
+			if !matched[i] {
+				unexpected = append(unexpected, canonKey(actual[i].Attributes))
+			}
+		}
+	}
+	if len(missing) == 0 && len(unexpected) == 0 && len(valErrs) == 0 {
 		return nil
 	}
+	var errs []error
+	errs = append(errs, valErrs...)
 	sort.Strings(missing)
 	sort.Strings(unexpected)
-	var errs []error
 	for _, k := range missing {
 		errs = append(errs, fmt.Errorf("missing datapoint with attributes %s", k))
 	}
@@ -169,21 +249,125 @@ func compareDatapoints(expected, actual []datapointAssertion) error {
 	return errors.Join(errs...)
 }
 
+// roundTo matches how pmetrictest's IgnoreMetricFloatPrecision rounds.
+func roundTo(v float64, n int) float64 {
+	factor := math.Pow(10, float64(n))
+	return math.Round(v*factor) / factor
+}
+
+func compareDatapointValues(expected, actual datapointAssertion) error {
+	var errs []error
+	if expected.IntValue != nil {
+		if actual.IntValue == nil {
+			errs = append(errs, errors.New("missing expected int_value"))
+		} else if *expected.IntValue != *actual.IntValue {
+			errs = append(errs, fmt.Errorf("int_value mismatch: expected %v, got %v", *expected.IntValue, *actual.IntValue))
+		}
+	}
+	if expected.DoubleValue != nil {
+		switch {
+		case actual.DoubleValue == nil:
+			errs = append(errs, errors.New("missing expected double_value"))
+		case expected.DoublePrecision != nil:
+			digits := *expected.DoublePrecision
+			if roundTo(*expected.DoubleValue, digits) != roundTo(*actual.DoubleValue, digits) {
+				errs = append(errs, fmt.Errorf("double_value mismatch at %d decimal places: expected %v, got %v", digits, *expected.DoubleValue, *actual.DoubleValue))
+			}
+		case *expected.DoubleValue != *actual.DoubleValue:
+			errs = append(errs, fmt.Errorf("double_value mismatch: expected %v, got %v", *expected.DoubleValue, *actual.DoubleValue))
+		}
+	}
+	if err := compareValueConstraints(expected.valueConstraints, actual); err != nil {
+		errs = append(errs, err)
+	}
+	if expected.Count != nil {
+		if actual.Count == nil {
+			errs = append(errs, errors.New("missing expected count"))
+		} else if *expected.Count != *actual.Count {
+			errs = append(errs, fmt.Errorf("count mismatch: expected %v, got %v", *expected.Count, *actual.Count))
+		}
+	}
+	if expected.Sum != nil {
+		if actual.Sum == nil {
+			errs = append(errs, errors.New("missing expected sum"))
+		} else if *expected.Sum != *actual.Sum {
+			errs = append(errs, fmt.Errorf("sum mismatch: expected %v, got %v", *expected.Sum, *actual.Sum))
+		}
+	}
+	if expected.Min != nil {
+		if actual.Min == nil {
+			errs = append(errs, errors.New("missing expected min"))
+		} else if *expected.Min != *actual.Min {
+			errs = append(errs, fmt.Errorf("min mismatch: expected %v, got %v", *expected.Min, *actual.Min))
+		}
+	}
+	if expected.Max != nil {
+		if actual.Max == nil {
+			errs = append(errs, errors.New("missing expected max"))
+		} else if *expected.Max != *actual.Max {
+			errs = append(errs, fmt.Errorf("max mismatch: expected %v, got %v", *expected.Max, *actual.Max))
+		}
+	}
+	if expected.ExplicitBounds != nil {
+		if actual.ExplicitBounds == nil {
+			errs = append(errs, errors.New("missing expected explicit_bounds"))
+		} else if !slices.Equal(*expected.ExplicitBounds, *actual.ExplicitBounds) {
+			errs = append(errs, fmt.Errorf("explicit_bounds mismatch: expected %v, got %v", *expected.ExplicitBounds, *actual.ExplicitBounds))
+		}
+	}
+	if expected.BucketCounts != nil {
+		if actual.BucketCounts == nil {
+			errs = append(errs, errors.New("missing expected bucket_counts"))
+		} else if !slices.Equal(expected.BucketCounts, actual.BucketCounts) {
+			errs = append(errs, fmt.Errorf("bucket_counts mismatch: expected %v, got %v", expected.BucketCounts, actual.BucketCounts))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// compareValueConstraints evaluates the /gt, /gte, /lt, /lte assertions parsed
+// from int_value/<op> and double_value/<op> keys against the actual datapoint
+// value.
+func compareValueConstraints(constraints []numericValueConstraint, actual datapointAssertion) error {
+	var errs []error
+	for _, c := range constraints {
+		switch c.field {
+		case "int_value":
+			if actual.IntValue == nil {
+				errs = append(errs, fmt.Errorf("missing int_value required by /%s", c.op))
+				continue
+			}
+			if err := compareNumericOp("int_value", c.op, c.operand, *actual.IntValue); err != nil {
+				errs = append(errs, err)
+			}
+		case "double_value":
+			if actual.DoubleValue == nil {
+				errs = append(errs, fmt.Errorf("missing double_value required by /%s", c.op))
+				continue
+			}
+			if err := compareNumericOp("double_value", c.op, c.operand, *actual.DoubleValue); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // findMatchingAttributes returns the first unmatched index whose attributes
 // satisfy the expected attribute map, or -1 if none do.
-func findMatchingAttributes(expected map[string]any, matched []bool, n int, attrsAt func(int) map[string]any) int {
+func findMatchingAttributes(expected map[string]any, mode attributeMode, matched []bool, n int, attrsAt func(int) map[string]any) int {
 	for i := range n {
 		if matched[i] {
 			continue
 		}
-		if compareAttributes(expected, attrsAt(i)) == nil {
+		if compareAttributes(expected, attrsAt(i), mode) == nil {
 			return i
 		}
 	}
 	return -1
 }
 
-func compareAttributes(expected, actual map[string]any) error {
+func compareAttributes(expected, actual map[string]any, mode attributeMode) error {
 	var errs []error
 	seen := make(map[string]struct{}, len(expected))
 	for rawKey, expectedValue := range expected {
@@ -198,6 +382,34 @@ func compareAttributes(expected, actual map[string]any) error {
 			}
 			continue
 		}
+		if key, ok := strings.CutSuffix(rawKey, "/regex"); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /regex", key))
+				continue
+			}
+			if err := compareRegexAttribute(key, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		if key, op, ok := cutNumericAttributeKey(rawKey); ok {
+			seen[key] = struct{}{}
+			actualValue, exists := actual[key]
+			if !exists {
+				errs = append(errs, fmt.Errorf("missing attribute %q required by /%s", key, op))
+				continue
+			}
+			if err := compareNumericOp(fmt.Sprintf("attribute %q", key), op, expectedValue, actualValue); err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		// An unrecognized operator suffix falls through to exact matching on
+		// the literal key: attribute keys may legitimately contain '/' (e.g.
+		// app.kubernetes.io/name), and a mistyped operator still fails loudly
+		// via the resulting missing/unexpected attribute mismatch.
 		seen[rawKey] = struct{}{}
 		actualValue, ok := actual[rawKey]
 		if !ok {
@@ -208,12 +420,142 @@ func compareAttributes(expected, actual map[string]any) error {
 			errs = append(errs, fmt.Errorf("attribute %q mismatch: expected %v, got %v", rawKey, expectedValue, actualValue))
 		}
 	}
-	for key := range actual {
-		if _, ok := seen[key]; !ok {
-			errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+	// In include mode, extra actual attributes are allowed.
+	if mode != attributeModeInclude {
+		for key := range actual {
+			if _, ok := seen[key]; !ok {
+				errs = append(errs, fmt.Errorf("unexpected attribute %q", key))
+			}
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// cutNumericAttributeKey splits an attribute key of the form `<key>/<op>`
+// where <op> is a numeric comparison operator, returning the bare key and the
+// operator. It reports ok=false for keys without a recognized numeric suffix.
+func cutNumericAttributeKey(rawKey string) (key, op string, ok bool) {
+	idx := strings.LastIndexByte(rawKey, '/')
+	if idx < 0 {
+		return "", "", false
+	}
+	suffix := rawKey[idx+1:]
+	if !isNumericOperator(suffix) {
+		return "", "", false
+	}
+	return rawKey[:idx], suffix, true
+}
+
+func compareRegexAttribute(key string, expectedValue, actualValue any) error {
+	matcher, err := newAttributeRegexMatcher(key, expectedValue)
+	if err != nil {
+		return err
+	}
+	return matcher.validate(key, actualValue)
+}
+
+func isNumericOperator(op string) bool {
+	switch op {
+	case "gt", "gte", "lt", "lte":
+		return true
+	}
+	return false
+}
+
+// compareNumericOp evaluates a /gt, /gte, /lt, or /lte comparison of the actual
+// value against the expected operand. Both values must be numeric. Integers are
+// compared exactly; otherwise the comparison falls back to float64.
+func compareNumericOp(keyStr, op string, expectedValue, actualValue any) error {
+	expInt, expIsInt := toInt64(expectedValue)
+	actInt, actIsInt := toInt64(actualValue)
+
+	if expIsInt && actIsInt {
+		if numericOpHolds(op, actInt > expInt, actInt >= expInt, actInt < expInt, actInt <= expInt) {
+			return nil
+		}
+		if !isNumericOperator(op) {
+			return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+		}
+		return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+	}
+
+	expFloat, expIsFloat := toFloat64(expectedValue)
+	actFloat, actIsFloat := toFloat64(actualValue)
+
+	if !expIsFloat {
+		return fmt.Errorf("%s/%s must be a numeric value", keyStr, op)
+	}
+	if !actIsFloat {
+		return fmt.Errorf("%s must be a numeric value to match /%s (got %T)", keyStr, op, actualValue)
+	}
+	if !isNumericOperator(op) {
+		return fmt.Errorf("unsupported operator /%s for %s", op, keyStr)
+	}
+	if numericOpHolds(op, actFloat > expFloat, actFloat >= expFloat, actFloat < expFloat, actFloat <= expFloat) {
+		return nil
+	}
+	return fmt.Errorf("%s %v is not %s %v", keyStr, actualValue, opToSymbol(op), expectedValue)
+}
+
+func numericOpHolds(op string, gt, gte, lt, lte bool) bool {
+	switch op {
+	case "gt":
+		return gt
+	case "gte":
+		return gte
+	case "lt":
+		return lt
+	case "lte":
+		return lte
+	}
+	return false
+}
+
+func opToSymbol(op string) string {
+	switch op {
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
+	}
+	return op
+}
+
+func toFloat64(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case float32:
+		return float64(x), true
+	case int:
+		return float64(x), true
+	case int64:
+		return float64(x), true
+	case uint64:
+		return float64(x), true
+	default:
+		return 0, false
+	}
+}
+
+func toInt64(v any) (int64, bool) {
+	switch x := v.(type) {
+	case int:
+		return int64(x), true
+	case int64:
+		return x, true
+	case uint64:
+		return int64(x), true
+	case float64:
+		if float64(int64(x)) == x {
+			return int64(x), true
+		}
+	}
+	return 0, false
 }
 
 func boolPtrEqual(a, b *bool) bool {

@@ -15,6 +15,7 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 		current ExponentialBuckets
 		old     ExponentialBuckets
 		want    ExponentialBuckets
+		reset   bool
 	}{
 		{
 			name: "sparse buckets without previous",
@@ -50,19 +51,31 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 			name: "subtract previous counts on overlapping buckets",
 			current: ExponentialBuckets{
 				Offset:       2,
-				BucketCounts: []uint64{5, 0, 9, 1},
+				BucketCounts: []uint64{5, 7, 9, 1},
 			},
 			old: ExponentialBuckets{
 				Offset:       1,
-				BucketCounts: []uint64{3, 0, 6, 1, 1},
+				BucketCounts: []uint64{0, 0, 6, 1, 1},
 			},
 			want: ExponentialBuckets{
 				Offset:       2,
-				BucketCounts: []uint64{5, 0, 8},
+				BucketCounts: []uint64{5, 1, 8},
 			},
 		},
 		{
-			name: "monotonicity fallback keeps later valid bucket",
+			name: "reset when non-zero old bucket precedes current offset",
+			current: ExponentialBuckets{
+				Offset:       1,
+				BucketCounts: []uint64{3, 8},
+			},
+			old: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 3, 8}, // bucket 0 (count=5) is below current.Offset=1
+			},
+			reset: true,
+		},
+		{
+			name: "monotonicity failure means a reset",
 			current: ExponentialBuckets{
 				Offset:       0,
 				BucketCounts: []uint64{1, 2, 1, 5},
@@ -71,13 +84,10 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 				Offset:       0,
 				BucketCounts: []uint64{1, 3, 2, 3},
 			},
-			want: ExponentialBuckets{
-				Offset:       3,
-				BucketCounts: []uint64{2},
-			},
+			reset: true,
 		},
 		{
-			name: "empty when all buckets are non-increasing",
+			name: "reset when all buckets are non-increasing",
 			current: ExponentialBuckets{
 				Offset:       10,
 				BucketCounts: []uint64{0, 1},
@@ -86,21 +96,21 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 				Offset:       10,
 				BucketCounts: []uint64{0, 2},
 			},
-			want: ExponentialBuckets{},
+			reset: true,
 		},
 		{
 			name: "negative offsets",
 			current: ExponentialBuckets{
 				Offset:       -3,
-				BucketCounts: []uint64{2, 0, 4},
+				BucketCounts: []uint64{2, 4, 4},
 			},
 			old: ExponentialBuckets{
 				Offset:       -4,
-				BucketCounts: []uint64{1, 1, 3, 1},
+				BucketCounts: []uint64{0, 1, 3, 1},
 			},
 			want: ExponentialBuckets{
 				Offset:       -3,
-				BucketCounts: []uint64{1, 0, 3},
+				BucketCounts: []uint64{1, 1, 3},
 			},
 		},
 		{
@@ -118,12 +128,39 @@ func TestExponentialBuckets_Diff(t *testing.T) {
 				BucketCounts: []uint64{9},
 			},
 		},
+		{
+			name: "reset when non-zero old bucket drops to zero within current range",
+			current: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 0, 9},
+			},
+			old: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 3, 8},
+			},
+			reset: true,
+		},
+		{
+			name: "reset when non-zero old bucket follows current range",
+			current: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{6, 3},
+			},
+			old: ExponentialBuckets{
+				Offset:       0,
+				BucketCounts: []uint64{5, 3, 8},
+			},
+			reset: true,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := tc.current.Diff(&tc.old)
-			assert.Equal(t, tc.want, got)
+			got, reset := tc.current.Diff(&tc.old)
+			assert.Equal(t, tc.reset, reset)
+			if !reset {
+				assert.Equal(t, tc.want, got)
+			}
 		})
 	}
 }

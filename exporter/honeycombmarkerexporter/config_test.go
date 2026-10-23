@@ -10,10 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
@@ -25,6 +26,9 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	defaultQueueSettings := createDefaultConfig().(*Config).QueueSettings
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -32,8 +36,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.honeycomb.io",
+				ClientConfig:  clientConfig,
+				QueueSettings: defaultQueueSettings,
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -49,11 +55,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers: 10,
-					QueueSize:    1000,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				}),
+				ClientConfig: clientConfig,
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := *createDefaultConfig().(*Config).QueueSettings.GetOrInsertDefault()
+					queue.NumConsumers = 10
+					queue.QueueSize = 1000
+					queue.Sizer = exporterhelper.RequestSizerTypeRequests
+					return configoptional.Some(queue)
+				}(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				APIKey:        "test-apikey",
 				APIURL:        "https://api.testhost.io",
@@ -87,8 +96,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "path_context_log"),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.honeycomb.io",
+				ClientConfig:  clientConfig,
+				QueueSettings: defaultQueueSettings,
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -105,8 +116,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "path_context_mixed"),
 			expected: &Config{
-				APIKey: "test-apikey",
-				APIURL: "https://api.honeycomb.io",
+				ClientConfig:  clientConfig,
+				QueueSettings: defaultQueueSettings,
+				APIKey:        "test-apikey",
+				APIURL:        "https://api.honeycomb.io",
 				Markers: []Marker{
 					{
 						Type: "fooType",
@@ -135,12 +148,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
+				err = confmap.Validate(cfg)
 				assert.Error(t, err)
 				return
 			}
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

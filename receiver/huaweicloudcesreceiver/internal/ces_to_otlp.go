@@ -29,6 +29,19 @@ func GetMetricKey(m model.MetricInfoList) string {
 	return fmt.Sprintf("metric_name=%s,dimensions=%s", m.MetricName, strings.Join(strArray, " "))
 }
 
+func ToDimensions(dimensions []model.MetricsDimensionResp) []model.MetricsDimension {
+	out := make([]model.MetricsDimension, len(dimensions))
+	for i, d := range dimensions {
+		if d.Name != nil {
+			out[i].Name = *d.Name
+		}
+		if d.Value != nil {
+			out[i].Value = *d.Value
+		}
+	}
+	return out
+}
+
 func GetDimension(dimensions []model.MetricsDimension, index int) *string {
 	if len(dimensions) > index {
 		dimValue := dimensions[index].Name + "," + dimensions[index].Value

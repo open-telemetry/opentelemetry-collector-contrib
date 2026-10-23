@@ -140,13 +140,12 @@ func NewServer(cfg *Config, host component.Host, settings component.TelemetrySet
 		},
 	}
 
-	serverConfig := confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Endpoint:  cfg.Endpoint,
-			Transport: "tcp",
-		},
-		ReadHeaderTimeout: 20 * time.Second,
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  cfg.Endpoint,
+		Transport: "tcp",
 	}
+	serverConfig.ReadHeaderTimeout = 20 * time.Second
 
 	httpServer, err := serverConfig.ToServer(
 		ctx,

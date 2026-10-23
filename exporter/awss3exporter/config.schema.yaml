@@ -15,6 +15,8 @@ $defs:
     description: S3UploaderConfig contains aws s3 uploader related config to controls things like bucket, prefix, batching, connections, retries, etc.
     type: object
     properties:
+      access_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       acl:
         description: ACL is the canned ACL to use when uploading objects.
         type: string
@@ -63,6 +65,8 @@ $defs:
       s3_prefix:
         description: S3Prefix is the key (directory) prefix to write to inside the bucket. Appended to S3BasePrefix if provided.
         type: string
+      secret_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       storage_class:
         type: string
       unique_key_func_name:
@@ -82,11 +86,12 @@ properties:
     $ref: marshaler_type
   resource_attrs_to_s3:
     $ref: resource_attrs_to_s_3
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   s3uploader:
     $ref: s_3_uploader_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
 allOf:
-  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

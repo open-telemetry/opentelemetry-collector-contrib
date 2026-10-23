@@ -5,10 +5,12 @@ package loadbalancingexporter
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,8 +27,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -152,6 +158,382 @@ func TestConsumeTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, res)
+}
+
+// TestConsumeTracesByID_MultipleTraceIDs verifies that a single ptrace.Traces carrying
+// several trace IDs - interleaved across multiple resources and scopes - is routed so that
+// every span lands on the backend selected for its trace ID, with its source resource and
+// scope preserved and no spans lost or duplicated.
+func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
+	received := map[string]ptrace.Traces{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			got, ok := received[endpoint]
+			if !ok {
+				got = ptrace.NewTraces()
+				received[endpoint] = got
+			}
+			td.ResourceSpans().MoveAndAppendTo(got.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+		},
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+	require.Equal(t, traceIDRouting, p.routingKey)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Spans for the same trace ID are intentionally non-contiguous so the grouping logic is
+	// exercised. Each span records its origin resource/scope so preservation can be checked.
+	td := ptrace.NewTraces()
+	rsA := td.ResourceSpans().AppendEmpty()
+	rsA.Resource().Attributes().PutStr("res", "res-A")
+	ssA1 := rsA.ScopeSpans().AppendEmpty()
+	ssA1.Scope().SetName("scope-A")
+	ssA2 := rsA.ScopeSpans().AppendEmpty()
+	ssA2.Scope().SetName("scope-B")
+	rsB := td.ResourceSpans().AppendEmpty()
+	rsB.Resource().Attributes().PutStr("res", "res-B")
+	ssB1 := rsB.ScopeSpans().AppendEmpty()
+	ssB1.Scope().SetName("scope-C")
+
+	addSpan := func(ss ptrace.ScopeSpans, res string, tid pcommon.TraceID) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(tid)
+		s.Attributes().PutStr("origin-res", res)
+		s.Attributes().PutStr("origin-scope", ss.Scope().Name())
+	}
+	addSpan(ssA1, "res-A", pcommon.TraceID{1})
+	addSpan(ssA1, "res-A", pcommon.TraceID{2})
+	addSpan(ssA1, "res-A", pcommon.TraceID{1})
+	addSpan(ssA2, "res-A", pcommon.TraceID{3})
+	addSpan(ssB1, "res-B", pcommon.TraceID{2})
+	addSpan(ssB1, "res-B", pcommon.TraceID{4})
+	addSpan(ssB1, "res-B", pcommon.TraceID{1})
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	totalSpans := 0
+	spansPerTID := map[pcommon.TraceID]int{}
+	for endpoint, got := range received {
+		rss := got.ResourceSpans()
+		for i := 0; i < rss.Len(); i++ {
+			rs := rss.At(i)
+			resAttr, ok := rs.Resource().Attributes().Get("res")
+			require.True(t, ok)
+			sss := rs.ScopeSpans()
+			for j := 0; j < sss.Len(); j++ {
+				ss := sss.At(j)
+				spans := ss.Spans()
+				for k := 0; k < spans.Len(); k++ {
+					span := spans.At(k)
+					totalSpans++
+
+					// span landed on the backend selected for its trace ID
+					tid := span.TraceID()
+					assert.Equal(t, endpointWithPort(lb.ring.endpointFor(tid[:])), endpoint)
+
+					// the span's source resource and scope traveled with it
+					originRes, _ := span.Attributes().Get("origin-res")
+					originScope, _ := span.Attributes().Get("origin-scope")
+					assert.Equal(t, resAttr.Str(), originRes.Str())
+					assert.Equal(t, ss.Scope().Name(), originScope.Str())
+
+					spansPerTID[tid]++
+				}
+			}
+		}
+	}
+
+	assert.Equal(t, 7, totalSpans)
+	assert.Equal(t, map[pcommon.TraceID]int{
+		{1}: 3,
+		{2}: 2,
+		{3}: 1,
+		{4}: 1,
+	}, spansPerTID)
+}
+
+func TestRandomnessIdentifier(t *testing.T) {
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), randomnessConfig())
+	require.NoError(t, err)
+	require.Equal(t, randomnessRouting, p.routingKey)
+
+	tid := pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	fallback := sampling.TraceIDToRandomness(tid).RValue()
+
+	for _, tt := range []struct {
+		desc       string
+		traceState string
+		expected   string
+	}{
+		{"explicit rv", "ot=rv:aabbccddeeff00", "aabbccddeeff00"},
+		{"rv with threshold", "ot=th:8;rv:aabbccddeeff00", "aabbccddeeff00"},
+		{"no tracestate", "", fallback},
+		{"vendor tracestate without rv", "vendor=value", fallback},
+		{"ot without rv", "ot=th:8", fallback},
+		{"unparseable rv", "ot=rv:zz", fallback},
+		// A value-level parse error keeps the members that did parse, so a
+		// valid rv survives a malformed sibling th.
+		{"valid rv beside malformed th", "ot=rv:aabbccddeeff00;th:notathreshold", "aabbccddeeff00"},
+		// An ot-section syntax error (th:0! is legal W3C but ! is not a legal
+		// OTel value char) rejects the whole ot section, discarding the rv.
+		{"valid rv beside ot-section syntax error", "ot=rv:aabbccddeeff00;th:0!", fallback},
+		// Header-level W3C failures discard the whole tracestate up front,
+		// including a valid rv, so these fall back to trace ID randomness.
+		{"valid rv beside uppercase vendor key", "ot=rv:aabbccddeeff00,Vendor=up", fallback},
+		{"valid rv in oversize header", "ot=rv:aabbccddeeff00,vendor=" + strings.Repeat("x", 1100), fallback},
+		// The 32-member limit aborts the scan where it is hit, keeping the
+		// members already parsed, so an rv before the cutoff survives.
+		{"valid rv before member limit", "ot=rv:aabbccddeeff00," + strings.Repeat("v=x,", 34) + "vend=x", "aabbccddeeff00"},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.SetTraceID(tid)
+			span.TraceState().FromRaw(tt.traceState)
+			assert.Equal(t, tt.expected, string(p.randomnessIdentifier(t.Context(), span)))
+		})
+	}
+}
+
+// The unparseable metric counts traces that lost an rv to a parse error, not every parse
+// error: a recovered rv routes the trace and is not counted, and neither is a failed header
+// that never carried an rv, as the trace would have routed by trace ID regardless.
+func TestRandomnessIdentifierUnparseableMetric(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
+
+	p, err := newTracesExporter(metadatatest.NewSettings(testTel), randomnessConfig())
+	require.NoError(t, err)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	// a recovered rv beside a malformed th routes the trace, no fallback
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00;th:notathreshold")
+	p.randomnessIdentifier(t.Context(), span)
+	// a valid tracestate without an rv falls back, but had no parse error
+	span.TraceState().FromRaw("vendor=value")
+	p.randomnessIdentifier(t.Context(), span)
+	// a header-level failure on a tracestate that never carried an rv is not counted
+	span.TraceState().FromRaw("vendor=value,Bad=up")
+	p.randomnessIdentifier(t.Context(), span)
+	// an rv-shaped value in a vendor member is not an ot rv, not counted
+	span.TraceState().FromRaw("vendor=rv:aabbccddeeff00,Bad=up")
+	p.randomnessIdentifier(t.Context(), span)
+	// an ot subkey that merely ends in "rv" (srv) is not an rv, not counted
+	span.TraceState().FromRaw("ot=th:0;srv:x,Bad=up")
+	p.randomnessIdentifier(t.Context(), span)
+	// a header-level failure discards the rv and falls back, counted
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00,Vendor=up")
+	p.randomnessIdentifier(t.Context(), span)
+	// an ot-section syntax error discards a real rv and falls back, counted
+	span.TraceState().FromRaw("ot=rv:aabbccddeeff00;th:0!")
+	p.randomnessIdentifier(t.Context(), span)
+
+	metadatatest.AssertEqualLoadbalancerRandomnessTracestateUnparseable(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
+	received := map[string]ptrace.Traces{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			got, ok := received[endpoint]
+			if !ok {
+				got = ptrace.NewTraces()
+				received[endpoint] = got
+			}
+			td.ResourceSpans().MoveAndAppendTo(got.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	cfg := randomnessConfig()
+	cfg.Resolver = ResolverSettings{
+		Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+	require.Equal(t, randomnessRouting, p.routingKey)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Distinct low-7-byte suffixes so each trace has its own trace ID randomness;
+	// with shared randomness the assertions below could pass even if the rv were
+	// ignored and every trace routed by trace ID.
+	const sharedRV = "aabbccddeeff00"
+	grouped1 := pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}
+	grouped2 := pcommon.TraceID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee}
+	ungrouped := pcommon.TraceID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0xde, 0xad, 0xbe, 0xef, 0x01, 0x02, 0x01}
+
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	addSpan := func(tid pcommon.TraceID, traceState string) {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(tid)
+		s.TraceState().FromRaw(traceState)
+	}
+	// two distinct traces sharing an rv, interleaved with a trace without one
+	addSpan(grouped1, "ot=rv:"+sharedRV)
+	addSpan(ungrouped, "")
+	addSpan(grouped2, "ot=rv:"+sharedRV)
+	addSpan(grouped1, "ot=rv:"+sharedRV)
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	groupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sharedRV)))
+	ungroupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sampling.TraceIDToRandomness(ungrouped).RValue())))
+	// The endpoints must differ for the assertions below to distinguish rv routing
+	// from trace ID fallback; pick a different ungrouped suffix if this ever fails.
+	require.NotEqual(t, groupedEndpoint, ungroupedEndpoint)
+
+	spansPerEndpointTID := map[string]map[pcommon.TraceID]int{}
+	for endpoint, got := range received {
+		perTID := map[pcommon.TraceID]int{}
+		spansPerEndpointTID[endpoint] = perTID
+		for _, rs := range got.ResourceSpans().All() {
+			for _, ss := range rs.ScopeSpans().All() {
+				for _, span := range ss.Spans().All() {
+					perTID[span.TraceID()]++
+				}
+			}
+		}
+	}
+
+	// both traces sharing the rv landed on the backend for that rv
+	assert.Equal(t, 2, spansPerEndpointTID[groupedEndpoint][grouped1])
+	assert.Equal(t, 1, spansPerEndpointTID[groupedEndpoint][grouped2])
+	// the trace without an rv landed on the backend for its trace ID randomness
+	assert.Equal(t, 1, spansPerEndpointTID[ungroupedEndpoint][ungrouped])
+}
+
+// The sampling spec requires the rv to be constant across a trace's spans and the exporter
+// relies on that contract rather than enforcing it: the backend is resolved from the first
+// span seen for each trace ID in a batch. This pins that first-span-wins behavior for a
+// trace that violates the contract.
+func TestConsumeTracesByRandomness_FirstSpanWins(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// ConsumeTraces runs the export loop synchronously, so no locking is needed here.
+	received := map[string]ptrace.Traces{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, td ptrace.Traces) error {
+			got, ok := received[endpoint]
+			if !ok {
+				got = ptrace.NewTraces()
+				received[endpoint] = got
+			}
+			td.ResourceSpans().MoveAndAppendTo(got.ResourceSpans())
+			return nil
+		}
+		return te, nil
+	}
+
+	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
+	cfg := randomnessConfig()
+	cfg.Resolver = ResolverSettings{
+		Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, cfg)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), endpoints)
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	const firstRV = "aabbccddeeff00"
+	const conflictingRV = "00112233445566"
+	tid := pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}
+
+	// one trace whose spans disagree on the rv, violating the spec contract
+	td := ptrace.NewTraces()
+	ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for _, traceState := range []string{"ot=rv:" + firstRV, "ot=rv:" + conflictingRV, ""} {
+		s := ss.Spans().AppendEmpty()
+		s.SetTraceID(tid)
+		s.TraceState().FromRaw(traceState)
+	}
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), td))
+
+	firstEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(firstRV)))
+	conflictingEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(conflictingRV)))
+	// The endpoints must differ for the assertion below to detect a span routed by the
+	// conflicting rv; pick a different conflicting value if this ever fails.
+	require.NotEqual(t, firstEndpoint, conflictingEndpoint)
+
+	// all spans landed on the backend chosen for the first span's rv
+	require.Len(t, received, 1)
+	got, ok := received[firstEndpoint]
+	require.True(t, ok)
+	assert.Equal(t, 3, got.SpanCount())
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.
@@ -805,6 +1187,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 	}
 	td := mergeTraces(trace1, trace2)
 
+	b.ReportAllocs()
 	for b.Loop() {
 		err = p.ConsumeTraces(b.Context(), td)
 		require.NoError(b, err)
@@ -915,6 +1298,15 @@ func serviceBasedRoutingConfig() *Config {
 	}
 }
 
+func randomnessConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
+		},
+		RoutingKey: "randomness",
+	}
+}
+
 type mockTracesExporter struct {
 	component.Component
 	ConsumeTracesFn func(ctx context.Context, td ptrace.Traces) error
@@ -946,4 +1338,66 @@ func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces
 		return e.consumeErr
 	}
 	return e.ConsumeTracesFn(ctx, td)
+}
+
+// traceIDForEndpoint brute-forces a trace ID that the ring routes to wantEndpoint.
+func traceIDForEndpoint(t *testing.T, ring *hashRing, wantEndpoint string) pcommon.TraceID {
+	t.Helper()
+	for i := range uint64(1_000_000) {
+		var tid [16]byte
+		binary.BigEndian.PutUint64(tid[8:], i)
+		if ring.endpointFor(tid[:]) == wantEndpoint {
+			return pcommon.TraceID(tid)
+		}
+	}
+	t.Fatalf("no trace id routed to %q", wantEndpoint)
+	return pcommon.TraceID{}
+}
+
+// waitGroupReturns reports whether wg.Wait() completes within the timeout.
+func waitGroupReturns(wg *sync.WaitGroup, timeout time.Duration) bool {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
+}
+
+// Regression test for a consumeWG leak: when exporterAndEndpoint errors partway
+// through a batch, backends already counted with consumeWG.Add(1) must still get
+// Done(), otherwise wrappedExporter.Shutdown -> consumeWG.Wait() hangs forever.
+func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	// The ring knows two endpoints, but only "good" has a resolved exporter, so a
+	// trace ID routed to "missing" makes exporterAndEndpoint return an error.
+	good := newWrappedExporter(newNopMockTracesExporter(), endpointWithPort("good"))
+	lb := &loadBalancer{
+		ring:      newHashRing([]string{"good", "missing"}),
+		exporters: map[string]*wrappedExporter{endpointWithPort("good"): good},
+	}
+	e := &traceExporterImp{
+		loadBalancer: lb,
+		routingKey:   traceIDRouting,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	tGood := traceIDForEndpoint(t, lb.ring, "good")
+	tMissing := traceIDForEndpoint(t, lb.ring, "missing")
+
+	td := ptrace.NewTraces()
+	spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+	spans.AppendEmpty().SetTraceID(tGood)    // routes to "good": consumeWG.Add(1)
+	spans.AppendEmpty().SetTraceID(tMissing) // resolve error returns mid-batch
+
+	require.Error(t, e.consumeTracesPerSpan(t.Context(), td, spanTraceIDIdentifier))
+	require.True(t, waitGroupReturns(&good.consumeWG, time.Second),
+		"consumeWG leaked on resolve error: Shutdown's Wait() would hang")
 }

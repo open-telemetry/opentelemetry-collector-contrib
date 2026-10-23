@@ -104,3 +104,10 @@ span_metrics/separate_calls_and_duration_dimensions:
       default: GET
   calls_dimensions:
     - name: http.url
+
+# Dimensions list mixing explicit names with a glob pattern.
+span_metrics/dimensions_with_globs:
+  dimensions:
+    - name: http.method
+      default: GET
+    - glob: db.*

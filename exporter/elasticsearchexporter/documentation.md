@@ -2,6 +2,29 @@
 
 # elasticsearch
 
+## Sending Queue
+
+**Support:** This component overrides the default QueueBatch configuration.
+
+```yaml
+sending_queue:
+    enabled: true              # OVERRIDE
+    wait_for_result: false     # default
+    sizer: requests            # default
+    queue_size: 10             # OVERRIDE
+    block_on_overflow: true    # OVERRIDE
+    storage: null              # default
+    num_consumers: 10          # default
+    batch:
+        enabled: true          # OVERRIDE
+        flush_timeout: 10s     # OVERRIDE
+        sizer: bytes           # OVERRIDE
+        min_size: 1000000      # OVERRIDE
+        max_size: 5000000      # OVERRIDE
+        partition:
+            metadata_keys: []  # default
+```
+
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
@@ -52,6 +75,7 @@ Count of documents flushed to Elasticsearch.
 | http.response.status_code | HTTP status code. | Any Int | - |
 | failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` | - |
 | error.type | The type of error that occurred when processing the documents. | Any Str | - |
+| db.collection.name | The index or data stream documents were written to, as reported in the bulk response `_index`, with backing and failure store indices folded into their data stream name. Only set when `telemetry::include_destination_index` is enabled. | Any Str | - |
 
 ### otelcol.elasticsearch.docs.received
 
@@ -83,7 +107,6 @@ up to the `max_retries` limit.
 In contrast, `elasticsearch.docs.retried` counts documents retried
 individually within otherwise successful bulk requests due to
 document-specific failures such as mapping conflicts.
-
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

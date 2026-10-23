@@ -19,7 +19,6 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
-	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -38,11 +37,6 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:        "reaggregate_set",
-			metricsSet:  testDataSetReag,
-			resAttrsSet: testDataSetReag,
-		},
-		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -59,108 +53,82 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.metricsSet != testDataSetReag {
-				assert.Equal(t, expectedWarnings, observedLogs.Len())
-			}
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsFreesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsGcSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsHeapSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsLastPauseDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsLookupsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMallocsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsNextGcDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsNumGcDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsStackInuseDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsStackSysDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessRuntimeMemstatsSysDataPoint(ts, 1)
@@ -170,8 +138,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
-			if tt.name == "reaggregate_set" {
-			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

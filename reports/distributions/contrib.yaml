@@ -7,7 +7,7 @@ components:
         - datadog
         - exceptions
         - failover
-        - grafanacloud
+        - grafana_cloud
         - otlp_json
         - round_robin
         - routing
@@ -23,8 +23,8 @@ components:
         - awss3
         - awsxray
         - azure_blob
+        - azure_monitor
         - azuredataexplorer
-        - azuremonitor
         - bmc_helix
         - cassandra
         - clickhouse
@@ -45,11 +45,10 @@ components:
         - load_balancing
         - logicmonitor
         - logzio
-        - mezmo
         - opensearch
         - otelarrow
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - pulsar
         - rabbitmq
         - sentry
@@ -64,6 +63,7 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_iam_db_auth
         - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
         - awsproxy
@@ -77,8 +77,8 @@ components:
         - docker_observer
         - ecs_observer
         - file_storage
+        - google_client_auth
         - google_cloud_logentry_encoding
-        - googleclientauth
         - headers_setter
         - health_check
         - host_observer
@@ -88,24 +88,28 @@ components:
         - json_log_encoding
         - k8s_leader_elector
         - k8s_observer
-        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
         - otlp_encoding
+        - pebble_tail_storage
         - pprof
         - redis_storage
+        - sd_notify
         - sigv4auth
         - skywalking_encoding
         - text_encoding
         - zipkin_encoding
     processor:
+        - adaptive_tail_sampling
         - attributes
-        - cumulativetodelta
-        - deltatocumulative
-        - deltatorate
+        - cardinality_guardian
+        - cumulative_to_delta
+        - delta_to_cumulative
+        - delta_to_rate
         - drain
         - filter
+        - gen_ai_normalizer
         - geoip
         - groupbyattrs
         - groupbytrace
@@ -116,14 +120,16 @@ components:
         - metric_start_time
         - metrics_transform
         - metricsgeneration
+        - partitioning
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
         - resource_detection
+        - rolling_span_latency
         - schema
         - span
-        - spanpruning
+        - span_pruning
         - sumologic
         - tail_sampling
         - transform
@@ -135,15 +141,16 @@ components:
         - secretsmanager
     receiver:
         - active_directory_ds
+        - active_directory_inv
         - aerospike
         - apache
-        - apachespark
+        - apache_spark
+        - aws_cloudwatch
         - aws_lambda
-        - awscloudwatch
+        - aws_s3
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
-        - awss3
         - awsxray
         - azure_blob
         - azure_event_hub
@@ -158,25 +165,25 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
-        - envoyals
+        - envoy_als
         - expvar
         - faro
         - file_log
         - file_stats
-        - flinkmetrics
+        - flink_metrics
         - fluent_forward
         - github
         - gitlab
         - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
+        - googlecloudpubsubpush
         - haproxy
         - host_metrics
         - http_check
         - iis
         - influxdb
         - jaeger
-        - jmx
         - journald
         - k8s_cluster
         - k8s_events
@@ -198,7 +205,7 @@ components:
         - ntp
         - oracledb
         - otelarrow
-        - otlpjsonfile
+        - otlp_json_file
         - podman_stats
         - postgresql
         - pprof
@@ -218,10 +225,10 @@ components:
         - snmp
         - snowflake
         - solace
+        - splunk_enterprise
         - splunk_hec
-        - splunkenterprise
-        - sqlquery
-        - sqlserver
+        - sql_query
+        - sql_server
         - ssh_check
         - statsd
         - stef
@@ -232,11 +239,10 @@ components:
         - tls_check
         - udp_log
         - vcenter
-        - wavefront
-        - webhookevent
+        - webhook_event
         - windows_event_log
-        - windowsperfcounters
-        - windowsservice
+        - windows_perf_counters
+        - windows_service
         - yang_grpc
         - zipkin
         - zookeeper

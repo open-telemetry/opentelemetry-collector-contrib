@@ -1063,9 +1063,10 @@ Fraction of heap memory usage
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| elasticsearch.cluster.name | The name of the elasticsearch cluster. | Any Str | true | - |
-| elasticsearch.index.name | The name of the elasticsearch index. | Any Str | true | - |
-| elasticsearch.node.name | The name of the elasticsearch node. | Any Str | true | - |
-| elasticsearch.node.version | The version of the elasticsearch node. | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster. | Any Str | true | - | - |
+| elasticsearch.cluster.uuid | The unique identifier (UUID) of the elasticsearch cluster, as reported by the cluster itself. | Any Str | false | - | - |
+| elasticsearch.index.name | The name of the elasticsearch index. | Any Str | true | - | - |
+| elasticsearch.node.name | The name of the elasticsearch node. | Any Str | true | - | - |
+| elasticsearch.node.version | The version of the elasticsearch node. | Any Str | true | - | - |

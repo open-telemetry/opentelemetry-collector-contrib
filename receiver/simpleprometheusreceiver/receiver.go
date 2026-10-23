@@ -13,9 +13,9 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -38,7 +38,7 @@ func newPrometheusReceiverWrapper(params receiver.Settings, cfg *Config, consume
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfigWrapper(prw.config, prw.params)
+	pConfig, err := getPrometheusConfig(prw.config, prw.params.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
@@ -57,24 +57,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 	return prw.prometheusReceiver.Start(ctx, host)
 }
 
-// Deprecated: [v0.55.0] Use getPrometheusConfig instead.
-func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
-	if cfg.TLSEnabled {
-		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
-		cfg.TLS = configtls.ClientConfig{
-			Config: configtls.Config{
-				CAFile:   cfg.TLSConfig.CAFile,
-				CertFile: cfg.TLSConfig.CertFile,
-				KeyFile:  cfg.TLSConfig.KeyFile,
-			},
-			Insecure:           false,
-			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
-		}
-	}
-	return getPrometheusConfig(cfg)
-}
-
-func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
+func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
 	var bearerToken string
 	if cfg.UseServiceAccount {
 		restConfig, err := rest.InClusterConfig()
@@ -92,17 +75,21 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	tlsConfig, err := cfg.TLS.LoadTLSConfig(context.Background())
+	tlsConfig, err := cfg.ClientConfig.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("tls config is not valid: %w", err)
 	}
 	if tlsConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.TLS.CAFile,
-			CertFile:           cfg.TLS.CertFile,
-			KeyFile:            cfg.TLS.KeyFile,
-			InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
+			CA:                 string(cfg.ClientConfig.TLS.CAPem),
+			Cert:               string(cfg.ClientConfig.TLS.CertPem),
+			Key:                configutil.Secret(cfg.ClientConfig.TLS.KeyPem),
+			CAFile:             cfg.ClientConfig.TLS.CAFile,
+			CertFile:           cfg.ClientConfig.TLS.CertFile,
+			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
+			ServerName:         cfg.ClientConfig.TLS.ServerName,
+			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
 		}
 	}
 
@@ -115,11 +102,25 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	jobName := cfg.JobName
 	if jobName == "" {
-		jobName = fmt.Sprintf("%s/%s", metadata.Type, cfg.Endpoint)
+		jobName = fmt.Sprintf("%s/%s", metadata.Type, cfg.ClientConfig.Endpoint)
 	}
+	// Prometheus rejects a scrape timeout greater than the scrape interval, so
+	// cap the configured timeout at the interval. An unset timeout keeps the
+	// scrape timeout equal to the interval.
+	scrapeTimeout := cfg.CollectionInterval
+	if timeout := cfg.ClientConfig.Timeout; timeout > 0 {
+		if timeout > cfg.CollectionInterval {
+			logger.Warn("timeout is greater than collection_interval; using collection_interval as the scrape timeout",
+				zap.Duration("timeout", timeout),
+				zap.Duration("collection_interval", cfg.CollectionInterval))
+		} else {
+			scrapeTimeout = timeout
+		}
+	}
+
 	scrapeConfig := &config.ScrapeConfig{
 		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
-		ScrapeTimeout:   model.Duration(cfg.CollectionInterval),
+		ScrapeTimeout:   model.Duration(scrapeTimeout),
 		JobName:         jobName,
 		HonorTimestamps: true,
 		Scheme:          scheme,
@@ -128,7 +129,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		ServiceDiscoveryConfigs: discovery.Configs{
 			discovery.StaticConfig{
 				{
-					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.Endpoint)}},
+					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
 					Labels:  labels,
 				},
 			},

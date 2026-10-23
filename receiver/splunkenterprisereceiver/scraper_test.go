@@ -187,19 +187,19 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	metricsCfg.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
 	metricsCfg.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
 	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
+	idxEndpoint := confighttp.NewDefaultClientConfig()
+	idxEndpoint.Endpoint = endpoint
+	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
+	shEndpoint := confighttp.NewDefaultClientConfig()
+	shEndpoint.Endpoint = endpoint
+	shEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
+	cmEndpoint := confighttp.NewDefaultClientConfig()
+	cmEndpoint.Endpoint = endpoint
+	cmEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	return &Config{
-		IdxEndpoint: confighttp.ClientConfig{
-			Endpoint: endpoint,
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
-		SHEndpoint: confighttp.ClientConfig{
-			Endpoint: endpoint,
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
-		CMEndpoint: confighttp.ClientConfig{
-			Endpoint: endpoint,
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
+		IdxEndpoint: idxEndpoint,
+		SHEndpoint:  shEndpoint,
+		CMEndpoint:  cmEndpoint,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
@@ -273,11 +273,11 @@ func TestScrapeCustomSearchesUnconfiguredEndpoint(t *testing.T) {
 	}
 
 	// Only the indexer endpoint is configured; search_head and cluster_master are not.
+	idxEndpoint := confighttp.NewDefaultClientConfig()
+	idxEndpoint.Endpoint = ts.URL
+	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cfg := &Config{
-		IdxEndpoint: confighttp.ClientConfig{
-			Endpoint: ts.URL,
-			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
-		},
+		IdxEndpoint: idxEndpoint,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			Timeout:            11 * time.Second,

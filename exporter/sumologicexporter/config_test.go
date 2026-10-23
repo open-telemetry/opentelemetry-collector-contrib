@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestInitExporterInvalidConfiguration(t *testing.T) {
@@ -68,7 +68,7 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := xconfmap.Validate(tc.cfg)
+			err := confmap.Validate(tc.cfg)
 
 			if tc.expectedError != nil {
 				assert.EqualError(t, err, tc.expectedError.Error())

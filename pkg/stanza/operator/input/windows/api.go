@@ -13,20 +13,30 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// The procedures below must stay *windows.LazyProc and be called directly: LazyProc.Call carries
+// //go:uintptrescapes, which keeps every uintptr(unsafe.Pointer(p)) argument alive for the duration of
+// the call. Routing the call through an interface or a function variable loses that guarantee, and the
+// garbage collector may then free an argument while the Windows API is still using it.
 var (
 	api = windows.NewLazySystemDLL("wevtapi.dll")
 
-	subscribeProc             SyscallProc = api.NewProc("EvtSubscribe")
-	nextProc                  SyscallProc = api.NewProc("EvtNext")
-	renderProc                SyscallProc = api.NewProc("EvtRender")
-	closeProc                 SyscallProc = api.NewProc("EvtClose")
-	createBookmarkProc        SyscallProc = api.NewProc("EvtCreateBookmark")
-	createRenderContextProc   SyscallProc = api.NewProc("EvtCreateRenderContext")
-	updateBookmarkProc        SyscallProc = api.NewProc("EvtUpdateBookmark")
-	openPublisherMetadataProc SyscallProc = api.NewProc("EvtOpenPublisherMetadata")
-	formatMessageProc         SyscallProc = api.NewProc("EvtFormatMessage")
-	openSessionProc           SyscallProc = api.NewProc("EvtOpenSession")
+	subscribeProc             = api.NewProc("EvtSubscribe")
+	queryProc                 = api.NewProc("EvtQuery")
+	nextProc                  = api.NewProc("EvtNext")
+	renderProc                = api.NewProc("EvtRender")
+	closeProc                 = api.NewProc("EvtClose")
+	createBookmarkProc        = api.NewProc("EvtCreateBookmark")
+	createRenderContextProc   = api.NewProc("EvtCreateRenderContext")
+	updateBookmarkProc        = api.NewProc("EvtUpdateBookmark")
+	openPublisherMetadataProc = api.NewProc("EvtOpenPublisherMetadata")
+	formatMessageProc         = api.NewProc("EvtFormatMessage")
+	openSessionProc           = api.NewProc("EvtOpenSession")
 )
+
+var _ = []*windows.LazyProc{
+	subscribeProc, queryProc, nextProc, renderProc, closeProc, createBookmarkProc,
+	createRenderContextProc, updateBookmarkProc, openPublisherMetadataProc, formatMessageProc, openSessionProc,
+}
 
 type EvtRPCLogin struct {
 	Server   *uint16
@@ -34,11 +44,6 @@ type EvtRPCLogin struct {
 	Domain   *uint16
 	Password *uint16
 	Flags    uint32
-}
-
-// SyscallProc is a syscall procedure.
-type SyscallProc interface {
-	Call(...uintptr) (uintptr, uintptr, error)
 }
 
 const (
@@ -84,6 +89,13 @@ const (
 	// The properties are returned in the order defined in the EVT_SYSTEM_PROPERTY_ID enumeration.
 	// https://learn.microsoft.com/en-us/windows/win32/api/winevt/ne-winevt-evt_render_context_flags
 	EvtRenderContextSystem uint32 = 1
+)
+
+const (
+	// EvtQueryChannelPath specifies that the query is against one or more channels.
+	EvtQueryChannelPath uint32 = 1
+	// EvtQueryFilePath specifies that the query is against one or more log files
+	EvtQueryFilePath uint32 = 2
 )
 
 // evtSubscribe is the direct syscall implementation of EvtSubscribe (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtsubscribe)
@@ -186,5 +198,15 @@ var evtOpenSession = func(loginClass uint32, login *EvtRPCLogin, timeout, flags 
 	if handle == 0 {
 		return handle, e1
 	}
+	return handle, nil
+}
+
+// evtQuery is the direct syscall implementation of EvtQuery (https://docs.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtquery)
+var evtQuery = func(session uintptr, path, query *uint16, flags uint32) (uintptr, error) {
+	handle, _, err := queryProc.Call(session, uintptr(unsafe.Pointer(path)), uintptr(unsafe.Pointer(query)), uintptr(flags))
+	if !errors.Is(err, ErrorSuccess) {
+		return 0, err
+	}
+
 	return handle, nil
 }

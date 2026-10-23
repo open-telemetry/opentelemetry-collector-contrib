@@ -77,125 +77,102 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobCheckpointCountDataPoint(ts, "1", AttributeCheckpointCompleted)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobCheckpointInProgressDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobLastCheckpointSizeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobLastCheckpointTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJobRestartCountDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmClassLoaderClassesLoadedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmCPULoadDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmCPUTimeDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmGcCollectionsCountDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmGcCollectionsTimeDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryDirectTotalCapacityDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryDirectUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryHeapCommittedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryHeapMaxDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryHeapUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMappedTotalCapacityDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMappedUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMetaspaceCommittedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMetaspaceMaxDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryMetaspaceUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryNonheapCommittedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryNonheapMaxDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmMemoryNonheapUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkJvmThreadsCountDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkMemoryManagedTotalDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkMemoryManagedUsedDataPoint(ts, "1")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkOperatorRecordCountDataPoint(ts, "1", "operator_name-val", AttributeRecordIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordFlinkOperatorRecordCountDataPoint(ts, "3", "operator_name-val-2", AttributeRecordIn)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFlinkOperatorRecordCountDataPoint(ts+1, "3", "operator_name-val-2", AttributeRecordIn)
+				assert.Equal(t, 2, mb.metricFlinkOperatorRecordCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "operator_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "3", "operator_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts+1, "3", "operator_name-val-2")
+				assert.Equal(t, 2, mb.metricFlinkOperatorWatermarkOutput.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)
@@ -633,7 +610,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["flink.operator.record.count"], "Found a duplicate in the metrics slice: flink.operator.record.count")
 						validatedMetrics["flink.operator.record.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of records an operator has.", mi.Description())
 						assert.Equal(t, "{records}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -679,7 +658,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["flink.operator.watermark.output"], "Found a duplicate in the metrics slice: flink.operator.watermark.output")
 						validatedMetrics["flink.operator.watermark.output"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The last watermark this operator has emitted.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

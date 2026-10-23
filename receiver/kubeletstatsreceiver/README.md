@@ -4,10 +4,10 @@
 The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
+| Semantic Conventions Version | 1.43.0 |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkubeletstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkubeletstats) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kubeletstats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kubeletstats&displayType=list) |
@@ -20,7 +20,18 @@ and sends it down the metric pipeline for further processing.
 
 ## Metrics
 
-Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md).
+
+### Node PID Metrics vs. Host Metrics
+
+The optional metrics `k8s.node.pid.usage` and `k8s.node.pid.limit` are collected directly from Kubelet's `/stats/summary` endpoint (`NodeStats.Rlimit`):
+- `k8s.node.pid.usage`: Reflects the total count of existing scheduling entities (threads and processes across all states) from `/proc/loadavg` on the node.
+- `k8s.node.pid.limit`: Reflects the system-wide task limit (the lower of `kernel.pid_max` and `kernel.threads-max`) on the node.
+
+These metrics differ from host-level metrics (`hostmetricsreceiver` / `system.processes.*`) in key ways:
+1. **Permissions & Environment:** They are retrieved through the Kubelet API without requiring `hostPID: true`, privileged containers, or hostPath mounts (`/proc`, `/sys`), allowing collection in restricted or managed Kubernetes environments (such as GKE Autopilot).
+2. **Aggregation:** `k8s.node.pid.usage` is an aggregate number of allocated PIDs used by Kubelet for node PID eviction, rather than a per-state breakdown (e.g. `running`, `sleeping`, `zombies`).
+3. **PID Capacity Limit:** `k8s.node.pid.limit` exposes the node PID capacity limit (`MaxPID`), which is not provided by `hostmetricsreceiver`.
 
 ## Compatibility
 
@@ -69,7 +80,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -103,7 +114,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -149,7 +160,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 
@@ -171,7 +182,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [kubeletstats]
+      receivers: [kubelet_stats]
       exporters: [file]
 ```
 

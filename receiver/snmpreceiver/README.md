@@ -5,15 +5,14 @@ This receiver fetches stats from an SNMP enabled host using a [golang
 snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
 based upon different configurations in the config file.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsnmp%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsnmp) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsnmp%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsnmp) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_snmp)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_snmp&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@tamir-michaeli](https://www.github.com/tamir-michaeli) |
-| Emeritus      | [@StefanKurek](https://www.github.com/StefanKurek) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ajimenez1503](https://www.github.com/ajimenez1503), [@svencowart](https://www.github.com/svencowart) |
+| Emeritus      | [@StefanKurek](https://www.github.com/StefanKurek), [@tamir-michaeli](https://www.github.com/tamir-michaeli) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -70,6 +69,7 @@ These configuration options are for connecting to a SNMP host.
   - `AES192c`
   - `AES256c`
 - `privacy_password`: The privacy password used for the SNMP connection. This is only available if `security_level` is set to `auth_priv`.
+- `max_repetitions`: (default = `25`): The maximum number of iterations over the repeating variable list for GETBULK requests. Only used for SNMP versions `v2c` and `v3`.
 
 ### Metric/Attribute Configuration
 These configuration options are for determining what metrics and attributes will be created with what SNMP data

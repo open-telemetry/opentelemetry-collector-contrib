@@ -184,7 +184,12 @@ func setDoubleHistogramBounds(hdp pmetric.HistogramDataPoint, bounds ...float64)
 func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
-	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
+	if !hdp.HasMin() || val < hdp.Min() {
+		hdp.SetMin(val)
+	}
+	if !hdp.HasMax() || val > hdp.Max() {
+		hdp.SetMax(val)
+	}
 	buckets := hdp.BucketCounts()
 	bounds := hdp.ExplicitBounds()
 	for i := 0; i < bounds.Len(); i++ {

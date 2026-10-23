@@ -109,14 +109,86 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			request: &httpRequest{
 				RequestURL: "http://::1]",
 			},
-			expectsErr: "failed to parse request url",
+			expectsAttributes: map[string]any{
+				"url.full": "http://::1]",
+			},
 		},
 		{
-			name: "invalid protocol",
+			name: "url with %u escape",
 			request: &httpRequest{
-				Protocol: "invalid",
+				RequestURL: "https://example.com/x/%u2028foo",
 			},
-			expectsErr: `expected exactly one "/"`,
+			expectsAttributes: map[string]any{
+				"url.full": "https://example.com/x/%u2028foo",
+			},
+		},
+		{
+			name: "url with %U escape",
+			request: &httpRequest{
+				RequestURL: "https://example.com/%U000Afoo",
+			},
+			expectsAttributes: map[string]any{
+				"url.full": "https://example.com/%U000Afoo",
+			},
+		},
+		{
+			name: "url with truncated escape",
+			request: &httpRequest{
+				RequestURL: "https://example.com/%0%0Aafoo",
+			},
+			expectsAttributes: map[string]any{
+				"url.full": "https://example.com/%0%0Aafoo",
+			},
+		},
+		{
+			// Short ALPN token — well-known HTTP variants are normalised to
+			// name="http" + numeric version so telemetry stays consistent with
+			// the HTTP/1.1 form (regression test for #45214).
+			name: "h2 protocol normalised to http/2",
+			request: &httpRequest{
+				Protocol: "h2",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h2c protocol normalised to http/2",
+			request: &httpRequest{
+				Protocol: "h2c",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h3 protocol normalised to http/3",
+			request: &httpRequest{
+				Protocol: "h3",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "3",
+			},
+		},
+		{
+			// Non-HTTP short ALPN token falls through to the raw-name path.
+			name: "unknown short ALPN token preserved as name",
+			request: &httpRequest{
+				Protocol: "mqtt",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name": "mqtt",
+			},
+		},
+		{
+			name: "invalid protocol — too many slashes",
+			request: &httpRequest{
+				Protocol: "a/b/c",
+			},
+			expectsErr: `at most one "/"`,
 		},
 		{
 			name: "invalid protocol 2",
@@ -252,9 +324,14 @@ func TestGetTraceID(t *testing.T) {
 			out:      [16]uint8{0x1d, 0xbe, 0x31, 0x7e, 0xb7, 0x3e, 0xb6, 0xe3, 0xbb, 0xb5, 0x1a, 0x2b, 0xc3, 0xa4, 0x1e, 0x9},
 		},
 		{
-			scenario:    "invalid_trace_format",
-			in:          "1dbe317eb73eb6e3bbb51a2bc3a41e09",
-			expectedErr: "expected trace format to be",
+			scenario: "valid_bare_trace",
+			in:       "1dbe317eb73eb6e3bbb51a2bc3a41e09",
+			out:      [16]uint8{0x1d, 0xbe, 0x31, 0x7e, 0xb7, 0x3e, 0xb6, 0xe3, 0xbb, 0xb5, 0x1a, 0x2b, 0xc3, 0xa4, 0x1e, 0x9},
+		},
+		{
+			scenario:    "empty_trace_id",
+			in:          "projects/my-gcp-project/traces/",
+			expectedErr: `expected trace format to be "projects/<id>/traces/<id>" or "<id>" but got "projects/my-gcp-project/traces/"`,
 		},
 		{
 			scenario:    "invalid_hex_trace",
@@ -271,12 +348,12 @@ func TestGetTraceID(t *testing.T) {
 			t.Parallel()
 
 			out, err := getTraceID(test.in)
-			if err != nil {
+			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, test.out, out)
+				return
 			}
+			require.NoError(t, err)
+			require.Equal(t, test.out, out)
 		})
 	}
 }
@@ -303,18 +380,32 @@ func TestGetSpanID(t *testing.T) {
 			in:         "3e3a5741b18f0710ab",
 			expectsErr: "expected span ID hex length to be 8",
 		},
+		{
+			scenario:   "decimal_span_20_digits",
+			in:         "17028117370332828846",
+			expectsErr: "expected span ID hex length to be 8, got 10",
+		},
+		{
+			scenario:   "decimal_span_19_digits",
+			in:         "5673238915494838914",
+			expectsErr: "odd length hex string",
+		},
+		{
+			scenario:   "decimal_span_18_digits",
+			in:         "123456789012345678",
+			expectsErr: "expected span ID hex length to be 8, got 9",
+		},
 	} {
 		t.Run(test.scenario, func(t *testing.T) {
 			t.Parallel()
 
 			out, err := getSpanID(test.in)
-
-			if err != nil {
+			if test.expectsErr != "" {
 				require.ErrorContains(t, err, test.expectsErr)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, test.out, out)
+				return
 			}
+			require.NoError(t, err)
+			require.Equal(t, test.out, out)
 		})
 	}
 }

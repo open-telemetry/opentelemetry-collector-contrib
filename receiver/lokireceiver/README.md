@@ -7,7 +7,6 @@ It allows Promtail instances to specify the open telemetry collector as their lo
 
 This receiver runs HTTP and GRPC servers to ingest log entries in Loki format.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |

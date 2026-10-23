@@ -24,7 +24,8 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -48,9 +49,10 @@ func createDefaultConfig() component.Config {
 func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return nil, errors.New(
-			"exporter config requires a non-empty \"endpoint\"")
+			"exporter config requires a non-empty \"endpoint\"",
+		)
 	}
 	return newTracesExporter(ctx, cfg, set)
 }
@@ -58,9 +60,10 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 
-	if cfg.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return nil, errors.New(
-			"exporter config requires a non-empty \"endpoint\"")
+			"exporter config requires a non-empty \"endpoint\"",
+		)
 	}
 	return newLogsExporter(ctx, cfg, set)
 }

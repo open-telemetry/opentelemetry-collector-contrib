@@ -21,18 +21,39 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestValidate(t *testing.T) {
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
 	someAuth := configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(ty)})
+
+	tlsClientConfig := confighttp.NewDefaultClientConfig()
+	tlsClientConfig.ForceAttemptHTTP2 = false
+	tlsClientConfig.TLS = configtls.ClientConfig{
+		InsecureSkipVerify: true,
+	}
+
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	httpClientConfig.ForceAttemptHTTP2 = false
+	httpClientConfig.ReadBufferSize = 100
+	httpClientConfig.WriteBufferSize = 200
+	httpClientConfig.Timeout = 10 * time.Second
+	httpClientConfig.MaxConnsPerHost = maxConnPerHost
+	httpClientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
+
+	unsupportedClientConfig := confighttp.NewDefaultClientConfig()
+	unsupportedClientConfig.ForceAttemptHTTP2 = false
+	unsupportedClientConfig.Endpoint = "endpoint"
+	unsupportedClientConfig.Compression = "gzip"
+	unsupportedClientConfig.Auth = someAuth
+	unsupportedClientConfig.Headers = configopaque.MapList{
+		{Name: "key", Value: "val"},
+	}
+	unsupportedClientConfig.HTTP2ReadIdleTimeout = 250
+	unsupportedClientConfig.HTTP2PingTimeout = 200
 
 	tests := []struct {
 		name string
@@ -127,12 +148,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS settings are valid",
 			cfg: &Config{
-				API: APIConfig{Key: "aaaaaaa"},
-				ClientConfig: confighttp.ClientConfig{
-					TLS: configtls.ClientConfig{
-						InsecureSkipVerify: true,
-					},
-				},
+				API:          APIConfig{Key: "aaaaaaa"},
+				ClientConfig: tlsClientConfig,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
@@ -159,18 +176,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "aaaaaaa"},
-				ClientConfig: confighttp.ClientConfig{
-					ReadBufferSize:      100,
-					WriteBufferSize:     200,
-					Timeout:             10 * time.Second,
-					IdleConnTimeout:     idleConnTimeout,
-					MaxIdleConns:        maxIdleConn,
-					MaxIdleConnsPerHost: maxIdleConnPerHost,
-					MaxConnsPerHost:     maxConnPerHost,
-					DisableKeepAlives:   true,
-					TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
-				},
+				API:          APIConfig{Key: "aaaaaaa"},
+				ClientConfig: httpClientConfig,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
@@ -178,17 +185,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "unsupported confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "aaaaaaa"},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint:    "endpoint",
-					Compression: "gzip",
-					Auth:        someAuth,
-					Headers: configopaque.MapList{
-						{Name: "key", Value: "val"},
-					},
-					HTTP2ReadIdleTimeout: 250,
-					HTTP2PingTimeout:     200,
-				},
+				API:          APIConfig{Key: "aaaaaaa"},
+				ClientConfig: unsupportedClientConfig,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, headers, http2_read_idle_timeout, http2_ping_timeout",
@@ -282,20 +280,20 @@ func TestValidateConnectorComponentConfig(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
+	httpConfigs := map[string]any{
+		"read_buffer_size":        100,
+		"write_buffer_size":       200,
+		"timeout":                 "10s",
+		"max_idle_conns":          300,
+		"max_idle_conns_per_host": 150,
+		"max_conns_per_host":      250,
+		"disable_keep_alives":     true,
+		"idle_conn_timeout":       "30s",
+		"tls":                     map[string]any{"insecure_skip_verify": true},
+	}
+	// Create confighttp.ClientConfig via unmarshaling to preserve internal state.
 	cfgWithHTTPConfigs := CreateDefaultConfig().(*Config)
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
-	maxConnPerHost := 250
-	cfgWithHTTPConfigs.ReadBufferSize = 100
-	cfgWithHTTPConfigs.WriteBufferSize = 200
-	cfgWithHTTPConfigs.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.MaxIdleConns = maxIdleConn
-	cfgWithHTTPConfigs.MaxIdleConnsPerHost = maxIdleConnPerHost
-	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
-	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
-	cfgWithHTTPConfigs.DisableKeepAlives = true
-	cfgWithHTTPConfigs.TLS.InsecureSkipVerify = true
+	require.NoError(t, confmap.NewFromStringMap(httpConfigs).Unmarshal(&cfgWithHTTPConfigs.ClientConfig))
 	cfgWithHTTPConfigs.warnings = nil
 
 	tests := []struct {
@@ -439,19 +437,9 @@ func TestUnmarshal(t *testing.T) {
 			err: "\"metrics::sums::initial_cumulative_monotonic_value\" can only be configured when \"metrics::sums::cumulative_monotonic_mode\" is set to \"to_delta\"",
 		},
 		{
-			name: "unmarshall confighttp client configs",
-			configMap: confmap.NewFromStringMap(map[string]any{
-				"read_buffer_size":        100,
-				"write_buffer_size":       200,
-				"timeout":                 "10s",
-				"max_idle_conns":          300,
-				"max_idle_conns_per_host": 150,
-				"max_conns_per_host":      250,
-				"disable_keep_alives":     true,
-				"idle_conn_timeout":       "30s",
-				"tls":                     map[string]any{"insecure_skip_verify": true},
-			}),
-			cfg: cfgWithHTTPConfigs,
+			name:      "unmarshall confighttp client configs",
+			configMap: confmap.NewFromStringMap(httpConfigs),
+			cfg:       cfgWithHTTPConfigs,
 		},
 	}
 
@@ -469,6 +457,17 @@ func TestUnmarshal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalHostnameWhitespace(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+
+	configMap := confmap.NewFromStringMap(map[string]any{
+		"hostname": " my-hostname\n",
+	})
+
+	require.NoError(t, cfg.Unmarshal(configMap))
+	assert.Equal(t, "my-hostname", cfg.Hostname)
 }
 
 // Test that the factory creates the default configuration
@@ -869,7 +868,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

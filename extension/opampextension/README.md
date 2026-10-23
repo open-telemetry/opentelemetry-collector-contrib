@@ -6,7 +6,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fopamp%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fopamp) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fopamp%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fopamp) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_opamp)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_opamp&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@evan-bradley](https://www.github.com/evan-bradley), [@tigrannajaryan](https://www.github.com/tigrannajaryan) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@evan-bradley](https://www.github.com/evan-bradley), [@tigrannajaryan](https://www.github.com/tigrannajaryan), [@douglascamata](https://www.github.com/douglascamata), [@dpaasman00](https://www.github.com/dpaasman00) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -28,6 +28,17 @@ The following settings are optional for the websocket client:
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `auth`: The ID of an auth extension to use for authentication.
+    - `socket`: A local IPC socket to dial instead of a TCP connection. This is
+      typically set by the Supervisor for the local supervisor-to-collector
+      link and not configured manually. `endpoint` above is still required and
+      the two settings work together: `socket` determines where the connection
+      is dialed, while `endpoint` supplies the URL scheme, request path, and
+      `Host` header (its host and port are ignored). Setting `socket` without
+      `endpoint` is a configuration error.
+      - `transport`: `unix` (Unix domain socket) or `npipe` (Windows named pipe).
+        Required.
+      - `endpoint`: The socket path (e.g. `/var/run/otelcol/opamp.sock`) or
+        named pipe path (e.g. `\\.\pipe\opamp`). Required.
 
 The following settings are optional for the HTTP client:
 
@@ -37,6 +48,8 @@ The following settings are optional for the HTTP client:
     - `headers`: HTTP headers to set.
     - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.
     - `auth`: The ID of an auth extension to use for authentication.
+    - `socket`: A local IPC socket to dial instead of a TCP connection, as
+      described for the websocket transport above.
 
 The following settings are optional for both transports:
 
@@ -48,6 +61,11 @@ The following settings are optional for both transports:
   - `reports_health`: Whether to enable the OpAMP ReportsHealth capability. Default is `true`.
   - `reports_available_components`: Whether to enable the OpAMP ReportsAvailableComponents capability. Default is `true`.
   - `accepts_restart_command`: Whether to enable the OpAMP AcceptsRestartCommand capability. Default is `false`. The extension sends a `SIGHUP` signal to the collector to initiate a restart (however, SIGHUP isn't supported on windows systems, so it will be ignored). This functionality is also behind a feature gate (alpha) called `extension.opampextension.RemoteRestarts`
+  - `reports_heartbeat`: Whether to enable the OpAMP ReportsHeartbeat capability, which allows the server to set the heartbeat interval via `ConnectionSettingsOffers`. Default is `true`. With the HTTP transport the offered interval replaces `polling_interval`. With the WebSocket transport an offered interval of `0` disables heartbeats.
+- `reports_raw_config`: Whether to additionally report the raw, unexpanded configuration alongside the effective configuration. Default is `false`. Requires the `reports_effective_config` capability to be enabled. When enabled, the raw configuration (as authored, before environment variable and other provider references are expanded) is reported under the `raw` key of the effective config map, while the fully expanded effective configuration remains under the `""` (empty) key. This lets a server distinguish values that were explicitly authored from component defaults populated during expansion.
+
+  > [!WARNING]
+  > The raw configuration may expose secrets that are written directly in the configuration files. Values sourced from provider references (for example `${env:TOKEN}`) retain their unexpanded form in the raw configuration, so they are not exposed. Configuration fields using types meant for opaque information (such as `configopaque.String`, commonly used for password fields) are redacted; consult your components' documentation or source to verify which fields are automatically redacted. This setting is disabled by default for this reason; only enable it if you trust the OpAMP server with the full contents of your configuration files.
 - `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
   - `include_resource_attributes`: Copy the Collector's resource attributes into the set of non-identifying attributes in the agent description.
   - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.

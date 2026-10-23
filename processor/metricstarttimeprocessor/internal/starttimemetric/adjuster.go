@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/datapointstorage"
 )
 
@@ -64,7 +64,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	startTimeTs := timestampFromFloat64(startTime)
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		attrHash := pdatautil.MapHash(rm.Resource().Attributes())
+		attrHash := xhash.MapHash(rm.Resource().Attributes())
 		tsm, _ := a.referenceValueCache.Get(attrHash)
 
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that

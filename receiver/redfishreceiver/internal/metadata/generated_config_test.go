@@ -173,6 +173,149 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestChassisPowerstateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ChassisPowerstate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ChassisPowerstateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric chassis.powerstate doesn't have an attribute invalid, valid attributes: [chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]")
+
+	cfg = DefaultMetricsConfig().ChassisPowerstate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestChassisStatusHealthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ChassisStatusHealth
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ChassisStatusHealthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric chassis.status.health doesn't have an attribute invalid, valid attributes: [chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]")
+
+	cfg = DefaultMetricsConfig().ChassisStatusHealth
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestChassisStatusStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().ChassisStatusState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []ChassisStatusStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric chassis.status.state doesn't have an attribute invalid, valid attributes: [chassis.id, chassis.asset_tag, chassis.model, chassis.name, chassis.manufacturer, chassis.serial_number, chassis.sku, chassis.chassis_type]")
+
+	cfg = DefaultMetricsConfig().ChassisStatusState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestFanReadingMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FanReading
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FanReadingMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric fan.reading doesn't have an attribute invalid, valid attributes: [chassis.id, fan.name, fan.reading_units]")
+
+	cfg = DefaultMetricsConfig().FanReading
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestFanStatusHealthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FanStatusHealth
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FanStatusHealthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric fan.status.health doesn't have an attribute invalid, valid attributes: [chassis.id, fan.name]")
+
+	cfg = DefaultMetricsConfig().FanStatusHealth
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestFanStatusStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FanStatusState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FanStatusStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric fan.status.state doesn't have an attribute invalid, valid attributes: [chassis.id, fan.name]")
+
+	cfg = DefaultMetricsConfig().FanStatusState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemPowerstateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemPowerstate
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemPowerstateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.powerstate doesn't have an attribute invalid, valid attributes: [system.id, system.asset_tag, system.bios_version, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]")
+
+	cfg = DefaultMetricsConfig().SystemPowerstate
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemStatusHealthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemStatusHealth
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemStatusHealthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.status.health doesn't have an attribute invalid, valid attributes: [system.id, system.asset_tag, system.bios_version, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]")
+
+	cfg = DefaultMetricsConfig().SystemStatusHealth
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSystemStatusStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SystemStatusState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SystemStatusStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric system.status.state doesn't have an attribute invalid, valid attributes: [system.id, system.asset_tag, system.bios_version, system.model, system.name, system.manufacturer, system.serial_number, system.sku, system.system_type]")
+
+	cfg = DefaultMetricsConfig().SystemStatusState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestTemperatureReadingMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().TemperatureReading
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []TemperatureReadingMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric temperature.reading doesn't have an attribute invalid, valid attributes: [chassis.id, temperature.name]")
+
+	cfg = DefaultMetricsConfig().TemperatureReading
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestTemperatureStatusHealthMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().TemperatureStatusHealth
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []TemperatureStatusHealthMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric temperature.status.health doesn't have an attribute invalid, valid attributes: [chassis.id, temperature.name]")
+
+	cfg = DefaultMetricsConfig().TemperatureStatusHealth
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestTemperatureStatusStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().TemperatureStatusState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []TemperatureStatusStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric temperature.status.state doesn't have an attribute invalid, valid attributes: [chassis.id, temperature.name]")
+
+	cfg = DefaultMetricsConfig().TemperatureStatusState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

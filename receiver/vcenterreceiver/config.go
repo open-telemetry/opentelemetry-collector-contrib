@@ -19,13 +19,14 @@ import (
 
 // Config is the configuration of the receiver
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Endpoint                       string              `mapstructure:"endpoint"`
-	Username                       string              `mapstructure:"username"`
-	Password                       configopaque.String `mapstructure:"password"`
-	MaxQueryMetrics                int                 `mapstructure:"max_query_metrics"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig         configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Endpoint             string                         `mapstructure:"endpoint"`
+	Username             string                         `mapstructure:"username"`
+	Password             configopaque.String            `mapstructure:"password"`
+	ProxyURL             string                         `mapstructure:"proxy_url"`
+	MaxQueryMetrics      int                            `mapstructure:"max_query_metrics"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver
@@ -53,7 +54,20 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password not provided and is required"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
+	if c.ProxyURL != "" {
+		proxyURL, proxyErr := url.Parse(c.ProxyURL)
+		switch {
+		case proxyErr != nil:
+			err = multierr.Append(err, fmt.Errorf("unable to parse proxy_url %s: %w", c.ProxyURL, proxyErr))
+		case proxyURL.Scheme != "http" && proxyURL.Scheme != "https" &&
+			proxyURL.Scheme != "socks5" && proxyURL.Scheme != "socks5h":
+			err = multierr.Append(err, errors.New("proxy_url scheme must be http, https, socks5 or socks5h"))
+		case proxyURL.Host == "":
+			err = multierr.Append(err, errors.New("proxy_url must include a host"))
+		}
+	}
+
+	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 

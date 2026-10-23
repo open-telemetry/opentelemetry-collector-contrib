@@ -127,7 +127,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.org/api/locations"
 	attributes["http.target"] = "/api/locations"
-	attributes["http.status_code"] = 500
+	attributes["http.response.status_code"] = 500
 	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
@@ -154,7 +154,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes["http.method"] = http.MethodPost
 	attributes["http.url"] = "https://api.example.org/api/locations"
 	attributes["http.target"] = "/api/locations"
-	attributes["http.status_code"] = 429
+	attributes["http.response.status_code"] = 429
 	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes["http.user_agent"] = userAgent
 	attributes["enduser.id"] = enduser
@@ -883,7 +883,7 @@ func TestOriginEks(t *testing.T) {
 	attrs.PutStr("cloud.account.id", "123456789")
 	attrs.PutStr("cloud.availability_zone", "us-east-1c")
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")
@@ -1450,6 +1450,35 @@ func TestLocalRootConsumer(t *testing.T) {
 	assert.Equal(t, expectedEndTime, *segments[1].EndTime)
 }
 
+// TestLocalRootConsumerUsesResourceServiceName verifies that when a local root
+// Consumer span does not carry the aws.local.service attribute, the X-Ray
+// service segment falls back to resource.service.name rather than using the
+// span (operation) name.
+func TestLocalRootConsumerUsesResourceServiceName(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "destination operation"
+	resource := getBasicResource() // has service.name = "signup_aggregator"
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	delete(attributes, awsLocalService) // remove aws.local.service to trigger fallback
+
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	serviceSegment := segments[1]
+	// Service segment must use the resource service name, not the span (operation) name.
+	assert.Equal(t, "signup_aggregator", *serviceSegment.Name)
+	assert.Nil(t, serviceSegment.Type)
+}
+
 func TestNonLocalRootConsumerProcess(t *testing.T) {
 	spanName := "destination operation"
 	resource := getBasicResource()
@@ -1992,7 +2021,7 @@ func constructDefaultResource() pcommon.Resource {
 	attrs.PutStr("service.version", "semver:1.1.4")
 	attrs.PutStr("container.name", "signup_aggregator")
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")

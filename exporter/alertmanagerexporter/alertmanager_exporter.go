@@ -350,7 +350,7 @@ func (s *alertmanagerExporter) pushLogs(ctx context.Context, ld plog.Logs) error
 }
 
 func (s *alertmanagerExporter) start(ctx context.Context, host component.Host) error {
-	client, err := s.config.ToClient(ctx, host.GetExtensions(), s.settings)
+	client, err := s.config.ClientConfig.ToClient(ctx, host.GetExtensions(), s.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -369,7 +369,7 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 	return &alertmanagerExporter{
 		config:            cfg,
 		settings:          set,
-		endpoint:          fmt.Sprintf("%s/api/%s/alerts", cfg.Endpoint, cfg.APIVersion),
+		endpoint:          fmt.Sprintf("%s/api/%s/alerts", cfg.ClientConfig.Endpoint, cfg.APIVersion),
 		generatorURL:      cfg.GeneratorURL,
 		defaultSeverity:   cfg.DefaultSeverity,
 		severityAttribute: cfg.SeverityAttribute,

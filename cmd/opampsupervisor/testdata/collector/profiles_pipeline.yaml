@@ -1,0 +1,14 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:0
+
+exporters:
+  debug:
+
+service:
+  pipelines:
+    profiles:
+      receivers: [otlp]
+      exporters: [debug]

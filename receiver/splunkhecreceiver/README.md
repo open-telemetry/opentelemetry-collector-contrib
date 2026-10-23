@@ -8,7 +8,6 @@ The collector accepts data formatted as JSON [HEC events](https://help.splunk.co
 under any path or as EOL separated log [raw data](https://help.splunk.com/en/splunk-enterprise/get-data-in/get-started-with-getting-data-in/10.0/get-data-with-http-event-collector/format-events-for-http-event-collector#raw-event-parsing-0)
 if sent to the `raw_path` path.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics, logs   |

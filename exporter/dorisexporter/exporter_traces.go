@@ -24,6 +24,9 @@ var tracesDDL string
 //go:embed sql/traces_view.sql
 var tracesView string
 
+//go:embed sql/traces_view_services.sql
+var tracesServicesView string
+
 //go:embed sql/traces_graph_ddl.sql
 var tracesGraphDDL string
 
@@ -51,6 +54,8 @@ type dTrace struct {
 	ResourceAttributes map[string]any `json:"resource_attributes"`
 	ScopeName          string         `json:"scope_name"`
 	ScopeVersion       string         `json:"scope_version"`
+	// IsRoot is 1 when the span has no parent (root span of the trace), else 0.
+	IsRoot int8 `json:"is_root"`
 }
 
 // dEvent Event to Doris
@@ -97,19 +102,37 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 			return err
 		}
 
-		ddl := fmt.Sprintf(tracesDDL, e.cfg.Traces, e.cfg.propertiesStr())
+		ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
 		}
 
-		view := fmt.Sprintf(tracesView, e.cfg.Traces, e.cfg.Traces)
-		_, err = conn.ExecContext(ctx, view)
-		if err != nil {
-			e.logger.Warn("failed to create materialized view", zap.Error(err))
+		if err = waitForPartitionsReady(ctx, conn, e.logger, e.cfg.Database, e.cfg.Table.Traces, e.cfg.expectedInitialPartitionCount()); err != nil {
+			e.logger.Warn("partitions not ready, skipping materialized view",
+				zap.String("table", e.cfg.Table.Traces), zap.Error(err))
+		} else {
+			// Doris builds a synchronous materialized view asynchronously and refuses a
+			// second one while the first is still building, so create them one by one.
+			views := []struct {
+				name string
+				stmt string
+			}{
+				{e.cfg.Table.Traces + "_services", fmt.Sprintf(tracesServicesView, e.cfg.Table.Traces, e.cfg.Table.Traces)},
+				{e.cfg.Table.Traces + "_summary", fmt.Sprintf(tracesView, e.cfg.Table.Traces, e.cfg.Table.Traces)},
+			}
+			for _, v := range views {
+				if _, err = conn.ExecContext(ctx, v.stmt); err != nil {
+					e.logger.Error("failed to create materialized view", zap.String("view", v.name), zap.Error(err))
+					continue
+				}
+				if err = waitForMaterializedViewReady(ctx, conn, e.logger, e.cfg.Database, e.cfg.Table.Traces, v.name); err != nil {
+					e.logger.Warn("materialized view is still building", zap.String("view", v.name), zap.Error(err))
+				}
+			}
 		}
 
-		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Traces, e.cfg.propertiesStrForUniqueKey())
+		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Table.Traces, e.cfg.propertiesStrForUniqueKey())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
@@ -140,7 +163,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	label := generateLabel(e.cfg, e.cfg.Traces)
+	label := generateLabel(e.cfg, e.cfg.Table.Traces)
 	traces := make([]*dTrace, 0, td.SpanCount())
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -193,6 +216,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					newLinks = append(newLinks, newLink)
 				}
 
+				parentSpanID := traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
+				var isRoot int8
+				if parentSpanID == "" {
+					isRoot = 1
+				}
+
 				trace := &dTrace{
 					ServiceName:        serviceName,
 					Timestamp:          e.formatTime(span.StartTimestamp().AsTime()),
@@ -200,7 +229,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					SpanID:             traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
 					TraceState:         span.TraceState().AsRaw(),
-					ParentSpanID:       traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
+					ParentSpanID:       parentSpanID,
 					SpanName:           span.Name(),
 					SpanKind:           traceutil.SpanKindStr(span.Kind()),
 					EndTime:            e.formatTime(span.EndTimestamp().AsTime()),
@@ -213,6 +242,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					ResourceAttributes: resourceAttributes.AsRaw(),
 					ScopeName:          scopeSpan.Scope().Name(),
 					ScopeVersion:       scopeSpan.Scope().Version(),
+					IsRoot:             isRoot,
 				}
 
 				traces = append(traces, trace)
@@ -229,7 +259,7 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Traces, marshal, label)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Traces, marshal, label)
 	if err != nil {
 		return err
 	}
@@ -272,9 +302,9 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 
 func (e *tracesExporter) formatDropTraceGraphJob() string {
 	return fmt.Sprintf(
-		"DROP JOB where jobName = '%s:%s_graph_job';",
+		"DROP JOB where jobName = '%s.%s_graph_job';",
 		e.cfg.Database,
-		e.cfg.Traces,
+		e.cfg.Table.Traces,
 	)
 }
 
@@ -282,9 +312,9 @@ func (e *tracesExporter) formatTraceGraphJob() string {
 	return fmt.Sprintf(
 		tracesGraphJob,
 		e.cfg.Database,
-		e.cfg.Traces,
-		e.cfg.Traces,
-		e.cfg.Traces,
-		e.cfg.Traces,
+		e.cfg.Table.Traces,
+		e.cfg.Table.Traces,
+		e.cfg.Table.Traces,
+		e.cfg.Table.Traces,
 	)
 }

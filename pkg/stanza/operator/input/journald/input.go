@@ -13,10 +13,12 @@ import (
 	"io"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	gojson "github.com/goccy/go-json"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -30,11 +32,13 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister           operator.Persister
-	convertMessageBytes bool
-	cancel              context.CancelFunc
-	wg                  sync.WaitGroup
-	errChan             chan error
+	persister                    operator.Persister
+	convertMessageBytes          bool
+	convertToSemanticConventions bool
+	cancel                       context.CancelFunc
+	wg                           sync.WaitGroup
+	errChan                      chan error
+	includeLogRecordOriginal     bool
 }
 
 type cmd interface {
@@ -248,13 +252,22 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", errors.New("journald field for cursor is not a string")
 	}
 
-	entry, err := operator.NewEntry(body)
+	e, err := operator.NewEntry(body)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
-	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
-	return entry, cursorString, nil
+	if operator.convertToSemanticConventions {
+		mapJournalEntryAttributes(e, body)
+	}
+
+	e.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
+
+	if operator.includeLogRecordOriginal {
+		e.AddAttribute(string(semconv.LogRecordOriginalKey), strings.TrimSpace(string(line)))
+	}
+
+	return e, cursorString, nil
 }
 
 // Stop will stop generating logs.

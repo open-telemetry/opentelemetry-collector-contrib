@@ -21,7 +21,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // createDefaultConfig creates the default configuration for receiver.
@@ -29,8 +30,10 @@ func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = netAddr
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
+		ServerConfig: serverConfig,
 	}
 }
 

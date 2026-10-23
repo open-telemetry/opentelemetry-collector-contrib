@@ -138,7 +138,8 @@ func startRabbitMQContainer(t *testing.T, image string) testcontainers.Container
 				},
 			},
 			Started: true,
-		})
+		},
+	)
 	require.NoError(t, err)
 
 	err = container.Start(t.Context())

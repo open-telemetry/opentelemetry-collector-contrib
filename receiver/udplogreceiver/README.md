@@ -24,7 +24,7 @@ The UDP Log Receiver receives logs over UDP.
 | `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
 | `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
 | `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
-| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/semantic-conventions/blob/cee22ec91448808ebcfa53df689c800c7171c9e1/docs/general/attributes.md#other-network-attributes] |
+| `add_attributes`          | false                | Adds network attributes to each log record. By default the deprecated `net.*` attributes are added (see [deprecated network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#deprecated-network-attributes)). Enable the `stanza.udp.useStableNetworkAttributes` feature gate to emit the [stable network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#network-attributes) instead. See [Feature Gates](#feature-gates). |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
@@ -100,4 +100,32 @@ The deprecated component type `udplog` is still accepted:
 receivers:
   udplog:
     listen_address: "0.0.0.0:54525"
+```
+
+## Feature Gates
+
+### `stanza.udp.useStableNetworkAttributes`
+
+When `add_attributes` is `true`, this feature gate controls which network attributes are added to
+each log record.
+
+- **Disabled (default):** the deprecated `net.*` attributes are added.
+- **Enabled:** the stable network semantic convention attributes are added instead.
+
+| Deprecated attribute | Stable attribute        |
+| ---                  | ---                     |
+| `net.transport`      | `network.transport`     |
+| `net.host.ip`        | `network.local.address` |
+| `net.host.port`      | `server.port`           |
+| `net.host.name`      | `server.address`        |
+| `net.peer.ip`        | `network.peer.address`  |
+| `net.peer.port`      | `client.port`           |
+| `net.peer.name`      | `client.address`        |
+
+The `net.transport` value `IP.UDP` is replaced by the `network.transport` value `udp`.
+
+To enable the feature gate:
+
+```sh
+otelcol --feature-gates=stanza.udp.useStableNetworkAttributes
 ```

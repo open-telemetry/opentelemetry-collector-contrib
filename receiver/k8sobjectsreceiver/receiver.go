@@ -227,7 +227,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				if err != nil {
 					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
 				}
-			})
+			},
+		)
 	} else {
 		cctx, cancel := context.WithCancel(ctx)
 		kr.cancel = cancel
@@ -263,6 +264,7 @@ func (kr *k8sobjectsreceiver) stopWatches() {
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
 	}
+	kr.stopperChanList = nil
 	kr.mu.Unlock()
 	kr.wg.Wait()
 }
@@ -306,10 +308,49 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 		return err
 	}
 
-	stopChan := obs.Start(ctx, &kr.wg)
+	stopChan, err := kr.startObserver(ctx, obs, object)
+	if err != nil {
+		return err
+	}
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
+	kr.mu.Unlock()
 
 	return nil
+}
+
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
+	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
+		return obs.Start(ctx, &kr.wg)
+	}
+
+	stopChan := make(chan struct{})
+	kr.wg.Go(func() {
+		timer := time.NewTimer(object.InitialDelay)
+		defer timer.Stop()
+
+		select {
+		case <-timer.C:
+		case <-stopChan:
+			return
+		case <-ctx.Done():
+			return
+		}
+
+		observerStopChan, err := obs.Start(ctx, &kr.wg)
+		if err != nil {
+			kr.setting.Logger.Error("failed to start observer after initial delay",
+				zap.String("object", object.Name), zap.Error(err))
+			return
+		}
+		select {
+		case <-stopChan:
+			close(observerStopChan)
+		case <-ctx.Done():
+		}
+	})
+
+	return stopChan, nil
 }
 
 // handleError handles errors according to the configured error mode

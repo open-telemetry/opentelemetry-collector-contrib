@@ -65,6 +65,11 @@ The `structure` sub-package contains a Histogram aggregator for use by
 the OpenTelemetry-Go Metrics SDK as well as OpenTelemetry Collector
 receivers, processors, and exporters.
 
+The `conversion` sub-package translates exponential histogram buckets
+into explicit histogram layouts. It uses the mapping sub-packages for
+source bucket boundaries, preserves the total count exactly, and supports
+deterministic and randomized redistribution.
+
 ## Implementation
 
 The implementation maintains a slice of buckets and grows the array in

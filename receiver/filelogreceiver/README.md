@@ -3,7 +3,6 @@
 
 This receiver tails and parses logs from files.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -50,6 +49,7 @@ This receiver tails and parses logs from files.
 | `delete_after_read`                   | `false`                              | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. Must be `false` when `start_at` is set to `end`.                                                                     |
 | `acquire_fs_lock`                     | `false`                              | Whether to attempt to acquire a filesystem lock before reading a file (Unix only).                                                                                                                                                                              |
 | `file_cache_advise`                   | `false`                              | Hints the operating system to release cached file pages after they are read, helping reduce page cache usage for large sequential workloads.  (Linux only).                                                                                                                                                                              |
+| `skip_unmodified_files`               | `false`                              | If `true`, a file whose path and mtime are unchanged since the previous poll is skipped without being opened, fingerprinted, or read. This trades pure fingerprint-based identification for a faster path+mtime check; enable it only in environments where an unchanged mtime reliably means unchanged content.                          |
 | `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                               |
 | `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                                 |
 | `operators`                           | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
@@ -172,7 +172,7 @@ receivers:
 
 - Use `ignore` when you want to avoid duplicate logs and your log rotation strategy ensures that rotated files are properly renamed or moved.
 - Use `read_whole_file` when data completeness is critical and you can tolerate duplicate logs, or when you have deduplication logic downstream.
-- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point. 
+- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point.
 
 ## Example - Tailing a simple json file
 
@@ -293,27 +293,28 @@ are provided.
 
 ### `filelog.protobufCheckpointEncoding`
 
-When this feature gate is enabled, the receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
+The receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
 
-The feature includes full backward compatibility:
-- The receiver can always read both protobuf and JSON checkpoints regardless of the feature gate setting
-- When the feature gate is enabled, new checkpoints are written in protobuf format
-- When the feature gate is disabled, new checkpoints are written in JSON format
-
-To enable this feature gate, use the flag: `--feature-gates=filelog.protobufCheckpointEncoding`
+Checkpoints are always written in protobuf format. Existing JSON checkpoints are still read and are rewritten as protobuf on the next save.
 
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.148.0`
+- Promoted to `Beta` (enabled by default) in `v0.156.0`
+- Promoted to `Stable` (cannot be disabled) in `v0.164.0`
+- Removed in `v0.165.0`
 
-### `filelog.decompressFingerprint`
+### List
 
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
+This component has the following feature gates:
 
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `filelog.allowFileDeletion` | beta | When enabled, allows usage of the `delete_after_read` setting. | v0.70.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314) |
+| `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
+| `filelog.mtimeSortType` | beta | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
+| `filelog.protobufCheckpointEncoding` | stable | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | v0.165.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
+| `filelog.requireExplicitTopN` | alpha | When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444) |
+| `filelog.windows.caseInsensitive` | beta | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
 
-Schedule for this feature gate is:
-
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0`
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

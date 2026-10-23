@@ -11,6 +11,9 @@ $defs:
       ignore_audience:
         description: When true, this skips validating the audience field. Optional.
         type: boolean
+      ignore_issuer:
+        description: When true, this skips validating the issuer field. Optional.
+        type: boolean
       issuer_ca_path:
         description: The local path for the issuer CA's TLS server cert. Optional.
         type: string

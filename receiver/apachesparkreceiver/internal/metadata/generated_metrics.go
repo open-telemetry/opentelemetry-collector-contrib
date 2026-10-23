@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -19,6 +20,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 // AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
@@ -293,7 +303,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.driver.block_manager.disk.usage",
 	},
 	SparkDriverBlockManagerMemoryUsage: metricInfo{
-		Name: "spark.driver.block_manager.memory.usage",
+		Name:       "spark.driver.block_manager.memory.usage",
+		Attributes: []string{"location", "state"},
 	},
 	SparkDriverCodeGeneratorCompilationAverageTime: metricInfo{
 		Name: "spark.driver.code_generator.compilation.average_time",
@@ -326,28 +337,35 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.driver.dag_scheduler.job.count",
 	},
 	SparkDriverDagSchedulerStageCount: metricInfo{
-		Name: "spark.driver.dag_scheduler.stage.count",
+		Name:       "spark.driver.dag_scheduler.stage.count",
+		Attributes: []string{"scheduler_status"},
 	},
 	SparkDriverDagSchedulerStageFailed: metricInfo{
 		Name: "spark.driver.dag_scheduler.stage.failed",
 	},
 	SparkDriverExecutorGcOperations: metricInfo{
-		Name: "spark.driver.executor.gc.operations",
+		Name:       "spark.driver.executor.gc.operations",
+		Attributes: []string{"gc_type"},
 	},
 	SparkDriverExecutorGcTime: metricInfo{
-		Name: "spark.driver.executor.gc.time",
+		Name:       "spark.driver.executor.gc.time",
+		Attributes: []string{"gc_type"},
 	},
 	SparkDriverExecutorMemoryExecution: metricInfo{
-		Name: "spark.driver.executor.memory.execution",
+		Name:       "spark.driver.executor.memory.execution",
+		Attributes: []string{"location"},
 	},
 	SparkDriverExecutorMemoryJvm: metricInfo{
-		Name: "spark.driver.executor.memory.jvm",
+		Name:       "spark.driver.executor.memory.jvm",
+		Attributes: []string{"location"},
 	},
 	SparkDriverExecutorMemoryPool: metricInfo{
-		Name: "spark.driver.executor.memory.pool",
+		Name:       "spark.driver.executor.memory.pool",
+		Attributes: []string{"pool_memory_type"},
 	},
 	SparkDriverExecutorMemoryStorage: metricInfo{
-		Name: "spark.driver.executor.memory.storage",
+		Name:       "spark.driver.executor.memory.storage",
+		Attributes: []string{"location"},
 	},
 	SparkDriverHiveExternalCatalogFileCacheHits: metricInfo{
 		Name: "spark.driver.hive_external_catalog.file_cache_hits",
@@ -392,10 +410,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.executor.memory.usage",
 	},
 	SparkExecutorShuffleIoSize: metricInfo{
-		Name: "spark.executor.shuffle.io.size",
+		Name:       "spark.executor.shuffle.io.size",
+		Attributes: []string{"direction"},
 	},
 	SparkExecutorStorageMemoryUsage: metricInfo{
-		Name: "spark.executor.storage_memory.usage",
+		Name:       "spark.executor.storage_memory.usage",
+		Attributes: []string{"location", "state"},
 	},
 	SparkExecutorTaskActive: metricInfo{
 		Name: "spark.executor.task.active",
@@ -404,7 +424,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.executor.task.limit",
 	},
 	SparkExecutorTaskResult: metricInfo{
-		Name: "spark.executor.task.result",
+		Name:       "spark.executor.task.result",
+		Attributes: []string{"executor_task_result"},
 	},
 	SparkExecutorTime: metricInfo{
 		Name: "spark.executor.time",
@@ -413,13 +434,15 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.job.stage.active",
 	},
 	SparkJobStageResult: metricInfo{
-		Name: "spark.job.stage.result",
+		Name:       "spark.job.stage.result",
+		Attributes: []string{"job_result"},
 	},
 	SparkJobTaskActive: metricInfo{
 		Name: "spark.job.task.active",
 	},
 	SparkJobTaskResult: metricInfo{
-		Name: "spark.job.task.result",
+		Name:       "spark.job.task.result",
+		Attributes: []string{"job_result"},
 	},
 	SparkStageDiskSpilled: metricInfo{
 		Name: "spark.stage.disk.spilled",
@@ -431,10 +454,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.executor.run_time",
 	},
 	SparkStageIoRecords: metricInfo{
-		Name: "spark.stage.io.records",
+		Name:       "spark.stage.io.records",
+		Attributes: []string{"direction"},
 	},
 	SparkStageIoSize: metricInfo{
-		Name: "spark.stage.io.size",
+		Name:       "spark.stage.io.size",
+		Attributes: []string{"direction"},
 	},
 	SparkStageJvmGcTime: metricInfo{
 		Name: "spark.stage.jvm_gc_time",
@@ -446,7 +471,8 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.memory.spilled",
 	},
 	SparkStageShuffleBlocksFetched: metricInfo{
-		Name: "spark.stage.shuffle.blocks_fetched",
+		Name:       "spark.stage.shuffle.blocks_fetched",
+		Attributes: []string{"source"},
 	},
 	SparkStageShuffleFetchWaitTime: metricInfo{
 		Name: "spark.stage.shuffle.fetch_wait_time",
@@ -455,10 +481,12 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.shuffle.io.disk",
 	},
 	SparkStageShuffleIoReadSize: metricInfo{
-		Name: "spark.stage.shuffle.io.read.size",
+		Name:       "spark.stage.shuffle.io.read.size",
+		Attributes: []string{"source"},
 	},
 	SparkStageShuffleIoRecords: metricInfo{
-		Name: "spark.stage.shuffle.io.records",
+		Name:       "spark.stage.shuffle.io.records",
+		Attributes: []string{"direction"},
 	},
 	SparkStageShuffleIoWriteSize: metricInfo{
 		Name: "spark.stage.shuffle.io.write.size",
@@ -467,13 +495,15 @@ var MetricsInfo = metricsInfo{
 		Name: "spark.stage.shuffle.write_time",
 	},
 	SparkStageStatus: metricInfo{
-		Name: "spark.stage.status",
+		Name:       "spark.stage.status",
+		Attributes: []string{"stage_active", "stage_complete", "stage_pending", "stage_failed"},
 	},
 	SparkStageTaskActive: metricInfo{
 		Name: "spark.stage.task.active",
 	},
 	SparkStageTaskResult: metricInfo{
-		Name: "spark.stage.task.result",
+		Name:       "spark.stage.task.result",
+		Attributes: []string{"stage_task_result"},
 	},
 	SparkStageTaskResultSize: metricInfo{
 		Name: "spark.stage.task.result_size",
@@ -547,7 +577,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricSparkDriverBlockManagerDiskUsage struct {
@@ -560,7 +591,7 @@ type metricSparkDriverBlockManagerDiskUsage struct {
 func (m *metricSparkDriverBlockManagerDiskUsage) init() {
 	m.data.SetName("spark.driver.block_manager.disk.usage")
 	m.data.SetDescription("Disk space used by the BlockManager.")
-	m.data.SetUnit("mb")
+	m.data.SetUnit("MBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -607,18 +638,20 @@ type metricSparkDriverBlockManagerMemoryUsage struct {
 	config        SparkDriverBlockManagerMemoryUsageMetricConfig // metric config provided by user.
 	capacity      int                                            // max observed number of data points added to the metric.
 	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.block_manager.memory.usage metric with initial data.
 func (m *metricSparkDriverBlockManagerMemoryUsage) init() {
 	m.data.SetName("spark.driver.block_manager.memory.usage")
 	m.data.SetDescription("Memory usage for the driver's BlockManager.")
-	m.data.SetUnit("mb")
+	m.data.SetUnit("MBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverBlockManagerMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string, stateAttributeValue string) {
@@ -637,31 +670,31 @@ func (m *metricSparkDriverBlockManagerMemoryUsage) recordDataPoint(start pcommon
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -808,7 +841,7 @@ type metricSparkDriverCodeGeneratorGeneratedClassAverageSize struct {
 func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) init() {
 	m.data.SetName("spark.driver.code_generator.generated_class.average_size")
 	m.data.SetDescription("Average class size of the classes generated by the CodeGenerator.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -910,7 +943,7 @@ type metricSparkDriverCodeGeneratorGeneratedMethodAverageSize struct {
 func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) init() {
 	m.data.SetName("spark.driver.code_generator.generated_method.average_size")
 	m.data.SetDescription("Average method size of the classes generated by the CodeGenerator.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -1012,7 +1045,7 @@ type metricSparkDriverCodeGeneratorSourceCodeAverageSize struct {
 func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) init() {
 	m.data.SetName("spark.driver.code_generator.source_code.average_size")
 	m.data.SetDescription("Average size of the source code generated by a CodeGenerator code generation operation.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -1213,6 +1246,7 @@ type metricSparkDriverDagSchedulerStageCount struct {
 	config        SparkDriverDagSchedulerStageCountMetricConfig // metric config provided by user.
 	capacity      int                                           // max observed number of data points added to the metric.
 	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.dag_scheduler.stage.count metric with initial data.
@@ -1225,6 +1259,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue string) {
@@ -1240,31 +1275,31 @@ func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1356,6 +1391,7 @@ type metricSparkDriverExecutorGcOperations struct {
 	config        SparkDriverExecutorGcOperationsMetricConfig // metric config provided by user.
 	capacity      int                                         // max observed number of data points added to the metric.
 	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                              // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.executor.gc.operations metric with initial data.
@@ -1368,6 +1404,7 @@ func (m *metricSparkDriverExecutorGcOperations) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverExecutorGcOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, gcTypeAttributeValue string) {
@@ -1383,31 +1420,31 @@ func (m *metricSparkDriverExecutorGcOperations) recordDataPoint(start pcommon.Ti
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1447,6 +1484,7 @@ type metricSparkDriverExecutorGcTime struct {
 	config        SparkDriverExecutorGcTimeMetricConfig // metric config provided by user.
 	capacity      int                                   // max observed number of data points added to the metric.
 	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.executor.gc.time metric with initial data.
@@ -1459,6 +1497,7 @@ func (m *metricSparkDriverExecutorGcTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverExecutorGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, gcTypeAttributeValue string) {
@@ -1474,31 +1513,31 @@ func (m *metricSparkDriverExecutorGcTime) recordDataPoint(start pcommon.Timestam
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1538,18 +1577,20 @@ type metricSparkDriverExecutorMemoryExecution struct {
 	config        SparkDriverExecutorMemoryExecutionMetricConfig // metric config provided by user.
 	capacity      int                                            // max observed number of data points added to the metric.
 	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.executor.memory.execution metric with initial data.
 func (m *metricSparkDriverExecutorMemoryExecution) init() {
 	m.data.SetName("spark.driver.executor.memory.execution")
 	m.data.SetDescription("Amount of execution memory currently used by the driver.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverExecutorMemoryExecution) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
@@ -1565,31 +1606,31 @@ func (m *metricSparkDriverExecutorMemoryExecution) recordDataPoint(start pcommon
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1629,18 +1670,20 @@ type metricSparkDriverExecutorMemoryJvm struct {
 	config        SparkDriverExecutorMemoryJvmMetricConfig // metric config provided by user.
 	capacity      int                                      // max observed number of data points added to the metric.
 	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.executor.memory.jvm metric with initial data.
 func (m *metricSparkDriverExecutorMemoryJvm) init() {
 	m.data.SetName("spark.driver.executor.memory.jvm")
 	m.data.SetDescription("Amount of memory used by the driver's JVM.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverExecutorMemoryJvm) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
@@ -1656,31 +1699,31 @@ func (m *metricSparkDriverExecutorMemoryJvm) recordDataPoint(start pcommon.Times
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1720,18 +1763,20 @@ type metricSparkDriverExecutorMemoryPool struct {
 	config        SparkDriverExecutorMemoryPoolMetricConfig // metric config provided by user.
 	capacity      int                                       // max observed number of data points added to the metric.
 	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                            // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.executor.memory.pool metric with initial data.
 func (m *metricSparkDriverExecutorMemoryPool) init() {
 	m.data.SetName("spark.driver.executor.memory.pool")
 	m.data.SetDescription("Amount of pool memory currently used by the driver.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverExecutorMemoryPool) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue string) {
@@ -1747,31 +1792,31 @@ func (m *metricSparkDriverExecutorMemoryPool) recordDataPoint(start pcommon.Time
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1811,18 +1856,20 @@ type metricSparkDriverExecutorMemoryStorage struct {
 	config        SparkDriverExecutorMemoryStorageMetricConfig // metric config provided by user.
 	capacity      int                                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.driver.executor.memory.storage metric with initial data.
 func (m *metricSparkDriverExecutorMemoryStorage) init() {
 	m.data.SetName("spark.driver.executor.memory.storage")
 	m.data.SetDescription("Amount of storage memory currently used by the driver.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkDriverExecutorMemoryStorage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
@@ -1838,31 +1885,31 @@ func (m *metricSparkDriverExecutorMemoryStorage) recordDataPoint(start pcommon.T
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2425,7 +2472,7 @@ type metricSparkExecutorDiskUsage struct {
 func (m *metricSparkExecutorDiskUsage) init() {
 	m.data.SetName("spark.executor.disk.usage")
 	m.data.SetDescription("Disk space used by this executor for RDD storage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2529,7 +2576,7 @@ type metricSparkExecutorInputSize struct {
 func (m *metricSparkExecutorInputSize) init() {
 	m.data.SetName("spark.executor.input_size")
 	m.data.SetDescription("Amount of data input for this executor.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2581,7 +2628,7 @@ type metricSparkExecutorMemoryUsage struct {
 func (m *metricSparkExecutorMemoryUsage) init() {
 	m.data.SetName("spark.executor.memory.usage")
 	m.data.SetDescription("Storage memory used by this executor.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2628,18 +2675,20 @@ type metricSparkExecutorShuffleIoSize struct {
 	config        SparkExecutorShuffleIoSizeMetricConfig // metric config provided by user.
 	capacity      int                                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.executor.shuffle.io.size metric with initial data.
 func (m *metricSparkExecutorShuffleIoSize) init() {
 	m.data.SetName("spark.executor.shuffle.io.size")
 	m.data.SetDescription("Amount of data written and read during shuffle operations for this executor.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkExecutorShuffleIoSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
@@ -2655,31 +2704,31 @@ func (m *metricSparkExecutorShuffleIoSize) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2719,18 +2768,20 @@ type metricSparkExecutorStorageMemoryUsage struct {
 	config        SparkExecutorStorageMemoryUsageMetricConfig // metric config provided by user.
 	capacity      int                                         // max observed number of data points added to the metric.
 	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                              // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.executor.storage_memory.usage metric with initial data.
 func (m *metricSparkExecutorStorageMemoryUsage) init() {
 	m.data.SetName("spark.executor.storage_memory.usage")
 	m.data.SetDescription("The executor's storage memory usage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkExecutorStorageMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string, stateAttributeValue string) {
@@ -2749,31 +2800,31 @@ func (m *metricSparkExecutorStorageMemoryUsage) recordDataPoint(start pcommon.Ti
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2917,6 +2968,7 @@ type metricSparkExecutorTaskResult struct {
 	config        SparkExecutorTaskResultMetricConfig // metric config provided by user.
 	capacity      int                                 // max observed number of data points added to the metric.
 	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.executor.task.result metric with initial data.
@@ -2929,6 +2981,7 @@ func (m *metricSparkExecutorTaskResult) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkExecutorTaskResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, executorTaskResultAttributeValue string) {
@@ -2944,31 +2997,31 @@ func (m *metricSparkExecutorTaskResult) recordDataPoint(start pcommon.Timestamp,
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3112,6 +3165,7 @@ type metricSparkJobStageResult struct {
 	config        SparkJobStageResultMetricConfig // metric config provided by user.
 	capacity      int                             // max observed number of data points added to the metric.
 	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                  // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.job.stage.result metric with initial data.
@@ -3124,6 +3178,7 @@ func (m *metricSparkJobStageResult) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkJobStageResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, jobResultAttributeValue string) {
@@ -3139,31 +3194,31 @@ func (m *metricSparkJobStageResult) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3255,6 +3310,7 @@ type metricSparkJobTaskResult struct {
 	config        SparkJobTaskResultMetricConfig // metric config provided by user.
 	capacity      int                            // max observed number of data points added to the metric.
 	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.job.task.result metric with initial data.
@@ -3267,6 +3323,7 @@ func (m *metricSparkJobTaskResult) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkJobTaskResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, jobResultAttributeValue string) {
@@ -3282,31 +3339,31 @@ func (m *metricSparkJobTaskResult) recordDataPoint(start pcommon.Timestamp, ts p
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3351,7 +3408,7 @@ type metricSparkStageDiskSpilled struct {
 func (m *metricSparkStageDiskSpilled) init() {
 	m.data.SetName("spark.stage.disk.spilled")
 	m.data.SetDescription("The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3502,6 +3559,7 @@ type metricSparkStageIoRecords struct {
 	config        SparkStageIoRecordsMetricConfig // metric config provided by user.
 	capacity      int                             // max observed number of data points added to the metric.
 	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                  // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.io.records metric with initial data.
@@ -3514,6 +3572,7 @@ func (m *metricSparkStageIoRecords) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageIoRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
@@ -3529,31 +3588,31 @@ func (m *metricSparkStageIoRecords) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3593,18 +3652,20 @@ type metricSparkStageIoSize struct {
 	config        SparkStageIoSizeMetricConfig // metric config provided by user.
 	capacity      int                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.io.size metric with initial data.
 func (m *metricSparkStageIoSize) init() {
 	m.data.SetName("spark.stage.io.size")
 	m.data.SetDescription("Amount of data written and read at this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageIoSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
@@ -3620,31 +3681,31 @@ func (m *metricSparkStageIoSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3741,7 +3802,7 @@ type metricSparkStageMemoryPeak struct {
 func (m *metricSparkStageMemoryPeak) init() {
 	m.data.SetName("spark.stage.memory.peak")
 	m.data.SetDescription("Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3793,7 +3854,7 @@ type metricSparkStageMemorySpilled struct {
 func (m *metricSparkStageMemorySpilled) init() {
 	m.data.SetName("spark.stage.memory.spilled")
 	m.data.SetDescription("The amount of memory moved to disk due to size constraints (spilled) in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -3840,6 +3901,7 @@ type metricSparkStageShuffleBlocksFetched struct {
 	config        SparkStageShuffleBlocksFetchedMetricConfig // metric config provided by user.
 	capacity      int                                        // max observed number of data points added to the metric.
 	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                             // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.shuffle.blocks_fetched metric with initial data.
@@ -3852,6 +3914,7 @@ func (m *metricSparkStageShuffleBlocksFetched) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageShuffleBlocksFetched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string) {
@@ -3867,31 +3930,31 @@ func (m *metricSparkStageShuffleBlocksFetched) recordDataPoint(start pcommon.Tim
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3988,7 +4051,7 @@ type metricSparkStageShuffleIoDisk struct {
 func (m *metricSparkStageShuffleIoDisk) init() {
 	m.data.SetName("spark.stage.shuffle.io.disk")
 	m.data.SetDescription("Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4035,18 +4098,20 @@ type metricSparkStageShuffleIoReadSize struct {
 	config        SparkStageShuffleIoReadSizeMetricConfig // metric config provided by user.
 	capacity      int                                     // max observed number of data points added to the metric.
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.shuffle.io.read.size metric with initial data.
 func (m *metricSparkStageShuffleIoReadSize) init() {
 	m.data.SetName("spark.stage.shuffle.io.read.size")
 	m.data.SetDescription("Amount of data read in shuffle operations in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageShuffleIoReadSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string) {
@@ -4062,31 +4127,31 @@ func (m *metricSparkStageShuffleIoReadSize) recordDataPoint(start pcommon.Timest
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4126,6 +4191,7 @@ type metricSparkStageShuffleIoRecords struct {
 	config        SparkStageShuffleIoRecordsMetricConfig // metric config provided by user.
 	capacity      int                                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.shuffle.io.records metric with initial data.
@@ -4138,6 +4204,7 @@ func (m *metricSparkStageShuffleIoRecords) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageShuffleIoRecords) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
@@ -4153,31 +4220,31 @@ func (m *metricSparkStageShuffleIoRecords) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4222,7 +4289,7 @@ type metricSparkStageShuffleIoWriteSize struct {
 func (m *metricSparkStageShuffleIoWriteSize) init() {
 	m.data.SetName("spark.stage.shuffle.io.write.size")
 	m.data.SetDescription("Amount of data written in shuffle operations in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -4321,6 +4388,7 @@ type metricSparkStageStatus struct {
 	config        SparkStageStatusMetricConfig // metric config provided by user.
 	capacity      int                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.status metric with initial data.
@@ -4333,6 +4401,7 @@ func (m *metricSparkStageStatus) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stageActiveAttributeValue bool, stageCompleteAttributeValue bool, stagePendingAttributeValue bool, stageFailedAttributeValue bool) {
@@ -4357,31 +4426,31 @@ func (m *metricSparkStageStatus) recordDataPoint(start pcommon.Timestamp, ts pco
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4473,6 +4542,7 @@ type metricSparkStageTaskResult struct {
 	config        SparkStageTaskResultMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills spark.stage.task.result metric with initial data.
@@ -4485,6 +4555,7 @@ func (m *metricSparkStageTaskResult) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSparkStageTaskResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue string) {
@@ -4500,31 +4571,31 @@ func (m *metricSparkStageTaskResult) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4569,7 +4640,7 @@ type metricSparkStageTaskResultSize struct {
 func (m *metricSparkStageTaskResultSize) init() {
 	m.data.SetName("spark.stage.task.result_size")
 	m.data.SetDescription("The amount of data transmitted back to the driver by all the tasks in this stage.")
-	m.data.SetUnit("bytes")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

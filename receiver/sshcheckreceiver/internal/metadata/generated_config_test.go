@@ -96,6 +96,30 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestSshcheckErrorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SshcheckError
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SshcheckErrorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sshcheck.error doesn't have an attribute invalid, valid attributes: [error.message]")
+
+	cfg = DefaultMetricsConfig().SshcheckError
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSshcheckSftpErrorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SshcheckSftpError
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SshcheckSftpErrorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric sshcheck.sftp_error doesn't have an attribute invalid, valid attributes: [error.message]")
+
+	cfg = DefaultMetricsConfig().SshcheckSftpError
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

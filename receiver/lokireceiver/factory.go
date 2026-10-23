@@ -28,10 +28,16 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  defaultHTTPEndpoint,
+	}
 	return &Config{
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
@@ -40,12 +46,7 @@ func createDefaultConfig() component.Config {
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
-			HTTP: &confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  defaultHTTPEndpoint,
-				},
-			},
+			HTTP: &httpServerConfig,
 		},
 	}
 }

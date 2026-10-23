@@ -11,5 +11,6 @@ $defs:
         $ref: go.opentelemetry.io/collector/config/confighttp.server_config
 description: Config defines configuration for skywalking receiver.
 type: object
-allOf:
-  - $ref: protocols
+properties:
+  protocols:
+    $ref: protocols

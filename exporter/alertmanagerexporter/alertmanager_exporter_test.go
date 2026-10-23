@@ -372,7 +372,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 		GeneratorURL: "http://example.com/alert",
 	})
 
-	cfg.Endpoint = mock.mockserver.URL
+	cfg.ClientConfig.Endpoint = mock.mockserver.URL
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(t.Context(), componenttest.NewNopHost())
@@ -393,6 +393,36 @@ func TestAlertManagerPostAlert(t *testing.T) {
 func TestClientConfig(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 	fmt.Println(endpoint)
+
+	useSecureClientConfig := confighttp.NewDefaultClientConfig()
+	useSecureClientConfig.Endpoint = endpoint
+	useSecureClientConfig.TLS = configtls.ClientConfig{
+		Insecure: false,
+	}
+
+	headersClientConfig := confighttp.NewDefaultClientConfig()
+	headersClientConfig.Endpoint = endpoint
+	headersClientConfig.Headers = configopaque.MapList{
+		{Name: "hdr1", Value: "val1"},
+		{Name: "hdr2", Value: "val2"},
+	}
+
+	caCertClientConfig := confighttp.NewDefaultClientConfig()
+	caCertClientConfig.Endpoint = endpoint
+	caCertClientConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "testdata/test_cert.pem",
+		},
+	}
+
+	certPemFileErrorClientConfig := confighttp.NewDefaultClientConfig()
+	certPemFileErrorClientConfig.Endpoint = endpoint
+	certPemFileErrorClientConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "nosuchfile",
+		},
+	}
+
 	tests := []struct {
 		name             string
 		config           *Config
@@ -402,50 +432,25 @@ func TestClientConfig(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Insecure: false,
-					},
-				},
+				ClientConfig: useSecureClientConfig,
 			},
 		},
 		{
 			name: "Headers",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					Headers: configopaque.MapList{
-						{Name: "hdr1", Value: "val1"},
-						{Name: "hdr2", Value: "val2"},
-					},
-				},
+				ClientConfig: headersClientConfig,
 			},
 		},
 		{
 			name: "CaCert",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "testdata/test_cert.pem",
-						},
-					},
-				},
+				ClientConfig: caCertClientConfig,
 			},
 		},
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: endpoint,
-					TLS: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "nosuchfile",
-						},
-					},
-				},
+				ClientConfig: certPemFileErrorClientConfig,
 			},
 			mustFailOnCreate: false,
 			mustFailOnStart:  true,

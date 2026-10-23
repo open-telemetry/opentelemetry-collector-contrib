@@ -22,7 +22,7 @@ func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExpo
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Traces.Endpoint, oCfg.Traces.Headers)
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Traces.ClientConfig.Endpoint, oCfg.Traces.ClientConfig.Headers)
 	if err != nil {
 		return nil, err
 	}

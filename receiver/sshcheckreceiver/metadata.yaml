@@ -1,7 +1,6 @@
 display_name: SSH Check Receiver
 type: ssh_check
 deprecated_type: sshcheck
-reaggregation_enabled: true
 
 description: This receiver creates stats by connecting to an SSH server which may be an SFTP server.
 
@@ -10,6 +9,7 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib]
+  warnings: [Other]
   codeowners:
     active: [ishaish103]
     emeritus: [nslaughter]

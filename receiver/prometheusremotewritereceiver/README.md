@@ -4,14 +4,13 @@
 This receiver implements the
 [Prometheus Remote Write 2.0 protocol](https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheusremotewrite%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fprometheusremotewrite) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheusremotewrite%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fprometheusremotewrite) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_prometheusremotewrite)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_prometheusremotewrite&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@perebaj](https://www.github.com/perebaj) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@perebaj](https://www.github.com/perebaj), [@himanshu130700](https://www.github.com/himanshu130700) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -99,6 +98,15 @@ In Prometheus Remote Write v2, this problem is solved since the time series are 
 As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic Histograms are split into several separate time series and, for this reason, it is impossible to determine if the amount of buckets received are the complete set. 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
+
+### Native Histogram expansion limits
+
+Prometheus sends Native Histogram buckets as spans of populated buckets separated by gaps, while OTLP wants one contiguous list, so a short list of spans can describe a very wide one. Two limits bound what that expansion is allowed to cost:
+
+    - A single histogram may expand to 16384 buckets, counting its positive and negative ranges together.
+    - All histograms in one request share a budget of 4194304 expanded buckets.
+
+Histograms past either limit are dropped, are not counted in the `X-Prometheus-Remote-Write-Histograms-Written` response header, and are logged. Both limits are hardcoded and not configurable for now.
 
 ### Resource Metrics Cache
 

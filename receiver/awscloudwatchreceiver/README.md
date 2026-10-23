@@ -4,7 +4,6 @@
 The AWS CloudWatch Receiver receives Cloudwatch events from [AWS CloudWatch](https://aws.amazon.com/cloudwatch/) via
 the [AWS SDK for Cloudwatch Logs](https://docs.aws.amazon.com/sdk-for-go/api/service/cloudwatchlogs/)
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs, metrics   |
@@ -21,6 +20,8 @@ the [AWS SDK for Cloudwatch Logs](https://docs.aws.amazon.com/sdk-for-go/api/ser
 ## Getting Started
 
 This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) as mode of authentication, which includes [Credentials File](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) and [IMDS](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) authentication for EC2 instances.
+
+The receiver makes requests to the `sts.GetCallerIdentity` API endpoint, which is used to populate the `cloud.account.id` attribute. If this request is blocked or restricted then this attribute is omitted.
 
 ## Configuration
 
@@ -39,7 +40,8 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 
 | Parameter                | Type     | Default                                    | Description                                                                                            |
 |--------------------------|----------|--------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| `start_from`             | String   | Read all available logs from the beginning | Timestamp in `RFC3339` format (e.g., 2006-01-02T15:04:05Z07:00) indicating where to start reading logs |
+| `start_from`             | String   | Read all available logs from the beginning | Timestamp in `RFC3339` format (e.g., 2006-01-02T15:04:05Z07:00) indicating where to start reading logs. Mutually exclusive with `initial_lookback`. |
+| `initial_lookback`       | Duration | 0                                          | How far back from the collector's startup time to begin collecting logs (e.g., `1h`). Mutually exclusive with `start_from`. |
 | `poll_interval`          | Duration | 1 minute                                   | Time to wait between log requests                                                                      |
 | `max_events_per_request` | Integer  | 1,000                                      | The maximum number of events to process per request to Cloudwatch                                      |
 | `groups`                 | Optional | All Log Groups and Streams                 | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected.             |

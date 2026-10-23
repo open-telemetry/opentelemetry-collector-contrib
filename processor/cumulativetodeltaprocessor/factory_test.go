@@ -57,7 +57,8 @@ func TestCreateProcessors(t *testing.T) {
 				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
-				consumertest.NewNop())
+				consumertest.NewNop(),
+			)
 			// Not implemented error
 			assert.Error(t, tErr)
 			assert.Nil(t, tp)
@@ -66,7 +67,8 @@ func TestCreateProcessors(t *testing.T) {
 				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
-				consumertest.NewNop())
+				consumertest.NewNop(),
+			)
 
 			if strings.Contains(k, "invalid") {
 				assert.Error(t, mErr)
@@ -87,9 +89,9 @@ func TestExplicitConfigOverridesDefault(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	// Use the "cumulativetodelta" config that has max_staleness: 10s
+	// Use the "cumulative_to_delta" config that has max_staleness: 10s
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub("cumulativetodelta")
+	sub, err := cm.Sub("cumulative_to_delta")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 

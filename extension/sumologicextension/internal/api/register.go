@@ -12,6 +12,7 @@ type OpenRegisterRequestPayload struct {
 	TimeZone      string         `json:"timeZone,omitempty"`
 	Clobber       bool           `json:"clobber,omitempty"`
 	Fields        map[string]any `json:"fields,omitempty"`
+	FleetID       string         `json:"fleetId,omitempty"`
 }
 
 type OpenRegisterResponsePayload struct {

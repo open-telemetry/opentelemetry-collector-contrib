@@ -68,6 +68,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestTcpcheckErrorMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().TcpcheckError
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []TcpcheckErrorMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric tcpcheck.error doesn't have an attribute invalid, valid attributes: [tcpcheck.endpoint, error.code]")
+
+	cfg = DefaultMetricsConfig().TcpcheckError
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

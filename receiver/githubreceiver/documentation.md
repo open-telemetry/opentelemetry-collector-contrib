@@ -185,10 +185,10 @@ The number of unique contributors to a repository.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| vcs.owner.name | The group owner within the version control system | Any Str | true | - |
-| vcs.provider.name | The name of the version control system provider | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| vcs.owner.name | The group owner within the version control system | Any Str | true | - | - |
+| vcs.provider.name | The name of the version control system provider | Any Str | true | - | - |
 
 ## Feature Gates
 

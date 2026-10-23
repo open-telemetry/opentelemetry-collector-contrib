@@ -31,6 +31,7 @@ type Config struct {
 	Offset                   string         `mapstructure:"offset"`
 	StorageID                *component.ID  `mapstructure:"storage"`
 	Auth                     *component.ID  `mapstructure:"auth"`
+	Encoding                 *component.ID  `mapstructure:"encoding"`
 	Format                   string         `mapstructure:"format"`
 	ConsumerGroup            string         `mapstructure:"group"`
 	ApplySemanticConventions bool           `mapstructure:"apply_semantic_conventions"`
@@ -102,10 +103,16 @@ func (config *Config) Validate() error {
 		}
 	}
 
-	switch logFormat(config.Format) {
-	case defaultLogFormat, rawLogFormat, azureLogFormat: // valid
-	default:
-		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
+	if config.Encoding != nil {
+		if config.Format != "" {
+			return errors.New("format and encoding are mutually exclusive")
+		}
+	} else {
+		switch logFormat(config.Format) {
+		case defaultLogFormat, rawLogFormat, azureLogFormat: // valid
+		default:
+			return fmt.Errorf("invalid format; must be one of %#v", validFormats)
+		}
 	}
 
 	if config.Partition == "" && config.Offset != "" {

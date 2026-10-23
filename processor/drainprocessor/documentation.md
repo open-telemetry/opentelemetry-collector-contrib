@@ -12,7 +12,7 @@ Current number of active clusters in the Drain parse tree.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {clusters} | Gauge | Int | Development |
+| {cluster} | Gauge | Int | Development |
 
 ### otelcol_processor_drain_log_records_annotated
 
@@ -20,4 +20,18 @@ Number of log records successfully annotated with a template.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Development |
+| {record} | Sum | Int | true | Development |
+
+### otelcol_processor_drain_masks_duplicates
+
+Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {record} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| mask | The mask name that matched more than one position in a single template. | Any Str | - |

@@ -50,3 +50,6 @@ internal/tools/testresults/*
 go.work*
 
 /result
+
+# API compatibility snapshots
+/internal/data/apidiff/

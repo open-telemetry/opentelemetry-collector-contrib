@@ -41,6 +41,14 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "none",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = None
+					return cfg
+				}(),
+			},
+			{
 				Name: "location",
 				Expect: func() *Config {
 					cfg := NewConfig()
@@ -140,7 +148,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		errContents string
 	}{
 		{
-			desc: "Octet Counting with RFC3164",
+			desc: "Valid Octet Counting with RFC3164",
 			cfg: &Config{
 				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
 				BaseConfig: BaseConfig{
@@ -148,7 +156,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 					EnableOctetCounting: true,
 				},
 			},
-			errContents: "octet_counting and non_transparent_framing are only compatible with protocol rfc5424",
+			errContents: "",
 		},
 		{
 			desc: "Non-Transparent-Framing with RFC3164",
@@ -159,7 +167,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 					NonTransparentFramingTrailer: &validFramingTrailer,
 				},
 			},
-			errContents: "octet_counting and non_transparent_framing are only compatible with protocol rfc5424",
+			errContents: "non_transparent_framing is only compatible with protocol rfc5424",
 		},
 		{
 			desc: "Non-Transparent-Framing and Octet counting both enabled with RFC5424",

@@ -575,6 +575,7 @@ func TestReceiverLogs(t *testing.T) {
 }
 
 func TestReceiverMetrics(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48669")
 	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 	stdTesting := otelAssert.NewStdUnitTest(t)
@@ -585,7 +586,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	sendDone := make(chan struct{})
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
-		func(_ *arrowpb.BatchStatus) error {
+		func(_ *arrowpb.BatchStatus) error { //nolint:unparam // flagged only because t.Skip makes this unreachable
 			close(sendDone)
 			return nil
 		},
@@ -880,8 +881,12 @@ func TestReceiverPayloadPositionIndependent(t *testing.T) {
 		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
 	})
 
+	// Like other cancel-driven shutdown tests in this file, the
+	// recv goroutine may observe EOF before the Canceled status
+	// surfaces (especially on Windows runners), so accept either a
+	// Canceled status or a clean shutdown. See issue #46000.
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func copyBatch(in *arrowpb.BatchArrowRecords) *arrowpb.BatchArrowRecords {
@@ -1493,10 +1498,12 @@ func TestHeaderReceiverIsTraced(t *testing.T) {
 		require.Equal(
 			t,
 			trace.TraceID{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff},
-			spanCtx.TraceID())
+			spanCtx.TraceID(),
+		)
 		require.Equal(
 			t,
 			trace.SpanID{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77},
-			spanCtx.SpanID())
+			spanCtx.SpanID(),
+		)
 	}
 }

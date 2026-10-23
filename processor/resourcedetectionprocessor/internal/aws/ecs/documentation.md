@@ -6,20 +6,20 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| aws.ecs.cluster.arn | The aws.ecs.cluster.arn | Any Str | true | - |
-| aws.ecs.launchtype | The aws.ecs.launchtype | Any Str | true | - |
-| aws.ecs.task.arn | The aws.ecs.task.arn | Any Str | true | - |
-| aws.ecs.task.family | The aws.ecs.task.family | Any Str | true | - |
-| aws.ecs.task.id | The aws.ecs.task.id | Any Str | true | - |
-| aws.ecs.task.revision | The aws.ecs.task.revision | Any Str | true | - |
-| aws.log.group.arns | The aws.log.group.arns | Any Slice | true | - |
-| aws.log.group.names | The aws.log.group.names | Any Slice | true | - |
-| aws.log.stream.arns | The aws.log.stream.arns | Any Slice | true | - |
-| aws.log.stream.names | The aws.log.stream.names | Any Slice | true | - |
-| cloud.account.id | The cloud.account.id | Any Str | true | - |
-| cloud.availability_zone | The cloud.availability_zone | Any Str | true | - |
-| cloud.platform | The cloud.platform | Any Str | true | - |
-| cloud.provider | The cloud.provider | Any Str | true | - |
-| cloud.region | The cloud.region | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| aws.ecs.cluster.arn | The aws.ecs.cluster.arn | Any Str | true | [aws.ecs.cluster.arn](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-ecs-cluster-arn) | - |
+| aws.ecs.launchtype | The aws.ecs.launchtype | Any Str | true | [aws.ecs.launchtype](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-ecs-launchtype) | - |
+| aws.ecs.task.arn | The aws.ecs.task.arn | Any Str | true | [aws.ecs.task.arn](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-ecs-task-arn) | - |
+| aws.ecs.task.family | The aws.ecs.task.family | Any Str | true | [aws.ecs.task.family](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-ecs-task-family) | - |
+| aws.ecs.task.id | The aws.ecs.task.id | Any Str | true | [aws.ecs.task.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-ecs-task-id) | - |
+| aws.ecs.task.revision | The aws.ecs.task.revision | Any Str | true | [aws.ecs.task.revision](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-ecs-task-revision) | - |
+| aws.log.group.arns | The aws.log.group.arns | Any Slice | true | [aws.log.group.arns](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-log-group-arns) | - |
+| aws.log.group.names | The aws.log.group.names | Any Slice | true | [aws.log.group.names](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-log-group-names) | - |
+| aws.log.stream.arns | The aws.log.stream.arns | Any Slice | true | [aws.log.stream.arns](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-log-stream-arns) | - |
+| aws.log.stream.names | The aws.log.stream.names | Any Slice | true | [aws.log.stream.names](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/aws.md#aws-log-stream-names) | - |
+| cloud.account.id | The cloud.account.id | Any Str | true | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
+| cloud.availability_zone | The cloud.availability_zone | Any Str | true | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-region) | - |

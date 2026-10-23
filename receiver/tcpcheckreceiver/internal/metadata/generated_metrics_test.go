@@ -67,18 +67,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckDurationDataPoint(ts, 1, "tcpcheck.endpoint-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionRefused)
 			if tt.name == "reaggregate_set" {
 				mb.RecordTcpcheckErrorDataPoint(ts, 3, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionTimeout)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordTcpcheckErrorDataPoint(ts+1, 3, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionTimeout)
+				assert.Equal(t, 2, mb.metricTcpcheckError.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckStatusDataPoint(ts, 1, "tcpcheck.endpoint-val")
@@ -136,7 +136,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Records errors occurring during TCP check.", mi.Description())
-						assert.Equal(t, "{errors}", mi.Unit())
+						assert.Equal(t, "{error}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -154,9 +154,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["tcpcheck.error"], "Found a duplicate in the metrics slice: tcpcheck.error")
 						validatedMetrics["tcpcheck.error"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Records errors occurring during TCP check.", mi.Description())
-						assert.Equal(t, "{errors}", mi.Unit())
+						assert.Equal(t, "{error}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)

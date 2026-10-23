@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 set -euo pipefail
 
 # ======================================================================================
-# Runs one shard of the build-and-test-experimental "exp-checks" matrix.
+# Runs one shard of the build-and-test "checks" matrix.
 #
-# The original `checks` job in build-and-test.yml runs 18 codegen + validation
-# targets serially. Splitting them into matrix shards lets a fresh runner
-# handle each subset so the file-modifying targets (goporto, gogci, gotidy,
-# crosslink, generate) don't share a working tree.
+# The `checks` job runs codegen + validation targets split into matrix shards
+# so file-modifying targets (goporto, gogci, gotidy, crosslink, generate)
+# don't share a working tree.
 #
 # Usage:
 #   ./run-checks-shard.sh <shard-name>
@@ -40,7 +42,7 @@ shard="$1"
 case "${shard}" in
   codegen-*)
     group="${shard#codegen-}"
-    make generate GROUP="${group}"
+    make -j4 generate GROUP="${group}"
     if [[ -n $(git status -s) ]]; then
       echo "Generated code is out of date for group '${group}', please run \"make generate\" and commit the changes in this PR."
       exit 1
@@ -49,7 +51,7 @@ case "${shard}" in
   porto-and-gci)
     make -j2 goporto
     git diff --exit-code || { echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.'; exit 1; }
-    make gogci
+    make -j4 gogci
     git diff --exit-code || { echo 'go package imports not formatted, please run "make gogci" and commit the changes in this PR.'; exit 1; }
     ;;
   go-mod-hygiene)

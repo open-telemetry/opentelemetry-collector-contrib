@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.uber.org/zap"
 )
@@ -19,9 +19,6 @@ func NewExponentialBackOff(backOffConfig *configretry.BackOffConfig) *backoff.Ex
 		RandomizationFactor: backOffConfig.RandomizationFactor,
 		Multiplier:          backOffConfig.Multiplier,
 		MaxInterval:         backOffConfig.MaxInterval,
-		MaxElapsedTime:      backOffConfig.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
 	}
 }
 
@@ -33,7 +30,9 @@ func MakeAPICallWithRetry[T any](
 	apiCall func() (*T, error),
 	isThrottlingError func(error) bool,
 	backOffConfig *backoff.ExponentialBackOff,
+	maxElapsedTime time.Duration,
 ) (*T, error) {
+	backOffStartTime := time.Now()
 	// Immediately check for context cancellation or server shutdown.
 	select {
 	case <-ctx.Done():
@@ -60,9 +59,6 @@ func MakeAPICallWithRetry[T any](
 		RandomizationFactor: backOffConfig.RandomizationFactor,
 		Multiplier:          backOffConfig.Multiplier,
 		MaxInterval:         backOffConfig.MaxInterval,
-		MaxElapsedTime:      backOffConfig.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
 	attempts := 0
@@ -71,6 +67,9 @@ func MakeAPICallWithRetry[T any](
 	for {
 		attempts++
 		delay := expBackoff.NextBackOff()
+		if maxElapsedTime > 0 && time.Since(backOffStartTime)+delay > maxElapsedTime {
+			delay = backoff.Stop
+		}
 		if delay == backoff.Stop {
 			return resp, err
 		}

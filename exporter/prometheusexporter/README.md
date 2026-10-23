@@ -27,8 +27,12 @@ The following settings can be optionally configured:
 - `namespace` (no default): if set, exports metrics under the provided value.
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying metric sample in the response.
 - `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
-- `resource_to_telemetry_conversion`
-  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
+  - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
+  - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
+- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Can be disabled entirely via the `exporter.prometheus.DisableResourceToTelemetryConversion` feature gate.
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is setting `included: ["*"]`.
+  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
 - `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
 - `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead. This setting is ignored when `translation_strategy` is explicitly set.
@@ -66,7 +70,7 @@ Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 ### Native Histograms
 
-The exporter supports [Prometheus native histograms](https://prometheus.io/docs/concepts/native_histograms/). OpenTelemetry exponential histograms are automatically converted to the Prometheus native histogram format.
+The exporter supports [Prometheus native histograms](https://prometheus.io/docs/specs/native_histograms/). OpenTelemetry exponential histograms are automatically converted to the Prometheus native histogram format.
 
 To scrape native histograms, configure your Prometheus server to [scrape using protobuf format](https://prometheus.io/docs/prometheus/latest/getting_started/#configure-native-histograms) and to accept native histograms.
 

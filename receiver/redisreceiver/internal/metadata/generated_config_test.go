@@ -176,6 +176,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisNetOutput: RedisNetOutputMetricConfig{
 						Enabled: true,
 					},
+					RedisPubsubChannelStatus: RedisPubsubChannelStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisPubsubChannelStatusMetricAttributeKey{RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState},
+					},
+					RedisPubsubConnectionCount: RedisPubsubConnectionCountMetricConfig{
+						Enabled: true,
+					},
+					RedisPubsubPatternStatus: RedisPubsubPatternStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisPubsubPatternStatusMetricAttributeKey{RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState},
+					},
 					RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 						Enabled: true,
 					},
@@ -382,6 +395,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisNetOutput: RedisNetOutputMetricConfig{
 						Enabled: false,
 					},
+					RedisPubsubChannelStatus: RedisPubsubChannelStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisPubsubChannelStatusMetricAttributeKey{RedisPubsubChannelStatusMetricAttributeKeyRedisPubsubChannelState},
+					},
+					RedisPubsubConnectionCount: RedisPubsubConnectionCountMetricConfig{
+						Enabled: false,
+					},
+					RedisPubsubPatternStatus: RedisPubsubPatternStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RedisPubsubPatternStatusMetricAttributeKey{RedisPubsubPatternStatusMetricAttributeKeyRedisPubsubPatternState},
+					},
 					RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 						Enabled: false,
 					},
@@ -438,10 +464,154 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RedisClientsBlockedMetricConfig{}, RedisClientsConnectedMetricConfig{}, RedisClientsMaxInputBufferMetricConfig{}, RedisClientsMaxOutputBufferMetricConfig{}, RedisClusterClusterEnabledMetricConfig{}, RedisClusterKnownNodesMetricConfig{}, RedisClusterLinksBufferLimitExceededCountMetricConfig{}, RedisClusterNodeCountMetricConfig{}, RedisClusterNodeUptimeMetricConfig{}, RedisClusterSlotsAssignedMetricConfig{}, RedisClusterSlotsFailMetricConfig{}, RedisClusterSlotsOkMetricConfig{}, RedisClusterSlotsPfailMetricConfig{}, RedisClusterStateMetricConfig{}, RedisClusterStatsMessagesReceivedMetricConfig{}, RedisClusterStatsMessagesSentMetricConfig{}, RedisClusterUptimeMetricConfig{}, RedisCmdCallsMetricConfig{}, RedisCmdLatencyMetricConfig{}, RedisCmdUsecMetricConfig{}, RedisCommandsMetricConfig{}, RedisCommandsProcessedMetricConfig{}, RedisConnectionsReceivedMetricConfig{}, RedisConnectionsRejectedMetricConfig{}, RedisCPUTimeMetricConfig{}, RedisDbAvgTTLMetricConfig{}, RedisDbExpiresMetricConfig{}, RedisDbKeysMetricConfig{}, RedisKeysEvictedMetricConfig{}, RedisKeysExpiredMetricConfig{}, RedisKeyspaceHitsMetricConfig{}, RedisKeyspaceMissesMetricConfig{}, RedisLatestForkMetricConfig{}, RedisMaxmemoryMetricConfig{}, RedisMemoryFragmentationRatioMetricConfig{}, RedisMemoryLuaMetricConfig{}, RedisMemoryPeakMetricConfig{}, RedisMemoryRssMetricConfig{}, RedisMemoryUsedMetricConfig{}, RedisMemoryUsedMemoryOverheadMetricConfig{}, RedisMemoryUsedMemoryStartupMetricConfig{}, RedisModeMetricConfig{}, RedisNetInputMetricConfig{}, RedisNetOutputMetricConfig{}, RedisRdbChangesSinceLastSaveMetricConfig{}, RedisReplicationBacklogFirstByteOffsetMetricConfig{}, RedisReplicationOffsetMetricConfig{}, RedisReplicationReplicaOffsetMetricConfig{}, RedisRoleMetricConfig{}, RedisSentinelMastersMetricConfig{}, RedisSentinelRunningScriptsMetricConfig{}, RedisSentinelScriptsQueueLengthMetricConfig{}, RedisSentinelSimulateFailureFlagsMetricConfig{}, RedisSentinelTiltSinceSecondsMetricConfig{}, RedisSentinelTotalTiltMetricConfig{}, RedisSlavesConnectedMetricConfig{}, RedisTrackingTotalKeysMetricConfig{}, RedisUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RedisClientsBlockedMetricConfig{}, RedisClientsConnectedMetricConfig{}, RedisClientsMaxInputBufferMetricConfig{}, RedisClientsMaxOutputBufferMetricConfig{}, RedisClusterClusterEnabledMetricConfig{}, RedisClusterKnownNodesMetricConfig{}, RedisClusterLinksBufferLimitExceededCountMetricConfig{}, RedisClusterNodeCountMetricConfig{}, RedisClusterNodeUptimeMetricConfig{}, RedisClusterSlotsAssignedMetricConfig{}, RedisClusterSlotsFailMetricConfig{}, RedisClusterSlotsOkMetricConfig{}, RedisClusterSlotsPfailMetricConfig{}, RedisClusterStateMetricConfig{}, RedisClusterStatsMessagesReceivedMetricConfig{}, RedisClusterStatsMessagesSentMetricConfig{}, RedisClusterUptimeMetricConfig{}, RedisCmdCallsMetricConfig{}, RedisCmdLatencyMetricConfig{}, RedisCmdUsecMetricConfig{}, RedisCommandsMetricConfig{}, RedisCommandsProcessedMetricConfig{}, RedisConnectionsReceivedMetricConfig{}, RedisConnectionsRejectedMetricConfig{}, RedisCPUTimeMetricConfig{}, RedisDbAvgTTLMetricConfig{}, RedisDbExpiresMetricConfig{}, RedisDbKeysMetricConfig{}, RedisKeysEvictedMetricConfig{}, RedisKeysExpiredMetricConfig{}, RedisKeyspaceHitsMetricConfig{}, RedisKeyspaceMissesMetricConfig{}, RedisLatestForkMetricConfig{}, RedisMaxmemoryMetricConfig{}, RedisMemoryFragmentationRatioMetricConfig{}, RedisMemoryLuaMetricConfig{}, RedisMemoryPeakMetricConfig{}, RedisMemoryRssMetricConfig{}, RedisMemoryUsedMetricConfig{}, RedisMemoryUsedMemoryOverheadMetricConfig{}, RedisMemoryUsedMemoryStartupMetricConfig{}, RedisModeMetricConfig{}, RedisNetInputMetricConfig{}, RedisNetOutputMetricConfig{}, RedisPubsubChannelStatusMetricConfig{}, RedisPubsubConnectionCountMetricConfig{}, RedisPubsubPatternStatusMetricConfig{}, RedisRdbChangesSinceLastSaveMetricConfig{}, RedisReplicationBacklogFirstByteOffsetMetricConfig{}, RedisReplicationOffsetMetricConfig{}, RedisReplicationReplicaOffsetMetricConfig{}, RedisRoleMetricConfig{}, RedisSentinelMastersMetricConfig{}, RedisSentinelRunningScriptsMetricConfig{}, RedisSentinelScriptsQueueLengthMetricConfig{}, RedisSentinelSimulateFailureFlagsMetricConfig{}, RedisSentinelTiltSinceSecondsMetricConfig{}, RedisSentinelTotalTiltMetricConfig{}, RedisSlavesConnectedMetricConfig{}, RedisTrackingTotalKeysMetricConfig{}, RedisUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestRedisClusterStateMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisClusterState
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisClusterStateMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cluster.state doesn't have an attribute invalid, valid attributes: [cluster_state]")
+
+	cfg = DefaultMetricsConfig().RedisClusterState
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCmdCallsMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCmdCalls
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCmdCallsMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cmd.calls doesn't have an attribute invalid, valid attributes: [cmd]")
+
+	cfg = DefaultMetricsConfig().RedisCmdCalls
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCmdLatencyMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCmdLatency
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCmdLatencyMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cmd.latency doesn't have an attribute invalid, valid attributes: [cmd, percentile]")
+
+	cfg = DefaultMetricsConfig().RedisCmdLatency
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCmdUsecMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCmdUsec
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCmdUsecMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cmd.usec doesn't have an attribute invalid, valid attributes: [cmd]")
+
+	cfg = DefaultMetricsConfig().RedisCmdUsec
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisCPUTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisCPUTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisCPUTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.cpu.time doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().RedisCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisDbAvgTTLMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisDbAvgTTL
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisDbAvgTTLMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.db.avg_ttl doesn't have an attribute invalid, valid attributes: [db]")
+
+	cfg = DefaultMetricsConfig().RedisDbAvgTTL
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisDbExpiresMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisDbExpires
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisDbExpiresMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.db.expires doesn't have an attribute invalid, valid attributes: [db]")
+
+	cfg = DefaultMetricsConfig().RedisDbExpires
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisDbKeysMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisDbKeys
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisDbKeysMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.db.keys doesn't have an attribute invalid, valid attributes: [db]")
+
+	cfg = DefaultMetricsConfig().RedisDbKeys
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisModeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisMode
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisModeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.mode doesn't have an attribute invalid, valid attributes: [mode]")
+
+	cfg = DefaultMetricsConfig().RedisMode
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisPubsubChannelStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisPubsubChannelStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisPubsubChannelStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.pubsub.channel.status doesn't have an attribute invalid, valid attributes: [redis.pubsub.channel.state]")
+
+	cfg = DefaultMetricsConfig().RedisPubsubChannelStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisPubsubPatternStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisPubsubPatternStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisPubsubPatternStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.pubsub.pattern.status doesn't have an attribute invalid, valid attributes: [redis.pubsub.pattern.state]")
+
+	cfg = DefaultMetricsConfig().RedisPubsubPatternStatus
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRedisRoleMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RedisRole
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RedisRoleMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric redis.role doesn't have an attribute invalid, valid attributes: [role]")
+
+	cfg = DefaultMetricsConfig().RedisRole
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {

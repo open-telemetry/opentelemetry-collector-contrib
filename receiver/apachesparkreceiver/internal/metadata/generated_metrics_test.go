@@ -95,315 +95,312 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 3, AttributeLocationOffHeap, AttributeStateFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts+1, 3, AttributeLocationOffHeap, AttributeStateFree)
+				assert.Equal(t, 2, mb.metricSparkDriverBlockManagerMemoryUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerJobActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerJobCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, AttributeSchedulerStatusWaiting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 3, AttributeSchedulerStatusRunning)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts+1, 3, AttributeSchedulerStatusRunning)
+				assert.Equal(t, 2, mb.metricSparkDriverDagSchedulerStageCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverDagSchedulerStageFailedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 1, AttributeGcTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 3, AttributeGcTypeMinor)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts+1, 3, AttributeGcTypeMinor)
+				assert.Equal(t, 2, mb.metricSparkDriverExecutorGcOperations.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 1, AttributeGcTypeMajor)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 3, AttributeGcTypeMinor)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverExecutorGcTimeDataPoint(ts+1, 3, AttributeGcTypeMinor)
+				assert.Equal(t, 2, mb.metricSparkDriverExecutorGcTime.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 3, AttributeLocationOffHeap)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts+1, 3, AttributeLocationOffHeap)
+				assert.Equal(t, 2, mb.metricSparkDriverExecutorMemoryExecution.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 3, AttributeLocationOffHeap)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts+1, 3, AttributeLocationOffHeap)
+				assert.Equal(t, 2, mb.metricSparkDriverExecutorMemoryJvm.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryTypeDirect)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 3, AttributePoolMemoryTypeMapped)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts+1, 3, AttributePoolMemoryTypeMapped)
+				assert.Equal(t, 2, mb.metricSparkDriverExecutorMemoryPool.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 1, AttributeLocationOnHeap)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 3, AttributeLocationOffHeap)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts+1, 3, AttributeLocationOffHeap)
+				assert.Equal(t, 2, mb.metricSparkDriverExecutorMemoryStorage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusDroppedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusPostedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorDiskUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorGcTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorInputSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 3, AttributeDirectionOut)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts+1, 3, AttributeDirectionOut)
+				assert.Equal(t, 2, mb.metricSparkExecutorShuffleIoSize.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 3, AttributeLocationOffHeap, AttributeStateFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts+1, 3, AttributeLocationOffHeap, AttributeStateFree)
+				assert.Equal(t, 2, mb.metricSparkExecutorStorageMemoryUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTaskResultDataPoint(ts, 1, AttributeExecutorTaskResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkExecutorTaskResultDataPoint(ts, 3, AttributeExecutorTaskResultFailed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkExecutorTaskResultDataPoint(ts+1, 3, AttributeExecutorTaskResultFailed)
+				assert.Equal(t, 2, mb.metricSparkExecutorTaskResult.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkExecutorTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobStageActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobStageResultDataPoint(ts, 1, AttributeJobResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkJobStageResultDataPoint(ts, 3, AttributeJobResultFailed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkJobStageResultDataPoint(ts+1, 3, AttributeJobResultFailed)
+				assert.Equal(t, 2, mb.metricSparkJobStageResult.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTaskResultDataPoint(ts, 1, AttributeJobResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkJobTaskResultDataPoint(ts, 3, AttributeJobResultFailed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkJobTaskResultDataPoint(ts+1, 3, AttributeJobResultFailed)
+				assert.Equal(t, 2, mb.metricSparkJobTaskResult.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageDiskSpilledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageIoRecordsDataPoint(ts, 3, AttributeDirectionOut)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageIoRecordsDataPoint(ts+1, 3, AttributeDirectionOut)
+				assert.Equal(t, 2, mb.metricSparkStageIoRecords.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageIoSizeDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageIoSizeDataPoint(ts, 3, AttributeDirectionOut)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageIoSizeDataPoint(ts+1, 3, AttributeDirectionOut)
+				assert.Equal(t, 2, mb.metricSparkStageIoSize.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageMemoryPeakDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, AttributeSourceLocal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 3, AttributeSourceRemote)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts+1, 3, AttributeSourceRemote)
+				assert.Equal(t, 2, mb.metricSparkStageShuffleBlocksFetched.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 1, AttributeSourceLocal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 3, AttributeSourceRemote)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts+1, 3, AttributeSourceRemote)
+				assert.Equal(t, 2, mb.metricSparkStageShuffleIoReadSize.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 3, AttributeDirectionOut)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageShuffleIoRecordsDataPoint(ts+1, 3, AttributeDirectionOut)
+				assert.Equal(t, 2, mb.metricSparkStageShuffleIoRecords.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleIoWriteSizeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageStatusDataPoint(ts, 1, true, true, false, true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageStatusDataPoint(ts, 3, false, false, true, false)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageStatusDataPoint(ts+1, 3, false, false, true, false)
+				assert.Equal(t, 2, mb.metricSparkStageStatus.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskActiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultDataPoint(ts, 1, AttributeStageTaskResultCompleted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSparkStageTaskResultDataPoint(ts, 3, AttributeStageTaskResultFailed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSparkStageTaskResultDataPoint(ts+1, 3, AttributeStageTaskResultFailed)
+				assert.Equal(t, 2, mb.metricSparkStageTaskResult.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
@@ -471,7 +468,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Disk space used by the BlockManager.", mi.Description())
-					assert.Equal(t, "mb", mi.Unit())
+					assert.Equal(t, "MBy", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -486,7 +483,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Memory usage for the driver's BlockManager.", mi.Description())
-						assert.Equal(t, "mb", mi.Unit())
+						assert.Equal(t, "MBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -504,9 +501,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.block_manager.memory.usage"], "Found a duplicate in the metrics slice: spark.driver.block_manager.memory.usage")
 						validatedMetrics["spark.driver.block_manager.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Memory usage for the driver's BlockManager.", mi.Description())
-						assert.Equal(t, "mb", mi.Unit())
+						assert.Equal(t, "MBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -560,7 +559,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average class size of the classes generated by the CodeGenerator.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -586,7 +585,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average method size of the classes generated by the CodeGenerator.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -612,7 +611,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Average size of the source code generated by a CodeGenerator code generation operation.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -682,7 +681,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.dag_scheduler.stage.count"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.stage.count")
 						validatedMetrics["spark.driver.dag_scheduler.stage.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of stages the DAGScheduler is either running or needs to run.", mi.Description())
 						assert.Equal(t, "{ stage }", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -740,7 +741,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.executor.gc.operations"], "Found a duplicate in the metrics slice: spark.driver.executor.gc.operations")
 						validatedMetrics["spark.driver.executor.gc.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of garbage collection operations performed by the driver.", mi.Description())
 						assert.Equal(t, "{ gc_operation }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -784,7 +787,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.executor.gc.time"], "Found a duplicate in the metrics slice: spark.driver.executor.gc.time")
 						validatedMetrics["spark.driver.executor.gc.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total elapsed time during garbage collection operations performed by the driver.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -813,7 +818,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of execution memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -828,9 +833,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.executor.memory.execution"], "Found a duplicate in the metrics slice: spark.driver.executor.memory.execution")
 						validatedMetrics["spark.driver.executor.memory.execution"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of execution memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -857,7 +864,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of memory used by the driver's JVM.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -872,9 +879,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.executor.memory.jvm"], "Found a duplicate in the metrics slice: spark.driver.executor.memory.jvm")
 						validatedMetrics["spark.driver.executor.memory.jvm"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of memory used by the driver's JVM.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -901,7 +910,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of pool memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -916,9 +925,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.executor.memory.pool"], "Found a duplicate in the metrics slice: spark.driver.executor.memory.pool")
 						validatedMetrics["spark.driver.executor.memory.pool"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of pool memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -945,7 +956,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of storage memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -960,9 +971,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.driver.executor.memory.storage"], "Found a duplicate in the metrics slice: spark.driver.executor.memory.storage")
 						validatedMetrics["spark.driver.executor.memory.storage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of storage memory currently used by the driver.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1126,7 +1139,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Disk space used by this executor for RDD storage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1154,7 +1167,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of data input for this executor.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1168,7 +1181,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Storage memory used by this executor.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1183,7 +1196,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data written and read during shuffle operations for this executor.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1198,9 +1211,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.executor.shuffle.io.size"], "Found a duplicate in the metrics slice: spark.executor.shuffle.io.size")
 						validatedMetrics["spark.executor.shuffle.io.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of data written and read during shuffle operations for this executor.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1227,7 +1242,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "The executor's storage memory usage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1245,9 +1260,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.executor.storage_memory.usage"], "Found a duplicate in the metrics slice: spark.executor.storage_memory.usage")
 						validatedMetrics["spark.executor.storage_memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The executor's storage memory usage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1319,7 +1336,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.executor.task.result"], "Found a duplicate in the metrics slice: spark.executor.task.result")
 						validatedMetrics["spark.executor.task.result"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of tasks with a specific result in this executor.", mi.Description())
 						assert.Equal(t, "{ task }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1391,7 +1410,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.job.stage.result"], "Found a duplicate in the metrics slice: spark.job.stage.result")
 						validatedMetrics["spark.job.stage.result"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of stages with a specific result in this job.", mi.Description())
 						assert.Equal(t, "{ stage }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1449,7 +1470,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.job.task.result"], "Found a duplicate in the metrics slice: spark.job.task.result")
 						validatedMetrics["spark.job.task.result"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of tasks with a specific result in this job.", mi.Description())
 						assert.Equal(t, "{ task }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1477,7 +1500,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1535,7 +1558,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.io.records"], "Found a duplicate in the metrics slice: spark.stage.io.records")
 						validatedMetrics["spark.stage.io.records"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of records written and read in this stage.", mi.Description())
 						assert.Equal(t, "{ record }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1564,7 +1589,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data written and read at this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1579,9 +1604,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.io.size"], "Found a duplicate in the metrics slice: spark.stage.io.size")
 						validatedMetrics["spark.stage.io.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of data written and read at this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1621,7 +1648,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1635,7 +1662,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory moved to disk due to size constraints (spilled) in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1665,7 +1692,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.shuffle.blocks_fetched"], "Found a duplicate in the metrics slice: spark.stage.shuffle.blocks_fetched")
 						validatedMetrics["spark.stage.shuffle.blocks_fetched"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of blocks fetched in shuffle operations in this stage.", mi.Description())
 						assert.Equal(t, "{ block }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1707,7 +1736,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1722,7 +1751,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 						assert.Equal(t, "Amount of data read in shuffle operations in this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1737,9 +1766,11 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.shuffle.io.read.size"], "Found a duplicate in the metrics slice: spark.stage.shuffle.io.read.size")
 						validatedMetrics["spark.stage.shuffle.io.read.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of data read in shuffle operations in this stage.", mi.Description())
-						assert.Equal(t, "bytes", mi.Unit())
+						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 						dp := mi.Sum().DataPoints().At(0)
@@ -1781,7 +1812,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.shuffle.io.records"], "Found a duplicate in the metrics slice: spark.stage.shuffle.io.records")
 						validatedMetrics["spark.stage.shuffle.io.records"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of records written or read in shuffle operations in this stage.", mi.Description())
 						assert.Equal(t, "{ record }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1809,7 +1842,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of data written in shuffle operations in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
@@ -1862,7 +1895,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.status"], "Found a duplicate in the metrics slice: spark.stage.status")
 						validatedMetrics["spark.stage.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "A one-hot encoding representing the status of this stage.", mi.Description())
 						assert.Equal(t, "{ status }", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1926,7 +1961,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["spark.stage.task.result"], "Found a duplicate in the metrics slice: spark.stage.task.result")
 						validatedMetrics["spark.stage.task.result"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of tasks with a specific result in this stage.", mi.Description())
 						assert.Equal(t, "{ task }", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1954,7 +1991,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of data transmitted back to the driver by all the tasks in this stage.", mi.Description())
-					assert.Equal(t, "bytes", mi.Unit())
+					assert.Equal(t, "By", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)

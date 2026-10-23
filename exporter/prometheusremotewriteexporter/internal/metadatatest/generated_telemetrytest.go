@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
+	set.ID = component.NewID(component.MustNewType("prometheus_remote_write"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

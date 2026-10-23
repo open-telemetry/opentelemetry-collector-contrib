@@ -9,8 +9,10 @@ status:
   codeowners:
     active: [aabmass, dashpole, braydonk, jsuereth, psx95, ridwanmsharif]
 
+sending_queue:
+  support: default
+
 tests:
-  skip_lifecycle: true
   goleak:
     ignore:
       top:

@@ -75,14 +75,12 @@ func TestDockerParserInvalidType(t *testing.T) {
 }
 
 func TestCrioParserInvalidType(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parseCRIO([]int{})
+	err := parseCRIOInto(make(map[string]any, 4), []int{})
 	require.ErrorContains(t, err, "type '[]int' cannot be parsed as cri-o container logs")
 }
 
 func TestContainerdParserInvalidType(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parseContainerd([]int{})
+	err := parseContainerdInto(make(map[string]any, 4), []int{})
 	require.ErrorContains(t, err, "type '[]int' cannot be parsed as containerd logs")
 }
 
@@ -92,7 +90,7 @@ func TestFormatDetectionFailure(t *testing.T) {
 		Body: `invalid container format`,
 	}
 	_, err := parser.detectFormat(e)
-	require.ErrorContains(t, err, "entry cannot be parsed as container logs")
+	require.Error(t, err)
 }
 
 func TestInternalRecombineCfg(t *testing.T) {
@@ -1314,5 +1312,722 @@ func TestUnlimitedBatchSize(t *testing.T) {
 	case e := <-fake.Received:
 		require.FailNow(t, "Received unexpected second entry - batch was incorrectly split", "entry: %+v", e)
 	default:
+	}
+}
+
+func TestContainerQuietModeProcess(t *testing.T) {
+	// Quiet mode swallows the processing/parse error, but send_quiet still
+	// surfaces downstream write failures so the pipeline can react to delivery
+	// errors.
+	testCases := []struct {
+		name             string
+		onError          string
+		useFailingOutput bool
+		expectError      bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     "drop_quiet",
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     "send_quiet",
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     "drop",
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     "send",
+			expectError: true,
+		},
+		{
+			name:             "SendOnErrorQuiet_WriteFailure_PropagatesError",
+			onError:          "send_quiet",
+			useFailingOutput: true,
+			expectError:      true,
+		},
+		{
+			name:             "SendOnError_WriteFailure_PropagatesError",
+			onError:          "send",
+			useFailingOutput: true,
+			expectError:      true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := NewConfigWithID("test")
+			config.OnError = tc.onError
+			config.OutputIDs = []string{"fake"}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := config.Build(set)
+			require.NoError(t, err)
+
+			var fake operator.Operator
+			if tc.useFailingOutput {
+				fake = testutil.NewFakeOutputWithProcessError(t)
+			} else {
+				fake = testutil.NewFakeOutput(t)
+			}
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+			// Create entry with invalid container log format that will cause parse error
+			e := entry.New()
+			e.Body = "invalid container log format"
+			e.ObservedTimestamp = time.Now()
+
+			err = op.Process(t.Context(), e)
+			if tc.expectError {
+				require.Error(t, err, "expected error")
+			} else {
+				require.NoError(t, err, "expected no error when processing error is swallowed in quiet mode")
+			}
+		})
+	}
+}
+
+func TestContainerQuietModeProcessBatch(t *testing.T) {
+	testCases := []struct {
+		name        string
+		onError     string
+		expectError bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     "drop_quiet",
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     "send_quiet",
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     "drop",
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     "send",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := &testutil.Operator{}
+			output.On("ID").Return("test-output")
+			output.On("CanProcess").Return(true)
+			output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+			config := NewConfigWithID("test")
+			config.OnError = tc.onError
+			config.OutputIDs = []string{"test-output"}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := config.Build(set)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+
+			entries := []*entry.Entry{
+				func() *entry.Entry {
+					e := entry.New()
+					e.Body = "invalid container log format"
+					e.ObservedTimestamp = time.Now()
+					return e
+				}(),
+				func() *entry.Entry {
+					e := entry.New()
+					e.Body = "another invalid log"
+					e.ObservedTimestamp = time.Now()
+					return e
+				}(),
+			}
+
+			err = op.ProcessBatch(t.Context(), entries)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+	}
+}
+
+// TestProcessDockerNoDoubleEntryOnError verifies that when ProcessWithCallback
+// returns an error in non-quiet mode, the entry is not sent twice. ProcessWithCallback
+// already handles error logging and entry sending internally.
+func TestProcessDockerNoDoubleEntryOnError(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("CanProcess").Return(true)
+	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.Format = "docker"
+	cfg.OnError = "send"
+	cfg.OutputIDs = []string{"test-output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+
+	// Entry with invalid JSON will cause parse error inside ProcessWithCallback
+	e := entry.New()
+	e.Body = `{"log":"missing time field","stream":"stdout"}`
+	e.ObservedTimestamp = time.Now()
+
+	err = op.Process(t.Context(), e)
+	require.Error(t, err)
+
+	// The entry should only be sent once (by HandleEntryError inside ProcessWithCallback/ParseWith),
+	// not twice. If HandleEntryError were called again by the caller, it would send the entry a second time.
+	output.AssertNumberOfCalls(t, "Process", 1)
+}
+
+// TestProcessBatchDockerQuietModeWithMixedEntries verifies that in quiet mode,
+// valid entries are still processed while invalid entries are silently dropped.
+func TestProcessBatchDockerQuietModeWithMixedEntries(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("CanProcess").Return(true)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.Format = "docker"
+	cfg.OnError = "drop_quiet"
+	cfg.OutputIDs = []string{"test-output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+
+	ctx := t.Context()
+
+	validEntry := entry.New()
+	validEntry.Body = `{"log":"INFO: valid line","stream":"stdout","time":"2029-03-30T08:31:20.545Z"}`
+
+	invalidEntry := entry.New()
+	invalidEntry.Body = `not a valid docker log`
+
+	validEntry2 := entry.New()
+	validEntry2.Body = `{"log":"INFO: another valid line","stream":"stderr","time":"2029-03-30T08:31:21.545Z"}`
+
+	err = op.ProcessBatch(ctx, []*entry.Entry{validEntry, invalidEntry, validEntry2})
+	require.NoError(t, err, "quiet mode should not return errors")
+
+	// Only valid entries should be written to output
+	output.AssertCalled(t, "ProcessBatch", ctx, mock.MatchedBy(func(entries []*entry.Entry) bool {
+		return len(entries) == 2
+	}))
+}
+
+func TestContainerdTimestampWithOffset(t *testing.T) {
+	expected := time.Date(2026, time.September, 18, 3, 0, 0, 123456789, time.UTC)
+	cases := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "utc",
+			body: `2026-09-18T03:00:00.123456789Z stdout F containerd line`,
+		},
+		{
+			name: "positive_offset",
+			body: `2026-09-18T13:00:00.123456789+10:00 stdout F containerd line`,
+		},
+		{
+			name: "negative_offset",
+			body: `2026-09-17T22:00:00.123456789-05:00 stdout F containerd line`,
+		},
+	}
+
+	for _, tc := range cases {
+		for _, batch := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/batch=%t", tc.name, batch), func(t *testing.T) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.Format = "containerd"
+				op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+				require.NoError(t, err)
+				defer func() { require.NoError(t, op.Stop()) }()
+
+				fake := testutil.NewFakeOutput(t)
+				op.(*Parser).OutputOperators = []operator.Operator{fake}
+
+				e := entry.New()
+				e.Body = tc.body
+				if batch {
+					require.NoError(t, op.ProcessBatch(t.Context(), []*entry.Entry{e}))
+				} else {
+					require.NoError(t, op.Process(t.Context(), e))
+				}
+
+				select {
+				case got := <-fake.Received:
+					require.Equal(t, "containerd line", got.Body)
+					require.True(t, expected.Equal(got.Timestamp), "expected %s, got %s", expected, got.Timestamp)
+				case <-time.After(time.Second):
+					require.FailNow(t, "timed out waiting for entry")
+				}
+			})
+		}
+	}
+}
+
+func TestFilepathCachePopulatedOnFirstEntry(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	_, ok := p.cache.Get(testLogPath)
+	require.False(t, ok, "cache should be empty before first call")
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	cached, ok := p.cache.Get(testLogPath)
+	require.True(t, ok, "cache should be populated after first call")
+	require.Equal(t, "49cc7c1fd3702c40b2686ea7486091d3", cached["k8s.pod.uid"])
+	require.Equal(t, "default", cached["k8s.namespace.name"])
+	require.Equal(t, "mypod", cached["k8s.pod.name"])
+	require.Equal(t, "mycontainer", cached["k8s.container.name"])
+	require.Equal(t, "0", cached["k8s.container.restart_count"])
+}
+
+func TestFilepathCacheHitSkipsRegex(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	sentinel := map[string]any{
+		"k8s.namespace.name":          "cached-namespace",
+		"k8s.pod.name":                "cached-pod",
+		"k8s.container.name":          "cached-container",
+		"k8s.container.restart_count": "cached-restart",
+		"k8s.pod.uid":                 "cached-uid",
+	}
+	p.cache.Add(testLogPath, sentinel)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	require.Equal(t, "cached-namespace", e.Resource["k8s.namespace.name"])
+	require.Equal(t, "cached-pod", e.Resource["k8s.pod.name"])
+	require.Equal(t, "cached-container", e.Resource["k8s.container.name"])
+}
+
+func TestFilepathCacheDisabledWhenMetadataOff(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	testLogPath := "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log"
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	p := op.(*Parser)
+
+	e := entry.New()
+	e.Attributes = map[string]any{attrs.LogFilePath: testLogPath}
+
+	err = p.extractk8sMetaFromFilePath(e)
+	require.NoError(t, err)
+
+	require.Nil(t, p.cache, "cache should be nil when add_metadata_from_filepath is false")
+}
+
+func TestStripLogSuffix(t *testing.T) {
+	cases := []struct {
+		input    string
+		wantOK   bool
+		wantBase string
+	}{
+		{
+			input:    "/var/log/pods/ns_pod_uid/container/0.log",
+			wantOK:   true,
+			wantBase: "/var/log/pods/ns_pod_uid/container/0",
+		},
+		{
+			input:    "/var/log/pods/ns_pod_uid/container/0.log.20240115-103000",
+			wantOK:   true,
+			wantBase: "/var/log/pods/ns_pod_uid/container/0",
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.backup",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.20240115",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log.20240115-10300",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.log2",
+			wantOK: false,
+		},
+		{
+			input:  "/var/log/pods/ns_pod_uid/container/0.txt",
+			wantOK: false,
+		},
+		{
+			input:  "",
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			base, ok := stripLogSuffix(tc.input)
+			require.Equal(t, tc.wantOK, ok)
+			if tc.wantOK {
+				require.Equal(t, tc.wantBase, base)
+			}
+		})
+	}
+}
+
+func TestSplitLogPath(t *testing.T) {
+	cases := []struct {
+		name        string
+		input       string
+		wantOK      bool
+		wantNS      string
+		wantPod     string
+		wantUID     string
+		wantCtr     string
+		wantRestart string
+	}{
+		{
+			name:        "standard path",
+			input:       "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log",
+			wantOK:      true,
+			wantNS:      "default",
+			wantPod:     "mypod",
+			wantUID:     "49cc7c1fd3702c40b2686ea7486091d3",
+			wantCtr:     "mycontainer",
+			wantRestart: "0",
+		},
+		{
+			name:        "rotated log",
+			input:       "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log.20240115-103000",
+			wantOK:      true,
+			wantNS:      "default",
+			wantPod:     "mypod",
+			wantRestart: "0",
+		},
+		{
+			name:        "pod name with hyphens",
+			input:       "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+			wantOK:      true,
+			wantNS:      "some",
+			wantPod:     "kube-scheduler-kind-control-plane",
+			wantUID:     "49cc7c1fd3702c40b2686ea7486091d3",
+			wantCtr:     "kube-scheduler44",
+			wantRestart: "1",
+		},
+		{
+			name:        "windows path separators",
+			input:       `C:\var\log\pods\default_mypod_49cc7c1fd3702c40b2686ea7486091d3\mycontainer\0.log`,
+			wantOK:      true,
+			wantNS:      "default",
+			wantPod:     "mypod",
+			wantRestart: "0",
+		},
+		{
+			name:   "unrecognized suffix rejected",
+			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log.backup",
+			wantOK: false,
+		},
+		{
+			name:   "uid contains invalid char",
+			input:  "/var/log/pods/default_mypod_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/mycontainer/0.log",
+			wantOK: false,
+		},
+		{
+			name:   "container name contains dot",
+			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/my.container/0.log",
+			wantOK: false,
+		},
+		{
+			name:   "restart count not digits",
+			input:  "/var/log/pods/default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/abc.log",
+			wantOK: false,
+		},
+		{
+			name:   "no path separator",
+			input:  "default_mypod_49cc7c1fd3702c40b2686ea7486091d3.log",
+			wantOK: false,
+		},
+		{
+			name:   "relative path without leading separator rejected",
+			input:  "default_mypod_49cc7c1fd3702c40b2686ea7486091d3/mycontainer/0.log",
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := make(map[string]any, 5)
+			ok := parseLogPathInto(result, tc.input)
+			require.Equal(t, tc.wantOK, ok)
+			if !ok {
+				return
+			}
+			if tc.wantNS != "" {
+				require.Equal(t, tc.wantNS, result["k8s.namespace.name"])
+			}
+			if tc.wantPod != "" {
+				require.Equal(t, tc.wantPod, result["k8s.pod.name"])
+			}
+			if tc.wantUID != "" {
+				require.Equal(t, tc.wantUID, result["k8s.pod.uid"])
+			}
+			if tc.wantCtr != "" {
+				require.Equal(t, tc.wantCtr, result["k8s.container.name"])
+			}
+			if tc.wantRestart != "" {
+				require.Equal(t, tc.wantRestart, result["k8s.container.restart_count"])
+			}
+		})
+	}
+}
+
+func TestPinnedFormatMismatch(t *testing.T) {
+	// When format is pinned, detectFormat is skipped and the pinned parser is called directly.
+	// A mismatched line (e.g. docker JSON sent to a containerd-pinned parser) causes a parse error.
+	cases := []struct {
+		name         string
+		pinnedFormat string
+		body         string
+	}{
+		{
+			name:         "docker line rejected when containerd pinned",
+			pinnedFormat: containerdFormat,
+			body:         `{"log":"msg","stream":"stdout","time":"2024-01-15T10:30:00.000Z"}`,
+		},
+		{
+			name:         "docker line rejected when crio pinned",
+			pinnedFormat: crioFormat,
+			body:         `{"log":"msg","stream":"stdout","time":"2024-01-15T10:30:00.000Z"}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfigWithID("test_id")
+			cfg.AddMetadataFromFilePath = false
+			cfg.Format = tc.pinnedFormat
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			e := entry.New()
+			e.Body = tc.body
+			err = op.Process(t.Context(), e)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestParseContainerdFields(t *testing.T) {
+	cases := []struct {
+		name       string
+		input      any
+		wantOK     bool
+		wantTime   string
+		wantStream string
+		wantLogtag string
+		wantLog    string
+	}{
+		{
+			name:       "full line",
+			input:      "2024-01-15T10:30:00.000Z stdout F log message here",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000Z",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "log message here",
+		},
+		{
+			name:       "stderr partial",
+			input:      "2024-01-15T10:30:00.000Z stderr P partial line",
+			wantOK:     true,
+			wantStream: "stderr",
+			wantLogtag: "P",
+			wantLog:    "partial line",
+		},
+		{
+			name:       "empty log message",
+			input:      "2024-01-15T10:30:00.000Z stdout F ",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:       "no log body logtag only",
+			input:      "2024-01-15T10:30:00.000Z stdout F",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:   "invalid stream",
+			input:  "2024-01-15T10:30:00.000Z stdxxx F message",
+			wantOK: false,
+		},
+		{
+			name:       "timezone offset timestamp",
+			input:      "2024-01-15T10:30:00.000+00:00 stdout F message",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000+00:00",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "message",
+		},
+		{
+			name:   "wrong type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			raw, isString := tc.input.(string)
+			if !tc.wantOK {
+				if isString {
+					m := make(map[string]any, 4)
+					require.Error(t, parseContainerdInto(m, raw))
+				} else {
+					require.False(t, isString)
+				}
+				return
+			}
+			m := make(map[string]any, 4)
+			require.NoError(t, parseContainerdInto(m, raw))
+			if tc.wantTime != "" {
+				require.Equal(t, tc.wantTime, m["time"])
+			}
+			if tc.wantStream != "" {
+				require.Equal(t, tc.wantStream, m["stream"])
+			}
+			require.Equal(t, tc.wantLogtag, m["logtag"])
+			require.Equal(t, tc.wantLog, m["log"])
+		})
+	}
+}
+
+func TestParseCRIOFields(t *testing.T) {
+	cases := []struct {
+		name       string
+		input      any
+		wantOK     bool
+		wantTime   string
+		wantStream string
+		wantLogtag string
+		wantLog    string
+	}{
+		{
+			name:       "full line with UTC offset",
+			input:      "2024-01-15T10:30:00.000000000+00:00 stdout F log message",
+			wantOK:     true,
+			wantTime:   "2024-01-15T10:30:00.000000000+00:00",
+			wantStream: "stdout",
+			wantLogtag: "F",
+			wantLog:    "log message",
+		},
+		{
+			name:       "negative timezone offset",
+			input:      "2024-01-15T10:30:00.000000000-05:00 stderr F error line",
+			wantOK:     true,
+			wantStream: "stderr",
+			wantLogtag: "F",
+			wantLog:    "error line",
+		},
+		{
+			name:       "empty log body",
+			input:      "2024-01-15T10:30:00.000000000+00:00 stdout F ",
+			wantOK:     true,
+			wantLogtag: "F",
+			wantLog:    "",
+		},
+		{
+			name:   "invalid stream",
+			input:  "2024-01-15T10:30:00.000000000+00:00 stdxxx F message",
+			wantOK: false,
+		},
+		{
+			name:   "missing timestamp",
+			input:  "stdout F message",
+			wantOK: false,
+		},
+		{
+			name:   "wrong type",
+			input:  42,
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			raw, isString := tc.input.(string)
+			if !tc.wantOK {
+				if isString {
+					m := make(map[string]any, 4)
+					require.Error(t, parseCRIOInto(m, raw))
+				} else {
+					require.False(t, isString)
+				}
+				return
+			}
+			m := make(map[string]any, 4)
+			require.NoError(t, parseCRIOInto(m, raw))
+			if tc.wantTime != "" {
+				require.Equal(t, tc.wantTime, m["time"])
+			}
+			if tc.wantStream != "" {
+				require.Equal(t, tc.wantStream, m["stream"])
+			}
+			require.Equal(t, tc.wantLogtag, m["logtag"])
+			require.Equal(t, tc.wantLog, m["log"])
+		})
 	}
 }

@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
@@ -61,7 +59,7 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 		conflicts:   map[uint64][]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{PreserveMultipleUnderscores: true, UTF8Allowed: utf8Allowed},
 		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
@@ -134,7 +132,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, scope, settings, promName, m))
+						dataPoints, resource, scope, settings, promName, m,
+					))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {

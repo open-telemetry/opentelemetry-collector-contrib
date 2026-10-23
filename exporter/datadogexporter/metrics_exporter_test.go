@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris && !freebsd
 
 package datadogexporter
 
@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
+	"io"
 	"net/http/httptest"
 	"net/http/httputil"
 	"os"
@@ -170,8 +170,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		{
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
-				Kind:       source.HostnameKind,
-				Identifier: "test-host",
+				Kind:             source.HostnameKind,
+				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeNoBuckets,
 			hostTags:      []string{"key1:value1", "key2:value2"},
@@ -180,8 +181,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		{
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
-				Kind:       source.HostnameKind,
-				Identifier: "test-host",
+				Kind:             source.HostnameKind,
+				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
@@ -252,8 +254,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				"custom_attribute":            "custom_value",
 			}),
 			source: source.Source{
-				Kind:       source.HostnameKind,
-				Identifier: "test-host",
+				Kind:             source.HostnameKind,
+				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
@@ -321,8 +324,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		{
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
-				Kind:       source.HostnameKind,
-				Identifier: "test-host",
+				Kind:             source.HostnameKind,
+				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
@@ -392,8 +396,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		{
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
-				Kind:       source.AWSECSFargateKind,
-				Identifier: "task_arn",
+				Kind:             source.AWSECSFargateKind,
+				Identifier:       "task_arn", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+				SourceIdentifier: source.SourceIdentifier{Primary: "task_arn"},
 			},
 			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
@@ -461,8 +466,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		{
 			metrics: loadOTLPMetrics(t, "metrics_stats.json"),
 			source: source.Source{
-				Kind:       source.HostnameKind,
-				Identifier: "test-host",
+				Kind:             source.HostnameKind,
+				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeDistributions,
 		},
@@ -530,10 +536,15 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			} else {
 				assert.Equal(t, "gzip", sketchRecorder.Header.Get("Accept-Encoding"))
 				assert.Equal(t, "application/x-protobuf", sketchRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", sketchRecorder.Header.Get("Content-Encoding"))
 				assert.Equal(t, "otelcol/latest", sketchRecorder.Header.Get("User-Agent"))
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
-				assert.Equal(t, expected, sketchRecorder.ByteBody)
+				reader, err := gzip.NewReader(bytes.NewReader(sketchRecorder.ByteBody))
+				require.NoError(t, err)
+				decompressed, err := io.ReadAll(reader)
+				require.NoError(t, err)
+				assert.Equal(t, expected, decompressed)
 			}
 		})
 	}
@@ -574,7 +585,7 @@ func Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin(t *testing
 		acfg,
 		&once,
 		attributesTranslator,
-		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}},
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		reporter,
 		nil,
 		gatewayUsage,
@@ -600,8 +611,14 @@ func Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin(t *testing
 	require.NoError(t, exp.PushMetricsData(t.Context(), md))
 	require.NotNil(t, sketchRecorder.ByteBody, "expected a sketch payload to be sent")
 
+	// The sketches payload is gzip-compressed (consistent with the series path).
+	gzReader, err := gzip.NewReader(bytes.NewReader(sketchRecorder.ByteBody))
+	require.NoError(t, err)
+	decompressed, err := io.ReadAll(gzReader)
+	require.NoError(t, err)
+
 	var payload gogen.SketchPayload
-	require.NoError(t, payload.Unmarshal(sketchRecorder.ByteBody))
+	require.NoError(t, payload.Unmarshal(decompressed))
 	require.Len(t, payload.Sketches, 1)
 	sketch := payload.Sketches[0]
 	require.Len(t, sketch.Dogsketches, 1)
@@ -636,14 +653,14 @@ func TestNewExporterWithProxy(t *testing.T) {
 	wg.Add(expectedRequests)
 
 	proxyServer := httptest.NewServer(&httputil.ReverseProxy{
-		Director: func(req *http.Request) {
-			req.Header.Set("X-Proxy-Test", "test-proxy-123")
-			req.URL.Scheme = "http"
-			req.URL.Host = server.Listener.Addr().String()
+		Rewrite: func(req *httputil.ProxyRequest) {
+			req.Out.Header.Set("X-Proxy-Test", "test-proxy-123")
+			req.Out.URL.Scheme = "http"
+			req.Out.URL.Host = server.Listener.Addr().String()
 
 			// Copy request data to avoid race conditions
 			headers := make(map[string]string)
-			for key, values := range req.Header {
+			for key, values := range req.Out.Header {
 				if len(values) > 0 {
 					headers[key] = values[0]
 				}
@@ -651,7 +668,7 @@ func TestNewExporterWithProxy(t *testing.T) {
 
 			mu.Lock()
 			proxyRequests = append(proxyRequests, requestInfo{
-				Path:    req.URL.Path,
+				Path:    req.Out.URL.Path,
 				Headers: headers,
 			})
 			mu.Unlock()
@@ -660,6 +677,10 @@ func TestNewExporterWithProxy(t *testing.T) {
 		},
 	})
 	defer proxyServer.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.ForceAttemptHTTP2 = false
+	clientConfig.ProxyURL = proxyServer.URL
 
 	cfg := &datadogconfig.Config{
 		API: datadogconfig.APIConfig{
@@ -684,9 +705,7 @@ func TestNewExporterWithProxy(t *testing.T) {
 		},
 		HostnameDetectionTimeout: 50 * time.Millisecond,
 
-		ClientConfig: confighttp.ClientConfig{
-			ProxyURL: proxyServer.URL,
-		},
+		ClientConfig: clientConfig,
 	}
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -879,7 +898,7 @@ func TestServiceInstanceIDTag(t *testing.T) {
 		traceconfig.New(),
 		&once,
 		attributesTranslator,
-		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}},
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		reporter,
 		nil,
 		attributes.NewGatewayUsage(),

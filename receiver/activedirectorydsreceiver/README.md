@@ -4,7 +4,6 @@
 The Active Directory Domain Services Receiver scrapes metrics relating to an Active Directory domain controller using
 the Windows Performance Counters.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

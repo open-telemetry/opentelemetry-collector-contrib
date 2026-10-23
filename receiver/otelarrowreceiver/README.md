@@ -7,7 +7,6 @@ Arrow](https://github.com/open-telemetry/otel-arrow) and standard
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
 protocol via gRPC.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |

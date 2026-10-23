@@ -4,8 +4,8 @@ cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
-cmd/schemagen cmd/schemagen
 cmd/telemetrygen cmd/telemetrygen
+config/configdbauth config/configdbauth
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
@@ -32,7 +32,6 @@ exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
 exporter/awsxrayexporter exporter/awsxray
 exporter/azureblobexporter exporter/azureblob
-exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/azuremonitorexporter exporter/azuremonitor
 exporter/bmchelixexporter exporter/bmchelix
 exporter/cassandraexporter exporter/cassandra
@@ -48,14 +47,12 @@ exporter/googlecloudexporter exporter/googlecloud
 exporter/googlecloudpubsubexporter exporter/googlecloudpubsub
 exporter/googlecloudstorageexporter exporter/googlecloudstorage
 exporter/googlemanagedprometheusexporter exporter/googlemanagedprometheus
-exporter/googlesecopsexporter exporter/googlesecops
 exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
-exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
-exporter/mezmoexporter exporter/mezmo
+exporter/natsexporter exporter/nats
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
 exporter/prometheusexporter exporter/prometheus
@@ -80,6 +77,8 @@ extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
 extension/datadogextension extension/datadog
+extension/dbauth extension/dbauth
+extension/dbauth/awsiamdbauthextension extension/dbauth/awsiamdbauth
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
@@ -92,6 +91,8 @@ extension/encoding/otlpencodingextension extension/encoding/otlpencoding
 extension/encoding/skywalkingencodingextension extension/encoding/skywalkingencoding
 extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
+extension/filetelemetrypolicyextension extension/filetelemetrypolicy
+extension/fleettracker/redisfleettrackerextension extension/fleettracker/redisfleettracker
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
 extension/healthcheckextension extension/healthcheck
@@ -107,12 +108,12 @@ extension/observer/dockerobserver extension/observer/dockerobserver
 extension/observer/ecsobserver extension/observer/ecsobserver
 extension/observer/hostobserver extension/observer/hostobserver
 extension/observer/k8sobserver extension/observer/k8sobserver
-extension/observer/kafkatopicsobserver extension/observer/kafkatopicsobserver
 extension/oidcauthextension extension/oidcauth
 extension/opampcustommessages extension/opampcustommessages
 extension/opampextension extension/opamp
 extension/pprofextension extension/pprof
 extension/remotetapextension extension/remotetap
+extension/sdnotifyextension extension/sdnotify
 extension/sigv4authextension extension/sigv4auth
 extension/solarwindsapmsettingsextension extension/solarwindsapmsettings
 extension/storage extension/storage
@@ -138,6 +139,7 @@ internal/k8sleaderelectortest internal/k8sleaderelectortest
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
 internal/metadataproviders internal/metadataproviders
+internal/natsclient internal/natsclient
 internal/otelarrow internal/otelarrow
 internal/pdatautil internal/pdatautil
 internal/rabbitmq internal/rabbitmq
@@ -155,13 +157,16 @@ pkg/golden pkg/golden
 pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
+pkg/ottl/contexts/xprofile pkg/ottl/contexts/xprofile
+pkg/ottl/xottl pkg/ottl/xottl
 pkg/pdatatest pkg/pdatatest
-pkg/pdatautil pkg/pdatautil
 pkg/resourcetotelemetry pkg/resourcetotelemetry
 pkg/sampling pkg/sampling
+pkg/semconvtest pkg/semconvtest
 pkg/stanza pkg/stanza
 pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/stanza/operator/input/journald pkg/stanza/operator/input/journald
+pkg/stanza/operator/input/tcp pkg/stanza/operator/input/tcp
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
@@ -178,7 +183,9 @@ pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
 pkg/xstreamencoding pkg/xstreamencoding
+processor/adaptivetailsamplingprocessor processor/adaptivetailsampling
 processor/attributesprocessor processor/attributes
+processor/awsecsattributesprocessor processor/awsecsattributes
 processor/cardinalityguardianprocessor processor/cardinalityguardian
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
@@ -199,6 +206,7 @@ processor/lookupprocessor processor/lookup
 processor/metricsgenerationprocessor processor/metricsgeneration
 processor/metricstarttimeprocessor processor/metricstarttime
 processor/metricstransformprocessor processor/metricstransform
+processor/partitioningprocessor processor/partitioning
 processor/probabilisticsamplerprocessor processor/probabilisticsampler
 processor/redactionprocessor processor/redaction
 processor/remotetapprocessor processor/remotetap
@@ -218,15 +226,20 @@ processor/resourcedetectionprocessor/internal/tencent/cvm processor/resourcedete
 processor/resourcedetectionprocessor/internal/upcloud processor/resourcedetection/internal/upcloud
 processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/internal/vultr
 processor/resourceprocessor processor/resource
+processor/rollingspanlatencyprocessor processor/rollingspanlatency
 processor/schemaprocessor processor/schema
+processor/signingprocessor processor/signing
 processor/spanprocessor processor/span
 processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
+processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
+processor/verifyprocessor processor/verify
 receiver/activedirectorydsreceiver receiver/activedirectoryds
+receiver/activedirectoryinvreceiver receiver/activedirectoryinv
 receiver/aerospikereceiver receiver/aerospike
 receiver/apachereceiver receiver/apache
 receiver/apachesparkreceiver receiver/apachespark
@@ -251,6 +264,7 @@ receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
 receiver/couchdbreceiver receiver/couchdb
 receiver/datadogreceiver receiver/datadog
+receiver/dnscheckreceiver receiver/dnscheck
 receiver/dockerstatsreceiver receiver/dockerstats
 receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals
@@ -262,6 +276,7 @@ receiver/flinkmetricsreceiver receiver/flinkmetrics
 receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
+receiver/gnmireceiver receiver/gnmi
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
 receiver/googlecloudpubsubpushreceiver receiver/googlecloudpubsubpush
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub
@@ -285,7 +300,6 @@ receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
 receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
-receiver/jmxreceiver receiver/jmx
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
 receiver/k8seventsreceiver receiver/k8sevents
@@ -301,6 +315,7 @@ receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
 receiver/mysqlreceiver receiver/mysql
 receiver/namedpipereceiver receiver/namedpipe
+receiver/natsreceiver receiver/nats
 receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
@@ -321,7 +336,6 @@ receiver/rabbitmqreceiver receiver/rabbitmq
 receiver/receivercreator receiver/receivercreator
 receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
-receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
 receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
@@ -344,7 +358,6 @@ receiver/tlscheckreceiver receiver/tlscheck
 receiver/udplogreceiver receiver/udplog
 receiver/vcenterreceiver receiver/vcenter
 receiver/vcrreceiver receiver/vcr
-receiver/wavefrontreceiver receiver/wavefront
 receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
@@ -359,3 +372,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/azuredataexplorerexporter exporter/azuredataexplorer
+exporter/logicmonitorexporter exporter/logicmonitor
+receiver/riakreceiver receiver/riak

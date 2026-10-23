@@ -4,6 +4,10 @@ all_set:
     systemd.service.cpu.time:
       enabled: true
       attributes: ["cpu.mode"]
+    systemd.service.memory.usage:
+      enabled: true
+    systemd.service.memory.usage.max:
+      enabled: true
     systemd.service.restarts:
       enabled: true
     systemd.unit.state:
@@ -17,6 +21,10 @@ reaggregate_set:
     systemd.service.cpu.time:
       enabled: true
       attributes: []
+    systemd.service.memory.usage:
+      enabled: true
+    systemd.service.memory.usage.max:
+      enabled: true
     systemd.service.restarts:
       enabled: true
     systemd.unit.state:
@@ -30,6 +38,10 @@ none_set:
     systemd.service.cpu.time:
       enabled: false
       attributes: ["cpu.mode"]
+    systemd.service.memory.usage:
+      enabled: false
+    systemd.service.memory.usage.max:
+      enabled: false
     systemd.service.restarts:
       enabled: false
     systemd.unit.state:

@@ -19,8 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
@@ -86,8 +86,9 @@ func TestReadStaticFile(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
-
-	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.BuildInfo.Version = "v0.1.0"
+	rcvr, err := f.CreateLogs(t.Context(), set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -110,7 +111,7 @@ func TestReadStaticFile(t *testing.T) {
 	queueEntry("Something bad happened!", entry.Error)
 	queueEntry("Some details...", entry.Debug)
 
-	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries))
+	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries, metadata.ScopeName, set.BuildInfo.Version))
 
 	dir, err := os.Getwd()
 	require.NoError(t, err)

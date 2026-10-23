@@ -4,6 +4,8 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
@@ -13,7 +15,7 @@ import (
 
 // Config defines configuration for kubernetes events receiver.
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
@@ -24,6 +26,12 @@ type Config struct {
 	Storage *component.ID `mapstructure:"storage"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
+
+	// DedupInterval controls throttling of MODIFIED watch events per event UID.
+	//   positive: emit MODIFIED only after interval has elapsed since the last emit for that UID
+	//   0 (default): no throttling — current behavior, backward compatible
+	//   negative: drop all MODIFIED events
+	DedupInterval time.Duration `mapstructure:"dedup_interval"`
 
 	// For mocking
 	makeClient        func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)

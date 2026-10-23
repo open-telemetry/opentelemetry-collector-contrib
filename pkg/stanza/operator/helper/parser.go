@@ -14,6 +14,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
+// ErrEntryHandled signals that ParseWith already handled the entry
+// (logged and optionally written downstream) and the caller must not
+// write it again or propagate an error.
+var ErrEntryHandled = errors.New("entry handled by parser in quiet mode")
+
 // NewParserConfig creates a new parser config with default values
 func NewParserConfig(operatorID, operatorType string) ParserConfig {
 	return ParserConfig{
@@ -117,7 +122,7 @@ func (p *ParserOperator) ProcessBatchWithCallback(ctx context.Context, entries [
 		}
 
 		if err = p.ParseWith(ctx, ent, parse, write); err != nil {
-			if p.OnError != DropOnErrorQuiet && p.OnError != SendOnErrorQuiet {
+			if !errors.Is(err, ErrEntryHandled) {
 				errs = append(errs, err)
 			}
 			continue
@@ -153,15 +158,13 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 	}
 
 	if err = p.ParseWith(ctx, entry, parse, p.Write); err != nil {
-		if p.OnError == DropOnErrorQuiet || p.OnError == SendOnErrorQuiet {
+		if errors.Is(err, ErrEntryHandled) {
 			return nil
 		}
-
 		return err
 	}
 	if cb != nil {
-		err = cb(entry)
-		if err != nil {
+		if err = cb(entry); err != nil {
 			return p.HandleEntryError(ctx, entry, err)
 		}
 	}
@@ -170,24 +173,35 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 }
 
 // ParseWith will process an entry's field with a parser function.
+// In quiet on_error modes any entry-level error is handled internally and
+// ErrEntryHandled is returned so callers do not write or propagate again.
 func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction, write WriteFunction) error {
+	// handle translates a nil-in-quiet-mode return from HandleEntryErrorWithWrite
+	// into ErrEntryHandled.
+	handle := func(err error) error {
+		handled := p.HandleEntryErrorWithWrite(ctx, entry, err, write)
+		if handled == nil && p.isQuietMode() {
+			return ErrEntryHandled
+		}
+		return handled
+	}
+
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
-		err := stanzaerrors.NewError(
+		return handle(stanzaerrors.NewError(
 			"Entry is missing the expected parse_from field.",
 			"Ensure that all incoming entries contain the parse_from field.",
 			"parse_from", p.ParseFrom.String(),
-		)
-		return p.HandleEntryErrorWithWrite(ctx, entry, err, write)
+		))
 	}
 
 	newValue, err := parse(value)
 	if err != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, err, write)
+		return handle(err)
 	}
 
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("set parse_to: %w", err), write)
+		return handle(fmt.Errorf("set parse_to: %w", err))
 	}
 
 	if p.BodyField != nil {
@@ -218,16 +232,16 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 
 	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("time parser: %w", timeParseErr), write)
+		return handle(fmt.Errorf("time parser: %w", timeParseErr))
 	}
 	if severityParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("severity parser: %w", severityParseErr), write)
+		return handle(fmt.Errorf("severity parser: %w", severityParseErr))
 	}
 	if traceParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("trace parser: %w", traceParseErr), write)
+		return handle(fmt.Errorf("trace parser: %w", traceParseErr))
 	}
 	if scopeNameParserErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("scope_name parser: %w", scopeNameParserErr), write)
+		return handle(fmt.Errorf("scope_name parser: %w", scopeNameParserErr))
 	}
 	return nil
 }

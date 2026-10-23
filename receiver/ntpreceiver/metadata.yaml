@@ -1,6 +1,5 @@
 display_name: NTP Receiver
 type: ntp
-reaggregation_enabled: true
 
 description: |
   This receiver periodically retrieves the clock offset from a NTP server.
@@ -24,7 +23,7 @@ metrics:
   ntp.offset:
     description: Time difference between local and NTP server clocks
     enabled: true
-    stability: development
+    stability: beta
     gauge:
       value_type: int
     unit: "ns"

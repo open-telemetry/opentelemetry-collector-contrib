@@ -18,6 +18,10 @@ data:
         detectors: [oraclecloud]
         timeout: 2s
         override: false
+        oraclecloud:
+          resource_attributes:
+            cloud.resource_id:
+              enabled: true
     receivers:
       hostmetrics:
         collection_interval: 1s

@@ -19,5 +19,13 @@ properties:
     type: array
     items:
       $ref: device_config
+  scrapers:
+    description: Map of scrapers to be run, keyed by scraper type.
+    type: object
+    properties:
+      interfaces:
+        $ref: ./internal/scraper/interfacesscraper.config
+      system:
+        $ref: ./internal/scraper/systemscraper.config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

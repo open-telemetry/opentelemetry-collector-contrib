@@ -15,16 +15,21 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+var (
+	errFlatLogsGateDisabled     = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlattenDataGateDisabled  = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlattenDataAndFlattenLog = errors.New("'flatten_data' and 'flatten.log' cannot both be set, use only 'flatten.log'")
+)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -32,23 +37,36 @@ type Config struct {
 	// Valid values are `ignore` and `propagate`.
 	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
-	// The default value is `ignore`, which can be changed back to `propagate` by disabling the `processor.transform.defaultErrorModeIgnore` feature gate.
+	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
-	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
-	MetricStatements  []common.ContextStatements `mapstructure:"metric_statements"`
-	LogStatements     []common.ContextStatements `mapstructure:"log_statements"`
+	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
+	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
+	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
+	// ProfileStatements configures the OTTL statements executed against profile data.
+	//
+	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
+	Flatten FlattenConfig `mapstructure:"flatten"`
+	// Deprecated: [v0.164.0] use flatten.log instead.
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
 
 	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	exemplarFunctions  map[string]ottl.Factory[*ottlexemplar.TransformContext]
 	logFunctions       map[string]ottl.Factory[*ottllog.TransformContext]
 	metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
 	spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
 	profileFunctions   map[string]ottl.Factory[*ottlprofile.TransformContext]
+}
+
+// FlattenConfig configures which OTTL contexts the data is flattened to before the statements run.
+type FlattenConfig struct {
+	// Log gives each log record a distinct copy of its resource and scope.
+	// Requires the transform.flatten.logs feature gate.
+	Log bool `mapstructure:"log"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -99,6 +117,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		statementsConfigs := make([]any, 0, len(values))
 		var basicStatements []any
 		for _, value := range values {
+			if value == nil {
+				return fmt.Errorf("invalid %s item: empty statement list items are not supported", fieldName)
+			}
 			// Array of strings means it's a basic configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
 				basicStatements = append(basicStatements, value)
@@ -151,7 +172,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(c.metricFunctions), common.WithDataPointParser(c.dataPointFunctions))
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(c.metricFunctions), common.WithDataPointParser(c.dataPointFunctions), common.WithExemplarParser(c.exemplarFunctions))
 		if err != nil {
 			return err
 		}
@@ -189,8 +210,16 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.FlattenData && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
+	if c.Flatten.Log && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
 		errors = multierr.Append(errors, errFlatLogsGateDisabled)
+	}
+
+	if c.FlattenData && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
+		errors = multierr.Append(errors, errFlattenDataGateDisabled)
+	}
+
+	if c.FlattenData && c.Flatten.Log {
+		errors = multierr.Append(errors, errFlattenDataAndFlattenLog)
 	}
 
 	return errors

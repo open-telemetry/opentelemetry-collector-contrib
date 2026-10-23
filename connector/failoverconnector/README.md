@@ -5,7 +5,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Ffailover%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Ffailover) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Ffailover%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Ffailover) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_failover)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_failover&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@akats7](https://www.github.com/akats7), [@fatsheep9146](https://www.github.com/fatsheep9146) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@akats7](https://www.github.com/akats7), [@khushijain21](https://www.github.com/khushijain21) |
+| Emeritus      | [@fatsheep9146](https://www.github.com/fatsheep9146) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -34,8 +35,16 @@ The following settings are available:
 
 - `priority_levels (required)`: list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level.
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
-- `retry_gap (optional)`: * **Deprecated** * the amount of time between trying two separate priority levels in a single retry_interval timeframe. Default value is 30 seconds. (See Example below for further explanation)
-- `max_retries (optional)`: **Deprecated** * the maximum retries per level. Default value is 10. Set to 0 to allow unlimited retries.
+- `sending_queue (optional)`: queues and batches data in the connector before it is routed to a priority level. Supports the common [`sending_queue` settings][exporterhelper] and is enabled by default.
+  We recommend configuring the queue here instead of on the exporters in the priority pipelines, and disabling `sending_queue` on those exporters.
+  Moving the queue to the connector avoids data being stuck in the queue of an unhealthy exporter, where it cannot be failed over to another priority level.
+- `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
+    - `error`: 
+       - `contains`: ["network failure", "connection refused"] (required list of non-empty, case-insensitive substrings)
+
+  Only errors whose message contains any configured string trigger failover. Non-matching errors are returned
+  to the upstream caller without failing over, and they do not mark the pipeline level unhealthy during
+  retry sampling either. When `condition` is omitted, all errors trigger failover.
 
 The connector intakes a list of `priority_levels` each of which can contain multiple pipelines.
 If any pipeline at a stable level fails, the level is considered unhealthy and the connector will move down one priority level and route all data to the new level (assuming it is stable).
@@ -76,3 +85,4 @@ service:
 [Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[exporterhelper]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md

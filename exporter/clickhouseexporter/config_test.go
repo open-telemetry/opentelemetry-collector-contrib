@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
@@ -51,15 +51,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				collectorVersion: "unknown",
-				Endpoint:         defaultEndpoint,
-				Database:         "otel",
-				Username:         "foo",
-				Password:         "bar",
-				TTL:              72 * time.Hour,
-				LogsTableName:    "otel_logs",
-				TracesTableName:  "otel_traces",
-				CreateSchema:     true,
+				collectorVersion:  "unknown",
+				Endpoint:          defaultEndpoint,
+				Database:          "otel",
+				Username:          "foo",
+				Password:          "bar",
+				TTL:               72 * time.Hour,
+				LogsTableName:     "otel_logs",
+				TracesTableName:   "otel_traces",
+				ProfilesTableName: "otel_profiles",
+				CreateSchema:      true,
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 5 * time.Second,
 				},
@@ -109,6 +110,27 @@ func TestLoadConfig(t *testing.T) {
 		expected: jsonCfg,
 	})
 
+	batchCfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.QueueSettings = configoptional.Some(func() exporterhelper.QueueBatchConfig {
+			queue := exporterhelper.NewDefaultQueueConfig()
+			batch := queue.Batch.GetOrInsertDefault()
+			batch.FlushTimeout = 5 * time.Second
+			batch.Sizer = exporterhelper.RequestSizerTypeItems
+			batch.MinSize = 5000
+			batch.MaxSize = 10000
+			return queue
+		}())
+	})
+
+	tests = append(tests, struct {
+		id       component.ID
+		expected component.Config
+	}{
+		id:       component.NewIDWithName(metadata.Type, "batch"),
+		expected: batchCfg,
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
@@ -118,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -592,7 +614,7 @@ func TestShouldCreateSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
-			assert.NoError(t, xconfmap.Validate(tt))
+			assert.NoError(t, confmap.Validate(tt))
 			assert.Equal(t, tt.expected, tt.input.shouldCreateSchema())
 		})
 	}
@@ -634,8 +656,50 @@ func TestTableEngineConfigParsing(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).tableEngineString())
+		})
+	}
+}
+
+func TestDatabaseEngineConfigParsing(t *testing.T) {
+	t.Parallel()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected string
+	}{
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-empty"),
+			expected: "",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-name-only"),
+			expected: "ENGINE = Replicated",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-full"),
+			expected: "ENGINE = Replicated('/clickhouse/databases/otel', '{shard}', '{replica}')",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-params-only"),
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).databaseEngineString())
 		})
 	}
 }
@@ -675,8 +739,67 @@ func TestClusterString(t *testing.T) {
 			cfg.(*Config).Endpoint = defaultEndpoint
 			cfg.(*Config).ClusterName = tt.input
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
+		})
+	}
+}
+
+func TestTableClusterString(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		database       string
+		clusterName    string
+		databaseEngine string
+		expected       string
+	}{
+		{
+			name:     "no cluster",
+			database: "otel",
+			expected: "",
+		},
+		{
+			name:        "cluster",
+			database:    "otel",
+			clusterName: "my_cluster",
+			expected:    "ON CLUSTER `my_cluster`",
+		},
+		{
+			name:           "cluster with atomic database",
+			database:       "otel",
+			clusterName:    "my_cluster",
+			databaseEngine: "Atomic",
+			expected:       "ON CLUSTER `my_cluster`",
+		},
+		{
+			name:           "cluster with replicated database",
+			database:       "otel",
+			clusterName:    "my_cluster",
+			databaseEngine: "Replicated",
+			expected:       "",
+		},
+		{
+			name:           "cluster with replicated engine on default database",
+			database:       "default",
+			clusterName:    "my_cluster",
+			databaseEngine: "Replicated",
+			expected:       "ON CLUSTER `my_cluster`",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = defaultEndpoint
+			cfg.Database = tt.database
+			cfg.ClusterName = tt.clusterName
+			cfg.DatabaseEngine.Name = tt.databaseEngine
+
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg.tableClusterString())
+			assert.Equal(t, tt.clusterName != "", cfg.clusterString() != "")
 		})
 	}
 }

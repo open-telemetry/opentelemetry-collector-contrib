@@ -2,12 +2,12 @@
 # Elasticsearch Exporter
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [development]: metrics, profiles   |
-|               | [beta]: traces, logs   |
+| Stability     | [development]: profiles   |
+|               | [beta]: traces, logs, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@JaredTan95](https://www.github.com/JaredTan95), [@carsonip](https://www.github.com/carsonip), [@lahsivjar](https://www.github.com/lahsivjar) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@JaredTan95](https://www.github.com/JaredTan95), [@blakerouse](https://www.github.com/blakerouse), [@carsonip](https://www.github.com/carsonip), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -76,7 +76,12 @@ service:
 The Elasticsearch exporter supports common [HTTP Configuration Settings][confighttp]. Gzip compression is enabled by default. To disable compression, set `compression` to `none`. Default Compression Level is set to 1 (gzip.BestSpeed).
 As a consequence of supporting [confighttp], the Elasticsearch exporter also supports common [TLS Configuration Settings][configtls].
 
+```yaml
+timeout: 90s
+```
+
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
+Note that this is per request and is independent between HTTP request retries.
 All other defaults are as defined by [confighttp].
 
 ### Queuing and batching
@@ -107,8 +112,8 @@ Documents are statically or dynamically routed to the target index / data stream
 2. "Dynamic - Index attribute mode": Route to index name specified in `elasticsearch.index` attribute (precedence: log record / data point / span attribute > scope attribute > resource attribute) if the attribute exists. [^3]
 3. "Dynamic - Data stream routing mode": Route to data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans, and is static. [^3]
-In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
-The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
+  In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
+  The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
 
@@ -284,6 +289,13 @@ This mode may be used for compatibility with existing dashboards that work with 
 | Metrics   | :white_check_mark: |
 | Profiles  | :no_entry_sign:    |
 
+In ECS mapping mode, span events are extracted as separate ECS-formatted log documents following
+the APM data stream convention:
+
+- Span events named `exception` with `exception.type` or `exception.message` present are routed
+  to `logs-apm.error-<namespace>`.
+- All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
+
 #### Bodymap mapping mode
 
 > [!WARNING]
@@ -343,17 +355,22 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
-- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
-  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if `sending_queue::batch::flush_timeout` is not explicitly defined. See the `sending_queue::batch::flush_timeout` for more details.
+The deprecated `num_workers` and `flush` settings have been removed. Existing configurations should use these replacements:
+
+| Removed setting | Replacement |
+| --- | --- |
+| `num_workers` | `sending_queue::num_consumers` |
+| `flush::interval` | `sending_queue::batch::flush_timeout` |
+| `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
+
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_status` (default=[429]): Status codes that trigger request level retries. To avoid duplicates, it defaults to `[429]`.
+  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
@@ -391,6 +408,24 @@ Settings related to node discovery are:
 
 Node discovery can be disabled by setting `discover.interval` to 0.
 
+### Elasticsearch version detection
+
+On startup, the Elasticsearch Exporter queries each configured endpoint for its
+version and build flavor and logs the result. This information is used to
+automatically enable features supported by the connected Elasticsearch version,
+so no per-feature configuration is required.
+
+- `version_detection`:
+  - `enabled` (default `true`): If enabled, the exporter queries Elasticsearch
+    at startup to detect its version and build flavor. When disabled, the
+    exporter does not query Elasticsearch and assumes only the baseline
+    capability set is available.
+
+The query is best-effort: if it fails (for example, when Elasticsearch is
+temporarily unreachable), startup is not blocked. Version detection cannot be
+performed when the endpoint is resolved at request time (for example, when a
+routing middleware rewrites the destination per request).
+
 ### Telemetry settings
 
 The Elasticsearch Exporter's own telemetry settings for testing and debugging purposes.
@@ -402,6 +437,7 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input_rate_limit` (default="1s"): Rate limiting of logs emitted by `log_failed_docs_input` config, e.g. "1s" means roughly 1 log line per second. A zero or negative value disables rate limiting.
+  - `include_destination_index` (default=false): Adds the `db.collection.name` attribute to the `otelcol.elasticsearch.docs.processed` metric, based on the `_index` of each document in the bulk response. For backing and failure store indices, the `.ds-`/`.fs-` prefix and the date and generation suffix are stripped, leaving the data stream name. WARNING: it multiplies the number of metric series by the number of destination indices, which can be high with dynamic index names.
 
 ### Metadata keys
 
@@ -429,6 +465,29 @@ The metric types supported are:
 - Exponential histogram (Delta temporality only)
 - Summary
 
+### Histogram storage
+
+In OTel mapping mode, OTLP exponential histograms are stored in Elasticsearch's
+native [`exponential_histogram`](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/exponential-histogram)
+field when connected to Elasticsearch 9.4.0 or later. This preserves the
+exponential bucket layout (scale, zero bucket, positive/negative buckets, sum,
+min, max) losslessly.
+
+This is enabled automatically via [version detection](#elasticsearch-version-detection): when
+version detection is disabled (`version_detection.enabled: false`) or the
+connected Elasticsearch is older than 9.4.0, exponential histograms fall back to
+a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
+`histogram` field.
+
+Explicit-bounds histograms are converted to exponential histograms
+when the Elasticsearch version is 9.4.0 or later. This can be disabled via `version_detection.enabled: false`, which stores
+explicit-bounds histograms as `histogram` field.
+
+Per-data-point mapping hints still apply and take precedence: `histogram:raw`
+stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
+stores a `{sum, value_count}` summary. The native `exponential_histogram` field
+is only used in OTel mapping mode.
+
 ### Metrics dynamic templates
 
 For metrics, the exporter sends **per-document `dynamic_templates`** with each bulk index action so that Elasticsearch can apply the correct mapping to metric fields. It uses the [bulk API `dynamic_templates` parameter](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk):
@@ -439,7 +498,7 @@ The index template must define dynamic templates whose names match the values se
 
 | Mapping mode | Field path in document | Template names sent | Notes |
 | ------------ | ---------------------- | -------------------- | ----- |
-| **OTel**     | `metrics.<metric name>` | `histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.4.0 or later. |
 | **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
@@ -477,6 +536,40 @@ exporters:
 > For the Elasticsearch Exporter to be able to export Profiles data, Universal Profiling needs to be installed in the database.
 > See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
 > You will need to use the Elasticsearch endpoint, with an [Elasticsearch API key](https://www.elastic.co/guide/en/kibana/current/api-keys.html).
+
+### OTel profiling datastreams
+
+In `otel` mapping mode, profiling signals are ingested into OTel-native Elasticsearch datastreams.
+Each profiling signal type is written to a dedicated backing index:
+
+| Signal type    | Index pattern                                 |
+| -------------- | --------------------------------------------- |
+| Stack traces   | `profiling-stacktraces.otel-default`          |
+| Stack frames   | `profiling-stackframes.otel-default`          |
+| Executables    | `profiling-executables.otel-default`          |
+| Trace events   | `profiling-events-all.otel-default`           |
+| Downsampled trace events | `profiling-events-5powNN.otel-default` (`NN` from `01` to `11`) |
+| Host metadata  | `profiling-hosts.otel-default`                |
+
+> [!NOTE]
+> Symbolization (resolving unsymbolized stack frames to human-readable function names and file locations)
+> is not yet supported in OTel profiling datastream mode.
+
+> [!WARNING]
+> The `.otel-default` profiling datastream index templates are only available in **Elasticsearch 9.6.0 and later**.
+> If you send profiles with the default OTel mapping mode to an older cluster, documents will be rejected
+> with `index_not_found_exception` (HTTP 404) and profiling data will be lost.
+>
+> To continue sending profiles to Elasticsearch < 9.6.0, restrict the exporter to ECS mode:
+>
+> ```yaml
+> mapping:
+>   allowed_modes: [ecs]
+> ```
+>
+> This is a **breaking change** for existing OTel-mode profiling users (profiles are still in tech preview):
+> the backing indices are different from the ECS-schema indices used by prior versions,
+> and existing profiling data in the old indices is not migrated automatically.
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings

@@ -4,7 +4,6 @@
 The Log DeDuplication Processor is used to deduplicate logs by detecting identical logs over a range of time and
 emitting a single log with the count of logs that were deduplicated.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
@@ -39,6 +38,8 @@ emitting a single log with the count of logs that were deduplicated.
 | include_fields                | []string | `[]`        | Fields to include in duplication matching. Fields can be from the log `body` or `attributes`.  Nested fields must be `.` delimited. If a field contains a `.` it can be escaped by using a `\`.  This option is **mutually exclusive** with `exclude_fields`. See [example config](#example-config-with-deduplication-key).
 | timezone            | string   | `UTC`       | The timezone of the `first_observed_timestamp` and `last_observed_timestamp` timestamps on the emitted aggregated log. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`.                                                                                                                               |
 | exclude_fields      | []string | `[]`        | Fields to exclude from duplication matching. Fields can be excluded from the log `body` or `attributes`. These fields will not be present in the emitted aggregated log. Nested fields must be `.` delimited. This option is `mutually exclusive` with `include_fields`. If a field contains a `.` it can be escaped by using a `\` see [example config](#example-config-with-excluded-fields).<br><br>**Note**: The entire `body` cannot be excluded. If the body is a map then fields within it can be excluded. |
+| metadata_keys       | []string | `[]`        | A list of client metadata keys (e.g. gRPC/HTTP request headers such as `x-scope-orgid`) used to partition log aggregation. Logs arriving with different values for these keys are aggregated independently and exported with a context that preserves the original metadata, allowing downstream extensions (e.g. `headers_setter`) to route them correctly. Entries are case-insensitive and duplicates are rejected. When empty (default), all logs share a single aggregation bucket. |
+| metadata_cardinality_limit | uint32 | `0` | Maximum number of distinct metadata combinations that can be tracked simultaneously. `0` means no limit (a warning is logged at startup when `metadata_keys` is set with no limit, since memory growth is unbounded). When the limit is reached, new combinations are rejected with a permanent error. |
 
 [OTTL]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.109.0/pkg/ottl#readme
 [converters]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.109.0/pkg/ottl/ottlfuncs/README.md#converters

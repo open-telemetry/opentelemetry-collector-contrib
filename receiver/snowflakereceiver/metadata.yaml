@@ -12,8 +12,6 @@ status:
   codeowners:
     active: [dmitryax, shalper2]
 
-reaggregation_enabled: true
-
 # every meter will have these attributes
 resource_attributes:
   snowflake.account.name:

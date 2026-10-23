@@ -4,7 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -30,10 +30,27 @@ var selfTelemetryScopeNames = map[string]bool{
 
 const (
 	maxDataStreamBytes          = 100
+	maxIndexBytes               = 255
 	disallowedNamespaceRunes    = "\\/*?\"<>| ,#:"
 	disallowedDatasetRunes      = "-\\/*?\"<>| ,#:"
+	disallowedIndexRunes        = "\\/*?\"<>| ,#:"
 	encodingFormatAttributeName = "encoding.format"
 )
+
+// isAllowedDataStreamType reports whether dsType is a valid data_stream.type
+// value that users may set via attributes when using the 'bodymap' mapping mode.
+func isAllowedDataStreamType(dsType string) bool {
+	switch dsType {
+	case defaultDataStreamTypeLogs,
+		defaultDataStreamTypeMetrics,
+		defaultDataStreamTypeTraces,
+		defaultDataStreamTypeProfiles,
+		defaultDataStreamTypeSynthetics:
+		return true
+	default:
+		return false
+	}
+}
 
 // Sanitize the datastream fields (dataset, namespace) to apply restrictions
 // as outlined in https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html
@@ -52,6 +69,30 @@ func sanitizeDataStreamField(field, disallowed, appendSuffix string) string {
 	field += appendSuffix
 
 	return field
+}
+
+// Sanitize the index name to apply restrictions
+// as outlined in Elasticsearch index naming rules.
+// https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-create#operation-indices-create-index
+func sanitizeIndexName(index string) string {
+	index = strings.Map(func(r rune) rune {
+		if strings.ContainsRune(disallowedIndexRunes, r) {
+			return '_'
+		}
+		return unicode.ToLower(r)
+	}, index)
+
+	if len(index) > maxIndexBytes {
+		index = index[:maxIndexBytes]
+	}
+
+	index = strings.TrimLeft(index, "-_+")
+
+	if index == "." || index == ".." {
+		return ""
+	}
+
+	return index
 }
 
 // documentRouter is an interface for routing records to the appropriate
@@ -175,7 +216,11 @@ func routeRecord(
 	if esIndex, esIndexExists := getFromAttributes(elasticsearch.IndexAttributeName, "", recordAttr, scopeAttr, resourceAttr); esIndexExists {
 		// Advanced users can route documents by setting IndexAttributeName in a processor earlier in the pipeline.
 		// If `data_stream.*` needs to be set in the document, users should use `data_stream.*` attributes.
-		return elasticsearch.Index{Index: esIndex}, nil
+		sanitized := sanitizeIndexName(esIndex)
+		if sanitized == "" {
+			return elasticsearch.Index{}, fmt.Errorf("invalid index name: %q", esIndex)
+		}
+		return elasticsearch.Index{Index: sanitized}, nil
 	}
 
 	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
@@ -185,8 +230,8 @@ func routeRecord(
 	// if mapping mode is bodymap, allow overriding data_stream.type
 	if mode == MappingBodyMap {
 		dsType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
-		if dsType != "logs" && dsType != "metrics" {
-			return elasticsearch.Index{}, errors.New("data_stream.type cannot be other than logs or metrics")
+		if !isAllowedDataStreamType(dsType) {
+			return elasticsearch.Index{}, fmt.Errorf("data_stream.type %q is not allowed for 'bodymap' mapping mode", dsType)
 		}
 	}
 

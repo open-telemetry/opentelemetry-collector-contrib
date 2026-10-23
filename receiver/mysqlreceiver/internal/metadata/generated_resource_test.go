@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestResourceBuilder(t *testing.T) {
@@ -13,27 +15,290 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetDbSystemName("db.system.name-val")
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
+			dbSystemNameAttrVal, ok := res.Attributes().Get("db.system.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "db.system.name-val", dbSystemNameAttrVal.Str())
+			}
+			dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
+			}
 			mysqlInstanceEndpointAttrVal, ok := res.Attributes().Get("mysql.instance.endpoint")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "mysql.instance.endpoint-val", mysqlInstanceEndpointAttrVal.Str())
 			}
+			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+			}
+			serverPortAttrVal, ok := res.Attributes().Get("server.port")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, 11, serverPortAttrVal.Int())
+			}
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
+			}
+			serviceNameAttrVal, ok := res.Attributes().Get("service.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
+			}
+			serviceNamespaceAttrVal, ok := res.Attributes().Get("service.namespace")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.namespace-val", serviceNamespaceAttrVal.Str())
+			}
 		})
+	}
+}
+
+func TestResourceBuilderOverrideValue(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, confmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemName("db.system.name-val")
+	rb.SetDbSystemVersion("db.system.version-val")
+	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.name")
+		assert.True(t, ok, "db.system.name should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("mysql.instance.endpoint")
+		assert.True(t, ok, "mysql.instance.endpoint should be present")
+		if ok {
+			assert.Equal(t, "override-mysql.instance.endpoint", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.address")
+		assert.True(t, ok, "server.address should be present")
+		if ok {
+			assert.Equal(t, "override-server.address", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.port")
+		assert.True(t, ok, "server.port should be present")
+		if ok {
+			assert.EqualValues(t, 123, val.Int())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.instance.id")
+		assert.True(t, ok, "service.instance.id should be present")
+		if ok {
+			assert.Equal(t, "override-service.instance.id", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.name")
+		assert.True(t, ok, "service.name should be present")
+		if ok {
+			assert.Equal(t, "override-service.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.namespace")
+		assert.True(t, ok, "service.namespace should be present")
+		if ok {
+			assert.Equal(t, "override-service.namespace", val.Str())
+		}
+	}
+}
+
+// TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
+func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	require.NoError(t, confmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	{
+		val, ok := res.Attributes().Get("db.system.name")
+		assert.True(t, ok, "db.system.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("db.system.version")
+		assert.True(t, ok, "db.system.version should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-db.system.version", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("mysql.instance.endpoint")
+		assert.True(t, ok, "mysql.instance.endpoint should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-mysql.instance.endpoint", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.address")
+		assert.True(t, ok, "server.address should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-server.address", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("server.port")
+		assert.True(t, ok, "server.port should be present even without calling Set")
+		if ok {
+			assert.EqualValues(t, 123, val.Int())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.instance.id")
+		assert.True(t, ok, "service.instance.id should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.instance.id", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.name")
+		assert.True(t, ok, "service.name should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("service.namespace")
+		assert.True(t, ok, "service.namespace should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "override-service.namespace", val.Str())
+		}
+	}
+}
+
+// TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
+func TestResourceBuilderOverrideDisabled(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "override_set")
+	cfg.DbSystemName.Enabled = false
+	cfg.DbSystemVersion.Enabled = false
+	cfg.MysqlInstanceEndpoint.Enabled = false
+	cfg.ServerAddress.Enabled = false
+	cfg.ServerPort.Enabled = false
+	cfg.ServiceInstanceID.Enabled = false
+	cfg.ServiceName.Enabled = false
+	cfg.ServiceNamespace.Enabled = false
+	require.NoError(t, confmap.Validate(cfg))
+	rb := NewResourceBuilder(cfg)
+
+	res := rb.Emit()
+	assert.Equal(t, 0, res.Attributes().Len(), "disabled attributes with override should not be emitted")
+}
+
+// TestResourceBuilderNoOverride has no override_value set, Validate should still succeed.
+func TestResourceBuilderNoOverride(t *testing.T) {
+	cfg := loadResourceAttributesConfig(t, "all_set")
+	require.NoError(t, confmap.Validate(cfg))
+	assert.Nil(t, cfg.DbSystemName.OverrideValue, "OverrideValue should be nil for db.system.name")
+	assert.Nil(t, cfg.DbSystemVersion.OverrideValue, "OverrideValue should be nil for db.system.version")
+	assert.Nil(t, cfg.MysqlInstanceEndpoint.OverrideValue, "OverrideValue should be nil for mysql.instance.endpoint")
+	assert.Nil(t, cfg.ServerAddress.OverrideValue, "OverrideValue should be nil for server.address")
+	assert.Nil(t, cfg.ServerPort.OverrideValue, "OverrideValue should be nil for server.port")
+	assert.Nil(t, cfg.ServiceInstanceID.OverrideValue, "OverrideValue should be nil for service.instance.id")
+	assert.Nil(t, cfg.ServiceName.OverrideValue, "OverrideValue should be nil for service.name")
+	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
+	rb := NewResourceBuilder(cfg)
+	rb.SetDbSystemName("db.system.name-val")
+	rb.SetDbSystemVersion("db.system.version-val")
+	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+	rb.SetServerAddress("server.address-val")
+	rb.SetServerPort(11)
+	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
+	rb.SetServiceNamespace("service.namespace-val")
+
+	res := rb.Emit()
+	assert.Equal(t, 8, res.Attributes().Len())
+	dbSystemNameAttrVal, ok := res.Attributes().Get("db.system.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.name-val", dbSystemNameAttrVal.Str())
+	}
+	dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "db.system.version-val", dbSystemVersionAttrVal.Str())
+	}
+	mysqlInstanceEndpointAttrVal, ok := res.Attributes().Get("mysql.instance.endpoint")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "mysql.instance.endpoint-val", mysqlInstanceEndpointAttrVal.Str())
+	}
+	serverAddressAttrVal, ok := res.Attributes().Get("server.address")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
+	}
+	serverPortAttrVal, ok := res.Attributes().Get("server.port")
+	assert.True(t, ok)
+	if ok {
+		assert.EqualValues(t, 11, serverPortAttrVal.Int())
+	}
+	serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
+	}
+	serviceNameAttrVal, ok := res.Attributes().Get("service.name")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
+	}
+	serviceNamespaceAttrVal, ok := res.Attributes().Get("service.namespace")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "service.namespace-val", serviceNamespaceAttrVal.Str())
 	}
 }

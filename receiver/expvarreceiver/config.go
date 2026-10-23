@@ -16,15 +16,15 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	confighttp.ClientConfig        `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	ControllerConfig     scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig         confighttp.ClientConfig        `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
-	u, err := url.Parse(c.Endpoint)
+	u, err := url.Parse(c.ClientConfig.Endpoint)
 	if err != nil {
 		return fmt.Errorf("endpoint is not a valid URL: %w", err)
 	}

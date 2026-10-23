@@ -127,13 +127,12 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		recv.client = client
 		return recv, nil
 	}
-	serverConfig := confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Endpoint:  cfg.Endpoint,
-			Transport: "tcp",
-		},
-		ReadHeaderTimeout: 20 * time.Second,
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  cfg.Endpoint,
+		Transport: "tcp",
 	}
+	serverConfig.ReadHeaderTimeout = 20 * time.Second
 	if cfg.TLS != nil {
 		serverConfig.TLS = configoptional.Some(*cfg.TLS)
 	}

@@ -1,0 +1,109 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: rabbitmq.exchange.name
+          value:
+            stringValue: ""
+        - key: rabbitmq.exchange.type
+          value:
+            stringValue: direct
+        - key: rabbitmq.vhost.name
+          value:
+            stringValue: /
+    scopeMetrics:
+      - metrics:
+          - description: The total number of messages published into an exchange from channels.
+            name: rabbitmq.exchange.messages.published_in
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{messages}'
+          - description: The total number of messages published out of an exchange to bound queues.
+            name: rabbitmq.exchange.messages.published_out
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{messages}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: rabbitmq.exchange.name
+          value:
+            stringValue: amq.topic
+        - key: rabbitmq.exchange.type
+          value:
+            stringValue: topic
+        - key: rabbitmq.vhost.name
+          value:
+            stringValue: /
+    scopeMetrics:
+      - metrics:
+          - description: The total number of messages published into an exchange from channels.
+            name: rabbitmq.exchange.messages.published_in
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "800"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{messages}'
+          - description: The total number of messages published out of an exchange to bound queues.
+            name: rabbitmq.exchange.messages.published_out
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "795"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{messages}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: rabbitmq.exchange.name
+          value:
+            stringValue: test.direct
+        - key: rabbitmq.exchange.type
+          value:
+            stringValue: direct
+        - key: rabbitmq.vhost.name
+          value:
+            stringValue: /
+    scopeMetrics:
+      - metrics:
+          - description: The total number of messages published into an exchange from channels.
+            name: rabbitmq.exchange.messages.published_in
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1500"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{messages}'
+          - description: The total number of messages published out of an exchange to bound queues.
+            name: rabbitmq.exchange.messages.published_out
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1480"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{messages}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
+          version: latest

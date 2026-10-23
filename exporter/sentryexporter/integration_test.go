@@ -116,7 +116,7 @@ func TestIntegration_OTLPRetryAfter429(t *testing.T) {
 	err = state.pushTraceData(t.Context(), zap.NewNop(), td)
 	require.Error(t, err)
 
-	recs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/1/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
@@ -178,12 +178,15 @@ func TestIntegration_ProjectAutoCreateAndSend(t *testing.T) {
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
-		return len(ts.recorded(http.MethodGet, "/api/0/projects/org/newproj/keys/")) >= 2
+		state.projectMapMu.RLock()
+		defer state.projectMapMu.RUnlock()
+		_, ok := state.projectToEndpoint["newproj"]
+		return ok
 	}, 3*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
@@ -239,7 +242,7 @@ func TestIntegration_ForbiddenWithProjectIDRejectedEvictsCacheAndRetries(t *test
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/1/integration/otlp/v1/traces/")
 	require.Len(t, recs, 2)
 }
 
@@ -290,8 +293,8 @@ func TestIntegration_ExistingProjectSend(t *testing.T) {
 	ld := logsForProject("proj")
 	require.NoError(t, state.pushLogData(t.Context(), zap.NewNop(), ld))
 
-	traceRecs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/traces/")
-	logRecs := ts.recorded(http.MethodPost, "/api/1/integration/otlp/v1/logs/")
+	traceRecs := ts.recordedPosts("/api/1/integration/otlp/v1/traces/")
+	logRecs := ts.recordedPosts("/api/1/integration/otlp/v1/logs/")
 	require.Len(t, traceRecs, 1)
 	require.Len(t, logRecs, 1)
 }
@@ -360,12 +363,15 @@ func TestIntegration_ProjectCreateRateLimitedThenSucceeds(t *testing.T) {
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
-		return len(ts.recorded(http.MethodPost, "/api/0/teams/org/team/projects/")) >= 2
+		state.projectMapMu.RLock()
+		defer state.projectMapMu.RUnlock()
+		_, ok := state.projectToEndpoint["newproj"]
+		return ok
 	}, 2*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
 }
 
@@ -433,11 +439,49 @@ func TestIntegration_EndpointFetchRateLimitedThenSucceeds(t *testing.T) {
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
 	require.Eventually(t, func() bool {
-		return len(ts.recorded(http.MethodGet, "/api/0/projects/org/newproj/keys/")) >= 2
+		state.projectMapMu.RLock()
+		defer state.projectMapMu.RUnlock()
+		_, ok := state.projectToEndpoint["newproj"]
+		return ok
 	}, 2*time.Second, 50*time.Millisecond)
 
 	require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
 
-	recs := ts.recorded(http.MethodPost, "/api/2/integration/otlp/v1/traces/")
+	recs := ts.recordedPosts("/api/2/integration/otlp/v1/traces/")
 	require.Len(t, recs, 1)
+}
+
+var traversalServiceNames = []string{
+	"../../organizations/victim/members",
+	"../../organizations/victim/members/?",
+	"../../organizations/victim/members/#",
+	"%2e%2e%2f%2e%2e%2forganizations%2fvictim%2fmembers",
+	"/organizations/victim/members",
+}
+
+func TestIntegration_TraversalServiceNamesIssueNoRequests(t *testing.T) {
+	t.Parallel()
+
+	for _, payload := range traversalServiceNames {
+		t.Run(payload, func(t *testing.T) {
+			t.Parallel()
+			ts := newTestServer()
+			t.Cleanup(ts.close)
+
+			cfg := newTestServerConfig(ts)
+			set := exportertest.NewNopSettings(metadata.Type)
+			state, err := newEndpointState(cfg, set)
+			require.NoError(t, err)
+
+			td := tracesForProject(payload)
+			require.NoError(t, state.pushTraceData(t.Context(), zap.NewNop(), td))
+
+			ld := logsForProject(payload)
+			require.NoError(t, state.pushLogData(t.Context(), zap.NewNop(), ld))
+
+			require.Eventually(t, func() bool {
+				return ts.recordedCount() == 0
+			}, 2*time.Second, 50*time.Millisecond)
+		})
+	}
 }

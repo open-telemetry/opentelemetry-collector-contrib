@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -30,6 +31,24 @@ type fakeJournaldCmd struct {
 	exitError  *exec.ExitError
 	stdErr     string
 }
+
+// fakeJournaldCmdCustom is like fakeJournaldCmd but with a configurable stdout response.
+type fakeJournaldCmdCustom struct {
+	response string
+	stdErr   string
+}
+
+func (*fakeJournaldCmdCustom) Start() error { return nil }
+
+func (f *fakeJournaldCmdCustom) StdoutPipe() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader([]byte(f.response))), nil
+}
+
+func (f *fakeJournaldCmdCustom) StderrPipe() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader([]byte(f.stdErr))), nil
+}
+
+func (*fakeJournaldCmdCustom) Wait() error { return nil }
 
 func (f *fakeJournaldCmd) Start() error {
 	return f.startError
@@ -57,29 +76,7 @@ func (f *fakeJournaldCmd) Wait() error {
 
 func TestInputJournald(t *testing.T) {
 	cfg := NewConfigWithID("my_journald_input")
-	cfg.OutputIDs = []string{"output"}
-
-	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(set)
-	require.NoError(t, err)
-
-	mockOutput := testutil.NewMockOperator("output")
-	received := make(chan *entry.Entry)
-	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		received <- args.Get(1).(*entry.Entry)
-	}).Return(nil)
-
-	err = op.SetOutputs([]operator.Operator{mockOutput})
-	require.NoError(t, err)
-
-	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
-		return &fakeJournaldCmd{}
-	}
-
-	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, op.Stop())
-	}()
+	received := startTestReceiver(t, cfg)
 
 	expected := map[string]any{
 		"_BOOT_ID":                   "c4fa36de06824d21835c05ff80c54468",
@@ -123,6 +120,71 @@ func TestInputJournald(t *testing.T) {
 		require.Equal(t, expected, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
+	}
+}
+
+// startTestReceiver starts [Input] for testing, it is connected to a mock
+// output, all published entries are sent to the returned, unbuffered, channel.
+// It uses the [fakeJournaldCmd] to mock the Journald process.
+// t.Fatal is used on errors and the operator is correctly shutdown at the end
+// of the test.
+func startTestReceiver(t *testing.T, cfg *Config) <-chan *entry.Entry {
+	cfg.OutputIDs = []string{"output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.NewMockOperator("output")
+	outChan := make(chan *entry.Entry)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		outChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = op.SetOutputs([]operator.Operator{mockOutput})
+	require.NoError(t, err)
+
+	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmd{}
+	}
+
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+
+	t.Cleanup(func() {
+		require.NoError(t, op.Stop())
+	})
+
+	return outChan
+}
+
+func TestInputJournaldIncludeOriginal(t *testing.T) {
+	testCases := map[string]bool{
+		"Must include original record":     true,
+		"Must not include original record": false,
+	}
+
+	for name, include := range testCases {
+		t.Run(name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			cfg.IncludeLogRecordOriginal = include
+
+			outChan := startTestReceiver(t, cfg)
+
+			select {
+			case e := <-outChan:
+				if include {
+					require.Contains(t, e.Attributes, "log.record.original", "must contain")
+					original, ok := e.Attributes["log.record.original"].(string)
+					require.True(t, ok, "'log.record.original' must be a string")
+					require.NotContains(t, original, "\n", "'log.record.original' must not contain the new line character")
+				} else {
+					require.NotContains(t, e.Attributes, "log.record.original", "must contain")
+				}
+
+			case <-time.After(time.Second):
+				require.FailNow(t, "Timed out waiting for entry to be read")
+			}
+		})
 	}
 }
 
@@ -389,6 +451,236 @@ func TestConfigValidation(t *testing.T) {
 			}
 			require.NoError(t, err)
 		})
+	}
+}
+
+func TestInputJournaldOtelAttributes(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+	cfg.ConvertToSemanticConventions = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.NewMockOperator("output")
+	received := make(chan *entry.Entry)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		received <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = op.SetOutputs([]operator.Operator{mockOutput})
+	require.NoError(t, err)
+
+	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmd{}
+	}
+
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
+
+	select {
+	case e := <-received:
+		// Body must be the MESSAGE string
+		assert.Equal(t, "run-docker-netns-4f76d707d45f.mount: Succeeded.", e.Body)
+
+		// Severity must be mapped from PRIORITY "6" → Info
+		assert.Equal(t, entry.Info, e.Severity)
+		assert.Equal(t, "info", e.SeverityText)
+
+		// OTel log attributes from known journald fields
+		require.NotNil(t, e.Attributes)
+		assert.Equal(t, "unit_log_success", e.Attributes["code.function.name"])
+		assert.Equal(t, "../src/core/unit.c", e.Attributes["code.file.path"])
+		assert.Equal(t, int64(5487), e.Attributes["code.line.number"])
+		assert.Equal(t, int64(3), e.Attributes["syslog.facility.code"])
+		assert.Equal(t, "systemd", e.Attributes["syslog.identifier"])
+
+		// OTel resource attributes from trusted journald fields
+		require.NotNil(t, e.Resource)
+		assert.Equal(t, "myhostname", e.Resource["host.name"])
+		assert.Equal(t, int64(13894), e.Resource["process.pid"])
+		assert.Equal(t, "systemd", e.Resource["process.executable.name"])
+		assert.Equal(t, "/usr/lib/systemd/systemd", e.Resource["process.executable.path"])
+		assert.Equal(t, "/lib/systemd/systemd --user", e.Resource["process.command_line"])
+
+		// Unmapped fields stay in attributes with original names
+		assert.Equal(t, "c4fa36de06824d21835c05ff80c54468", e.Attributes["journald._BOOT_ID"])
+		assert.Equal(t, "journal", e.Attributes["journald._TRANSPORT"])
+		assert.Equal(t, "systemd", e.Attributes["journald._COMM"])
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be read")
+	}
+}
+
+// newTestOperator creates a started journald Input operator wired to a channel.
+// The caller is responsible for calling Stop() after the test.
+func newTestOperator(t *testing.T, cfg *Config, mkCmd func(context.Context, []byte) cmd) (chan *entry.Entry, func()) {
+	t.Helper()
+	cfg.OutputIDs = []string{"output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	received := make(chan *entry.Entry, 1)
+	mockOutput := testutil.NewMockOperator("output")
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		received <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	require.NoError(t, op.SetOutputs([]operator.Operator{mockOutput}))
+	op.(*Input).newCmd = mkCmd
+
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+	stop := func() { require.NoError(t, op.Stop()) }
+	return received, stop
+}
+
+func TestInputJournaldOtelAttributes_EmergencyPriority(t *testing.T) {
+	// PRIORITY "0" (emergency) should map to Fatal severity.
+	const line = `{"MESSAGE":"system crash","PRIORITY":"0","_HOSTNAME":"box","_PID":"1","_COMM":"init","_EXE":"/sbin/init","_CMDLINE":"/sbin/init","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.ConvertToSemanticConventions = true
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmdCustom{response: line}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		assert.Equal(t, "system crash", e.Body)
+		assert.Equal(t, entry.Fatal, e.Severity)
+		assert.Equal(t, "emerg", e.SeverityText)
+		assert.Equal(t, "box", e.Resource["host.name"])
+		assert.Equal(t, int64(1), e.Resource["process.pid"])
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
+	}
+}
+
+func TestInputJournaldOtelAttributes_DefaultDisabled(t *testing.T) {
+	// Without convert_to_semantic_conventions the full body map must be preserved.
+	cfg := NewConfigWithID("my_journald_input")
+	// ConvertToSemanticConventions defaults to false — do not set it.
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmd{}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		// Body is a map, not a string
+		bodyMap, ok := e.Body.(map[string]any)
+		require.True(t, ok, "expected body to be map[string]any when convert_to_semantic_conventions is false")
+		assert.Equal(t, "run-docker-netns-4f76d707d45f.mount: Succeeded.", bodyMap["MESSAGE"])
+		assert.Equal(t, "6", bodyMap["PRIORITY"])
+		// No OTel attributes populated from journald fields
+		assert.Empty(t, e.Resource)
+		assert.Equal(t, entry.Default, e.Severity)
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
+	}
+}
+
+func TestInputJournaldOtelAttributes_ConvertMessageBytesWithOtelAttrs(t *testing.T) {
+	// MESSAGE as a byte array should still be converted to a string body when
+	// both convert_message_bytes and convert_to_semantic_conventions are true.
+	const line = `{"MESSAGE":[116,101,115,116],"PRIORITY":"6","_HOSTNAME":"myhost","_PID":"99","_COMM":"app","_EXE":"/usr/bin/app","_CMDLINE":"/usr/bin/app","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.ConvertMessageBytes = true
+	cfg.ConvertToSemanticConventions = true
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmdCustom{response: line}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		// [116,101,115,116] decodes to "test"
+		assert.Equal(t, "test", e.Body)
+		assert.Equal(t, entry.Info, e.Severity)
+		assert.Equal(t, "myhost", e.Resource["host.name"])
+		assert.Equal(t, int64(99), e.Resource["process.pid"])
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
+	}
+}
+
+func TestInputJournaldOtelAttributes_UnmappedFields(t *testing.T) {
+	// ERRNO and TID have no semantic convention mapping, so they keep their
+	// original journald names under the "journald." prefix.
+	const line = `{"MESSAGE":"io error","PRIORITY":"3","ERRNO":"5","TID":"777","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.ConvertToSemanticConventions = true
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmdCustom{response: line}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		assert.Equal(t, "5", e.Attributes["journald.ERRNO"])
+		assert.Equal(t, "777", e.Attributes["journald.TID"])
+		assert.Equal(t, entry.Error, e.Severity)
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
+	}
+}
+
+func TestInputJournaldOtelAttributes_ExprAttributeOnRawBody(t *testing.T) {
+	// A user-configured `attributes` EXPR referencing `body` must still see the raw
+	// journal record, even though ConvertToSemanticConventions replaces entry.Body
+	// with the MESSAGE field afterwards.
+	const line = `{"MESSAGE":"boom","PRIORITY":"3","SYSLOG_IDENTIFIER":"myapp","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.ConvertToSemanticConventions = true
+	cfg.Attributes = map[string]helper.ExprStringConfig{
+		"custom.identifier": "EXPR(body.SYSLOG_IDENTIFIER)",
+	}
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmdCustom{response: line}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		assert.Equal(t, "boom", e.Body)
+		assert.Equal(t, "myapp", e.Attributes["custom.identifier"])
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
+	}
+}
+
+func TestInputJournaldOtelAttributes_TimestampPreserved(t *testing.T) {
+	// Timestamp must be set correctly regardless of convert_to_semantic_conventions.
+	const line = `{"MESSAGE":"hello","PRIORITY":"6","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.ConvertToSemanticConventions = true
+
+	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
+		return &fakeJournaldCmdCustom{response: line}
+	})
+	defer stop()
+
+	select {
+	case e := <-received:
+		// __REALTIME_TIMESTAMP 1587047866229555 µs → 1587047866229555000 ns
+		assert.Equal(t, int64(1587047866229555000), e.Timestamp.UnixNano())
+	case <-time.After(time.Second):
+		require.FailNow(t, "timed out waiting for entry")
 	}
 }
 

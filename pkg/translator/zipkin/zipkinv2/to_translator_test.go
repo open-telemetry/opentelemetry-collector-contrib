@@ -53,6 +53,80 @@ func TestZTagsToInternalAttrsRemoteServiceNameMigration(t *testing.T) {
 	}
 }
 
+func TestZTagsToInternalAttrsHTTPConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", false))
+			})
+
+			zspan := &zipkinmodel.SpanModel{Tags: map[string]string{"http.status_code": "500"}}
+			dest := pcommon.NewMap()
+			err = zTagsToInternalAttrs(zspan, zspan.Tags, dest, false)
+			assert.NoError(t, err)
+
+			_, hasV0 := dest.Get("http.status_code")
+			_, hasV1 := dest.Get("http.response.status_code")
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
+	}
+}
+
+func TestZTagsToInternalAttrsCloudResourceConventionsMigration(t *testing.T) {
+	cases := []struct {
+		name       string
+		emitV1     bool
+		dontEmitV0 bool
+		expectsV0  bool
+		expectsV1  bool
+	}{
+		{name: "v0 only", emitV1: false, dontEmitV0: false, expectsV0: true, expectsV1: false},
+		{name: "double publish", emitV1: true, dontEmitV0: false, expectsV0: true, expectsV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true, expectsV0: false, expectsV1: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", tc.emitV1)
+			assert.NoError(t, err)
+			err = featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", tc.dontEmitV0)
+			assert.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", false))
+			})
+
+			zspan := &zipkinmodel.SpanModel{Tags: map[string]string{"faas.id": "my-faas"}}
+			// FaaS ID is a resource attribute so we use populateResourceFromZipkinSpan
+			dest := pcommon.NewResource()
+			populateResourceFromZipkinSpan(zspan.Tags, "local-service", dest)
+
+			_, hasV0 := dest.Attributes().Get("faas.id")
+			_, hasV1 := dest.Attributes().Get("cloud.resource_id")
+			assert.Equal(t, tc.expectsV0, hasV0)
+			assert.Equal(t, tc.expectsV1, hasV1)
+		})
+	}
+}
+
 func TestZipkinSpansToInternalTraces(t *testing.T) {
 	tests := []struct {
 		name string
@@ -89,7 +163,8 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				{
 					SpanContext: zipkinmodel.SpanContext{
 						TraceID: convertTraceID(
-							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
 						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
 					},
 					Name: "min.data",
@@ -105,7 +180,8 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				td := ptrace.NewTraces()
 				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				span.SetTraceID(
-					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
 				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 				span.SetName("min.data")
 				span.Status().SetCode(ptrace.StatusCodeOk)
@@ -120,7 +196,8 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				{
 					SpanContext: zipkinmodel.SpanContext{
 						TraceID: convertTraceID(
-							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
 						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
 					},
 					Name: "min.data",
@@ -136,7 +213,8 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				td := ptrace.NewTraces()
 				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				span.SetTraceID(
-					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
 				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 				span.SetName("min.data")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -151,7 +229,8 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				{
 					SpanContext: zipkinmodel.SpanContext{
 						TraceID: convertTraceID(
-							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
 						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
 					},
 					Name: "min.data",
@@ -167,7 +246,8 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				td := ptrace.NewTraces()
 				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				span.SetTraceID(
-					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
 				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 				span.SetName("min.data")
 				span.Status().SetCode(ptrace.StatusCodeError)
@@ -194,7 +274,8 @@ func generateSpanNoEndpoints() []*zipkinmodel.SpanModel {
 	spans[0] = &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID: convertTraceID(
-				[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+				[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+			),
 			ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
 		},
 		Name:           "MinimalData",
@@ -229,7 +310,8 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() ptrace.Traces {
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+	)
 	span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 	span.SetName("MinimalData")
 	span.SetKind(ptrace.SpanKindClient)
@@ -250,7 +332,8 @@ func generateTraceSingleSpanErrorStatus() ptrace.Traces {
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+	)
 	span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 	span.SetName("MinimalData")
 	span.SetKind(ptrace.SpanKindClient)
@@ -266,7 +349,8 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 	spans[0] = &zipkinmodel.SpanModel{
 		SpanContext: zipkinmodel.SpanContext{
 			TraceID: convertTraceID(
-				[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+				[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+			),
 			ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
 		},
 		Name:           "NoTimestamps",

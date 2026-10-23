@@ -103,6 +103,38 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			},
 		},
 		{
+			// On Linux, /proc/stat's user column already includes guest time and nice
+			// already includes guest_nice (kernel increments both CPUTIME_USER and
+			// CPUTIME_GUEST in account_guest_time). Adding Guest/GuestNice again in
+			// totalCPU inflates the denominator and makes all utilizations too low.
+			name: "guest time is not double-counted in total",
+			now:  1640097435776827000,
+			previousCPUTimes: []cpu.TimesStat{
+				{
+					CPU:   "cpu0",
+					User:  10.0, // already includes Guest on Linux
+					Idle:  5.0,
+					Guest: 5.0, // already counted in User
+				},
+			},
+			cpuTimes: []cpu.TimesStat{
+				{
+					CPU:   "cpu0",
+					User:  20.0, // already includes Guest on Linux
+					Idle:  10.0,
+					Guest: 10.0, // already counted in User
+				},
+			},
+			expectedUtilizations: []CPUUtilization{
+				{
+					CPU: "cpu0",
+					// elapsed = (20+10)-(10+5) = 15, not 20 (which would double-count guest)
+					User: 10.0 / 15.0, // ~0.66667
+					Idle: 5.0 / 15.0,  // ~0.33333
+				},
+			},
+		},
+		{
 			name: "multiple cpus unordered",
 			now:  1640097435776827000,
 			previousCPUTimes: []cpu.TimesStat{

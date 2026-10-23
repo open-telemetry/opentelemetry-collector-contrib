@@ -69,7 +69,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				false,
-				"c", 0, nil, nil, 0),
+				"c", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "integer counter with empty tags",
@@ -78,7 +79,22 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				false,
-				"c", 0, nil, nil, 0),
+				"c", 0, nil, nil, 0,
+			),
+		},
+		{
+			name:  "counter with empty tag entries before valid tags",
+			input: "test.metric:42|c|#,,layer:gateway,component:scoring",
+			wantMetric: testStatsDMetric(
+				"test.metric",
+				42,
+				false,
+				"c",
+				0,
+				[]string{"layer", "component"},
+				[]string{"gateway", "scoring"},
+				0,
+			),
 		},
 		{
 			name:  "integer counter",
@@ -87,7 +103,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				false,
-				"c", 0, nil, nil, 0),
+				"c", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "invalid  counter metric value",
@@ -176,7 +193,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				false,
-				"g", 0, nil, nil, 0),
+				"g", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "int gauge",
@@ -185,7 +203,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				false,
-				"g", 0, nil, nil, 0),
+				"g", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "invalid gauge metric value",
@@ -241,7 +260,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				true,
-				"g", 0, nil, nil, 0),
+				"g", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "double gauge minus",
@@ -250,7 +270,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				-42,
 				true,
-				"g", 0, nil, nil, 0),
+				"g", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "int gauge plus",
@@ -259,7 +280,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				true,
-				"g", 0, nil, nil, 0),
+				"g", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "int gauge minus",
@@ -268,7 +290,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				-42,
 				true,
-				"g", 0, nil, nil, 0),
+				"g", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "invalid histogram metric value",
@@ -287,7 +310,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				-42,
 				true,
-				"ms", 0, nil, nil, 0),
+				"ms", 0, nil, nil, 0,
+			),
 		},
 		{
 			name:  "int histogram",
@@ -296,7 +320,8 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"test.metric",
 				42,
 				false,
-				"h", 0, nil, nil, 0),
+				"h", 0, nil, nil, 0,
+			),
 		},
 	}
 
@@ -706,7 +731,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				testDescription("statsdTestMetric2", "g",
 					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(
 					testStatsDMetric(
@@ -718,7 +744,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
 		},
@@ -748,7 +775,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				testDescription("statsdTestMetric2", "g",
 					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(
 					testStatsDMetric(
@@ -760,7 +788,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
 		},
@@ -790,7 +819,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				testDescription("statsdTestMetric2", "g",
 					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(
 					testStatsDMetric(
@@ -802,7 +832,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
 		},
@@ -827,7 +858,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(
 					testStatsDMetric(
@@ -839,7 +871,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 			},
 		},
 		{
@@ -867,7 +900,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{
 				testDescription("statsdTestMetric1", "c",
@@ -881,7 +915,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(
 					testStatsDMetric(
@@ -893,7 +928,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 			},
 		},
 		{
@@ -922,7 +958,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				testDescription("statsdTestMetric1", "g",
 					[]string{"mykey"}, []string{"myvalue1"}): buildGaugeMetric(
 					testStatsDMetric(
@@ -934,7 +971,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue1"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{
 				testDescription("statsdTestMetric1", "c",
@@ -948,7 +986,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(
 					testStatsDMetric(
@@ -960,7 +999,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 			},
 		},
 		{
@@ -986,7 +1026,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				buildGaugeMetric(
 					testStatsDMetric(
 						"statsdTestMetric1",
@@ -997,7 +1038,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				buildGaugeMetric(
 					testStatsDMetric(
 						"statsdTestMetric1",
@@ -1008,7 +1050,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				buildGaugeMetric(
 					testStatsDMetric(
 						"statsdTestMetric1",
@@ -1019,7 +1062,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				buildGaugeMetric(
 					testStatsDMetric(
 						"statsdTestMetric1",
@@ -1030,7 +1074,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				buildGaugeMetric(
 					testStatsDMetric(
 						"statsdTestMetric1",
@@ -1041,7 +1086,8 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 		},
 	}
@@ -1112,7 +1158,8 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 							[]string{"mykey", "metric_type"},
 							[]string{"myvalue", "gauge"},
 							0,
-						), time.Unix(711, 0)),
+						), time.Unix(711, 0),
+					),
 					testDescription("statsdTestMetric2", "g",
 						[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(
 						testStatsDMetric(
@@ -1124,7 +1171,8 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 							[]string{"mykey", "metric_type"},
 							[]string{"myvalue", "gauge"},
 							0,
-						), time.Unix(711, 0)),
+						), time.Unix(711, 0),
+					),
 				},
 				{
 					testDescription("statsdTestMetric1", "g",
@@ -1138,7 +1186,8 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 							[]string{"mykey", "metric_type"},
 							[]string{"myvalue", "gauge"},
 							0,
-						), time.Unix(711, 0)),
+						), time.Unix(711, 0),
+					),
 					testDescription("statsdTestMetric2", "g",
 						[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(
 						testStatsDMetric(
@@ -1150,7 +1199,8 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 							[]string{"mykey", "metric_type"},
 							[]string{"myvalue", "gauge"},
 							0,
-						), time.Unix(711, 0)),
+						), time.Unix(711, 0),
+					),
 				},
 			},
 		},
@@ -1208,7 +1258,8 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 						[]string{"mykey", "metric_type"},
 						[]string{"myvalue", "gauge"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 				testDescription("statsdTestMetric2", "g",
 					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(
 					testStatsDMetric(
@@ -1220,7 +1271,8 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 						[]string{"mykey", "metric_type"},
 						[]string{"myvalue", "gauge"},
 						0,
-					), time.Unix(711, 0)),
+					), time.Unix(711, 0),
+				),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
 		},
@@ -1246,7 +1298,8 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 						[]string{"mykey", "metric_type"},
 						[]string{"myvalue", "counter"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(
 					testStatsDMetric(
@@ -1258,7 +1311,8 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 						[]string{"mykey", "metric_type"},
 						[]string{"myvalue", "counter"},
 						0,
-					), false, protocol.CounterTypeInt),
+					), false, protocol.CounterTypeInt,
+				),
 			},
 		},
 	}
@@ -1316,7 +1370,8 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), true, protocol.CounterTypeInt),
+					), true, protocol.CounterTypeInt,
+				),
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(
 					testStatsDMetric(
@@ -1328,7 +1383,8 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 						[]string{"mykey"},
 						[]string{"myvalue"},
 						0,
-					), true, protocol.CounterTypeInt),
+					), true, protocol.CounterTypeInt,
+				),
 			},
 		},
 	}
@@ -1564,7 +1620,8 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 			[]string{"mykey", "metric_type"},
 			[]string{"myvalue", "gauge"},
 			0,
-		), time.Unix(711, 0))
+		), time.Unix(711, 0),
+	)
 	instrument.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"})] = buildGaugeMetric(
 		testStatsDMetric(
@@ -1576,7 +1633,8 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 			[]string{"mykey2", "metric_type"},
 			[]string{"myvalue2", "gauge"},
 			0,
-		), time.Unix(711, 0))
+		), time.Unix(711, 0),
+	)
 	instrument.counters[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = buildCounterMetric(
 		testStatsDMetric(
@@ -1588,7 +1646,8 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 			[]string{"mykey", "metric_type"},
 			[]string{"myvalue", "gauge"},
 			0,
-		), false, protocol.CounterTypeInt)
+		), false, protocol.CounterTypeInt,
+	)
 	instrument.timersAndDistributions = append(instrument.timersAndDistributions, buildGaugeMetric(
 		testStatsDMetric(
 			"statsdTestMetric1",
@@ -1599,7 +1658,8 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 			[]string{"mykey2", "metric_type"},
 			[]string{"myvalue2", "gauge"},
 			0,
-		), time.Unix(711, 0)))
+		), time.Unix(711, 0),
+	))
 	instrument.summaries = map[statsDMetricDescription]summaryMetric{
 		testDescription("statsdTestMetric1", "h",
 			[]string{"mykey"}, []string{"myvalue"}): {
@@ -2153,6 +2213,60 @@ func TestStatsDParser_HistogramExplicitBucket(t *testing.T) {
 			assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, tc.ExpectedOutput, p.GetMetrics()[0].Metrics))
 		})
 	}
+}
+
+func TestStatsDParser_TimingExplicitBucket(t *testing.T) {
+	originalTimeNowFunc := timeNowFunc
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+	t.Cleanup(func() {
+		timeNowFunc = originalTimeNowFunc
+	})
+
+	expected := pmetric.NewMetrics()
+	ilm := expected.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("timer.duration")
+	histogram := m.SetEmptyHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := histogram.DataPoints().AppendEmpty()
+	dp.SetCount(4)
+	dp.SetSum(555.5)
+	dp.SetMin(0.5)
+	dp.SetMax(500)
+	dp.BucketCounts().FromRaw([]uint64{1, 1, 1, 1})
+	dp.ExplicitBounds().FromRaw([]float64{1, 10, 100})
+
+	p := &StatsDParser{}
+	require.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{
+		{
+			StatsdType:   "timing",
+			ObserverType: "histogram",
+			Histogram: protocol.HistogramConfig{
+				ExplicitBuckets: []protocol.ExplicitBucket{
+					{
+						MatcherPattern: "timer.*",
+						Buckets:        []float64{1, 10, 100},
+					},
+				},
+				MaxSize: 10,
+			},
+		},
+	}, protocol.CounterTypeInt))
+
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	for _, input := range []string{
+		"timer.duration:0.5|ms",
+		"timer.duration:5|ms",
+		"timer.duration:50|ms",
+		"timer.duration:500|ms",
+	} {
+		require.NoError(t, p.Aggregate(input, addr))
+	}
+
+	var nodiffs []*metricstestutil.MetricDiff
+	assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, expected, p.GetMetrics()[0].Metrics))
 }
 
 func TestStatsDParser_IPOnlyAggregation(t *testing.T) {

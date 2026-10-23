@@ -1,10 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_azure_aks
+
 package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
@@ -17,23 +20,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr = "aks"
-
-	// Environment variable that is set when running on Kubernetes
-	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
-)
+// Environment variable that is set when running on Kubernetes
+const kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 
 type Detector struct {
-	provider           azure.Provider
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider              azure.Provider
+	resourceAttributes    metadata.ResourceAttributesConfig
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new AKS detector
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes, failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -46,6 +45,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	m, err := d.provider.Metadata(ctx)
 	// If we can't get a response from the metadata endpoint, we're not running in Azure
 	if err != nil {
+		if d.failOnMissingMetadata {
+			return res, "", fmt.Errorf("aks metadata unavailable: %w", err)
+		}
 		return res, "", nil
 	}
 

@@ -16,9 +16,9 @@ metrics:
 
 Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| s | Sum | Double | Cumulative | true | Beta | [container.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/system/container-metrics.md#metric-containercputime) |
 
 ### container.cpu.usage
 
@@ -400,7 +400,7 @@ Container cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.container.cpu_limit_utilization
 
@@ -438,7 +438,7 @@ Container memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.container.memory_limit_utilization
 
@@ -455,6 +455,38 @@ Container memory utilization as a ratio of the container's requests
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### k8s.node.filesystem.inode.count
+
+Total number of inodes in the node's root filesystem.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.filesystem.inode.free
+
+Number of free inodes in the node's root filesystem.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.pid.limit
+
+Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit (the lower of kernel.pid_max and kernel.threads-max).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.pid.usage
+
+Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
 
 ### k8s.node.system_container.cpu.time
 
@@ -502,7 +534,7 @@ Pod cpu utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.pod.cpu_limit_utilization
 
@@ -526,7 +558,7 @@ Pod memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Double | Development |
+| 1 | Gauge | Double | Deprecated |
 
 ### k8s.pod.memory_limit_utilization
 
@@ -562,21 +594,31 @@ The number of used bytes in the pod volume.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | false | - |
-| container.id | Container id used to identify container | Any Str | true | - |
-| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | false | - |
-| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | false | - |
-| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | false | - |
-| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | false | - |
-| k8s.container.name | Container name used by container runtime | Any Str | true | - |
-| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - |
-| k8s.node.name | The name of the Node | Any Str | true | - |
-| k8s.node.system_container.name | The name of the system container | Any Str | true | - |
-| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - |
-| k8s.pod.name | The name of the Pod | Any Str | true | - |
-| k8s.pod.uid | The UID of the Pod | Any Str | true | - |
-| k8s.volume.name | The name of the Volume | Any Str | true | - |
-| k8s.volume.type | The type of the Volume | Any Str | true | - |
-| partition | [DEPRECATED] The partition in the Volume | Any Str | false | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | false | - | - |
+| container.id | Container id used to identify container | Any Str | true | - | - |
+| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | false | - | - |
+| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | false | - | - |
+| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | false | - | - |
+| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | false | - | - |
+| k8s.container.name | Container name used by container runtime | Any Str | true | - | - |
+| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - | - |
+| k8s.node.name | The name of the Node | Any Str | true | - | - |
+| k8s.node.system_container.name | The name of the system container | Any Str | true | - | - |
+| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - | - |
+| k8s.pod.name | The name of the Pod | Any Str | true | - | - |
+| k8s.pod.uid | The UID of the Pod | Any Str | true | - | - |
+| k8s.volume.name | The name of the Volume | Any Str | true | - | - |
+| k8s.volume.type | The type of the Volume | Any Str | true | - | - |
+| partition | [DEPRECATED] The partition in the Volume | Any Str | false | - | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.kubeletstats.cpuUsageScrapeBased` | beta | When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

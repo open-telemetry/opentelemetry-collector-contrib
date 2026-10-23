@@ -228,7 +228,7 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			if eachMap.Histogram.ExplicitBuckets != nil {
-				p.histogramEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
+				p.timerEvents.explicitBucketConfigs = explicitBucketInitializeRegex(eachMap.Histogram)
 			}
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
@@ -525,7 +525,10 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 
 			var tagSet string
 			tagSet, tagsStr, _ = strings.Cut(tagsStr, ",")
-			for ; tagSet != ""; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
+			for ; tagSet != "" || tagsStr != ""; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
+				if tagSet == "" {
+					continue
+				}
 				k, v, _ := strings.Cut(tagSet, ":")
 				if k == "" {
 					return result, fmt.Errorf("invalid tag format: %q", tagSet)

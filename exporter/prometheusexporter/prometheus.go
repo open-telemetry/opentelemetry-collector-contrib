@@ -32,8 +32,8 @@ type prometheusExporter struct {
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusExporter, error) {
-	addr := strings.TrimSpace(config.NetAddr.Endpoint)
-	if strings.TrimSpace(config.NetAddr.Endpoint) == "" {
+	addr := strings.TrimSpace(config.ServerConfig.NetAddr.Endpoint)
+	if strings.TrimSpace(config.ServerConfig.NetAddr.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
 
@@ -66,14 +66,14 @@ func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusEx
 }
 
 func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) error {
-	ln, err := pe.config.ToListener(ctx)
+	ln, err := pe.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", pe.handler)
-	srv, err := pe.config.ToServer(ctx, host.GetExtensions(), pe.settings, mux)
+	srv, err := pe.config.ServerConfig.ToServer(ctx, host.GetExtensions(), pe.settings, mux)
 	if err != nil {
 		lnerr := ln.Close()
 		return errors.Join(err, lnerr)

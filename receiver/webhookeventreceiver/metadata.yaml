@@ -1,5 +1,6 @@
 display_name: Webhook Event Receiver
-type: webhookevent
+type: webhook_event
+deprecated_type: webhookevent
 
 description: |
   The Webhook Event Receiver is a push based event collector component meant to act as a generally available receiver

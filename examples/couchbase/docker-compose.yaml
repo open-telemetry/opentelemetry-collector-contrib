@@ -1,7 +1,7 @@
 version: "3"
 services:
   couchbase:
-    image: couchbase:enterprise-7.1.0
+    image: couchbase:enterprise-7.1.0@sha256:6ea8fc49bde775bb4999f59add71dc7e016c7ec6c00a286729c395a1948c0356
     ports:
       - 8091:8091
     deploy:
@@ -10,14 +10,14 @@ services:
           cpus: "0.50"
           memory: 1512M
   opentelemetry-collector-contrib:
-    image: otel/opentelemetry-collector-contrib:0.153.0
+    image: otel/opentelemetry-collector-contrib:0.163.1@sha256:1175b03003053962012f5a231f5567f66a3e8fdb960c7835c0e48f7aa1555806
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yml
     depends_on:
       - couchbase
   prometheus:
-    image: prom/prometheus:v3.11.3
+    image: prom/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
     volumes:
       - ./prometheus-config.yaml:/etc/prometheus/prometheus.yml
     ports:

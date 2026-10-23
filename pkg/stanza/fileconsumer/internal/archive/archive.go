@@ -82,7 +82,7 @@ func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint)
 		// Update the mostRecentIndex
 		nextIndex = (nextIndex - 1 + a.pollsToArchive) % a.pollsToArchive
 
-		data, err := a.readArchive(ctx, nextIndex) // we load one fileset atmost once per poll
+		data, err := a.readArchive(ctx, nextIndex) // we load one fileset at most once per poll
 		if err != nil {
 			a.logger.Error("failed to read archive", zap.Error(err))
 			continue
@@ -93,7 +93,7 @@ func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint)
 				// we've already found a match for this index, continue
 				continue
 			}
-			if md := data.Match(fp, fileset.StartsWith); md != nil {
+			if md := data.MatchStartsWith(fp); md != nil {
 				// update the matched metada for the index
 				matchedMetadata[j] = md
 				archiveModified = true
@@ -103,7 +103,7 @@ func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint)
 		if !archiveModified {
 			continue
 		}
-		// we save one fileset atmost once per poll
+		// we save one fileset at most once per poll
 		if err := a.writeArchive(ctx, nextIndex, data); err != nil {
 			a.logger.Error("failed to write archive", zap.Error(err))
 		}

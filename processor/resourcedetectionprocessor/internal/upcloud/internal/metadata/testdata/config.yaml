@@ -9,16 +9,6 @@ all_set:
       enabled: true
     host.name:
       enabled: true
-reaggregate_set:
-  resource_attributes:
-    cloud.provider:
-      enabled: true
-    cloud.region:
-      enabled: true
-    host.id:
-      enabled: true
-    host.name:
-      enabled: true
 none_set:
   resource_attributes:
     cloud.provider:

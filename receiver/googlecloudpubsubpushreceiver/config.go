@@ -18,7 +18,7 @@ var _ component.Config = (*Config)(nil)
 
 // Config defines configuration for the receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Endpoint identifies the expected encoding of messages
 	// received from Pub/Sub.
@@ -46,7 +46,7 @@ func (c *Config) Validate() error {
 		errs = append(errs, errors.New("encoding must be set"))
 	}
 
-	_, _, err := net.SplitHostPort(c.NetAddr.Endpoint)
+	_, _, err := net.SplitHostPort(c.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("misformatted endpoint: %w", err))
 	}

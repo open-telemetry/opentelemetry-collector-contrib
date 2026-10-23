@@ -92,6 +92,17 @@ tail_sampling:
                   type: string_attribute,
                   string_attribute: { key: key2, values: [ value1, value2 ] }
               },
+              {
+                  name: test-and-policy-3,
+                  type: not,
+                  not: {
+                    not_sub_policy: {
+                      name: test-and-policy-3-not-sub-policy,
+                      type: latency,
+                      latency: { threshold_ms: 1000 }
+                    }
+                  }
+              },
             ]
           }
        },

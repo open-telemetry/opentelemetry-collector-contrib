@@ -157,18 +157,21 @@ func TestResourceProcessor(t *testing.T) {
 			require.NoError(t, res.Attributes().FromRaw(tt.detectedResource))
 			md1.On("Detect").Return(res, tt.detectedError)
 			factory.resourceProviderFactory = internal.NewProviderFactory(
-				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 					return md1, nil
-				}})
+				}},
+			)
 
 			if tt.detectorKeys == nil {
 				tt.detectorKeys = []string{"mock"}
 			}
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Timeout = time.Second
 			cfg := &Config{
 				Override:     tt.override,
 				Detectors:    tt.detectorKeys,
-				ClientConfig: confighttp.ClientConfig{Timeout: time.Second},
+				ClientConfig: clientConfig,
 			}
 
 			// Test trace consumer
@@ -313,15 +316,17 @@ func TestProcessor_RefreshInterval_UpdatesResource(t *testing.T) {
 	// Hook detector into factory.
 	factory.resourceProviderFactory = internal.NewProviderFactory(
 		map[internal.DetectorType]internal.DetectorFactory{
-			"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+			"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 				return md, nil
 			},
 		},
 	)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 500 * time.Millisecond
 	cfg := &Config{
 		Detectors:       []string{"mock"},
-		ClientConfig:    confighttp.ClientConfig{Timeout: 500 * time.Millisecond},
+		ClientConfig:    clientConfig,
 		RefreshInterval: 50 * time.Millisecond, // short to trigger refresh quickly
 	}
 
@@ -426,15 +431,17 @@ func TestProcessor_RefreshInterval_KeepsLastGoodOnFailure(t *testing.T) {
 	// Wire detector into factory.
 	factory.resourceProviderFactory = internal.NewProviderFactory(
 		map[internal.DetectorType]internal.DetectorFactory{
-			"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
+			"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
 				return md, nil
 			},
 		},
 	)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 500 * time.Millisecond
 	cfg := &Config{
 		Detectors:       []string{"mock"},
-		ClientConfig:    confighttp.ClientConfig{Timeout: 500 * time.Millisecond},
+		ClientConfig:    clientConfig,
 		RefreshInterval: 25 * time.Millisecond,
 	}
 
@@ -812,15 +819,15 @@ func TestStartFailsGracefullyOnInvalidHTTPClientConfig(t *testing.T) {
 	oCfg.Detectors = []string{"env"}
 
 	// Configure invalid TLS settings that will cause ToClient() to fail
-	oCfg.ClientConfig = confighttp.ClientConfig{
-		TLS: configtls.ClientConfig{
-			Config: configtls.Config{
-				CAFile:   "/nonexistent/ca.crt",
-				CertFile: "/nonexistent/cert.crt",
-				KeyFile:  "/nonexistent/key.pem",
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "/nonexistent/ca.crt",
+			CertFile: "/nonexistent/cert.crt",
+			KeyFile:  "/nonexistent/key.pem",
 		},
 	}
+	oCfg.ClientConfig = clientConfig
 
 	ctx := t.Context()
 	host := componenttest.NewNopHost()

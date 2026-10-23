@@ -67,7 +67,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KBy
+            unit: kBy
           - description: The memory usage of the node.
             name: nsxt.node.memory.usage
             sum:
@@ -76,7 +76,7 @@ resourceMetrics:
                 - asInt: "89169108"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KBy
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
@@ -148,7 +148,7 @@ resourceMetrics:
                 - asInt: "1716556"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KBy
+            unit: kBy
           - description: The memory usage of the node.
             name: nsxt.node.memory.usage
             sum:
@@ -157,7 +157,7 @@ resourceMetrics:
                 - asInt: "19636300"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KBy
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
@@ -229,7 +229,7 @@ resourceMetrics:
                 - asInt: "234"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KBy
+            unit: kBy
           - description: The memory usage of the node.
             name: nsxt.node.memory.usage
             sum:
@@ -238,7 +238,7 @@ resourceMetrics:
                 - asInt: "143728936"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: KBy
+            unit: kBy
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest

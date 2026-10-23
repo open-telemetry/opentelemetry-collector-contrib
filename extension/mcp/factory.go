@@ -25,13 +25,13 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "localhost:8080",
+		Transport: confignet.TransportTypeTCP,
+	}
 	return &Config{
-		confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Endpoint:  "localhost:8080",
-				Transport: confignet.TransportTypeTCP,
-			},
-		},
+		ServerConfig: serverConfig,
 	}
 }
 

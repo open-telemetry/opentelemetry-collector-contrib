@@ -42,12 +42,15 @@ func Test_scraper_readStats(t *testing.T) {
 	}()
 
 	haProxyCfg := newDefaultConfig().(*Config)
-	haProxyCfg.Endpoint = socketAddr
+	haProxyCfg.ClientConfig.Endpoint = socketAddr
 	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
 	m, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
+	// The assertion file uses attributes/include on the resource attributes to
+	// assert only the stable haproxy.proxy_name and haproxy.service_name keys
+	// while allowing the volatile haproxy.addr key as an extra attribute.
 	expectedFile := filepath.Join("testdata", "scraper", "metrics.assert.yaml")
 	// To regenerate: uncomment, run the test once, re-comment.
 	// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, m))
@@ -79,7 +82,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 	}()
 
 	haProxyCfg := newDefaultConfig().(*Config)
-	haProxyCfg.Endpoint = socketAddr
+	haProxyCfg.ClientConfig.Endpoint = socketAddr
 	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
 	m, err := s.scrape(t.Context())
 	require.NoError(t, err)
@@ -116,7 +119,7 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 	}()
 
 	haProxyCfg := newDefaultConfig().(*Config)
-	haProxyCfg.Endpoint = socketAddr
+	haProxyCfg.ClientConfig.Endpoint = socketAddr
 	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
 	m, err := s.scrape(t.Context())
 	require.NoError(t, err)

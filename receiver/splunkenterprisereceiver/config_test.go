@@ -43,6 +43,26 @@ func TestEndpointCorrectness(t *testing.T) {
 	errScheme = multierr.Append(errScheme, errBadScheme)
 	errScheme = multierr.Append(errScheme, errMissingAuthExtension)
 
+	missingIdxEndpoint := confighttp.NewDefaultClientConfig()
+	missingIdxEndpoint.ForceAttemptHTTP2 = false
+	missingIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	missingSHEndpoint := confighttp.NewDefaultClientConfig()
+	missingSHEndpoint.ForceAttemptHTTP2 = false
+	missingSHEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	missingCMEndpoint := confighttp.NewDefaultClientConfig()
+	missingCMEndpoint.ForceAttemptHTTP2 = false
+	missingCMEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	invalidIdxEndpoint := confighttp.NewDefaultClientConfig()
+	invalidIdxEndpoint.ForceAttemptHTTP2 = false
+	invalidIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	invalidIdxEndpoint.Endpoint = "123.321.12.1:1"
+	badSchemeIdxEndpoint := confighttp.NewDefaultClientConfig()
+	badSchemeIdxEndpoint.ForceAttemptHTTP2 = false
+	badSchemeIdxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	badSchemeIdxEndpoint.Endpoint = "gss://123.124.32.12:90"
+	missingAuthIdxEndpoint := confighttp.NewDefaultClientConfig()
+	missingAuthIdxEndpoint.ForceAttemptHTTP2 = false
+	missingAuthIdxEndpoint.Endpoint = "https://123.123.32.2:2093"
 	tests := []struct {
 		desc     string
 		expected error
@@ -52,44 +72,30 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "missing any endpoint setting",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
-				SHEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
-				CMEndpoint: confighttp.ClientConfig{
-					Auth: configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-				},
+				IdxEndpoint: missingIdxEndpoint,
+				SHEndpoint:  missingSHEndpoint,
+				CMEndpoint:  missingCMEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured invalid endpoint",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-					Endpoint: "123.321.12.1:1",
-				},
+				IdxEndpoint: invalidIdxEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured endpoint has bad scheme",
 			expected: errScheme,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-					Endpoint: "gss://123.124.32.12:90",
-				},
+				IdxEndpoint: badSchemeIdxEndpoint,
 			},
 		},
 		{
 			desc:     "properly configured endpoint missing auth",
 			expected: errMissingAuthExtension,
 			config: &Config{
-				IdxEndpoint: confighttp.ClientConfig{
-					Endpoint: "https://123.123.32.2:2093",
-				},
+				IdxEndpoint: missingAuthIdxEndpoint,
 			},
 		},
 	}
@@ -105,10 +111,10 @@ func TestEndpointCorrectness(t *testing.T) {
 }
 
 func TestCustomSearchConfigValidation(t *testing.T) {
-	validEndpoint := confighttp.ClientConfig{
-		Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
-		Endpoint: "https://localhost:8089",
-	}
+	validEndpoint := confighttp.NewDefaultClientConfig()
+	validEndpoint.ForceAttemptHTTP2 = false
+	validEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: dummyID})
+	validEndpoint.Endpoint = "https://localhost:8089"
 
 	tests := []struct {
 		desc        string

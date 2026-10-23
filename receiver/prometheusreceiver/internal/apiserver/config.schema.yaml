@@ -1,0 +1,10 @@
+$defs:
+  config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      max_connections:
+        type: integer
+      server_config:
+        $ref: go.opentelemetry.io/collector/config/confighttp.server_config

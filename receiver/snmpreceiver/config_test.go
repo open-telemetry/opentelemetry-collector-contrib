@@ -5,14 +5,16 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
@@ -45,6 +47,14 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	}
 	expectedConfigSimple := factory.CreateDefaultConfig().(*Config)
 	expectedConfigSimple.Metrics = metrics
+
+	expectedConfigCustomMaxRepetitions := factory.CreateDefaultConfig().(*Config)
+	expectedConfigCustomMaxRepetitions.MaxRepetitions = 10
+	expectedConfigCustomMaxRepetitions.Metrics = metrics
+
+	expectedConfigMaxRepetitionsTooLarge := factory.CreateDefaultConfig().(*Config)
+	expectedConfigMaxRepetitionsTooLarge.MaxRepetitions = 2147483648
+	expectedConfigMaxRepetitionsTooLarge.Metrics = metrics
 
 	expectedConfigInvalidEndpoint := factory.CreateDefaultConfig().(*Config)
 	expectedConfigInvalidEndpoint.Endpoint = "udp://a:a:a:a:a:a"
@@ -132,6 +142,18 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 	expectedConfigV3NoPrivacyPassword.Metrics = metrics
 
 	testCases := []testCase{
+		{
+			name:        "CustomMaxRepetitions",
+			nameVal:     "custom_max_repetitions",
+			expectedCfg: expectedConfigCustomMaxRepetitions,
+			expectedErr: "",
+		},
+		{
+			name:        "MaxRepetitionsTooLarge",
+			nameVal:     "max_repetitions_too_large",
+			expectedCfg: expectedConfigMaxRepetitionsTooLarge,
+			expectedErr: fmt.Sprintf(errMsgMaxRepetitionsTooLarge, uint64(2147483648), math.MaxInt32),
+		},
 		{
 			name:        "NoEndpointUsesDefault",
 			nameVal:     "no_endpoint",
@@ -256,9 +278,9 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			require.NoError(t, sub.Unmarshal(cfg))
 			if test.expectedErr == "" {
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 			} else {
-				require.ErrorContains(t, xconfmap.Validate(cfg), test.expectedErr)
+				require.ErrorContains(t, confmap.Validate(cfg), test.expectedErr)
 			}
 
 			require.Equal(t, test.expectedCfg, cfg)
@@ -1000,9 +1022,9 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			require.NoError(t, sub.Unmarshal(cfg))
 			if test.expectedErr == "" {
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 			} else {
-				require.ErrorContains(t, xconfmap.Validate(cfg), test.expectedErr)
+				require.ErrorContains(t, confmap.Validate(cfg), test.expectedErr)
 			}
 
 			require.Equal(t, test.expectedCfg, cfg)
@@ -1141,4 +1163,106 @@ func TestValidate(t *testing.T) {
 			assert.ErrorContains(t, err, test.expectedErr)
 		})
 	}
+}
+
+func TestValidateMaxRepetitions(t *testing.T) {
+	factory := NewFactory()
+	baseCfg := func(version string, maxRepetitions uint32) *Config {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.Version = version
+		if strings.EqualFold(version, "v3") {
+			cfg.User = "user"
+			cfg.SecurityLevel = "no_auth_no_priv"
+		}
+		cfg.MaxRepetitions = maxRepetitions
+		cfg.Metrics = map[string]*MetricConfig{
+			"m1": {
+				Unit:  "1",
+				Gauge: &GaugeMetric{ValueType: "int"},
+				ScalarOIDs: []ScalarOID{{
+					OID: "1.0",
+				}},
+			},
+		}
+		return cfg
+	}
+
+	testCases := []struct {
+		name        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			name: "default_value_25_v2c",
+			cfg:  baseCfg("v2c", defaultMaxRepetitions),
+		},
+		{
+			name: "default_value_25_v3",
+			cfg:  baseCfg("v3", defaultMaxRepetitions),
+		},
+		{
+			name: "valid_custom_10_v2c",
+			cfg:  baseCfg("v2c", 10),
+		},
+		{
+			name: "valid_custom_10_v3",
+			cfg:  baseCfg("v3", 10),
+		},
+		{
+			name: "zero_defaults_allowed_v2c",
+			cfg:  baseCfg("v2c", 0),
+		},
+		{
+			name: "zero_defaults_allowed_v3",
+			cfg:  baseCfg("v3", 0),
+		},
+		{
+			name: "immediately_below_maximum",
+			cfg:  baseCfg("v2c", math.MaxInt32-1),
+		},
+		{
+			name: "at_maximum_math_MaxInt32_v2c",
+			cfg:  baseCfg("v2c", math.MaxInt32),
+		},
+		{
+			name: "at_maximum_math_MaxInt32_v3",
+			cfg:  baseCfg("v3", math.MaxInt32),
+		},
+		{
+			name:        "first_invalid_above_maximum_math_MaxInt32_plus_1_v2c",
+			cfg:         baseCfg("v2c", math.MaxInt32+1),
+			expectedErr: fmt.Sprintf(errMsgMaxRepetitionsTooLarge, uint64(math.MaxInt32+1), math.MaxInt32),
+		},
+		{
+			name:        "first_invalid_above_maximum_math_MaxInt32_plus_1_v3",
+			cfg:         baseCfg("v3", math.MaxInt32+1),
+			expectedErr: fmt.Sprintf(errMsgMaxRepetitionsTooLarge, uint64(math.MaxInt32+1), math.MaxInt32),
+		},
+		{
+			name:        "overflow_wrap_max_uint32",
+			cfg:         baseCfg("v2c", math.MaxUint32),
+			expectedErr: fmt.Sprintf(errMsgMaxRepetitionsTooLarge, uint64(math.MaxUint32), math.MaxInt32),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.expectedErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	t.Run("negative_value_rejected_during_unmarshaling", func(t *testing.T) {
+		conf := confmap.NewFromStringMap(map[string]any{
+			"max_repetitions": -1,
+		})
+		cfg := factory.CreateDefaultConfig().(*Config)
+		err := conf.Unmarshal(cfg)
+		require.Error(t, err)
+	})
 }

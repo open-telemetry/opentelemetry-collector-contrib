@@ -24,8 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -262,6 +260,21 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
+		}
+
+		// Emit an NHCB series under the base name; with KeepClassicHistograms also keep the classic series.
+		if settings.ConvertExplicitHistogramsToNHCB {
+			// Create the series only on success, so a conversion error leaves no empty series.
+			if h, convErr := explicitToNHCBHistogram(pt); convErr != nil {
+				errs = multierr.Append(errs, convErr)
+			} else {
+				nativeTS, _ := c.getOrCreateTimeSeries(createLabels(baseName, baseLabels))
+				nativeTS.Histograms = append(nativeTS.Histograms, h)
+				nativeTS.Exemplars = append(nativeTS.Exemplars, getPromExemplars[pmetric.HistogramDataPoint](pt)...)
+			}
+			if !settings.KeepClassicHistograms {
+				continue
+			}
 		}
 
 		// If the sum is unset, it indicates the _sum metric point should be
@@ -540,7 +553,7 @@ func (c *prometheusConverter) getOrCreateTimeSeries(lbls []prompb.Label) (*promp
 }
 
 // addResourceTargetInfo converts the resource to the target info metric.
-func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) error {
+func (c *prometheusConverter) addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp) error {
 	if settings.DisableTargetInfo || timestamp == 0 {
 		return nil
 	}
@@ -568,7 +581,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, settings.DisableScopeInfo, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
@@ -590,7 +603,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		// convert ns to ms
 		Timestamp: convertTimeStamp(timestamp),
 	}
-	converter.addSample(sample, labels)
+	c.addSample(sample, labels)
 	return nil
 }
 

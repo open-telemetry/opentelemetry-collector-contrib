@@ -21,7 +21,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -96,7 +95,7 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.LabelNamer{
 		UTF8Allowed:                 utf8Allowed,
-		PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled(),
+		PreserveMultipleUnderscores: true,
 	}
 }
 
@@ -236,6 +235,9 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)
 	}
+	if !dp.HasSum() {
+		return nil, errors.New("cannot convert exponential to native histogram: sum is not set")
+	}
 	var scaleDown int32
 	if schema > 8 {
 		scaleDown = schema - 8
@@ -256,15 +258,10 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		created = dp.StartTimestamp().AsTime()
 	}
 
-	sumVal := 0.0
-	if dp.HasSum() {
-		sumVal = dp.Sum()
-	}
-
 	m, err := prometheus.NewConstNativeHistogram(
 		desc,
 		dp.Count(),
-		sumVal,
+		dp.Sum(),
 		pos,
 		neg,
 		dp.ZeroCount(),
@@ -660,8 +657,8 @@ func (c *collector) validateMetrics(name, description string, metricType *dto.Me
 		c.metricFamilies.Store(name, metricFamily{
 			lastSeen: now,
 			mf: &dto.MetricFamily{
-				Name: proto.String(name),
-				Help: proto.String(description),
+				Name: new(name),
+				Help: new(description),
 				Type: metricType,
 			},
 		})

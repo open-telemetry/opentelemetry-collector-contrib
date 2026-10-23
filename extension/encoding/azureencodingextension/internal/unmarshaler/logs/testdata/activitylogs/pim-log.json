@@ -1,0 +1,84 @@
+{
+    "records": [
+        {
+            "location": "global",
+            "resultType": "Succeeded",
+            "time": "2026-04-10T21:43:40.2657554Z",
+            "resourceId": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000001/RESOURCEGROUPS/myresourcegroupname/PROVIDERS/MICROSOFT.KEYVAULT/VAULTS/mykeyvaultname",
+            "correlationId": "00000000-0000-0000-0000-000000000002",
+            "operationName": "Remove member from role (PIM activation expired)",
+            "category": "Administrative",
+            "properties": {
+                "SubscriptionID": null,
+                "ResourceGroupName": "mykeyvaultname",
+                "ResourceProviderName": "azurerbac",
+                "ResourceType": "Microsoft.KeyVault/vaults",
+                "TenantID": "00000000-0000-0000-0000-000000000003",
+                "EventName": "RemoveActivatedRole",
+                "EventID": "00000000-0000-0000-0000-000000000004",
+                "ActionType": "Revoke",
+                "OriginRoleAssignmentId": "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/myresourcegroupname/providers/Microsoft.KeyVault/vaults/mykeyvaultname/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000005",
+                "RoleAssignmentRequestId": "00000000-0000-0000-0000-000000000006",
+                "RoleDefinition": "Key Vault Crypto Officer",
+                "RoleDefinitionOriginId": "/subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000007",
+                "CallerInfo": "[{\"CallerIdentityType\":\"UPN\",\"CallerIdentityValue\":\"\"},{\"CallerIdentityType\":\"ObjectID\",\"CallerIdentityValue\":\"00000000-0000-0000-0000-000000000008\"},{\"CallerIdentityType\":\"Username\",\"CallerIdentityValue\":\"AzureADPIM\"},{\"CallerIdentityType\":\"Name\",\"CallerIdentityValue\":\"AzureADPIM\"},{\"CallerIdentityType\":\"ObjectClass\",\"CallerIdentityValue\":\"User\"}]",
+                "SubjectID": "00000000-0000-0000-0000-000000000009",
+                "SubjectName": "User LastName"
+            }
+        },
+        {
+            "location": "global",
+            "resultType": "Succeeded",
+            "time": "2026-04-11T21:23:28.7182817Z",
+            "callerIpAddress": "203.0.113.10",
+            "resourceId": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000001",
+            "correlationId": "00000000-0000-0000-0000-000000000010",
+            "operationName": "Add member to role requested (PIM activation)",
+            "category": "Administrative",
+            "properties": {
+                "SubscriptionID": "00000000-0000-0000-0000-000000000001",
+                "ResourceGroupName": "MyAzureSubscriptionName",
+                "ResourceProviderName": "azurerbac",
+                "ResourceType": "subscription",
+                "TenantID": "00000000-0000-0000-0000-000000000003",
+                "EventName": "CreateRequestRoleActivation",
+                "EventID": "00000000-0000-0000-0000-000000000011",
+                "RoleAssignmentRequestId": "00000000-0000-0000-0000-000000000012",
+                "RoleDefinition": "Storage Blob Data Contributor",
+                "RoleDefinitionOriginId": "/subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000013",
+                "CallerInfo": "[{\"CallerIdentityType\":\"UPN\",\"CallerIdentityValue\":\"user@example.com\"},{\"CallerIdentityType\":\"ObjectID\",\"CallerIdentityValue\":\"00000000-0000-0000-0000-000000000008\"},{\"CallerIdentityType\":\"Username\",\"CallerIdentityValue\":\"User LastName\"},{\"CallerIdentityType\":\"Name\",\"CallerIdentityValue\":\"User LastName\"},{\"CallerIdentityType\":\"ObjectClass\",\"CallerIdentityValue\":\"User\"}]",
+                "Justification": "I need access to complete my task.",
+                "SubjectID": "00000000-0000-0000-0000-000000000009",
+                "SubjectName": "User LastName"
+            }
+        },
+        {
+            "location": "global",
+            "resultType": "Succeeded",
+            "time": "2026-04-11T21:23:30.4212011Z",
+            "callerIpAddress": "203.0.113.10",
+            "resourceId": "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000001",
+            "correlationId": "00000000-0000-0000-0000-000000000010",
+            "operationName": "Add member to role completed (PIM activation)",
+            "category": "Administrative",
+            "properties": {
+                "SubscriptionID": "00000000-0000-0000-0000-000000000001",
+                "ResourceGroupName": "MyAzureSubscriptionName",
+                "ResourceProviderName": "azurerbac",
+                "ResourceType": "subscription",
+                "TenantID": "00000000-0000-0000-0000-000000000003",
+                "EventName": "ActivateRole",
+                "EventID": "00000000-0000-0000-0000-000000000014",
+                "ActionType": "Grant",
+                "OriginRoleAssignmentId": "/subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000015",
+                "RoleAssignmentRequestId": "00000000-0000-0000-0000-000000000012",
+                "RoleDefinition": "Storage Blob Data Contributor",
+                "RoleDefinitionOriginId": "/subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000013",
+                "CallerInfo": "[{\"CallerIdentityType\":\"UPN\",\"CallerIdentityValue\":\"user@example.com\"},{\"CallerIdentityType\":\"ObjectID\",\"CallerIdentityValue\":\"00000000-0000-0000-0000-000000000008\"},{\"CallerIdentityType\":\"Username\",\"CallerIdentityValue\":\"User LastName\"},{\"CallerIdentityType\":\"Name\",\"CallerIdentityValue\":\"User LastName\"},{\"CallerIdentityType\":\"ObjectClass\",\"CallerIdentityValue\":\"User\"}]",
+                "Justification": "I need access to complete my task.",
+                "SubjectID": "00000000-0000-0000-0000-000000000009",
+                "SubjectName": "User LastName"
+            }
+        }
+    ]
+}

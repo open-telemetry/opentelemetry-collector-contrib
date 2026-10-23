@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -40,10 +41,10 @@ func newTracesConnector(
 	}
 
 	r, err := newRouter(
-		cfg.Table,
-		cfg.DefaultPipelines,
+		cfg,
 		tr.Consumer,
-		set.TelemetrySettings)
+		set.TelemetrySettings,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -76,12 +77,26 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 					td.MoveTo(matched)
 				}
 			}
+		case "otelcol":
+			otx := ottlotelcol.NewTransformContext()
+			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
+			otx.Close()
+			if err != nil {
+				errs = errors.Join(errs, err)
+			} else if isMatch {
+				switch route.action {
+				case Copy:
+					td.CopyTo(matched)
+				default:
+					td.MoveTo(matched)
+				}
+			}
 		case "", "resource":
 			switch route.action {
 			case Copy:
 				ptraceutil.CopyResourcesIf(td, matched,
 					func(rs ptrace.ResourceSpans) bool {
-						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+						rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 						defer rtx.Close()
 						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 						// If error during statement evaluation consider it as not a match.
@@ -95,7 +110,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 			default:
 				ptraceutil.MoveResourcesIf(td, matched,
 					func(rs ptrace.ResourceSpans) bool {
-						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+						rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 						defer rtx.Close()
 						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 						// If error during statement evaluation consider it as not a match.
@@ -112,7 +127,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 			case Copy:
 				ptraceutil.CopySpansWithContextIf(td, matched,
 					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
-						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
+						mtx := ottlspan.NewTransformContext(rs, ss, s)
 						defer mtx.Close()
 						_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
 						// If error during statement evaluation consider it as not a match.
@@ -126,7 +141,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 			default:
 				ptraceutil.MoveSpansWithContextIf(td, matched,
 					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
-						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
+						mtx := ottlspan.NewTransformContext(rs, ss, s)
 						defer mtx.Close()
 						_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
 						// If error during statement evaluation consider it as not a match.

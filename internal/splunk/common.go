@@ -25,6 +25,12 @@ const (
 	DefaultAckPath    = "/services/collector/ack"
 )
 
+// BuildHECAuthHeader returns the value of the HTTP Authorization header for
+// Splunk HEC requests using the provided token (format: "Splunk <token>").
+func BuildHECAuthHeader(token string) string {
+	return HECTokenHeader + " " + token
+}
+
 // AccessTokenPassthroughConfig configures passing through access tokens.
 type AccessTokenPassthroughConfig struct {
 	// AccessTokenPassthrough indicates whether to associate datapoints with an organization access token received in request.

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
@@ -86,7 +86,7 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	c := *(cfg.(*Config))
+	c := *cfg.(*Config)
 	if c.Topic == "" {
 		c.Topic = defaultTraceTopic
 	}
@@ -103,7 +103,7 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	c := *(cfg.(*Config))
+	c := *cfg.(*Config)
 	if c.Topic == "" {
 		c.Topic = defaultMetricsTopic
 	}
@@ -120,7 +120,7 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	c := *(cfg.(*Config))
+	c := *cfg.(*Config)
 	if c.Topic == "" {
 		c.Topic = defaultLogsTopic
 	}

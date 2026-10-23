@@ -44,7 +44,7 @@ func TestEvaluate_Latency(t *testing.T) {
 					Duration:  5000 * time.Millisecond,
 				},
 			},
-			samplingpolicy.Sampled,
+			samplingpolicy.NotSampled,
 		},
 		{
 			"total trace duration is longer than threshold but every single span is shorter",
@@ -156,6 +156,27 @@ func TestEvaluate_Bounded_Latency(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
+	}
+}
+
+func BenchmarkLatencyEvaluate(b *testing.B) {
+	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	now := time.Now()
+
+	spans := make([]spanWithTimeAndDuration, 64)
+	for i := range spans {
+		spans[i] = spanWithTimeAndDuration{
+			StartTime: now.Add(time.Duration(i) * time.Millisecond),
+			Duration:  100 * time.Millisecond,
+		}
+	}
+	td := newTraceWithSpans(spans)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, _ = filter.Evaluate(b.Context(), traceID, td)
 	}
 }
 

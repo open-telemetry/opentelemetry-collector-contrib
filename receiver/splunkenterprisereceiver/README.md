@@ -3,10 +3,9 @@
 
 The Splunk Enterprise Receiver is a pull based tool which enables the ingestion of performance metrics describing the operational status of a user's Splunk Enterprise deployment to an appropriate observability tool.
 It is designed to leverage several different data sources to gather these metrics including the [introspection api endpoint](https://help.splunk.com/en/splunk-enterprise/leverage-rest-apis/rest-api-reference/9.1/introspection-endpoints/introspection-endpoint-descriptions) and serializing
-results from ad-hoc searches. Because of this, care must be taken by users when enabling metrics as running searches can effect your Splunk Enterprise Deployment and introspection may fail to report for Splunk
+results from ad-hoc searches. Because of this, care must be taken by users when enabling metrics as running searches can affect your Splunk Enterprise Deployment and introspection may fail to report for Splunk
 Cloud deployments. The primary purpose of this receiver is to empower those tasked with the maintenance and care of a Splunk Enterprise deployment to leverage opentelemetry and their observability toolset in their
 jobs.
-
 
 | Status        |           |
 | ------------- |-----------|
@@ -38,6 +37,8 @@ The following settings are optional:
 * `timeout` (default: 60s): The time the scrape function will wait for a response before returning empty.
 * `build_version_info` (default: false): Elect to run an additional scrape which will retrieve build and version info for the configured endpoints and attach this as attributes to the selected metrics. A value of false will report an empty string as the attribute value but will speed up the receiver slightly.
 
+> **Note:** The receiver type has been renamed from `splunkenterprise` to `splunk_enterprise`. The old name is still accepted but will log a deprecation warning.
+
 ## Basic Example:
 
 ```yaml
@@ -52,7 +53,7 @@ extensions:
             password: securityFirst
 
 receivers:
-    splunkenterprise:
+    splunk_enterprise:
         indexer:
             auth: 
               authenticator: basicauth/indexer

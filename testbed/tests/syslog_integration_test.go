@@ -17,8 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/syslogdatareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed/components"
 )
 
 type expectedDataType struct {
@@ -102,7 +103,7 @@ func TestSyslogComplementaryRFC3164(t *testing.T) {
 }
 
 func componentFactories(t *testing.T) otelcol.Factories {
-	factories, err := testbed.Components()
+	factories, err := components.All()
 	require.NoError(t, err)
 	return factories
 }
@@ -113,7 +114,7 @@ func complementaryTest(t *testing.T, rfc string, expectedData []expectedDataType
 	inputPort := testutil.GetAvailablePort(t)
 
 	// Start SyslogDataReceiver
-	syslogReceiver := datareceivers.NewSyslogDataReceiver(rfc, port)
+	syslogReceiver := syslogdatareceiver.NewSyslogDataReceiver(rfc, port)
 	backend := testbed.NewMockBackend("mockbackend.log", syslogReceiver)
 	require.NoError(t, backend.Start())
 	backend.EnableRecording()
@@ -162,7 +163,10 @@ service:
 	expectedAttributes := []map[string]any{}
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
-	lrs := rl.ScopeLogs().AppendEmpty().LogRecords()
+	scopeLogs := rl.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver")
+	scopeLogs.Scope().SetVersion("latest")
+	lrs := scopeLogs.LogRecords()
 
 	for _, e := range expectedData {
 		lr := lrs.AppendEmpty()

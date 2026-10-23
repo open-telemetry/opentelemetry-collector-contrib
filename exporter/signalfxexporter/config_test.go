@@ -20,11 +20,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	apmcorrelation "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
@@ -38,12 +35,30 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	seventy := 70
-	hundred := 100
-	idleConnTimeout := 30 * time.Second
-	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
-	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
 	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
-	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
+	defaultClientConfig := confighttp.NewDefaultClientConfig()
+	defaultClientConfig.Keepalive = configoptional.Some(confighttp.NewDefaultKeepaliveClientConfig())
+	defaultClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	defaultClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
+	defaultClientConfig.Timeout = 10 * time.Second
+	defaultClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
+	defaultClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
+	defaultClientConfig.HTTP2PingTimeout = 10 * time.Second
+
+	allSettingsClientConfig := confighttp.NewDefaultClientConfig()
+	allSettingsClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
+	allSettingsClientConfig.Timeout = 2 * time.Second
+	allSettingsClientConfig.Headers = configopaque.MapList{
+		{Name: "added-entry", Value: "added value"},
+		{Name: "dot.test", Value: "test"},
+	}
+	allSettingsClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
+	allSettingsClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
+	allSettingsClientConfig.HTTP2PingTimeout = 10 * time.Second
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConns = seventy
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = seventy
 
 	tests := []struct {
 		id       component.ID
@@ -52,18 +67,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				AccessToken: "testToken",
-				Realm:       "ap0",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:              10 * time.Second,
-					MaxIdleConns:         hundred,
-					MaxIdleConnsPerHost:  hundred,
-					MaxConnsPerHost:      defaultMaxConnsPerHost,
-					IdleConnTimeout:      idleConnTimeout,
-					HTTP2ReadIdleTimeout: 10 * time.Second,
-					HTTP2PingTimeout:     10 * time.Second,
-					ForceAttemptHTTP2:    true,
-				},
+				AccessToken:  "testToken",
+				Realm:        "ap0",
+				ClientConfig: defaultClientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
@@ -88,34 +94,10 @@ func TestLoadConfig(t *testing.T) {
 					DropTags:            false,
 					StripK8sLabelPrefix: true,
 				},
-				ExcludeMetrics:      nil,
-				IncludeMetrics:      nil,
-				DeltaTranslationTTL: 3600,
-				ExcludeProperties:   nil,
-				Correlation: &correlation.Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint:            "",
-						Timeout:             5 * time.Second,
-						MaxIdleConns:        defaultMaxIdleConns,
-						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-						MaxConnsPerHost:     defaultMaxConnsPerHost,
-						IdleConnTimeout:     defaultIdleConnTimeout,
-						ForceAttemptHTTP2:   true,
-					},
-					StaleServiceTimeout: 5 * time.Minute,
-					SyncAttributes: map[string]string{
-						"k8s.pod.uid":  "k8s.pod.uid",
-						"container.id": "container.id",
-					},
-					Config: apmcorrelation.Config{
-						MaxRequests:     20,
-						MaxBuffered:     10_000,
-						MaxRetries:      2,
-						LogUpdates:      false,
-						RetryDelay:      30 * time.Second,
-						CleanupInterval: 1 * time.Minute,
-					},
-				},
+				ExcludeMetrics:                nil,
+				IncludeMetrics:                nil,
+				DeltaTranslationTTL:           3600,
+				ExcludeProperties:             nil,
 				NonAlphanumericDimensionChars: "_-.",
 				SendOTLPHistograms:            false,
 			},
@@ -123,22 +105,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				AccessToken: "testToken",
-				Realm:       "us1",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout: 2 * time.Second,
-					Headers: configopaque.MapList{
-						{Name: "added-entry", Value: "added value"},
-						{Name: "dot.test", Value: "test"},
-					},
-					MaxIdleConns:         seventy,
-					MaxIdleConnsPerHost:  seventy,
-					MaxConnsPerHost:      defaultMaxConnsPerHost,
-					IdleConnTimeout:      idleConnTimeout,
-					HTTP2ReadIdleTimeout: 10 * time.Second,
-					HTTP2PingTimeout:     10 * time.Second,
-					ForceAttemptHTTP2:    true,
-				},
+				AccessToken:  "testToken",
+				Realm:        "us1",
+				ClientConfig: allSettingsClientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
@@ -233,30 +202,6 @@ func TestLoadConfig(t *testing.T) {
 						DimensionValue: mustStringFilter(t, "!globbed*value"),
 					},
 				},
-				Correlation: &correlation.Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint:            "",
-						Timeout:             5 * time.Second,
-						MaxIdleConns:        defaultMaxIdleConns,
-						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
-						MaxConnsPerHost:     defaultMaxConnsPerHost,
-						IdleConnTimeout:     defaultIdleConnTimeout,
-						ForceAttemptHTTP2:   true,
-					},
-					StaleServiceTimeout: 5 * time.Minute,
-					SyncAttributes: map[string]string{
-						"k8s.pod.uid":  "k8s.pod.uid",
-						"container.id": "container.id",
-					},
-					Config: apmcorrelation.Config{
-						MaxRequests:     20,
-						MaxBuffered:     10_000,
-						MaxRetries:      2,
-						LogUpdates:      false,
-						RetryDelay:      30 * time.Second,
-						CleanupInterval: 1 * time.Minute,
-					},
-				},
 				NonAlphanumericDimensionChars: "_-.",
 				SendOTLPHistograms:            true,
 			},
@@ -272,7 +217,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			// We need to add the default exclude rules.
 			assert.NoError(t, setDefaultExcludes(tt.expected))
 			assert.Equal(t, tt.expected, cfg)
@@ -427,6 +372,8 @@ func TestConfigGetAPIURL(t *testing.T) {
 }
 
 func TestConfigValidateErrors(t *testing.T) {
+	negativeTimeoutClientConfig := confighttp.NewDefaultClientConfig()
+	negativeTimeoutClientConfig.Timeout = -1 * time.Second
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -454,7 +401,7 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				Realm:        "us0",
 				AccessToken:  "access_token",
-				ClientConfig: confighttp.ClientConfig{Timeout: -1 * time.Second},
+				ClientConfig: negativeTimeoutClientConfig,
 			},
 		},
 		{
@@ -487,7 +434,7 @@ func TestConfigValidateErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Error(t, xconfmap.Validate(tt.cfg))
+			assert.Error(t, confmap.Validate(tt.cfg))
 		})
 	}
 }
@@ -501,7 +448,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 		{
 			name:              "empty config",
 			cfg:               &Config{},
-			excludeMetricsLen: 12,
+			excludeMetricsLen: 10,
 		},
 		{
 			name: "existing exclude config",
@@ -512,7 +459,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 					},
 				},
 			},
-			excludeMetricsLen: 13,
+			excludeMetricsLen: 11,
 		},
 		{
 			name: "existing empty exclude config",

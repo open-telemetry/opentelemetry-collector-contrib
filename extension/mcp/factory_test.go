@@ -15,13 +15,13 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Endpoint:  "localhost:8080",
+		Transport: confignet.TransportTypeTCP,
+	}
 	expected := &Config{
-		confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Endpoint:  "localhost:8080",
-				Transport: confignet.TransportTypeTCP,
-			},
-		},
+		ServerConfig: serverConfig,
 	}
 
 	// test

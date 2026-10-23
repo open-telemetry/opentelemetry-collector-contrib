@@ -68,7 +68,36 @@ const (
 	identityClaimEmailAddress          = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
 )
 
-var errMissingTimestamp = errors.New("missing timestamp")
+var (
+	errMissingTimestamp    = errors.New("missing timestamp")
+	errInvalidFeatureGates = errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
+)
+
+// CheckFeatureGates returns an error if the semantic conventions migration
+// feature gates are set to an unsupported combination, and logs a warning
+// while the deprecated v0 attributes are still emitted. Components using
+// ResourceLogsUnmarshaler should call it once at startup.
+func CheckFeatureGates(logger *zap.Logger) error {
+	if err := validateFeatureGates(); err != nil {
+		return err
+	}
+	if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+		logger.Warn(
+			"Azure resource logs emit deprecated semconv attributes (code.function, code.filepath). " +
+				"They will no longer be emitted once the pkg.translator.azurelogs.EmitV1LogConventions and " +
+				"pkg.translator.azurelogs.DontEmitV0LogConventions feature gates become stable.",
+		)
+	}
+	return nil
+}
+
+func validateFeatureGates() error {
+	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
+		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+		return errInvalidFeatureGates
+	}
+	return nil
+}
 
 // as exported via an Azure Event Hub
 type azureRecords struct {
@@ -103,9 +132,16 @@ type identity struct {
 // azureLogRecord represents a single Azure log following
 // the common schema:
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
+// Some services don't follow the common schema and may have different fields, but these are the most common ones across all services and are used for grouping and semantic conventions mapping.
+// Example:
+//   - Service Bus: https://learn.microsoft.com/en-us/azure/service-bus-messaging/monitor-service-bus-reference#operational-logs
+//   - Event Hub: https://learn.microsoft.com/en-us/azure/event-hubs/monitor-event-hubs-reference#archive-logs-schema
 type azureLogRecord struct {
 	Time              string          `json:"time"`
 	Timestamp         string          `json:"timeStamp"`
+	EventTimeString   string          `json:"EventTimeString"`
+	EventTimestamp    string          `json:"EventTimestamp"`
+	StartTime         string          `json:"startTime"`
 	ResourceID        string          `json:"resourceId"`
 	TenantID          *string         `json:"tenantId"`
 	OperationName     string          `json:"operationName"`
@@ -121,6 +157,16 @@ type azureLogRecord struct {
 	Level             *json.Number    `json:"Level"`
 	Location          *string         `json:"location"`
 	Properties        json.RawMessage `json:"properties"`
+	EventProperties   json.RawMessage `json:"EventProperties"`
+}
+
+// getProperties returns whichever properties field is populated,
+// preferring "properties" over "EventProperties".
+func (r *azureLogRecord) getProperties() json.RawMessage {
+	if len(r.Properties) > 0 {
+		return r.Properties
+	}
+	return r.EventProperties
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -140,11 +186,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	if iter.Error != nil {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
-	}
-
-	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
-		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
-		return plog.Logs{}, errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
 	}
 
 	var rawRecordMap map[int]json.RawMessage
@@ -182,16 +223,20 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		nanos, err := getTimestamp(log, r.TimeFormats...)
 		if err != nil {
-			r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
+			fields := []zap.Field{zap.String("timestamp", log.Time)}
+			if log.ResourceID != "" {
+				fields = append(fields, zap.String("resource_id", log.ResourceID))
+			}
+			if log.Category != "" {
+				fields = append(fields, zap.String("category", log.Category))
+			}
+			r.Logger.Warn("Unable to convert timestamp from log", fields...)
 			continue
 		}
 
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
 		lr.SetObservedTimestamp(observedTimestamp)
-		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
-			lr.SetEventName("az.resource.log")
-		}
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
@@ -199,7 +244,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			lr.SetSeverityText(log.Level.String())
 		}
 
-		err = addRecordAttributes(log.Category, log.Properties, lr)
+		err = addRecordAttributes(log.Category, log.getProperties(), lr)
 		if err != nil {
 			if errors.Is(err, errStillToImplement) || errors.Is(err, errUnsupportedCategory) {
 				// TODO @constanca-m This will be removed once the categories
@@ -235,11 +280,9 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
 		// NOTE: event.name semantically belongs on each LogRecord (not the Resource).
-		// Legacy behavior incorrectly placed it on the Resource for all records.
-		// Use pkg.translator.azurelogs.EmitV1LogConventions to migrate to SetEventName().
-		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
-			rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
-		}
+		// It is not migrated by the semconv feature gates because semantic conventions
+		// renamed this event to azure.resource.log, which is still in development.
+		rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
@@ -247,13 +290,20 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 }
 
 func getTimestamp(record *azureLogRecord, formats ...string) (pcommon.Timestamp, error) {
-	if record.Time != "" {
+	switch {
+	case record.Time != "":
 		return asTimestamp(record.Time, formats...)
-	} else if record.Timestamp != "" {
+	case record.Timestamp != "":
 		return asTimestamp(record.Timestamp, formats...)
+	case record.EventTimeString != "":
+		return asTimestamp(record.EventTimeString, formats...)
+	case record.EventTimestamp != "":
+		return asTimestamp(record.EventTimestamp, formats...)
+	case record.StartTime != "":
+		return asTimestamp(record.StartTime, formats...)
+	default:
+		return 0, errMissingTimestamp
 	}
-
-	return 0, errMissingTimestamp
 }
 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
@@ -357,12 +407,13 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
 
-	if log.Properties != nil {
-		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
+	properties := log.getProperties()
+	if properties != nil {
+		copyPropertiesAndApplySemanticConventions(log.Category, properties, attrs)
 	}
 
 	// The original log needs to be preserved for logs that don't have a properties field
-	if len(log.Properties) == 0 && len(rawRecord) > 0 {
+	if len(properties) == 0 && len(rawRecord) > 0 {
 		// Format the JSON with proper indentation to match expected output
 		var formattedJSON bytes.Buffer
 		if err := json.Indent(&formattedJSON, rawRecord, "", "\t"); err == nil {

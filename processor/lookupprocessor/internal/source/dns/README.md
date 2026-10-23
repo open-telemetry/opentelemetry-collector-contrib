@@ -1,14 +1,15 @@
 # dns Source
 
-Performs reverse DNS lookups (PTR records) to resolve IP addresses to hostnames. Caching is enabled by default to minimize DNS queries.
+Performs DNS lookups supporting forward (A/AAAA) and reverse (PTR) record types. Caching is enabled by default to minimize DNS queries.
 
 ## Configuration
 
 | Field | Description | Default |
 | ----- | ----------- | ------- |
-| `record_type` | DNS record type (currently only `PTR` is supported) | `PTR` |
+| `record_type` | DNS record type: `PTR` (IP → hostname), `A` (hostname → IPv4), `AAAA` (hostname → IPv6) | `PTR` |
 | `timeout` | Maximum time to wait for DNS query (must be `> 0`) | `1s` |
 | `server` | DNS server to use (e.g., `8.8.8.8:53`). Empty uses system resolver | - |
+| `multiple_results` | Return all results as comma-separated string instead of just the first | `false` |
 | `cache.enabled` | Enable caching | `true` |
 | `cache.size` | Maximum cache entries (LRU eviction) | `10000` |
 | `cache.ttl` | Time-to-live for successful lookups | `5m` |
@@ -50,7 +51,5 @@ Cache hit is ~5,000x faster than a network lookup, with zero allocations.
 
 ## TODO
 
-- [ ] Support A record lookups (hostname to IPv4)
-- [ ] Support AAAA record lookups (hostname to IPv6)
 - [ ] Support TXT, CNAME, MX record lookups
 - [ ] Support multiple DNS servers
