@@ -274,7 +274,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -656,7 +656,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.integerHistogram, tt.floatHistogram)
 			require.NoError(t, err)
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -882,7 +882,7 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -1167,7 +1167,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -1292,7 +1292,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				require.NoError(t, mp.addSeries(sRef, tv.metric, lb, tv.at, tv.value))
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)

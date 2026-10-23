@@ -5,7 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"cmp"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"slices"
@@ -27,41 +26,53 @@ import (
 type metricFamily struct {
 	mtype pmetric.MetricType
 	// isMonotonic only applies to sums
-	isMonotonic bool
-	groups      map[uint64]*metricGroup
-	name        string
-	metadata    scrape.MetricMetadata
-	groupOrders []*metricGroup
-	logger      *zap.Logger
+	isMonotonic     bool
+	groups          map[uint64]int
+	name            string
+	metadata        scrape.MetricMetadata
+	groupOrders     []*metricGroup
+	inlineGroup     metricGroup
+	inlineGroupSlot [1]*metricGroup
+	lastGroupKey    uint64
+	lastGroupIdx    int
+	tx              *transaction
+	logger          *zap.Logger
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	mtype    pmetric.MetricType
-	ts       int64
-	ls       labels.Labels
-	count    float64
-	hasCount bool
-	sum      float64
-	hasSum   bool
+	ts    int64
+	ls    labels.Labels
+	ce    *seriesCacheEntry
+	count float64
+	sum   float64
 	// This corresponds to the `_created` sample found from the metric parsing.
 	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#timestamps
 	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#counter-1
 	createdSeconds float64
 	value          float64
-	hasValue       bool
 	hValue         *histogram.Histogram
 	fhValue        *histogram.FloatHistogram
 	complexValue   []dataPoint
-	exemplars      pmetric.ExemplarSlice
-	hasExemplars   bool
+	exemplarOff    int32
+	exemplarLen    uint16
+	mtype          pmetric.MetricType
+	hasCount       bool
+	hasSum         bool
+	hasValue       bool
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
+	mf := &metricFamily{}
+	initMetricFamily(mf, metricName, familyName, metadata, logger, isNativeHistogram, isNHCB)
+	return mf
+}
+
+func initMetricFamily(mf *metricFamily, metricName, familyName string, metadata scrape.MetricMetadata, logger *zap.Logger, isNativeHistogram, isNHCB bool) {
 	// Native histograms have intrinsic metric type, use it,
 	// regardless of what metadata says.
 	if isNativeHistogram {
@@ -73,14 +84,12 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
-	return &metricFamily{
-		mtype:       mtype,
-		isMonotonic: isMonotonic,
-		groups:      make(map[uint64]*metricGroup),
-		name:        familyName,
-		metadata:    metadata,
-		logger:      logger,
-	}
+	mf.mtype = mtype
+	mf.isMonotonic = isMonotonic
+	mf.name = familyName
+	mf.metadata = metadata
+	mf.lastGroupIdx = -1
+	mf.logger = logger
 }
 
 // includesMetric returns true if the metric is part of the family
@@ -213,10 +222,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
-	if mg.hasExemplars {
-		mg.setExemplars(point.Exemplars())
-	}
+	mg.populatePointAttributes(pmetric.MetricTypeHistogram, point.Attributes())
 }
 
 // toExponentialHistogramDataPoints is based on
@@ -290,10 +296,7 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
-	if mg.hasExemplars {
-		mg.setExemplars(point.Exemplars())
-	}
+	mg.populatePointAttributes(pmetric.MetricTypeHistogram, point.Attributes())
 }
 
 func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon.UInt64Slice) {
@@ -389,13 +392,16 @@ func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) ([]uint64, 
 	return bucketCounts, valid
 }
 
-func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
-	if mg == nil || !mg.hasExemplars {
+func (mf *metricFamily) setExemplars(mg *metricGroup, exemplars pmetric.ExemplarSlice) {
+	if mg == nil || mg.exemplarLen == 0 || mf.tx == nil {
 		return
 	}
-	if mg.exemplars.Len() > 0 {
-		mg.exemplars.MoveAndAppendTo(exemplars)
+	src := mf.tx.exemplarSlab[mg.exemplarOff : int(mg.exemplarOff)+int(mg.exemplarLen)]
+	exemplars.EnsureCapacity(len(src))
+	for _, e := range src {
+		convertExemplar(e, exemplars.AppendEmpty())
 	}
+	mg.exemplarLen = 0
 }
 
 func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
@@ -442,7 +448,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
-	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
+	mg.populatePointAttributes(pmetric.MetricTypeSummary, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
@@ -463,10 +469,52 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	} else {
 		point.SetDoubleValue(mg.value)
 	}
-	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
-	if mg.hasExemplars {
-		mg.setExemplars(point.Exemplars())
+	mg.populatePointAttributes(pmetric.MetricTypeGauge, point.Attributes())
+}
+
+func (mg *metricGroup) populatePointAttributes(mType pmetric.MetricType, dest pcommon.Map) {
+	if mg.ce != nil {
+		cached := mg.ce.attrs.Load()
+		if cached == nil {
+			m := buildAttributesMap(mType, mg.ls)
+			mg.ce.attrs.Store(&m)
+			cached = &m
+		}
+		cached.CopyTo(dest)
+		return
 	}
+	populateAttributes(mType, mg.ls, dest)
+}
+
+func buildAttributesMap(mType pmetric.MetricType, ls labels.Labels) pcommon.Map {
+	var stackBuf [64]labels.Label
+	filtered := stackBuf[:0]
+	names := getSortedNotUsefulLabels(mType)
+	j := 0
+	ls.Range(func(l labels.Label) {
+		for j < len(names) && names[j] < l.Name {
+			j++
+		}
+		if j < len(names) && l.Name == names[j] {
+			return
+		}
+		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) {
+			return
+		}
+		if l.Value == "" {
+			return
+		}
+		filtered = append(filtered, l)
+	})
+	m := pcommon.NewMap()
+	if len(filtered) == 0 {
+		return m
+	}
+	m.EnsureCapacity(len(filtered))
+	for _, l := range filtered {
+		m.PutStr(l.Name, l.Value)
+	}
+	return m
 }
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
@@ -491,33 +539,100 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 	})
 }
 
-func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
-	mg, ok := mf.groups[groupKey]
-	if !ok {
-		mg = &metricGroup{
-			mtype: mf.mtype,
-			ts:    ts,
-			ls:    ls,
-		}
-		switch mf.mtype {
-		case pmetric.MetricTypeHistogram:
-			// Pre-allocate to 16 to accommodate the default OpenTelemetry ExplicitBucketHistogram
-			// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
-			mg.complexValue = make([]dataPoint, 0, 16)
-		case pmetric.MetricTypeSummary:
-			// Pre-allocate to 5 to accommodate the 5 quantiles of Prometheus's default
-			// go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
-			mg.complexValue = make([]dataPoint, 0, 5)
-		}
-		mf.groups[groupKey] = mg
-		// maintaining data insertion order is helpful to generate stable/reproducible metric output
-		mf.groupOrders = append(mf.groupOrders, mg)
+func (mf *metricFamily) initMetricGroup(mg *metricGroup, ls labels.Labels, ts int64) {
+	*mg = metricGroup{
+		mtype: mf.mtype,
+		ts:    ts,
+		ls:    ls,
 	}
+	switch mf.mtype {
+	case pmetric.MetricTypeHistogram:
+		// Pre-allocate to 16 to accommodate the default OpenTelemetry ExplicitBucketHistogram
+		// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
+		mg.complexValue = make([]dataPoint, 0, 16)
+	case pmetric.MetricTypeSummary:
+		// Pre-allocate to 5 to accommodate the 5 quantiles of Prometheus's default
+		// go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
+		mg.complexValue = make([]dataPoint, 0, 5)
+	}
+}
+
+func (mf *metricFamily) allocGroup() *metricGroup {
+	if mf.tx != nil {
+		return mf.tx.allocMetricGroup()
+	}
+	return &metricGroup{}
+}
+
+func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
+	if mf.lastGroupIdx >= 0 && mf.lastGroupKey == groupKey {
+		return mf.groupOrders[mf.lastGroupIdx]
+	}
+	if len(mf.groupOrders) == 0 {
+		mg := &mf.inlineGroup
+		mf.initMetricGroup(mg, ls, ts)
+		mf.inlineGroupSlot[0] = mg
+		mf.groupOrders = mf.inlineGroupSlot[:1]
+		mf.lastGroupKey = groupKey
+		mf.lastGroupIdx = 0
+		return mg
+	}
+	if mf.groups == nil {
+		// Transition from 1 inline group to a multi-group map + pointer slice.
+		mf.groups = make(map[uint64]int, 8)
+		mf.groups[mf.lastGroupKey] = 0
+		newOrders := make([]*metricGroup, 2, 8)
+		newOrders[0] = mf.inlineGroupSlot[0]
+		mg := mf.allocGroup()
+		mf.initMetricGroup(mg, ls, ts)
+		newOrders[1] = mg
+		mf.groupOrders = newOrders
+		mf.groups[groupKey] = 1
+		mf.lastGroupKey = groupKey
+		mf.lastGroupIdx = 1
+		return mg
+	}
+	if idx, ok := mf.groups[groupKey]; ok {
+		mf.lastGroupKey = groupKey
+		mf.lastGroupIdx = idx
+		return mf.groupOrders[idx]
+	}
+	idx := len(mf.groupOrders)
+	mg := mf.allocGroup()
+	mf.initMetricGroup(mg, ls, ts)
+	mf.groupOrders = append(mf.groupOrders, mg)
+	mf.groups[groupKey] = idx
+	mf.lastGroupKey = groupKey
+	mf.lastGroupIdx = idx
 	return mg
 }
 
+func (mf *metricFamily) getGroup(groupKey uint64) *metricGroup {
+	if mf.lastGroupIdx >= 0 && mf.lastGroupKey == groupKey {
+		return mf.groupOrders[mf.lastGroupIdx]
+	}
+	if mf.groups != nil {
+		if idx, ok := mf.groups[groupKey]; ok {
+			return mf.groupOrders[idx]
+		}
+	}
+	return nil
+}
+
+func isCreatedMetric(metricName, familyName string) bool {
+	return strings.HasSuffix(metricName, metricSuffixCreated) &&
+		metricName[:len(metricName)-len(metricSuffixCreated)] == familyName
+}
+
 func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, v float64) error {
+	return mf.addSeriesCached(seriesRef, metricName, ls, t, v, nil)
+}
+
+func (mf *metricFamily) addSeriesCached(seriesRef uint64, metricName string, ls labels.Labels, t int64, v float64, ce *seriesCacheEntry) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ce == nil && ce != nil {
+		mg.ce = ce
+	}
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
@@ -532,21 +647,27 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
-		case metricName == mf.metadata.MetricFamily+metricSuffixCreated:
+		case isCreatedMetric(metricName, mf.metadata.MetricFamily):
 			mg.createdSeconds = v
 		default:
-			boundary, err := getBoundary(mf.mtype, ls)
+			var boundary float64
+			var err error
+			if ce != nil && ce.hasBoundary {
+				boundary, err = ce.boundary, ce.boundaryErr
+			} else {
+				boundary, err = getBoundary(mf.mtype, ls)
+			}
 			if err != nil {
 				return err
 			}
 			mg.complexValue = append(mg.complexValue, dataPoint{value: v, boundary: boundary})
 		}
 	case pmetric.MetricTypeExponentialHistogram:
-		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
+		if isCreatedMetric(metricName, mf.metadata.MetricFamily) {
 			mg.createdSeconds = v
 		}
 	case pmetric.MetricTypeSum:
-		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
+		if isCreatedMetric(metricName, mf.metadata.MetricFamily) {
 			mg.createdSeconds = v
 		} else {
 			mg.value = v
@@ -569,7 +690,14 @@ func (mf *metricFamily) addCreationTimestamp(seriesRef uint64, ls labels.Labels,
 }
 
 func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	return mf.addExponentialHistogramSeriesCached(seriesRef, metricName, ls, t, h, fh, nil)
+}
+
+func (mf *metricFamily) addExponentialHistogramSeriesCached(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram, ce *seriesCacheEntry) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ce == nil && ce != nil {
+		mg.ce = ce
+	}
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
@@ -601,7 +729,14 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 
 // addNHCBSeries adds a Native Histogram Custom Buckets (NHCB) series to the metric family.
 func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	return mf.addNHCBSeriesCached(seriesRef, metricName, ls, t, h, fh, nil)
+}
+
+func (mf *metricFamily) addNHCBSeriesCached(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram, ce *seriesCacheEntry) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ce == nil && ce != nil {
+		mg.ce = ce
+	}
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
@@ -653,8 +788,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		hdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := hdpL.Len()
 			mg.toDistributionPoint(hdpL, mf.logger)
+			if mg.exemplarLen > 0 && hdpL.Len() > beforeLen {
+				mf.setExemplars(mg, hdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = hdpL.Len()
 
@@ -662,8 +802,8 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		summary := metric.SetEmptySummary()
 		sdpL := summary.DataPoints()
 		sdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
-			mg.toSummaryPoint(sdpL)
+		for i := range mf.groupOrders {
+			mf.groupOrders[i].toSummaryPoint(sdpL)
 		}
 		pointCount = sdpL.Len()
 
@@ -673,8 +813,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		sdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := sdpL.Len()
 			mg.toNumberDataPoint(sdpL)
+			if mg.exemplarLen > 0 && sdpL.Len() > beforeLen {
+				mf.setExemplars(mg, sdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = sdpL.Len()
 
@@ -683,8 +828,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		hdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := hdpL.Len()
 			mg.toExponentialHistogramDataPoints(hdpL)
+			if mg.exemplarLen > 0 && hdpL.Len() > beforeLen {
+				mf.setExemplars(mg, hdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = hdpL.Len()
 
@@ -692,8 +842,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
 		gdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := gdpL.Len()
 			mg.toNumberDataPoint(gdpL)
+			if mg.exemplarLen > 0 && gdpL.Len() > beforeLen {
+				mf.setExemplars(mg, gdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = gdpL.Len()
 	}
@@ -709,15 +864,39 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 	if mf.mtype == pmetric.MetricTypeSummary {
 		return
 	}
-	mg := mf.groups[seriesRef]
-	if mg == nil {
+	mg := mf.getGroup(seriesRef)
+	if mg == nil || mf.tx == nil {
 		return
 	}
-	if !mg.hasExemplars {
-		mg.exemplars = pmetric.NewExemplarSlice()
-		mg.hasExemplars = true
+	mf.tx.appendExemplarToGroup(mg, e)
+}
+
+func decodeHexByte(c byte) (byte, bool) {
+	switch {
+	case '0' <= c && c <= '9':
+		return c - '0', true
+	case 'a' <= c && c <= 'f':
+		return c - 'a' + 10, true
+	case 'A' <= c && c <= 'F':
+		return c - 'A' + 10, true
+	default:
+		return 0, false
 	}
-	convertExemplar(e, mg.exemplars.AppendEmpty())
+}
+
+func decodeHexString(dst []byte, s string) bool {
+	if len(s) != len(dst)*2 {
+		return false
+	}
+	for i := range dst {
+		hi, ok1 := decodeHexByte(s[i*2])
+		lo, ok2 := decodeHexByte(s[i*2+1])
+		if !ok1 || !ok2 {
+			return false
+		}
+		dst[i] = (hi << 4) | lo
+	}
+	return true
 }
 
 // convertExemplar converts a Prometheus exemplar's labels to an OTel exemplar.
@@ -728,38 +907,31 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
 	filteredAttrs := e.FilteredAttributes()
-	filteredAttrs.EnsureCapacity(pe.Labels.Len())
 	pe.Labels.Range(func(lb labels.Label) {
-		switch strings.ToLower(lb.Name) {
-		case prometheus.ExemplarTraceIDKey:
+		switch {
+		case strings.EqualFold(lb.Name, prometheus.ExemplarTraceIDKey):
 			if lb.Value == "" {
 				return
 			}
 			var tid [16]byte
-			if len(lb.Value) == hex.EncodedLen(len(tid)) {
-				if b, err := hex.DecodeString(lb.Value); err == nil {
-					copy(tid[:], b)
-					// all-zero looks unset already, so keep the original value instead of setting it
-					if traceID := pcommon.TraceID(tid); !traceID.IsEmpty() {
-						e.SetTraceID(traceID)
-						return
-					}
+			if decodeHexString(tid[:], lb.Value) {
+				// all-zero looks unset already, so keep the original value instead of setting it
+				if traceID := pcommon.TraceID(tid); !traceID.IsEmpty() {
+					e.SetTraceID(traceID)
+					return
 				}
 			}
 			filteredAttrs.PutStr(lb.Name, lb.Value)
-		case prometheus.ExemplarSpanIDKey:
+		case strings.EqualFold(lb.Name, prometheus.ExemplarSpanIDKey):
 			if lb.Value == "" {
 				return
 			}
 			var sid [8]byte
-			if len(lb.Value) == hex.EncodedLen(len(sid)) {
-				if b, err := hex.DecodeString(lb.Value); err == nil {
-					copy(sid[:], b)
-					// all-zero looks unset already, so keep the original value instead of setting it
-					if spanID := pcommon.SpanID(sid); !spanID.IsEmpty() {
-						e.SetSpanID(spanID)
-						return
-					}
+			if decodeHexString(sid[:], lb.Value) {
+				// all-zero looks unset already, so keep the original value instead of setting it
+				if spanID := pcommon.SpanID(sid); !spanID.IsEmpty() {
+					e.SetSpanID(spanID)
+					return
 				}
 			}
 			filteredAttrs.PutStr(lb.Name, lb.Value)
