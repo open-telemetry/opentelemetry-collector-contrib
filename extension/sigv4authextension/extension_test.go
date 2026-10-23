@@ -121,6 +121,33 @@ func TestAssumeRoleOptionsWithoutExternalID(t *testing.T) {
 	assert.Nil(t, opts.ExternalID)
 }
 
+func TestAssumeRoleOptionsWithSessionName(t *testing.T) {
+	cfg := &Config{
+		AssumeRole: AssumeRole{
+			ARN:         "arn:aws:iam::123456789012:role/my_role",
+			SessionName: "host-a",
+		},
+	}
+
+	opts := &stscreds.AssumeRoleOptions{}
+	assumeRoleOptions(cfg)(opts)
+
+	assert.Equal(t, "host-a", opts.RoleSessionName)
+}
+
+func TestAssumeRoleOptionsWithoutSessionName(t *testing.T) {
+	cfg := &Config{
+		AssumeRole: AssumeRole{
+			ARN: "arn:aws:iam::123456789012:role/my_role",
+		},
+	}
+
+	opts := &stscreds.AssumeRoleOptions{}
+	assumeRoleOptions(cfg)(opts)
+
+	assert.Empty(t, opts.RoleSessionName)
+}
+
 func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 	tests := []struct {
 		name        string
