@@ -78,6 +78,26 @@ func TestDetect(t *testing.T) {
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
+func TestDetectHostIDDisabledByDefault(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+	md.On("NodeName").Return("mainNode", nil)
+	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
+	cfg := CreateDefaultConfig()
+	d := &detector{
+		provider: md,
+		logger:   zap.NewNop(),
+		ra:       &cfg.ResourceAttributes,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	md.AssertNotCalled(t, "NodeMachineID")
+	_, ok := res.Attributes().Get("host.id")
+	assert.False(t, ok, "host.id must not be detected unless enabled")
+}
+
 func TestDetectHostID(t *testing.T) {
 	tt := []struct {
 		name      string
