@@ -251,25 +251,20 @@ func TestExtractYANGFromFiles_MalformedAndNonExistent(t *testing.T) {
 	assert.Empty(t, parser.GetAvailableModules())
 }
 
-func TestYANGParser_SetLogger(t *testing.T) {
-	parser := NewYANGParser()
-	assert.NotNil(t, parser)
+func TestNewYANGParser(t *testing.T) {
+	logger := zap.NewNop()
+	p1 := NewYANGParser(logger)
+	require.NotNil(t, p1)
+	assert.NotNil(t, p1.modules)
+	assert.NotNil(t, p1.moduleSources)
+	assert.Equal(t, logger, p1.logger)
 
-	core, recorded := observer.New(zap.WarnLevel)
-	parser.SetLogger(zap.New(core))
-
-	tempDir := t.TempDir()
-	f1 := filepath.Join(tempDir, "a.yang")
-	f2 := filepath.Join(tempDir, "b.yang")
-	require.NoError(t, os.WriteFile(f1, []byte(sampleDuplicateYangV1), 0o600))
-	require.NoError(t, os.WriteFile(f2, []byte(sampleDuplicateYangV2), 0o600))
-
-	require.NoError(t, parser.ExtractYANGFromFiles(tempDir))
-	assert.Equal(t, 1, recorded.Len())
-
-	// Setting nil logger falls back to nop without panic
-	parser.SetLogger(nil)
-	assert.NotNil(t, parser.logger)
+	// Nil logger falls back to nop without panic
+	p2 := NewYANGParser(nil)
+	require.NotNil(t, p2)
+	assert.NotNil(t, p2.modules)
+	assert.NotNil(t, p2.moduleSources)
+	assert.NotNil(t, p2.logger)
 }
 
 func TestExtractYANGFromFiles_MultipleConfiguredPaths(t *testing.T) {

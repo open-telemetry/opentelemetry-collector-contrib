@@ -50,24 +50,14 @@ type YANGParser struct {
 }
 
 // NewYANGParser creates a new YANG parser instance
-func NewYANGParser(logger ...*zap.Logger) *YANGParser {
-	l := zap.NewNop()
-	if len(logger) > 0 && logger[0] != nil {
-		l = logger[0]
+func NewYANGParser(logger *zap.Logger) *YANGParser {
+	if logger == nil {
+		logger = zap.NewNop()
 	}
 	return &YANGParser{
 		modules:       make(map[string]*YANGModule),
 		moduleSources: make(map[string]string),
-		logger:        l,
-	}
-}
-
-// SetLogger sets the logger for the parser
-func (p *YANGParser) SetLogger(logger *zap.Logger) {
-	if logger == nil {
-		p.logger = zap.NewNop()
-	} else {
-		p.logger = logger
+		logger:        logger,
 	}
 }
 
@@ -190,16 +180,6 @@ func (p *YANGParser) LoadBuiltinModules() {
 			"/ospf-oper-data/ospf-state/ospf-instance/ospf-area/area-id": {Type: "uint32", Description: "OSPF area identifier"},
 		},
 		Description: "OSPF operational data for Cisco IOS XE devices",
-	}
-
-	if p.modules == nil {
-		p.modules = make(map[string]*YANGModule)
-	}
-	if p.moduleSources == nil {
-		p.moduleSources = make(map[string]string)
-	}
-	if p.logger == nil {
-		p.logger = zap.NewNop()
 	}
 
 	p.modules[interfacesModule.Name] = interfacesModule
@@ -481,9 +461,6 @@ func (p *YANGParser) LoadModulesFromFile(filename string) error {
 		return fmt.Errorf("failed to unmarshal modules: %w", err)
 	}
 
-	if p.moduleSources == nil {
-		p.moduleSources = make(map[string]string)
-	}
 	for name := range p.modules {
 		p.moduleSources[name] = filename
 	}
@@ -501,16 +478,6 @@ func (p *YANGParser) GetAvailableModules() []string {
 
 // ExtractYANGFromFiles attempts to extract YANG module information from .yang files
 func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
-	if p.modules == nil {
-		p.modules = make(map[string]*YANGModule)
-	}
-	if p.moduleSources == nil {
-		p.moduleSources = make(map[string]string)
-	}
-	if p.logger == nil {
-		p.logger = zap.NewNop()
-	}
-
 	return filepath.Walk(yangDir, func(path string, _ os.FileInfo, err error) error {
 		if err != nil {
 			return err

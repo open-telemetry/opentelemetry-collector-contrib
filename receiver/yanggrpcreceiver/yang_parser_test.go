@@ -18,7 +18,7 @@ import (
 )
 
 func TestYANGParser(t *testing.T) {
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	t.Run("TestBuiltinModulesLoaded", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestYANGParser(t *testing.T) {
 }
 
 func TestYANGParserIntegration(t *testing.T) {
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	// Test real telemetry scenarios
@@ -96,7 +96,7 @@ func TestYANGParserIntegration(t *testing.T) {
 }
 
 func TestYANGParserPersistence(t *testing.T) {
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	// Test saving modules to file
@@ -106,7 +106,7 @@ func TestYANGParserPersistence(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Test loading from file
-		parser2 := internal.NewYANGParser()
+		parser2 := internal.NewYANGParser(zap.NewNop())
 		err = parser2.LoadModulesFromFile(filename)
 		assert.NoError(t, err)
 
@@ -120,7 +120,7 @@ func TestYANGParserPersistence(t *testing.T) {
 // TestYANGEnhancedTelemetryProcessing tests the integration with real telemetry data
 func TestYANGEnhancedTelemetryProcessing(t *testing.T) {
 	// This test would simulate the enhanced telemetry processing with YANG awareness
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	// Test path analysis for live telemetry
