@@ -176,3 +176,27 @@ func TestDownscale(t *testing.T) {
 		})
 	})
 }
+
+func TestIdx(t *testing.T) {
+	cases := []struct {
+		scale expo.Scale
+		v     float64
+		want  int
+	}{
+		{scale: 1, v: 2, want: 1},     // (1.41,2]
+		{scale: 0, v: 3, want: 1},     // (2,4]
+		{scale: 0, v: 4, want: 1},     // (2,4]
+		{scale: -1, v: 1, want: -1},   // (0.25,1]
+		{scale: -1, v: 2, want: 0},    // (1,4]
+		{scale: -1, v: 4, want: 0},    // (1,4]
+		{scale: -1, v: 16, want: 1},   // (4,16]
+		{scale: -2, v: 0.5, want: -1}, // (0.0625,1]
+		{scale: -2, v: 32, want: 1},   // (16,256]
+	}
+
+	for _, cs := range cases {
+		t.Run(fmt.Sprintf("%d/%g", cs.scale, cs.v), func(t *testing.T) {
+			assert.Equal(t, cs.want, cs.scale.Idx(cs.v))
+		})
+	}
+}
