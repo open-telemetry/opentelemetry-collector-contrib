@@ -274,9 +274,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if virtualNodeFeatureGate.IsEnabled() {
-							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
-						}
+						p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -297,9 +295,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if virtualNodeFeatureGate.IsEnabled() {
-							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
-						}
+						p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -467,7 +463,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		return
 	}
 
-	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
+	if len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if e.ClientService == "" && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"

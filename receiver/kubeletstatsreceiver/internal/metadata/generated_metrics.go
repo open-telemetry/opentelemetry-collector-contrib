@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 const (
@@ -4330,6 +4331,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
