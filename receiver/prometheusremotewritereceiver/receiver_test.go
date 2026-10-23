@@ -47,6 +47,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadatatest"
 )
 
 var writeV2RequestFixture = &writev2.Request{
@@ -4624,6 +4625,71 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics2, mockConsumer.metrics[1]))
 	// As just have 1 slot in the cache, but the cache for metric1 was evicted, this metric1_1 should generate a new resource metric, even having the same job/instance than the metric1.
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
+}
+
+// TestResourceCacheEvictionsAreCounted asserts that every entry evicted from the
+// resource metrics cache is reported in the receiver's internal telemetry.
+func TestResourceCacheEvictionsAreCounted(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+	settings := metadatatest.NewSettings(tel)
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	// Purge before the telemetry shutdown above so the evictions it triggers are still recorded.
+	defer writeReceiver.rmCache.Purge()
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	writeReceiver.obsrecv = obsrecv
+
+	// Shrink the still empty cache so that every new job/instance pair evicts the previous one.
+	require.Zero(t, writeReceiver.rmCache.Resize(1))
+
+	ts := httptest.NewServer(http.HandlerFunc(writeReceiver.handlePRW))
+	defer ts.Close()
+
+	const pairs = 3
+	for i := range pairs {
+		req := &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "normal_metric", // 1, 2
+				"job", fmt.Sprintf("service_%d", i), // 3, 4
+				"instance", fmt.Sprintf("host_%d", i), // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+			},
+		}
+		pBuf := proto.NewBuffer(nil)
+		require.NoError(t, pBuf.Marshal(req))
+
+		resp, err := http.Post(
+			ts.URL,
+			fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
+			bytes.NewBuffer(pBuf.Bytes()),
+		)
+		require.NoError(t, err)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+	}
+
+	// The first pair fills the single slot; each of the following pairs evicts one entry.
+	metadatatest.AssertEqualReceiverPrometheusremotewriteResourceCacheEvictions(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: pairs - 1}},
+		metricdatatest.IgnoreTimestamp())
 }
 
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
