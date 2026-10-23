@@ -12,19 +12,19 @@
     },
 	"asserts": {
 		"msg": {
-			"$numberInt": "0"
+			"$numberInt": "1"
 		},
 		"regular": {
-			"$numberInt": "0"
+			"$numberInt": "2"
 		},
 		"rollovers": {
-			"$numberInt": "0"
+			"$numberInt": "9"
 		},
 		"user": {
-			"$numberInt": "0"
+			"$numberInt": "3"
 		},
 		"warning": {
-			"$numberInt": "0"
+			"$numberInt": "4"
 		}
 	},
 	"connections": {
@@ -136,13 +136,13 @@
 		},
 		"currentQueue": {
 			"readers": {
-				"$numberInt": "0"
+				"$numberInt": "5"
 			},
 			"total": {
-				"$numberInt": "0"
+				"$numberInt": "12"
 			},
 			"writers": {
-				"$numberInt": "0"
+				"$numberInt": "7"
 			}
 		},
 		"totalTime": {
@@ -364,6 +364,16 @@
 		}
 	},
 	"metrics": {
+		"getLastError": {
+			"wtime": {
+				"num": {
+					"$numberInt": "4"
+				},
+				"totalMillis": {
+					"$numberInt": "2500"
+				}
+			}
+		},
 		"cursor": {
             "timedOut": {
                 "$numberLong": "0"

@@ -77,39 +77,39 @@ func setupQueries(cfg *Config) []string {
 	var queries []string
 
 	if isAvailabilityGroupQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerAvailabilityGroupQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerAvailabilityGroupQuery())
 	}
 
 	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerDatabaseIOQuery())
 	}
 
 	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerPerformanceCounterQuery())
 	}
 
 	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverCPUCount.Enabled || cfg.MetricsBuilderConfig.Metrics.SqlserverComputerUptime.Enabled {
-		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerPropertiesQuery())
 	}
 
 	if isWaitStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerWaitStatsQuery())
 	}
 
 	if isWorkerThreadsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerWorkerThreadsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerWorkerThreadsQuery())
 	}
 
 	if isIndexPhysicalStatsQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery())
 	}
 
 	if isCPUMemoryQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerCPUMemoryQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerCPUMemoryQuery())
 	}
 
 	if isDiskIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
-		queries = append(queries, getSQLServerDiskIOQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
 	return queries
@@ -129,7 +129,7 @@ func setupLogQueries(cfg *Config) []string {
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
-		queries = append(queries, getSQLServerTopProcedureQuery(cfg.InstanceName))
+		queries = append(queries, getSQLServerTopProcedureQuery())
 	}
 
 	return queries
@@ -185,14 +185,15 @@ type dbProvider struct {
 	pool        ConnectionPool
 	numScrapers int
 
-	mu                 sync.Mutex
-	db                 *sql.DB
-	openErr            error
-	opened             bool
-	closed             bool
-	closeErr           error
-	dbVersion          *string
-	versionErrReported bool
+	mu                      sync.Mutex
+	db                      *sql.DB
+	openErr                 error
+	opened                  bool
+	closed                  bool
+	closeErr                error
+	dbVersion               *string
+	dbEdition               *string
+	instanceInfoErrReported bool
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -246,45 +247,46 @@ func (p *dbProvider) close() error {
 	return p.closeErr
 }
 
-// detectVersion lazily queries SERVERPROPERTY('ProductVersion') and caches the
-// result. Returns (version, resolved): resolved=true means a definitive answer
-// was reached (success or confirmed NULL) and the caller should nil out its
-// versionFunc. resolved=false means a transient error; the caller should retry
-// next interval. The first error is logged at WARN; subsequent ones at DEBUG so
-// a permanent failure does not spam the log every interval. Safe for concurrent
-// use; all scrapers on this provider share the cached result.
-func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) (string, bool) {
+// detectInstanceInfo lazily queries ProductVersion and Edition in one round-trip and caches both.
+// Returns (version, edition string, resolved bool): resolved=true means a definitive answer
+// was reached and the caller should nil out its instanceInfoFunc. resolved=false means a
+// transient error; the caller should retry next interval.
+func (p *dbProvider) detectInstanceInfo(ctx context.Context, logger *zap.Logger) (string, string, bool) {
 	p.mu.Lock()
-	if p.dbVersion != nil {
-		v := *p.dbVersion
+	if p.dbVersion != nil && p.dbEdition != nil {
+		v, e := *p.dbVersion, *p.dbEdition
 		p.mu.Unlock()
-		return v, true
+		return v, e, true
 	}
 	db := p.db
-	errReported := p.versionErrReported
+	errReported := p.instanceInfoErrReported
 	p.mu.Unlock()
 
-	v, err := detectSQLServerVersion(ctx, db)
-	if v != nil {
+	v, e, err := detectSQLServerInstanceInfo(ctx, db)
+	if v != nil && e != nil {
 		if *v == "" {
 			logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL; db.system.version will not be set")
 		}
+		if *e == "" {
+			logger.Warn("failed to detect SQL Server edition: SERVERPROPERTY returned NULL; sqlserver.db.edition will not be set")
+		}
 		p.mu.Lock()
 		p.dbVersion = v
+		p.dbEdition = e
 		p.mu.Unlock()
-		return *v, true
+		return *v, *e, true
 	}
 	if err != nil {
 		if !errReported {
-			logger.Warn("failed to detect SQL Server version; db.system.version will not be set; will retry", zap.Error(err))
+			logger.Warn("failed to detect SQL Server instance info; db.system.version and sqlserver.db.edition will not be set; will retry", zap.Error(err))
 			p.mu.Lock()
-			p.versionErrReported = true
+			p.instanceInfoErrReported = true
 			p.mu.Unlock()
 		} else {
-			logger.Debug("failed to detect SQL Server version; retrying next interval", zap.Error(err))
+			logger.Debug("failed to detect SQL Server instance info; retrying next interval", zap.Error(err))
 		}
 	}
-	return "", false
+	return "", "", false
 }
 
 // setConnectionPoolSettings applies the configured pool settings, falling back
@@ -326,6 +328,9 @@ func setConnectionPoolSettings(db *sql.DB, pool ConnectionPool, numScrapers int)
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			params.Logger.Warn("sqlserver.db.edition is enabled but requires a direct database connection; it will not be set in Windows Performance Counter mode")
+		}
 		return nil, nil
 	}
 
@@ -354,8 +359,8 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			cfg,
 			cache)
 
-		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
-			sqlServerScraper.versionFunc = provider.detectVersion
+		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) || isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
 		}
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -371,6 +376,9 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			params.Logger.Warn("sqlserver.db.edition is enabled but requires a direct database connection; it will not be set in Windows Performance Counter mode")
+		}
 		return nil, nil
 	}
 
@@ -400,7 +408,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cache = newCache(1)
 		}
 
-		if query == getSQLServerTopProcedureQuery(cfg.InstanceName) {
+		if query == getSQLServerTopProcedureQuery() {
 			// every candidate row caches 7 counters, and multiply by 2 so that a procedure
 			// dropping out of one scrape's sample still has its previous values on the next.
 			cache = newCache(int(cfg.TopProcedureCollection.MaxProcedureSampleCount * 7 * 2))
@@ -414,8 +422,8 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cfg,
 			cache)
 
-		if isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
-			sqlServerScraper.versionFunc = provider.detectVersion
+		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) || isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
 		}
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -614,6 +622,13 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
+	if resourceAttrs == nil {
+		return false
+	}
+	return resourceAttrs.SqlserverDbEdition.Enabled
 }
 
 func isDbSystemVersionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {

@@ -11,6 +11,9 @@ status:
     active: [hgaol]
     emeritus: [pcwiese]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"

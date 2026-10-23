@@ -43,7 +43,10 @@ GOTESTARCH?=$(GOARCH)
 # - GO-2026-5662: False positive, we use `github.com/prometheus/prometheus` 
 #   >= 0.312.0, which has the fix for this vulnerability. Besides, this doesn't
 #   affect the Collector in any way, only the Prometheus UI.
-IGNORED_VULNS = GO-2026-5662
+# - GO-2026-6443: False positive, the vulndb entry marks google.golang.org/grpc
+#   v1.84.0 as affected, but v1.84.0 contains the fix.
+#   See https://github.com/golang/vulndb/issues/6659
+IGNORED_VULNS = GO-2026-5662 GO-2026-6443
 
 # Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
 IGNORE_GOLANG_VULNS ?=
