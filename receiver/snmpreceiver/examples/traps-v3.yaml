@@ -1,0 +1,25 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+receivers:
+  snmp:
+    traps:
+      listen_address: 127.0.0.1:1620
+      versions: [v3]
+      v3:
+        user: otel
+        security_level: auth_priv
+        auth_type: SHA256
+        auth_password: ${env:SNMP_TRAP_AUTH_PASSWORD}
+        privacy_type: AES
+        privacy_password: ${env:SNMP_TRAP_PRIVACY_PASSWORD}
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers: [snmp]
+      exporters: [debug]
