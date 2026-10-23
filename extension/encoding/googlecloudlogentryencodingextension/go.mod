@@ -9,14 +9,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.69.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/component v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261015205720-932ee30af2c0
-	go.opentelemetry.io/collector/confmap v1.69.1-0.20261015205720-932ee30af2c0
-	go.opentelemetry.io/collector/extension v1.69.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/confmap v1.69.1-0.20261022201525-42ee5d39b18f
+	go.opentelemetry.io/collector/extension v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/collector/extension/extensiontest v0.163.1-0.20261015205720-932ee30af2c0
 	go.opentelemetry.io/collector/extension/xextension v0.163.1-0.20261015205720-932ee30af2c0
-	go.opentelemetry.io/collector/featuregate v1.69.1-0.20261015205720-932ee30af2c0
-	go.opentelemetry.io/collector/pdata v1.69.1-0.20261015205720-932ee30af2c0
+	go.opentelemetry.io/collector/featuregate v1.69.1-0.20261022201525-42ee5d39b18f
+	go.opentelemetry.io/collector/pdata v1.69.1-0.20261022201525-42ee5d39b18f
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
