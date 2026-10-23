@@ -117,9 +117,7 @@ func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
 	var mu sync.Mutex
 	var accepted []net.Conn
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			conn, aerr := ln.Accept()
 			if aerr != nil {
@@ -129,7 +127,7 @@ func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
 			accepted = append(accepted, conn)
 			mu.Unlock()
 		}
-	}()
+	})
 	t.Cleanup(func() {
 		_ = ln.Close()
 		wg.Wait()
