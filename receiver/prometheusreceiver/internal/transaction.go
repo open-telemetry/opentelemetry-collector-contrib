@@ -675,8 +675,9 @@ func (t *transaction) prepareLabelsWithCache(ref storage.SeriesRef, ls labels.La
 		inputHash = origLS.Hash()
 	}
 
+	var ce *seriesCacheEntry
 	if !t.isNew && t.seriesCache != nil {
-		if ce := t.seriesCache.lookup(inputHash, origLS, t.externalLabels); ce != nil {
+		if ce = t.seriesCache.lookup(inputHash, origLS, t.externalLabels); ce != nil {
 			if ce.rKey == t.lastRKey {
 				return origLS, ce.mergedLS, ce.rKey, ce.metricName, inputHash, ce, nil
 			}
@@ -686,7 +687,9 @@ func (t *transaction) prepareLabelsWithCache(ref storage.SeriesRef, ls labels.La
 		}
 	}
 
-	if !t.externalLabels.IsEmpty() {
+	if ce != nil {
+		ls = ce.mergedLS
+	} else if !t.externalLabels.IsEmpty() {
 		b := labels.NewBuilder(ls)
 		t.externalLabels.Range(func(l labels.Label) {
 			b.Set(l.Name, l.Value)
@@ -704,9 +707,10 @@ func (t *transaction) prepareLabelsWithCache(ref storage.SeriesRef, ls labels.La
 		if inputHash == 0 {
 			inputHash = origLS.Hash()
 		}
-		if ce := t.seriesCache.lookup(inputHash, origLS, t.externalLabels); ce != nil {
-			return origLS, ce.mergedLS, ce.rKey, ce.metricName, inputHash, ce, nil
-		}
+		ce = t.seriesCache.lookup(inputHash, origLS, t.externalLabels)
+	}
+	if ce != nil && ce.rKey == rKey {
+		return origLS, ce.mergedLS, ce.rKey, ce.metricName, inputHash, ce, nil
 	}
 
 	// Any datapoint with duplicate labels MUST be rejected per:
