@@ -6,6 +6,7 @@ package splunkhecexporter
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -2862,5 +2863,135 @@ func TestBuildHTTPHeaders(t *testing.T) {
 		headers := buildHTTPHeaders(cfg, buildInfo)
 		assert.Equal(t, "1.2.3", headers["__splunk_app_version"])
 		assert.Equal(t, "myapp/1.2.3", headers["User-Agent"])
+	})
+}
+
+type capturingHecWorker struct {
+	batches [][]byte
+}
+
+func (c *capturingHecWorker) send(_ context.Context, buf buffer, _ map[string]string) error {
+	c.batches = append(c.batches, bytes.Clone(buf.Bytes()))
+	return nil
+}
+
+type multiMetricItem struct {
+	name      string
+	timestamp pcommon.Timestamp
+	oversized bool
+}
+
+func makeMultiMetricData(items ...multiMetricItem) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	for i, item := range items {
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(item.name)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(int64(i + 1))
+		dp.SetTimestamp(item.timestamp)
+		if item.oversized {
+			dp.Attributes().PutStr("large_attr", strings.Repeat("x", 400))
+		}
+	}
+	return md
+}
+
+func Test_PushMetricsData_MultiMetric_DropOversizedEvents(t *testing.T) {
+	newTestClient := func() (*client, *capturingHecWorker) {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.UseMultiMetricFormat = true
+		cfg.DisableCompression = true
+		// 300 bytes: oversized event (~500+ bytes) exceeds capacity on empty buffer,
+		// while normal events (~150 bytes) fit within 300 bytes.
+		cfg.MaxContentLengthMetrics = 300
+
+		c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), cfg)
+		worker := &capturingHecWorker{}
+		c.hecWorker = worker
+		return c, worker
+	}
+
+	t.Run("oversized event followed by valid event", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "oversized_first", timestamp: pcommon.Timestamp(1_000_000_000), oversized: true},
+			multiMetricItem{name: "valid_second", timestamp: pcommon.Timestamp(2_000_000_000), oversized: false},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "dropped metric event")
+
+		require.Len(t, worker.batches, 1, "valid_second must be exported despite preceding oversized event")
+		assert.Contains(t, string(worker.batches[0]), "valid_second")
+		assert.NotContains(t, string(worker.batches[0]), "oversized_first")
+	})
+
+	t.Run("valid event followed by oversized event", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "valid_first", timestamp: pcommon.Timestamp(1_000_000_000), oversized: false},
+			multiMetricItem{name: "oversized_second", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "dropped metric event")
+
+		require.Len(t, worker.batches, 1, "valid_first must be exported")
+		assert.Contains(t, string(worker.batches[0]), "valid_first")
+		assert.NotContains(t, string(worker.batches[0]), "oversized_second")
+	})
+
+	t.Run("oversized event between two valid events", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "valid_first", timestamp: pcommon.Timestamp(1_000_000_000), oversized: false},
+			multiMetricItem{name: "oversized_middle", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+			multiMetricItem{name: "valid_last", timestamp: pcommon.Timestamp(3_000_000_000), oversized: false},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "dropped metric event")
+
+		require.Len(t, worker.batches, 2, "both valid events must be exported across batches")
+		assert.Contains(t, string(worker.batches[0]), "valid_first")
+		assert.Contains(t, string(worker.batches[1]), "valid_last")
+		for _, b := range worker.batches {
+			assert.NotContains(t, string(b), "oversized_middle")
+		}
+	})
+
+	t.Run("consecutive oversized events", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "oversized_1", timestamp: pcommon.Timestamp(1_000_000_000), oversized: true},
+			multiMetricItem{name: "oversized_2", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+			multiMetricItem{name: "valid_3", timestamp: pcommon.Timestamp(3_000_000_000), oversized: false},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		// Both oversized events should be reported in permanent errors
+		assert.Equal(t, 2, strings.Count(err.Error(), "dropped metric event"))
+
+		require.Len(t, worker.batches, 1, "valid_3 must be exported after consecutive oversized drops")
+		assert.Contains(t, string(worker.batches[0]), "valid_3")
+	})
+
+	t.Run("all oversized events", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "oversized_1", timestamp: pcommon.Timestamp(1_000_000_000), oversized: true},
+			multiMetricItem{name: "oversized_2", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Equal(t, 2, strings.Count(err.Error(), "dropped metric event"))
+		assert.Empty(t, worker.batches, "no batches should be exported when all events are oversized")
 	})
 }
