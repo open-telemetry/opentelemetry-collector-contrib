@@ -67,7 +67,9 @@ type metricGroup struct {
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
-	mf := &metricFamily{}
+	mf := &metricFamily{
+		tx: &transaction{},
+	}
 	initMetricFamily(mf, metricName, familyName, metadata, logger, isNativeHistogram, isNHCB)
 	return mf
 }
