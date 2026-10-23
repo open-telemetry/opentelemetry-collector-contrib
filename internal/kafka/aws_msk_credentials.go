@@ -7,15 +7,11 @@ import (
 	"context"
 	"errors"
 	"math/rand/v2"
-	"net"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/smithy-go"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"go.uber.org/zap"
 )
 
@@ -36,18 +32,25 @@ var loadAWSCredentialsProvider = func(ctx context.Context, region string, logger
 	if err != nil {
 		return nil, err
 	}
-	if !aws.IsCredentialsProvider(cfg.Credentials, &stscreds.WebIdentityRoleProvider{}) {
-		return cfg.Credentials, nil
+	return wrapAWSMSKCredentialsProvider(cfg.Credentials, webIdentityOptions, logger), nil
+}
+
+func wrapAWSMSKCredentialsProvider(provider aws.CredentialsProvider, options stscreds.WebIdentityRoleOptions, logger *zap.Logger) aws.CredentialsProvider {
+	// The SDK invokes the options callback before constructing the provider as
+	// well as during construction. Preserve the SDK provider if a change in that
+	// ordering leaves the captured client or token retriever unset.
+	if !aws.IsCredentialsProvider(provider, &stscreds.WebIdentityRoleProvider{}) || options.Client == nil || options.TokenRetriever == nil {
+		return provider
 	}
 
-	// Reconstruct only the SDK-selected web identity provider with its resolved
-	// options, so its uncached Retrieve can be wrapped with the cache strategies.
+	// Reconstruct only the SDK-selected web identity provider, so its uncached
+	// Retrieve can be wrapped with the cache strategies.
 	// This preserves the default credential chain, including profile selection
 	// and the precedence of static credentials over web identity environment vars.
-	provider := stscreds.NewWebIdentityRoleProvider(webIdentityOptions.Client,
-		webIdentityOptions.RoleARN, webIdentityOptions.TokenRetriever,
-		func(o *stscreds.WebIdentityRoleOptions) { *o = webIdentityOptions })
-	return aws.NewCredentialsCache(newAWSMSKRefreshProvider(provider, logger), configureAWSMSKCache), nil
+	webIdentityProvider := stscreds.NewWebIdentityRoleProvider(options.Client,
+		options.RoleARN, options.TokenRetriever,
+		func(o *stscreds.WebIdentityRoleOptions) { *o = options })
+	return aws.NewCredentialsCache(newAWSMSKRefreshProvider(webIdentityProvider, logger), configureAWSMSKCache)
 }
 
 func configureAWSMSKCache(o *aws.CredentialsCacheOptions) {
@@ -58,22 +61,21 @@ func configureAWSMSKCache(o *aws.CredentialsCacheOptions) {
 // awsMSKRefreshProvider leaves credential values and concurrent refreshes owned
 // by the SDK cache. It retains only the original AWS expiry, before the SDK
 // subtracts its early-refresh window.
+// Each instance belongs to one SDK CredentialsCache, whose singleflight
+// serializes Retrieve and both cache strategy hooks.
 type awsMSKRefreshProvider struct {
 	provider aws.CredentialsProvider
 	logger   *zap.Logger
 
-	mu                   sync.Mutex
 	actualExpiry         time.Time
 	skipExpiryAdjustment bool
-	refreshTimeout       time.Duration
 	retryDelay           func() time.Duration
 }
 
 func newAWSMSKRefreshProvider(provider aws.CredentialsProvider, logger *zap.Logger) *awsMSKRefreshProvider {
 	return &awsMSKRefreshProvider{
-		provider:       provider,
-		logger:         logger.Named("aws_msk_credentials"),
-		refreshTimeout: awsMSKRefreshTimeout,
+		provider: provider,
+		logger:   logger.Named("aws_msk_credentials"),
 		retryDelay: func() time.Duration {
 			return 30*time.Second + time.Duration(rand.Int64N(int64(30*time.Second)+1))
 		},
@@ -83,59 +85,28 @@ func newAWSMSKRefreshProvider(provider aws.CredentialsProvider, logger *zap.Logg
 func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
 	// CredentialsCache suppresses the caller's deadline for its shared refresh.
 	// Bound the underlying provider here, including all of the SDK's STS retries.
-	ctx, cancel := context.WithTimeout(ctx, p.refreshTimeout)
+	ctx, cancel := context.WithTimeout(ctx, awsMSKRefreshTimeout)
 	defer cancel()
 	started := time.Now()
 	p.logger.Debug("AWS MSK credential refresh started")
 	creds, err := p.provider.Retrieve(ctx)
 	if err != nil {
-		fields := []zap.Field{zap.Duration("duration", time.Since(started))}
-		fields = append(fields, awsMSKRefreshErrorFields(err)...)
-		p.logger.Warn("AWS MSK credential refresh failed", fields...)
+		p.logger.Warn("AWS MSK credential refresh failed",
+			zap.Duration("duration", time.Since(started)), zap.Error(err))
 		return aws.Credentials{}, err
 	}
 	if creds.CanExpire && !creds.Expires.After(time.Now()) {
 		return aws.Credentials{}, errors.New("AWS MSK credential refresh returned expired credentials")
 	}
-	p.mu.Lock()
 	p.actualExpiry = creds.Expires
 	p.skipExpiryAdjustment = false
-	p.mu.Unlock()
 	p.logger.Debug("AWS MSK credential refresh succeeded",
 		zap.Duration("duration", time.Since(started)),
 		zap.Duration("credential_time_to_expiry", time.Until(creds.Expires)))
 	return creds, nil
 }
 
-func awsMSKRefreshErrorFields(err error) []zap.Field {
-	netErr, isNetErr := errors.AsType[net.Error](err)
-	if errors.Is(err, context.DeadlineExceeded) || (isNetErr && netErr.Timeout()) {
-		return []zap.Field{zap.String("error_kind", "timeout")}
-	}
-	if apiErr, ok := errors.AsType[smithy.APIError](err); ok {
-		code := apiErr.ErrorCode()
-		// Log only recognized codes, never response messages or arbitrary codes
-		// that could contain token, request, or other sensitive contents.
-		switch code {
-		case "AccessDenied", "AccessDeniedException", "ExpiredToken", "ExpiredTokenException", "InvalidClientTokenId",
-			"IDPCommunicationError", "IDPRejectedClaim", "InvalidIdentityToken",
-			"MalformedPolicyDocument", "PackedPolicyTooLarge", "RegionDisabled", "RegionDisabledException",
-			"Throttling", "ThrottlingException", "RequestTimeout", "RequestTimeoutException",
-			"ServiceUnavailable", "InternalFailure", "InternalError":
-		default:
-			code = "unknown"
-		}
-		return []zap.Field{zap.String("error_kind", "sts_api_error"), zap.String("aws_error_code", code)}
-	}
-	if _, ok := errors.AsType[*smithyhttp.RequestSendError](err); isNetErr || ok {
-		return []zap.Field{zap.String("error_kind", "network")}
-	}
-	return []zap.Field{zap.String("error_kind", "unknown")}
-}
-
 func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current aws.Credentials, refreshErr error) (aws.Credentials, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
 	now := time.Now()
 	if !current.HasKeys() || !current.CanExpire || !p.actualExpiry.After(now) {
 		return aws.Credentials{}, refreshErr
@@ -152,8 +123,6 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 }
 
 func (p *awsMSKRefreshProvider) AdjustExpiresBy(creds aws.Credentials, adjustment time.Duration) (aws.Credentials, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.skipExpiryAdjustment {
 		p.skipExpiryAdjustment = false
 	} else if creds.CanExpire {
