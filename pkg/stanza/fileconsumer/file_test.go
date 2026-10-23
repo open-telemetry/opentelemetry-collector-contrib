@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -1296,40 +1297,97 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.FileExists(t, longFile.Name())
 }
 
-// TestHeaderWithGzipDoesNotDuplicateLines tests that reading a gzip file with a header config does not re-emit
-// lines on a later poll. The header scanner can read further into the decompressed stream than the header
-// itself, and that read-ahead must be accounted for so the next poll does not resume before it.
-func TestHeaderWithGzipDoesNotDuplicateLines(t *testing.T) {
+// TestHeaderWithGzip tests that every line of a gzip file with a header config is emitted exactly once. The
+// header scanner reads ahead of the header into its own buffer, by an amount that depends on the buffer size, and
+// reading must continue right after the header regardless.
+func TestHeaderWithGzip(t *testing.T) {
+	t.Parallel()
+
+	for name, bufferSize := range map[string]helper.ByteSize{
+		"small buffer":   16,
+		"default buffer": helper.ByteSize(scanner.DefaultBufferSize),
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir).withGzip()
+			cfg.StartAt = "beginning"
+			cfg.InitialBufferSize = bufferSize
+			cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
+
+			op, sink := testManager(t, cfg)
+
+			temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+			writer := gzip.NewWriter(temp)
+			_, err := writer.Write([]byte("#headerField: headerValue\nline1\nline2\nline3\n"))
+			require.NoError(t, err)
+			require.NoError(t, writer.Close())
+
+			attributes := map[string]any{
+				"header_key":      "headerField",
+				"header_value":    "headerValue",
+				attrs.LogFileName: filepath.Base(temp.Name()),
+			}
+			op.poll(t.Context())
+			sink.ExpectCall(t, []byte("line1"), attributes)
+			sink.ExpectCall(t, []byte("line2"), attributes)
+			sink.ExpectCall(t, []byte("line3"), attributes)
+
+			// The file has not changed, so nothing is read again.
+			op.poll(t.Context())
+			sink.ExpectNoCalls(t)
+		})
+	}
+}
+
+// TestHeaderWithGzipBeingWritten tests a gzip file with a header config that is read while it is still being
+// written, with the header finished in one poll and lines arriving over later polls. Every line must be emitted
+// exactly once.
+func TestHeaderWithGzipBeingWritten(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir).withGzip()
 	cfg.StartAt = "beginning"
-	cfg.InitialBufferSize = 16
 	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
 
 	op, sink := testManager(t, cfg)
 
 	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	attributes := map[string]any{
+		"header_key":      "headerField",
+		"header_value":    "headerValue",
+		attrs.LogFileName: filepath.Base(temp.Name()),
+	}
 	writer := gzip.NewWriter(temp)
-	_, err := writer.Write([]byte("#headerField: headerValue\nline1\nline2\nline3\n"))
+
+	// Only the header is written so far, and the gzip member is not finished.
+	_, err := writer.Write([]byte("#headerField: headerValue\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	op.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	_, err = writer.Write([]byte("line1\nline2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	op.poll(t.Context())
+	sink.ExpectCall(t, []byte("line1"), attributes)
+	sink.ExpectCall(t, []byte("line2"), attributes)
+
+	_, err = writer.Write([]byte("line3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	op.poll(t.Context())
+	sink.ExpectCall(t, []byte("line3"), attributes)
+
+	_, err = writer.Write([]byte("line4\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
-
-	attrs := map[string]any{
-		"header_key":    "headerField",
-		"header_value":  "headerValue",
-		"log.file.name": filepath.Base(temp.Name()),
-	}
-	// The few bytes immediately after the header can be lost to the header scanner's own read-ahead buffer
-	// (a narrow, separate limitation of combining a header with gzip); line1 is not asserted here for that
-	// reason. What this test guards against is line2 and line3 being emitted more than once.
 	op.poll(t.Context())
-	sink.ExpectCall(t, []byte("line2"), attrs)
-	sink.ExpectCall(t, []byte("line3"), attrs)
+	sink.ExpectCall(t, []byte("line4"), attributes)
 
-	// The file has not changed, so nothing should be read again - in particular, line2 and line3 must not
-	// be re-emitted.
 	op.poll(t.Context())
 	sink.ExpectNoCalls(t)
 }

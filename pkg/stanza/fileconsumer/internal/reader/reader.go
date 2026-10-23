@@ -101,18 +101,17 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		gzipReader, err := r.createGzipReader()
-		if err != nil {
+		if err := r.createGzipReader(); err != nil {
 			return
 		}
-		defer r.updateGzipOffset(gzipReader)
+		// The gzip reader is replaced when a header ends, so the offset is updated from the current one.
+		defer func() { r.updateGzipOffset(r.reader.(*gzipMembersReader)) }()
 	case "auto":
 		if r.FileType == gzipExtension {
-			gzipReader, err := r.createGzipReader()
-			if err != nil {
+			if err := r.createGzipReader(); err != nil {
 				return
 			}
-			defer r.updateGzipOffset(gzipReader)
+			defer func() { r.updateGzipOffset(r.reader.(*gzipMembersReader)) }()
 		} else {
 			r.reader = r.file
 		}
@@ -145,20 +144,20 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 }
 
 // createGzipReader creates a reader that decompresses the gzip members of the file from the offset to the end of the file.
-func (r *Reader) createGzipReader() (*gzipMembersReader, error) {
+func (r *Reader) createGzipReader() error {
 	// We need to create a gzip reader each time ReadToEnd is called because the underlying
 	// SectionReader can only read a fixed window (from previous offset to EOF).
 	info, err := r.file.Stat()
 	if err != nil {
 		r.set.Logger.Error("failed to stat", zap.Error(err))
-		return nil, err
+		return err
 	}
 	currentEOF := info.Size()
 
 	if r.incompleteGzipSize > 0 && r.incompleteGzipSize == currentEOF {
 		// The file has not grown since its last gzip member was found to be incomplete, so there is nothing new to read.
 		r.handleUnchangedIncompleteGzip()
-		return nil, io.ErrUnexpectedEOF
+		return io.ErrUnexpectedEOF
 	}
 
 	gzipReader, err := newGzipMembersReader(io.NewSectionReader(r.file, r.Offset, currentEOF-r.Offset), r.Offset, currentEOF)
@@ -173,7 +172,7 @@ func (r *Reader) createGzipReader() (*gzipMembersReader, error) {
 			r.set.Logger.Error("failed to create gzip reader", zap.Error(err),
 				zap.Int64("offset", r.Offset), zap.Int64("file_size", currentEOF))
 		}
-		return nil, err
+		return err
 	}
 
 	// Skip past already-consumed decompressed bytes so only new lines are processed.
@@ -186,11 +185,11 @@ func (r *Reader) createGzipReader() (*gzipMembersReader, error) {
 					zap.Int64("offset", r.Offset), zap.Int64("decompressed_bytes_to_skip", r.DecompressedBytesToSkip),
 					zap.Int64("file_size", currentEOF))
 			}
-			return nil, err
+			return err
 		}
 	}
 	r.reader = gzipReader
-	return gzipReader, nil
+	return nil
 }
 
 // updateGzipOffset moves the offset of a gzip compressed file past the data that was read. The offset can only
@@ -249,6 +248,25 @@ func (r *Reader) recoverGzipOffset(fileSize int64) {
 	r.set.Logger.Warn("gzip offset is not at the start of a gzip member, continuing from the start of the gzip member",
 		zap.Int64("offset", oldOffset), zap.Int64("gzip_member_start", start), zap.Int64("decompressed_bytes_to_skip", skip))
 	r.Offset, r.DecompressedBytesToSkip = start, skip
+}
+
+// restartGzipReaderAfterHeader positions a new gzip reader right after the header. The header scanner reads
+// ahead of the header into its own buffer, and unlike a plain file, a gzip stream cannot be rewound to the end of
+// the header. So the gzip member is decompressed again from its start, skipping the data read before the header
+// and the header itself, and the content scanner continues from there.
+func (r *Reader) restartGzipReaderAfterHeader(g *gzipMembersReader) bool {
+	skip := r.DecompressedBytesToSkip + r.Offset - g.start
+	restarted, err := newGzipMembersReader(io.NewSectionReader(r.file, g.start, g.eof-g.start), g.start, g.eof)
+	if err == nil {
+		_, err = io.CopyN(io.Discard, restarted, skip)
+	}
+	if err != nil {
+		r.set.Logger.Error("failed to continue reading the gzip file after its header", zap.Error(err),
+			zap.Int64("offset", g.start), zap.Int64("decompressed_bytes_to_skip", skip))
+		return false
+	}
+	r.reader, r.Offset, r.DecompressedBytesToSkip = restarted, g.start, skip
+	return true
 }
 
 // gzipMemberContaining returns the start of the gzip member in rd that contains offset.
@@ -419,11 +437,8 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 		r.Offset = s.Pos()
 	}
 
-	// The header scanner may have read further into a gzip stream than the header itself, buffering decompressed
-	// bytes immediately after the header that it never returned as a token. Move the offset to that true position,
-	// so the content scanner resumes from there instead of re-reading and re-emitting lines already consumed.
-	if g, ok := r.reader.(*gzipMembersReader); ok {
-		r.Offset = g.start + g.decompressed
+	if g, ok := r.reader.(*gzipMembersReader); ok && !r.restartGzipReaderAfterHeader(g) {
+		return true
 	}
 
 	// Clean up the header machinery
