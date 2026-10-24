@@ -9,6 +9,106 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
+// RabbitmqChannelCountMetricAttributeKey specifies the key of an attribute for the rabbitmq.channel.count metric.
+type RabbitmqChannelCountMetricAttributeKey string
+
+const (
+	RabbitmqChannelCountMetricAttributeKeyChannelConsuming     RabbitmqChannelCountMetricAttributeKey = "rabbitmq.channel.consuming"
+	RabbitmqChannelCountMetricAttributeKeyChannelPrefetchCount RabbitmqChannelCountMetricAttributeKey = "rabbitmq.channel.prefetch_count"
+	RabbitmqChannelCountMetricAttributeKeyUserName             RabbitmqChannelCountMetricAttributeKey = "rabbitmq.user.name"
+	RabbitmqChannelCountMetricAttributeKeyVhostName            RabbitmqChannelCountMetricAttributeKey = "rabbitmq.vhost.name"
+)
+
+// RabbitmqChannelCountMetricConfig provides config for the rabbitmq.channel.count metric.
+type RabbitmqChannelCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RabbitmqChannelCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RabbitmqChannelCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RabbitmqChannelCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RabbitmqChannelCountMetricAttributeKeyChannelConsuming, RabbitmqChannelCountMetricAttributeKeyChannelPrefetchCount, RabbitmqChannelCountMetricAttributeKeyUserName, RabbitmqChannelCountMetricAttributeKeyVhostName:
+		default:
+			return fmt.Errorf("metric rabbitmq.channel.count doesn't have an attribute %v, valid attributes: [rabbitmq.channel.consuming, rabbitmq.channel.prefetch_count, rabbitmq.user.name, rabbitmq.vhost.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RabbitmqConnectionCountMetricAttributeKey specifies the key of an attribute for the rabbitmq.connection.count metric.
+type RabbitmqConnectionCountMetricAttributeKey string
+
+const (
+	RabbitmqConnectionCountMetricAttributeKeyUserName  RabbitmqConnectionCountMetricAttributeKey = "rabbitmq.user.name"
+	RabbitmqConnectionCountMetricAttributeKeyVhostName RabbitmqConnectionCountMetricAttributeKey = "rabbitmq.vhost.name"
+)
+
+// RabbitmqConnectionCountMetricConfig provides config for the rabbitmq.connection.count metric.
+type RabbitmqConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RabbitmqConnectionCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RabbitmqConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RabbitmqConnectionCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RabbitmqConnectionCountMetricAttributeKeyUserName, RabbitmqConnectionCountMetricAttributeKeyVhostName:
+		default:
+			return fmt.Errorf("metric rabbitmq.connection.count doesn't have an attribute %v, valid attributes: [rabbitmq.user.name, rabbitmq.vhost.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // RabbitmqConsumerCountMetricConfig provides config for the rabbitmq.consumer.count metric.
 type RabbitmqConsumerCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1679,6 +1779,8 @@ func (ms *RabbitmqNodeUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error 
 
 // MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
+	RabbitmqChannelCount                        RabbitmqChannelCountMetricConfig                        `mapstructure:"rabbitmq.channel.count"`
+	RabbitmqConnectionCount                     RabbitmqConnectionCountMetricConfig                     `mapstructure:"rabbitmq.connection.count"`
 	RabbitmqConsumerCount                       RabbitmqConsumerCountMetricConfig                       `mapstructure:"rabbitmq.consumer.count"`
 	RabbitmqExchangeMessagesPublishedIn         RabbitmqExchangeMessagesPublishedInMetricConfig         `mapstructure:"rabbitmq.exchange.messages.published_in"`
 	RabbitmqExchangeMessagesPublishedOut        RabbitmqExchangeMessagesPublishedOutMetricConfig        `mapstructure:"rabbitmq.exchange.messages.published_out"`
@@ -1765,6 +1867,16 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		RabbitmqChannelCount: RabbitmqChannelCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RabbitmqChannelCountMetricAttributeKey{RabbitmqChannelCountMetricAttributeKeyUserName, RabbitmqChannelCountMetricAttributeKeyVhostName},
+		},
+		RabbitmqConnectionCount: RabbitmqConnectionCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RabbitmqConnectionCountMetricAttributeKey{RabbitmqConnectionCountMetricAttributeKeyUserName, RabbitmqConnectionCountMetricAttributeKeyVhostName},
+		},
 		RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 			Enabled: true,
 		},

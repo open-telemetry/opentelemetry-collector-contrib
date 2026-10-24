@@ -1,6 +1,12 @@
 default:
 all_set:
   metrics:
+    rabbitmq.channel.count:
+      enabled: true
+      attributes: ["rabbitmq.channel.consuming","rabbitmq.channel.prefetch_count","rabbitmq.user.name","rabbitmq.vhost.name"]
+    rabbitmq.connection.count:
+      enabled: true
+      attributes: ["rabbitmq.user.name","rabbitmq.vhost.name"]
     rabbitmq.consumer.count:
       enabled: true
     rabbitmq.exchange.messages.published_in:
@@ -181,6 +187,12 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    rabbitmq.channel.count:
+      enabled: true
+      attributes: []
+    rabbitmq.connection.count:
+      enabled: true
+      attributes: []
     rabbitmq.consumer.count:
       enabled: true
     rabbitmq.exchange.messages.published_in:
@@ -361,6 +373,12 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    rabbitmq.channel.count:
+      enabled: false
+      attributes: ["rabbitmq.channel.consuming","rabbitmq.channel.prefetch_count","rabbitmq.user.name","rabbitmq.vhost.name"]
+    rabbitmq.connection.count:
+      enabled: false
+      attributes: ["rabbitmq.user.name","rabbitmq.vhost.name"]
     rabbitmq.consumer.count:
       enabled: false
     rabbitmq.exchange.messages.published_in:
