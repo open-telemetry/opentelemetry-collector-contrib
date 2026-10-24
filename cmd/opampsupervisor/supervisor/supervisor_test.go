@@ -2612,6 +2612,98 @@ func TestSupervisor_reportLastWorkingRemoteConfigStatus(t *testing.T) {
 	require.Equal(t, "boom", lastRemoteConfigStatus.ErrorMessage)
 }
 
+func TestSupervisor_runAgentProcessResolvesApplyingStatusAfterRestart(t *testing.T) {
+	tests := []struct {
+		name           string
+		health         *protobufs.ComponentHealth
+		expectedStatus protobufs.RemoteConfigStatuses
+		expectedError  string
+	}{
+		{
+			name:           "healthy agent",
+			health:         &protobufs.ComponentHealth{Healthy: true},
+			expectedStatus: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+		},
+		{
+			name:           "no health reported",
+			expectedStatus: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+			expectedError:  "Config apply timeout exceeded",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageDir := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(storageDir, agentConfigFileName), []byte("receivers:\n  debug: null\n"), 0o600))
+
+			persistentState, err := loadOrCreatePersistentState(
+				filepath.Join(storageDir, persistentStateFileName),
+				"018fee23-4a51-7303-a441-73faed7d9deb",
+				zap.NewNop(),
+			)
+			require.NoError(t, err)
+			configHash := []byte("applying-hash")
+			// Persisted by a previous Supervisor run that stopped before the config was applied.
+			require.NoError(t, persistentState.SetLastRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+				LastRemoteConfigHash: configHash,
+				Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+			}))
+
+			agentConfig := config.Agent{
+				Executable:         os.Args[0],
+				ConfigApplyTimeout: 100 * time.Millisecond,
+				Env: map[string]string{
+					supervisorRestartHelperEnv: "sleep",
+				},
+			}
+			cmdr, err := commander.NewCommander(zap.NewNop(), filepath.Join(storageDir, agentLogFileName), agentConfig)
+			require.NoError(t, err)
+
+			reportedStatuses := make(chan *protobufs.RemoteConfigStatus, 1)
+			s := &Supervisor{
+				runCtx:            t.Context(),
+				telemetrySettings: newNopTelemetrySettings(),
+				config: config.Supervisor{
+					Agent:        agentConfig,
+					Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+					Storage:      config.Storage{Directory: storageDir},
+				},
+				persistentState: persistentState,
+				commander:       cmdr,
+				opampClient: &mockOpAMPClient{
+					setHealthFunc: func(*protobufs.ComponentHealth) {},
+					setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+						reportedStatuses <- rcs
+						return nil
+					},
+				},
+				cfgState:     &atomic.Value{},
+				hasNewConfig: make(chan struct{}, 1),
+				doneChan:     make(chan struct{}),
+			}
+			s.cfgState.Store(&configState{mergedConfig: "receivers:\n  debug: null\n"})
+			s.remoteConfig.Store(&protobufs.AgentRemoteConfig{ConfigHash: configHash})
+			s.lastHealthFromClient.Store(tt.health)
+
+			s.agentWG.Go(s.runAgentProcess)
+			defer func() {
+				close(s.doneChan)
+				s.agentWG.Wait()
+			}()
+
+			select {
+			case rcs := <-reportedStatuses:
+				require.Equal(t, tt.expectedStatus, rcs.Status)
+				require.Equal(t, configHash, rcs.LastRemoteConfigHash)
+				require.Equal(t, tt.expectedError, rcs.ErrorMessage)
+			case <-time.After(5 * time.Second):
+				t.Fatal("timed out waiting for the remote config status")
+			}
+			require.Equal(t, tt.expectedStatus, s.persistentState.GetLastRemoteConfigStatus().Status)
+		})
+	}
+}
+
 func TestSupervisor_setAgentDescription(t *testing.T) {
 	s := &Supervisor{
 		agentDescription: &atomic.Value{},

@@ -1992,21 +1992,29 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
-		// We have an effective config file saved previously. Use it to start the agent.
-		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
-		_, err := s.startAgent()
-		if err != nil {
-			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
-			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
-		}
-	}
-
 	restartTimer := time.NewTimer(0)
 	restartTimer.Stop()
 
 	configApplyTimeoutTimer := time.NewTimer(0)
 	configApplyTimeoutTimer.Stop()
+
+	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
+		// We have an effective config file saved previously. Use it to start the agent.
+		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
+		status, err := s.startAgent()
+		// The Supervisor may have stopped while the remote config was being applied.
+		applying := s.persistentState.GetLastRemoteConfigStatus().GetStatus() == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
+		switch {
+		case err != nil:
+			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
+			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		case applying && status == agentNotStarting:
+			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+		case applying:
+			s.telemetrySettings.Logger.Info("Resuming application of the remote config interrupted by a Supervisor restart")
+			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
+		}
+	}
 
 	for {
 		select {
