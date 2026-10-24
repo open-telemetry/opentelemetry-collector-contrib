@@ -5,20 +5,20 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	eventsv1 "k8s.io/api/events/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 const (
 	// Number of log attributes to add to the plog.LogRecordSlice.
-	totalLogAttributes = 9
+	totalLogAttributes = 8
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
 	totalResourceAttributes = 7
@@ -33,8 +33,8 @@ var severityMap = map[string]plog.SeverityNumber{
 	"critical": plog.SeverityNumberFatal,
 }
 
-// k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
-func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plog.Logs {
+// k8sEventToLogRecord converts a Kubernetes events.k8s.io/v1 Event to plog.Logs and adds the resource attributes.
+func k8sEventToLogData(logger *zap.Logger, ev *eventsv1.Event, version string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -45,21 +45,22 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.PutStr(string(conventions.K8SNodeNameKey), ev.Source.Host)
+	// k8s.namespace.name describes the regarding object's namespace and belongs as a resource attribute.
+	resourceAttrs.PutStr(string(conventions.K8SNamespaceNameKey), ev.Regarding.Namespace)
 
-	// Attributes related to the object causing the event.
-	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
-	resourceAttrs.PutStr("k8s.object.name", ev.InvolvedObject.Name)
-	resourceAttrs.PutStr("k8s.object.uid", string(ev.InvolvedObject.UID))
-	resourceAttrs.PutStr("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
-	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
-	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
+	// Attributes related to the object causing the event (regarding in events.k8s.io/v1).
+	resourceAttrs.PutStr("k8s.object.kind", ev.Regarding.Kind)
+	resourceAttrs.PutStr("k8s.object.name", ev.Regarding.Name)
+	resourceAttrs.PutStr("k8s.object.uid", string(ev.Regarding.UID))
+	resourceAttrs.PutStr("k8s.object.fieldpath", ev.Regarding.FieldPath)
+	resourceAttrs.PutStr("k8s.object.api_version", ev.Regarding.APIVersion)
+	resourceAttrs.PutStr("k8s.object.resource_version", ev.Regarding.ResourceVersion)
 
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(k8sinventory.GetEventTimestamp(ev)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(getEventTimestamp(ev)))
 
-	// The Message field contains description about the event,
+	// The Note field contains description about the event (was Message in core/v1),
 	// which is best suited for the "Body" of the LogRecordSlice.
-	lr.Body().SetStr(ev.Message)
+	lr.Body().SetStr(ev.Note)
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
 	// severity is found.
@@ -78,15 +79,23 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	attrs.PutStr("k8s.event.start_time", ev.CreationTimestamp.String())
 	attrs.PutStr("k8s.event.name", ev.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.UID))
-	attrs.PutStr(string(conventions.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
 	attrs.PutStr("k8s.event.reporting_controller", ev.ReportingController)
 	attrs.PutStr("k8s.event.reporting_instance", ev.ReportingInstance)
 
-	// "Count" field of k8s event will be '0' in case it is
-	// not present in the collected event from k8s.
-	if ev.Count != 0 {
-		attrs.PutInt("k8s.event.count", int64(ev.Count))
+	// For series events, use series.count; for single events omit (no equivalent of core/v1 count).
+	if ev.Series != nil && ev.Series.Count != 0 {
+		attrs.PutInt("k8s.event.count", int64(ev.Series.Count))
 	}
 
 	return ld
+}
+
+// getEventTimestamp returns the most relevant timestamp for an events.k8s.io/v1 Event.
+// Priority: series.lastObservedTime > eventTime. For series events this gives the most
+// recent occurrence; for single events eventTime is the only available timestamp.
+func getEventTimestamp(ev *eventsv1.Event) time.Time {
+	if ev.Series != nil && ev.Series.LastObservedTime.Time != (time.Time{}) {
+		return ev.Series.LastObservedTime.Time
+	}
+	return ev.EventTime.Time
 }
