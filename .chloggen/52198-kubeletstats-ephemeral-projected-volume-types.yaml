@@ -1,0 +1,11 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: receiver/kubelet_stats
+
+note: Set `k8s.volume.type` for ephemeral and projected volumes.
+
+issues: [52198]
+
+change_logs: [user]
