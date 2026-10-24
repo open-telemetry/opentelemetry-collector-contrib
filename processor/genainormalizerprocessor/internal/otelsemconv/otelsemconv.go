@@ -21,7 +21,7 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // SchemaURL is the OTel semconv schema URL for the targeted version.
