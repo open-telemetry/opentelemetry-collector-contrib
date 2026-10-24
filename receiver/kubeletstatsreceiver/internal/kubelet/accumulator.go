@@ -42,6 +42,10 @@ type metricDataAccumulator struct {
 	time                  time.Time
 	mbs                   *metadata.MetricsBuilders
 	cpuUsageCalculator    *CPUUsageCalculator
+	nodeName              string
+	// seenPVCs tracks PVCs already reported in the current scrape, since a PVC
+	// can be mounted by more than one pod on the node.
+	seenPVCs map[stats.PVCReference]struct{}
 }
 
 func addUptimeMetric(mb *metadata.MetricsBuilder, uptimeMetric metadata.RecordIntDataPointFunc, startTime v1.Time, currentTime pcommon.Timestamp) {
@@ -163,4 +167,44 @@ func (a *metricDataAccumulator) volumeStats(sPod *stats.PodStats, s *stats.Volum
 	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
 
 	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(metadata.WithResource(res)))
+}
+
+// pvcStats emits PVC-level volume metrics, once per PVC per scrape. This mirrors
+// the deduplication done by kubelet in pkg/kubelet/metrics/collectors/volume_stats.go.
+func (a *metricDataAccumulator) pvcStats(s *stats.VolumeStats) {
+	if !a.metricGroupsToCollect[VolumeMetricGroup] || s.PVCRef == nil {
+		return
+	}
+
+	if a.seenPVCs == nil {
+		a.seenPVCs = make(map[stats.PVCReference]struct{})
+	}
+	if _, ok := a.seenPVCs[*s.PVCRef]; ok {
+		return
+	}
+	a.seenPVCs[*s.PVCRef] = struct{}{}
+
+	rb := a.mbs.OtherMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sPersistentvolumeclaimName(s.PVCRef.Name)
+	rb.SetK8sNamespaceName(s.PVCRef.Namespace)
+	rb.SetK8sNodeName(a.nodeName)
+	if a.metadata.PVCUIDGetter != nil {
+		uid, err := a.metadata.PVCUIDGetter(s.PVCRef.Namespace, s.PVCRef.Name)
+		if err != nil {
+			// Still emit the data point, just without the UID.
+			a.logger.Debug(
+				"Failed to look up PersistentVolumeClaim UID.",
+				zap.String("namespace", s.PVCRef.Namespace),
+				zap.String("pvc", s.PVCRef.Name),
+				zap.Error(err),
+			)
+		} else {
+			rb.SetK8sPersistentvolumeclaimUID(uid)
+		}
+	}
+
+	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sPersistentVolumeClaimVolumeMetrics, s, currentTime)
+
+	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(metadata.WithResource(rb.Emit())))
 }
