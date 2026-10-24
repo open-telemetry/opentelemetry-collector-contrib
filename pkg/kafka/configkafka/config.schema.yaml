@@ -22,11 +22,11 @@ $defs:
         type: string
         format: duration
   awsmsk_config:
-    description: AWSMSKConfig defines the additional SASL authentication measures needed to use the AWS_MSK_IAM_OAUTHBEARER mechanism
+    description: AWSMSKConfig defines the additional SASL authentication configuration for AWS MSK.
     type: object
     properties:
       region:
-        description: Region is the AWS region the MSK cluster is based in
+        description: 'Region is the AWS region the MSK cluster is based in. Deprecated [v0.163.0]: use the sigv4auth extension with OAUTHBEARER instead. This configuration will be removed in a future release.'
         type: string
   client_config:
     type: object
@@ -204,10 +204,10 @@ $defs:
     type: object
     properties:
       aws_msk:
-        description: AWSMSK holds configuration specific to AWS MSK.
+        description: 'AWSMSK holds configuration specific to AWS MSK. Deprecated [v0.163.0]: use the sigv4auth extension with OAUTHBEARER instead. This configuration will be removed in a future release.'
         $ref: awsmsk_config
       mechanism:
-        description: 'SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).'
+        description: 'SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512). AWS_MSK_IAM_OAUTHBEARER is deprecated; use OAUTHBEARER with the sigv4auth extension configured as oauthbearer_token_source instead.'
         type: string
       oauthbearer_token_source:
         description: ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism, typically named "oauth2client"
