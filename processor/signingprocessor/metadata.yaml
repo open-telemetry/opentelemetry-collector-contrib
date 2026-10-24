@@ -1,0 +1,19 @@
+display_name: Signing Processor
+type: signing
+
+status:
+  class: processor
+  stability:
+    development: [ logs ]
+  distributions: []
+  warnings: []
+  codeowners:
+    active: [hilmarf, jmacd]
+
+tests:
+  config:
+    key_source:
+      type: file
+      file:
+        certificate: testdata/test-cert.pem
+        private_key: testdata/test-key.pem

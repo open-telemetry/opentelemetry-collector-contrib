@@ -25,7 +25,7 @@ func AssertEqualProcessorCardinalityLabelsStripped(t *testing.T, tt *componentte
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_cardinality_labels.stripped",
 		Description: "Total number of high-cardinality labels stripped or tagged. [Development]",
-		Unit:        "{labels}",
+		Unit:        "{label}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -41,7 +41,7 @@ func AssertEqualProcessorCardinalitySavingsEstimated(t *testing.T, tt *component
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_cardinality_savings.estimated",
 		Description: "Cumulative estimated dollar value of time-series churn prevented by the processor. [Development]",
-		Unit:        "{dollars}",
+		Unit:        "{dollar}",
 		Data: metricdata.Sum[float64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -57,7 +57,7 @@ func AssertEqualProcessorCardinalityTopOffenders(t *testing.T, tt *componenttest
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_cardinality_top.offenders",
 		Description: "Cardinality delta of the top-N highest-growth (metric, label) pairs from the last epoch rotation. [Development]",
-		Unit:        "{pairs}",
+		Unit:        "{pair}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -71,7 +71,7 @@ func AssertEqualProcessorCardinalityTrackersActive(t *testing.T, tt *componentte
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_cardinality_trackers.active",
 		Description: "Current number of active cardinality trackers across all shards. [Development]",
-		Unit:        "{trackers}",
+		Unit:        "{tracker}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -85,7 +85,7 @@ func AssertEqualProcessorCardinalityTrackersRejected(t *testing.T, tt *component
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_cardinality_trackers.rejected",
 		Description: "Number of new (metric, label) pairs ignored because max_tracker_count was reached. [Development]",
-		Unit:        "{trackers}",
+		Unit:        "{tracker}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

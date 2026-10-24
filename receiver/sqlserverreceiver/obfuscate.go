@@ -6,10 +6,11 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
+	"go.uber.org/zap"
 )
 
 var xmlPlanObfuscationAttrs = []string{
@@ -19,18 +20,49 @@ var xmlPlanObfuscationAttrs = []string{
 	"ParameterCompiledValue",
 }
 
-type obfuscator obfuscate.Obfuscator
+type obfuscator struct {
+	*obfuscate.Obfuscator
+	logger *zap.Logger
+}
 
-func newObfuscator() *obfuscator {
-	return (*obfuscator)(obfuscate.NewObfuscator(obfuscate.Config{
-		SQL: obfuscate.SQLConfig{
-			DBMS: "mssql",
-		},
-	}))
+func newObfuscator(logger *zap.Logger) *obfuscator {
+	return &obfuscator{
+		Obfuscator: obfuscate.NewObfuscator(obfuscate.Config{
+			SQL: obfuscate.SQLConfig{
+				DBMS: "mssql",
+				// ObfuscateAndNormalize routes obfuscation through the go-sqllexer
+				// engine, which is more tolerant than the legacy tokenizer: it does
+				// not error on statements that reduce to nothing after comments are
+				// stripped (returning an empty result instead of "result is empty"),
+				// so comment-only statements no longer spam error logs or drop the
+				// row. It also normalizes the output (collapsing whitespace and
+				// stripping comments/aliases), which yields more stable query
+				// signatures across semantically identical statements.
+				ObfuscationMode: obfuscate.ObfuscateAndNormalize,
+			},
+		}),
+		logger: logger,
+	}
+}
+
+// sanitizeSQL strips non-semantic Unicode format characters (Unicode category
+// Cf, e.g. a zero-width space U+200B) that carry no SQL semantics. Under the
+// ObfuscateAndNormalize engine these characters no longer cause a hard failure,
+// but they would otherwise survive into the obfuscated output as garbled bytes
+// and, worse, cause an otherwise-identical statement to obfuscate to a different
+// string. Stripping them keeps the obfuscated text clean and ensures the query
+// signature is stable regardless of stray invisible characters.
+func sanitizeSQL(sql string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Cf, r) {
+			return -1
+		}
+		return r
+	}, sql)
 }
 
 func (o *obfuscator) obfuscateSQLString(sql string) (string, error) {
-	obfuscatedQuery, err := (*obfuscate.Obfuscator)(o).ObfuscateSQLString(sql)
+	obfuscatedQuery, err := o.ObfuscateSQLString(sanitizeSQL(sql))
 	if err != nil {
 		return "", err
 	}
@@ -62,8 +94,9 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							return "", nil
+							o.logger.Warn("Unable to obfuscate SQL statement in query plan, redacting attribute", zap.String("attr", attrName), zap.Error(err))
+							elem.Attr[i].Value = "?"
+							continue
 						}
 						elem.Attr[i].Value = val
 					}

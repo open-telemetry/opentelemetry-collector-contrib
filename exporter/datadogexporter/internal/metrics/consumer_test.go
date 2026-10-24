@@ -11,6 +11,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -22,7 +23,7 @@ import (
 type testProvider string
 
 func (t testProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
+	return source.Source{Kind: source.HostnameKind, Identifier: string(t), SourceIdentifier: source.SourceIdentifier{Primary: string(t)}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116) so not-yet-migrated readers (e.g. otlp/metrics fallback hostname) still see a value
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger, opts ...metrics.TranslatorOption) metrics.Provider {
@@ -189,4 +190,51 @@ func TestConsumeTimeSeriesUnits(t *testing.T) {
 	for _, m := range consumer.ms {
 		assert.Nil(t, m.Unit)
 	}
+}
+
+func TestToDataType(t *testing.T) {
+	consumer := NewConsumer(nil)
+	for _, tt := range []struct {
+		name string
+		in   metrics.DataType
+		want datadogV2.MetricIntakeType
+	}{
+		{"count", metrics.Count, datadogV2.METRICINTAKETYPE_COUNT},
+		{"gauge", metrics.Gauge, datadogV2.METRICINTAKETYPE_GAUGE},
+		// Rate is reachable when an OTLP delta-sum datapoint carries the
+		// datadog.metric.as_type=rate attribute; before this case existed it fell
+		// through to METRICINTAKETYPE_UNSPECIFIED and the metric was silently dropped.
+		{"rate", metrics.Rate, datadogV2.METRICINTAKETYPE_RATE},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, consumer.toDataType(tt.in))
+		})
+	}
+}
+
+func TestAzureContainerAppsRunningMetric(t *testing.T) {
+	consumer := NewConsumer(nil)
+	tags := []string{
+		"replica:replica-1",
+		"name:my-app",
+		"subscription_id:sub-123",
+		"resource_group:my-rg",
+	}
+	consumer.ConsumeTagSet("azurecontainerapps", tags)
+	// Same tags — should deduplicate
+	consumer.ConsumeTagSet("azurecontainerapps", tags)
+
+	series, _ := consumer.All(uint64(1e9), component.BuildInfo{}, nil, metrics.Metadata{})
+
+	var acaSeries []datadogV2.MetricSeries
+	for _, s := range series {
+		if s.GetMetric() == "otel.datadog_exporter.metrics.running.azurecontainerapps" {
+			acaSeries = append(acaSeries, s)
+		}
+	}
+	require.Len(t, acaSeries, 1, "expected exactly one ACA metric (dedup check)")
+	assert.Contains(t, acaSeries[0].Tags, "replica:replica-1")
+	assert.Contains(t, acaSeries[0].Tags, "name:my-app")
+	assert.Contains(t, acaSeries[0].Tags, "subscription_id:sub-123")
+	assert.Contains(t, acaSeries[0].Tags, "resource_group:my-rg")
 }

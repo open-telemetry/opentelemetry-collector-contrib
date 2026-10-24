@@ -47,12 +47,15 @@ func createDefaultConfig() component.Config {
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		Exclude:   defaultExcludes,
 		Extract: ExtractConfig{
-			Metadata:                     enabledAttributes(),
-			DeploymentNameFromReplicaSet: true,
+			Metadata: enabledAttributes(),
 		},
 		WaitForMetadataTimeout: 10 * time.Second,
 		WatchSyncPeriod:        5 * time.Minute,
 		PodDeleteGracePeriod:   120 * time.Second,
+		Kubelet: KubeletConfig{
+			PollInterval:   10 * time.Second,
+			RequestTimeout: 10 * time.Second,
+		},
 	}
 }
 
@@ -78,7 +81,8 @@ func createTracesProcessor(
 		kp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(sc.Start),
-		processorhelper.WithShutdown(sc.Shutdown))
+		processorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createLogsProcessor(
@@ -103,7 +107,8 @@ func createLogsProcessor(
 		kp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(sc.Start),
-		processorhelper.WithShutdown(sc.Shutdown))
+		processorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createMetricsProcessor(
@@ -128,7 +133,8 @@ func createMetricsProcessor(
 		kp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(sc.Start),
-		processorhelper.WithShutdown(sc.Shutdown))
+		processorhelper.WithShutdown(sc.Shutdown),
+	)
 }
 
 func createProfilesProcessor(
@@ -174,7 +180,8 @@ func createTracesProcessorWithOptions(
 		kp.processTraces,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
-		processorhelper.WithShutdown(kp.Shutdown))
+		processorhelper.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createMetricsProcessorWithOptions(
@@ -194,7 +201,8 @@ func createMetricsProcessorWithOptions(
 		kp.processMetrics,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
-		processorhelper.WithShutdown(kp.Shutdown))
+		processorhelper.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createLogsProcessorWithOptions(
@@ -214,7 +222,8 @@ func createLogsProcessorWithOptions(
 		kp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
-		processorhelper.WithShutdown(kp.Shutdown))
+		processorhelper.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createProfilesProcessorWithOptions(
@@ -272,7 +281,6 @@ func createProcessorOpts(cfg component.Config) []option {
 		withExtractLabels(oCfg.Extract.Labels...),
 		withExtractAnnotations(oCfg.Extract.Annotations...),
 		withOtelAnnotations(oCfg.Extract.OtelAnnotations),
-		withDeploymentNameFromReplicaSet(oCfg.Extract.DeploymentNameFromReplicaSet),
 		// filters
 		withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar),
 		withFilterNamespace(oCfg.Filter.Namespace),
@@ -283,7 +291,8 @@ func createProcessorOpts(cfg component.Config) []option {
 		withExcludes(oCfg.Exclude),
 		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout),
 		withWatchSyncPeriod(oCfg.WatchSyncPeriod),
-		withPodDeleteGracePeriod(oCfg.PodDeleteGracePeriod))
+		withPodDeleteGracePeriod(oCfg.PodDeleteGracePeriod),
+		withKubeletConfig(oCfg.Kubelet))
 
 	if oCfg.WaitForMetadata {
 		opts = append(opts, withWaitForMetadata(true))

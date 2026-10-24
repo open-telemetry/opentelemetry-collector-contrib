@@ -6,7 +6,8 @@
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheusremotewrite%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheusremotewrite%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_prometheusremotewrite)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_prometheusremotewrite&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@rapphil](https://www.github.com/rapphil), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
+| Emeritus      | [@rapphil](https://www.github.com/rapphil) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -29,14 +30,16 @@ how this exporter works.
 
 The following settings are required:
 
-- `endpoint` (no default): The remote write URL to send remote write samples.
+- `http.endpoint` (no default): The remote write URL to send remote write samples.
+  For backward compatibility, a top-level `endpoint` is still accepted, but prefer
+  configuring it under the `http` block.
 
-By default, TLS is enabled and must be configured under `tls:`:
+By default, TLS is enabled and must be configured under `http.tls:` (or top-level `tls:` for backward compatibility):
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required under `tls:`:
+As a result, the following parameters are also required under `http.tls:` (or top-level `tls:`):
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
@@ -46,7 +49,7 @@ As a result, the following parameters are also required under `tls:`:
 The following settings can be optionally configured:
 
 - `external_labels`: map of labels names and values to be attached to each metric data point
-- `headers`: additional headers attached to each HTTP request.
+- `http.headers` (or top-level `headers` for backward compatibility): additional headers attached to each HTTP request.
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true. **Deprecated**: Use `translation_strategy` instead.
@@ -59,9 +62,12 @@ The following settings can be optionally configured:
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
-- `resource_to_telemetry_conversion`
-  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
-  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace`  resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
+- `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
+  - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
+  - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
+- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Can be disabled entirely via the `exporter.prometheusremotewrite.DisableResourceToTelemetryConversion` feature gate.
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is setting `included: ["*"]`.
+  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
 - `wal`: Write-Ahead-Log settings for the exporter.
   - `directory` (default = ``): The directory to store the WAL in.
   - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
@@ -88,7 +94,8 @@ Example:
 ```yaml
 exporters:
   prometheus_remote_write:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    http:
+      endpoint: "https://my-cortex:7900/api/v1/push"
     wal: # Enabling the Write-Ahead-Log for the exporter.
       directory: ./prom_rw # The directory to store the WAL in
       buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
@@ -102,22 +109,27 @@ Example:
 ```yaml
 exporters:
   prometheus_remote_write:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    http:
+      endpoint: "https://my-cortex:7900/api/v1/push"
     external_labels:
       label_name1: label_value1
       label_name2: label_value2
 ```
 
 > [!NOTE]
-> The deprecated coponent type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
+> The deprecated component type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
 
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol.
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol. Prefer configuring these under an `http` block (for example `http.endpoint`, `http.tls`, `http.headers`, `http.timeout`). Top-level HTTP client settings remain supported for backward compatibility. The top-level `timeout` is the exporter `timeout` setting (see below); `http.timeout` takes the same value unless it is set explicitly, and the other way round. When both are present, the `http` block takes precedence. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
+  - `timeout` (default = `5s`) is the time to wait for each attempt to send a request, including the first one. It does not limit the time spent retrying. The timeout of the HTTP client, `http.timeout`, takes the same value when it is not set explicitly (and `timeout` takes the value of `http.timeout` when only `http.timeout` is set); when both are set, the smaller one is what bounds an attempt. A `timeout` of `0` disables the per-attempt timeout of the exporter, which leaves only `http.timeout`.
+  - `retry_on_failure` retries the requests that failed with a retryable error, such as a connection error, a timeout or a 5xx response. `retry_on_failure.max_elapsed_time` (default = `5m`) bounds the total time spent exporting a batch of metrics, including the retries of all the requests it is split into (see `max_batch_size_bytes`), after which the batch is dropped. Set it to a value longer than the backend outage that must be tolerated. A value of `0` retries until the exporter shuts down.
+  - On shutdown the retries stop, and the batches still queued are attempted once each, until the deadline of the shutdown if there is one.
+  - While a batch is retried, the batches after it wait in the `remote_write_queue`, which drops new data when it is full. The data in the queue is lost when the Collector restarts, unless the `wal` is configured. When `remote_write_queue.enabled` is `false`, the retries block the caller for up to `retry_on_failure.max_elapsed_time`, so lower it or disable `retry_on_failure`.
 
 ### Feature gates
 
@@ -135,6 +147,12 @@ This exporter has feature gate: `+exporter.prometheusremotewritexporter.EnableMu
 
 When this feature gate is enabled, `num_consumers` will be used as the worker counter for handling batches from the queue, and `max_batch_request_parallelism` will be used for parallelism on single batch bigger than `max_batch_size_bytes`.
 Enabling this feature gate, with `num_consumers` higher than 1 requires the target destination to supports ingestion of OutOfOrder samples. See [Multiple Consumers and OutOfOrder](#multiple-consumers-and-outoforder) for more info
+
+#### removeTopLevelHTTPSettings
+
+This exporter has feature gate: `exporter.prometheusremotewritexporter.removeTopLevelHTTPSettings`.
+
+When enabled, top-level (flat) HTTP client settings such as `endpoint`, `tls`, `headers`, and `proxy_url` are rejected. Configure those settings under the `http` block instead (for example `http.endpoint`). The nested `http` block is available without enabling this gate; the gate is only for forcing migration off the legacy flat settings. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
 
 ## Metric names and labels normalization
 

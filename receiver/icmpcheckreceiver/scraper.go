@@ -104,7 +104,8 @@ func addMetrics(result pingResult, mb *metadata.MetricsBuilder, logger *zap.Logg
 		logger.Error(
 			"failed to ping host",
 			zap.String("host", result.targetHost),
-			zap.Error(result.err))
+			zap.Error(result.err),
+		)
 		return
 	}
 

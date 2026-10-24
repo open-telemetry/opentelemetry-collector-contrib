@@ -27,7 +27,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
@@ -37,12 +38,13 @@ func createDefaultConfig() component.Config {
 			CollectionInterval: defaultCollectionInterval,
 			Timeout:            defaultTimeout,
 		},
-		Endpoint:      defaultEndpoint,
-		Version:       defaultVersion,
-		Community:     defaultCommunity,
-		SecurityLevel: defaultSecurityLevel,
-		AuthType:      defaultAuthType,
-		PrivacyType:   defaultPrivacyType,
+		Endpoint:       defaultEndpoint,
+		Version:        defaultVersion,
+		Community:      defaultCommunity,
+		SecurityLevel:  defaultSecurityLevel,
+		AuthType:       defaultAuthType,
+		PrivacyType:    defaultPrivacyType,
+		MaxRepetitions: defaultMaxRepetitions,
 	}
 }
 
@@ -73,6 +75,11 @@ func createMetricsReceiver(
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults
 func addMissingConfigDefaults(cfg *Config) error {
+	// Add default max_repetitions if not set
+	if cfg.MaxRepetitions == 0 {
+		cfg.MaxRepetitions = defaultMaxRepetitions
+	}
+
 	// Add the schema prefix to the endpoint if it doesn't contain one
 	if !strings.Contains(cfg.Endpoint, "://") {
 		cfg.Endpoint = "udp://" + cfg.Endpoint

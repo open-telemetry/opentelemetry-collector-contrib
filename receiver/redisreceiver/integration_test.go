@@ -32,14 +32,16 @@ func TestIntegrationV6(t *testing.T) {
 				Image:        "redis:6.0.3",
 				ExposedPorts: []string{redisPort},
 				WaitingFor:   wait.ForListeningPort(redisPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
 				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubChannelStatus.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubPatternStatus.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -86,7 +88,8 @@ func TestIntegrationV7Cluster(t *testing.T) {
 				// to a replica node, so in practice any failures due to cluster node role changes is unlikely
 				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
 				rCfg.MetricsBuilderConfig.Metrics.RedisReplicationReplicaOffset.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -120,7 +123,8 @@ func TestIntegrationV8Sentinel(t *testing.T) {
 					},
 				},
 				WaitingFor: wait.ForListeningPort(sentinelPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
@@ -134,7 +138,8 @@ func TestIntegrationV8Sentinel(t *testing.T) {
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelSimulateFailureFlags.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelTiltSinceSeconds.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelTotalTilt.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),

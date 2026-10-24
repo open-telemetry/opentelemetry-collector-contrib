@@ -47,7 +47,8 @@ func createMetricsScraper(
 		if inContainer {
 			settings.Logger.Warn(
 				"No `root_path` config set when running in docker environment, will report container filesystem stats." +
-					" See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#collecting-host-metrics-from-inside-a-container-linux-only")
+					" See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#collecting-host-metrics-from-inside-a-container-linux-only",
+			)
 		}
 	}
 

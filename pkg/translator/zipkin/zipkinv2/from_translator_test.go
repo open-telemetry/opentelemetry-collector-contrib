@@ -139,6 +139,8 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 	}
 }
 
+// TestExtractScopeTags covers the default behavior with the Scope semconv gates
+// at their Beta stage, where the translator emits the v1 otel.scope.* attributes.
 func TestExtractScopeTags(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -158,19 +160,6 @@ func TestExtractScopeTags(t *testing.T) {
 				il.Attributes().PutStr("custom.key", "custom.val")
 			},
 			res: map[string]string{
-				"custom.key":           "custom.val",
-				"otel.library.name":    "otel-lib",
-				"otel.library.version": "v1.2.3",
-			},
-		},
-		{
-			name: "with attributes and name/version (v1)",
-			scopeCfg: func(il pcommon.InstrumentationScope) {
-				il.SetName("otel-lib")
-				il.SetVersion("v1.2.3")
-				il.Attributes().PutStr("custom.key", "custom.val")
-			},
-			res: map[string]string{
 				"custom.key":         "custom.val",
 				"otel.scope.name":    "otel-lib",
 				"otel.scope.version": "v1.2.3",
@@ -180,15 +169,6 @@ func TestExtractScopeTags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "with attributes and name/version (v1)" {
-				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", true))
-				require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", true))
-				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", false))
-					require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", false))
-				}()
-			}
-
 			il := pcommon.NewInstrumentationScope()
 			tt.scopeCfg(il)
 
@@ -200,10 +180,37 @@ func TestExtractScopeTags(t *testing.T) {
 	}
 }
 
+// TestExtractScopeTagsV0 covers the deprecated v0 otel.library.* output emitted
+// when the Scope semconv gates are disabled. Remove this test once the gates are
+// promoted to stable and the v0 attributes are no longer emitted.
+func TestExtractScopeTagsV0(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", false))
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0ScopeConventions", true))
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1ScopeConventions", true))
+	})
+
+	il := pcommon.NewInstrumentationScope()
+	il.SetName("otel-lib")
+	il.SetVersion("v1.2.3")
+	il.Attributes().PutStr("custom.key", "custom.val")
+
+	zTags := map[string]string{}
+	extractScopeTags(il, zTags)
+
+	assert.Equal(t, map[string]string{
+		"custom.key":           "custom.val",
+		"otel.library.name":    "otel-lib",
+		"otel.library.version": "v1.2.3",
+	}, zTags)
+}
+
 func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	tds, err := goldendataset.GenerateTraces(
 		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",
-		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
+		"../../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt",
+	)
 	assert.NoError(t, err)
 	for _, td := range tds {
 		zipkinSpans, err := FromTranslator{}.FromTraces(td)

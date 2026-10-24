@@ -25,6 +25,7 @@ type Config struct {
 	Endpoint             string                         `mapstructure:"endpoint"`
 	Username             string                         `mapstructure:"username"`
 	Password             configopaque.String            `mapstructure:"password"`
+	ProxyURL             string                         `mapstructure:"proxy_url"`
 	MaxQueryMetrics      int                            `mapstructure:"max_query_metrics"`
 }
 
@@ -51,6 +52,19 @@ func (c *Config) Validate() error {
 
 	if c.Password == "" {
 		err = multierr.Append(err, errors.New("password not provided and is required"))
+	}
+
+	if c.ProxyURL != "" {
+		proxyURL, proxyErr := url.Parse(c.ProxyURL)
+		switch {
+		case proxyErr != nil:
+			err = multierr.Append(err, fmt.Errorf("unable to parse proxy_url %s: %w", c.ProxyURL, proxyErr))
+		case proxyURL.Scheme != "http" && proxyURL.Scheme != "https" &&
+			proxyURL.Scheme != "socks5" && proxyURL.Scheme != "socks5h":
+			err = multierr.Append(err, errors.New("proxy_url scheme must be http, https, socks5 or socks5h"))
+		case proxyURL.Host == "":
+			err = multierr.Append(err, errors.New("proxy_url must include a host"))
+		}
 	}
 
 	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {

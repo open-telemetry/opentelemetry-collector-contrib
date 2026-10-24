@@ -24,21 +24,11 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultServerConfig.WriteTimeout = 0
-	defaultServerConfig.ReadHeaderTimeout = 0
-	defaultServerConfig.IdleTimeout = 0
-	defaultServerConfig.KeepAlivesEnabled = false
 	defaultServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  "localhost:5778",
 		Transport: confignet.TransportTypeTCP,
 	}
 	namedServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	namedServerConfig.WriteTimeout = 0
-	namedServerConfig.ReadHeaderTimeout = 0
-	namedServerConfig.IdleTimeout = 0
-	namedServerConfig.KeepAlivesEnabled = false
 	namedServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  "localhost:5778",
 		Transport: confignet.TransportTypeTCP,

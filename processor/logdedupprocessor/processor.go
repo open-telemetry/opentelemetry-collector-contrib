@@ -260,7 +260,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 					return true
 				}
 
-				logCtx := ottllog.NewTransformContextPtr(rl, sl, logRecord)
+				logCtx := ottllog.NewTransformContext(rl, sl, logRecord)
 				defer logCtx.Close()
 				logMatch, err := p.conditions.Eval(ctx, logCtx)
 				if err != nil {

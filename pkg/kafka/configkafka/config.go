@@ -40,14 +40,6 @@ type ClientConfig struct {
 	// Brokers holds the list of Kafka bootstrap servers (default localhost:9092).
 	Brokers []string `mapstructure:"brokers"`
 
-	// ResolveCanonicalBootstrapServersOnly is ignored, and exists for
-	// backwards compatibility in config parsing.
-	//
-	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
-	// which has no direct equivalent to the associated Sarama config. This config
-	// will be removed in a future release.
-	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
-
 	// ProtocolVersion defines the Kafka protocol version that the client will
 	// assume it is running against.
 	ProtocolVersion string `mapstructure:"protocol_version"`
@@ -84,6 +76,9 @@ type ClientConfig struct {
 
 	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
 	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
+
+	// DialTimeout specifies the time allowed to establish a connection to a broker (default 10s).
+	DialTimeout time.Duration `mapstructure:"dial_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
@@ -93,6 +88,7 @@ func NewDefaultClientConfig() ClientConfig {
 		Metadata:        NewDefaultMetadataConfig(),
 		UseLeaderEpoch:  true,
 		ConnIdleTimeout: 9 * time.Minute,
+		DialTimeout:     10 * time.Second,
 	}
 }
 
@@ -107,6 +103,15 @@ func (c ClientConfig) Validate() error {
 	}
 	if c.ConnIdleTimeout <= 0 {
 		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
+	}
+	if c.DialTimeout <= 0 {
+		return fmt.Errorf("dial_timeout (%s) must be positive", c.DialTimeout)
+	}
+	if c.Metadata.Retry.Max < 0 {
+		return fmt.Errorf("metadata::retry::max (%d) must be non-negative", c.Metadata.Retry.Max)
+	}
+	if c.Metadata.Retry.Backoff < 0 {
+		return fmt.Errorf("metadata::retry::backoff (%s) must be non-negative", c.Metadata.Retry.Backoff)
 	}
 	return nil
 }
@@ -146,6 +151,14 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
+	// MaxDecompressBatchBytes defines the maximum number of bytes to allow
+	// for decompressing a single Kafka record batch. This limit is applied
+	// after decompression, so it bounds the memory required for a decompressed
+	// record batch. The default is 1 GiB (1073741824 bytes).
+	// This setting is independent of MaxFetchSize and MaxPartitionFetchSize,
+	// which limit compressed bytes on the wire.
+	MaxDecompressBatchBytes int `mapstructure:"max_decompress_batch_bytes"`
+
 	// GroupRebalanceStrategies specifies the ordered strategies to advertise
 	// for partition assignment. Kafka selects the first strategy supported by
 	// every member of the consumer group. Built-in values are "range",
@@ -155,14 +168,6 @@ type ConsumerConfig struct {
 	// "cooperative-sticky". This field is mutually exclusive with
 	// GroupRebalanceStrategy.
 	GroupRebalanceStrategies []GroupRebalanceStrategy `mapstructure:"group_rebalance_strategies"`
-
-	// GroupRebalanceStrategy specifies the strategy to use for partition
-	// assignment. Accepts the same values as GroupRebalanceStrategies.
-	//
-	// Defaults to "cooperative-sticky".
-	//
-	// Deprecated [v0.154.0]: use GroupRebalanceStrategies instead.
-	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
@@ -178,10 +183,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:          1,
-		MaxFetchSize:          1048576,
-		MaxFetchWait:          250 * time.Millisecond,
-		MaxPartitionFetchSize: 1048576,
+		MinFetchSize:            1,
+		MaxFetchSize:            1048576,
+		MaxFetchWait:            250 * time.Millisecond,
+		MaxPartitionFetchSize:   1048576,
+		MaxDecompressBatchBytes: 1073741824, // 1 GiB
 	}
 }
 
@@ -196,13 +202,6 @@ func (c ConsumerConfig) Validate() error {
 		)
 	}
 
-	if c.GroupRebalanceStrategy != "" && len(c.GroupRebalanceStrategies) > 0 {
-		return errors.New("group_rebalance_strategy and group_rebalance_strategies are mutually exclusive; group_rebalance_strategy is deprecated, prefer group_rebalance_strategies")
-	}
-
-	if err := validateGroupRebalanceStrategy(c.GroupRebalanceStrategy); err != nil {
-		return err
-	}
 	for _, strategy := range c.GroupRebalanceStrategies {
 		if strings.TrimSpace(string(strategy)) == "" {
 			return errors.New("group_rebalance_strategies entries cannot be empty")
@@ -222,6 +221,9 @@ func (c ConsumerConfig) Validate() error {
 	if c.MaxPartitionFetchSize < 0 {
 		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
 	}
+	if c.MaxDecompressBatchBytes < 1 || c.MaxDecompressBatchBytes > math.MaxInt32 {
+		return fmt.Errorf("max_decompress_batch_bytes (%d) must be between 1 and %d", c.MaxDecompressBatchBytes, math.MaxInt32)
+	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(
 			"max_fetch_size (%d) cannot be less than min_fetch_size (%d)",
@@ -234,12 +236,6 @@ func (c ConsumerConfig) Validate() error {
 }
 
 func validateGroupRebalanceStrategy(strategy GroupRebalanceStrategy) error {
-	// An empty value means the deprecated group_rebalance_strategy field is
-	// unset. Treat it as valid so the default ConsumerConfig passes validation.
-	// Empty entries inside group_rebalance_strategies are rejected by the caller.
-	if strategy == "" {
-		return nil
-	}
 	switch strategy {
 	case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
 		// Built-in strategy, valid.
@@ -424,29 +420,35 @@ func (r RequiredAcks) Validate() error {
 }
 
 type MetadataConfig struct {
-	// Whether to maintain a full set of metadata for all topics, or just
-	// the minimal set that has been necessary so far. The full set is simpler
-	// and usually more convenient, but can take up a substantial amount of
-	// memory if you have many topics and partitions. Defaults to true.
+	// Full is ignored, and exists for backwards compatibility in config parsing.
+	//
+	// Deprecated [v0.159.0]: this field is a no-op since the migration to franz-go,
+	// which only fetches metadata for the topics the client produces to or consumes
+	// from. This config will be removed in a future release.
 	Full bool `mapstructure:"full"`
 
 	// RefreshInterval controls the frequency at which cluster metadata is
 	// refreshed. Defaults to 10 minutes.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 
-	// Retry configuration for metadata.
+	// Retry configuration for retriable Kafka requests.
 	// This configuration is useful to avoid race conditions when broker
 	// is starting at the same time as collector.
 	Retry MetadataRetryConfig `mapstructure:"retry"`
 }
 
-// MetadataRetryConfig defines retry configuration for Metadata.
+// MetadataRetryConfig defines retry configuration for retriable Kafka requests.
 type MetadataRetryConfig struct {
-	// The total number of times to retry a metadata request when the
-	// cluster is in the middle of a leader election or at startup (default 3).
+	// The total number of times to retry a retriable request, such as when the
+	// cluster is in the middle of a leader election or at startup (default 20).
+	// Applies to consumer group, offset commit/fetch and admin requests. It does
+	// not apply to produce or fetch requests, nor to franz-go's internal
+	// metadata refresh, which caps itself at 3 retries.
 	Max int `mapstructure:"max"`
-	// How long to wait for leader election to occur before retrying
-	// (default 250ms). Similar to the JVM's `retry.backoff.ms`.
+	// The minimum time to wait before retrying a request (default 250ms).
+	// Similar to the JVM's `retry.backoff.ms`: each successive retry doubles
+	// the wait, with jitter applied, capped at max(5s, backoff). Unlike Max,
+	// this applies to every retry path, including produce and fetch.
 	Backoff time.Duration `mapstructure:"backoff"`
 }
 
@@ -455,7 +457,8 @@ func NewDefaultMetadataConfig() MetadataConfig {
 		Full:            true,
 		RefreshInterval: 10 * time.Minute,
 		Retry: MetadataRetryConfig{
-			Max:     3,
+			// Matches the franz-go default this field was silently unwired to.
+			Max:     20,
 			Backoff: time.Millisecond * 250,
 		},
 	}
@@ -463,22 +466,19 @@ func NewDefaultMetadataConfig() MetadataConfig {
 
 // AuthenticationConfig defines authentication-related configuration.
 type AuthenticationConfig struct {
-	// PlainText is an alias for SASL/PLAIN authentication.
-	//
-	// Deprecated [v0.123.0]: use SASL with Mechanism set to PLAIN instead.
-	PlainText *PlainTextConfig `mapstructure:"plain_text"`
-
 	// SASL holds SASL authentication configuration.
 	SASL *SASLConfig `mapstructure:"sasl"`
 
 	// Kerberos holds Kerberos authentication configuration.
 	Kerberos *KerberosConfig `mapstructure:"kerberos"`
+}
 
-	// TLS holds TLS configuration for connecting to Kafka brokers.
-	//
-	// Deprecated [v0.124.0]: use ClientConfig.TLS instead. This will
-	// be used only if ClientConfig.TLS is not set.
-	TLS *configtls.ClientConfig `mapstructure:"tls"`
+func (a AuthenticationConfig) Validate() error {
+	if a.SASL != nil && a.Kerberos != nil {
+		return errors.New("only one of sasl or kerberos authentication can be configured")
+	}
+
+	return nil
 }
 
 // PlainTextConfig defines plaintext authentication.
@@ -496,12 +496,6 @@ type SASLConfig struct {
 	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
 	// SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
-	// Version is ignored, and exists for backwards compatibility in config parsing.
-	//
-	// Deprecated [v0.153.0]: this field is a no-op since the migration to franz-go,
-	// which negotiates the SASL handshake version automatically. This config will be
-	// removed in a future release.
-	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
 	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
@@ -512,7 +506,9 @@ type SASLConfig struct {
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
-		// TODO validate c.AWSMSK
+		if c.AWSMSK.Region == "" {
+			return errors.New("region is required for AWS_MSK_IAM_OAUTHBEARER mechanism")
+		}
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -527,12 +523,9 @@ func (c SASLConfig) Validate() error {
 		}
 	default:
 		return fmt.Errorf(
-			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
+			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
 			c.Mechanism,
 		)
-	}
-	if c.Version < 0 || c.Version > 1 {
-		return fmt.Errorf("version has to be either 0 or 1. configured value %v", c.Version)
 	}
 	return nil
 }

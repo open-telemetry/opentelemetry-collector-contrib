@@ -5,8 +5,10 @@ package groupbytraceprocessor
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -63,5 +65,49 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 		// verify
 		assert.ErrorIs(t, tt.expectedErr, err)
 		assert.Nil(t, p)
+	}
+}
+
+func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
+	cfg := &Config{
+		NumTraces:    1,
+		NumWorkers:   2,
+		WaitDuration: time.Second,
+		EmitStrategy: EmitStrategyService,
+	}
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+}
+
+func TestCreateProcessorServiceEmitGivesEachWorkerItsOwnStorage(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.NumTraces = 100
+	cfg.NumWorkers = 4
+	cfg.EmitStrategy = EmitStrategyService
+
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	workers := p.(*groupByTraceProcessor).eventMachine.workers
+	require.Len(t, workers, cfg.NumWorkers)
+
+	seen := map[subtraceStorage]bool{}
+	for i, w := range workers {
+		require.NotNil(t, w.subSt, "worker %d has no storage", i)
+		assert.False(t, seen[w.subSt], "worker %d shares its storage with another worker", i)
+		seen[w.subSt] = true
+	}
+}
+
+func TestCreateProcessorTraceEmitHasNoSubtraceStorage(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.NumWorkers = 2
+
+	p, err := createTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	for i, w := range p.(*groupByTraceProcessor).eventMachine.workers {
+		assert.Nil(t, w.subSt, "worker %d allocated subtrace storage in trace mode", i)
 	}
 }

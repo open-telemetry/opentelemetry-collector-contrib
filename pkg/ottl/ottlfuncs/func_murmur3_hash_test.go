@@ -72,13 +72,65 @@ func Test_CreateMurmur3HashFunc(t *testing.T) {
 
 	// valid args
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &Murmur3HashArguments[any]{
+		fCtx, &murmur3HashArguments[any]{
 			Target: ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "Hello World", nil
 				},
 			},
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
+}
+
+func Test_Murmur3HashFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMurmur3HashFactory[any]()
+		assert.Equal(t, "Murmur3Hash", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMurmur3HashFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &murmur3HashArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMurmur3HashFactory[any]()
+		args := factory.CreateDefaultArguments()
+		murmurArgs, ok := args.(*murmur3HashArguments[any])
+		require.True(t, ok)
+		murmurArgs.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "Hello World", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMurmur3HashFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "Murmur3HashFactory args must be of type *murmur3HashArguments[K]")
+	})
+}
+
+func BenchmarkMurmur3Hash(b *testing.B) {
+	exprFunc := murmur3Hash[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "Hello World", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

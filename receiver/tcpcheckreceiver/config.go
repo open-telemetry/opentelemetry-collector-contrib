@@ -22,6 +22,7 @@ var (
 	errInvalidEndpoint = errors.New(`"Endpoint" must be in the form of <hostname>:<port>`)
 	errMissingTargets  = errors.New(`No targets specified`)
 	errConfigTCPCheck  = errors.New(`Invalid Config`)
+	errDuplicateTarget = errors.New(`duplicate target endpoint`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -76,8 +77,14 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, errMissingTargets)
 	}
 
+	seen := make(map[string]struct{}, len(cfg.Targets))
 	for _, tcpConfig := range cfg.Targets {
 		err = multierr.Append(err, validateTarget(tcpConfig))
+		if _, ok := seen[tcpConfig.Endpoint]; ok {
+			err = multierr.Append(err, fmt.Errorf("%w: %s", errDuplicateTarget, tcpConfig.Endpoint))
+			continue
+		}
+		seen[tcpConfig.Endpoint] = struct{}{}
 	}
 
 	return err

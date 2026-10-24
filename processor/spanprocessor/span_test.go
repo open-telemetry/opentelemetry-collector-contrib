@@ -307,7 +307,8 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		"ensure no separator in the rename with one key",
 		map[string]any{
 			"key1": "bob",
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -315,7 +316,8 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		"bob",
 		map[string]any{
 			"key1": "bob",
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
@@ -335,7 +337,8 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 		"ensure no separator in the rename with two keys", map[string]any{
 			"key1": "bob",
 			"key2": 123,
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -344,7 +347,8 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 		map[string]any{
 			"key1": "bob",
 			"key2": 123,
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
@@ -367,7 +371,8 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			"key2": 123,
 			"key3": 234.129312,
 			"key4": true,
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -378,7 +383,8 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			"key2": 123,
 			"key3": 234.129312,
 			"key4": true,
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_NilName tests naming a span when the input span had no name.
@@ -398,7 +404,8 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		"",
 		map[string]any{
 			"key1": "bob",
-		})
+		},
+	)
 	assert.NoError(t, tp.ConsumeTraces(t.Context(), traceData))
 
 	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
@@ -406,7 +413,8 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		"bob",
 		map[string]any{
 			"key1": "bob",
-		}), traceData))
+		},
+	), traceData))
 }
 
 // TestSpanProcessor_ToAttributes

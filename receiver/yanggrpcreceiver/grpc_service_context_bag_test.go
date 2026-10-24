@@ -72,34 +72,17 @@ func TestGrpcService_ProcessTelemetryData_ContextBagAttributes(t *testing.T) {
 				},
 			},
 			expectedDatapoints: map[string]map[string]string{
-				"cisco.interface.keys.interface-name_info": {
+				"cisco.interface.admin-status_info": {
 					"node_id":        "test-node-1",
 					"interface-name": "GigabitEthernet0/0/1",
 					"interface":      "GigabitEthernet0/0/1",
 					"name":           "GigabitEthernet0/0/1",
-					"admin-status":   "up",
 				},
-				"cisco.interface.keys.name_info": {
+				"cisco.interface.rx-pkts": {
 					"node_id":        "test-node-1",
 					"interface-name": "GigabitEthernet0/0/1",
 					"interface":      "GigabitEthernet0/0/1",
 					"name":           "GigabitEthernet0/0/1",
-					"admin-status":   "up",
-				},
-				"cisco.interface.content.admin-status_info": {
-					"node_id":        "test-node-1",
-					"interface-name": "GigabitEthernet0/0/1",
-					"interface":      "GigabitEthernet0/0/1",
-					"name":           "GigabitEthernet0/0/1",
-					"admin-status":   "up",
-					"value":          "up",
-				},
-				"cisco.interface.content.rx-pkts": {
-					"node_id":        "test-node-1",
-					"interface-name": "GigabitEthernet0/0/1",
-					"interface":      "GigabitEthernet0/0/1",
-					"name":           "GigabitEthernet0/0/1",
-					"admin-status":   "up",
 				},
 			},
 		},
@@ -112,7 +95,7 @@ func TestGrpcService_ProcessTelemetryData_ContextBagAttributes(t *testing.T) {
 			settings := createTestSettings()
 			receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
-			yangParser := internal.NewYANGParser()
+			yangParser := internal.NewYANGParser(settings.Logger)
 			yangParser.LoadBuiltinModules()
 			service := &grpcService{
 				receiver:   receiver.(*yangReceiver),

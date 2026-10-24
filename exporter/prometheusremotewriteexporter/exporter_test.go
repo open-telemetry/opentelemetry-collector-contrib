@@ -57,7 +57,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		BackOffConfig:   configretry.BackOffConfig{},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
-		ClientConfig:    confighttp.NewDefaultClientConfig(),
+		HTTP:            confighttp.NewDefaultClientConfig(),
 		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
@@ -121,7 +121,7 @@ func Test_NewPRWExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg.ClientConfig.Endpoint = tt.endpoint
+			cfg.HTTP.Endpoint = tt.endpoint
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
@@ -214,7 +214,7 @@ func Test_Start(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			cfg.ClientConfig = tt.clientSettings
+			cfg.HTTP = tt.clientSettings
 			cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 
 			prwe, err := newPRWExporter(cfg, tt.set)
@@ -362,7 +362,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = endpoint.String()
+	cfg.HTTP.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
 	cfg.BackOffConfig = configretry.BackOffConfig{
 		Enabled:         true,
@@ -396,6 +396,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
+	rw2Gate := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate
+	originalRW2Enabled := rw2Gate.IsEnabled()
+	t.Cleanup(func() {
+		assert.Equal(t, originalRW2Enabled, rw2Gate.IsEnabled(), "RW2 feature gate must be restored after the subtests")
+	})
+
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
@@ -565,11 +571,21 @@ func Test_PushMetrics(t *testing.T) {
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			name:               "exponential_histogram_no_sum_case",
-			metrics:            exponentialNoSumHistogramBatch,
-			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 1,
-			httpResponseCode:   http.StatusAccepted,
+			name:                       "exponential_histogram_no_sum_case",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+		},
+		{
+			name:                       "exponential_histogram_no_sum_case_rw2",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+			enableSendingRW2:           true,
 		},
 		{
 			name:               "histogram_case",
@@ -729,7 +745,10 @@ func Test_PushMetrics(t *testing.T) {
 					t.Skip("test not supported when using WAL")
 				}
 				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
+					// RW2 cases mutate a global feature gate and must run serially.
+					if !tt.enableSendingRW2 {
+						t.Parallel()
+					}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker, tt.enableSendingRW2)
@@ -752,7 +771,7 @@ func Test_PushMetrics(t *testing.T) {
 					clientConfig.WriteBufferSize = 512 * 1024
 					cfg := &Config{
 						Namespace:         "",
-						ClientConfig:      clientConfig,
+						HTTP:              clientConfig,
 						MaxBatchSizeBytes: 3000000,
 						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: TargetInfo{
@@ -763,9 +782,7 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV2MessageType
-						oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
-						testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)
-						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
+						defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, tt.enableSendingRW2)()
 					} else {
 						cfg.RemoteWriteProtoMsg = remoteapi.WriteV1MessageType
 					}
@@ -787,7 +804,8 @@ func Test_PushMetrics(t *testing.T) {
 								sdkmetric.Stream{
 									Aggregation: sdkmetric.AggregationDrop{},
 								},
-							))),
+							),
+						)),
 					)
 					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 					set := metadatatest.NewSettings(tel)
@@ -950,6 +968,96 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	}
 }
 
+func Test_validateAndSanitizeExternalLabels_TranslationStrategy(t *testing.T) {
+	tests := []struct {
+		name           string
+		strategy       translationStrategy
+		inputLabels    map[string]string
+		expectedLabels map[string]string
+	}{
+		{
+			name:     "NoTranslation preserves dots in external label keys",
+			strategy: noTranslation,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+		},
+		{
+			name:     "NoUTF8EscapingWithSuffixes preserves dots in external label keys",
+			strategy: noUTF8EscapingWithSuffixes,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+		},
+		{
+			name:     "UnderscoreEscapingWithSuffixes escapes dots to underscores",
+			strategy: underscoreEscapingWithSuffixes,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app_kubernetes_io_name": "test-app",
+				"service_name":           "my-service",
+			},
+		},
+		{
+			name:     "UnderscoreEscapingWithoutSuffixes escapes dots to underscores",
+			strategy: underscoreEscapingWithoutSuffixes,
+			inputLabels: map[string]string{
+				"app.kubernetes.io/name": "test-app",
+				"service.name":           "my-service",
+			},
+			expectedLabels: map[string]string{
+				"app_kubernetes_io_name": "test-app",
+				"service_name":           "my-service",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = tt.strategy
+			cfg.ExternalLabels = tt.inputLabels
+
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedLabels, newLabels)
+		})
+	}
+}
+
+func Test_validateAndSanitizeExternalLabelsPreservesUnderscores(t *testing.T) {
+	for _, strategy := range []translationStrategy{"", underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation} {
+		t.Run(string(strategy), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = strategy
+			cfg.ExternalLabels = map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}
+
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}, newLabels)
+		})
+	}
+}
+
 // Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,
 // that it successfully writes the serialized prompb.WriteRequests to the WAL,
 // and that we can retrieve those exact requests back from the WAL, when the
@@ -982,7 +1090,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	clientConfig.Endpoint = prweServer.URL
 	cfg := &Config{
 		Namespace:        "test_ns",
-		ClientConfig:     clientConfig,
+		HTTP:             clientConfig,
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 		WAL: configoptional.Some(WALConfig{
 			Directory:  tempDir,
@@ -1117,6 +1225,9 @@ func assertNonPermanentError(t assert.TestingT, err error, _ ...any) bool {
 }
 
 func TestRetries(t *testing.T) {
+	deadlineExceededContext, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+	defer cancel()
+
 	tts := []struct {
 		name             string
 		serverErrorCount int // number of times server should return error
@@ -1182,6 +1293,17 @@ func TestRetries(t *testing.T) {
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
+		},
+		{
+			"test deadline exceeded context should return non-permanent error",
+			4,
+			0,
+			http.StatusInternalServerError,
+			false,
+			true,
+			assert.Error,
+			assertNonPermanentError,
+			deadlineExceededContext,
 		},
 		{
 			"test 5xx with retry disabled returns non-permanent error",
@@ -1392,7 +1514,7 @@ func TestIncludeMetadataKeys(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
 	cfg := &Config{
-		ClientConfig:     clientConfig,
+		HTTP:             clientConfig,
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 		IncludeMetadataKeys: []string{
 			"target-id",
@@ -1450,7 +1572,7 @@ func TestIncludeMetadataKeysAbsentWhenNotConfigured(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
 	cfg := &Config{
-		ClientConfig:        clientConfig,
+		HTTP:                clientConfig,
 		RemoteWriteQueue:    RemoteWriteQueue{NumConsumers: 1},
 		TargetInfo:          TargetInfo{Enabled: true},
 		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
@@ -1508,7 +1630,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	clientConfig.WriteBufferSize = 512 * 1024
 	cfg := &Config{
 		Namespace:         "",
-		ClientConfig:      clientConfig,
+		HTTP:              clientConfig,
 		MaxBatchSizeBytes: 3000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
 		BackOffConfig:     retrySettings,

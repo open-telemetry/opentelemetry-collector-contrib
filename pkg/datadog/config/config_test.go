@@ -25,40 +25,26 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
 	someAuth := configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(ty)})
 
 	tlsClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	tlsClientConfig.MaxIdleConns = 0
-	tlsClientConfig.IdleConnTimeout = 0
 	tlsClientConfig.ForceAttemptHTTP2 = false
 	tlsClientConfig.TLS = configtls.ClientConfig{
 		InsecureSkipVerify: true,
 	}
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	httpClientConfig.ForceAttemptHTTP2 = false
 	httpClientConfig.ReadBufferSize = 100
 	httpClientConfig.WriteBufferSize = 200
 	httpClientConfig.Timeout = 10 * time.Second
-	httpClientConfig.IdleConnTimeout = idleConnTimeout
-	httpClientConfig.MaxIdleConns = maxIdleConn
-	httpClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost
 	httpClientConfig.MaxConnsPerHost = maxConnPerHost
-	httpClientConfig.DisableKeepAlives = true
 	httpClientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
 	unsupportedClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	unsupportedClientConfig.MaxIdleConns = 0
-	unsupportedClientConfig.IdleConnTimeout = 0
 	unsupportedClientConfig.ForceAttemptHTTP2 = false
 	unsupportedClientConfig.Endpoint = "endpoint"
 	unsupportedClientConfig.Compression = "gzip"
@@ -471,6 +457,17 @@ func TestUnmarshal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalHostnameWhitespace(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+
+	configMap := confmap.NewFromStringMap(map[string]any{
+		"hostname": " my-hostname\n",
+	})
+
+	require.NoError(t, cfg.Unmarshal(configMap))
+	assert.Equal(t, "my-hostname", cfg.Hostname)
 }
 
 // Test that the factory creates the default configuration

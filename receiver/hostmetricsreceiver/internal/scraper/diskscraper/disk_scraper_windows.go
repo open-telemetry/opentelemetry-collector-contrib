@@ -117,7 +117,8 @@ func (s *diskScraper) start(ctx context.Context, _ component.Host) error {
 			s.settings.Logger.Error(
 				"Failed to create performance counter watcher, disk metrics will not be scraped",
 				zap.String("counter", counterName),
-				zap.Error(err))
+				zap.Error(err),
+			)
 		}
 	}
 

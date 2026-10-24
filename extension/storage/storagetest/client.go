@@ -8,15 +8,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
-var errClientClosed = errors.New("client closed")
+var (
+	errClientClosed = errors.New("client closed")
+
+	// Ensure TestClient implements the Walker interface
+	_ storage.Walker = (*TestClient)(nil)
+)
 
 type TestClient struct {
 	cache    map[string][]byte
@@ -105,21 +112,7 @@ func (p *TestClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	if p.closed {
 		return errClientClosed
 	}
-
-	for _, op := range ops {
-		switch op.Type {
-		case storage.Get:
-			op.Value = p.cache[op.Key]
-		case storage.Set:
-			p.cache[op.Key] = op.Value
-		case storage.Delete:
-			delete(p.cache, op.Key)
-		default:
-			return errors.New("wrong operation type")
-		}
-	}
-
-	return nil
+	return p.batchInternal(ops)
 }
 
 func (p *TestClient) Close(_ context.Context) error {
@@ -138,6 +131,53 @@ func (p *TestClient) Close(_ context.Context) error {
 	}
 
 	return os.WriteFile(p.storageFile, contents, os.FileMode(0o600))
+}
+
+func (p *TestClient) Walk(_ context.Context, fn storage.WalkFunc) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+
+	if p.closed {
+		return errClientClosed
+	}
+
+	var opsBatch []*storage.Operation
+
+	// Deterministic walk order
+	keys := slices.Sorted(maps.Keys(p.cache))
+
+	for _, k := range keys {
+		ops, err := fn(k, p.cache[k])
+		if err != nil {
+			if errors.Is(err, storage.SkipAll) {
+				opsBatch = append(opsBatch, ops...)
+				return p.batchInternal(opsBatch)
+			}
+			return err
+		}
+		opsBatch = append(opsBatch, ops...)
+	}
+	return p.batchInternal(opsBatch)
+}
+
+// Apply all ops to the cache. The cache mutex must be held when calling.
+// Ops are applied to a copy so a failure leaves the cache untouched.
+func (p *TestClient) batchInternal(ops []*storage.Operation) error {
+	cache := maps.Clone(p.cache)
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			op.Value = cache[op.Key]
+		case storage.Set:
+			cache[op.Key] = op.Value
+		case storage.Delete:
+			delete(cache, op.Key)
+		default:
+			return errors.New("wrong operation type")
+		}
+	}
+	p.cache = cache
+	return nil
 }
 
 const clientCreatorID = "client_creator_id"

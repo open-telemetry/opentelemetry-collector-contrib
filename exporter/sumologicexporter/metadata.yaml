@@ -10,9 +10,18 @@ status:
     active: [rnishtala-sumo, pankaj101A, jagan2221]
     emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, chan-tim-sumo, echlebek, amdprophet]
 
-# TODO: Update the exporter to pass the tests
-tests:
-  skip_lifecycle: true
+
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    queue_size: 1024000
+    batch:
+      enabled: true
+      flush_timeout: 1s
+      sizer: items
+      min_size: 1024
+      max_size: 2048
 
 telemetry:
   metrics:

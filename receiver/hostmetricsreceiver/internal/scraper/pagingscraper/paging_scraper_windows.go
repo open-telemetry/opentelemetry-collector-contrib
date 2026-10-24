@@ -185,7 +185,8 @@ func (s *pagingScraper) scrapePagingFaultsMetric(errors *scrapererror.ScrapeErro
 	}
 	if !pageMajFaultsHasValue {
 		s.settings.Logger.Debug(
-			"Skipping paging faults metrics as no value was scraped for 'Pages/sec' performance counter")
+			"Skipping paging faults metrics as no value was scraped for 'Pages/sec' performance counter",
+		)
 		return
 	}
 	s.mb.RecordSystemPagingFaultsDataPoint(now, pageMajFaultsPerSecValue, metadata.AttributeTypeMajor)
@@ -199,6 +200,7 @@ func (s *pagingScraper) scrapePagingFaultsMetric(errors *scrapererror.ScrapeErro
 		s.mb.RecordSystemPagingFaultsDataPoint(now, pageFaultsPerSecValue-pageMajFaultsPerSecValue, metadata.AttributeTypeMinor)
 	} else {
 		s.settings.Logger.Debug(
-			"Skipping minor paging faults metric as no value was scraped for 'Page Faults/sec' performance counter")
+			"Skipping minor paging faults metric as no value was scraped for 'Page Faults/sec' performance counter",
+		)
 	}
 }

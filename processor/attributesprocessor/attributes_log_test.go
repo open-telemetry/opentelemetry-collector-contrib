@@ -81,7 +81,8 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogs(
-		t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
+		t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop(),
+	)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tt := range testCases {

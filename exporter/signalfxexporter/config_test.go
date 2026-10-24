@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	apmcorrelation "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
@@ -37,58 +35,30 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	seventy := 70
-	hundred := 100
-	idleConnTimeout := 30 * time.Second
-	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
-	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
 	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
-	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	defaultClientConfig.Keepalive = configoptional.Some(confighttp.NewDefaultKeepaliveClientConfig())
+	defaultClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	defaultClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
 	defaultClientConfig.Timeout = 10 * time.Second
-	defaultClientConfig.MaxIdleConns = hundred
-	defaultClientConfig.MaxIdleConnsPerHost = hundred
 	defaultClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	defaultClientConfig.IdleConnTimeout = idleConnTimeout
 	defaultClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	defaultClientConfig.HTTP2PingTimeout = 10 * time.Second
-	defaultClientConfig.ForceAttemptHTTP2 = true
-
-	defaultCorrelationClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultCorrelationClientConfig.Endpoint = ""
-	defaultCorrelationClientConfig.Timeout = 5 * time.Second
-	defaultCorrelationClientConfig.MaxIdleConns = defaultMaxIdleConns
-	defaultCorrelationClientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
-	defaultCorrelationClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	defaultCorrelationClientConfig.IdleConnTimeout = defaultIdleConnTimeout
-	defaultCorrelationClientConfig.ForceAttemptHTTP2 = true
 
 	allSettingsClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
+	allSettingsClientConfig.Keepalive.Get().IdleConnTimeout = 30 * time.Second
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = 100
 	allSettingsClientConfig.Timeout = 2 * time.Second
 	allSettingsClientConfig.Headers = configopaque.MapList{
 		{Name: "added-entry", Value: "added value"},
 		{Name: "dot.test", Value: "test"},
 	}
-	allSettingsClientConfig.MaxIdleConns = seventy
-	allSettingsClientConfig.MaxIdleConnsPerHost = seventy
 	allSettingsClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	allSettingsClientConfig.IdleConnTimeout = idleConnTimeout
 	allSettingsClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	allSettingsClientConfig.HTTP2PingTimeout = 10 * time.Second
-	allSettingsClientConfig.ForceAttemptHTTP2 = true
-
-	allSettingsCorrelationClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	allSettingsCorrelationClientConfig.Endpoint = ""
-	allSettingsCorrelationClientConfig.Timeout = 5 * time.Second
-	allSettingsCorrelationClientConfig.MaxIdleConns = defaultMaxIdleConns
-	allSettingsCorrelationClientConfig.MaxIdleConnsPerHost = defaultMaxIdleConnsPerHost
-	allSettingsCorrelationClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
-	allSettingsCorrelationClientConfig.IdleConnTimeout = defaultIdleConnTimeout
-	allSettingsCorrelationClientConfig.ForceAttemptHTTP2 = true
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConns = seventy
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = seventy
 
 	tests := []struct {
 		id       component.ID
@@ -124,26 +94,10 @@ func TestLoadConfig(t *testing.T) {
 					DropTags:            false,
 					StripK8sLabelPrefix: true,
 				},
-				ExcludeMetrics:      nil,
-				IncludeMetrics:      nil,
-				DeltaTranslationTTL: 3600,
-				ExcludeProperties:   nil,
-				Correlation: &correlation.Config{
-					ClientConfig:        defaultCorrelationClientConfig,
-					StaleServiceTimeout: 5 * time.Minute,
-					SyncAttributes: map[string]string{
-						"k8s.pod.uid":  "k8s.pod.uid",
-						"container.id": "container.id",
-					},
-					Config: apmcorrelation.Config{
-						MaxRequests:     20,
-						MaxBuffered:     10_000,
-						MaxRetries:      2,
-						LogUpdates:      false,
-						RetryDelay:      30 * time.Second,
-						CleanupInterval: 1 * time.Minute,
-					},
-				},
+				ExcludeMetrics:                nil,
+				IncludeMetrics:                nil,
+				DeltaTranslationTTL:           3600,
+				ExcludeProperties:             nil,
 				NonAlphanumericDimensionChars: "_-.",
 				SendOTLPHistograms:            false,
 			},
@@ -246,22 +200,6 @@ func TestLoadConfig(t *testing.T) {
 						PropertyValue:  mustStringFilter(t, "!globbed*value"),
 						DimensionName:  mustStringFilter(t, "globbed*"),
 						DimensionValue: mustStringFilter(t, "!globbed*value"),
-					},
-				},
-				Correlation: &correlation.Config{
-					ClientConfig:        allSettingsCorrelationClientConfig,
-					StaleServiceTimeout: 5 * time.Minute,
-					SyncAttributes: map[string]string{
-						"k8s.pod.uid":  "k8s.pod.uid",
-						"container.id": "container.id",
-					},
-					Config: apmcorrelation.Config{
-						MaxRequests:     20,
-						MaxBuffered:     10_000,
-						MaxRetries:      2,
-						LogUpdates:      false,
-						RetryDelay:      30 * time.Second,
-						CleanupInterval: 1 * time.Minute,
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",
@@ -435,10 +373,6 @@ func TestConfigGetAPIURL(t *testing.T) {
 
 func TestConfigValidateErrors(t *testing.T) {
 	negativeTimeoutClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	negativeTimeoutClientConfig.MaxIdleConns = 0
-	negativeTimeoutClientConfig.IdleConnTimeout = 0
-	negativeTimeoutClientConfig.ForceAttemptHTTP2 = false
 	negativeTimeoutClientConfig.Timeout = -1 * time.Second
 	tests := []struct {
 		name string

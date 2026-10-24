@@ -112,7 +112,7 @@ func BenchmarkResourceProvider(b *testing.B) {
 	d1 := &benchDetector{res: generateResource(b, 0, 10)}
 	d2 := &benchDetector{res: generateResource(b, 0, 10)}
 	d3 := &benchDetector{res: generateResource(b, 0, 10)}
-	provider, err := newTestResourceProvider(0, d1, d2, d3)
+	provider, err := newTestResourceProvider(fastRetryConfig, d1, d2, d3)
 	require.NoError(b, err)
 	ctx := b.Context()
 	client := &http.Client{}

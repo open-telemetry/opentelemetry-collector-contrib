@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fjsonlogencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fjsonlogencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fjsonlogencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fjsonlogencoding) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fencoding%2Fjsonlogencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fencoding%2Fjsonlogencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fencoding%2Fjsonlogencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fencoding%2Fjsonlogencoding) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@VihasMakwana](https://www.github.com/VihasMakwana), [@atoulme](https://www.github.com/atoulme) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -13,10 +13,14 @@
 
 ## Configuration
 
-| Name       | Description                                                                           | Default |
-|------------|---------------------------------------------------------------------------------------|---------|
-| mode       | What mode of the JSON encoding extension you want                                     | body    |
-| array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean. | true    |
+| Name       | Description                                                                                                        | Default |
+|------------|--------------------------------------------------------------------------------------------------------------------|---------|
+| mode       | What mode of the JSON encoding extension you want                                                                  | body    |
+| array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean.                              | true    |
+| parse_ints | Preserve integer literals within the `int64` range as `int64` when unmarshaling.                                  | false   |
+
+When unmarshaling, the observed timestamp of each log record is set to the time the payload was decoded.
+All records decoded from the same payload share the same observed timestamp.
 
 ### Mode
 
@@ -67,4 +71,16 @@ Configuration accepts a boolean.
   New line delimited JSON payload
   > {"key": "value"}\
   > {"key": "value"}
-  
+
+### parse_ints
+
+Only affects unmarshaling.
+
+By default every JSON number is decoded as a `float64`, so integers above 2^53 can lose precision. With `parse_ints: true`, integer literals within the `int64` range, including those in nested objects and arrays, are decoded as `int64`.
+
+> {"id": 9007199254740993}
+
+- `parse_ints: false` : `id` becomes `9007199254740992` (`float64`)
+- `parse_ints: true` : `id` becomes `9007199254740993` (`int64`)
+
+Literals with a fraction (`1.0`), an exponent (`1e3`), or a value outside the `int64` range are still decoded as `float64`. Enabling this option adds processing overhead.

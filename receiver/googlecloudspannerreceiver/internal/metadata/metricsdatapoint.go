@@ -4,7 +4,10 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"hash/fnv"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -148,6 +151,150 @@ func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
 		v := mdp.labelValues[index].(byteSliceLabelValue)
 		p := &v
 		p.ModifyValue(hashedKey)
+		mdp.labelValues[index] = v
+	}
+}
+
+func (mdp *MetricsDataPoint) HideSplitStatsKeysPII() {
+	for index, labelValue := range mdp.labelValues {
+		if labelValue.Metadata().Name() != "split_start" && labelValue.Metadata().Name() != "split_limit" {
+			continue
+		}
+
+		switch v := labelValue.(type) {
+		case byteSliceLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashSplitStatsKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		case stringSliceLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashSplitStatsKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		case stringLabelValue:
+			p := &v
+			p.ModifyValue(parseAndHashSplitStatsKey(v.Value().(string)))
+			mdp.labelValues[index] = v
+		}
+	}
+}
+
+func parseAndHashSplitStatsKey(val string) string {
+	if val == "<begin>" || val == "<end>" || val == "<infinity>" {
+		return val
+	}
+
+	var result strings.Builder
+	var current strings.Builder
+	inQuotes := false
+	escapeNext := false
+	bracketLevel := 0
+
+	flushToken := func(hashToken bool) {
+		if current.Len() == 0 {
+			return
+		}
+		token := current.String()
+		current.Reset()
+
+		if !hashToken || token == "NULL" || token == "<begin>" || token == "<end>" || token == "<infinity>" {
+			result.WriteString(token)
+			return
+		}
+
+		hash := sha256.Sum256([]byte(token))
+		hashUint := binary.BigEndian.Uint32(hash[:4])
+		hashedStr := strconv.FormatUint(uint64(hashUint), 10)
+
+		result.WriteString(hashedStr)
+	}
+
+	for i := 0; i < len(val); i++ {
+		c := val[i]
+
+		if escapeNext {
+			current.WriteByte(c)
+			escapeNext = false
+			continue
+		}
+
+		if c == '\\' {
+			current.WriteByte(c)
+			escapeNext = true
+			continue
+		}
+
+		if c == '"' {
+			inQuotes = !inQuotes
+			current.WriteByte(c)
+			continue
+		}
+
+		if !inQuotes {
+			if c == '(' {
+				flushToken(false)
+				result.WriteByte(c)
+				bracketLevel++
+				continue
+			}
+			if c == ')' {
+				flushToken(bracketLevel > 0)
+				result.WriteByte(c)
+				if bracketLevel > 0 {
+					bracketLevel--
+				}
+				continue
+			}
+			if c == ',' {
+				flushToken(bracketLevel > 0)
+				result.WriteByte(c)
+				continue
+			}
+		}
+
+		current.WriteByte(c)
+	}
+
+	flushToken(bracketLevel > 0)
+
+	return result.String()
+}
+
+func isValidIPAddressOrPort(ip string) bool {
+	if _, err := netip.ParseAddr(ip); err == nil {
+		return true
+	}
+	if _, err := netip.ParseAddrPort(ip); err == nil {
+		return true
+	}
+	return false
+}
+
+func hashClientIPAddress(ip string) string {
+	if strings.EqualFold(ip, "NULL") {
+		return ""
+	}
+	if !isValidIPAddressOrPort(ip) {
+		if strings.ContainsAny(ip, "0123456789.:") {
+			return ""
+		}
+		return ip
+	}
+
+	hash := sha256.Sum256([]byte(ip))
+	hashUint := binary.BigEndian.Uint64(hash[:8])
+	return strconv.FormatUint(hashUint, 10)
+}
+
+func (mdp *MetricsDataPoint) HideClientIPAddressPII() {
+	for index, labelValue := range mdp.labelValues {
+		if labelValue.Metadata().Name() != "client_ip_address" {
+			continue
+		}
+		ip := labelValue.Value().(string)
+		hashedIP := hashClientIPAddress(ip)
+		v := mdp.labelValues[index].(stringLabelValue)
+		p := &v
+		p.ModifyValue(hashedIP)
 		mdp.labelValues[index] = v
 	}
 }

@@ -679,11 +679,86 @@ func TestTimeZoneLocationsErrors(t *testing.T) {
 	})
 }
 
-func TestSetInvalidLocation(t *testing.T) {
-	tp := NewTimeParser()
-	tp.Location = "not_a_location"
-	err := tp.setLocation()
-	require.ErrorContains(t, err, "failed to load location "+"not_a_location")
+func TestSetLocation(t *testing.T) {
+	ny, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+
+	parseFrom := entry.NewBodyField()
+
+	testCases := []struct {
+		name       string
+		layoutType string
+		layout     string
+		location   string
+		expected   *time.Location
+		expectErr  string
+	}{
+		{
+			name:       "explicit-location",
+			layoutType: GotimeKey,
+			layout:     "2006-01-02 15:04:05",
+			location:   "America/New_York",
+			expected:   ny,
+		},
+		{
+			name:       "strptime-percent-Z",
+			layoutType: StrptimeKey,
+			layout:     "%Y-%m-%d %H:%M:%S.%L %Z",
+			expected:   time.Local,
+		},
+		{
+			name:       "gotime-Z-suffix",
+			layoutType: GotimeKey,
+			layout:     "2006-01-02T15:04:05Z",
+			expected:   time.UTC,
+		},
+		{
+			name:       "gotime-MST-suffix",
+			layoutType: GotimeKey,
+			layout:     "2006-01-02 15:04:05 MST",
+			expected:   time.Local,
+		},
+		{
+			name:       "gotime-percent-Z-literal-suffix",
+			layoutType: GotimeKey,
+			layout:     "2006-01-02 15:04:05 %Z",
+			expected:   time.UTC,
+		},
+		{
+			name:       "default",
+			layoutType: GotimeKey,
+			layout:     "2006-01-02 15:04:05",
+			expected:   time.Local,
+		},
+		{
+			name:       "invalid-location",
+			layoutType: GotimeKey,
+			layout:     "2006-01-02 15:04:05",
+			location:   "not_a_location",
+			expectErr:  "failed to load location not_a_location",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tp := &TimeParser{
+				LayoutType: tc.layoutType,
+				Layout:     tc.layout,
+				Location:   tc.location,
+				ParseFrom:  &parseFrom,
+			}
+
+			err := tp.setLocation()
+
+			if tc.expectErr != "" {
+				require.ErrorContains(t, err, tc.expectErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, tp.location)
+		})
+	}
 }
 
 func TestUnmarshal(t *testing.T) {

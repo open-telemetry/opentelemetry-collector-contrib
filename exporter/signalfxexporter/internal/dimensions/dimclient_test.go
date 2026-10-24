@@ -151,7 +151,8 @@ func setupTestClientServer(t *testing.T) (*DimensionClient, *testServer) {
 			Logger:      zap.NewNop(),
 			SendDelay:   100 * time.Millisecond,
 			MaxBuffered: 10,
-		})
+		},
+	)
 	client.Start()
 
 	return client, ts

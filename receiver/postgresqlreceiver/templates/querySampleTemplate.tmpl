@@ -5,6 +5,9 @@ SELECT
     COALESCE(sa.client_hostname, '') AS client_hostname,
     COALESCE(sa.client_port::TEXT, '') AS client_port,
     COALESCE(sa.query_start::TEXT, '') AS query_start,
+    CASE WHEN sa.backend_start IS NOT NULL
+         THEN to_char(sa.backend_start AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+         ELSE '' END AS backend_start,
     COALESCE(sa.wait_event_type, '') AS wait_event_type,
     COALESCE(sa.wait_event, '') AS wait_event,
     COALESCE(sa.query_id::TEXT, '') AS query_id,
@@ -53,6 +56,10 @@ WHERE
     AND sa.pid != pg_backend_pid()
     {{/* Require query_start to be set -- rows without it have no meaningful timestamp */}}
     AND sa.query_start IS NOT NULL
+    {{- if .excludedDatabases }}
+    {{/* COALESCE: datname is NULL for background workers, and a bare NOT IN would drop them */}}
+    AND COALESCE(sa.datname, '') NOT IN ({{ .excludedDatabases }})
+    {{- end }}
     AND NOT (
     {{/* we only want query that is either still running that was started before our newestQueryTimestamp or idle but start after the newestQueryTimestamp */}}
       sa.query_start < TO_TIMESTAMP({{ .newestQueryTimestamp }})

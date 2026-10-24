@@ -112,7 +112,7 @@ var _ confmap.Validator = (*Config)(nil)
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		RetrySettings:   configretry.NewDefaultBackOffConfig(),
 		Bucket: bucketConfig{
 			ReuseIfExists: false,
@@ -132,7 +132,8 @@ func (c *bucketConfig) Validate() error {
 			return fmt.Errorf(
 				"%w %q, valid values are %q and %q",
 				errUnknownCompression, compression,
-				configcompression.TypeGzip, configcompression.TypeZstd)
+				configcompression.TypeGzip, configcompression.TypeZstd,
+			)
 		}
 	}
 

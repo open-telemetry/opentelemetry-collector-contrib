@@ -48,6 +48,10 @@ all_set:
       enabled: true
     k8s.node.filesystem.capacity:
       enabled: true
+    k8s.node.filesystem.inode.count:
+      enabled: true
+    k8s.node.filesystem.inode.free:
+      enabled: true
     k8s.node.filesystem.usage:
       enabled: true
     k8s.node.memory.available:
@@ -68,6 +72,10 @@ all_set:
     k8s.node.network.io:
       enabled: true
       attributes: ["interface","direction"]
+    k8s.node.pid.limit:
+      enabled: true
+    k8s.node.pid.usage:
+      enabled: true
     k8s.node.system_container.cpu.time:
       enabled: true
     k8s.node.system_container.cpu.usage:
@@ -214,6 +222,10 @@ reaggregate_set:
       enabled: true
     k8s.node.filesystem.capacity:
       enabled: true
+    k8s.node.filesystem.inode.count:
+      enabled: true
+    k8s.node.filesystem.inode.free:
+      enabled: true
     k8s.node.filesystem.usage:
       enabled: true
     k8s.node.memory.available:
@@ -234,6 +246,10 @@ reaggregate_set:
     k8s.node.network.io:
       enabled: true
       attributes: []
+    k8s.node.pid.limit:
+      enabled: true
+    k8s.node.pid.usage:
+      enabled: true
     k8s.node.system_container.cpu.time:
       enabled: true
     k8s.node.system_container.cpu.usage:
@@ -380,6 +396,10 @@ none_set:
       enabled: false
     k8s.node.filesystem.capacity:
       enabled: false
+    k8s.node.filesystem.inode.count:
+      enabled: false
+    k8s.node.filesystem.inode.free:
+      enabled: false
     k8s.node.filesystem.usage:
       enabled: false
     k8s.node.memory.available:
@@ -400,6 +420,10 @@ none_set:
     k8s.node.network.io:
       enabled: false
       attributes: ["interface","direction"]
+    k8s.node.pid.limit:
+      enabled: false
+    k8s.node.pid.usage:
+      enabled: false
     k8s.node.system_container.cpu.time:
       enabled: false
     k8s.node.system_container.cpu.usage:
