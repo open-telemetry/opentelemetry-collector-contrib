@@ -681,3 +681,57 @@ func TestProcessorConfigValidate(t *testing.T) {
 	_, err = createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), validCfg, consumertest.NewNop())
 	require.NoError(t, err)
 }
+
+// ctxAwareSink rejects logs when the context is already cancelled.
+type ctxAwareSink struct {
+	mu       sync.Mutex
+	accepted int
+}
+
+func (*ctxAwareSink) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (s *ctxAwareSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.accepted += ld.LogRecordCount()
+	return nil
+}
+
+func (s *ctxAwareSink) count() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.accepted
+}
+
+func TestShutdownFlushesWithLiveContext(t *testing.T) {
+	cfg := &Config{LogCountAttribute: defaultLogCountAttribute, Interval: time.Hour, Timezone: defaultTimezone}
+	sink := &ctxAwareSink{}
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.ConsumeLogs(t.Context(), newSimpleLog()))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	require.Equal(t, 1, sink.count())
+}
+
+func TestStartContextCancelDoesNotStopProcessor(t *testing.T) {
+	cfg := &Config{LogCountAttribute: defaultLogCountAttribute, Interval: time.Hour, Timezone: defaultTimezone}
+	sink := &ctxAwareSink{}
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+
+	startCtx, cancel := context.WithCancel(t.Context())
+	require.NoError(t, p.Start(startCtx, componenttest.NewNopHost()))
+	cancel()
+	require.NoError(t, p.ConsumeLogs(t.Context(), newSimpleLog()))
+	require.NoError(t, p.Shutdown(t.Context()))
+
+	require.Equal(t, 1, sink.count())
+}
