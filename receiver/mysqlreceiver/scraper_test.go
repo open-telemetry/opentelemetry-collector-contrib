@@ -370,6 +370,131 @@ func TestScrapeReplicaThreadRunningRecordsRowsByChannel(t *testing.T) {
 	}, got)
 }
 
+func TestScrapeReplicaStatusMetrics_MariaDB12AndMySQL(t *testing.T) {
+	tests := []struct {
+		name                 string
+		stats                []replicaStatusStats
+		wantSQLDelay         []intMetricDataPoint
+		wantTimeBehindSource []intMetricDataPoint
+		wantThreadRunning    []replicaThreadRunningDataPoint
+	}{
+		{
+			name: "MariaDB 12 with Connects_Tried records all metrics",
+			stats: []replicaStatusStats{
+				{
+					replicaIORunning:    "Yes",
+					replicaSQLRunning:   "Yes",
+					secondsBehindSource: sql.NullInt64{Int64: 15, Valid: true},
+					sqlDelay:            30,
+					channelName:         "mariadb12",
+					connectsTried:       4,
+				},
+			},
+			wantSQLDelay: []intMetricDataPoint{
+				{value: 30},
+			},
+			wantTimeBehindSource: []intMetricDataPoint{
+				{value: 15},
+			},
+			wantThreadRunning: []replicaThreadRunningDataPoint{
+				{threadType: "io", channel: "mariadb12", value: 1},
+				{threadType: "sql", channel: "mariadb12", value: 1},
+			},
+		},
+		{
+			name: "MariaDB 11 without Connects_Tried records metrics correctly",
+			stats: []replicaStatusStats{
+				{
+					replicaIORunning:    "Yes",
+					replicaSQLRunning:   "No",
+					secondsBehindSource: sql.NullInt64{Int64: 0, Valid: true},
+					sqlDelay:            10,
+					channelName:         "mariadb11",
+				},
+			},
+			wantSQLDelay: []intMetricDataPoint{
+				{value: 10},
+			},
+			wantTimeBehindSource: []intMetricDataPoint{
+				{value: 0},
+			},
+			wantThreadRunning: []replicaThreadRunningDataPoint{
+				{threadType: "io", channel: "mariadb11", value: 1},
+				{threadType: "sql", channel: "mariadb11", value: 0},
+			},
+		},
+		{
+			name: "MySQL 8.4 replica records metrics correctly",
+			stats: []replicaStatusStats{
+				{
+					replicaIORunning:    "Connecting",
+					replicaSQLRunning:   "Yes",
+					secondsBehindSource: sql.NullInt64{Int64: 120, Valid: true},
+					sqlDelay:            0,
+					channelName:         "mysql84",
+				},
+			},
+			wantSQLDelay: []intMetricDataPoint{
+				{value: 0},
+			},
+			wantTimeBehindSource: []intMetricDataPoint{
+				{value: 120},
+			},
+			wantThreadRunning: []replicaThreadRunningDataPoint{
+				{threadType: "io", channel: "mysql84", value: 0},
+				{threadType: "sql", channel: "mysql84", value: 1},
+			},
+		},
+		{
+			name: "Null seconds_behind_source omits time_behind_source metric",
+			stats: []replicaStatusStats{
+				{
+					replicaIORunning:    "No",
+					replicaSQLRunning:   "No",
+					secondsBehindSource: sql.NullInt64{Valid: false},
+					sqlDelay:            0,
+					channelName:         "disconnected",
+				},
+			},
+			wantSQLDelay: []intMetricDataPoint{
+				{value: 0},
+			},
+			wantTimeBehindSource: nil,
+			wantThreadRunning: []replicaThreadRunningDataPoint{
+				{threadType: "io", channel: "disconnected", value: 0},
+				{threadType: "sql", channel: "disconnected", value: 0},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.MysqlReplicaThreadRunning.Enabled = true
+
+			scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+			require.NoError(t, err)
+			scraper.sqlclient = &mockClient{
+				replicaStatusStats: tt.stats,
+			}
+
+			scraper.scrapeReplicaStatusStats(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+			metrics := scraper.mb.Emit()
+
+			gotSQLDelay := optionalIntMetricDataPointsByName(metrics, "mysql.replica.sql_delay")
+			assert.Equal(t, tt.wantSQLDelay, gotSQLDelay)
+
+			gotTimeBehind := optionalIntMetricDataPointsByName(metrics, "mysql.replica.time_behind_source")
+			assert.Equal(t, tt.wantTimeBehindSource, gotTimeBehind)
+
+			gotThreads := replicaThreadRunningDataPoints(t, metrics)
+			assert.Equal(t, tt.wantThreadRunning, gotThreads)
+		})
+	}
+}
+
 func TestScrapeGlobalStatsRecordsReplicaOpenTempTablesFromGlobalStatus(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTempTableOpen.Enabled = true
