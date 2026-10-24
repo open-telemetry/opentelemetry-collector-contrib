@@ -16,6 +16,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -330,11 +333,14 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 		},
 	}
 
+	observedCore, observedLogs := observer.New(zapcore.DebugLevel)
 	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(observedCore)
 
+	collectionTime := time.Date(2026, 9, 27, 12, 0, 0, 0, time.UTC)
 	resourceID := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
-	t1 := time.Now().Add(-2 * time.Minute).Truncate(time.Minute)
-	t2 := time.Now().Add(-1 * time.Minute).Truncate(time.Minute)
+	t1 := collectionTime.Add(-2 * time.Hour)
+	t2 := collectionTime.Add(-70 * time.Minute)
 	value1 := 10.0
 	value2 := 12.0
 
@@ -383,7 +389,7 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 		cfg:                          cfg,
 		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
 		mutex:                        &sync.Mutex{},
-		time:                         getTimeMock(),
+		time:                         &timeMock{time: collectionTime},
 		clientOptionsResolver:        optionsResolver1,
 		receiverSettings:             settings,
 		settings:                     settings.TelemetrySettings,
@@ -411,7 +417,24 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 	assert.Equal(t, value2, dp2.DoubleValue())
 	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp2.Timestamp())
 
-	t3 := time.Now().Truncate(time.Minute)
+	emittedLogs := observedLogs.FilterMessage("Emitting Azure Metric data point").All()
+	require.Len(t, emittedLogs, 2)
+	assert.Equal(t, map[string]any{
+		"collection_time":      collectionTime,
+		"data_point_delay":     2 * time.Hour,
+		"data_point_timestamp": t1,
+		"metric_name":          "metric1",
+		"resource_id":          resourceID,
+	}, emittedLogs[0].ContextMap())
+	assert.Equal(t, map[string]any{
+		"collection_time":      collectionTime,
+		"data_point_delay":     70 * time.Minute,
+		"data_point_timestamp": t2,
+		"metric_name":          "metric1",
+		"resource_id":          resourceID,
+	}, emittedLogs[1].ContextMap())
+
+	t3 := collectionTime
 	value3 := 15.0
 	mockQueryResponse2 := []queryResourcesResponseMock{
 		{
