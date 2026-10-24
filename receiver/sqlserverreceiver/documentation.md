@@ -488,7 +488,9 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.database.tempdb.space
 
-Total free space in temporary DB.
+TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -498,7 +500,7 @@ Total free space in temporary DB.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used`` | Recommended | - |
+| tempdb.state | The tempdb space usage category. The values are mutually exclusive and partition total tempdb space. | Str: ``free``, ``user_objects``, ``internal_objects``, ``version_store``, ``mixed_extents`` | Recommended | - |
 
 ### sqlserver.database.tempdb.version_store.size
 
@@ -1174,6 +1176,39 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | task.result | The result of the task activation. | Str: ``started``, ``aborted`` | Recommended | - |
+
+### sqlserver.tempdb.allocation.waiters.count
+
+Number of tasks currently waiting on a tempdb page latch, broken down by page type.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {waiters} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.tempdb.allocation.page_type | The type of tempdb page latch wait. `other` covers page latch waits on ordinary (non-allocation-map) pages. | Str: ``gam``, ``sgam``, ``pfs``, ``other`` | Recommended | - |
+
+### sqlserver.tempdb.file.size
+
+Size of each tempdb data or log file.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file_type | The type of file being monitored. | Any Str | Recommended | - |
+| sqlserver.tempdb.file.id | Numeric identifier of the tempdb file. | Any Int | Recommended | - |
 
 ### sqlserver.transaction.delay
 
