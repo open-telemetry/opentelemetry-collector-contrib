@@ -1,0 +1,25 @@
+default:
+all_set:
+  metrics:
+    hw.temperature:
+      enabled: true
+      attributes: ["hw.id","hw.name","hw.parent","hw.sensor_location"]
+    hw.temperature.limit:
+      enabled: true
+      attributes: ["hw.id","hw.limit_type","hw.name","hw.parent","hw.sensor_location"]
+reaggregate_set:
+  metrics:
+    hw.temperature:
+      enabled: true
+      attributes: []
+    hw.temperature.limit:
+      enabled: true
+      attributes: []
+none_set:
+  metrics:
+    hw.temperature:
+      enabled: false
+      attributes: ["hw.id","hw.name","hw.parent","hw.sensor_location"]
+    hw.temperature.limit:
+      enabled: false
+      attributes: ["hw.id","hw.limit_type","hw.name","hw.parent","hw.sensor_location"]
