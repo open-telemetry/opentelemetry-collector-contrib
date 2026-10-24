@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -342,6 +343,69 @@ func TestConfigValidateTailStorageFeatureGate(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestApplyOTTLErrorModeDefault(t *testing.T) {
+	testCases := []struct {
+		name          string
+		gateEnabled   bool
+		errorMode     ottl.ErrorMode
+		wantErrorMode ottl.ErrorMode
+	}{
+		{
+			name:          "unset error_mode defaults to propagate when gate disabled",
+			gateEnabled:   false,
+			errorMode:     "",
+			wantErrorMode: ottl.PropagateError,
+		},
+		{
+			name:          "unset error_mode defaults to ignore when gate enabled",
+			gateEnabled:   true,
+			errorMode:     "",
+			wantErrorMode: ottl.IgnoreError,
+		},
+		{
+			name:          "explicit error_mode is preserved when gate enabled",
+			gateEnabled:   true,
+			errorMode:     ottl.PropagateError,
+			wantErrorMode: ottl.PropagateError,
+		},
+		{
+			name:          "explicit error_mode is preserved when gate disabled",
+			gateEnabled:   false,
+			errorMode:     ottl.IgnoreError,
+			wantErrorMode: ottl.IgnoreError,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gateID := "processor.tailsamplingprocessor.defaultErrorModeIgnore"
+			prev := telemetry.IsDefaultErrorModeIgnoreEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(gateID, tc.gateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gateID, prev))
+			})
+
+			cfg := &Config{
+				SamplingStrategy: samplingStrategyTraceComplete,
+				PolicyCfgs: []PolicyCfg{
+					{
+						sharedPolicyCfg: sharedPolicyCfg{
+							Name: "test-ottl-policy",
+							Type: OTTLCondition,
+							OTTLConditionCfg: OTTLConditionCfg{
+								ErrorMode:      tc.errorMode,
+								SpanConditions: []string{"true"},
+							},
+						},
+					},
+				},
+			}
+			err := cfg.Validate()
+			require.NoError(t, err)
+			require.Equal(t, tc.wantErrorMode, cfg.PolicyCfgs[0].OTTLConditionCfg.ErrorMode)
 		})
 	}
 }
