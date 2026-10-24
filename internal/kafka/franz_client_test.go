@@ -5,18 +5,22 @@ package kafka
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -819,9 +823,13 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 		lifetime  time.Duration
 		wantCalls int32
 		wantKey   string
+		profile   bool
+		static    bool
 	}{
-		{name: "reuse valid credentials", lifetime: 5 * time.Minute, wantCalls: 1, wantKey: "AKID1"},
+		{name: "reuse valid credentials", lifetime: 10 * time.Minute, wantCalls: 1, wantKey: "AKID1"},
 		{name: "refresh near-expiry credentials", lifetime: 30 * time.Second, wantCalls: 2, wantKey: "AKID2"},
+		{name: "shared profile web identity", lifetime: 10 * time.Minute, wantCalls: 1, wantKey: "AKID1", profile: true},
+		{name: "static credentials take precedence", wantKey: "STATIC", static: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			// Given a real web identity provider backed by a local STS endpoint.
@@ -837,6 +845,7 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
+				assert.Equal(t, "test-session", r.Form.Get("RoleSessionName"))
 				call := calls.Add(1)
 				lifetime := tt.lifetime
 				if call > 1 {
@@ -863,8 +872,23 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 			t.Setenv("AWS_ROLE_SESSION_NAME", "test-session")
 			t.Setenv("AWS_ENDPOINT_URL_STS", server.URL)
 			t.Setenv("AWS_IGNORE_CONFIGURED_ENDPOINT_URLS", "false")
-			provider, err := loadAWSCredentialsProvider(t.Context(), "us-west-2")
+			if tt.profile {
+				t.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", "")
+				t.Setenv("AWS_ROLE_ARN", "")
+				t.Setenv("AWS_PROFILE", "msk")
+				profile := fmt.Sprintf("[profile msk]\nrole_arn = arn:aws:iam::123456789012:role/test\nweb_identity_token_file = %s\nrole_session_name = test-session\n", filepath.ToSlash(tokenFile))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "config"), []byte(profile), 0o600))
+			}
+			if tt.static {
+				t.Setenv("AWS_ACCESS_KEY_ID", "STATIC")
+				t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
+			}
+			provider, err := loadAWSCredentialsProvider(t.Context(), "us-west-2", zap.NewNop())
 			require.NoError(t, err)
+			assert.Equal(t, !tt.static, aws.IsCredentialsProvider(provider, &awsMSKRefreshProvider{}))
+			other, err := loadAWSCredentialsProvider(t.Context(), "us-west-2", zap.NewNop())
+			require.NoError(t, err)
+			assert.NotSame(t, provider, other, "each Kafka client must own its credential cache")
 			_, err = provider.Retrieve(t.Context())
 			require.NoError(t, err)
 
@@ -877,6 +901,199 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 			require.Equal(t, tt.wantCalls, calls.Load())
 		})
 	}
+}
+
+func TestAWSMSKCredentialCacheJitter(t *testing.T) {
+	actualExpiry := time.Now().Add(time.Hour)
+	provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+		return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: actualExpiry}, nil
+	}), zap.NewNop())
+	cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
+	creds, err := cache.Retrieve(t.Context())
+	require.NoError(t, err)
+	earlyBy := actualExpiry.Sub(creds.Expires)
+	assert.GreaterOrEqual(t, earlyBy, awsMSKExpiryWindow/2)
+	assert.LessOrEqual(t, earlyBy, awsMSKExpiryWindow)
+}
+
+func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		actualExpiry := time.Now().Add(time.Hour)
+		var failing atomic.Bool
+		var calls atomic.Int32
+		refreshErr := errors.New("STS unavailable")
+		logs, observed := observer.New(zap.DebugLevel)
+		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+			call := calls.Add(1)
+			if failing.Load() {
+				return aws.Credentials{}, refreshErr
+			}
+			return aws.Credentials{AccessKeyID: fmt.Sprintf("AKID%d", call), SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
+		}), zap.New(logs))
+		provider.retryDelay = func() time.Duration { return 45 * time.Second }
+		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
+		originalLoader := loadAWSCredentialsProvider
+		t.Cleanup(func() { loadAWSCredentialsProvider = originalLoader })
+		loadAWSCredentialsProvider = func(context.Context, string, *zap.Logger) (aws.CredentialsProvider, error) {
+			return cache, nil
+		}
+		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+			Mechanism: AWSMSKIAMOAUTHBEARER,
+			AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+		}, componenttest.NewNopHost(), zap.NewNop())
+		require.NoError(t, err)
+		cl, err := kgo.NewClient(opt)
+		require.NoError(t, err)
+		mechanism := cl.OptValue(kgo.SASL).([]sasl.Mechanism)[0]
+		cl.Close()
+		authenticate := func(wantKey string) {
+			t.Helper()
+			_, response, authErr := mechanism.Authenticate(t.Context(), "broker:9098")
+			require.NoError(t, authErr)
+			_, bearer, ok := strings.Cut(string(response), "auth=Bearer ")
+			require.True(t, ok)
+			signedURL, decodeErr := base64.RawURLEncoding.DecodeString(strings.TrimRight(bearer, "\x01"))
+			require.NoError(t, decodeErr)
+			parsed, parseErr := url.Parse(string(signedURL))
+			require.NoError(t, parseErr)
+			assert.True(t, strings.HasPrefix(parsed.Query().Get("X-Amz-Credential"), wantKey+"/"))
+			assert.NotEmpty(t, parsed.Query().Get("X-Amz-Signature"))
+		}
+		creds, err := cache.Retrieve(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, "AKID1", creds.AccessKeyID)
+		authenticate("AKID1")
+		failing.Store(true)
+		time.Sleep(time.Until(creds.Expires))
+
+		for time.Now().Before(actualExpiry) {
+			fallback, retrieveErr := cache.Retrieve(t.Context())
+			require.NoError(t, retrieveErr)
+			assert.Equal(t, "AKID1", fallback.AccessKeyID)
+			retryIn := min(45*time.Second, time.Until(actualExpiry))
+			assert.Equal(t, time.Now().Add(retryIn), fallback.Expires)
+			before := calls.Load()
+			authenticate("AKID1")
+			assert.Equal(t, before, calls.Load(), "fallback must be cached until its retry deadline")
+			time.Sleep(retryIn)
+		}
+		expired, err := cache.Retrieve(t.Context())
+		require.ErrorIs(t, err, refreshErr)
+		assert.False(t, expired.HasKeys(), "credentials must be rejected at their original AWS expiry")
+		_, response, err := mechanism.Authenticate(t.Context(), "broker:9098")
+		require.ErrorIs(t, err, refreshErr)
+		assert.Empty(t, response, "expired credentials must never produce an OAuth token")
+		time.Sleep(time.Second)
+		_, err = cache.Retrieve(t.Context())
+		require.ErrorIs(t, err, refreshErr)
+
+		failing.Store(false)
+		recovered, err := cache.Retrieve(t.Context())
+		require.NoError(t, err)
+		assert.NotEqual(t, "AKID1", recovered.AccessKeyID)
+		assert.True(t, recovered.Expires.After(time.Now()))
+		authenticate(recovered.AccessKeyID)
+		assert.Positive(t, observed.FilterMessage("AWS MSK credential refresh retaining still-valid credentials").Len())
+		for _, entry := range observed.All() {
+			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), "SECRET")
+			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), "AKID")
+		}
+	})
+}
+
+func TestAWSMSKCredentialCacheConcurrentRefresh(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var calls atomic.Int32
+		release := make(chan struct{})
+		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+			calls.Add(1)
+			<-release
+			return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
+		}), zap.NewNop())
+		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
+		var wg sync.WaitGroup
+		for range 32 {
+			wg.Go(func() {
+				_, err := cache.Retrieve(t.Context())
+				assert.NoError(t, err)
+			})
+		}
+		synctest.Wait()
+		assert.Equal(t, int32(1), calls.Load(), "the SDK must collapse concurrent refreshes")
+		close(release)
+		wg.Wait()
+	})
+}
+
+func TestAWSMSKCredentialCacheRefreshTimeout(t *testing.T) {
+	for _, callerTimeout := range []time.Duration{0, time.Second} {
+		t.Run(callerTimeout.String(), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				finished := make(chan struct{})
+				provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+					defer close(finished)
+					deadline, ok := ctx.Deadline()
+					assert.True(t, ok)
+					assert.Equal(t, awsMSKRefreshTimeout, time.Until(deadline))
+					<-ctx.Done()
+					return aws.Credentials{}, ctx.Err()
+				}), zap.NewNop())
+				cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
+				ctx := t.Context()
+				if callerTimeout > 0 {
+					var cancel context.CancelFunc
+					ctx, cancel = context.WithTimeout(ctx, callerTimeout)
+					defer cancel()
+				}
+				started := time.Now()
+				creds, err := cache.Retrieve(ctx)
+				require.ErrorIs(t, err, context.DeadlineExceeded)
+				assert.False(t, creds.HasKeys())
+				if callerTimeout > 0 {
+					assert.Equal(t, callerTimeout, time.Since(started))
+					time.Sleep(awsMSKRefreshTimeout - callerTimeout)
+				} else {
+					assert.Equal(t, awsMSKRefreshTimeout, time.Since(started))
+				}
+				synctest.Wait()
+				select {
+				case <-finished:
+				default:
+					t.Fatal("the provider refresh outlived its own timeout")
+				}
+			})
+		})
+	}
+}
+
+func TestAWSMSKRefreshProviderRejectsExpiredCredentials(t *testing.T) {
+	provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+		return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(-time.Second)}, nil
+	}), zap.NewNop())
+	creds, err := aws.NewCredentialsCache(provider, configureAWSMSKCache).Retrieve(t.Context())
+	require.ErrorContains(t, err, "expired credentials")
+	assert.False(t, creds.HasKeys())
+}
+
+func TestAWSMSKCredentialCacheExpiresDuringRefresh(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var calls atomic.Int32
+		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+			if calls.Add(1) == 1 {
+				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(15 * time.Second)}, nil
+			}
+			<-ctx.Done()
+			return aws.Credentials{}, ctx.Err()
+		}), zap.NewNop())
+		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
+		_, err := cache.Retrieve(t.Context())
+		require.NoError(t, err)
+		// The 30-second refresh timeout outlasts the credentials' remaining life.
+		// Fallback must check real expiry after the failed refresh completes.
+		creds, err := cache.Retrieve(t.Context())
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.False(t, creds.HasKeys())
+	})
 }
 
 func saslMechanism(t *testing.T, opt kgo.Opt) sasl.Mechanism {
@@ -893,7 +1110,7 @@ func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 	var loads, retrievals atomic.Int32
 	orig := loadAWSCredentialsProvider
 	t.Cleanup(func() { loadAWSCredentialsProvider = orig })
-	loadAWSCredentialsProvider = func(_ context.Context, region string) (aws.CredentialsProvider, error) {
+	loadAWSCredentialsProvider = func(_ context.Context, region string, _ *zap.Logger) (aws.CredentialsProvider, error) {
 		loads.Add(1)
 		assert.Equal(t, "us-west-2", region)
 		// Mirror LoadDefaultConfig, which wraps the provider in a cache.
@@ -906,7 +1123,7 @@ func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: AWSMSKIAMOAUTHBEARER,
 		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
-	}, componenttest.NewNopHost())
+	}, componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
 
 	mech := saslMechanism(t, opt)
@@ -922,14 +1139,14 @@ func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_LoadError(t *testing.T) {
 	orig := loadAWSCredentialsProvider
 	t.Cleanup(func() { loadAWSCredentialsProvider = orig })
-	loadAWSCredentialsProvider = func(context.Context, string) (aws.CredentialsProvider, error) {
+	loadAWSCredentialsProvider = func(context.Context, string, *zap.Logger) (aws.CredentialsProvider, error) {
 		return nil, errors.New("bad profile")
 	}
 
 	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: AWSMSKIAMOAUTHBEARER,
 		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
-	}, componenttest.NewNopHost())
+	}, componenttest.NewNopHost(), zap.NewNop())
 	require.ErrorContains(t, err, "bad profile")
 }
 
@@ -940,7 +1157,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
-		}, componenttest.NewNopHost())
+		}, componenttest.NewNopHost(), zap.NewNop())
 		require.Error(t, err)
 		assert.ErrorContains(t, err, "is not configured")
 	})
@@ -952,7 +1169,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
-		}, host)
+		}, host, zap.NewNop())
 		require.EqualError(t, err, `oauthbearer_token_source extension "oauth2client" does not implement Token(context.Context)`)
 	})
 
@@ -963,7 +1180,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
-		}, host)
+		}, host, zap.NewNop())
 		require.NoError(t, err)
 		require.NotNil(t, opt)
 
@@ -980,7 +1197,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 			Mechanism:              OAUTHBEARER,
 			OAuthBearerTokenSource: extID,
-		}, host)
+		}, host, zap.NewNop())
 		require.NoError(t, err)
 		require.NotNil(t, opt)
 
@@ -993,7 +1210,7 @@ func TestConfigureKgoSASL_OAUTHBEARER(t *testing.T) {
 func TestConfigureKgoSASL_UnsupportedMechanism(t *testing.T) {
 	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
 		Mechanism: "BOGUS",
-	}, componenttest.NewNopHost())
+	}, componenttest.NewNopHost(), zap.NewNop())
 	require.ErrorContains(t, err, "unsupported SASL mechanism")
 }
 
