@@ -330,14 +330,15 @@ func (t *transaction) appendExemplarToGroup(mg *metricGroup, e exemplar.Exemplar
 		capHint := max(t.prevExemplarCount, 64)
 		t.exemplarSlab = make([]exemplar.Exemplar, 0, capHint)
 	}
-	if mg.exemplarLen == 0 {
+	switch {
+	case mg.exemplarLen == 0:
 		mg.exemplarOff = int32(len(t.exemplarSlab))
 		mg.exemplarLen = 1
 		t.exemplarSlab = append(t.exemplarSlab, e)
-	} else if int(mg.exemplarOff)+int(mg.exemplarLen) == len(t.exemplarSlab) {
+	case int(mg.exemplarOff)+int(mg.exemplarLen) == len(t.exemplarSlab):
 		mg.exemplarLen++
 		t.exemplarSlab = append(t.exemplarSlab, e)
-	} else {
+	default:
 		newOff := int32(len(t.exemplarSlab))
 		t.exemplarSlab = append(t.exemplarSlab, t.exemplarSlab[mg.exemplarOff:int(mg.exemplarOff)+int(mg.exemplarLen)]...)
 		t.exemplarSlab = append(t.exemplarSlab, e)

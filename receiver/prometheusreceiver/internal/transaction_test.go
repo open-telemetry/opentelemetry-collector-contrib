@@ -2368,18 +2368,23 @@ func TestSeriesCacheSetEvictionAndDynamicGrowth(t *testing.T) {
 	}
 	tbl := sc.table.Load()
 	require.NotNil(t, tbl)
-	require.Equal(t, minSeriesCacheSets*4, len(tbl.sets))
+	require.Len(t, tbl.sets, minSeriesCacheSets*4)
 	for _, e := range entries {
 		require.Same(t, e, sc.lookup(e.hash, e.ls, ext))
 	}
 
 	// Re-inserting an entry with identical (hash, ls, externalLabels) replaces in-place without growing count.
 	beforeCount := sc.count.Load()
-	updated := *entries[0]
-	updated.mtype = pmetric.MetricTypeSum
-	sc.put(&updated)
+	updated := &seriesCacheEntry{
+		hash:           entries[0].hash,
+		ls:             entries[0].ls,
+		externalLabels: entries[0].externalLabels,
+		metricName:     entries[0].metricName,
+		mtype:          pmetric.MetricTypeSum,
+	}
+	sc.put(updated)
 	require.Equal(t, beforeCount, sc.count.Load())
-	require.Same(t, &updated, sc.lookup(updated.hash, updated.ls, ext))
+	require.Same(t, updated, sc.lookup(updated.hash, updated.ls, ext))
 
 	// Exercise 4-way set-associative shift + eviction within a single set on a fresh table.
 	evictCache := &seriesCache{}
