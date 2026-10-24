@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vmware/govmomi/fault"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
@@ -76,8 +77,17 @@ func applyProxy(transport *http.Transport, proxyURL string) error {
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.sessionManager != nil {
-		sessionActive, _ := vc.sessionManager.SessionIsActive(ctx)
-		if sessionActive {
+		// SessionIsActive needs the Sessions.ValidateSession privilege, which a read-only user
+		// lacks, and ESXi does not implement it. Reading the current session needs neither.
+		// UserSession returns no error and no session when the session has expired, and
+		// ManagedObjectNotFound when the session no longer exists on the server, as govmomi's
+		// session cache treats it. Any other error may be transient, so it is returned instead of
+		// logging in again and leaking the session.
+		userSession, err := vc.sessionManager.UserSession(ctx)
+		if err != nil && !fault.Is(err, &vt.ManagedObjectNotFound{}) {
+			return fmt.Errorf("unable to check the vSphere SDK session: %w", err)
+		}
+		if userSession != nil {
 			return nil
 		}
 	}
