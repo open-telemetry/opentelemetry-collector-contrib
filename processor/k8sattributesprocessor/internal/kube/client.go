@@ -17,7 +17,7 @@ import (
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
