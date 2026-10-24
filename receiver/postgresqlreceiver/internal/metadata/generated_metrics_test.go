@@ -115,11 +115,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val")
+			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val", "postgresql.backend.type-val", "postgresql.state-val", "postgresql.wait_event_type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2", "postgresql.backend.type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2")
+				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2", "postgresql.backend.type-val-2", "postgresql.state-val-2", "postgresql.wait_event_type-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlBackends.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
@@ -556,7 +556,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -575,7 +575,7 @@ func TestMetricsBuilder(t *testing.T) {
 						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
 						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
 						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
-						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
+						assert.Equal(t, "The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -594,6 +594,12 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.backend.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.state")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.wait_event_type")
 						assert.False(t, ok)
 					}
 				case "postgresql.bgwriter.buffers.allocated":

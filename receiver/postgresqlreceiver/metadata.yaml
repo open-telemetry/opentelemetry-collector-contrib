@@ -162,6 +162,10 @@ attributes:
   postgresql.backend.connection.start:
     description: UTC timestamp (RFC3339) when this backend was started.
     type: string
+  postgresql.backend.type:
+    description: The type of backend process, e.g. client backend, autovacuum worker, walsender, or logical replication worker. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role.
+    type: string
+    requirement_level: opt_in
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
     type: string
@@ -244,6 +248,7 @@ attributes:
   postgresql.state:
     description: Current overall state of this backend
     type: string
+    requirement_level: opt_in
   postgresql.temp_blks_read:
     description: Total number of temp blocks read by the statement, reported in delta value.
     type: int
@@ -265,6 +270,7 @@ attributes:
   postgresql.wait_event_type:
     description: The type of event for which the backend is waiting, if any; otherwise NULL.
     type: string
+    requirement_level: opt_in
   relation:
     description: The name of the relation (table, index, view, etc.) targeted by the lock, or empty if the target is not a relation or part of a relation.
     type: string
@@ -364,14 +370,14 @@ events:
 metrics:
   postgresql.backends:
     enabled: true
-    description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+    description: The number of backend processes associated with each database, broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
     stability: development
     unit: "1"
     sum:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [db.namespace]
+    attributes: [db.namespace, postgresql.backend.type, postgresql.state, postgresql.wait_event_type]
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated.
     stability: development
