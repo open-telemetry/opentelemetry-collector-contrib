@@ -23,6 +23,12 @@ $defs:
   byte_size:
     type: integer
     x-customType: int64
+  drop_field_config:
+    description: DropFieldConfig provides configuration for dropping parsed fields from an entry.
+    type: object
+    properties:
+      drop_field:
+        type: boolean
   expr_string_config:
     description: ExprStringConfig is a string that represents an expression
     type: string
@@ -71,6 +77,7 @@ $defs:
         $ref: trace_parser
     allOf:
       - $ref: transformer_config
+      - $ref: drop_field_config
   scope_name_parser:
     description: ScopeNameParser is a helper that parses severity onto an entry.
     type: object
@@ -92,6 +99,8 @@ $defs:
         $ref: /pkg/stanza/entry.field
       preset:
         type: string
+    allOf:
+      - $ref: drop_field_config
   span_id_config:
     type: object
     properties:
@@ -115,6 +124,8 @@ $defs:
         type: object
         additionalProperties:
           type: string
+    allOf:
+      - $ref: drop_field_config
   trace_flags_config:
     type: object
     properties:

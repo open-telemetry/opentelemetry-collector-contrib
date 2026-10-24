@@ -52,6 +52,17 @@ func TestParserConfigBodyCollision(t *testing.T) {
 	require.ErrorContains(t, err, "`parse_to: body` not allowed when `body` is configured")
 }
 
+func TestParserConfigDropFieldCollision(t *testing.T) {
+	cfg := NewParserConfig("test-id", "test-type")
+	cfg.ParseFrom = entry.NewBodyField("message")
+	cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("message")}
+	cfg.DropField = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
+	require.ErrorContains(t, err, "`parse_to` and `parse_from` cannot be the same when `drop_field: true`")
+}
+
 func TestParserConfigBuildValid(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
 
@@ -654,6 +665,88 @@ func TestParserFields(t *testing.T) {
 					"one": map[string]any{
 						"two": keyValue,
 					},
+				}
+				return e
+			},
+		},
+		{
+			"ParseFromBodyFieldWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewBodyField("one", "two")
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = map[string]any{
+					"one": map[string]any{
+						"two": keyValue,
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = map[string]any{
+					"one": map[string]any{},
+				}
+				e.Attributes = map[string]any{
+					"key": "value",
+				}
+				return e
+			},
+		},
+		{
+			"ParseFromAttributeFieldWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewAttributeField("one", "two")
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": keyValue,
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]any{
+					"key": "value",
+					"one": map[string]any{},
+				}
+				return e
+			},
+		},
+		{
+			"ParseFromResourceFieldWithDrop",
+			func(cfg *ParserConfig) {
+				cfg.ParseFrom = entry.NewResourceField("one", "two")
+				cfg.DropField = true
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": keyValue,
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]any{
+					"key": "value",
+				}
+				e.Resource = map[string]any{
+					"one": map[string]any{},
 				}
 				return e
 			},
