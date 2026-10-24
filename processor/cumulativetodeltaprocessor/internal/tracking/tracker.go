@@ -285,6 +285,17 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			return out, false, ReasonReset
 		}
 
+		// Same NaN Sum handling as for regular histograms. It runs after the reset checks so that
+		// a reset frame with NaN Sum is stored as-is rather than carrying forward the pre-reset Sum.
+		if math.IsNaN(delta.Sum) {
+			delta.Sum = 0
+			if math.IsNaN(value.Sum) {
+				expHistCopy := value.Clone()
+				expHistCopy.Sum = prevValue.Sum
+				metricPoint.ExponentialHistogramValue = &expHistCopy
+			}
+		}
+
 		out.ExponentialHistogramPoint = &delta
 
 	case pmetric.MetricTypeSum:

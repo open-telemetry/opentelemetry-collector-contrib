@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/prometheus_simple
+
+note: Forward inline TLS PEM (`ca_pem`, `cert_pem`, `key_pem`) and `server_name_override` to the underlying Prometheus receiver instead of silently dropping them.
+
+issues: [52029]
+
+subtext:
+
+change_logs: []

@@ -27,8 +27,8 @@ const (
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	return xhash.Hash64(
 		xhash.WithMap(dp.Attributes()),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
 	)
 }
 
@@ -8098,6 +8098,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SqlserverDbEdition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDbEdition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SqlserverDbEdition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.db.edition"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDbEdition.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude)
