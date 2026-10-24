@@ -254,6 +254,11 @@ The [`azureauth`](../../extension/azureauthextension/README.md) extension can al
 as a token source, which supports managed identity, workload identity, and service principal
 for authenticating against Azure Event Hubs.
 
+The [`googleclientauth`](../../extension/googleclientauthextension/README.md) extension can also be
+used as a token source with `token_type: google_managed_kafka`, which supports application default
+credentials, including GKE Workload Identity, for authenticating against Google Cloud Managed Service
+for Apache Kafka.
+
 #### Header extraction
 
 In addition to propagating Kafka message metadata as described above in
