@@ -282,6 +282,17 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+// asDecompressTooLarge unwraps a franz-go ErrDecompressTooLarge error,
+// if err wraps one. Its Epoch/NextOffset are exactly what franz-go
+// documents for skipping the over-limit batch via SetOffsets.
+func asDecompressTooLarge(err error) (*kgo.ErrDecompressTooLarge, bool) {
+	var decompressErr *kgo.ErrDecompressTooLarge
+	if !errors.As(err, &decompressErr) {
+		return nil, false
+	}
+	return decompressErr, true
+}
+
 func (c *franzConsumer) consumeLoop(ctx context.Context) {
 	// When the loop exits, report Stopped.
 	defer func() {
@@ -321,6 +332,29 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// simply be logged and keep fetching.
 	fetch.EachError(func(topic string, partition int32, err error) {
 		if c.config.PartitionProcessing.Independent && errors.Is(err, context.Canceled) {
+			return
+		}
+		// An over-limit decompressed batch stops its partition until the
+		// fetch cursor is moved past it (franz-go: ErrDecompressTooLarge).
+		// Logging it as a generic recoverable error would leave the
+		// partition silently stalled, so handle it explicitly: log the
+		// batch position, move the cursor past the batch with SetOffsets,
+		// and do NOT report it as recoverable (it is handled, not transient).
+		if decompressErr, ok := asDecompressTooLarge(err); ok {
+			c.settings.Logger.Error(
+				"consumer fetch error: decompressed batch exceeds max_decompress_batch_bytes, skipping batch",
+				zap.Error(err),
+				zap.String("topic", topic),
+				zap.Int64("partition", int64(partition)),
+				zap.Int64("offset", decompressErr.Offset),
+				zap.Int64("next_offset", decompressErr.NextOffset),
+				zap.Int("max_decompress_batch_bytes", c.config.ConsumerConfig.MaxDecompressBatchBytes),
+			)
+			// SetOffsets is called between PollRecords calls here, so it
+			// does not race the poll loop.
+			c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+				topic: {partition: {Epoch: decompressErr.Epoch, Offset: decompressErr.NextOffset}},
+			})
 			return
 		}
 		c.settings.Logger.Error("consumer fetch error", zap.Error(err),
