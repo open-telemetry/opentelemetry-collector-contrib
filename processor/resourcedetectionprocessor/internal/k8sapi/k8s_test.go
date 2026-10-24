@@ -18,7 +18,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/internal/metadata"
 )
@@ -51,7 +51,7 @@ func TestDetect(t *testing.T) {
 	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -80,7 +80,7 @@ func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
 	forbiddenErr := k8serrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "kube-system", errors.New("forbidden"))
 	md.On("ClusterUID").Return("", forbiddenErr)
 	cfg := CreateDefaultConfig()
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -105,7 +105,7 @@ func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
 	md.On("NodeName").Return("mainNode", nil)
 	md.On("ClusterUID").Return("", errors.New("connection refused"))
 	cfg := CreateDefaultConfig()
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -126,7 +126,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	cfg.ResourceAttributes.K8sNodeName.Enabled = false
 	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
@@ -206,7 +206,7 @@ func TestNewDetectorErrors(t *testing.T) {
 
 func TestNewDeprecatedDetector(t *testing.T) {
 	cfg := CreateDefaultConfig()
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	t.Setenv("K8S_NODE_NAME", "mainNode")
