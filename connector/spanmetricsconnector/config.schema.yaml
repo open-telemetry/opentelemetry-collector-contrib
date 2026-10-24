@@ -102,7 +102,7 @@ properties:
     items:
       type: string
   metric_timestamp_cache_size:
-    description: TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
+    description: TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed Each resource-and-dimension combination uses one cache entry.
     x-pointer: true
     type: integer
   metrics_expiration:
