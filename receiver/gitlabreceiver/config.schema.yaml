@@ -16,7 +16,7 @@ $defs:
       health_path:
         type: string
       include_user_attributes:
-        description: 'IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included Default: false (user information is excluded by default for privacy)'
+        description: 'Deprecated: [v0.162.0] Use resource_attributes.<name>.enabled instead. When true, enables the user resource attributes (vcs.ref.head.revision.author.name, vcs.ref.head.revision.author.email, vcs.ref.head.revision.message, cicd.pipeline.run.actor.id, cicd.pipeline.run.actor.name, gitlab.pipeline.run.actor.username), overriding their resource_attributes setting.'
         type: boolean
       path:
         type: string
@@ -32,5 +32,8 @@ $defs:
 description: Config that is exposed to this gitlab receiver through the OTEL config.yaml
 type: object
 properties:
+  resource_attributes:
+    description: ResourceAttributes controls which resource attributes are emitted.
+    $ref: ./internal/metadata.resource_attributes_config
   webhook:
     $ref: web_hook

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
 
 const (
@@ -47,6 +49,9 @@ var (
 type Config struct {
 	WebHook WebHook `mapstructure:"webhook"`
 
+	// ResourceAttributes controls which resource attributes are emitted.
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -62,8 +67,10 @@ type WebHook struct {
 
 	Secret string `mapstructure:"secret"` // secret for webhook
 
-	// IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included
-	// Default: false (user information is excluded by default for privacy)
+	// Deprecated: [v0.162.0] Use resource_attributes.<name>.enabled instead.
+	// When true, enables the user resource attributes (vcs.ref.head.revision.author.name,
+	// vcs.ref.head.revision.author.email, vcs.ref.head.revision.message, cicd.pipeline.run.actor.id,
+	// cicd.pipeline.run.actor.name, gitlab.pipeline.run.actor.username), overriding their resource_attributes setting.
 	IncludeUserAttributes bool `mapstructure:"include_user_attributes"`
 }
 
@@ -102,6 +109,7 @@ func createDefaultConfig() component.Config {
 			HealthPath:            defaultHealthPath,
 			IncludeUserAttributes: false,
 		},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -149,5 +157,20 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 	}
 
+	// keep the deprecated include_user_attributes working by enabling the user resource attributes
+	if cfg.WebHook.IncludeUserAttributes {
+		enableUserResourceAttributes(&cfg.ResourceAttributes)
+	}
+
 	return nil
+}
+
+// enableUserResourceAttributes enables the resource attributes that carry user information.
+func enableUserResourceAttributes(ra *metadata.ResourceAttributesConfig) {
+	ra.VcsRefHeadRevisionAuthorName.Enabled = true
+	ra.VcsRefHeadRevisionAuthorEmail.Enabled = true
+	ra.VcsRefHeadRevisionMessage.Enabled = true
+	ra.CicdPipelineRunActorID.Enabled = true
+	ra.CicdPipelineRunActorName.Enabled = true
+	ra.GitlabPipelineRunActorUsername.Enabled = true
 }

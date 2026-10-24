@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlab
 go 1.26.0
 
 require (
+	github.com/google/go-cmp v0.7.0
 	github.com/stretchr/testify v1.12.1
 	gitlab.com/gitlab-org/api/client-go/v3 v3.29.0
 	go.opentelemetry.io/collector/component v1.69.1-0.20261022201525-42ee5d39b18f

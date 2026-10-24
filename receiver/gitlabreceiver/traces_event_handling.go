@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
 
 var (
@@ -44,7 +46,7 @@ func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
 
-	gtr.setResourceAttributes(r.Resource().Attributes(), e)
+	gtr.buildResource(e).MoveTo(r.Resource())
 
 	traceID, err := newTraceID(e.ObjectAttributes.ID, e.ObjectAttributes.FinishedAt)
 	if err != nil {
@@ -357,41 +359,44 @@ func setSpanStatus(span ptrace.Span, status string) {
 	}
 }
 
-func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *gitlab.PipelineEvent) {
+func (gtr *gitlabTracesReceiver) buildResource(e *gitlab.PipelineEvent) pcommon.Resource {
+	// a new builder per event, since ResourceBuilder is not thread-safe and webhooks are handled concurrently
+	rb := metadata.NewResourceBuilder(gtr.cfg.ResourceAttributes)
+
 	// Service
-	attrs.PutStr(string(conventions.ServiceNameKey), e.Project.PathWithNamespace)
+	rb.SetServiceName(e.Project.PathWithNamespace)
 
 	// CICD
-	attrs.PutStr(string(conventions.CICDPipelineNameKey), e.ObjectAttributes.Name)
-	attrs.PutStr(string(conventions.CICDPipelineResultKey), e.ObjectAttributes.Status)
-	attrs.PutInt(string(conventions.CICDPipelineRunIDKey), e.ObjectAttributes.ID)
-	attrs.PutStr(string(conventions.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
+	rb.SetCicdPipelineName(e.ObjectAttributes.Name)
+	rb.SetCicdPipelineResult(e.ObjectAttributes.Status)
+	rb.SetCicdPipelineRunID(e.ObjectAttributes.ID)
+	rb.SetCicdPipelineRunURLFull(e.ObjectAttributes.URL)
 
 	// Resource attributes for workers are not applicable for GitLab, because GitLab provides worker information on job level
 	// One pipeline can have multiple jobs, and each job can have a different worker
 	// Therefore we set the worker attributes on job level
 
 	// VCS
-	attrs.PutStr(string(conventions.VCSProviderNameGitlab.Key), conventions.VCSProviderNameGitlab.Value.AsString())
+	rb.SetVcsProviderName(conventions.VCSProviderNameGitlab.Value.AsString())
 
-	attrs.PutStr(string(conventions.VCSRepositoryNameKey), e.Project.Name)
-	attrs.PutStr(string(conventions.VCSRepositoryURLFullKey), e.Project.WebURL)
+	rb.SetVcsRepositoryName(e.Project.Name)
+	rb.SetVcsRepositoryURLFull(e.Project.WebURL)
 
-	attrs.PutStr(string(conventions.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
+	rb.SetVcsRefHeadName(e.ObjectAttributes.Ref)
 	refType := conventions.VCSRefTypeBranch.Value.AsString()
 	if e.ObjectAttributes.Tag {
 		refType = conventions.VCSRefTypeTag.Value.AsString()
 	}
-	attrs.PutStr(string(conventions.VCSRefHeadTypeKey), refType)
-	attrs.PutStr(string(conventions.VCSRefHeadRevisionKey), e.ObjectAttributes.SHA)
+	rb.SetVcsRefHeadType(refType)
+	rb.SetVcsRefHeadRevision(e.ObjectAttributes.SHA)
 
 	// Merge Request attributes (only for MR-triggered pipelines)
 	if e.MergeRequest.ID != 0 {
-		attrs.PutStr(string(conventions.VCSChangeIDKey), strconv.FormatInt(e.MergeRequest.ID, 10))
-		attrs.PutStr(string(conventions.VCSChangeStateKey), e.MergeRequest.State)
-		attrs.PutStr(string(conventions.VCSChangeTitleKey), e.MergeRequest.Title)
-		attrs.PutStr(string(conventions.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
-		attrs.PutStr(string(conventions.VCSRefBaseTypeKey), conventions.VCSRefTypeBranch.Value.AsString())
+		rb.SetVcsChangeID(strconv.FormatInt(e.MergeRequest.ID, 10))
+		rb.SetVcsChangeState(e.MergeRequest.State)
+		rb.SetVcsChangeTitle(e.MergeRequest.Title)
+		rb.SetVcsRefBaseName(e.MergeRequest.TargetBranch)
+		rb.SetVcsRefBaseType(conventions.VCSRefTypeBranch.Value.AsString())
 	}
 
 	// ---------- The following attributes are not part of semconv yet ----------
@@ -399,24 +404,24 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	// VCS
 	// We need to check if the commit timestamp is not nil, otherwise we might have a nil pointer dereference when calling Format()
 	if e.Commit.Timestamp != nil {
-		attrs.PutStr(AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp.Format(gitlabEventTimeFormat))
+		rb.SetVcsRefHeadRevisionTimestamp(e.Commit.Timestamp.Format(gitlabEventTimeFormat))
 	}
 
-	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
-	attrs.PutInt(AttributeGitLabProjectID, e.Project.ID)
-	attrs.PutStr(AttributeGitLabProjectNamespace, e.Project.Namespace)
-	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
+	rb.SetVcsRepositoryVisibility(string(e.Project.Visibility))
+	rb.SetGitlabProjectID(e.Project.ID)
+	rb.SetGitlabProjectNamespace(e.Project.Namespace)
+	rb.SetVcsRepositoryRefDefault(e.Project.DefaultBranch)
 
-	// User details are only included if explicitly enabled in configuration
-	if gtr.cfg.WebHook.IncludeUserAttributes {
-		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorName, e.Commit.Author.Name)
-		attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.Commit.Author.Email)
-		attrs.PutStr(AttributeVCSRefHeadRevisionMessage, e.Commit.Message)
+	// User details are disabled by default for privacy, see resource_attributes in the configuration
+	rb.SetVcsRefHeadRevisionAuthorName(e.Commit.Author.Name)
+	rb.SetVcsRefHeadRevisionAuthorEmail(e.Commit.Author.Email)
+	rb.SetVcsRefHeadRevisionMessage(e.Commit.Message)
 
-		if e.User != nil {
-			attrs.PutInt(AttributeCICDPipelineRunActorID, e.User.ID)
-			attrs.PutStr(AttributeGitLabPipelineRunActorUsername, e.User.Username)
-			attrs.PutStr(AttributeCICDPipelineRunActorName, e.User.Name)
-		}
+	if e.User != nil {
+		rb.SetCicdPipelineRunActorID(e.User.ID)
+		rb.SetGitlabPipelineRunActorUsername(e.User.Username)
+		rb.SetCicdPipelineRunActorName(e.User.Name)
 	}
+
+	return rb.Emit()
 }
