@@ -26,6 +26,19 @@ opensearch/invalid_bulk_action:
   http:
     endpoint: https://opensearch.example.com:9200
 
+opensearch/otel_v1_ism:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  mapping:
+    mode: otel-v1
+    manage_index_template: true
+    index_template_file: /etc/otelcol/otel-v1-overlay.json
+    ism:
+      enabled: true
+      rollover_min_size: 25gb
+      rollover_min_index_age: 12h
+      rollover_priority: 200
+
 opensearch/trace:
   dataset: ngnix
   namespace: eu
