@@ -1,0 +1,13 @@
+change_type: enhancement
+
+component: processor/resource_detection
+
+note: "`docker` detector: add `container.image.id` and `container.image.tags` resource attributes"
+
+issues: [48159]
+
+subtext: |
+  Both are disabled by default. An image run as `otelcontribcol:latest` reports
+  `container.image.tags: [latest]` and `container.image.id: sha256:<id>`.
+
+change_logs: [user]
