@@ -4,6 +4,9 @@ all_set:
     splunk.aggregation.queue.ratio:
       enabled: true
       attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
+    splunk.api.info.up:
+      enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.buckets.searchable.status:
       enabled: true
       attributes: ["splunk.host","splunk.indexer.searchable","splunk.splunkd.build","splunk.splunkd.version"]
@@ -159,6 +162,9 @@ reaggregate_set:
     splunk.aggregation.queue.ratio:
       enabled: true
       attributes: []
+    splunk.api.info.up:
+      enabled: true
+      attributes: []
     splunk.buckets.searchable.status:
       enabled: true
       attributes: []
@@ -312,6 +318,9 @@ reaggregate_set:
 none_set:
   metrics:
     splunk.aggregation.queue.ratio:
+      enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
+    splunk.api.info.up:
       enabled: false
       attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.buckets.searchable.status:
