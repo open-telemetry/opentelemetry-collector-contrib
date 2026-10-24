@@ -1059,5 +1059,14 @@ metrics:
       - resource
     entity: openshift.clusterquota
 
+feature_gates:
+  - id: receiver.k8sclusterreceiver.sidecarContainerMetrics
+    stage: alpha
+    from_version: v0.162.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42571
+    description: >-
+      When enabled, collect k8s.container metrics and entities for native sidecar
+      containers (init containers with restartPolicy: Always).
+
 tests:
   config:
