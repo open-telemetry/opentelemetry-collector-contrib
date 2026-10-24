@@ -245,7 +245,7 @@ func extractResponseSizeFromEvents(span ptrace.Span) int64 {
 }
 
 func extractResponseSizeFromAttributes(attributes pcommon.Map) int64 {
-	typeVal, ok := attributes.Get("message.type")
+	typeVal, ok := attributes.Get(string(conventionsv112.MessageTypeKey))
 	if ok && typeVal.Str() == "RECEIVED" {
 		// TODO: Remove old key when exporter.awsxray.DontEmitV0HTTPNetworkConventions is removed.
 		if !metadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() {
