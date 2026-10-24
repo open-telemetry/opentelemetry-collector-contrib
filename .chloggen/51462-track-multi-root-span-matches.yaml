@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: processor/adaptive_tail_sampling
+
+note: Add a metric to track multiple root span condition matches
+
+issues: [51458]
+
+subtext: |
+  Adds the otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches
+  histogram, which records the number of spans matching the root span condition
+  for traces where the condition matches more than once.
+
+change_logs: [user]

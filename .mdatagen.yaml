@@ -25,9 +25,6 @@ exclusions:
       - name: connector.servicegraph.legacyLatencyUnitMs
         validation:
           enabled: false
-      - name: connector.servicegraph.virtualNode
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
     feature_gates:
       - name: connector.spanmetrics.excludeResourceMetrics
@@ -747,6 +744,10 @@ exclusions:
       enabled: false
     goleak:
       enabled: false
+    feature_gates:
+      - name: receiver.k8sobjects.useInformerObserver
+        validation:
+          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
     feature_gates:
       - name: receiver.kafkametricsreceiver.UseFranzGo
@@ -775,9 +776,6 @@ exclusions:
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
     feature_gates:
       - name: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
-        validation:
-          enabled: false
-      - name: receiver.prometheusreceiver.IgnoreScopeInfoMetric
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
