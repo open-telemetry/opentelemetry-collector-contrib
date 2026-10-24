@@ -43,6 +43,14 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event). Conditions may use OTTL path-based context names (e.g. `span.attributes["http.status_code"]`, `resource.attributes["service.name"]`, `spanevent.name`, `scope.name`). It is highly recommended to use this new syntax to avoid breaking changes in the future.
+
+  The `error_mode` defaults to `propagate`. Enable the alpha feature gate
+  `processor.tailsamplingprocessor.defaultErrorModeIgnore` with
+  `--feature-gates=processor.tailsamplingprocessor.defaultErrorModeIgnore` to default
+  to `ignore` instead. In `ignore` mode, evaluation errors are logged and processing
+  continues with the next condition, span, or span event. Explicit `error_mode`
+  settings (`propagate`, `ignore`, or `silent`) take precedence over the gate,
+  including for policies nested inside `and`, `composite`, or `drop` policies.
 - `and`: Sample based on multiple policies, creates an AND policy
 - `not`: Sample based on the opposite result a single policy, creates a NOT policy
 - `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
