@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/googlecloudpubsub
+note: Skip publishing empty telemetry groups when ordering is enabled.
+issues: [52049]
+subtext: ""

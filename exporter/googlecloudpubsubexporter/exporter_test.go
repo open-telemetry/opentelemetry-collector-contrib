@@ -681,6 +681,172 @@ func TestExporterWithOrdering(t *testing.T) {
 	})
 }
 
+func TestExporterWithOrdering_EmptyGroup(t *testing.T) {
+	const orderingKey = "ordering.key"
+	withOrdering := func(cfg *Config) {
+		cfg.Ordering.Enabled = true
+		cfg.Ordering.FromResourceAttribute = orderingKey
+		cfg.Ordering.RemoveResourceAttribute = true
+	}
+
+	ctx := t.Context()
+
+	t.Run("ordered logs with JSON encoding and all records keyed", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.LogsSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("json_log_mock_encoding"),
+			}
+		})
+
+		logs := plog.NewLogs()
+		{
+			resourceLogs := logs.ResourceLogs().AppendEmpty()
+			resourceLogs.Resource().Attributes().PutStr(orderingKey, "group 1")
+			resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log message in group 1")
+		}
+		{
+			resourceLogs := logs.ResourceLogs().AppendEmpty()
+			resourceLogs.Resource().Attributes().PutStr(orderingKey, "group 2")
+			resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log message in group 2")
+		}
+
+		require.NoError(t, exporter.consumeLogs(ctx, logs))
+		require.Len(t, publisher.requests, 2, "must publish only groups containing actual records, not an extra empty/null group")
+
+		var keys []string
+		for _, req := range publisher.requests {
+			require.Len(t, req.Messages, 1)
+			keys = append(keys, req.Messages[0].OrderingKey)
+			assert.Equal(t, []byte(`{"message":"some log message"}`), req.Messages[0].Data)
+			assert.NotEqual(t, []byte("null"), req.Messages[0].Data)
+		}
+		assert.ElementsMatch(t, []string{"group 1", "group 2"}, keys)
+	})
+
+	t.Run("ordered logs with JSON encoding and mixed keyed and unkeyed", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.LogsSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("json_log_mock_encoding"),
+			}
+		})
+
+		logs := plog.NewLogs()
+		{
+			resourceLogs := logs.ResourceLogs().AppendEmpty()
+			resourceLogs.Resource().Attributes().PutStr(orderingKey, "group 1")
+			resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log message in group 1")
+		}
+		{
+			resourceLogs := logs.ResourceLogs().AppendEmpty()
+			resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("unkeyed log message")
+		}
+
+		require.NoError(t, exporter.consumeLogs(ctx, logs))
+		require.Len(t, publisher.requests, 2)
+
+		var keys []string
+		for _, req := range publisher.requests {
+			require.Len(t, req.Messages, 1)
+			keys = append(keys, req.Messages[0].OrderingKey)
+			assert.Equal(t, []byte(`{"message":"some log message"}`), req.Messages[0].Data)
+		}
+		assert.ElementsMatch(t, []string{"group 1", ""}, keys)
+	})
+
+	t.Run("ordered logs with JSON encoding and no telemetry records", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.LogsSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("json_log_mock_encoding"),
+			}
+		})
+
+		require.NoError(t, exporter.consumeLogs(ctx, plog.NewLogs()))
+		assert.Empty(t, publisher.requests)
+	})
+
+	t.Run("ordered logs with default protobuf and all records keyed", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering)
+
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resourceLogs.Resource().Attributes().PutStr(orderingKey, "group 1")
+		resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log message in group 1")
+
+		require.NoError(t, exporter.consumeLogs(ctx, logs))
+		require.Len(t, publisher.requests, 1)
+		assert.Equal(t, "group 1", publisher.requests[0].Messages[0].OrderingKey)
+		assert.NotEmpty(t, publisher.requests[0].Messages[0].Data)
+	})
+
+	t.Run("ordered logs with default protobuf and no telemetry records", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering)
+
+		require.NoError(t, exporter.consumeLogs(ctx, plog.NewLogs()))
+		assert.Empty(t, publisher.requests)
+	})
+
+	t.Run("ordered traces with extension encoding and all records keyed", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.TracesSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("trace_mock_encoding"),
+			}
+		})
+
+		traces := ptrace.NewTraces()
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().Attributes().PutStr(orderingKey, "group 1")
+		span := resourceSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span 1")
+
+		require.NoError(t, exporter.consumeTraces(ctx, traces))
+		require.Len(t, publisher.requests, 1, "must publish only groups containing actual traces, not an extra empty group")
+		assert.Equal(t, "group 1", publisher.requests[0].Messages[0].OrderingKey)
+		assert.Equal(t, []byte{0xf0}, publisher.requests[0].Messages[0].Data)
+	})
+
+	t.Run("ordered traces with extension encoding and no telemetry records", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.TracesSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("trace_mock_encoding"),
+			}
+		})
+
+		require.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
+		assert.Empty(t, publisher.requests)
+	})
+
+	t.Run("ordered metrics with extension encoding and all records keyed", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.MetricsSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("metric_mock_encoding"),
+			}
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		resourceMetrics.Resource().Attributes().PutStr(orderingKey, "group 1")
+		metric := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetName("some.metric")
+		metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(42)
+
+		require.NoError(t, exporter.consumeMetrics(ctx, metrics))
+		require.Len(t, publisher.requests, 1, "must publish only groups containing actual metrics, not an extra empty group")
+		assert.Equal(t, "group 1", publisher.requests[0].Messages[0].OrderingKey)
+		assert.Equal(t, []byte{0xf0}, publisher.requests[0].Messages[0].Data)
+	})
+
+	t.Run("ordered metrics with extension encoding and no telemetry records", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering, func(cfg *Config) {
+			cfg.MetricsSignalConfig = SignalConfig{
+				Encoding: component.MustNewID("metric_mock_encoding"),
+			}
+		})
+
+		require.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))
+		assert.Empty(t, publisher.requests)
+	})
+}
+
 // Helpers
 
 func newTestExporter(t *testing.T, options ...func(*Config)) (*pubsubExporter, *mockPublisher) {
@@ -787,6 +953,23 @@ func (mockLogExtension) MarshalLogs(_ plog.Logs) ([]byte, error) {
 	return []byte{0xf0}, nil
 }
 
+type mockJSONLogExtension struct{}
+
+func (mockJSONLogExtension) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (mockJSONLogExtension) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (mockJSONLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
+	if ld.LogRecordCount() == 0 {
+		return []byte("null"), nil
+	}
+	return []byte(`{"message":"some log message"}`), nil
+}
+
 type mockHost struct{}
 
 func (mockHost) GetExtensions() map[component.ID]component.Component {
@@ -795,5 +978,6 @@ func (mockHost) GetExtensions() map[component.ID]component.Component {
 	ext[component.MustNewID("trace_mock_encoding")] = mockTraceExtension{}
 	ext[component.MustNewID("metric_mock_encoding")] = mockMetricExtension{}
 	ext[component.MustNewID("log_mock_encoding")] = mockLogExtension{}
+	ext[component.MustNewID("json_log_mock_encoding")] = mockJSONLogExtension{}
 	return ext
 }
