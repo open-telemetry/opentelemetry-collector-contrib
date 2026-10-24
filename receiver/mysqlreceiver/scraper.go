@@ -177,6 +177,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// collect table size metrics.
 
 	m.scrapeTableStats(now, errs)
+	m.scrapeAutoIncrementStats(now, errs)
 
 	// collect performance event statements metrics.
 	m.scrapeStatementEventsStats(now, errs)
@@ -708,6 +709,12 @@ func (m *mySQLScraper) tableStatsMetricsEnabled() bool {
 		metrics.MysqlTableSize.Enabled
 }
 
+// autoIncrementStatsMetricsEnabled reports whether any metric fed by the
+// auto_increment usage query is enabled.
+func (m *mySQLScraper) autoIncrementStatsMetricsEnabled() bool {
+	return m.config.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUtilization.Enabled
+}
+
 // tableIoWaitsMetricsEnabled reports whether any metric fed by the table
 // io_waits query is enabled.
 func (m *mySQLScraper) tableIoWaitsMetricsEnabled() bool {
@@ -770,6 +777,24 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		m.mb.RecordMysqlTableAverageRowLengthDataPoint(now, s.averageRowLength, s.name, s.schema)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.dataLength, s.name, s.schema, metadata.AttributeTableSizeTypeData)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.indexLength, s.name, s.schema, metadata.AttributeTableSizeTypeIndex)
+	}
+}
+
+func (m *mySQLScraper) scrapeAutoIncrementStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.autoIncrementStatsMetricsEnabled() {
+		return
+	}
+
+	autoIncrementStats, err := m.sqlclient.getAutoIncrementStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch auto_increment utilization stats", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for i := range autoIncrementStats {
+		s := autoIncrementStats[i]
+		m.mb.RecordMysqlTableAutoIncrementUtilizationDataPoint(now, s.utilizationRatio, s.table, s.schema, s.column)
 	}
 }
 

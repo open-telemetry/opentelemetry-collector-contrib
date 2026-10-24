@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add a metric to track how close a table's auto-increment column is to its integer range limit.
+
+issues: [52287]
+
+subtext:
+
+change_logs: [user]

@@ -159,6 +159,7 @@ type client interface {
 	getActiveSessionCount() (int64, error)
 	getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error)
 	getTableStats() ([]tableStats, error)
+	getAutoIncrementStats() ([]autoIncrementStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
 	getStatementEventsStats() ([]statementEventStats, error)
@@ -212,6 +213,13 @@ type tableStats struct {
 	averageRowLength int64
 	dataLength       int64
 	indexLength      int64
+}
+
+type autoIncrementStats struct {
+	schema           string
+	table            string
+	column           string
+	utilizationRatio float64
 }
 
 type innodbTransactionStats struct {
@@ -597,6 +605,56 @@ func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 			&s.rows, &s.averageRowLength,
 			&s.dataLength, &s.indexLength)
 		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// autoIncrementColumnMaxValueCase picks the max value an auto_increment
+// column can hold, based on its integer type and whether it's unsigned.
+// https://dev.mysql.com/doc/refman/8.4/en/integer-types.html
+const autoIncrementColumnMaxValueCase = `CASE
+	WHEN c.DATA_TYPE = 'tinyint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 255, 127)
+	WHEN c.DATA_TYPE = 'smallint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 65535, 32767)
+	WHEN c.DATA_TYPE = 'mediumint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 16777215, 8388607)
+	WHEN c.DATA_TYPE = 'int' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 4294967295, 2147483647)
+	WHEN c.DATA_TYPE = 'bigint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 18446744073709551615, 9223372036854775807)
+	ELSE NULL
+END`
+
+// getAutoIncrementStats queries the db for how much of each auto_increment
+// column's integer range is used, as a percentage of its type's max value.
+//
+// This query is slower than most others in this file: MySQL/MariaDB have to
+// look up every table's metadata to fill in AUTO_INCREMENT, no matter how we
+// filter. Expect it to be noticeably slower on servers with many tables,
+// especially right after a restart.
+func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
+	query := "SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, " +
+		"LEAST(t.AUTO_INCREMENT / (" + autoIncrementColumnMaxValueCase + ") * 100, 100) AS UTILIZATION_RATIO " +
+		"FROM information_schema.COLUMNS c " +
+		"JOIN information_schema.TABLES t " +
+		"ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME " +
+		"WHERE c.EXTRA LIKE '%auto_increment%' " +
+		"AND t.AUTO_INCREMENT IS NOT NULL " +
+		"AND c.TABLE_SCHEMA NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');"
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []autoIncrementStats
+	for rows.Next() {
+		var s autoIncrementStats
+		if err := rows.Scan(&s.schema, &s.table, &s.column, &s.utilizationRatio); err != nil {
 			return nil, err
 		}
 		stats = append(stats, s)

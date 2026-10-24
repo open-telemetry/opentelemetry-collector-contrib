@@ -748,6 +748,22 @@ The total wait time of the summarized timed events.
 | digest | Digest. | Any Str | Recommended | - |
 | digest_text | Text before digestion. | Any Str | Recommended | - |
 
+### mysql.table.auto_increment.utilization
+
+The percentage of the auto_increment column's integer range currently in use for a given table.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
+
 ### mysql.table.average_row_length
 
 The average row length in bytes for a given table.

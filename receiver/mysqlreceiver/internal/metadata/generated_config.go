@@ -1982,6 +1982,56 @@ func (ms *MysqlStatementEventWaitTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlTableAutoIncrementUtilizationMetricAttributeKey specifies the key of an attribute for the mysql.table.auto_increment.utilization metric.
+type MysqlTableAutoIncrementUtilizationMetricAttributeKey string
+
+const (
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName       MysqlTableAutoIncrementUtilizationMetricAttributeKey = "table"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema          MysqlTableAutoIncrementUtilizationMetricAttributeKey = "schema"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName MysqlTableAutoIncrementUtilizationMetricAttributeKey = "mysql.column.name"
+)
+
+// MysqlTableAutoIncrementUtilizationMetricConfig provides config for the mysql.table.auto_increment.utilization metric.
+type MysqlTableAutoIncrementUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableAutoIncrementUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableAutoIncrementUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableAutoIncrementUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName:
+		default:
+			return fmt.Errorf("metric mysql.table.auto_increment.utilization doesn't have an attribute %v, valid attributes: [table, schema, mysql.column.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MysqlTableAverageRowLengthMetricAttributeKey specifies the key of an attribute for the mysql.table.average_row_length metric.
 type MysqlTableAverageRowLengthMetricAttributeKey string
 
@@ -2692,6 +2742,7 @@ type MetricsConfig struct {
 	MysqlSorts                              MysqlSortsMetricConfig                              `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount                MysqlStatementEventCountMetricConfig                `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime             MysqlStatementEventWaitTimeMetricConfig             `mapstructure:"mysql.statement_event.wait.time"`
+	MysqlTableAutoIncrementUtilization      MysqlTableAutoIncrementUtilizationMetricConfig      `mapstructure:"mysql.table.auto_increment.utilization"`
 	MysqlTableAverageRowLength              MysqlTableAverageRowLengthMetricConfig              `mapstructure:"mysql.table.average_row_length"`
 	MysqlTableIoWaitCount                   MysqlTableIoWaitCountMetricConfig                   `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime                    MysqlTableIoWaitTimeMetricConfig                    `mapstructure:"mysql.table.io.wait.time"`
@@ -2938,6 +2989,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlStatementEventWaitTimeMetricAttributeKey{MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText},
+		},
+		MysqlTableAutoIncrementUtilization: MysqlTableAutoIncrementUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MysqlTableAutoIncrementUtilizationMetricAttributeKey{MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName},
 		},
 		MysqlTableAverageRowLength: MysqlTableAverageRowLengthMetricConfig{
 			Enabled:             false,
