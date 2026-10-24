@@ -15,7 +15,7 @@ import (
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 type valueKind int
@@ -333,15 +333,15 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		dst.Comments = append(dst.Comments, commentStrs...)
 	}
 
-	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileKeepFramesKey))
+	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), string(conventions.PprofProfileKeepFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDropFramesKey))
+	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), string(conventions.PprofProfileDropFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDocURLKey))
+	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), string(conventions.PprofProfileDocURLKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
@@ -401,7 +401,7 @@ func sampleShapeOf(s pprofile.Sample) (sampleShape, error) {
 const (
 	invalidProfileIndexFormat        = "%s index %d out of range (table length %d)"
 	invalidProfileCommentIndexFormat = "attribute index %d out of range for %d profile comments"
-	profileCommentKeyPrefix          = string(semconv.PprofProfileCommentKey)
+	profileCommentKeyPrefix          = string(conventions.PprofProfileCommentKey)
 )
 
 // checkProfileIndex protects a table lookup at the point conversion uses it.
@@ -631,27 +631,27 @@ func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mappin
 			return nil, err
 		}
 		switch attrKey {
-		case string(semconv.ProcessExecutableBuildIDGNUKey):
+		case string(conventions.ProcessExecutableBuildIDGNUKey):
 			if !buildIDSet {
 				pprofM.BuildID = attr.Value().AsString()
 				buildIDSet = true
 			}
-		case string(semconv.PprofMappingHasFunctionsKey):
+		case string(conventions.PprofMappingHasFunctionsKey):
 			if !hasFunctionsSet {
 				pprofM.HasFunctions = attr.Value().Bool()
 				hasFunctionsSet = true
 			}
-		case string(semconv.PprofMappingHasFilenamesKey):
+		case string(conventions.PprofMappingHasFilenamesKey):
 			if !hasFilenamesSet {
 				pprofM.HasFilenames = attr.Value().Bool()
 				hasFilenamesSet = true
 			}
-		case string(semconv.PprofMappingHasLineNumbersKey):
+		case string(conventions.PprofMappingHasLineNumbersKey):
 			if !hasLineNumbersSet {
 				pprofM.HasLineNumbers = attr.Value().Bool()
 				hasLineNumbersSet = true
 			}
-		case string(semconv.PprofMappingHasInlineFramesKey):
+		case string(conventions.PprofMappingHasInlineFramesKey):
 			if !hasInlineFramesSet {
 				pprofM.HasInlineFrames = attr.Value().Bool()
 				hasInlineFramesSet = true
@@ -706,7 +706,7 @@ func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Loca
 	}
 
 	// Extract IsFolded from attributes
-	isFolded, err := getAttributeBool(dic, attrIndices, string(semconv.PprofLocationIsFoldedKey))
+	isFolded, err := getAttributeBool(dic, attrIndices, string(conventions.PprofLocationIsFoldedKey))
 	if err != nil && !errors.Is(err, errNotFound) {
 		return nil, err
 	}
