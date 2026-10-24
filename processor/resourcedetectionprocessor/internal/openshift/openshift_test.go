@@ -165,6 +165,14 @@ func TestDetectLegacyCloudNameRegion(t *testing.T) {
 		})
 	}
 
+	t.Run("trailing slash address", func(t *testing.T) {
+		cfg := testConfig(newInfraServer(t, http.StatusOK, azureInfra))
+		cfg.Address += "/"
+		got, err := detect(t, cfg, true)
+		require.NoError(t, err)
+		assert.Equal(t, "azurepubliccloud", got["cloud.region"])
+	})
+
 	t.Run("disabled attribute", func(t *testing.T) {
 		cfg := testConfig(newInfraServer(t, http.StatusOK, azureInfra))
 		cfg.ResourceAttributes.CloudRegion.Enabled = false
@@ -224,6 +232,38 @@ func TestDetectWithTLS(t *testing.T) {
 	got, err := detect(t, cfg, true)
 	require.NoError(t, err)
 	assert.Equal(t, "my-cluster", got["k8s.cluster.name"])
+}
+
+func TestDetectWithInsecureSkipVerify(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(awsInfra))
+	}))
+	t.Cleanup(srv.Close)
+
+	// No CA is configured, so the projected CA must not be required.
+	cfg := testConfig(srv)
+	cfg.TLSs.InsecureSkipVerify = true
+
+	got, err := detect(t, cfg, true)
+	require.NoError(t, err)
+	assert.Equal(t, "my-cluster", got["k8s.cluster.name"])
+}
+
+func TestNewDetectorInsecure(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.TLSs.Insecure = true
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	// A nil TLS config would make the SDK detector read the projected CA.
+	assert.NotNil(t, d.(*detector).tlsCfg)
+}
+
+func TestReadSVCAddressFromENVIPv6(t *testing.T) {
+	t.Setenv("KUBERNETES_SERVICE_HOST", "::1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	got, err := readSVCAddressFromENV()
+	require.NoError(t, err)
+	assert.Equal(t, "https://[::1]:443", got)
 }
 
 func TestNewDetectorInvalidTLS(t *testing.T) {

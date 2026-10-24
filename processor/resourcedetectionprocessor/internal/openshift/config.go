@@ -5,8 +5,9 @@ package openshift // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
-	"fmt"
+	"net"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/configtls"
 
@@ -23,7 +24,12 @@ func readK8STokenFromFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(token), nil
+	// Trailing whitespace would make the Authorization header value invalid.
+	t := strings.TrimSpace(string(token))
+	if t == "" {
+		return "", errors.New("empty service account token")
+	}
+	return t, nil
 }
 
 func readSVCAddressFromENV() (string, error) {
@@ -35,7 +41,8 @@ func readSVCAddressFromENV() (string, error) {
 	if port == "" {
 		return "", errors.New("could not extract openshift api port")
 	}
-	return fmt.Sprintf("https://%s:%s", host, port), nil
+	// JoinHostPort brackets the bare IPv6 host Kubernetes sets on IPv6 clusters.
+	return "https://" + net.JoinHostPort(host, port), nil
 }
 
 // Config can contain user-specified inputs to overwrite default values.

@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add row deletion policies metrics and `timestamp` label `value_type` support in `googlecloudspannerreceiver`.
+issues: [52030]

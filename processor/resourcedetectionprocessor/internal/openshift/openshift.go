@@ -48,13 +48,21 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	// Without any TLS settings the SDK detector trusts the certificate authority
 	// projected into the pod, so only build a TLS config when the user set one.
 	if !reflect.DeepEqual(cfg.TLSs, configtls.ClientConfig{}) {
-		if !cfg.TLSs.Insecure && cfg.TLSs.CAFile == "" && cfg.TLSs.CAPem == "" {
+		// Only default to the projected certificate authority when the user did not
+		// choose another way to trust the API server.
+		t := cfg.TLSs
+		if !t.Insecure && !t.InsecureSkipVerify && !t.IncludeSystemCACertsPool && t.CAFile == "" && t.CAPem == "" {
 			cfg.TLSs.CAFile = defaultCAPath
 		}
 		var err error
 		tlsCfg, err = cfg.TLSs.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
+		}
+		if tlsCfg == nil {
+			// Insecure without a CA: verify against the system roots, as before the SDK port,
+			// instead of letting the SDK detector fall back to the projected CA.
+			tlsCfg = &tls.Config{MinVersion: tls.VersionTLS12}
 		}
 		opts = append(opts, openshiftdetector.WithTLSConfig(tlsCfg))
 	}
@@ -132,6 +140,8 @@ func (d *detector) legacyCloudNameRegion(ctx context.Context) (string, error) {
 			return "", err
 		}
 	}
+	// A trailing slash would double the separator in the request path.
+	address = strings.TrimRight(address, "/")
 	if tlsCfg == nil && strings.HasPrefix(address, "https://") {
 		caCfg := configtls.ClientConfig{Config: configtls.Config{CAFile: defaultCAPath}}
 		if tlsCfg, err = caCfg.LoadTLSConfig(ctx); err != nil {
