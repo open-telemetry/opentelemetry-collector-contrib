@@ -4,6 +4,7 @@
 package ottlcommon
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -271,4 +272,237 @@ func TestCopyValueTo_errors(t *testing.T) {
 	err := CopyValueTo(make(chan int), dest)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "Invalid value type")
+}
+
+func newTestMap(t *testing.T) pcommon.Map {
+	m := pcommon.NewMap()
+	require.NoError(t, m.FromRaw(map[string]any{"k": "v", "n": int64(1)}))
+	return m
+}
+
+func newTestSlice(t *testing.T) pcommon.Slice {
+	s := pcommon.NewSlice()
+	require.NoError(t, s.FromRaw([]any{"a", int64(2)}))
+	return s
+}
+
+func TestCopyValueTo_containers(t *testing.T) {
+	tests := []struct {
+		name  string
+		value func(t *testing.T) any
+		want  any
+	}{
+		{
+			name: "raw any slice",
+			value: func(*testing.T) any {
+				return []any{"a", int64(1), 1.5, true, nil, []byte{1}, []any{"x"}, map[string]any{"k": "v"}}
+			},
+			want: []any{"a", int64(1), 1.5, true, nil, []byte{1}, []any{"x"}, map[string]any{"k": "v"}},
+		},
+		{
+			name:  "raw map",
+			value: func(*testing.T) any { return map[string]any{"a": "b", "c": []any{map[string]any{"d": int64(1)}}} },
+			want:  map[string]any{"a": "b", "c": []any{map[string]any{"d": int64(1)}}},
+		},
+		{
+			name:  "empty any slice",
+			value: func(*testing.T) any { return []any{} },
+			want:  []any{},
+		},
+		{
+			name:  "empty map",
+			value: func(*testing.T) any { return map[string]any{} },
+			want:  map[string]any{},
+		},
+		{
+			name:  "any slice with pcommon.Map",
+			value: func(t *testing.T) any { return []any{newTestMap(t)} },
+			want:  []any{map[string]any{"k": "v", "n": int64(1)}},
+		},
+		{
+			name:  "any slice with pcommon.Slice",
+			value: func(t *testing.T) any { return []any{newTestSlice(t)} },
+			want:  []any{[]any{"a", int64(2)}},
+		},
+		{
+			name:  "any slice with pcommon.Value",
+			value: func(*testing.T) any { return []any{"s", pcommon.NewValueInt(5)} },
+			want:  []any{"s", int64(5)},
+		},
+		{
+			name:  "map with pcommon.Map",
+			value: func(t *testing.T) any { return map[string]any{"m": newTestMap(t), "s": "x"} },
+			want:  map[string]any{"m": map[string]any{"k": "v", "n": int64(1)}, "s": "x"},
+		},
+		{
+			name:  "map with pcommon.Slice",
+			value: func(t *testing.T) any { return map[string]any{"s": newTestSlice(t)} },
+			want:  map[string]any{"s": []any{"a", int64(2)}},
+		},
+		{
+			name:  "map with pcommon.Value",
+			value: func(*testing.T) any { return map[string]any{"v": pcommon.NewValueStr("x")} },
+			want:  map[string]any{"v": "x"},
+		},
+		{
+			name:  "any slice with nested typed slices",
+			value: func(*testing.T) any { return []any{[]any{[]string{"a", "b"}}, []int64{1}} },
+			want:  []any{[]any{[]any{"a", "b"}}, []any{int64(1)}},
+		},
+		{
+			name: "map with typed slices at depth",
+			value: func(*testing.T) any {
+				return map[string]any{
+					"s": []string{"a"},
+					"b": []bool{true},
+					"f": []float64{1.5},
+					"i": []int64{2},
+					"n": []any{map[string]any{"m": []string{"x", "y"}}},
+				}
+			},
+			want: map[string]any{
+				"s": []any{"a"},
+				"b": []any{true},
+				"f": []any{1.5},
+				"i": []any{int64(2)},
+				"n": []any{map[string]any{"m": []any{"x", "y"}}},
+			},
+		},
+		{
+			name: "nested combination",
+			value: func(t *testing.T) any {
+				return map[string]any{
+					"a": []any{map[string]any{"b": []any{newTestMap(t), "raw"}}, newTestSlice(t)},
+					"c": map[string]any{"d": pcommon.NewValueBool(true), "e": []any{"x"}},
+				}
+			},
+			want: map[string]any{
+				"a": []any{map[string]any{"b": []any{map[string]any{"k": "v", "n": int64(1)}, "raw"}}, []any{"a", int64(2)}},
+				"c": map[string]any{"d": true, "e": []any{"x"}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dest := pcommon.NewValueEmpty()
+			require.NoError(t, CopyValueTo(tt.value(t), dest))
+			switch want := tt.want.(type) {
+			case map[string]any:
+				assert.Equal(t, want, dest.Map().AsRaw())
+			case []any:
+				assert.Equal(t, want, dest.Slice().AsRaw())
+			}
+		})
+	}
+}
+
+func TestCopyValueTo_rawMatchesFromRaw(t *testing.T) {
+	raws := []any{
+		[]any{"a", int64(1), []any{"b"}, map[string]any{"c": 1.5}},
+		map[string]any{"a": "b", "c": []any{int64(1), map[string]any{"d": nil}}},
+	}
+	for _, raw := range raws {
+		want := pcommon.NewValueEmpty()
+		require.NoError(t, want.FromRaw(raw))
+		got := pcommon.NewValueEmpty()
+		require.NoError(t, CopyValueTo(raw, got))
+		assert.Equal(t, want.AsRaw(), got.AsRaw())
+	}
+}
+
+func TestCopyValueTo_containerErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		value func(t *testing.T) any
+	}{
+		{"raw any slice", func(*testing.T) any { return []any{"a", make(chan int)} }},
+		{"raw map", func(*testing.T) any { return map[string]any{"a": make(chan int)} }},
+		{"nested raw", func(*testing.T) any { return map[string]any{"a": []any{map[string]any{"b": make(chan int)}}} }},
+		{"any slice with pdata and invalid", func(t *testing.T) any { return []any{newTestMap(t), make(chan int)} }},
+		{"map with pdata and invalid", func(t *testing.T) any { return map[string]any{"m": newTestMap(t), "c": make(chan int)} }},
+		{"nested pdata and invalid", func(t *testing.T) any {
+			return map[string]any{"a": []any{newTestSlice(t), map[string]any{"b": make(chan int)}}}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := CopyValueTo(tt.value(t), pcommon.NewValueEmpty())
+			require.Error(t, err)
+			assert.ErrorContains(t, err, "Invalid value type")
+		})
+	}
+}
+
+func TestCopyValueTo_noAliasing(t *testing.T) {
+	newSrc := func() (map[string]any, pcommon.Map, pcommon.Slice, pcommon.Value) {
+		m := pcommon.NewMap()
+		m.PutStr("k", "v")
+		s := pcommon.NewSlice()
+		s.AppendEmpty().SetStr("a")
+		v := pcommon.NewValueStr("orig")
+		return map[string]any{"l": []any{m, s, v}}, m, s, v
+	}
+
+	t.Run("mutating result does not change source", func(t *testing.T) {
+		src, m, s, v := newSrc()
+		dest := pcommon.NewValueEmpty()
+		require.NoError(t, CopyValueTo(src, dest))
+
+		l, ok := dest.Map().Get("l")
+		require.True(t, ok)
+		l.Slice().At(0).Map().PutStr("k", "changed")
+		l.Slice().At(1).Slice().At(0).SetStr("changed")
+		l.Slice().At(2).SetStr("changed")
+
+		assert.Equal(t, map[string]any{"k": "v"}, m.AsRaw())
+		assert.Equal(t, []any{"a"}, s.AsRaw())
+		assert.Equal(t, "orig", v.Str())
+	})
+
+	t.Run("mutating source does not change result", func(t *testing.T) {
+		src, m, s, v := newSrc()
+		dest := pcommon.NewValueEmpty()
+		require.NoError(t, CopyValueTo(src, dest))
+
+		m.PutStr("k", "changed")
+		s.At(0).SetStr("changed")
+		v.SetStr("changed")
+
+		assert.Equal(t, map[string]any{"l": []any{map[string]any{"k": "v"}, []any{"a"}, "orig"}}, dest.Map().AsRaw())
+	})
+}
+
+func benchmarkMap(n int, withPdata bool) map[string]any {
+	m := make(map[string]any, n)
+	for i := range n {
+		m["key"+strconv.Itoa(i)] = "value"
+	}
+	if withPdata {
+		m["pdata"] = pcommon.NewValueStr("value")
+	}
+	return m
+}
+
+func BenchmarkCopyValueTo(b *testing.B) {
+	for _, bc := range []struct {
+		name      string
+		size      int
+		withPdata bool
+	}{
+		{"raw_map_10", 10, false},
+		{"raw_map_1000", 1000, false},
+		{"pdata_map_10", 10, true},
+		{"pdata_map_1000", 1000, true},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			src := benchmarkMap(bc.size, bc.withPdata)
+			b.ReportAllocs()
+			for b.Loop() {
+				dest := pcommon.NewValueEmpty()
+				if err := CopyValueTo(src, dest); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }
