@@ -14,3 +14,7 @@ status:
   codeowners:
     active: [andrzej-stencel, rogercoll]
     emeritus: [michalpristas]
+
+tests:
+  config:
+    error_mode: ignore
