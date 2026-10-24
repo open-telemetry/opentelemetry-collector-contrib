@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -28,6 +31,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-node-lease
@@ -55,6 +61,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-public
@@ -82,6 +91,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -109,6 +121,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: local-path-storage
@@ -136,6 +151,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -156,6 +174,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.cronjob.name
           value:
             stringValue: test-k8scluster-receiver-cronjob
@@ -187,6 +208,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.daemonset.name
           value:
             stringValue: kindnet
@@ -242,6 +266,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.daemonset.name
           value:
             stringValue: kube-proxy
@@ -297,6 +324,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.deployment.name
           value:
             stringValue: coredns
@@ -336,6 +366,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.deployment.name
           value:
             stringValue: local-path-provisioner
@@ -375,6 +408,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.deployment.name
           value:
             stringValue: otelcol-f26fdde8
@@ -414,6 +450,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.hpa.name
           value:
             stringValue: test-k8scluster-receiver-hpa
@@ -469,6 +508,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.job.name
           value:
             stringValue: test-k8scluster-receiver-cronjob-29593175
@@ -532,6 +574,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.job.name
           value:
             stringValue: test-k8scluster-receiver-job
@@ -595,6 +640,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -634,6 +682,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -698,6 +749,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -737,6 +791,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: local-path-storage
@@ -776,6 +833,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -809,6 +869,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -842,6 +905,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -875,6 +941,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -908,6 +977,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -970,6 +1042,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -1041,6 +1116,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1074,6 +1152,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1107,6 +1188,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1140,6 +1224,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1173,6 +1260,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1206,6 +1296,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1239,6 +1332,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1272,6 +1368,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1305,6 +1404,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: local-path-storage
@@ -1338,6 +1440,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.persistentvolume.name
           value:
             stringValue: pvc-bec77d63-23a3-4a90-8a40-b8cfb3cc00e2
@@ -1416,6 +1521,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -1483,6 +1591,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -1550,6 +1661,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -1617,6 +1731,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1684,6 +1801,9 @@ resourceMetrics:
           version: 0.149.0-dev
   - resource:
       attributes:
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -1727,6 +1847,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: latest
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: opentelemetry-collector
@@ -1814,6 +1937,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v1.12.0
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: coredns
@@ -1893,6 +2019,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: latest
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: alpine
@@ -1948,6 +2077,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: latest
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: alpine
@@ -2003,6 +2135,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v1.12.0
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: coredns
@@ -2082,6 +2217,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v20250214-acbabc1a
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: local-path-provisioner
@@ -2137,6 +2275,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v1.33.1
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: kube-scheduler
@@ -2200,6 +2341,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: 3.5.21-0
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: etcd
@@ -2271,6 +2415,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v1.33.1
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: kube-apiserver
@@ -2334,6 +2481,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v1.33.1
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: kube-proxy
@@ -2389,6 +2539,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v20250512-df8de77b
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: kindnet-cni
@@ -2476,6 +2629,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: latest
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: nginx
@@ -2531,6 +2687,9 @@ resourceMetrics:
         - key: container.image.tag
           value:
             stringValue: v1.33.1
+        - key: k8s.cluster.uid
+          value:
+            stringValue: 6b4a5c8e-2f1d-4a3b-9c7e-1d5f8a2b3c4d
         - key: k8s.container.name
           value:
             stringValue: kube-controller-manager
