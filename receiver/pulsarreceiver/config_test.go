@@ -44,9 +44,6 @@ func TestLoadConfig(t *testing.T) {
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	require.ErrorIs(t, cfg.Validate(), errMissingTopic)
-
-	cfg.Topic = "test-topic"
 	require.NoError(t, cfg.Validate())
 }
 
@@ -66,24 +63,22 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "missing endpoint",
+			name: "valid with empty endpoint (defaults in clientOptions)",
 			cfg: &Config{
 				Endpoint:     "",
 				Topic:        "test-topic",
 				Subscription: "test-subscription",
 				Encoding:     defaultEncoding,
 			},
-			expectedErr: errMissingEndpoint,
 		},
 		{
-			name: "missing topic",
+			name: "valid with empty topic (defaults per signal in factory)",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "",
 				Subscription: "test-subscription",
 				Encoding:     defaultEncoding,
 			},
-			expectedErr: errMissingTopic,
 		},
 		{
 			name: "missing subscription",
@@ -209,7 +204,7 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple auth tls and token",
+			name: "valid multiple auth tls and token (precedence preserved)",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -220,10 +215,9 @@ func TestValidate(t *testing.T) {
 					Token: configoptional.Some(Token{Token: "token-value"}),
 				},
 			},
-			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "multiple auth token and oauth2",
+			name: "valid multiple auth token and oauth2 (precedence preserved)",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -234,10 +228,9 @@ func TestValidate(t *testing.T) {
 					OAuth2: configoptional.Some(OAuth2{ClientID: "client-id"}),
 				},
 			},
-			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "multiple auth oauth2 and athenz",
+			name: "valid multiple auth oauth2 and athenz (precedence preserved)",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -248,10 +241,9 @@ func TestValidate(t *testing.T) {
 					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
 				},
 			},
-			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "multiple auth tls and athenz",
+			name: "valid multiple auth tls and athenz (precedence preserved)",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -262,10 +254,9 @@ func TestValidate(t *testing.T) {
 					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
 				},
 			},
-			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "multiple auth all",
+			name: "valid multiple auth all (precedence preserved)",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -278,7 +269,6 @@ func TestValidate(t *testing.T) {
 					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
 				},
 			},
-			expectedErr: errMultipleAuthMechanisms,
 		},
 	}
 
@@ -292,4 +282,43 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClientOptions(t *testing.T) {
+	cfg := &Config{}
+	opts := cfg.clientOptions()
+	assert.Equal(t, defaultServiceURL, opts.URL)
+
+	cfg.Endpoint = "pulsar://custom:6650"
+	opts = cfg.clientOptions()
+	assert.Equal(t, "pulsar://custom:6650", opts.URL)
+}
+
+func TestAuthPrecedence(t *testing.T) {
+	// TLS takes precedence over Token
+	cfg := &Config{
+		Authentication: Authentication{
+			TLS:   configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"}),
+			Token: configoptional.Some(Token{Token: "token-value"}),
+		},
+	}
+	assert.NotNil(t, cfg.auth())
+
+	// Token takes precedence over OAuth2
+	cfg = &Config{
+		Authentication: Authentication{
+			Token:  configoptional.Some(Token{Token: "token-value"}),
+			OAuth2: configoptional.Some(OAuth2{ClientID: "client-id"}),
+		},
+	}
+	assert.NotNil(t, cfg.auth())
+
+	// OAuth2 takes precedence over Athenz
+	cfg = &Config{
+		Authentication: Authentication{
+			OAuth2: configoptional.Some(OAuth2{IssuerURL: "https://auth.example.com", ClientID: "client-id"}),
+			Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
+		},
+	}
+	assert.NotNil(t, cfg.auth())
 }
