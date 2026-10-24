@@ -4,6 +4,8 @@
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 )
@@ -108,10 +110,12 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 	}
 
 	for _, blockStat := range stats.IoServiceBytesRecursives {
-		switch op := blockStat.Op; op {
-		case "Read":
+		// The Op value is capitalized ("Read"/"Write") on cgroup v1 hosts but
+		// lowercase ("read"/"write") on cgroup v2 hosts, so match case-insensitively.
+		switch {
+		case strings.EqualFold(blockStat.Op, "Read"):
 			readBytes += aws.ToUint64(blockStat.Value)
-		case "Write":
+		case strings.EqualFold(blockStat.Op, "Write"):
 			writeBytes += aws.ToUint64(blockStat.Value)
 
 		default:

@@ -413,6 +413,30 @@ func TestExtractStorageUsage(t *testing.T) {
 	require.Equal(t, v, write)
 }
 
+func TestExtractStorageUsageLowercaseOp(t *testing.T) {
+	// On cgroup v2 hosts, the ECS Task Metadata Endpoint v4 /stats response
+	// reports blkio_stats.io_service_bytes_recursive Op values in lowercase
+	// ("read"/"write") instead of the capitalized form ("Read"/"Write") seen
+	// on cgroup v1 hosts.
+	v := uint64(100)
+	v2 := uint64(200)
+	disk := &DiskStats{
+		IoServiceBytesRecursives: []IoServiceBytesRecursive{
+			{Op: "read", Value: &v},
+			{Op: "write", Value: &v},
+			{Op: "total", Value: &v},
+
+			{Op: "read", Value: &v2},
+			{Op: "write", Value: &v2},
+			{Op: "total", Value: &v2},
+		},
+	}
+	read, write := extractStorageUsage(disk)
+
+	require.Equal(t, v+v2, read)
+	require.Equal(t, v+v2, write)
+}
+
 func TestExtractStorageUsageDereferenceCheck(t *testing.T) {
 	disk := &DiskStats{
 		IoServiceBytesRecursives: []IoServiceBytesRecursive{
