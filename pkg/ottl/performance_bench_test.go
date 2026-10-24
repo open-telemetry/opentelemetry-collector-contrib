@@ -808,6 +808,9 @@ func BenchmarkDataPointPMapAccess(b *testing.B) {
 	}
 }
 
+// Recommended CLI invocation:
+//
+//	go test -run '^$' -bench '^BenchmarkDataPointPMapInsertAndReplaceKey$' -benchtime 500ms -count 6 -cpu 2 -timeout 999m -benchmem | tee bench.txt
 func BenchmarkDataPointPMapInsertAndReplaceKey(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottldatapoint.NewParser(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext](), settings, ottldatapoint.EnablePathContextNames())
@@ -819,6 +822,8 @@ func BenchmarkDataPointPMapInsertAndReplaceKey(b *testing.B) {
 		`replace_all_patterns(datapoint.attributes, "key", "^nonexistent_", "")`,
 		`set(datapoint.attributes["exported_job"], datapoint.attributes["label_0"])`,
 		`delete_key(datapoint.attributes, "exported_job")`,
+		`merge_maps(datapoint.attributes, resource.attributes, "insert")`,
+		`delete_key(datapoint.attributes, "service.name")`,
 	}
 	parsed, err := parser.ParseStatements(statements)
 	if err != nil {
@@ -830,10 +835,11 @@ func BenchmarkDataPointPMapInsertAndReplaceKey(b *testing.B) {
 		b.Run(fmt.Sprintf("attrs=%d", attrCount), func(b *testing.B) {
 			metrics := pmetric.NewMetrics()
 			rm := metrics.ResourceMetrics().AppendEmpty()
+			rm.Resource().Attributes().PutStr("service.name", "benchmark-service")
 			sm := rm.ScopeMetrics().AppendEmpty()
 			metric := sm.Metrics().AppendEmpty()
 			dp := metric.SetEmptySum().DataPoints().AppendEmpty()
-			dp.Attributes().EnsureCapacity(attrCount + 1)
+			dp.Attributes().EnsureCapacity(attrCount + 2)
 			for i := range attrCount {
 				dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 			}
