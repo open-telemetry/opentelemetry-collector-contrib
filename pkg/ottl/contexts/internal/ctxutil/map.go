@@ -41,10 +41,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return fmt.Errorf("cannot set map value: %w", err)
 	}
 
-	currentValue, ok := m.Get(*s)
-	if !ok {
-		currentValue = m.PutEmpty(*s)
-	}
+	currentValue, _ := m.GetOrPutEmpty(*s)
 	return SetIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 }
 
