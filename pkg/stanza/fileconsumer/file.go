@@ -355,7 +355,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.Int64("stored_offset", md.Offset),
 					zap.Int64("current_file_size", info.Size()),
 				)
-				md.Offset = 0
+				md.Offset, md.DecompressedBytesToSkip = 0, 0
 			case OnTruncateReadNew:
 				m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
 					zap.String("path", file.Name()),
@@ -363,7 +363,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.Int64("current_file_size", info.Size()),
 					zap.Int64("new_offset", info.Size()),
 				)
-				md.Offset = info.Size()
+				md.Offset, md.DecompressedBytesToSkip = info.Size(), 0
 			case OnTruncateIgnore:
 				// Keep the old offset - no data will be read until file grows past the original offset
 				m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
@@ -388,7 +388,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.Int64("stored_offset", oldMetadata.Offset),
 					zap.Int64("current_file_size", info.Size()),
 				)
-				oldMetadata.Offset = 0
+				oldMetadata.Offset, oldMetadata.DecompressedBytesToSkip = 0, 0
 			case OnTruncateReadNew:
 				m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
 					zap.String("path", file.Name()),
@@ -396,7 +396,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.Int64("current_file_size", info.Size()),
 					zap.Int64("new_offset", info.Size()),
 				)
-				oldMetadata.Offset = info.Size()
+				oldMetadata.Offset, oldMetadata.DecompressedBytesToSkip = info.Size(), 0
 			case OnTruncateIgnore:
 				// Keep the old offset - no data will be read until file grows past the original offset
 				m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
@@ -443,7 +443,7 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 						zap.Int64("stored_offset", md.Offset),
 						zap.Int64("current_file_size", info.Size()),
 					)
-					md.Offset = 0
+					md.Offset, md.DecompressedBytesToSkip = 0, 0
 				case OnTruncateReadNew:
 					m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
 						zap.String("path", file.Name()),
@@ -451,7 +451,7 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 						zap.Int64("current_file_size", info.Size()),
 						zap.Int64("new_offset", info.Size()),
 					)
-					md.Offset = info.Size()
+					md.Offset, md.DecompressedBytesToSkip = info.Size(), 0
 				case OnTruncateIgnore:
 					// Keep the old offset - no data will be read until file grows past the original offset
 					m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",

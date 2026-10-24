@@ -91,9 +91,11 @@ type Metadata struct {
 	// Token length state
 	TokenLenState *TokenLenState `protobuf:"bytes,7,opt,name=token_len_state,json=tokenLenState,proto3" json:"token_len_state,omitempty"`
 	// File type (e.g., ".gz")
-	FileType      string `protobuf:"bytes,8,opt,name=file_type,json=fileType,proto3" json:"file_type,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	FileType string `protobuf:"bytes,8,opt,name=file_type,json=fileType,proto3" json:"file_type,omitempty"`
+	// Number of decompressed bytes at the offset of a gzip compressed file that were already read
+	DecompressedBytesToSkip int64 `protobuf:"varint,9,opt,name=decompressed_bytes_to_skip,json=decompressedBytesToSkip,proto3" json:"decompressed_bytes_to_skip,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Metadata) Reset() {
@@ -180,6 +182,13 @@ func (x *Metadata) GetFileType() string {
 		return x.FileType
 	}
 	return ""
+}
+
+func (x *Metadata) GetDecompressedBytesToSkip() int64 {
+	if x != nil {
+		return x.DecompressedBytesToSkip
+	}
+	return 0
 }
 
 // Fingerprint identifies a file by its first N bytes
@@ -334,7 +343,7 @@ const file_checkpoint_proto_rawDesc = "" +
 	"\x10checkpoint.proto\x12\n" +
 	"checkpoint\"@\n" +
 	"\fMetadataList\x120\n" +
-	"\bmetadata\x18\x01 \x03(\v2\x14.checkpoint.MetadataR\bmetadata\"\xe9\x02\n" +
+	"\bmetadata\x18\x01 \x03(\v2\x14.checkpoint.MetadataR\bmetadata\"\xa6\x03\n" +
 	"\bMetadata\x129\n" +
 	"\vfingerprint\x18\x01 \x01(\v2\x17.checkpoint.FingerprintR\vfingerprint\x12\x16\n" +
 	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12\x1d\n" +
@@ -345,7 +354,8 @@ const file_checkpoint_proto_rawDesc = "" +
 	"\vflush_state\x18\x06 \x01(\v2\x16.checkpoint.FlushStateR\n" +
 	"flushState\x12A\n" +
 	"\x0ftoken_len_state\x18\a \x01(\v2\x19.checkpoint.TokenLenStateR\rtokenLenState\x12\x1b\n" +
-	"\tfile_type\x18\b \x01(\tR\bfileType\".\n" +
+	"\tfile_type\x18\b \x01(\tR\bfileType\x12;\n" +
+	"\x1adecompressed_bytes_to_skip\x18\t \x01(\x03R\x17decompressedBytesToSkip\".\n" +
 	"\vFingerprint\x12\x1f\n" +
 	"\vfirst_bytes\x18\x01 \x01(\fR\n" +
 	"firstBytes\"r\n" +
