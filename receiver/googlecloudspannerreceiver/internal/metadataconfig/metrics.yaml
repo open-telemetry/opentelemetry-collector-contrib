@@ -734,7 +734,7 @@ metadata:
         value_type: "string_slice"
       - name: "operations_by_table_json_string"
         column_name: "OPERATIONS_BY_TABLE_JSON_STRING"
-        value_type: "string"
+        value_type: "operations_by_table_json"
     metrics:
       - name: "commit_attempt_count"
         column_name: "COMMIT_ATTEMPT_COUNT"
