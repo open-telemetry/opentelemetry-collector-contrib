@@ -6068,15 +6068,19 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for oracledb events.
 type EventsConfig struct {
-	DbServerQueryPlan         EventConfig `mapstructure:"db.server.query_plan"`
-	DbServerQuerySample       EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerSessionWaitSample EventConfig `mapstructure:"db.server.session.wait_sample"`
-	DbServerTopProcedure      EventConfig `mapstructure:"db.server.top_procedure"`
-	DbServerTopQuery          EventConfig `mapstructure:"db.server.top_query"`
+	DbServerProcedureDefinition EventConfig `mapstructure:"db.server.procedure_definition"`
+	DbServerQueryPlan           EventConfig `mapstructure:"db.server.query_plan"`
+	DbServerQuerySample         EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerSessionWaitSample   EventConfig `mapstructure:"db.server.session.wait_sample"`
+	DbServerTopProcedure        EventConfig `mapstructure:"db.server.top_procedure"`
+	DbServerTopQuery            EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerProcedureDefinition: EventConfig{
+			Enabled: false,
+		},
 		DbServerQueryPlan: EventConfig{
 			Enabled: false,
 		},
