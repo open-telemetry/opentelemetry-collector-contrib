@@ -6,7 +6,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"context"
-	"errors"
+	"sync"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -22,6 +22,16 @@ type logBulkIndexer struct {
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
+
+	// mu guards the fields below and errs. Item callbacks run on the bulk
+	// indexer's worker goroutine while items are still being added, and can
+	// outlive close when the context expires during a flush.
+	mu sync.Mutex
+	// requestErr is set when a whole bulk request was rejected with a retryable status.
+	requestErr error
+	// retryErrs and retryLogs hold the records OpenSearch rejected one by one with a retryable status.
+	retryErrs []error
+	retryLogs plog.Logs
 }
 
 func newLogBulkIndexer(bulkAction string, model mappingModel, pipeline string) *logBulkIndexer {
@@ -35,13 +45,19 @@ func (lbi *logBulkIndexer) start(client *opensearchapi.Client) error {
 }
 
 func (lbi *logBulkIndexer) joinedError() error {
-	return errors.Join(lbi.errs...)
+	lbi.mu.Lock()
+	defer lbi.mu.Unlock()
+	return joinBulkErrors(lbi.errs, lbi.requestErr, lbi.retryErrs, func(err error) error {
+		return consumererror.NewLogs(err, lbi.retryLogs)
+	})
 }
 
 func (lbi *logBulkIndexer) close(ctx context.Context) {
 	closeErr := lbi.bulkIndexer.Close(ctx)
 	if closeErr != nil {
+		lbi.mu.Lock()
 		lbi.errs = append(lbi.errs, closeErr)
+		lbi.mu.Unlock()
 	}
 }
 
@@ -52,11 +68,19 @@ func (lbi *logBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 }
 
 func (lbi *logBulkIndexer) appendPermanentError(e error) {
+	lbi.mu.Lock()
+	defer lbi.mu.Unlock()
 	lbi.errs = append(lbi.errs, consumererror.NewPermanent(e))
 }
 
 func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
-	lbi.errs = append(lbi.errs, consumererror.NewLogs(err, log))
+	lbi.mu.Lock()
+	defer lbi.mu.Unlock()
+	if len(lbi.retryErrs) == 0 {
+		lbi.retryLogs = plog.NewLogs()
+	}
+	lbi.retryErrs = append(lbi.retryErrs, err)
+	log.ResourceLogs().MoveAndAppendTo(lbi.retryLogs.ResourceLogs())
 }
 
 func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
@@ -124,6 +148,13 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, i
 	case shouldRetryEvent(resp.Status):
 		// Recoverable OpenSearch error
 		lbi.appendRetryLogError(responseAsError(resp), logs)
+	case resp.Status == 0 && isRetryableResponse(itemErr):
+		// The whole bulk request was rejected, and this is called for each of its items.
+		lbi.mu.Lock()
+		if lbi.requestErr == nil {
+			lbi.requestErr = itemErr
+		}
+		lbi.mu.Unlock()
 	case resp.Status != 0 && itemErr == nil:
 		// Non-recoverable OpenSearch error while indexing document
 		lbi.appendPermanentError(responseAsError(resp))

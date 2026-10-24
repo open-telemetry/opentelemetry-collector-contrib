@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -23,6 +24,16 @@ type metricBulkIndexer struct {
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
+
+	// mu guards the fields below and errs. Item callbacks run on the bulk
+	// indexer's worker goroutine while items are still being added, and can
+	// outlive close when the context expires during a flush.
+	mu sync.Mutex
+	// requestErr is set when a whole bulk request was rejected with a retryable status.
+	requestErr error
+	// retryErrs and retryMetrics hold the data points OpenSearch rejected one by one with a retryable status.
+	retryErrs    []error
+	retryMetrics pmetric.Metrics
 }
 
 func newMetricBulkIndexer(bulkAction string, model mappingModel, pipeline string) *metricBulkIndexer {
@@ -36,13 +47,19 @@ func (mbi *metricBulkIndexer) start(client *opensearchapi.Client) error {
 }
 
 func (mbi *metricBulkIndexer) joinedError() error {
-	return errors.Join(mbi.errs...)
+	mbi.mu.Lock()
+	defer mbi.mu.Unlock()
+	return joinBulkErrors(mbi.errs, mbi.requestErr, mbi.retryErrs, func(err error) error {
+		return consumererror.NewMetrics(err, mbi.retryMetrics)
+	})
 }
 
 func (mbi *metricBulkIndexer) close(ctx context.Context) {
 	closeErr := mbi.bulkIndexer.Close(ctx)
 	if closeErr != nil {
+		mbi.mu.Lock()
 		mbi.errs = append(mbi.errs, closeErr)
+		mbi.mu.Unlock()
 	}
 }
 
@@ -52,16 +69,26 @@ func (mbi *metricBulkIndexer) onIndexerError(_ context.Context, indexerErr error
 		// timeout, DNS). They are transient, so surface them as a retryable error
 		// and let exporterhelper's retry_on_failure resend the batch instead of
 		// dropping it as permanent.
+		mbi.mu.Lock()
 		mbi.errs = append(mbi.errs, indexerErr)
+		mbi.mu.Unlock()
 	}
 }
 
 func (mbi *metricBulkIndexer) appendPermanentError(e error) {
+	mbi.mu.Lock()
+	defer mbi.mu.Unlock()
 	mbi.errs = append(mbi.errs, consumererror.NewPermanent(e))
 }
 
 func (mbi *metricBulkIndexer) appendRetryMetricError(err error, metrics pmetric.Metrics) {
-	mbi.errs = append(mbi.errs, consumererror.NewMetrics(err, metrics))
+	mbi.mu.Lock()
+	defer mbi.mu.Unlock()
+	if len(mbi.retryErrs) == 0 {
+		mbi.retryMetrics = pmetric.NewMetrics()
+	}
+	mbi.retryErrs = append(mbi.retryErrs, err)
+	metrics.ResourceMetrics().MoveAndAppendTo(mbi.retryMetrics.ResourceMetrics())
 }
 
 func (mbi *metricBulkIndexer) submit(ctx context.Context, md pmetric.Metrics, ir *indexResolver, cfg *Config, timestamp time.Time) {
@@ -205,6 +232,13 @@ func (mbi *metricBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem
 	case shouldRetryEvent(resp.Status):
 		// Recoverable OpenSearch error
 		mbi.appendRetryMetricError(responseAsError(resp), metrics)
+	case resp.Status == 0 && isRetryableResponse(itemErr):
+		// The whole bulk request was rejected, and this is called for each of its items.
+		mbi.mu.Lock()
+		if mbi.requestErr == nil {
+			mbi.requestErr = itemErr
+		}
+		mbi.mu.Unlock()
 	case resp.Status != 0 && itemErr == nil:
 		// Non-recoverable OpenSearch error while indexing document
 		mbi.appendPermanentError(responseAsError(resp))
@@ -222,7 +256,9 @@ func (mbi *metricBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem
 		// to a single data point and silently drop the rest of the batch. With no
 		// payload attached, OnError falls through and the whole request is resent.
 		if isRetryableError(itemErr) {
+			mbi.mu.Lock()
 			mbi.errs = append(mbi.errs, itemErr)
+			mbi.mu.Unlock()
 		} else {
 			mbi.appendPermanentError(itemErr)
 		}

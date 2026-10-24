@@ -53,8 +53,8 @@ func TestTraceProcessItemFailure(t *testing.T) {
 			resp := opensearchapi.BulkRespItem{Status: tt.status}
 			traces := ptrace.NewTraces()
 			tbi.processItemFailure(resp, nil, traces)
-			if len(tbi.errs) != tt.expectedErrs {
-				t.Errorf("expected %d errors, got %d", tt.expectedErrs, len(tbi.errs))
+			if got := len(tbi.errs) + len(tbi.retryErrs); got != tt.expectedErrs {
+				t.Errorf("expected %d errors, got %d", tt.expectedErrs, got)
 			}
 		})
 	}
