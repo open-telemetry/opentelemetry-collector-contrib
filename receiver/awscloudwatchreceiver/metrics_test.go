@@ -411,11 +411,118 @@ func TestListMetrics_SinglePage(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
-	out, err := scr.listMetrics(t.Context())
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
+	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
 	require.Len(t, out, 1)
 	require.Equal(t, "AWS/EC2", out[0].Namespace)
 	require.Equal(t, "CPUUtilization", out[0].MetricName)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_RecentlyActiveWindowWithinThreshold(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// A scrape window starting within the last three hours must pass RecentlyActive=PT3H to ListMetrics.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == types.RecentlyActivePt3h
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-30*time.Minute))
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_RecentlyActiveUnsetWindowBeyondThreshold(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// A scrape window starting more than three hours ago (a long collection interval, or a
+	// delay pushing the window back) must leave RecentlyActive at its zero value so AWS
+	// applies the default two-week discovery window.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == ""
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-4*time.Hour))
+	require.NoError(t, err)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_RecentlyActiveOverrideForcesOn(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// recently_active: true forces RecentlyActive=PT3H even when the scrape window is
+	// well beyond the automatic three-hour threshold.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == types.RecentlyActivePt3h
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10, RecentlyActive: configoptional.Some(true)},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-4*time.Hour))
+	require.NoError(t, err)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_RecentlyActiveOverrideForcesOff(t *testing.T) {
+	mc := &mockMetricsClient{}
+	// recently_active: false disables the filter even when the scrape window is within
+	// the automatic three-hour threshold.
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.RecentlyActive == ""
+	}), mock.Anything).Return(
+		&cloudwatch.ListMetricsOutput{
+			Metrics: []types.Metric{
+				{Namespace: aws.String("AWS/EC2"), MetricName: aws.String("CPUUtilization")},
+			},
+			NextToken: nil,
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
+		Discovery: &MetricsDiscoveryConfig{Limit: 10, RecentlyActive: configoptional.Some(false)},
+	}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-30*time.Minute))
+	require.NoError(t, err)
 	mc.AssertExpectations(t)
 }
 
@@ -445,7 +552,9 @@ func TestListMetrics_Paginated(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
-	out, err := scr.listMetrics(t.Context())
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
+	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
 	require.Len(t, out, 2)
 	mc.AssertExpectations(t)
@@ -470,7 +579,9 @@ func TestListMetrics_LimitRespected(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
-	out, err := scr.listMetrics(t.Context())
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
+	out, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.NoError(t, err)
 	require.Len(t, out, 2)
 }
@@ -487,7 +598,9 @@ func TestListMetrics_Error(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
-	_, err := scr.listMetrics(t.Context())
+	// collectionStartTime is always some time in the past.
+	// the value used in this test is arbitrary (it does not affect the outcome of the test).
+	_, err := scr.listMetrics(t.Context(), time.Now().UTC().Add(-time.Hour))
 	require.Error(t, err)
 }
 
