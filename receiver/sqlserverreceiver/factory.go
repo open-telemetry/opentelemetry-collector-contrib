@@ -384,6 +384,11 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 
 	queries := setupLogQueries(cfg)
 
+	if cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
+		!cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		params.Logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+	}
+
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
 		return nil, nil

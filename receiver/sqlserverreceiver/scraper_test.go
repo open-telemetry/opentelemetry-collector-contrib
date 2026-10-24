@@ -3018,3 +3018,129 @@ func TestDetectSQLServerInstanceInfo(t *testing.T) {
 		require.Equal(t, "enterprise", *e)
 	})
 }
+
+// newProcedureDefinitionScraper builds a logs scraper with both the top procedure and
+// procedure definition events enabled.
+func newProcedureDefinitionScraper(t *testing.T) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	require.NotEmpty(t, scrapers)
+
+	scraper := scrapers[0]
+	require.NotNil(t, scraper.cache)
+	scraper.client = mockClient{
+		SQL: scraper.sqlQuery,
+	}
+	return scraper
+}
+
+func TestProcedureDefinitionEvent(t *testing.T) {
+	scraper := newProcedureDefinitionScraper(t)
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      200,
+		"total_worker_time":    4_000_000,
+		"total_elapsed_time":   8_000_000,
+		"total_physical_reads": 5,
+		"total_logical_reads":  15_000,
+		"total_logical_writes": 3_000,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expectedProcedureDefinition.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+	// Verify both event types are present: top_procedure followed by procedure_definition.
+	eventNames := make([]string, records.Len())
+	for i := range records.Len() {
+		eventNames[i] = records.At(i).EventName()
+	}
+	assert.Contains(t, eventNames, "db.server.top_procedure")
+	assert.Contains(t, eventNames, "db.server.procedure_definition")
+}
+
+func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
+	// Use the standard top-procedure scraper which has procedure_definition disabled.
+	scraper := newTopProcedureScraper(t)
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition event must not be emitted when disabled")
+	}
+}
+
+func TestProcedureDefinitionEmptyDefinition(t *testing.T) {
+	scraper := newProcedureDefinitionScraper(t)
+	scraper.client = mockClient{
+		SQL:                  scraper.sqlQuery,
+		procedureFixtureFile: "topProcedureQueryEmptyDefinition.txt",
+	}
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("sqlserver.procedure.definition")
+			require.True(t, ok)
+			assert.Empty(t, def.Str(), "empty definition should be emitted as an empty string")
+			return
+		}
+	}
+	t.Fatal("expected at least one db.server.procedure_definition event")
+}

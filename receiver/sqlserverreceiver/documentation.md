@@ -1253,6 +1253,20 @@ events:
     enabled: true
 ```
 
+### db.server.procedure_definition
+
+The SQL source text of stored procedures observed in db.server.top_procedure. Correlates with db.server.top_procedure via sqlserver.procedure_id and db.namespace.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
+| sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
+| sqlserver.procedure.definition | The SQL source text of the stored procedure as returned by sys.dm_exec_sql_text. Empty string when the procedure is encrypted (WITH ENCRYPTION) or its plan has been evicted from cache. | Any Str | - |
+
 ### db.server.query_plan
 
 query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
