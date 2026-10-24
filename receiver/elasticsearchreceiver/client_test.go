@@ -4,6 +4,7 @@
 package elasticsearchreceiver
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,6 +99,61 @@ func TestNodeStatsNilIOStats(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, &actualNodeStats, nodeStats)
+}
+
+func TestNodeStatsRequestedMetrics(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		wantMetrics []string
+	}{
+		{
+			name:        "before 7.9",
+			version:     "7.8.1",
+			wantMetrics: []string{"breaker", "indices", "process", "jvm", "thread_pool", "transport", "http", "fs", "ingest", "discovery", "script", "os"},
+		},
+		{
+			name:        "7.9 and later",
+			version:     "7.17.0",
+			wantMetrics: []string{"breaker", "indices", "process", "jvm", "thread_pool", "transport", "http", "fs", "ingest", "discovery", "script", "os", "indexing_pressure"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metadataJSON := bytes.ReplaceAll(readSamplePayload(t, "metadata.json"), []byte(`"7.17.0"`), []byte(`"`+tt.version+`"`))
+			var (
+				mu    sync.Mutex
+				paths []string
+			)
+			elasticsearchMock := newMockServer(t, withMetadata(metadataJSON), withRequestHook(func(req *http.Request) {
+				if strings.HasPrefix(req.URL.Path, "/_nodes/_all/stats/") {
+					mu.Lock()
+					defer mu.Unlock()
+					paths = append(paths, req.URL.Path)
+				}
+			}))
+			defer elasticsearchMock.Close()
+
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = elasticsearchMock.URL
+			client, err := newElasticsearchClient(t.Context(), componenttest.NewNopTelemetrySettings(), Config{
+				ClientConfig: clientConfig,
+			}, componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			_, err = client.NodeStats(t.Context(), nil)
+			require.NoError(t, err)
+
+			mu.Lock()
+			defer mu.Unlock()
+			require.Len(t, paths, 1)
+			segments := strings.Split(strings.TrimPrefix(paths[0], "/_nodes/_all/stats/"), "/")
+			require.Len(t, segments, 2)
+			require.Equal(t, tt.wantMetrics, strings.Split(segments[0], ","))
+			require.Equal(t, nodeStatsIndexMetrics, segments[1])
+		})
+	}
 }
 
 func TestNodeStatsAuthentication(t *testing.T) {
@@ -627,9 +684,10 @@ func TestMasterNodeNoAuthentication(t *testing.T) {
 }
 
 type mockServer struct {
-	auth     func(username, password string) bool
-	metadata []byte
-	prefixes map[string][]byte
+	auth      func(username, password string) bool
+	metadata  []byte
+	prefixes  map[string][]byte
+	onRequest func(*http.Request)
 }
 
 type mockServerOption func(*mockServer)
@@ -645,6 +703,20 @@ func withBasicAuth(username, password string) mockServerOption { //nolint:unpara
 func withNodes(payload []byte) mockServerOption {
 	return func(m *mockServer) {
 		m.prefixes["/_nodes/_all/stats"] = payload
+	}
+}
+
+func withMetadata(payload []byte) mockServerOption {
+	return func(m *mockServer) {
+		m.metadata = payload
+	}
+}
+
+// withRequestHook calls hook with every request the server receives, from the
+// server's goroutine.
+func withRequestHook(hook func(*http.Request)) mockServerOption {
+	return func(m *mockServer) {
+		m.onRequest = hook
 	}
 }
 
@@ -665,6 +737,9 @@ func newMockServer(t *testing.T, opts ...mockServerOption) *httptest.Server {
 	}
 
 	elasticsearchMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if mock.onRequest != nil {
+			mock.onRequest(req)
+		}
 		if mock.auth != nil {
 			username, password, ok := req.BasicAuth()
 			if !ok {
