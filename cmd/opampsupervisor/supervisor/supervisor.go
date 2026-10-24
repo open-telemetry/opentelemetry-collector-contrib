@@ -135,6 +135,9 @@ type Supervisor struct {
 	// Supervisor's persistent state
 	persistentState *persistentState
 
+	// interruptedConfigApply is true if a previous Supervisor run stopped while a remote config was APPLYING.
+	interruptedConfigApply bool
+
 	noopPipelineTemplate         *template.Template
 	opampextensionTemplate       *template.Template
 	extraTelemetryConfigTemplate *template.Template
@@ -387,6 +390,8 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// Read before OpAMP callbacks start, so a newly received config is not mistaken for the interrupted one.
+	s.interruptedConfigApply = s.persistentState.GetLastRemoteConfigStatus().GetStatus() == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
 
 	if s.config.Capabilities.AcceptsPackages {
 		s.telemetrySettings.Logger.Error(
@@ -1992,21 +1997,32 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
-		// We have an effective config file saved previously. Use it to start the agent.
-		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
-		_, err := s.startAgent()
-		if err != nil {
-			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
-			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
-		}
-	}
-
 	restartTimer := time.NewTimer(0)
 	restartTimer.Stop()
 
 	configApplyTimeoutTimer := time.NewTimer(0)
 	configApplyTimeoutTimer.Stop()
+
+	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
+		// We have an effective config file saved previously. Use it to start the agent.
+		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
+		status, err := s.startAgent()
+		switch {
+		case err != nil:
+			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
+			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		case !s.interruptedConfigApply:
+		case status == agentNotStarting:
+			// Let the new config handling report the status, so it also covers a config received in the meantime.
+			select {
+			case s.hasNewConfig <- struct{}{}:
+			default:
+			}
+		default:
+			s.telemetrySettings.Logger.Info("Resuming application of the remote config interrupted by a Supervisor restart")
+			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
+		}
+	}
 
 	for {
 		select {
