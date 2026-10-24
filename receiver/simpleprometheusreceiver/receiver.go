@@ -90,6 +90,10 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
 			ServerName:         cfg.ClientConfig.TLS.ServerName,
 			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
+			// Forward the resolved versions so the defaults match other collector
+			// HTTP clients. An unset max_version stays 0, meaning the newest version.
+			MinVersion: configutil.TLSVersion(tlsConfig.MinVersion),
+			MaxVersion: configutil.TLSVersion(tlsConfig.MaxVersion),
 		}
 	}
 

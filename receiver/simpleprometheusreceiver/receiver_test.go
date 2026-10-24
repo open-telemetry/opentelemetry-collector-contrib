@@ -120,6 +120,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 								},
 							},
 						},
+						HTTPClientConfig: configutil.HTTPClientConfig{
+							TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+						},
 					},
 				},
 			},
@@ -196,6 +199,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
+							HTTPClientConfig: configutil.HTTPClientConfig{
+								TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+							},
 						},
 					},
 				},
@@ -233,6 +239,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 								TLSConfig: configutil.TLSConfig{
 									CAFile:             "./testdata/test_cert.pem",
 									InsecureSkipVerify: true,
+									MinVersion:         configutil.TLSVersions["TLS12"],
 								},
 							},
 						},
@@ -274,6 +281,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 										},
 									},
 								},
+							},
+							HTTPClientConfig: configutil.HTTPClientConfig{
+								TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 							},
 						},
 					},
@@ -358,6 +368,7 @@ func TestGetPrometheusConfigScheme(t *testing.T) {
 			name:       "insecure false",
 			tls:        configtls.ClientConfig{Insecure: false},
 			wantScheme: "https",
+			wantTLS:    configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 		},
 		{
 			name: "ca_file with default insecure",
@@ -366,7 +377,10 @@ func TestGetPrometheusConfigScheme(t *testing.T) {
 				Insecure: true,
 			},
 			wantScheme: "https",
-			wantTLS:    configutil.TLSConfig{CAFile: "./testdata/test_cert.pem"},
+			wantTLS: configutil.TLSConfig{
+				CAFile:     "./testdata/test_cert.pem",
+				MinVersion: configutil.TLSVersions["TLS12"],
+			},
 		},
 		{
 			name: "cert_file and key_file without ca_file are not used with default insecure",
