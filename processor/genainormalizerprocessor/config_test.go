@@ -35,6 +35,12 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "valid spring_ai source",
+			cfg: Config{
+				Sources: []Source{{Name: SourceSpringAI, RemoveOriginals: true}},
+			},
+		},
+		{
 			name: "both sources",
 			cfg: Config{
 				Sources: []Source{
@@ -89,14 +95,14 @@ func TestValidate(t *testing.T) {
 			cfg: Config{
 				Sources: []Source{{Name: "my_vendor"}},
 			},
-			wantErr: `sources[0]: user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry)`,
+			wantErr: `sources[0]: user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry, spring_ai)`,
 		},
 		{
 			name: "typo on built-in source name surfaces built-in list",
 			cfg: Config{
 				Sources: []Source{{Name: "openllllmetry"}},
 			},
-			wantErr: `built-in sources, which do not require mappings: openinference, openllmetry`,
+			wantErr: `built-in sources, which do not require mappings: openinference, openllmetry, spring_ai`,
 		},
 		{
 			name: "built-in source with mappings set",
@@ -215,6 +221,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "spring_ai_only"),
+			expected: &Config{
+				Sources: []Source{{Name: SourceSpringAI}},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "openinference_and_openllmetry"),
 			expected: &Config{
 				Sources: []Source{
@@ -277,7 +289,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "user_defined_empty_mappings"),
-			errorMessage: `user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry)`,
+			errorMessage: `user-defined source "my_vendor" requires non-empty "mappings" (built-in sources, which do not require mappings: openinference, openllmetry, spring_ai)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "openinference_with_mappings"),
