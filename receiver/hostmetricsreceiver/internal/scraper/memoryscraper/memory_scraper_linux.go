@@ -15,10 +15,9 @@ import (
 )
 
 func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
-	// gopsutil formula: https://github.com/shirou/gopsutil/pull/1882/files#diff-5af8322731595fb792b48f3c38f31ddb24f596cf11a74a9c37b19734597baef6R321
+	// gopsutil used formula is based on "MemAvailable" state: https://github.com/shirou/gopsutil/issues/1873
 	if hostmetricsmetadata.ReceiverHostmetricsreceiverUseLinuxMemAvailableFeatureGate.IsEnabled() {
-		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total-memInfo.Available), metadata.AttributeStateUsed)
+		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeStateUsed)
 	} else {
 		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
 		s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached), metadata.AttributeStateUsed)
@@ -35,10 +34,9 @@ func (s *memoryScraper) recordMemoryLinuxSharedMetric(now pcommon.Timestamp, mem
 }
 
 func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
-	// gopsutil formula: https://github.com/shirou/gopsutil/pull/1882/files#diff-5af8322731595fb792b48f3c38f31ddb24f596cf11a74a9c37b19734597baef6R321
+	// gopsutil used formula is based on "MemAvailable" state: https://github.com/shirou/gopsutil/issues/1873
 	if hostmetricsmetadata.ReceiverHostmetricsreceiverUseLinuxMemAvailableFeatureGate.IsEnabled() {
-		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Total-memInfo.Available, memInfo.Total), metadata.AttributeStateUsed)
+		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Used, memInfo.Total), metadata.AttributeStateUsed)
 	} else {
 		// gopsutil legacy "Used" memory formula = Total - Free - Buffers - Cache
 		s.mb.RecordSystemMemoryUtilizationDataPoint(now, precision.Ratio(memInfo.Total-memInfo.Free-memInfo.Buffers-memInfo.Cached, memInfo.Total), metadata.AttributeStateUsed)
