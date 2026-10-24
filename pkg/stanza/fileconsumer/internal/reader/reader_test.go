@@ -6,6 +6,7 @@ package reader
 import (
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -463,7 +464,7 @@ func TestReadContentsCancelledDuringEmit(t *testing.T) {
 			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				calls++
 				if calls == tc.cancelOnCall {
-					// Simulate Stop() cancelling the context while the emit is blocked.
+					// Simulate Stop() canceling the context while the emit is blocked.
 					cancel()
 					return ctx.Err()
 				}
@@ -482,6 +483,63 @@ func TestReadContentsCancelledDuringEmit(t *testing.T) {
 			assert.Equal(t, tc.cancelOnCall, calls)
 			assert.Equal(t, tc.expectedOffset, reader.Offset)
 			assert.Equal(t, tc.expectedRecordNum, reader.RecordNum)
+		})
+	}
+}
+
+func TestReadContentsEmitErrorAdvancesOffset(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		content       string
+		maxBatchSize  int
+		expectedCalls int
+	}{
+		{
+			name:          "full_batch",
+			content:       "line1\nline2\nline3\nline4\n",
+			maxBatchSize:  2,
+			expectedCalls: 2,
+		},
+		{
+			name:          "end_of_file",
+			content:       "line1\nline2\n",
+			maxBatchSize:  100,
+			expectedCalls: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			filetest.WriteString(t, temp, tc.content)
+
+			var calls int
+			f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+				calls++
+				return errors.New("emit failed")
+			})
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+			reader.maxBatchSize = tc.maxBatchSize
+
+			reader.ReadToEnd(t.Context())
+
+			// The context is still live, so a failed emit is not retried: the offset moves past the batch.
+			assert.Equal(t, tc.expectedCalls, calls)
+			assert.Equal(t, int64(len(tc.content)), reader.Offset)
+			assert.Equal(t, int64(strings.Count(tc.content, "\n")), reader.RecordNum)
+
+			// A later poll must not emit the failed batches again.
+			reader.ReadToEnd(t.Context())
+			assert.Equal(t, tc.expectedCalls, calls)
 		})
 	}
 }
@@ -521,7 +579,7 @@ func TestDeleteAtEOFCancelledDuringEmit(t *testing.T) {
 
 			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				if tc.cancel {
-					// Simulate Stop() cancelling the context while the emit is blocked.
+					// Simulate Stop() canceling the context while the emit is blocked.
 					cancel()
 					return ctx.Err()
 				}
@@ -571,7 +629,7 @@ func TestGzipCancelledDuringEmit(t *testing.T) {
 			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				calls++
 				if calls == 2 {
-					// Simulate Stop() cancelling the context while the emit is blocked.
+					// Simulate Stop() canceling the context while the emit is blocked.
 					cancel()
 					return ctx.Err()
 				}

@@ -4,10 +4,10 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/stanza
+component: pkg/fileconsumer
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix graceful shutdown of Stanza file consumer
+note: Fix log loss on graceful shutdown under back pressure
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52067]
@@ -17,6 +17,7 @@ issues: [52067]
 # Use pipe (|) for multiline entries.
 subtext: |
   Logs interrupted by shutdown are now re-read after restart instead of being skipped, so delivery is at-least-once and some logs may be duplicated.
+  This only holds with the `stanza.synchronousLogEmitter` feature gate enabled; with the default batching emitter, buffered logs can still be lost on shutdown.
   For gzip files, the whole interrupted file chunk is re-read instead of being skipped.
 
 # If your change doesn't affect end users or the exported elements of any package,
