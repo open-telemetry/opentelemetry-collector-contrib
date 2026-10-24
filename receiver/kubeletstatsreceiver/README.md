@@ -367,3 +367,10 @@ rules:
     resources: ["persistentvolumes"]
     verbs: ["get"]
 ```
+## Available Benchmarks
+
+The Kubelet Stats Receiver is benchmarked as part of the Collector Contrib testbed load tests. The test scrapes a mock kubelet endpoint with increasing pod counts and records Collector CPU and memory consumption.
+
+Results are published on the [Collector Contrib load-test benchmark dashboard](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/).
+
+See the [testbed benchmark](../../testbed/tests/kubeletstats_receiver_test.go) for the workload and setup details.
