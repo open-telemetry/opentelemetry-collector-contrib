@@ -134,11 +134,12 @@ processors:
         # convert all cumulative sum or histogram metrics to delta
 ```
 
-## Histogram sums that are NaN
+## Histogram sums that are NaN or unset
 
-A `NaN` sum on a histogram or exponential histogram data point is treated as a sum that was not recorded. The data
-point keeps its `NaN` sum, and the last sum that was not `NaN` stays as the baseline, so the next data point with a
-sum is diffed against it. The sums of the delta data points therefore add up to the growth of the cumulative sum.
+A `NaN` sum on a histogram or exponential histogram data point, and a data point without a sum, are treated as a sum
+that was not recorded. The data point keeps its `NaN` or unset sum, and the last sum that was recorded stays as the
+baseline, so the next data point with a sum is diffed against it. The sums of the delta data points therefore add up to
+the growth of the cumulative sum.
 
 ## Troubleshooting
 
