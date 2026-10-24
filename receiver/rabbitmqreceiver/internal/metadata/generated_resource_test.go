@@ -17,7 +17,11 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetRabbitmqExchangeName("rabbitmq.exchange.name-val")
 			rb.SetRabbitmqExchangeType("rabbitmq.exchange.type-val")
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
+			rb.SetRabbitmqQueueAutoDelete(true)
+			rb.SetRabbitmqQueueDurable(true)
 			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
+			rb.SetRabbitmqQueuePolicyExpires(29)
+			rb.SetRabbitmqQueuePolicyName("rabbitmq.queue.policy.name-val")
 			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
 
 			res := rb.Emit()
@@ -27,7 +31,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -54,10 +58,30 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "rabbitmq.node.name-val", rabbitmqNodeNameAttrVal.Str())
 			}
+			rabbitmqQueueAutoDeleteAttrVal, ok := res.Attributes().Get("rabbitmq.queue.auto_delete")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.True(t, rabbitmqQueueAutoDeleteAttrVal.Bool())
+			}
+			rabbitmqQueueDurableAttrVal, ok := res.Attributes().Get("rabbitmq.queue.durable")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.True(t, rabbitmqQueueDurableAttrVal.Bool())
+			}
 			rabbitmqQueueNameAttrVal, ok := res.Attributes().Get("rabbitmq.queue.name")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "rabbitmq.queue.name-val", rabbitmqQueueNameAttrVal.Str())
+			}
+			rabbitmqQueuePolicyExpiresAttrVal, ok := res.Attributes().Get("rabbitmq.queue.policy.expires")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, 29, rabbitmqQueuePolicyExpiresAttrVal.Int())
+			}
+			rabbitmqQueuePolicyNameAttrVal, ok := res.Attributes().Get("rabbitmq.queue.policy.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.queue.policy.name-val", rabbitmqQueuePolicyNameAttrVal.Str())
 			}
 			rabbitmqVhostNameAttrVal, ok := res.Attributes().Get("rabbitmq.vhost.name")
 			assert.True(t, ok)
