@@ -142,6 +142,28 @@ func TestNewObfuscator(t *testing.T) {
 			expectedProcessSpecific: false,
 		},
 		{
+			name: "opensearch enabled with attributes",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			expectedObfuscatorCount: 1,
+			expectedProcessSpecific: true,
+		},
+		{
+			name: "elasticsearch enabled with attributes",
+			config: DBSanitizerConfig{
+				ESConfig: ESConfig{
+					Enabled:    true,
+					Attributes: []string{"db.statement"},
+				},
+			},
+			expectedObfuscatorCount: 1,
+			expectedProcessSpecific: true,
+		},
+		{
 			name: "enabled without attributes",
 			config: DBSanitizerConfig{
 				SQLConfig: SQLConfig{
@@ -492,6 +514,112 @@ func TestObfuscateAttribute(t *testing.T) {
 			dbSystem: "cassandra",
 			expected: "SET user:123 john",
 			wantErr:  false,
+		},
+		{
+			name: "opensearch system sanitizes configured attribute",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			value:    `{"query":{"match":{"email":"user@example.com"}}}`,
+			key:      "db.query.text",
+			dbSystem: "opensearch",
+			expected: `{"query":{"match":{"email":"?"}}}`,
+			wantErr:  false,
+		},
+		{
+			name: "elasticsearch system sanitizes configured attribute",
+			config: DBSanitizerConfig{
+				ESConfig: ESConfig{
+					Enabled:    true,
+					Attributes: []string{"db.statement"},
+				},
+			},
+			value:    `{"query":{"term":{"ssn":"123-45-6789"}}}`,
+			key:      "db.statement",
+			dbSystem: "elasticsearch",
+			expected: `{"query":{"term":{"ssn":"?"}}}`,
+			wantErr:  false,
+		},
+		{
+			name: "opensearch and elasticsearch enabled, system selects the right obfuscator",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+				ESConfig: ESConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			value:    `{"query":{"match":{"title":"secret"}}}`,
+			key:      "db.query.text",
+			dbSystem: "elasticsearch",
+			expected: `{"query":{"match":{"title":"?"}}}`,
+			wantErr:  false,
+		},
+		{
+			name: "opensearch enabled without attributes leaves span attributes unchanged",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled: true,
+				},
+			},
+			value:    `{"query":{"match":{"title":"secret"}}}`,
+			key:      "db.query.text",
+			dbSystem: "opensearch",
+			expected: `{"query":{"match":{"title":"secret"}}}`,
+			wantErr:  false,
+		},
+		{
+			name: "configured attribute key but different system leaves attribute unchanged",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			value:    `{"query":{"match":{"email":"user@example.com"}}}`,
+			key:      "db.query.text",
+			dbSystem: "elasticsearch",
+			expected: `{"query":{"match":{"email":"user@example.com"}}}`,
+			wantErr:  false,
+		},
+		{
+			name: "opensearch configured for a different key leaves attribute unchanged",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			value:    `{"query":{"match":{"email":"user@example.com"}}}`,
+			key:      "db.statement",
+			dbSystem: "opensearch",
+			expected: `{"query":{"match":{"email":"user@example.com"}}}`,
+			wantErr:  false,
+		},
+		{
+			name: "opensearch and es both configured, fallback chain masks once and result is idempotent",
+			config: DBSanitizerConfig{
+				OpenSearchConfig: OpenSearchConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+				ESConfig: ESConfig{
+					Enabled:    true,
+					Attributes: []string{"db.query.text"},
+				},
+			},
+			value:    `{"query":{"match":{"email":"user@example.com"}}}`,
+			key:      "db.query.text",
+			dbSystem: "",
+			expected: `{"query":{"match":{"email":"?"}}}`,
+			wantErr:  false,
+			fallback: true,
 		},
 	}
 
