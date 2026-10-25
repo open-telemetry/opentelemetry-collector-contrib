@@ -124,7 +124,6 @@ var testCases = []struct {
 		name:      "default source.address attribute, not found",
 		goldenDir: "resource_no_source_address",
 		context:   resource,
-		errorMode: ottl.IgnoreError,
 	},
 	{
 		name:      "default source.address attribute",
@@ -319,13 +318,10 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 	}{
 		// propagate error mode
 		{
-			name:       "propagate missing IP attribute",
+			name:       "propagate missing IP attribute is no-op",
 			errorMode:  ottl.PropagateError,
 			attributes: pcommon.NewMap(),
-			expectErr:  true,
-			errCheck: func(err error) bool {
-				return errors.Is(err, errIPNotFound)
-			},
+			expectErr:  false,
 		},
 		{
 			name:      "propagate invalid IP",
@@ -362,12 +358,10 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 		},
 		// ignore error mode
 		{
-			name:            "ignore missing IP attribute",
-			errorMode:       ottl.IgnoreError,
-			attributes:      pcommon.NewMap(),
-			expectErr:       false,
-			expectLogsDebug: 1,
-			expectedLogMsg:  "failed to find IP address, ignoring",
+			name:       "ignore missing IP attribute is no-op",
+			errorMode:  ottl.IgnoreError,
+			attributes: pcommon.NewMap(),
+			expectErr:  false,
 		},
 		{
 			name:      "ignore invalid IP",
@@ -407,7 +401,7 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 		},
 		// silent error mode
 		{
-			name:       "silent missing IP attribute",
+			name:       "silent missing IP attribute is no-op",
 			errorMode:  ottl.SilentError,
 			attributes: pcommon.NewMap(),
 			expectErr:  false,
@@ -523,4 +517,28 @@ func TestProcessor_Signals_ErrorMode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessor_Signals_MissingIP_NoError(t *testing.T) {
+	factory := NewFactory()
+	cfg := &Config{
+		Context:    resource,
+		Providers:  map[string]provider.Config{"mock": &providerConfigMock{}},
+		Attributes: defaultAttributes,
+		ErrorMode:  ottl.PropagateError,
+		providerFactories: map[string]provider.GeoIPProviderFactory{
+			"mock": &baseMockFactory,
+		},
+	}
+
+	settings := processortest.NewNopSettings(metadata.Type)
+	logsSink := new(consumertest.LogsSink)
+	logsProc, err := factory.CreateLogs(t.Context(), settings, cfg, logsSink)
+	require.NoError(t, err)
+
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty()
+
+	err = logsProc.ConsumeLogs(t.Context(), ld)
+	require.NoError(t, err)
 }

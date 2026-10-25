@@ -92,13 +92,14 @@ func (g *geoIPProcessor) geoLocation(ctx context.Context, ip netip.Addr) (attrib
 func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon.Map) error {
 	ipAddr, err := ipFromAttributes(g.cfg.Attributes, metadata)
 	if err != nil {
+		// A missing IP attribute is a normal "not applicable" case, not an error (see #35069).
+		if errors.Is(err, errIPNotFound) {
+			return nil
+		}
+
 		switch g.cfg.ErrorMode {
 		case ottl.IgnoreError:
-			if errors.Is(err, errIPNotFound) {
-				g.logger.Debug("failed to find IP address, ignoring", zap.Error(err))
-			} else {
-				g.logger.Warn("failed to parse IP address, ignoring", zap.Error(err))
-			}
+			g.logger.Warn("failed to parse IP address, ignoring", zap.Error(err))
 			return nil
 		case ottl.SilentError:
 			return nil
