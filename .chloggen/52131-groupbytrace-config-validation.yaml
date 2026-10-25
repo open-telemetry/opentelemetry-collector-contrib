@@ -1,0 +1,6 @@
+change_type: breaking
+component: processor/groupbytrace
+note: Reject invalid configurations at startup in `Config.Validate()`.
+issues: [52131]
+subtext: |
+  Startup validation now rejects `wait_duration` <= 0, `num_traces` <= 0, `num_workers` <= 0, and unsupported `discard_orphans` or `store_on_disk` options.

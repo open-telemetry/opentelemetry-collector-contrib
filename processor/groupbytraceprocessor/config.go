@@ -4,8 +4,14 @@
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"time"
+)
+
+var (
+	errDiskStorageNotSupported    = errors.New("option 'disk storage' not supported in this release")
+	errDiscardOrphansNotSupported = errors.New("option 'discard orphans' not supported in this release")
 )
 
 // EmitStrategy controls how the processor groups spans before releasing them to
@@ -61,6 +67,26 @@ func (cfg *Config) Validate() error {
 	default:
 		return fmt.Errorf("unknown emit_strategy %q: valid values are %q and %q",
 			cfg.EmitStrategy, EmitStrategyTrace, EmitStrategyService)
+	}
+
+	if cfg.DiscardOrphans {
+		return errDiscardOrphansNotSupported
+	}
+
+	if cfg.StoreOnDisk {
+		return errDiskStorageNotSupported
+	}
+
+	if cfg.WaitDuration <= 0 {
+		return errors.New("wait_duration must be greater than 0")
+	}
+
+	if cfg.NumTraces <= 0 {
+		return errors.New("num_traces must be greater than 0")
+	}
+
+	if cfg.NumWorkers <= 0 {
+		return errors.New("num_workers must be greater than 0")
 	}
 
 	return nil
