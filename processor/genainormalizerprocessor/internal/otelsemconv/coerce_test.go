@@ -4,6 +4,7 @@
 package otelsemconv
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -141,10 +142,46 @@ func TestCoerce_StringSlice(t *testing.T) {
 }
 
 func TestCoerce_UnknownTargetPassesThrough(t *testing.T) {
-	// gen_ai.input.messages is "any" in the spec, no constructor in semconv.
+	// gen_ai.input.messages is "any" in the spec, so it has no registered type.
 	src := pcommon.NewValueStr(`[{"role":"user"}]`)
 	dst := pcommon.NewValueEmpty()
 	require.True(t, Coerce(GenAIInputMessages, src, dst))
 	assert.Equal(t, pcommon.ValueTypeStr, dst.Type())
 	assert.Equal(t, `[{"role":"user"}]`, dst.Str())
+}
+
+func TestTargetTypes(t *testing.T) {
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.43.0", SchemaURL)
+
+	expected := map[string]reflect.Type{
+		"gen_ai.agent.name":                reflect.TypeFor[string](),
+		"gen_ai.conversation.id":           reflect.TypeFor[string](),
+		"gen_ai.request.frequency_penalty": reflect.TypeFor[float64](),
+		"gen_ai.request.max_tokens":        reflect.TypeFor[int64](),
+		"gen_ai.request.model":             reflect.TypeFor[string](),
+		"gen_ai.request.presence_penalty":  reflect.TypeFor[float64](),
+		"gen_ai.request.stop_sequences":    reflect.TypeFor[[]string](),
+		"gen_ai.request.temperature":       reflect.TypeFor[float64](),
+		"gen_ai.request.top_k":             reflect.TypeFor[float64](),
+		"gen_ai.request.top_p":             reflect.TypeFor[float64](),
+		"gen_ai.response.finish_reasons":   reflect.TypeFor[[]string](),
+		"gen_ai.response.model":            reflect.TypeFor[string](),
+		"gen_ai.tool.call.id":              reflect.TypeFor[string](),
+		"gen_ai.tool.description":          reflect.TypeFor[string](),
+		"gen_ai.tool.name":                 reflect.TypeFor[string](),
+		"gen_ai.usage.input_tokens":        reflect.TypeFor[int64](),
+		"gen_ai.usage.output_tokens":       reflect.TypeFor[int64](),
+	}
+	assert.Equal(t, expected, targetTypes)
+
+	for _, anyKey := range []string{
+		GenAIInputMessages,
+		GenAIOperationName,
+		GenAIOutputMessages,
+		GenAIProviderName,
+		GenAIToolCallArguments,
+		GenAIToolDefinitions,
+	} {
+		assert.NotContains(t, targetTypes, anyKey)
+	}
 }

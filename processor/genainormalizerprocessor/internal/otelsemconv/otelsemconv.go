@@ -2,139 +2,86 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package otelsemconv pins the OTel semantic-conventions version this
-// processor targets and exports the gen_ai.* attribute keys it emits, along
-// with the Go type each key is defined to carry.
+// processor targets and declares the gen_ai.* attribute keys it emits along
+// with their spec types.
 //
-// Bumping versions: update the conventions import path below, verify any
-// referenced symbols still exist, and bump version references in public docs.
-//
-// Adding a new attribute: prefer typed(conventions.GenAIFooBar) — the typed
-// constructor's argument type drives Coerce, which is what enforces spec
-// types at write time. For keys whose spec type is "any" (e.g.
-// gen_ai.input.messages, gen_ai.operation.name) the semconv library exposes
-// only a *Key constant; convert it with string(conventions.GenAIFooBarKey).
-// Values for these keys pass through Coerce verbatim, with no type
-// enforcement. If a typed constructor exists, use typed.
+// The gen_ai.* conventions moved to
+// https://github.com/open-telemetry/semantic-conventions-genai in semconv
+// v1.42.0 and are no longer generated into go.opentelemetry.io/otel/semconv,
+// so the keys are declared here and only SchemaURL comes from that package.
 package otelsemconv // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 
 import (
 	"reflect"
 
-	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // SchemaURL is the OTel semconv schema URL for the targeted version.
 const SchemaURL = conventions.SchemaURL
 
-// targetTypes maps each gen_ai.* key registered via typed() to the Go type
-// the corresponding semconv constructor accepts. Variadic constructors (e.g.
-// ...string) yield a slice type. Keys whose spec type is "any" are not
-// registered (their declarations use string(...) directly); Coerce treats
-// absent keys as opaque and passes values through.
+// targetTypes maps each key registered via typed to its spec type. Keys with
+// spec type "any" are not registered and pass through Coerce verbatim.
 var targetTypes = map[string]reflect.Type{}
 
-// typed registers a gen_ai.* attribute whose semconv definition is a typed
-// constructor (e.g. func(string) attribute.KeyValue) and returns the
-// attribute key as a string for use as a pdata map key. The constructor's
-// argument type is recorded so Coerce can enforce it at write time.
-//
-// Both the key string and the type registration come from the same ctor
-// symbol — there's no separate *Key constant to drift.
-func typed(ctor any) string {
-	t := reflect.TypeOf(ctor)
-	if t.Kind() != reflect.Func || t.NumIn() != 1 || t.NumOut() != 1 {
-		panic("otelsemconv: typed expects a 1-arg, 1-return semconv constructor")
-	}
-	in := t.In(0)
-	var out []reflect.Value
-	if t.IsVariadic() {
-		// Variadic ...T: param type already arrives as []T. CallSlice passes
-		// the slice as the variadic arg.
-		out = reflect.ValueOf(ctor).CallSlice([]reflect.Value{reflect.MakeSlice(in, 0, 0)})
-	} else {
-		out = reflect.ValueOf(ctor).Call([]reflect.Value{reflect.Zero(in)})
-	}
-	kv := out[0].Interface().(attribute.KeyValue)
-	name := string(kv.Key)
-	targetTypes[name] = in
-	return name
+func typed[T any](key string) string {
+	targetTypes[key] = reflect.TypeFor[T]()
+	return key
 }
 
-// enumValue extracts the string value from a semconv enum KeyValue (e.g.
-// conventions.GenAIOperationNameChat). The semconv library exposes these as
-// pre-built attribute.KeyValue with a String value, so we unwrap once at
-// init rather than at every call site.
-func enumValue(kv attribute.KeyValue) string {
-	return kv.Value.AsString()
-}
-
-// GenAI attribute keys, grouped by subnamespace. Adding a new attribute is
-// one line: typed(conventions.GenAIFoo) for keys with a typed constructor,
-// or string(conventions.GenAIFooKey) for keys whose spec type is "any".
-//
 //nolint:gochecknoglobals // canonical key registry
 var (
 	// gen_ai.agent.*
-	GenAIAgentName = typed(conventions.GenAIAgentName)
+	GenAIAgentName = typed[string]("gen_ai.agent.name")
 
 	// gen_ai.conversation.*
-	GenAIConversationID = typed(conventions.GenAIConversationID)
+	GenAIConversationID = typed[string]("gen_ai.conversation.id")
 
 	// gen_ai.input.*
-	GenAIInputMessages = string(conventions.GenAIInputMessagesKey)
+	GenAIInputMessages = "gen_ai.input.messages"
 
 	// gen_ai.operation.*
-	GenAIOperationName = string(conventions.GenAIOperationNameKey)
+	GenAIOperationName = "gen_ai.operation.name"
 
 	// gen_ai.output.*
-	GenAIOutputMessages = string(conventions.GenAIOutputMessagesKey)
+	GenAIOutputMessages = "gen_ai.output.messages"
 
 	// gen_ai.provider.*
-	GenAIProviderName = string(conventions.GenAIProviderNameKey)
+	GenAIProviderName = "gen_ai.provider.name"
 
 	// gen_ai.request.*
-	GenAIRequestFrequencyPenalty = typed(conventions.GenAIRequestFrequencyPenalty)
-	GenAIRequestMaxTokens        = typed(conventions.GenAIRequestMaxTokens)
-	GenAIRequestModel            = typed(conventions.GenAIRequestModel)
-	GenAIRequestPresencePenalty  = typed(conventions.GenAIRequestPresencePenalty)
-	GenAIRequestStopSequences    = typed(conventions.GenAIRequestStopSequences)
-	GenAIRequestTemperature      = typed(conventions.GenAIRequestTemperature)
-	GenAIRequestTopK             = typed(conventions.GenAIRequestTopK)
-	GenAIRequestTopP             = typed(conventions.GenAIRequestTopP)
+	GenAIRequestFrequencyPenalty = typed[float64]("gen_ai.request.frequency_penalty")
+	GenAIRequestMaxTokens        = typed[int64]("gen_ai.request.max_tokens")
+	GenAIRequestModel            = typed[string]("gen_ai.request.model")
+	GenAIRequestPresencePenalty  = typed[float64]("gen_ai.request.presence_penalty")
+	GenAIRequestStopSequences    = typed[[]string]("gen_ai.request.stop_sequences")
+	GenAIRequestTemperature      = typed[float64]("gen_ai.request.temperature")
+	GenAIRequestTopK             = typed[float64]("gen_ai.request.top_k")
+	GenAIRequestTopP             = typed[float64]("gen_ai.request.top_p")
 
 	// gen_ai.response.*
-	GenAIResponseFinishReasons = typed(conventions.GenAIResponseFinishReasons)
-	GenAIResponseModel         = typed(conventions.GenAIResponseModel)
+	GenAIResponseFinishReasons = typed[[]string]("gen_ai.response.finish_reasons")
+	GenAIResponseModel         = typed[string]("gen_ai.response.model")
 
 	// gen_ai.tool.*
-	GenAIToolCallArguments = string(conventions.GenAIToolCallArgumentsKey)
-	GenAIToolCallID        = typed(conventions.GenAIToolCallID)
-	GenAIToolDefinitions   = string(conventions.GenAIToolDefinitionsKey)
-	GenAIToolDescription   = typed(conventions.GenAIToolDescription)
-	GenAIToolName          = typed(conventions.GenAIToolName)
+	GenAIToolCallArguments = "gen_ai.tool.call.arguments"
+	GenAIToolCallID        = typed[string]("gen_ai.tool.call.id")
+	GenAIToolDefinitions   = "gen_ai.tool.definitions"
+	GenAIToolDescription   = typed[string]("gen_ai.tool.description")
+	GenAIToolName          = typed[string]("gen_ai.tool.name")
 
 	// gen_ai.usage.*
-	GenAIUsageInputTokens  = typed(conventions.GenAIUsageInputTokens)
-	GenAIUsageOutputTokens = typed(conventions.GenAIUsageOutputTokens)
+	GenAIUsageInputTokens  = typed[int64]("gen_ai.usage.input_tokens")
+	GenAIUsageOutputTokens = typed[int64]("gen_ai.usage.output_tokens")
 )
 
-// gen_ai.operation.name enum values, sourced from the semconv library.
-// Source-side normalizers (openinference, openllmetry) fold their own
-// span-kind/operation-type enums onto these.
-//
-//nolint:gochecknoglobals // canonical enum value registry
-var (
-	GenAIOperationNameChat           = enumValue(conventions.GenAIOperationNameChat)
-	GenAIOperationNameEmbeddings     = enumValue(conventions.GenAIOperationNameEmbeddings)
-	GenAIOperationNameExecuteTool    = enumValue(conventions.GenAIOperationNameExecuteTool)
-	GenAIOperationNameInvokeAgent    = enumValue(conventions.GenAIOperationNameInvokeAgent)
-	GenAIOperationNameRetrieval      = enumValue(conventions.GenAIOperationNameRetrieval)
-	GenAIOperationNameTextCompletion = enumValue(conventions.GenAIOperationNameTextCompletion)
-
-	// GenAIOperationNameInvokeWorkflow is not part of the standard enum. It
-	// is emitted by openllmetry's traceloop.span.kind=workflow path; we keep
-	// it as a centralized constant so callers don't need to hard-code the
-	// raw string.
+// gen_ai.operation.name enum values.
+const (
+	GenAIOperationNameChat           = "chat"
+	GenAIOperationNameEmbeddings     = "embeddings"
+	GenAIOperationNameExecuteTool    = "execute_tool"
+	GenAIOperationNameInvokeAgent    = "invoke_agent"
+	GenAIOperationNameRetrieval      = "retrieval"
+	GenAIOperationNameTextCompletion = "text_completion"
 	GenAIOperationNameInvokeWorkflow = "invoke_workflow"
 )

@@ -57,13 +57,13 @@ The following are not modified:
 
 ### Schema URL
 
-When a normalization writes an attribute on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.40.0`) if the scope does not already have a schema URL. By default, an existing `schema_url` is preserved because the scope may contain other attributes that still follow the original semantic conventions. Set `overwrite_schema_url: true` when the whole scope has already been normalized and the existing value should be replaced. A scope with no normalization writes is unchanged. `ResourceSpans.schema_url` is never modified.
+When a normalization writes an attribute on a span, the enclosing `ScopeSpans.schema_url` is set to the OTel semantic-conventions version this processor targets (`https://opentelemetry.io/schemas/1.43.0`) if the scope does not already have a schema URL. By default, an existing `schema_url` is preserved because the scope may contain other attributes that still follow the original semantic conventions. Set `overwrite_schema_url: true` when the whole scope has already been normalized and the existing value should be replaced. A scope with no normalization writes is unchanged. `ResourceSpans.schema_url` is never modified.
 
 ### Type handling
 
-After renaming, the processor enforces target attribute types against the OTel GenAI semantic conventions, derived from the typed constructor functions in `go.opentelemetry.io/otel/semconv`.
+After renaming, the processor enforces target attribute types against the OTel GenAI semantic conventions. The `gen_ai.*` attribute keys and their types are declared by the processor itself, because the GenAI conventions were moved out of the core semantic conventions (and out of the `go.opentelemetry.io/otel/semconv` Go packages) as of 1.42.0.
 
-For target keys with a typed primitive constructor in semconv (`gen_ai.usage.input_tokens` int, `gen_ai.request.temperature` float64, `gen_ai.request.model` string, `gen_ai.response.finish_reasons` []string, etc.), the processor coerces between compatible scalar types and drops the rename when coercion is unsafe:
+For target keys with a primitive spec type (`gen_ai.usage.input_tokens` int, `gen_ai.request.temperature` float64, `gen_ai.request.model` string, `gen_ai.response.finish_reasons` []string, etc.), the processor coerces between compatible scalar types and drops the rename when coercion is unsafe:
 
 - string -> int: parsed via `strconv.ParseInt`; non-numeric strings drop.
 - string -> float64: parsed via `strconv.ParseFloat`; non-numeric strings drop.

@@ -392,7 +392,7 @@ func TestProcessTraces_StampsSchemaURLWhenMappingFires(t *testing.T) {
 	require.NoError(t, err)
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.43.0", ss.SchemaUrl())
 }
 
 func TestProcessTraces_StampsSchemaURLWhenAggregatorFires(t *testing.T) {
@@ -413,7 +413,7 @@ func TestProcessTraces_StampsSchemaURLWhenAggregatorFires(t *testing.T) {
 	require.NoError(t, err)
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.43.0", ss.SchemaUrl())
 }
 
 func TestProcessTraces_LeavesSchemaURLWhenNoMappingFires(t *testing.T) {
@@ -492,7 +492,7 @@ func TestProcessTraces_OverwritesExistingSchemaURLWhenEnabled(t *testing.T) {
 	require.NoError(t, err)
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().At(0)
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", ss.SchemaUrl())
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.43.0", ss.SchemaUrl())
 }
 
 func TestProcessTraces_DoesNotModifyResourceSchemaURL(t *testing.T) {
