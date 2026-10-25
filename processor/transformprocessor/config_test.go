@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -455,4 +456,56 @@ func Test_EmptyStatementListItem(t *testing.T) {
 			require.ErrorContains(t, conf.Unmarshal(cfg), "invalid "+fieldName+" item: empty statement list items are not supported")
 		})
 	}
+}
+
+func setFlattenLogsFeatureGate(t *testing.T, enabled bool) {
+	original := metadata.TransformFlattenLogsFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), original))
+	})
+}
+
+func Test_LoadConfig_FlattenLog(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	assert.True(t, cfg.(*Config).Flatten.Log)
+}
+
+func Test_LoadConfig_FlattenData(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	assert.True(t, cfg.(*Config).FlattenData)
+	assert.False(t, cfg.(*Config).Flatten.Log)
+}
+
+func Test_FlattenDataAndFlattenLogCannotBothBeSet(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data_and_flatten_log").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	assert.ErrorIs(t, confmap.Validate(cfg), errFlattenDataAndFlattenLog)
 }
