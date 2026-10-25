@@ -201,8 +201,8 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 func backendGroupingFor(attributes []metadata.PostgresqlBackendsMetricAttributeKey) backendGrouping {
 	return backendGrouping{
 		backendType:   slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType),
-		state:         slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState),
-		waitEventType: slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType),
+		state:         slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState),
+		waitEventType: slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType),
 	}
 }
 

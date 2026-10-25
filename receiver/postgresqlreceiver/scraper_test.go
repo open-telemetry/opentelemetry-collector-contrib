@@ -130,8 +130,8 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 	cfg.MetricsBuilderConfig.Metrics.PostgresqlBackends.EnabledAttributes = []metadata.PostgresqlBackendsMetricAttributeKey{
 		metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
 		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
-		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
-		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState,
+		metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType,
 	}
 	scraper := &postgreSQLScraper{
 		config:            cfg,
@@ -174,9 +174,9 @@ func TestRecordDatabaseBackendsPerBackendTypeStateAndWaitEventType(t *testing.T)
 		require.True(t, ok)
 		backendType, ok := dp.Attributes().Get("postgresql.backend.type")
 		require.True(t, ok)
-		state, ok := dp.Attributes().Get("postgresql.state")
+		state, ok := dp.Attributes().Get("postgresql.backend.state")
 		require.True(t, ok)
-		waitEventType, ok := dp.Attributes().Get("postgresql.wait_event_type")
+		waitEventType, ok := dp.Attributes().Get("postgresql.backend.wait_event.type")
 		require.True(t, ok)
 		actual[backendKey{namespace.Str(), backendType.Str(), state.Str(), waitEventType.Str()}] = dp.IntValue()
 	}
@@ -212,12 +212,12 @@ func TestBackendGroupingFor(t *testing.T) {
 		},
 		{
 			name:       "state",
-			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState},
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState},
 			expected:   backendGrouping{state: true},
 		},
 		{
 			name:       "wait event type",
-			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType},
+			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType},
 			expected:   backendGrouping{waitEventType: true},
 		},
 		{
@@ -225,8 +225,8 @@ func TestBackendGroupingFor(t *testing.T) {
 			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
 				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
 				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType,
 			},
 			expected: backendGrouping{backendType: true, state: true, waitEventType: true},
 		},
@@ -257,8 +257,8 @@ func TestScraperRequestsBackendGroupingForEnabledAttributes(t *testing.T) {
 		{
 			name: "state and wait event type, legacy mode",
 			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType,
 			},
 			expected: backendGrouping{state: true, waitEventType: true},
 		},
@@ -268,8 +268,8 @@ func TestScraperRequestsBackendGroupingForEnabledAttributes(t *testing.T) {
 			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
 				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
 				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType,
 			},
 			expected: backendGrouping{backendType: true, state: true, waitEventType: true},
 		},
@@ -358,7 +358,7 @@ func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
 			name: "state only",
 			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
 				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState,
 			},
 			expected: map[backendKey]int64{
 				{state: "active"}:  6,
@@ -370,7 +370,7 @@ func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
 			name: "backend type and wait event type",
 			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
 				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType,
 			},
 			expected: map[backendKey]int64{
 				{backendType: "client backend", waitEventType: "none"}:    3,
@@ -385,8 +385,8 @@ func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
 			attributes: []metadata.PostgresqlBackendsMetricAttributeKey{
 				metadata.PostgresqlBackendsMetricAttributeKeyDbNamespace,
 				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlState,
-				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState,
+				metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType,
 			},
 			expected: map[backendKey]int64{
 				{backendType: "client backend", state: "active", waitEventType: "none"}:    3,
@@ -442,8 +442,8 @@ func TestRecordDatabaseBackendsIndependentOfAggregationStrategy(t *testing.T) {
 					dp := dataPoints.At(i)
 					key := backendKey{
 						backendType:   attributeValue(dp, "postgresql.backend.type"),
-						state:         attributeValue(dp, "postgresql.state"),
-						waitEventType: attributeValue(dp, "postgresql.wait_event_type"),
+						state:         attributeValue(dp, "postgresql.backend.state"),
+						waitEventType: attributeValue(dp, "postgresql.backend.wait_event.type"),
 					}
 					_, seen := actual[key]
 					require.False(t, seen, "duplicate data point for %+v", key)

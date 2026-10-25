@@ -30,7 +30,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBackends: PostgresqlBackendsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, PostgresqlBackendsMetricAttributeKeyPostgresqlState, PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType},
+						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType},
 					},
 					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 						Enabled: true,
@@ -254,7 +254,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBackends: PostgresqlBackendsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, PostgresqlBackendsMetricAttributeKeyPostgresqlState, PostgresqlBackendsMetricAttributeKeyPostgresqlWaitEventType},
+						EnabledAttributes:   []PostgresqlBackendsMetricAttributeKey{PostgresqlBackendsMetricAttributeKeyDbNamespace, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState, PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType},
 					},
 					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
 						Enabled: false,
@@ -485,7 +485,7 @@ func TestPostgresqlBackendsMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []PostgresqlBackendsMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric postgresql.backends doesn't have an attribute invalid, valid attributes: [db.namespace, postgresql.backend.type, postgresql.state, postgresql.wait_event_type]")
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.backends doesn't have an attribute invalid, valid attributes: [db.namespace, postgresql.backend.type, postgresql.backend.state, postgresql.backend.wait_event.type]")
 
 	cfg = DefaultMetricsConfig().PostgresqlBackends
 	cfg.AggregationStrategy = "invalid"
