@@ -14,6 +14,8 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth, ChrsMark]
 
+sem_conv_version: 1.43.0
+
 resource_attributes:
   aws.volume.id:
     description: "[DEPRECATED] The id of the AWS Volume"
@@ -112,7 +114,9 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability: development
+    stability: beta
+    semantic_convention:
+      ref: system/container-metrics.md#metric-containercputime
     sum:
       value_type: double
       monotonic: true

@@ -9,11 +9,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/coredistro"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor/internal/metadata"
 )
 
@@ -89,4 +93,19 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	require.Nil(t, mp)
 	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
+}
+
+func TestCoreDistroRemovalWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	set := processortest.NewNopSettings(metadata.Type)
+	set.BuildInfo = component.BuildInfo{Command: "otelcol", Description: "OpenTelemetry Collector"}
+	set.Logger = zap.New(core)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Rename.FromAttributes = []string{"foo"}
+
+	_, err := factory.CreateTraces(t.Context(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, 1, logs.FilterMessageSnippet(coredistro.RemovalWarning).Len())
 }

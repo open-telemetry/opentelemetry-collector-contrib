@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/prometheus_remote_write
+note: Drop exponential histogram data points without a sum instead of exporting a zero sum.
+issues: [52232]
+change_logs: [user, api]

@@ -23,6 +23,7 @@ const (
 	defaultBackfillEnabled                   = false
 	defaultHideTopnLockstatsRowrangestartkey = false
 	defaultHideSplitStatsKeys                = false
+	defaultHideClientIPAddress               = false
 	defaultTruncateText                      = false
 )
 
@@ -42,6 +43,7 @@ func createDefaultConfig() component.Config {
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
 		HideSplitStatsKeys:                defaultHideSplitStatsKeys,
+		HideClientIPAddress:               defaultHideClientIPAddress,
 		TruncateText:                      defaultTruncateText,
 	}
 }

@@ -17,6 +17,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 	cases := []struct {
 		name              string
 		capacity          int
+		maxBytes          int
 		initialOffset     *int
 		pendingRewind     *int
 		cancel            bool
@@ -25,6 +26,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 		wantPauseCalls    int
 		wantPauseReason   partitionPauseReason
 		wantPendingOffset *int64
+		wantQueuedBytes   int
 	}{
 		{
 			name:         "accepts batch",
@@ -65,12 +67,60 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 			batch:        mailboxBatch(10),
 			wantAccepted: false,
 		},
+		{
+			name:            "pauses when batch reaches byte cap",
+			capacity:        4,
+			maxBytes:        256,
+			batch:           mailboxBatch(10),
+			wantAccepted:    true,
+			wantPauseCalls:  1,
+			wantPauseReason: partitionPauseBackpressure,
+			wantQueuedBytes: 256,
+		},
+		{
+			name:            "does not pause below byte cap",
+			capacity:        4,
+			maxBytes:        512,
+			batch:           mailboxBatch(10),
+			wantAccepted:    true,
+			wantQueuedBytes: 256,
+		},
+		{
+			name:            "admits batch above byte cap into empty mailbox",
+			capacity:        2,
+			maxBytes:        100,
+			batch:           mailboxBatch(10),
+			wantAccepted:    true,
+			wantPauseCalls:  1,
+			wantPauseReason: partitionPauseBackpressure,
+			wantQueuedBytes: 256,
+		},
+		{
+			name:              "rejects batch while over byte cap",
+			capacity:          4,
+			maxBytes:          256,
+			initialOffset:     new(5),
+			batch:             mailboxBatch(10),
+			wantPauseCalls:    1,
+			wantPauseReason:   partitionPauseRewind,
+			wantPendingOffset: new(int64(10)),
+			wantQueuedBytes:   256,
+		},
+		{
+			name:            "ignores queued bytes when byte cap is zero",
+			capacity:        4,
+			maxBytes:        0,
+			initialOffset:   new(5),
+			batch:           mailboxBatch(10),
+			wantAccepted:    true,
+			wantQueuedBytes: 0,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
-			mailbox := newPartitionMailbox(ctx, tc.capacity)
+			mailbox := newPartitionMailbox(ctx, tc.capacity, tc.maxBytes)
 			if tc.initialOffset != nil {
 				require.True(t, mailbox.enqueue(mailboxBatch(int64(*tc.initialOffset)), func(partitionPauseReason) {}))
 			}
@@ -98,6 +148,7 @@ func TestPartitionMailboxEnqueue(t *testing.T) {
 				pendingOffset = new(mailbox.takeOffsetChange().Offset)
 			}
 			require.Equal(t, tc.wantPendingOffset, pendingOffset)
+			require.Equal(t, tc.wantQueuedBytes, queuedBytes(t, mailbox))
 		})
 	}
 }
@@ -137,7 +188,7 @@ func TestPartitionMailboxDequeue(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mailbox := newPartitionMailbox(t.Context(), tc.capacity)
+			mailbox := newPartitionMailbox(t.Context(), tc.capacity, 0)
 			for _, offset := range tc.offsets {
 				require.True(t, mailbox.enqueue(mailboxBatch(offset), func(partitionPauseReason) {}))
 			}
@@ -155,6 +206,54 @@ func TestPartitionMailboxDequeue(t *testing.T) {
 			if tc.wantOK {
 				require.Equal(t, tc.wantOffset, batch.Records[0].Offset)
 			}
+		})
+	}
+}
+
+// TestPartitionMailboxDequeueBytes proves dequeue subtracts each batch's stored
+// size and resumes only once both caps have room.
+func TestPartitionMailboxDequeueBytes(t *testing.T) {
+	cases := []struct {
+		name            string
+		sizes           []int
+		dequeues        int
+		wantResumeCalls int
+		wantQueuedBytes int
+	}{
+		{
+			name:            "does not resume while bytes stay at cap",
+			sizes:           []int{256, 768},
+			dequeues:        1,
+			wantResumeCalls: 0,
+			wantQueuedBytes: 768,
+		},
+		{
+			name:            "drains to zero bytes",
+			sizes:           []int{256, 768},
+			dequeues:        2,
+			wantResumeCalls: 1,
+			wantQueuedBytes: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Each batch is admitted while the queue is still below the 500-byte cap.
+			mailbox := newPartitionMailbox(t.Context(), 4, 500)
+			for _, size := range tc.sizes {
+				require.True(t, mailbox.enqueue(sizedBatch(size), func(partitionPauseReason) {}))
+			}
+
+			resumeCalls := 0
+			for range tc.dequeues {
+				_, ok := mailbox.dequeue(func() {
+					resumeCalls++
+				})
+				require.True(t, ok)
+			}
+
+			require.Equal(t, tc.wantResumeCalls, resumeCalls)
+			require.Equal(t, tc.wantQueuedBytes, queuedBytes(t, mailbox))
 		})
 	}
 }
@@ -185,7 +284,7 @@ func TestPartitionMailboxSerializesPauseBeforeResume(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mailbox := newPartitionMailbox(t.Context(), 1)
+			mailbox := newPartitionMailbox(t.Context(), 1, 0)
 			pauseStarted := make(chan struct{})
 			releasePause := make(chan struct{})
 			resumed := make(chan struct{})
@@ -221,26 +320,29 @@ func TestPartitionMailboxSerializesPauseBeforeResume(t *testing.T) {
 // TestPartitionMailboxRequestRewind proves rewind keeps the earliest offset and can clear the queue.
 func TestPartitionMailboxRequestRewind(t *testing.T) {
 	cases := []struct {
-		name          string
-		existing      *int
-		requested     int64
-		clearQueue    bool
-		wantOffset    int64
-		wantQueueSize int
+		name            string
+		existing        *int
+		requested       int64
+		clearQueue      bool
+		wantOffset      int64
+		wantQueueSize   int
+		wantQueuedBytes int
 	}{
 		{
-			name:          "retains earlier existing offset",
-			existing:      new(5),
-			requested:     8,
-			wantOffset:    5,
-			wantQueueSize: 1,
+			name:            "retains earlier existing offset",
+			existing:        new(5),
+			requested:       8,
+			wantOffset:      5,
+			wantQueueSize:   1,
+			wantQueuedBytes: 256,
 		},
 		{
-			name:          "replaces with earlier requested offset",
-			existing:      new(8),
-			requested:     5,
-			wantOffset:    5,
-			wantQueueSize: 1,
+			name:            "replaces with earlier requested offset",
+			existing:        new(8),
+			requested:       5,
+			wantOffset:      5,
+			wantQueueSize:   1,
+			wantQueuedBytes: 256,
 		},
 		{
 			name:          "clears queued batches",
@@ -253,7 +355,7 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mailbox := newPartitionMailbox(t.Context(), 2)
+			mailbox := newPartitionMailbox(t.Context(), 2, 1000)
 			require.True(t, mailbox.enqueue(mailboxBatch(1), func(partitionPauseReason) {}))
 			if tc.existing != nil {
 				mailbox.requestRewind(recordAtOffset(int64(*tc.existing)), false, func() {})
@@ -268,8 +370,29 @@ func TestPartitionMailboxRequestRewind(t *testing.T) {
 			require.True(t, mailbox.hasPendingOffsetChange())
 			require.Equal(t, tc.wantOffset, mailbox.takeOffsetChange().Offset)
 			require.Equal(t, tc.wantQueueSize, queued(t, mailbox))
+			require.Equal(t, tc.wantQueuedBytes, queuedBytes(t, mailbox))
 		})
 	}
+}
+
+// TestPartitionMailboxDiscardResetsQueuedBytes proves discard drops the queued bytes with the batches.
+func TestPartitionMailboxDiscardResetsQueuedBytes(t *testing.T) {
+	mailbox := newPartitionMailbox(t.Context(), 2, 1000)
+	require.True(t, mailbox.enqueue(sizedBatch(256), func(partitionPauseReason) {}))
+	require.True(t, mailbox.enqueue(sizedBatch(256), func(partitionPauseReason) {}))
+	require.Equal(t, 512, queuedBytes(t, mailbox))
+
+	mailbox.discard()
+
+	require.Equal(t, 0, queued(t, mailbox))
+	require.Equal(t, 0, queuedBytes(t, mailbox))
+}
+
+func queuedBytes(t *testing.T, m *partitionMailbox) int {
+	t.Helper()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.queuedBytes
 }
 
 func queued(t *testing.T, m *partitionMailbox) int {
@@ -283,6 +406,17 @@ func mailboxBatch(offset int64) kgo.FetchTopicPartition {
 	return kgo.FetchTopicPartition{
 		FetchPartition: kgo.FetchPartition{
 			Records: []*kgo.Record{recordAtOffset(offset)},
+		},
+	}
+}
+
+// sizedBatch returns a one-record batch whose inflightSize is size.
+func sizedBatch(size int) kgo.FetchTopicPartition {
+	rec := recordAtOffset(0)
+	rec.Value = make([]byte, size-recordOverhead)
+	return kgo.FetchTopicPartition{
+		FetchPartition: kgo.FetchPartition{
+			Records: []*kgo.Record{rec},
 		},
 	}
 }

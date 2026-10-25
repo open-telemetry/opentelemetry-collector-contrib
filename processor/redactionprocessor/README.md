@@ -170,7 +170,7 @@ The value is then masked according to the configuration.
 `hash_function` defines the function for hashing values of matched keys or matches in values
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
-are `md5`, `sha1`, `sha3` (SHA-256), `hmac-sha256`, and `hmac-sha512`.
+are `md5`, `sha1`, `sha3` (SHA3-256), `hmac-sha256`, and `hmac-sha512`.
 
 ### HMAC Hash Functions
 

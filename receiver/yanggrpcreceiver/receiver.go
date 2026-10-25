@@ -66,7 +66,7 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 
 	// 4. Initialize YANG Parsers
 	// Standard Parser for structural analysis
-	yangParser := internal.NewYANGParser()
+	yangParser := internal.NewYANGParser(y.settings.Logger)
 	yangParser.LoadBuiltinModules()
 
 	// Load external Cisco/IETF modules from configured paths

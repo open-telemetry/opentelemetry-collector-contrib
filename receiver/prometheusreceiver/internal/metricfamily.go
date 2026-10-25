@@ -470,25 +470,48 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 }
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
-	dest.EnsureCapacity(ls.Len())
 	names := getSortedNotUsefulLabels(mType)
+	var buf [16]labels.Label
+	n := 0
+	skipped := 0
 	j := 0
 	ls.Range(func(l labels.Label) {
 		for j < len(names) && names[j] < l.Name {
 			j++
 		}
 		if j < len(names) && l.Name == names[j] {
+			skipped++
 			return
 		}
 		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) {
+			skipped++
 			return
 		}
 		if l.Value == "" {
 			// empty label values should be omitted
+			skipped++
 			return
+		}
+		if n < len(buf) {
+			buf[n] = l
+			n++
+			return
+		}
+		if n == len(buf) {
+			dest.EnsureCapacity(ls.Len() - skipped)
+			for i := range buf {
+				dest.PutStr(buf[i].Name, buf[i].Value)
+			}
+			n++
 		}
 		dest.PutStr(l.Name, l.Value)
 	})
+	if n > 0 && n <= len(buf) {
+		dest.EnsureCapacity(n)
+		for _, l := range buf[:n] {
+			dest.PutStr(l.Name, l.Value)
+		}
+	}
 }
 
 func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
@@ -727,8 +750,6 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
-	filteredAttrs := e.FilteredAttributes()
-	filteredAttrs.EnsureCapacity(pe.Labels.Len())
 	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
 		case prometheus.ExemplarTraceIDKey:
@@ -746,7 +767,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 					}
 				}
 			}
-			filteredAttrs.PutStr(lb.Name, lb.Value)
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		case prometheus.ExemplarSpanIDKey:
 			if lb.Value == "" {
 				return
@@ -762,9 +783,9 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 					}
 				}
 			}
-			filteredAttrs.PutStr(lb.Name, lb.Value)
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		default:
-			filteredAttrs.PutStr(lb.Name, lb.Value)
+			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		}
 	})
 }
