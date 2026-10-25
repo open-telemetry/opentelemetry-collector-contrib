@@ -471,16 +471,24 @@ func TestReadGzipOffsetFromEarlierVersionNotRecoverable(t *testing.T) {
 	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
+	firstMember, err := temp.Stat()
+	require.NoError(t, err)
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog3\ntestlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
 
-	// The gzip member that contains the offset cannot be decompressed because its checksum is wrong.
+	// The offset is inside the second gzip member, but the first one cannot be decompressed because its
+	// checksum is wrong.
 	info, err := temp.Stat()
 	require.NoError(t, err)
-	_, err = temp.WriteAt([]byte{0xff}, info.Size()-8)
+	_, err = temp.WriteAt([]byte{0xff}, firstMember.Size()-8)
 	require.NoError(t, err)
+	offset := firstMember.Size() + (info.Size()-firstMember.Size())/2
 
-	reader, err := f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), &Metadata{Fingerprint: fp, Offset: info.Size() / 2, FileType: gzipExtension})
+	reader, err := f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), &Metadata{Fingerprint: fp, Offset: offset, FileType: gzipExtension})
 	require.NoError(t, err)
 	defer reader.Close()
 

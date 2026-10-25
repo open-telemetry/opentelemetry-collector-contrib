@@ -1878,9 +1878,6 @@ func TestArchive(t *testing.T) {
 }
 
 // TestTruncateResetsDecompressedBytesToSkip tests that when a gzip file's stored offset exceeds the current
-// file size (it was truncated and rewritten from scratch), the decompressed-bytes-to-skip count is reset along
-// with the offset, so the new content is not missing its first bytes.
-// TestTruncateResetsDecompressedBytesToSkip tests that when a gzip file's stored offset exceeds the current
 // file size (it was truncated and rewritten with new, shorter content), the decompressed-bytes-to-skip count is
 // reset along with the offset, so the new content is not missing its first bytes.
 func TestTruncateResetsDecompressedBytesToSkip(t *testing.T) {
