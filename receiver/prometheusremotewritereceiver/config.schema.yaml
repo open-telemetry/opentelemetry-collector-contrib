@@ -1,4 +1,8 @@
 description: Config holds common fields and embedded protocol-specific configurations
 type: object
+properties:
+  resource_cache_size:
+    description: ResourceCacheSize is the maximum number of job/instance pairs whose resource attributes (from target_info) are kept in the LRU cache across requests. Default is 1000.
+    type: integer
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

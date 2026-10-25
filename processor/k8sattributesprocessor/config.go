@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
