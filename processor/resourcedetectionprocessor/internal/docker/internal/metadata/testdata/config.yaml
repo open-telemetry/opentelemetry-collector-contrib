@@ -1,7 +1,11 @@
 default:
 all_set:
   resource_attributes:
+    container.image.id:
+      enabled: true
     container.image.name:
+      enabled: true
+    container.image.tags:
       enabled: true
     container.name:
       enabled: true
@@ -11,7 +15,11 @@ all_set:
       enabled: true
 none_set:
   resource_attributes:
+    container.image.id:
+      enabled: false
     container.image.name:
+      enabled: false
+    container.image.tags:
       enabled: false
     container.name:
       enabled: false
