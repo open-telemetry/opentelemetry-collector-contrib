@@ -74,7 +74,8 @@ func (p *Provider) Source(context.Context) (source.Source, error) {
 		return source.Source{}, fmt.Errorf("failed to get project ID: %w", err)
 	}
 
-	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s.%s", name, cloudAccount)}, nil
+	identifier := fmt.Sprintf("%s.%s", name, cloudAccount)
+	return source.Source{Kind: source.HostnameKind, Identifier: identifier, SourceIdentifier: source.SourceIdentifier{Primary: identifier}}, nil
 }
 
 func (p *Provider) ClusterName(_ context.Context) (string, error) {

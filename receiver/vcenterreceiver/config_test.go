@@ -39,6 +39,8 @@ func TestConfigValidation(t *testing.T) {
 			desc: "with endpoint",
 			cfg: Config{
 				Endpoint:         "http://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
@@ -77,6 +79,70 @@ func TestConfigValidation(t *testing.T) {
 			},
 			expectedErr: errors.New("password not provided"),
 		},
+		{
+			desc: "socks5 proxy_url",
+			cfg: Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
+				ProxyURL:         "socks5://proxy.some-host:1080",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			desc: "http proxy_url",
+			cfg: Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
+				ProxyURL:         "http://proxy.some-host:8080",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			desc: "proxy_url with unsupported scheme",
+			cfg: Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
+				ProxyURL:         "sock5://proxy.some-host:1080",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("proxy_url scheme must be http, https, socks5 or socks5h"),
+		},
+		{
+			desc: "proxy_url without scheme",
+			cfg: Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
+				ProxyURL:         "proxy.some-host:1080",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("proxy_url scheme must be http, https, socks5 or socks5h"),
+		},
+		{
+			desc: "proxy_url without host",
+			cfg: Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
+				ProxyURL:         "socks5://",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("proxy_url must include a host"),
+		},
+		{
+			desc: "unparsable proxy_url",
+			cfg: Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				Password:         "otelp",
+				ProxyURL:         "h" + string(rune(0x7f)),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errors.New("unable to parse proxy_url"),
+		},
 	}
 
 	for _, tc := range cases {
@@ -84,6 +150,8 @@ func TestConfigValidation(t *testing.T) {
 			err := tc.cfg.Validate()
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -104,6 +172,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Endpoint = "http://vcsa.host.localnet"
 	expected.Username = "otelu"
 	expected.Password = "${env:VCENTER_PASSWORD}"
+	expected.ProxyURL = "socks5://proxy.host.localnet:1080"
 	expected.MaxQueryMetrics = 128
 	expected.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
 	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false

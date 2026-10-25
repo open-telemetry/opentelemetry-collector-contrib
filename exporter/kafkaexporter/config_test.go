@@ -236,15 +236,11 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Batch = configoptional.Some(func() exporterhelper.BatchConfig {
-						batch := exporterhelper.BatchConfig{
-							Sizer: exporterhelper.RequestSizerTypeBytes,
-						}
-						batch.FlushTimeout = 200 * time.Millisecond
-						batch.MinSize = 8192
-						batch.Partition.MetadataKeys = []string{"metadata_key", "another_key", "kafka_topic"}
-						return batch
-					}())
+					batch := queue.Batch.GetOrInsertDefault()
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.FlushTimeout = 200 * time.Millisecond
+					batch.MinSize = 8192
+					batch.Partition.MetadataKeys = []string{"metadata_key", "another_key", "kafka_topic"}
 					return queue
 				}()),
 				ClientConfig: configkafka.NewDefaultClientConfig(),

@@ -23,7 +23,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
@@ -40,8 +40,8 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 	hm := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
 
 	if src, ok := attributes.SourceFromAttrs(attrs, hostFromAttributesHandler); ok && src.Kind == source.HostnameKind {
-		hm.InternalHostname = src.Identifier
-		hm.Meta.Hostname = src.Identifier
+		hm.InternalHostname = src.SourceIdentifier.Primary
+		hm.Meta.Hostname = src.SourceIdentifier.Primary
 	}
 
 	// AWS EC2 resource metadata
@@ -73,8 +73,8 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 			src, err = p.Source(context.TODO())
 		}
 		if err == nil && src.Kind == source.HostnameKind {
-			hm.InternalHostname = src.Identifier
-			hm.Meta.Hostname = src.Identifier
+			hm.InternalHostname = src.SourceIdentifier.Primary
+			hm.Meta.Hostname = src.SourceIdentifier.Primary
 		}
 		for _, alias := range aliases {
 			if !slices.Contains(hm.Meta.HostAliases, alias) {

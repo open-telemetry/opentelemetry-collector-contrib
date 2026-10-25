@@ -6,7 +6,8 @@
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheusremotewrite%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheusremotewrite%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_prometheusremotewrite)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_prometheusremotewrite&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@rapphil](https://www.github.com/rapphil), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
+| Emeritus      | [@rapphil](https://www.github.com/rapphil) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -116,15 +117,19 @@ exporters:
 ```
 
 > [!NOTE]
-> The deprecated coponent type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
+> The deprecated component type `prometheusremotewrite` (without the underscores) can still be used as an alias and will log a deprecation warning.
 
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol. Prefer configuring these under an `http` block (for example `http.endpoint`, `http.tls`, `http.headers`, `http.timeout`). Top-level HTTP client settings remain supported for backward compatibility, but the top-level `timeout` is shared with the exporter retry helper and cannot be set independently unless HTTP client settings are nested under `http`. When both are present, the `http` block takes precedence. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol. Prefer configuring these under an `http` block (for example `http.endpoint`, `http.tls`, `http.headers`, `http.timeout`). Top-level HTTP client settings remain supported for backward compatibility. The top-level `timeout` is the exporter `timeout` setting (see below); `http.timeout` takes the same value unless it is set explicitly, and the other way round. When both are present, the `http` block takes precedence. See [#46209](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46209).
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
+  - `timeout` (default = `5s`) is the time to wait for each attempt to send a request, including the first one. It does not limit the time spent retrying. The timeout of the HTTP client, `http.timeout`, takes the same value when it is not set explicitly (and `timeout` takes the value of `http.timeout` when only `http.timeout` is set); when both are set, the smaller one is what bounds an attempt. A `timeout` of `0` disables the per-attempt timeout of the exporter, which leaves only `http.timeout`.
+  - `retry_on_failure` retries the requests that failed with a retryable error, such as a connection error, a timeout or a 5xx response. `retry_on_failure.max_elapsed_time` (default = `5m`) bounds the total time spent exporting a batch of metrics, including the retries of all the requests it is split into (see `max_batch_size_bytes`), after which the batch is dropped. Set it to a value longer than the backend outage that must be tolerated. A value of `0` retries until the exporter shuts down.
+  - On shutdown the retries stop, and the batches still queued are attempted once each, until the deadline of the shutdown if there is one.
+  - While a batch is retried, the batches after it wait in the `remote_write_queue`, which drops new data when it is full. The data in the queue is lost when the Collector restarts, unless the `wal` is configured. When `remote_write_queue.enabled` is `false`, the retries block the caller for up to `retry_on_failure.max_elapsed_time`, so lower it or disable `retry_on_failure`.
 
 ### Feature gates
 

@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -52,10 +52,6 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	return &Config{
 		ClientConfig:        clientConfig,
 		MaxBatchSize:        1024,

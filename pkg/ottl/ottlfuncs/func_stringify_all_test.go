@@ -128,14 +128,14 @@ func Test_StringifyAllFactory(t *testing.T) {
 		factory := NewStringifyAllFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &StringifyAllArguments[any]{}, args)
+		assert.IsType(t, &stringifyAllArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewStringifyAllFactory[any]()
 		args := factory.CreateDefaultArguments()
-		stringifyAllArgs, ok := args.(*StringifyAllArguments[any])
+		stringifyAllArgs, ok := args.(*stringifyAllArguments[any])
 		require.True(t, ok)
 		stringifyAllArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -153,6 +153,44 @@ func Test_StringifyAllFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createStringifyAllFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "StringifyAllFactory args must be of type *StringifyAllArguments[K]")
+		assert.ErrorContains(t, err, "StringifyAllFactory args must be of type *stringifyAllArguments[K]")
 	})
+}
+
+func BenchmarkStringifyAll(b *testing.B) {
+	base := pcommon.NewMap()
+	base.PutStr("already_string", "hello")
+	base.PutInt("int_val", 42)
+	base.PutDouble("double_val", 3.14)
+	base.PutBool("bool_val", true)
+	base.PutEmptyBytes("bytes_val").FromRaw([]byte{1, 2, 3})
+	m := base.PutEmptyMap("map_val")
+	m.PutStr("nested", "value")
+	s := base.PutEmptySlice("slice_val")
+	s.AppendEmpty().SetInt(1)
+	s.AppendEmpty().SetInt(2)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	exprFunc := stringifyAll(target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		base.CopyTo(scenarioMap)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

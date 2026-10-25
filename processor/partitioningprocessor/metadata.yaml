@@ -1,0 +1,55 @@
+display_name: Partitioning Processor
+type: partitioning
+
+description: |
+  The `partitioning` processor splits incoming batches into sub-batches using
+  OTTL value expressions, and forwards each sub-batch with the evaluated
+  partition keys added to the outgoing request metadata.
+
+status:
+  class: processor
+  stability:
+    alpha: [logs, metrics, traces]
+    development: [profiles]
+  distributions: [contrib]
+  codeowners:
+    active: [paulojmdias, dmitryax]
+    emeritus: [axw]
+
+tests:
+  # Each partition is forwarded with a derived context carrying its partition
+  # keys in client.Metadata, so the downstream context is not the inbound one.
+  skip_context_propagation: true
+  config:
+    keys:
+      service: 'resource.attributes["service.name"]'
+
+attributes:
+  error.type:
+    description: Why key evaluation failed.
+    type: string
+    enum:
+      - evaluation_failed
+      - invalid_value_type
+
+telemetry:
+  metrics:
+    processor.partitioning.key_evaluation.errors:
+      prefix: otelcol.
+      enabled: true
+      description: Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
+      stability: development
+      unit: "{batch}"
+      attributes: [error.type]
+      sum:
+        value_type: int
+        monotonic: true
+    processor.partitioning.partitions:
+      prefix: otelcol.
+      enabled: true
+      description: Number of partitions each incoming batch was split into.
+      stability: development
+      unit: "{partition}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 2, 3, 5, 10, 20, 50, 100, 250, 1000]

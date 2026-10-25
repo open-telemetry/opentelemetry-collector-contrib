@@ -79,9 +79,31 @@ processors:
     override: false
 ```
 
+Use `attributes.included` and `attributes.excluded` to filter which keys from
+`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` (matches any run
+of characters, including none) and `?` (matches any single character) as
+wildcards. When `included` is empty every key is included by default.
+`excluded` is applied after `included`, so a key matched by both is dropped.
+
+For example, inject `deployment.environment.name` and every `k8s.*` key via
+`OTEL_RESOURCE_ATTRIBUTES` while dropping `k8s.pod.name`, so other env vars on
+the collector itself (e.g. its own pod name) don't leak into the telemetry:
+
+```yaml
+processors:
+  resource_detection/env:
+    detectors: [env]
+    env:
+      attributes:
+        included:
+          - deployment.environment.name
+          - k8s.*
+        excluded:
+          - k8s.pod.name
+```
 
 > [!NOTE]
-> The deprecated coponent type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
+> The deprecated component type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
 
 
 ### System metadata
@@ -348,9 +370,11 @@ If the instance is part of AWS ParallelCluster and the detector is failing to co
 
 In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
 
-By default, the client retries 3 times with a max backoff delay of 20s.
+By default, the client makes up to 3 total attempts (the initial request and 2 retries),
+with a maximum backoff delay of 20s between attempts.
 
-We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+You can override these defaults. For example, this configuration allows up to 10 total
+attempts with a maximum backoff delay of 5 minutes between attempts:
 
 ```yaml
 processors:
@@ -363,6 +387,12 @@ processors:
 
 > **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
 > `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the instance ID or the instance identity document cannot be retrieved from IMDS.
+> When `false` (default), those failures are logged and an empty resource is returned.
+> This matters on hosts whose metadata service implements the EC2-compatible `meta-data` tree but not the AWS-specific `dynamic/instance-identity` tree, such as OpenStack Nova based clouds.
+> A dedicated [OpenStack Nova detector](#openstack-nova) is also available.
+> The same applies to the hostname: when `fail_on_missing_metadata` is `true`, a hostname that cannot be retrieved results in an error, otherwise the failure is logged and the resource is returned without the `host.name` attribute.
 
 ### Amazon ECS
 
@@ -623,6 +653,29 @@ processors:
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the `WEBSITE_SITE_NAME`, `WEBSITE_RESOURCE_GROUP` or `WEBSITE_OWNER_NAME` environment variables are not set (not running on Azure App Service), or if `FUNCTIONS_WORKER_RUNTIME` is set (running as an Azure Functions app), instead of silently returning an empty resource.
 
+### Azure Functions
+
+Uses the [Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/) injected environment variables to retrieve related resource attributes. Detection is enabled when either `FUNCTIONS_WORKER_RUNTIME` or `FUNCTIONS_EXTENSION_VERSION` is set.
+
+The list of populated resource attributes can be found at [Azure Functions Detector Resource Attributes](./internal/azure/functions/documentation.md).
+
+Example:
+```yaml
+processors:
+  resourcedetection/azurefunctions:
+    detectors: [env, azurefunctions]
+    timeout: 2s
+    override: false
+```
+
+Azure Functions Flex Consumption plans do not expose `WEBSITE_RESOURCE_GROUP`, so `azure.resource_group.name` and `cloud.resource_id` will be absent.
+
+`deployment.environment.name` is disabled by default. Azure sets `WEBSITE_SLOT_NAME` to `Production` on apps without deployment slots regardless of the actual user's intent. Users should enable this attribute if they are using deployment slots, want the Production label, or are setting their own value for the environment. 
+
+If this detector is deployed as a sidecar, consider setting `override` to `false` to prevent overwriting values such as `service.name`. 
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if neither `FUNCTIONS_WORKER_RUNTIME` nor `FUNCTIONS_EXTENSION_VERSION` is set (not running on Azure Functions), instead of silently returning an empty resource.
+
 ### Consul
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
@@ -631,7 +684,7 @@ The list of the populated resource attributes can be found at [Consul Detector R
 
 In addition to:
 
-  * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
+  * *exploded consul metadata* - reads the key:value pairs allowlisted in `meta` from [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ```yaml
 processors:
@@ -639,6 +692,30 @@ processors:
     detectors: [env, consul]
     timeout: 2s
     override: false
+```
+
+The `consul` detector accepts the following settings. Unset fields fall back to the Consul API client defaults, including the `CONSUL_HTTP_*` environment variables.
+
+| Name | Type | Required | Default | Docs |
+| ---- | ---- | -------- | ------- | ---- |
+| address | string | No | `127.0.0.1:8500` | Address of the Consul agent. |
+| datacenter | string | No | agent's datacenter | Datacenter to query. |
+| token | string | No | | Per-request ACL token that overrides the agent's default token. Only required when the [Consul ACL system](https://developer.hashicorp.com/consul/docs/security/acl) is enabled. |
+| token_file | string | No | | File containing the ACL token. Read once at startup. Only required when the Consul ACL system is enabled. |
+| namespace | string | No | | Namespace sent with each request. |
+| meta | map | No | | Allowlist of [node metadata](https://developer.hashicorp.com/consul/docs/agent/config/config-files#node_meta) keys to emit as resource attributes. Keys not listed here are dropped. |
+
+```yaml
+processors:
+  resource_detection/consul:
+    detectors: [consul]
+    consul:
+      address: "127.0.0.1:8500"
+      datacenter: "dc1"
+      token_file: /etc/consul/token
+      meta:
+        rack: ""
+        zone: ""
 ```
 
 Consul node metadata keys are emitted verbatim, without a namespace of their own. Enabling the `processor.resourcedetection.consul.prefixMetaAttributes` feature gate namespaces each key as `consul.meta.<key>`, consistent with the other detectors that expose user-defined key/value data (`ec2.tag.`, `azure.tag.`, `gcp.gce.instance.labels.`, `openstack.nova.meta.`):
@@ -941,7 +1018,7 @@ Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/ap
 
 The list of the populated resource attributes can be found at [Digital Ocean Detector Resource Attributes](./internal/digitalocean/documentation.md).
 
-Akamai custom configuration example:
+Digital Ocean custom configuration example:
 
 ```yaml
 processors:
@@ -1062,7 +1139,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azureappservice", "azurecontainerapps", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "azureappservice", "azurecontainerapps", "azurefunctions", "heroku", "openshift", "dynatrace", "consul", "docker", "k8s_api", "k8snode" (deprecated, use "k8s_api"), "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
@@ -1071,7 +1148,13 @@ refresh_interval: <duration>
 # controls whether network-based detectors treat an unreachable metadata service as a hard failure;
 # supersedes the per-detector fail_on_missing_metadata fields (now deprecated). Default: false
 fail_on_missing_metadata: <bool>
+# bounds detection time (see Retry configuration); defaults to 5s
+timeout: <duration>
+# retry settings for failed detections, see Retry configuration
+retry: <configretry.BackOffConfig>
 ```
+
+The processor also accepts the [`confighttp` client settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) at the top level (for example `tls` or `headers`). `timeout` applies to every detector; the other HTTP client settings are currently used only by the `ec2` detector.
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 
@@ -1123,11 +1206,12 @@ processors:
 
 ### Benchmark Tests
 
-This component includes comprehensive benchmark tests for all stable signals. The benchmarks measure the performance of the processor under different configurations:
+This component includes comprehensive benchmark tests for all supported signals. The benchmarks measure the performance of the processor under different configurations:
 
 - **Traces**: `BenchmarkConsumeTracesDefault` and `BenchmarkConsumeTracesAll`
 - **Metrics**: `BenchmarkConsumeMetricsDefault` and `BenchmarkConsumeMetricsAll`
 - **Logs**: `BenchmarkConsumeLogsDefault` and `BenchmarkConsumeLogsAll`
+- **Profiles**: `BenchmarkConsumeProfilesDefault` and `BenchmarkConsumeProfilesAll`
 
 To run the benchmarks locally:
 
@@ -1153,5 +1237,5 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ecs
 * ec2
 
-The full list of settings exposed for this extension are documented in [config.go](./config.go)
+The full list of settings exposed for this processor are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

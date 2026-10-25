@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -56,23 +57,47 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 	}
 }
 
-// timeoutInterceptor injects a context that enforces a timeout per http request over the wire.
+// connSetupTimeoutError is a context.DeadlineExceeded from before GotConn.
+// Unwrap preserves the transport error.
+//
+// These are safe to retry without risking duplicates because no request body has been sent.
+type connSetupTimeoutError struct {
+	err error
+}
+
+func (e *connSetupTimeoutError) Error() string { return e.err.Error() }
+func (e *connSetupTimeoutError) Unwrap() error { return e.err }
+
+// timeoutInterceptor enforces the per-attempt timeout on a child context.
+// Canceling that context must not cancel req, or elastictransport's retry backoff stops.
+// A context.DeadlineExceeded before GotConn, with the caller's context still active, is wrapped for retry.
 func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
 	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
 		return func(req *http.Request) (*http.Response, error) {
-			if perRequestTimeout <= 0 {
-				return next(req)
+			var gotConn atomic.Bool
+			// ctx is not reused across retries.
+			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout.
+			ctx := httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+				GotConn: func(httptrace.GotConnInfo) { gotConn.Store(true) },
+			})
+			var cancel context.CancelFunc
+			if perRequestTimeout > 0 {
+				ctx, cancel = context.WithTimeout(ctx, perRequestTimeout)
 			}
-			// ctx is not reused across retries
-			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout
-			ctx, cancel := context.WithTimeout(req.Context(), perRequestTimeout)
 			res, err := next(req.WithContext(ctx))
 			if err != nil {
-				cancel()
+				if cancel != nil {
+					cancel()
+				}
+				if errors.Is(err, context.DeadlineExceeded) && !gotConn.Load() && req.Context().Err() == nil {
+					err = &connSetupTimeoutError{err: err}
+				}
 				return res, err
 			}
-			// Cancel the context once the body is read/discarded.
-			res.Body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
+			if cancel != nil {
+				// Cancel the context once the body is read/discarded.
+				res.Body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
+			}
 			return res, nil
 		}
 	}
@@ -277,11 +302,9 @@ func newElasticsearchClient(
 
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
-		RetryOnError: func(_ *http.Request, err error) bool {
-			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
-		},
-		MaxRetries:   maxRetries,
-		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnError:  retryOnError,
+		MaxRetries:    maxRetries,
+		RetryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
 
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
@@ -328,6 +351,18 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 		urls = append(urls, u)
 	}
 	return urls, nil
+}
+
+// retryOnError retries connSetupTimeoutError. Other context.DeadlineExceeded
+// errors and context.Canceled are not retried.
+func retryOnError(_ *http.Request, err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	if _, ok := errors.AsType[*connSetupTimeoutError](err); ok {
+		return true
+	}
+	return !errors.Is(err, context.DeadlineExceeded)
 }
 
 // createElasticsearchBackoffFunc creates an exponential backoff with equal jitter.

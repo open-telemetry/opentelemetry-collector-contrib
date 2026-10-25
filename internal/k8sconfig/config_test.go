@@ -4,10 +4,13 @@
 package k8sconfig
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/client-go/rest"
 )
 
 func TestAPIConfigValidate(t *testing.T) {
@@ -108,4 +111,35 @@ func TestCreateRestConfigAppliesRateLimits(t *testing.T) {
 			assert.Equal(t, tt.expectedBurst, rc.Burst)
 		})
 	}
+}
+
+func TestCreateRestConfigDisablesSystemProxy(t *testing.T) {
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	t.Setenv("HTTPS_PROXY", "http://192.0.2.1:1234")
+	t.Setenv("NO_PROXY", "")
+
+	rc, err := CreateRestConfig(APIConfig{AuthType: AuthTypeNone})
+	require.NoError(t, err)
+
+	roundTripper, err := rest.TransportFor(rc)
+	require.NoError(t, err)
+
+	for {
+		wrapper, ok := roundTripper.(utilnet.RoundTripperWrapper)
+		if !ok {
+			break
+		}
+		roundTripper = wrapper.WrappedRoundTripper()
+	}
+
+	transport, ok := roundTripper.(*http.Transport)
+	require.Truef(t, ok, "unexpected transport type %T", roundTripper)
+	require.NotNil(t, transport.Proxy)
+
+	req, err := http.NewRequest(http.MethodGet, "https://kubernetes.default.svc", http.NoBody)
+	require.NoError(t, err)
+	proxyURL, err := transport.Proxy(req)
+	require.NoError(t, err)
+	assert.Nil(t, proxyURL)
 }

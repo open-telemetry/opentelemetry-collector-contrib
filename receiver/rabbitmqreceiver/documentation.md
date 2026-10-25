@@ -688,6 +688,7 @@ Uptime of the node.
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| rabbitmq.cluster.name | The name of the RabbitMQ cluster. | Any Str | false | - | - |
 | rabbitmq.exchange.name | The name of the RabbitMQ exchange. | Any Str | true | - | - |
 | rabbitmq.exchange.type | The type of the RabbitMQ exchange (direct, fanout, topic, or headers). | Any Str | true | - | - |
 | rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true | - | - |

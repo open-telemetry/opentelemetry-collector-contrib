@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -26,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/logging"
@@ -103,6 +104,7 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.TelemetrySettings.LogFailedDocsInput,
+		PopulateIndexStats:      config.TelemetrySettings.IncludeDestinationIndex,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 		FilterPath:              config.BulkResponseFilterPath,
@@ -257,6 +259,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			s.s.failedDocsInputLogger,
 			s.s.getErrorHintFunc,
 			s.s.suppressConflictErrors,
+			s.s.config.PopulateIndexStats,
 		); err != nil {
 			return err
 		}
@@ -294,6 +297,7 @@ func flushBulkIndexer(
 	failedDocsInputLogger *zap.Logger,
 	getErrorHintFunc func(index, errorType string) string,
 	suppressConflictErrors bool,
+	includeDestinationIndex bool,
 ) error {
 	itemsCount := bi.Items()
 	if itemsCount == 0 {
@@ -377,23 +381,31 @@ func flushBulkIndexer(
 		tb.ElasticsearchBulkRequestsLatency.Record(ctx, latency, successAttrSet)
 	}
 
+	addDocsProcessed := func(count int64, index string, attrs ...attribute.KeyValue) {
+		if count == 0 {
+			return
+		}
+		// Concat always copies, so the attributes of a series never share the
+		// backing array of defaultMetaAttrs, which is used by all of them.
+		kvs := slices.Concat(defaultMetaAttrs, attrs)
+		if includeDestinationIndex {
+			kvs = appendDestinationIndex(kvs, index)
+		}
+		tb.ElasticsearchDocsProcessed.Add(ctx, count, metric.WithAttributeSet(attribute.NewSet(kvs...)))
+	}
 	for _, resp := range stat.FailedDocs {
 		// Collect telemetry
-		outcome := statusToOutcome(resp.Status)
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			int64(1),
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
-				withOutcome(outcome),
-				conventions.HTTPResponseStatusCode(resp.Status),
-				attribute.String("error.type", resp.Error.Type),
-			)...)),
+		addDocsProcessed(1, resp.Index,
+			withOutcome(statusToOutcome(resp.Status)),
+			conventions.HTTPResponseStatusCode(resp.Status),
+			attribute.String("error.type", resp.Error.Type),
 		)
 
 		if resp.Error.Type == "version_conflict_engine_exception" {
 			if suppressConflictErrors ||
 				strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
-				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") {
+				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") ||
+				strings.HasPrefix(resp.Index, ".ds-profiling-") {
 				// Rejection of duplicates are either expected (Profiling indices)
 				// or globally suppressed by the user. Do not log them.
 				continue
@@ -420,51 +432,33 @@ func flushBulkIndexer(
 		}
 		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
 	}
-	if stat.Indexed > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			stat.Indexed,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
-				withOutcome("success"),
-				conventions.HTTPResponseStatusCode(http.StatusOK),
-			)...)),
+	addIndexedAndFailureStoreDocs := func(index string, indexed int64, failureStore docappender.FailureStoreDocsStat) {
+		addDocsProcessed(indexed, index,
+			withOutcome("success"),
+			conventions.HTTPResponseStatusCode(http.StatusOK),
 		)
-	}
-	if stat.FailureStoreDocs.Used > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			stat.FailureStoreDocs.Used,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
+		for _, fs := range []struct {
+			status docappender.FailureStoreStatus
+			count  int64
+		}{
+			{docappender.FailureStoreStatusUsed, failureStore.Used},
+			{docappender.FailureStoreStatusFailed, failureStore.Failed},
+			{docappender.FailureStoreStatusNotEnabled, failureStore.NotEnabled},
+		} {
+			addDocsProcessed(fs.count, index,
 				withOutcome("failure_store"),
-				attribute.String("failure_store",
-					string(docappender.FailureStoreStatusUsed),
-				),
-			)...)),
-		)
+				attribute.String("failure_store", string(fs.status)),
+			)
+		}
 	}
-	if stat.FailureStoreDocs.Failed > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			stat.FailureStoreDocs.Failed,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
-				withOutcome("failure_store"),
-				attribute.String("failure_store", string(
-					docappender.FailureStoreStatusFailed,
-				)),
-			)...)),
-		)
-	}
-	if stat.FailureStoreDocs.NotEnabled > 0 {
-		tb.ElasticsearchDocsProcessed.Add(
-			ctx,
-			stat.FailureStoreDocs.NotEnabled,
-			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
-				withOutcome("failure_store"),
-				attribute.String("failure_store", string(
-					docappender.FailureStoreStatusNotEnabled,
-				)),
-			)...)),
-		)
+	// stat.IndexStats is only populated when includeDestinationIndex is set, and
+	// then replaces the aggregate counters, so the two must not be mixed.
+	if includeDestinationIndex {
+		for index, indexStat := range stat.IndexStats {
+			addIndexedAndFailureStoreDocs(index, indexStat.Indexed, indexStat.FailureStoreDocs)
+		}
+	} else {
+		addIndexedAndFailureStoreDocs("", stat.Indexed, stat.FailureStoreDocs)
 	}
 	if stat.RetriedDocs > 0 {
 		tb.ElasticsearchDocsRetried.Add(ctx, stat.RetriedDocs,
@@ -490,7 +484,9 @@ func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribu
 			attrs = append(attrs, attribute.StringSlice(k, values))
 		}
 	}
-	return attrs
+	// Clip so that appending to the result never writes into the spare capacity
+	// left by absent keys, which is shared by all the series built from it.
+	return slices.Clip(attrs)
 }
 
 func getErrorHint(mode MappingMode, index, errorType string) string {
@@ -659,6 +655,27 @@ func (errBulkIndexerSession) End() {}
 
 func (s errBulkIndexerSession) Flush(context.Context) error {
 	return fmt.Errorf("creating bulk indexer session failed, cannot flush: %w", s.err)
+}
+
+// backingIndexRE matches the name of Elasticsearch backing and failure store
+// indices, e.g. ".ds-logs-app-default-2026.10.13-000001", capturing the data
+// stream name. It must keep exactly one capture group: a match always has the
+// data stream name at index 1.
+var backingIndexRE = regexp.MustCompile(`^\.(?:ds|fs)-(.+)-\d{4}\.\d{2}\.\d{2}-\d{6,}$`)
+
+// appendDestinationIndex appends the destination index attribute to attrs.
+// The rollover prefix and suffix are stripped from the index name, so that it
+// does not change every time the destination index rolls over. Names that are
+// not in that format are used as is. The attribute is omitted if the index is
+// unknown, e.g. when `_index` is missing from the bulk response filter path.
+func appendDestinationIndex(attrs []attribute.KeyValue, index string) []attribute.KeyValue {
+	if index == "" {
+		return attrs
+	}
+	if m := backingIndexRE.FindStringSubmatch(index); m != nil {
+		index = m[1]
+	}
+	return append(attrs, conventions.DBCollectionName(index))
 }
 
 func withOutcome(outcome string) attribute.KeyValue {

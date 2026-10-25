@@ -650,7 +650,7 @@ func incompleteClientTraces() ptrace.Traces {
 	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
 	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpanNoServerSpan.Attributes().PutStr("peer.service", "AuthTokenCache") // Attribute selected as dimension for metrics
+	clientSpanNoServerSpan.Attributes().PutStr("peer.service.name", "AuthTokenCache") // Attribute selected as dimension for metrics
 
 	return traces
 }
@@ -964,7 +964,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 }
 
 func TestVirtualNodeServerLabels(t *testing.T) {
-	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
+	virtualNodeDimensions := []string{"peer.service.name", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
 		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
@@ -1013,7 +1013,7 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 }
 
 func TestVirtualNodeClientLabels(t *testing.T) {
-	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
+	virtualNodeDimensions := []string{"peer.service.name", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
 		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},

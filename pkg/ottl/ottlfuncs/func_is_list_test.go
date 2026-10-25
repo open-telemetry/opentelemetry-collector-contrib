@@ -200,14 +200,14 @@ func Test_IsListFactory(t *testing.T) {
 		factory := NewIsListFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IsListArguments[any]{}, args)
+		assert.IsType(t, &isListArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewIsListFactory[any]()
 		args := factory.CreateDefaultArguments()
-		isListArgs, ok := args.(*IsListArguments[any])
+		isListArgs, ok := args.(*isListArguments[any])
 		require.True(t, ok)
 		isListArgs.Target = &ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -222,6 +222,21 @@ func Test_IsListFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createIsListFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "IsListFactory args must be of type *IsListArguments[K]")
+		assert.ErrorContains(t, err, "IsListFactory args must be of type *isListArguments[K]")
 	})
+}
+
+func BenchmarkIsList(b *testing.B) {
+	exprFunc := isList[any](&ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"a", "b", "c"}, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

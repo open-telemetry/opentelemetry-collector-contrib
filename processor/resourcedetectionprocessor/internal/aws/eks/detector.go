@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_aws_eks
+
 package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 
 import (
@@ -16,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	imdsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
@@ -26,8 +28,6 @@ import (
 )
 
 const (
-	// TypeStr is type of detector.
-	TypeStr = "eks"
 	// Environment variable that is set when running on Kubernetes.
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	// EKS cluster version string identifier.

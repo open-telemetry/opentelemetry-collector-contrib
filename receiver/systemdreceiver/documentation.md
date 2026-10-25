@@ -76,7 +76,7 @@ not include manual restarts (e.g. from `systemctl restart`).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {restarts} | Sum | Int | Cumulative | true | Development |
+| {restart} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

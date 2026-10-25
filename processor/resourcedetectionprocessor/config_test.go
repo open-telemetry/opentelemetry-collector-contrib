@@ -20,6 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/functions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -49,6 +51,14 @@ func TestLoadConfig(t *testing.T) {
 		MaxBackoff:         20 * time.Second,
 	}
 
+	envConfig := detectorCreateDefaultConfig()
+	envConfig.EnvConfig = env.Config{
+		Attributes: env.AttributesConfig{
+			Included: []string{"deployment.environment.name", "k8s.*"},
+			Excluded: []string{"k8s.pod.name"},
+		},
+	}
+
 	systemConfig := detectorCreateDefaultConfig()
 	systemConfig.SystemConfig = system.Config{
 		HostnameSources:    []string{"os"},
@@ -59,6 +69,11 @@ func TestLoadConfig(t *testing.T) {
 	azureAppServiceResourceAttributes := appservice.CreateDefaultConfig()
 	azureAppServiceResourceAttributes.ResourceAttributes.AzureAppServiceInstanceID.Enabled = false
 	azureAppServiceConfig.AzureAppServiceConfig = azureAppServiceResourceAttributes
+
+	azureFunctionsConfig := detectorCreateDefaultConfig()
+	azureFunctionsResourceAttributes := functions.CreateDefaultConfig()
+	azureFunctionsResourceAttributes.ResourceAttributes.FaasInstance.Enabled = false
+	azureFunctionsConfig.AzureFunctionsConfig = azureFunctionsResourceAttributes
 
 	resourceAttributesConfig := detectorCreateDefaultConfig()
 	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
@@ -106,6 +121,16 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "azurefunctions"),
+			expected: &Config{
+				Detectors:      []string{"env", "azurefunctions"},
+				DetectorConfig: azureFunctionsConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "gcp"),
 			expected: &Config{
 				Detectors:      []string{"env", "gcp"},
@@ -130,6 +155,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Detectors:      []string{"env", "system"},
 				DetectorConfig: systemConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "env"),
+			expected: &Config{
+				Detectors:      []string{"env"},
+				DetectorConfig: envConfig,
 				ClientConfig:   cfg,
 				Override:       false,
 				Retry:          defaultRetryConfig(),
@@ -308,6 +343,18 @@ func TestGetConfigFromType(t *testing.T) {
 			inputDetectorConfig: lambdaDetectorConfig,
 			expectedConfig:      lambdaDetectorConfig.LambdaConfig,
 		},
+		{
+			name:         "Get Env Config",
+			detectorType: env.TypeStr,
+			inputDetectorConfig: DetectorConfig{
+				EnvConfig: env.Config{
+					Attributes: env.AttributesConfig{Included: []string{"service.name"}},
+				},
+			},
+			expectedConfig: env.Config{
+				Attributes: env.AttributesConfig{Included: []string{"service.name"}},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -334,9 +381,11 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"AKS", "aks"},
 		{"AzureAppService", "azureappservice"},
 		{"AzureContainerApps", "azurecontainerapps"},
+		{"AzureFunctions", "azurefunctions"},
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},
 		{"Docker", "docker"},
+		{"Env", "env"},
 		{"GCP", "gcp"},
 		{"Hetzner", "hetzner"},
 		{"OpenShift", "openshift"},
@@ -376,6 +425,7 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.ConsulConfig)
 	assert.NotNil(t, config.DigitalOceanConfig)
 	assert.NotNil(t, config.DockerConfig)
+	assert.NotNil(t, config.EnvConfig)
 	assert.NotNil(t, config.GcpConfig)
 	assert.NotNil(t, config.HerokuConfig)
 	assert.NotNil(t, config.HetznerConfig)

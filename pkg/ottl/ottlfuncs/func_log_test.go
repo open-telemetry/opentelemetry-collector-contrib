@@ -118,14 +118,14 @@ func Test_LogFactory(t *testing.T) {
 		factory := NewLogFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &LogArguments[any]{}, args)
+		assert.IsType(t, &logArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewLogFactory[any]()
 		args := factory.CreateDefaultArguments()
-		logArgs, ok := args.(*LogArguments[any])
+		logArgs, ok := args.(*logArguments[any])
 		require.True(t, ok)
 		logArgs.Target = ottl.StandardFloatLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -140,6 +140,21 @@ func Test_LogFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createLogFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "LogFactory args must be of type *LogArguments[K]")
+		assert.ErrorContains(t, err, "LogFactory args must be of type *logArguments[K]")
 	})
+}
+
+func BenchmarkLog(b *testing.B) {
+	exprFunc := logFunc[any](&ottl.StandardFloatLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return float64(50), nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

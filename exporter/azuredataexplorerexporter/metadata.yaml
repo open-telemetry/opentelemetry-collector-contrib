@@ -4,13 +4,20 @@ display_name: Azure Data Explorer Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, metrics, logs]
+    unmaintained: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [ag-ramachandran]
-    emeritus: [asaharn]
+    emeritus: [asaharn, ag-ramachandran]
 
 # TODO: Update the exporter to pass the tests
+sending_queue:
+  support: has_overrides
+  rationale: "Sending queue is disabled by default."
+  overrides:
+    enabled: false
+    batch:
+      enabled: false
+
 tests:
   config:
     cluster_uri: "https://CLUSTER.kusto.windows.net"

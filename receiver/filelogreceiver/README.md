@@ -172,7 +172,7 @@ receivers:
 
 - Use `ignore` when you want to avoid duplicate logs and your log rotation strategy ensures that rotated files are properly renamed or moved.
 - Use `read_whole_file` when data completeness is critical and you can tolerate duplicate logs, or when you have deduplication logic downstream.
-- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point. 
+- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point.
 
 ## Example - Tailing a simple json file
 
@@ -293,19 +293,16 @@ are provided.
 
 ### `filelog.protobufCheckpointEncoding`
 
-When this feature gate is enabled, the receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
+The receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
 
-The feature includes full backward compatibility:
-- The receiver can always read both protobuf and JSON checkpoints regardless of the feature gate setting
-- When the feature gate is enabled, new checkpoints are written in protobuf format
-- When the feature gate is disabled, new checkpoints are written in JSON format
-
-To enable this feature gate, use the flag: `--feature-gates=filelog.protobufCheckpointEncoding`
+Checkpoints are always written in protobuf format. Existing JSON checkpoints are still read and are rewritten as protobuf on the next save.
 
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.148.0`
 - Promoted to `Beta` (enabled by default) in `v0.156.0`
+- Promoted to `Stable` (cannot be disabled) in `v0.164.0`
+- Removed in `v0.165.0`
 
 ### List
 
@@ -316,7 +313,7 @@ This component has the following feature gates:
 | `filelog.allowFileDeletion` | beta | When enabled, allows usage of the `delete_after_read` setting. | v0.70.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314) |
 | `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
 | `filelog.mtimeSortType` | beta | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
-| `filelog.protobufCheckpointEncoding` | beta | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
+| `filelog.protobufCheckpointEncoding` | stable | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | v0.165.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
 | `filelog.requireExplicitTopN` | alpha | When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444) |
 | `filelog.windows.caseInsensitive` | beta | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
 

@@ -997,6 +997,62 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 	}
 }
 
+// TestCumulativeToDeltaExponentialHistogramNaNSum mirrors cumulative_to_delta_histogram_nan_sum for
+// exponential histograms. It is a separate test because pmetrictest.CompareMetric cannot compare NaN sums.
+func TestCumulativeToDeltaExponentialHistogramNaNSum(t *testing.T) {
+	now := time.Now()
+
+	point := func(ts int64, count uint64, sum float64) testExponentialHistogramPoint {
+		return testExponentialHistogramPoint{
+			startTs:         1,
+			ts:              ts,
+			count:           count,
+			sum:             &sum,
+			positiveBuckets: []uint64{count},
+		}
+	}
+
+	next := new(consumertest.MetricsSink)
+	mgp, err := NewFactory().CreateMetrics(
+		t.Context(),
+		processortest.NewNopSettings(metadata.Type),
+		&Config{},
+		next,
+	)
+	require.NoError(t, err)
+	require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+
+	require.NoError(t, mgp.ConsumeMetrics(t.Context(), testExponentialHistogramMetrics{
+		metrics: []testExponentialHistogramMetric{{
+			name:       "metric_1",
+			cumulative: true,
+			points: []testExponentialHistogramPoint{
+				point(2, 10, 1000),
+				point(3, 20, math.NaN()),
+				point(4, 30, 1200),
+				point(5, 40, 1300),
+			},
+		}},
+	}.generateMetrics(now)))
+
+	got := next.AllMetrics()
+	require.Len(t, got, 1)
+	dps := got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints()
+	require.Equal(t, 4, dps.Len())
+
+	// The point without a sum is passed through untouched, and the following sum is diffed against
+	// the last sum seen before it, so the sums of the deltas add up to the growth of the cumulative sum.
+	assert.InDelta(t, 1000.0, dps.At(0).Sum(), 1e-9)
+	assert.True(t, math.IsNaN(dps.At(1).Sum()))
+	assert.InDelta(t, 200.0, dps.At(2).Sum(), 1e-9)
+	assert.InDelta(t, 100.0, dps.At(3).Sum(), 1e-9)
+	for i := range 4 {
+		assert.Equal(t, uint64(10), dps.At(i).Count())
+	}
+
+	require.NoError(t, mgp.Shutdown(t.Context()))
+}
+
 func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
@@ -1030,6 +1086,71 @@ func generateMixedTestMetrics(tsm testSumMetric, thm testHistogramMetric) pmetri
 	thm.addToMetrics(ms, now)
 
 	return md
+}
+
+func TestCumulativeToDeltaScopeAttributes(t *testing.T) {
+	now := time.Now()
+
+	// sum is a cumulative monotonic sum from a scope that only differs from the others by its "tenant" attribute.
+	sum := func(tenant string, ts, value int64) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("lib")
+		sm.Scope().SetVersion("1")
+		sm.Scope().Attributes().PutStr("tenant", tenant)
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("requests")
+		s := m.SetEmptySum()
+		s.SetIsMonotonic(true)
+		s.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := s.DataPoints().AppendEmpty()
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(ts) * time.Second)))
+		dp.SetIntValue(value)
+		return md
+	}
+
+	next := new(consumertest.MetricsSink)
+	mgp, err := NewFactory().CreateMetrics(
+		t.Context(),
+		processortest.NewNopSettings(metadata.Type),
+		&Config{InitialValue: tracking.InitialValueKeep},
+		next,
+	)
+	require.NoError(t, err)
+	require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+
+	for _, md := range []pmetric.Metrics{
+		sum("a", 1, 100),
+		sum("b", 1, 50),
+		sum("a", 2, 150),
+		sum("b", 2, 80),
+	} {
+		require.NoError(t, mgp.ConsumeMetrics(t.Context(), md))
+	}
+
+	type delta struct {
+		tenant string
+		value  int64
+	}
+	var got []delta
+	for _, md := range next.AllMetrics() {
+		for i := range md.ResourceMetrics().Len() {
+			sms := md.ResourceMetrics().At(i).ScopeMetrics()
+			for j := range sms.Len() {
+				tenant, _ := sms.At(j).Scope().Attributes().Get("tenant")
+				dps := sms.At(j).Metrics().At(0).Sum().DataPoints()
+				for k := range dps.Len() {
+					got = append(got, delta{tenant: tenant.Str(), value: dps.At(k).IntValue()})
+				}
+			}
+		}
+	}
+
+	// Scopes that differ only in their attributes are separate streams, so neither is read as a reset of the other.
+	assert.Equal(t, []delta{{"a", 100}, {"b", 50}, {"a", 50}, {"b", 30}}, got)
+
+	require.NoError(t, mgp.Shutdown(t.Context()))
 }
 
 func BenchmarkConsumeMetrics(b *testing.B) {

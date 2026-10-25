@@ -47,6 +47,44 @@ func TestLoadContextCache(t *testing.T) {
 	})
 }
 
+func TestNewSharedCaches(t *testing.T) {
+	t.Run("nil input returns nil", func(t *testing.T) {
+		result := NewSharedCaches(nil)
+		assert.Nil(t, result)
+	})
+
+	t.Run("empty input returns nil", func(t *testing.T) {
+		result := NewSharedCaches([]ContextID{})
+		assert.Nil(t, result)
+	})
+
+	t.Run("one ID returns a one-entry map with a usable empty map behind it", func(t *testing.T) {
+		result := NewSharedCaches([]ContextID{Resource})
+		require.Len(t, result, 1)
+		require.NotNil(t, result[Resource])
+		assert.Equal(t, 0, result[Resource].Len())
+		result[Resource].PutStr("key", "value")
+		val, ok := result[Resource].Get("key")
+		require.True(t, ok)
+		assert.Equal(t, "value", val.Str())
+	})
+
+	t.Run("multiple IDs return independent maps", func(t *testing.T) {
+		result := NewSharedCaches([]ContextID{Resource, Log})
+		require.Len(t, result, 2)
+		result[Resource].PutStr("key", "value")
+		assert.Equal(t, 0, result[Log].Len())
+	})
+
+	t.Run("two calls return distinct maps", func(t *testing.T) {
+		first := NewSharedCaches([]ContextID{Resource})
+		first[Resource].PutStr("key", "value")
+
+		second := NewSharedCaches([]ContextID{Resource})
+		assert.Equal(t, 0, second[Resource].Len())
+	})
+}
+
 func newCacheWithContexts(contexts []ContextID) map[ContextID]*pcommon.Map {
 	cache := make(map[ContextID]*pcommon.Map)
 	for _, context := range contexts {

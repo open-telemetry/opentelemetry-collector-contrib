@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/cumulative_to_delta
+
+note: Handle NaN sums on exponential histograms like on histograms, so the next sum is no longer emitted as a NaN delta
+
+issues: [51965]
+
+subtext:
+
+change_logs: [user]

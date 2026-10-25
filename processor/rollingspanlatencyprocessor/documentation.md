@@ -12,7 +12,7 @@ Current number of active per-key latency baselines tracked by the processor.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {baselines} | Gauge | Int | Development |
+| {baseline} | Gauge | Int | Development |
 
 ### otelcol_processor_rolling_span_latency_dropped_keys_total
 
@@ -20,4 +20,4 @@ Number of new baseline keys dropped because max_baselines was reached.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {keys} | Sum | Int | true | Development |
+| {key} | Sum | Int | true | Development |
