@@ -7,6 +7,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.3.1/v0.164.1
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Fix modules requiring the nonexistent `pkg/ottl` v1.2.0; they now require v1.3.0. (#52356)
+
+<!-- previous-version -->
+
 ## v1.3.0/v0.164.0
 
 ### 🛑 Breaking changes 🛑
