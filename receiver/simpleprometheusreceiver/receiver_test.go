@@ -140,6 +140,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 
 	wantWithHTTPClientConfig := func(httpConfig configutil.HTTPClientConfig) *prometheusreceiver.Config {
 		want := wantWithScrapeTimeout(10 * time.Second)
+		// The collector's TLS defaults are forwarded even without a tls block.
+		httpConfig.TLSConfig.MinVersion = configutil.TLSVersions["TLS12"]
 		want.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig = httpConfig
 		return want
 	}
