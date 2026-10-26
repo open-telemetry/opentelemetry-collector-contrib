@@ -219,6 +219,8 @@ type autoIncrementStats struct {
 	schema           string
 	table            string
 	column           string
+	currentValue     float64
+	maxValue         float64
 	utilizationRatio float64
 }
 
@@ -629,16 +631,27 @@ const autoIncrementColumnMaxValueCase = `CASE
 	ELSE NULL
 END`
 
-// getAutoIncrementStats queries the db for how much of each auto_increment
-// column's integer range is used, as a percentage of its type's max value.
+// getAutoIncrementStats queries the db for the current auto_increment value,
+// the max value its type allows, and the resulting fraction (0 to 1) of
+// range used, for every auto_increment column.
 //
 // This query is slower than most others in this file: MySQL/MariaDB have to
 // look up every table's metadata to fill in AUTO_INCREMENT, no matter how we
 // filter. Expect it to be noticeably slower on servers with many tables,
 // especially right after a restart.
+//
+// MySQL 8.0 through 9.x have a stats cache bug: for a BIGINT UNSIGNED column
+// whose auto_increment value is above 9223372036854775807 (signed BIGINT
+// max), the cached AUTO_INCREMENT it hands back is wrong - it reports
+// 9223372036854775807 instead of the real value. A fresh, uncached read gets
+// it right. Since most servers run with caching on
+// (information_schema_stats_expiry=86400), this metric can under-report for
+// that one case. Confirmed fine on MySQL 5.7 and all MariaDB versions.
 func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
 	query := "SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, " +
-		"LEAST(t.AUTO_INCREMENT / (" + autoIncrementColumnMaxValueCase + ") * 100, 100) AS UTILIZATION_RATIO " +
+		"t.AUTO_INCREMENT, " +
+		"(" + autoIncrementColumnMaxValueCase + ") AS MAX_VALUE, " +
+		"LEAST(t.AUTO_INCREMENT / (" + autoIncrementColumnMaxValueCase + "), 1) AS UTILIZATION_RATIO " +
 		"FROM information_schema.COLUMNS c " +
 		"JOIN information_schema.TABLES t " +
 		"ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME " +
@@ -654,7 +667,7 @@ func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
 	var stats []autoIncrementStats
 	for rows.Next() {
 		var s autoIncrementStats
-		if err := rows.Scan(&s.schema, &s.table, &s.column, &s.utilizationRatio); err != nil {
+		if err := rows.Scan(&s.schema, &s.table, &s.column, &s.currentValue, &s.maxValue, &s.utilizationRatio); err != nil {
 			return nil, err
 		}
 		stats = append(stats, s)

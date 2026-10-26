@@ -1,1 +1,1 @@
-a_schema	a_table	id	0.5
+a_schema	a_table	id	1073741823	2147483647	0.5

@@ -954,11 +954,27 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
+  mysql.table.auto_increment.limit:
+    enabled: false
+    description: The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.usage:
+    enabled: false
+    description: The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
   mysql.table.auto_increment.utilization:
     enabled: false
-    description: The percentage of the auto_increment column's integer range currently in use for a given table.
+    description: The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
     stability: development
-    unit: "%"
+    unit: "1"
     gauge:
       value_type: double
     attributes: [table_name, schema, mysql.column.name]

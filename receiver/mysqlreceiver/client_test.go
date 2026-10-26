@@ -490,8 +490,10 @@ func TestGetAutoIncrementStats(t *testing.T) {
 			"TABLE_SCHEMA",
 			"TABLE_NAME",
 			"COLUMN_NAME",
+			"AUTO_INCREMENT",
+			"MAX_VALUE",
 			"UTILIZATION_RATIO",
-		}).AddRow("a_schema", "a_table", "id", 50.0))
+		}).AddRow("a_schema", "a_table", "id", 1073741823.0, 2147483647.0, 0.5))
 
 	c := &mySQLClient{client: db}
 	got, err := c.getAutoIncrementStats()
@@ -502,7 +504,9 @@ func TestGetAutoIncrementStats(t *testing.T) {
 	assert.Equal(t, "a_schema", got[0].schema)
 	assert.Equal(t, "a_table", got[0].table)
 	assert.Equal(t, "id", got[0].column)
-	assert.InDelta(t, 50.0, got[0].utilizationRatio, 0.0001)
+	assert.InDelta(t, 1073741823.0, got[0].currentValue, 0.0001)
+	assert.InDelta(t, 2147483647.0, got[0].maxValue, 0.0001)
+	assert.InDelta(t, 0.5, got[0].utilizationRatio, 0.0001)
 }
 
 func TestRowsIterationErrorIsReturned(t *testing.T) {
@@ -534,8 +538,8 @@ func TestRowsIterationErrorIsReturned(t *testing.T) {
 		},
 		{
 			name:    "getAutoIncrementStats",
-			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME", "UTILIZATION_RATIO"},
-			values:  []driver.Value{"schema", "table", "id", 50.0},
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME", "AUTO_INCREMENT", "MAX_VALUE", "UTILIZATION_RATIO"},
+			values:  []driver.Value{"schema", "table", "id", 1073741823.0, 2147483647.0, 0.5},
 			call: func(c *mySQLClient) (any, error) {
 				return c.getAutoIncrementStats()
 			},
