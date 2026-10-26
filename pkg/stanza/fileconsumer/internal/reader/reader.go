@@ -308,6 +308,10 @@ func (r *Reader) handleUnchangedIncompleteGzip() {
 // multistream gzip reader, and records where each complete member ends in the file and in the decompressed data.
 // If the section ends inside a gzip member, which happens while it is still being written, Read returns
 // io.ErrUnexpectedEOF after the data that could be decompressed.
+//
+// Like reading a plain file, Read fills p with as much data as is available, across deflate blocks and gzip
+// members. Otherwise the scanner could be given only the part of a line it already saw on an earlier poll, and
+// force flush it as an incomplete line although the rest of it was written since.
 type gzipMembersReader struct {
 	cr           *countingByteReader
 	gr           *gzip.Reader
@@ -336,22 +340,28 @@ func (g *gzipMembersReader) Read(p []byte) (int, error) {
 	if g.err != nil {
 		return 0, g.err
 	}
-	for {
-		n, err := g.gr.Read(p)
+	total := 0
+	for total < len(p) {
+		n, err := g.gr.Read(p[total:])
+		total += n
 		g.decompressed += int64(n)
 		if errors.Is(err, io.EOF) {
 			g.ends = append(g.ends, gzipMemberEnd{compressed: g.cr.n, decompressed: g.decompressed})
 			// Reset returns io.EOF if no other gzip member follows.
 			if err = g.gr.Reset(g.cr); err == nil {
 				g.gr.Multistream(false)
-				if n == 0 {
-					continue
-				}
+				continue
 			}
 		}
-		g.err = err
-		return n, err
+		if err != nil {
+			g.err = err
+			return total, err
+		}
+		if n == 0 {
+			break
+		}
 	}
+	return total, nil
 }
 
 // countingByteReader counts the bytes read through it. It implements io.ByteReader, so a gzip reader reading

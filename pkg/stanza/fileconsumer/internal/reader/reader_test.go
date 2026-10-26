@@ -371,7 +371,8 @@ func TestFileCacheAdvise(t *testing.T) {
 func TestReadGzipIncompleteStream(t *testing.T) {
 	t.Parallel()
 
-	f, sink := testFactory(t, withCompression("gzip"))
+	const flushPeriod = 100 * time.Millisecond
+	f, sink := testFactory(t, withCompression("gzip"), withFlushPeriod(flushPeriod))
 	core, logs := observer.New(zap.WarnLevel)
 	f.Logger = zap.New(core)
 
@@ -406,7 +407,9 @@ func TestReadGzipIncompleteStream(t *testing.T) {
 	sink.ExpectNoCalls(t)
 	require.Equal(t, 1, logs.FilterMessageSnippet("gzip member is incomplete").Len())
 
-	// The rest of the member is read without reading its first line again.
+	// The rest of the member is read without reading its first line again. The incomplete line was seen longer
+	// than the flush period ago, and the rest of it is in another deflate block, but it is not flushed in two parts.
+	time.Sleep(2 * flushPeriod)
 	_, err = writer.Write([]byte("log2\n"))
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
