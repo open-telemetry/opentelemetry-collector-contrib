@@ -750,8 +750,13 @@ func TestExportThenFrontTruncateWAL_RetentionByErrorKind(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tel := componenttest.NewTelemetry()
+			t.Cleanup(func() {
+				require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
+			})
+
 			pwal, err := newWAL(&WALConfig{Directory: t.TempDir()},
-				exportertest.NewNopSettings(metadata.Type),
+				metadatatest.NewSettings(tel),
 				func(context.Context, []*prompb.WriteRequest) error { return tt.sinkErr })
 			require.NoError(t, err)
 			require.NoError(t, pwal.retrieveWALIndices())
@@ -779,10 +784,15 @@ func TestExportThenFrontTruncateWAL_RetentionByErrorKind(t *testing.T) {
 				assert.NoError(t, exportErr, "a rejected batch is handled, not reported upwards")
 				assert.Greater(t, first, last,
 					"the rejected record must be truncated so it stops blocking the WAL head")
+				// A drop is otherwise invisible: PushMetrics already returned
+				// success when the record was persisted, so nothing upstream
+				// can account for it.
+				assertSendFailed(t, tel, 1, 1)
 				return
 			}
 			assert.Error(t, exportErr, "a batch that was never accepted must be reported upwards")
 			assert.Equal(t, uint64(1), first, "the record must be retained for a later retry")
+			assertNoSendFailed(t, tel)
 		})
 	}
 }
@@ -877,4 +887,89 @@ func TestWAL_NoFlushAfterExportError(t *testing.T) {
 	last, err := pwal.wal.LastIndex()
 	require.NoError(t, err)
 	assert.Equal(t, first, last, "the failed entries must stay in the WAL")
+}
+
+// assertSendFailed checks both drop counters carry the expected totals.
+func assertSendFailed(t *testing.T, tel *componenttest.Telemetry, batches, samples int64) {
+	t.Helper()
+	attrs := attribute.NewSet(attribute.String("exporter", metadata.Type.String()))
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalSendFailedBatches(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: batches, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalSendFailedSamples(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: samples, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// assertNoSendFailed checks nothing was recorded as dropped. A counter that was
+// never incremented is absent from the reader rather than present at zero.
+func assertNoSendFailed(t *testing.T, tel *componenttest.Telemetry) {
+	t.Helper()
+	for _, name := range []string{
+		"otelcol_exporter_prometheusremotewrite_wal_send_failed_batches",
+		"otelcol_exporter_prometheusremotewrite_wal_send_failed_samples",
+	} {
+		_, err := tel.GetMetric(name)
+		assert.Error(t, err, "%s must not be recorded for a batch that is retained", name)
+	}
+}
+
+func TestDroppedSampleCount(t *testing.T) {
+	series := func(samples, histograms int) prompb.TimeSeries {
+		ts := prompb.TimeSeries{
+			Labels: []prompb.Label{{Name: "__name__", Value: "m"}},
+		}
+		for i := range samples {
+			ts.Samples = append(ts.Samples, prompb.Sample{Value: 1, Timestamp: int64(i)})
+		}
+		for i := range histograms {
+			ts.Histograms = append(ts.Histograms, prompb.Histogram{Timestamp: int64(i)})
+		}
+		return ts
+	}
+
+	tests := []struct {
+		name string
+		reqL []*prompb.WriteRequest
+		want int
+	}{
+		{name: "nil batch", reqL: nil, want: 0},
+		{
+			name: "request with no series",
+			reqL: []*prompb.WriteRequest{{}},
+			want: 0,
+		},
+		{
+			name: "samples only",
+			reqL: []*prompb.WriteRequest{{Timeseries: []prompb.TimeSeries{series(3, 0)}}},
+			want: 3,
+		},
+		{
+			name: "native histograms are samples too",
+			reqL: []*prompb.WriteRequest{{Timeseries: []prompb.TimeSeries{series(0, 2)}}},
+			want: 2,
+		},
+		{
+			name: "mixed, across several requests and series",
+			reqL: []*prompb.WriteRequest{
+				{Timeseries: []prompb.TimeSeries{series(2, 1), series(1, 0)}},
+				{Timeseries: []prompb.TimeSeries{series(0, 4)}},
+			},
+			want: 8,
+		},
+		{
+			name: "exemplars are not counted",
+			reqL: []*prompb.WriteRequest{{Timeseries: []prompb.TimeSeries{{
+				Samples:   []prompb.Sample{{Value: 1}},
+				Exemplars: []prompb.Exemplar{{Value: 1}, {Value: 2}},
+			}}}},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, droppedSampleCount(tt.reqL))
+		})
+	}
 }

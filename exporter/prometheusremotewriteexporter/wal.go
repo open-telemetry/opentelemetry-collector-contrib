@@ -34,6 +34,8 @@ type prwWalTelemetry interface {
 	recordWALBytesWritten(ctx context.Context, bytes int)
 	recordWALBytesRead(ctx context.Context, bytes int)
 	recordWALLag(ctx context.Context, lag int64)
+	recordWALSendFailedBatches(ctx context.Context, batches int)
+	recordWALSendFailedSamples(ctx context.Context, samples int)
 }
 
 type prwWalTelemetryOTel struct {
@@ -75,6 +77,14 @@ func (p *prwWalTelemetryOTel) recordWALBytesRead(ctx context.Context, bytes int)
 
 func (p *prwWalTelemetryOTel) recordWALLag(ctx context.Context, lag int64) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteWalLag.Record(ctx, lag, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALSendFailedBatches(ctx context.Context, batches int) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalSendFailedBatches.Add(ctx, int64(batches), metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALSendFailedSamples(ctx context.Context, samples int) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalSendFailedSamples.Add(ctx, int64(samples), metric.WithAttributes(p.otelAttrs...))
 }
 
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
@@ -447,6 +457,21 @@ func allNonRetryable(err error) bool {
 	return errors.As(err, &nre)
 }
 
+// droppedSampleCount reports how many samples a rejected batch carried. A
+// native histogram is one sample in Prometheus terms, so it is counted here;
+// exemplars are accounted for separately by the backend and are not.
+func droppedSampleCount(reqL []*prompb.WriteRequest) int {
+	n := 0
+	for _, req := range reqL {
+		// Indexed rather than ranged by value: a TimeSeries is large enough
+		// that copying one per iteration shows up in the linter.
+		for i := range req.Timeseries {
+			n += len(req.Timeseries[i].Samples) + len(req.Timeseries[i].Histograms)
+		}
+	}
+	return n
+}
+
 func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*prompb.WriteRequest) error {
 	if len(reqL) == 0 {
 		return nil
@@ -462,9 +487,13 @@ func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*
 		}
 		// The endpoint will reject this payload again, so truncate past it;
 		// otherwise it blocks the head of the WAL and nothing drains behind it.
+		samples := droppedSampleCount(reqL)
+		prweWAL.telemetry.recordWALSendFailedBatches(ctx, len(reqL))
+		prweWAL.telemetry.recordWALSendFailedSamples(ctx, samples)
 		if logger, lErr := loggerFromContext(ctx); lErr == nil {
 			logger.Warn("dropping write-ahead log batch rejected by the remote endpoint",
 				zap.Int("request_count", len(reqL)),
+				zap.Int("sample_count", samples),
 				zap.Error(errL),
 			)
 		}

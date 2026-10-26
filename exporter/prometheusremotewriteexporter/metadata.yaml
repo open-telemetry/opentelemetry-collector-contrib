@@ -133,6 +133,22 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_send_failed_batches:
+      enabled: true
+      stability: development
+      description: Number of WAL write request batches dropped because the remote endpoint rejected them with a non-retryable status. A retryable failure is retried, not counted here.
+      unit: "{batch}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_send_failed_samples:
+      enabled: true
+      stability: development
+      description: Number of samples dropped because the remote endpoint rejected them with a non-retryable status. Counts samples and native histograms; a retryable failure is retried, not counted here.
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
     exporter_prometheusremotewrite_wal_write_latency:
       enabled: true
       stability: development

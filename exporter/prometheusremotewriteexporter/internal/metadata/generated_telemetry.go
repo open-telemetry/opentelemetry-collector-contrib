@@ -35,6 +35,8 @@ type TelemetryBuilder struct {
 	ExporterPrometheusremotewriteWalReadLatency       metric.Int64Histogram
 	ExporterPrometheusremotewriteWalReads             metric.Int64Counter
 	ExporterPrometheusremotewriteWalReadsFailures     metric.Int64Counter
+	ExporterPrometheusremotewriteWalSendFailedBatches metric.Int64Counter
+	ExporterPrometheusremotewriteWalSendFailedSamples metric.Int64Counter
 	ExporterPrometheusremotewriteWalWriteLatency      metric.Int64Histogram
 	ExporterPrometheusremotewriteWalWrites            metric.Int64Counter
 	ExporterPrometheusremotewriteWalWritesFailures    metric.Int64Counter
@@ -131,6 +133,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_prometheusremotewrite_wal_reads_failures",
 		metric.WithDescription("Number of WAL reads that failed [Development]"),
 		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalSendFailedBatches, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_send_failed_batches",
+		metric.WithDescription("Number of WAL write request batches dropped because the remote endpoint rejected them with a non-retryable status. A retryable failure is retried, not counted here. [Development]"),
+		metric.WithUnit("{batch}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterPrometheusremotewriteWalSendFailedSamples, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_wal_send_failed_samples",
+		metric.WithDescription("Number of samples dropped because the remote endpoint rejected them with a non-retryable status. Counts samples and native histograms; a retryable failure is retried, not counted here. [Development]"),
+		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalWriteLatency, err = builder.meter.Int64Histogram(

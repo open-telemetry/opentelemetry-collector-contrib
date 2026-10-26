@@ -92,6 +92,22 @@ Number of WAL reads that failed
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
+### otelcol_exporter_prometheusremotewrite_wal_send_failed_batches
+
+Number of WAL write request batches dropped because the remote endpoint rejected them with a non-retryable status. A retryable failure is retried, not counted here.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {batch} | Sum | Int | true | Development |
+
+### otelcol_exporter_prometheusremotewrite_wal_send_failed_samples
+
+Number of samples dropped because the remote endpoint rejected them with a non-retryable status. Counts samples and native histograms; a retryable failure is retried, not counted here.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {sample} | Sum | Int | true | Development |
+
 ### otelcol_exporter_prometheusremotewrite_wal_write_latency
 
 Response latency in ms for the WAL writes.

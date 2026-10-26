@@ -16,14 +16,9 @@ issues: [51710]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  A record the endpoint rejected with a non-retryable HTTP status was never truncated,
-  so the read loop rewound to it on every pass and no record queued behind it was ever
-  delivered. Such a record is now dropped, with a warning naming the status and the
-  number of requests discarded, and the log moves on.
-
-  Only a rejection by the endpoint is dropped. A cancelled export, a retryable failure,
-  and a batch that mixes a rejection with a retryable failure are all still retained and
-  retried, so an outage or a shutdown does not lose data.
+  A dropped batch is reported by the new otelcol_exporter_prometheusremotewrite_wal_send_failed_batches
+  and otelcol_exporter_prometheusremotewrite_wal_send_failed_samples counters. A retryable
+  failure is retained and retried, and is not counted by either.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

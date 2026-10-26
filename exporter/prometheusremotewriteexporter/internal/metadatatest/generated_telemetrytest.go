@@ -178,6 +178,38 @@ func AssertEqualExporterPrometheusremotewriteWalReadsFailures(t *testing.T, tt *
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterPrometheusremotewriteWalSendFailedBatches(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_wal_send_failed_batches",
+		Description: "Number of WAL write request batches dropped because the remote endpoint rejected them with a non-retryable status. A retryable failure is retried, not counted here. [Development]",
+		Unit:        "{batch}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_wal_send_failed_batches")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterPrometheusremotewriteWalSendFailedSamples(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_wal_send_failed_samples",
+		Description: "Number of samples dropped because the remote endpoint rejected them with a non-retryable status. Counts samples and native histograms; a retryable failure is retried, not counted here. [Development]",
+		Unit:        "{sample}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_wal_send_failed_samples")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterPrometheusremotewriteWalWriteLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_write_latency",
