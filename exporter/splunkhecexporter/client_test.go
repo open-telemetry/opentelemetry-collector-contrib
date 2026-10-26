@@ -1822,6 +1822,19 @@ func Test_pushLogData_SplitOn413_RetriesAllRecordsWhenBothHalvesRetryable(t *tes
 		"records from both retryable halves must be preserved, not just the first half's")
 }
 
+// A throttled half must keep its ThrottleRetry so the retry sender honors Retry-After.
+func Test_combineSplitResults_PreservesThrottleRetry(t *testing.T) {
+	throttle := exporterhelper.NewThrottleRetry(errors.New("HTTP 503"), 30*time.Second)
+	head := consumererror.NewLogs(throttle, createLogData(1, 1, 1))
+	tail := consumererror.NewLogs(errors.New("HTTP 500"), createLogData(1, 1, 1))
+
+	err := combineSplitResults(head, tail)
+	require.ErrorIs(t, err, throttle, "the throttled half's Retry-After must survive the combine")
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 2, logsErr.Data().LogRecordCount())
+}
+
 func Test_pushLogData_DropsUnsplittableRecordOn413(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = true

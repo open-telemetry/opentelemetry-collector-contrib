@@ -204,10 +204,11 @@ func (c *client) pushLogsWithSplitOn413(ctx context.Context, ld plog.Logs, heade
 // the whole result permanent (dropping the retryable half), and the queue sender
 // extracts only the first consumererror.Logs (dropping any later half's records).
 // So every retryable record goes into one consumererror.Logs, and permanent drops are
-// excluded from the payload without making the combined error permanent.
+// excluded from the payload without making the combined error permanent. The retryable
+// halves' errors are kept so a ThrottleRetry (Retry-After) still reaches the retry sender.
 func combineSplitResults(results ...error) error {
 	retryable := plog.NewLogs()
-	var permanentErrs []error
+	var retryableErrs, permanentErrs []error
 	for _, err := range results {
 		if err == nil {
 			continue
@@ -215,6 +216,7 @@ func combineSplitResults(results ...error) error {
 		var logsErr consumererror.Logs
 		if !consumererror.IsPermanent(err) && errors.As(err, &logsErr) {
 			logsErr.Data().ResourceLogs().MoveAndAppendTo(retryable.ResourceLogs())
+			retryableErrs = append(retryableErrs, err)
 			continue
 		}
 		permanentErrs = append(permanentErrs, err)
@@ -222,7 +224,7 @@ func combineSplitResults(results ...error) error {
 
 	if retryable.LogRecordCount() > 0 {
 		return consumererror.NewLogs(
-			fmt.Errorf("%w: resending %d log record(s) Splunk did not accept", errPayloadTooLarge, retryable.LogRecordCount()),
+			fmt.Errorf("resending %d log record(s) Splunk did not accept: %w", retryable.LogRecordCount(), errors.Join(retryableErrs...)),
 			retryable,
 		)
 	}
