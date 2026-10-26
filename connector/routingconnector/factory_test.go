@@ -86,7 +86,7 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 func TestDefaultErrorModeWithFeatureGate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
+	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
 }
 
 func Test_FactoryWithFunctions_CreateTracesToTraces(t *testing.T) {

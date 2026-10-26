@@ -143,7 +143,7 @@ func NewFactoryWithOptions(options ...FactoryOption) connector.Factory {
 // createDefaultConfig creates the default configuration.
 func (f *routingConnectorFactory) createDefaultConfig() component.Config {
 	return &Config{
-		ErrorMode:          ottl.PropagateError,
+		ErrorMode:          ottl.IgnoreError,
 		otelColFunctions:   f.otelColFunctions,
 		resourceFunctions:  f.resourceFunctions,
 		spanFunctions:      f.spanFunctions,

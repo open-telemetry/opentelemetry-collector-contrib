@@ -1,7 +1,7 @@
 routing:
   default_pipelines:
     - traces/otlp-all
-  error_mode: ignore
+  error_mode: propagate
   table:
     - statement: route() where attributes["X-Tenant"] == "acme"
       pipelines:
