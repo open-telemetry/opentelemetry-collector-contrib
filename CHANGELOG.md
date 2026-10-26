@@ -7,7 +7,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
-## v1.70.0/v0.164.0
+## v1.3.0/v0.164.0
 
 ### 🛑 Breaking changes 🛑
 
