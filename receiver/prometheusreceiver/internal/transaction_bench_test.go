@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -807,4 +809,41 @@ func generateProtobufNativeHistogramPayload(count int) []byte {
 		writeDelimitedProto(&buf, mf)
 	}
 	return buf.Bytes()
+}
+
+func BenchmarkPopulateAttributes(b *testing.B) {
+	for k := range 16 {
+		b.Run(fmt.Sprintf("k=%d", k), func(b *testing.B) {
+			lb := labels.NewBuilder(labels.EmptyLabels())
+			lb.Set(model.MetricNameLabel, "bench_metric_total")
+			lb.Set(model.JobLabel, "benchmark")
+			lb.Set(model.InstanceLabel, "localhost:8080")
+			for i := range k {
+				lb.Set(fmt.Sprintf("label_%02d", i), fmt.Sprintf("value_%02d", i))
+			}
+			ls := lb.Labels()
+			dest := pcommon.NewMap()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				dest.Clear()
+				populateAttributes(pmetric.MetricTypeGauge, ls, dest)
+			}
+		})
+	}
+}
+
+func BenchmarkConvertExemplar(b *testing.B) {
+	pe := exemplar.Exemplar{
+		Labels: labels.FromStrings("trace_id", "0102030405060708090a0b0c0d0e0f10", "span_id", "0102030405060708"),
+		Value:  1.0,
+		Ts:     1700000000000,
+	}
+	ex := pmetric.NewExemplar()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ex.FilteredAttributes().Clear()
+		convertExemplar(pe, ex)
+	}
 }

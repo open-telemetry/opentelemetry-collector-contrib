@@ -13,6 +13,17 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dashpole, ArthurSens, perebaj, himanshu130700]
+telemetry:
+  metrics:
+    receiver_prometheusremotewrite_resource_cache_evictions:
+      enabled: true
+      description: Number of job/instance entries evicted from the resource metrics cache because it was full.
+      stability: development
+      unit: "{entries}"
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
   goleak:
