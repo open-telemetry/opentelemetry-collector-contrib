@@ -40,6 +40,9 @@ type TrapV3Config struct {
 // TrapEngineConfig configures state retained for authenticated SNMPv3 engines.
 type TrapEngineConfig struct {
 	Cache TrapEngineCacheConfig `mapstructure:"cache"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // TrapEngineCacheConfig bounds retained keys and time synchronization state.

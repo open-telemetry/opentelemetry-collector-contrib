@@ -201,9 +201,9 @@ func (r *trapReceiver) receive(ctx context.Context, host component.Host, conn ne
 			r.rejectTrap(obsCtx, remote, 1, "malformed_notification", err)
 			continue
 		}
-		if err := r.parser.admitTrap(packet, received); err != nil {
+		if admissionErr := r.parser.admitTrap(packet, received); admissionErr != nil {
 			r.parser.discardEngine(packet)
-			r.rejectTrap(obsCtx, remote, 1, "notification_not_allowed", err)
+			r.rejectTrap(obsCtx, remote, 1, "notification_not_allowed", admissionErr)
 			continue
 		}
 		sender, ok := remote.(*net.UDPAddr)
