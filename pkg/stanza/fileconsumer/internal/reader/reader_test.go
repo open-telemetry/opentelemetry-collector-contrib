@@ -544,6 +544,65 @@ func TestReadContentsEmitErrorAdvancesOffset(t *testing.T) {
 	}
 }
 
+// errAfterCallsCtx reports cancellation once Err has been called more than n times. It cancels
+// deterministically at a point that has no other hook, e.g. after the last emit has been checked.
+type errAfterCallsCtx struct {
+	context.Context
+	n     int
+	calls int
+}
+
+func (c *errAfterCallsCtx) Err() error {
+	c.calls++
+	if c.calls > c.n {
+		return context.Canceled
+	}
+	return nil
+}
+
+func TestGzipCanceledAfterLastEmit(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "test.log.gz")
+	gzipFile, err := os.Create(path)
+	require.NoError(t, err)
+	gzipWriter := gzip.NewWriter(gzipFile)
+	_, err = gzipWriter.Write([]byte("line1\nline2\nline3\nline4\n"))
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+	require.NoError(t, gzipFile.Close())
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+
+	var calls int
+	f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+		calls++
+		return nil
+	})
+	f.Compression = "gzip"
+
+	file, err := os.Open(path)
+	require.NoError(t, err)
+	fp, err := f.NewFingerprint(file)
+	require.NoError(t, err)
+	reader, err := f.NewReader(file, fp)
+	require.NoError(t, err)
+	defer reader.Close()
+	reader.maxBatchSize = 2
+
+	// Each emitted batch checks the context once, so with 2 batches the context is reported as
+	// canceled only after the last batch has been emitted successfully.
+	ctx := &errAfterCallsCtx{Context: t.Context(), n: 2}
+	reader.ReadToEnd(ctx)
+
+	require.Equal(t, 2, calls)
+	require.ErrorIs(t, ctx.Err(), context.Canceled)
+	// Every batch was emitted before the cancellation, so the chunk is checkpointed instead of being
+	// rolled back and read again.
+	assert.Equal(t, info.Size(), reader.Offset)
+	assert.Equal(t, int64(4), reader.RecordNum)
+}
+
 func TestDeleteAtEOFCancelledDuringEmit(t *testing.T) {
 	t.Parallel()
 

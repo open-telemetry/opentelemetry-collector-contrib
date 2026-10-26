@@ -87,6 +87,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		defer r.unlockFile()
 	}
 
+	// completed is false when reading was interrupted by a canceled context before the end of the file.
+	completed := true
 	if r.compression == "gzip" || (r.compression == "auto" && r.FileType == gzipExtension) {
 		// createGzipReader resets decompressedBytesToSkip, so capture the state before calling it.
 		startOffset, startRecordNum, startSkip := r.Offset, r.RecordNum, r.decompressedBytesToSkip
@@ -98,7 +100,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		// we need to set the offset to the end of the file. A gzip stream cannot be resumed mid-stream, so
 		// if reading was interrupted by shutdown, roll back to re-read the whole chunk instead of skipping it.
 		defer func() {
-			if ctx.Err() != nil {
+			if !completed {
 				r.Offset, r.RecordNum, r.decompressedBytesToSkip = startOffset, startRecordNum, startSkip
 				return
 			}
@@ -125,11 +127,12 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	if r.headerReader != nil {
 		if r.readHeader(ctx) {
+			completed = ctx.Err() == nil
 			return
 		}
 	}
 
-	r.readContents(ctx)
+	completed = r.readContents(ctx)
 }
 
 // createGzipReader creates gzip reader and returns the file offset
@@ -236,7 +239,9 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	return false
 }
 
-func (r *Reader) readContents(ctx context.Context) {
+// readContents reads and emits tokens until the end of the file. It returns false if reading was
+// interrupted because the context was canceled, either before the end of the file or during an emit.
+func (r *Reader) readContents(ctx context.Context) (completed bool) {
 	var buf []byte
 	if r.TokenLenState.MinimumLength <= r.initialBufferSize {
 		bufPtr := r.getBufPtrFromPool()
@@ -259,7 +264,7 @@ func (r *Reader) readContents(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return false
 		default:
 		}
 
@@ -272,7 +277,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 			if numTokensBatched > 0 {
 				if !r.emitBatch(ctx, tokenBodies[:numTokensBatched], tokenOffsets) {
-					return
+					return false
 				}
 				r.RecordNum += int64(numTokensBatched)
 				r.Offset = s.Pos()
@@ -282,7 +287,7 @@ func (r *Reader) readContents(ctx context.Context) {
 				r.delete()
 			}
 
-			return
+			return true
 		}
 
 		var err error
@@ -297,7 +302,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
 			if !r.emitBatch(ctx, tokenBodies[:numTokensBatched], tokenOffsets) {
-				return
+				return false
 			}
 			// We can only advance the offset and record number if the batch was successfully emitted.
 			// If the context was cancelled during the emit, the batch may not have been consumed, so we don't want to checkpoint it.
