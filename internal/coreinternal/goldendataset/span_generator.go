@@ -223,7 +223,7 @@ func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv125.NetTransportKey), "IP.TCP")
 	attrMap.PutStr(string(conventionsv125.DBNameKey), "shopdb")
 	attrMap.PutStr(string(conventionsv125.DBStatementKey), "SELECT * FROM orders WHERE order_id = 'o4711'")
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
@@ -246,7 +246,7 @@ func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv125.DBNameKey), "shopDb")
 	attrMap.PutStr(string(conventionsv125.DBOperationKey), "findAndModify")
 	attrMap.PutStr(string(conventionsv125.DBMongoDBCollectionKey), "products")
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
@@ -261,7 +261,7 @@ func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.FaaSDocumentOperationKey), "insert")
 	attrMap.PutStr(string(conventions.FaaSDocumentTimeKey), "2020-05-09T19:50:06Z")
 	attrMap.PutStr(string(conventions.FaaSDocumentNameKey), "delays-20200509-13.csv")
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
@@ -298,7 +298,7 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.UserAgentOriginalKey),
 			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15")
 	}
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
@@ -311,7 +311,7 @@ func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.MessagingDestinationNameKey), "video-views-au")
 	}
 	attrMap.PutStr(string(conventionsv125.MessagingOperationKey), "process")
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendFaaSTimerAttributes(attrMap pcommon.Map) {
@@ -324,7 +324,7 @@ func appendFaaSTimerAttributes(attrMap pcommon.Map) {
 	}
 	attrMap.PutStr(string(conventions.FaaSTimeKey), "2020-05-09T20:00:08Z")
 	attrMap.PutStr(string(conventions.FaaSCronKey), "0/15 * * * *")
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendFaaSOtherAttributes(attrMap pcommon.Map) {
@@ -332,7 +332,7 @@ func appendFaaSOtherAttributes(attrMap pcommon.Map) {
 	attrMap.PutInt("processed.count", 256)
 	attrMap.PutDouble("processed.data", 14.46)
 	attrMap.PutBool("processed.errors", false)
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
@@ -347,7 +347,7 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
 		}
 		attrMap.PutStr("http.status_text", "More Than OK")
 	}
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
@@ -391,7 +391,7 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.ClientAddressKey), "2001:506:71f0:16e::1")
 	}
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendMessagingProducerAttributes(attrMap pcommon.Map) {
@@ -411,7 +411,7 @@ func appendMessagingProducerAttributes(attrMap pcommon.Map) {
 	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "10.10.212.33")
 	}
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
@@ -429,7 +429,7 @@ func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
 	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	}
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendGRPCClientAttributes(attrMap pcommon.Map) {
@@ -446,7 +446,7 @@ func appendGRPCClientAttributes(attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	}
 	attrMap.PutInt(string(conventionsv125.NetHostPortKey), 8443)
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendGRPCServerAttributes(attrMap pcommon.Map) {
@@ -462,12 +462,12 @@ func appendGRPCServerAttributes(attrMap pcommon.Map) {
 	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.168.1.70")
 	}
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendInternalAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr("parameters", "account=7310,amount=1817.10")
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 }
 
 func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
@@ -551,7 +551,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr("application.job.id", "0E38800B-9C4C-484E-8F2B-C7864D854321")
 	attrMap.PutDouble("application.service.sla", 0.34)
 	attrMap.PutDouble("application.service.slo", 0.55)
-	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
+	attrMap.PutStr(string(conventions.EnduserIDKey), "unittest")
 	attrMap.PutStr(string(conventionsv126.EnduserRoleKey), "poweruser")
 	attrMap.PutStr(string(conventionsv126.EnduserScopeKey), "email profile administrator")
 }

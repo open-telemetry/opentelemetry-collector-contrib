@@ -5,7 +5,8 @@ package goldendataset // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // GenerateResource generates a PData Resource object with representative attributes for the
@@ -64,7 +65,7 @@ func appendCloudVMAttributes(attrMap pcommon.Map) {
 func appendOnpremK8sAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.ContainerNameKey), "cert-manager")
 	attrMap.PutStr(string(conventions.ContainerImageNameKey), "quay.io/jetstack/cert-manager-controller")
-	attrMap.PutStr(string(conventions.ContainerImageTagKey), "v0.14.2")
+	attrMap.PutStr(string(conventionsv118.ContainerImageTagKey), "v0.14.2")
 	attrMap.PutStr(string(conventions.K8SClusterNameKey), "docker-desktop")
 	attrMap.PutStr(string(conventions.K8SNamespaceNameKey), "cert-manager")
 	attrMap.PutStr(string(conventions.K8SDeploymentNameKey), "cm-1-cert-manager")
@@ -75,7 +76,7 @@ func appendOnpremK8sAttributes(attrMap pcommon.Map) {
 func appendCloudK8sAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.ContainerNameKey), "otel-collector")
 	attrMap.PutStr(string(conventions.ContainerImageNameKey), "otel/opentelemetry-collector-contrib")
-	attrMap.PutStr(string(conventions.ContainerImageTagKey), "0.4.0")
+	attrMap.PutStr(string(conventionsv118.ContainerImageTagKey), "0.4.0")
 	attrMap.PutStr(string(conventions.K8SClusterNameKey), "erp-dev")
 	attrMap.PutStr(string(conventions.K8SNamespaceNameKey), "monitoring")
 	attrMap.PutStr(string(conventions.K8SDeploymentNameKey), "otel-collector")
@@ -95,7 +96,7 @@ func appendCloudK8sAttributes(attrMap pcommon.Map) {
 }
 
 func appendFassAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.FaaSIDKey), "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print")
+	attrMap.PutStr(string(conventionsv118.FaaSIDKey), "https://us-central1-dist-system-demo.cloudfunctions.net/env-vars-print")
 	attrMap.PutStr(string(conventions.FaaSNameKey), "env-vars-print")
 	attrMap.PutStr(string(conventions.FaaSVersionKey), "semver:1.0.0")
 	attrMap.PutStr(string(conventions.CloudProviderKey), "gcp")
