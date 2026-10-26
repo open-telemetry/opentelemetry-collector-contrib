@@ -346,6 +346,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 			var valueHolder spanner.NullTime
 			return &valueHolder
 		}
+	case DateValueType:
+		newLabelValueFunc = newDateLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullDate
+			return &valueHolder
+		}
 	default:
 		return nil, fmt.Errorf("invalid value type received for label %q", name)
 	}
@@ -387,6 +393,39 @@ func newTimestampLabelValue(metadata LabelValueMetadata, valueHolder any) LabelV
 		val = nullTime.Time.UTC().Format(time.RFC3339)
 	}
 	return timestampLabelValue{
+		metadata: metadata,
+		value:    val,
+	}
+}
+
+type dateLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+func (v dateLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v dateLabelValue) Value() any {
+	return v.value
+}
+
+func (v dateLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *dateLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newDateLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullDate := *valueHolder.(*spanner.NullDate)
+	var val string
+	if nullDate.Valid && nullDate.Date.IsValid() {
+		val = nullDate.Date.String()
+	}
+	return dateLabelValue{
 		metadata: metadata,
 		value:    val,
 	}
