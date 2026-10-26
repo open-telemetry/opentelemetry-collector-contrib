@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/basic
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/basicauth v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider v0.164.1
 	github.com/stretchr/testify v1.12.1
 	github.com/tg123/go-htpasswd v1.2.5
 	go.opentelemetry.io/collector/client v1.70.0
