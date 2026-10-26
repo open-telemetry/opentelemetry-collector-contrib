@@ -23,13 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
-func defaultErrorMode() ottl.ErrorMode {
-	if metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
-		return ottl.IgnoreError
-	}
-	return ottl.PropagateError
-}
-
 type routingConnectorFactory struct {
 	otelColFunctions   map[string]ottl.Factory[*ottlotelcol.TransformContext]
 	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
@@ -150,7 +143,7 @@ func NewFactoryWithOptions(options ...FactoryOption) connector.Factory {
 // createDefaultConfig creates the default configuration.
 func (f *routingConnectorFactory) createDefaultConfig() component.Config {
 	return &Config{
-		ErrorMode:          defaultErrorMode(),
+		ErrorMode:          ottl.PropagateError,
 		otelColFunctions:   f.otelColFunctions,
 		resourceFunctions:  f.resourceFunctions,
 		spanFunctions:      f.spanFunctions,

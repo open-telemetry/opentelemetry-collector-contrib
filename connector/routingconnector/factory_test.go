@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -87,17 +86,6 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 func TestDefaultErrorModeWithFeatureGate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-
-	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
-
-	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), true)
-	})
-
-	err := featuregate.GlobalRegistry().Set(metadata.ConnectorRoutingDefaultErrorModeIgnoreFeatureGate.ID(), false)
-	require.NoError(t, err)
-
-	cfg = factory.CreateDefaultConfig()
 	assert.Equal(t, ottl.PropagateError, cfg.(*Config).ErrorMode)
 }
 
