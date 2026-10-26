@@ -112,6 +112,18 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
+	if isTempDBQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBQuery())
+	}
+
+	if isTempDBContentionQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBContentionQuery())
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled {
+		queries = append(queries, getSQLServerTempDBFileQuery())
+	}
+
 	return queries
 }
 
@@ -529,7 +541,6 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
-		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverErrorRate.Enabled ||
@@ -627,6 +638,22 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isTempDBQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDatabaseTempdbSpace.Enabled
+}
+
+func isTempDBContentionQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverTempdbAllocationWaitersCount.Enabled
 }
 
 func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {

@@ -204,6 +204,12 @@ all_set:
     sqlserver.task.rate:
       enabled: true
       attributes: ["task.result"]
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: true
+      attributes: ["sqlserver.tempdb.allocation.page_type"]
+    sqlserver.tempdb.file.size:
+      enabled: true
+      attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -471,6 +477,12 @@ reaggregate_set:
       enabled: true
       attributes: []
     sqlserver.task.rate:
+      enabled: true
+      attributes: []
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: true
+      attributes: []
+    sqlserver.tempdb.file.size:
       enabled: true
       attributes: []
     sqlserver.transaction.delay:
@@ -742,6 +754,12 @@ none_set:
     sqlserver.task.rate:
       enabled: false
       attributes: ["task.result"]
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: false
+      attributes: ["sqlserver.tempdb.allocation.page_type"]
+    sqlserver.tempdb.file.size:
+      enabled: false
+      attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
