@@ -370,9 +370,11 @@ If the instance is part of AWS ParallelCluster and the detector is failing to co
 
 In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
 
-By default, the client retries 3 times with a max backoff delay of 20s.
+By default, the client makes up to 3 total attempts (the initial request and 2 retries),
+with a maximum backoff delay of 20s between attempts.
 
-We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+You can override these defaults. For example, this configuration allows up to 10 total
+attempts with a maximum backoff delay of 5 minutes between attempts:
 
 ```yaml
 processors:

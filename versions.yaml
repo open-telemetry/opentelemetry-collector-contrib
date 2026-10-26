@@ -3,13 +3,13 @@
 
 module-sets:
   stable-base:
-    version: v1.2.0
+    version: v1.3.1
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
   contrib-base:
-    version: v0.163.0
+    version: v0.164.1
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -242,6 +242,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/telemetrypolicyprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/unrollprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/verifyprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectoryinvreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver

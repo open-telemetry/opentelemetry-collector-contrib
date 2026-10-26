@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	openshiftdetector "go.opentelemetry.io/contrib/detectors/openshift"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
