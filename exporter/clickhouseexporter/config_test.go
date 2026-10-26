@@ -662,6 +662,48 @@ func TestTableEngineConfigParsing(t *testing.T) {
 	}
 }
 
+func TestDatabaseEngineConfigParsing(t *testing.T) {
+	t.Parallel()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected string
+	}{
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-empty"),
+			expected: "",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-name-only"),
+			expected: "ENGINE = Replicated",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-full"),
+			expected: "ENGINE = Replicated('/clickhouse/databases/otel', '{shard}', '{replica}')",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "database-engine-params-only"),
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).databaseEngineString())
+		})
+	}
+}
+
 func TestClusterString(t *testing.T) {
 	t.Parallel()
 
@@ -699,6 +741,65 @@ func TestClusterString(t *testing.T) {
 
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
+		})
+	}
+}
+
+func TestTableClusterString(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		database       string
+		clusterName    string
+		databaseEngine string
+		expected       string
+	}{
+		{
+			name:     "no cluster",
+			database: "otel",
+			expected: "",
+		},
+		{
+			name:        "cluster",
+			database:    "otel",
+			clusterName: "my_cluster",
+			expected:    "ON CLUSTER `my_cluster`",
+		},
+		{
+			name:           "cluster with atomic database",
+			database:       "otel",
+			clusterName:    "my_cluster",
+			databaseEngine: "Atomic",
+			expected:       "ON CLUSTER `my_cluster`",
+		},
+		{
+			name:           "cluster with replicated database",
+			database:       "otel",
+			clusterName:    "my_cluster",
+			databaseEngine: "Replicated",
+			expected:       "",
+		},
+		{
+			name:           "cluster with replicated engine on default database",
+			database:       "default",
+			clusterName:    "my_cluster",
+			databaseEngine: "Replicated",
+			expected:       "ON CLUSTER `my_cluster`",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = defaultEndpoint
+			cfg.Database = tt.database
+			cfg.ClusterName = tt.clusterName
+			cfg.DatabaseEngine.Name = tt.databaseEngine
+
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg.tableClusterString())
+			assert.Equal(t, tt.clusterName != "", cfg.clusterString() != "")
 		})
 	}
 }
@@ -828,4 +929,72 @@ func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
 
 	// No panic, but options may be nil since TLS setup failed early.
 	require.Nil(t, opt, "expected nil options when TLS setup fails cleanly")
+}
+
+func TestBuildClickHouseOptions_ConnectionPoolSize(t *testing.T) {
+	tests := []struct {
+		name             string
+		endpoint         string
+		connectionParams map[string]string
+		queue            configoptional.Optional[exporterhelper.QueueBatchConfig]
+		expectedMaxOpen  int
+		expectedMaxIdle  int
+	}{
+		{
+			name:            "default queue",
+			endpoint:        defaultEndpoint,
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 10,
+			expectedMaxIdle: 10,
+		},
+		{
+			name:     "custom num consumers",
+			endpoint: defaultEndpoint,
+			queue: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+				queue := exporterhelper.NewDefaultQueueConfig()
+				queue.NumConsumers = 25
+				return queue
+			}()),
+			expectedMaxOpen: 25,
+			expectedMaxIdle: 25,
+		},
+		{
+			name:            "queue disabled",
+			endpoint:        defaultEndpoint,
+			queue:           configoptional.None[exporterhelper.QueueBatchConfig](),
+			expectedMaxOpen: 0,
+			expectedMaxIdle: 0,
+		},
+		{
+			name:            "endpoint overrides",
+			endpoint:        defaultEndpoint + "?max_open_conns=3&max_idle_conns=2",
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 3,
+			expectedMaxIdle: 2,
+		},
+		{
+			name:             "connection params override",
+			endpoint:         defaultEndpoint,
+			connectionParams: map[string]string{"max_open_conns": "7"},
+			queue:            configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen:  7,
+			expectedMaxIdle:  7,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tt.endpoint
+			cfg.QueueSettings = tt.queue
+			if tt.connectionParams != nil {
+				cfg.ConnectionParams = tt.connectionParams
+			}
+
+			opt, err := cfg.buildClickHouseOptions()
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedMaxOpen, opt.MaxOpenConns)
+			assert.Equal(t, tt.expectedMaxIdle, opt.MaxIdleConns)
+		})
+	}
 }

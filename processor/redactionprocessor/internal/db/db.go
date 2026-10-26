@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
-	semconv138 "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
 
@@ -82,11 +82,11 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 
 	if cfg.SQLConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.SQLConfig.Attributes, []string{
-			semconv138.DBSystemNameOtherSQL.Value.AsString(),
-			semconv138.DBSystemNameMySQL.Value.AsString(),
-			semconv138.DBSystemNamePostgreSQL.Value.AsString(),
-			semconv138.DBSystemNameMariaDB.Value.AsString(),
-			semconv138.DBSystemNameSQLite.Value.AsString(),
+			conventions.DBSystemNameOtherSQL.Value.AsString(),
+			conventions.DBSystemNameMySQL.Value.AsString(),
+			conventions.DBSystemNamePostgreSQL.Value.AsString(),
+			conventions.DBSystemNameMariaDB.Value.AsString(),
+			conventions.DBSystemNameSQLite.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &sqlObfuscator{
 			dbAttributes: dbAttrs,
@@ -96,7 +96,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 
 	if cfg.RedisConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.RedisConfig.Attributes, []string{
-			semconv138.DBSystemNameRedis.Value.AsString(),
+			conventions.DBSystemNameRedis.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &redisObfuscator{
 			dbAttributes: dbAttrs,
@@ -116,7 +116,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 
 	if cfg.MemcachedConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.MemcachedConfig.Attributes, []string{
-			semconv138.DBSystemNameMemcached.Value.AsString(),
+			conventions.DBSystemNameMemcached.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &memcachedObfuscator{
 			dbAttributes: dbAttrs,
@@ -126,7 +126,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 
 	if cfg.MongoConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.MongoConfig.Attributes, []string{
-			semconv138.DBSystemNameMongoDB.Value.AsString(),
+			conventions.DBSystemNameMongoDB.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &mongoObfuscator{
 			dbAttributes: dbAttrs,
@@ -137,7 +137,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 
 	if cfg.OpenSearchConfig.Enabled {
 		dbAttrs := newDBAttributes([]string{}, []string{
-			semconv138.DBSystemNameOpenSearch.Value.AsString(),
+			conventions.DBSystemNameOpenSearch.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &opensearchObfuscator{
 			dbAttributes: dbAttrs,
@@ -148,7 +148,7 @@ func newDatabaseObfuscators(cfg DBSanitizerConfig, logger *zap.Logger, o *obfusc
 
 	if cfg.ESConfig.Enabled {
 		dbAttrs := newDBAttributes([]string{}, []string{
-			semconv138.DBSystemNameElasticsearch.Value.AsString(),
+			conventions.DBSystemNameElasticsearch.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &esObfuscator{
 			dbAttributes: dbAttrs,

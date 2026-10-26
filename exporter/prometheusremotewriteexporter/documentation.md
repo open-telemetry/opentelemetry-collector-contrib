@@ -2,6 +2,12 @@
 
 # prometheus_remote_write
 
+## Sending Queue
+
+**Support:** This component omits the default QueueBatch configuration.
+
+**Rationale:** The exporter uses a dedicated remote_write_queue configuration.
+
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.

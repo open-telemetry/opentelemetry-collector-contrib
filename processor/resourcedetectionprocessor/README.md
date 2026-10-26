@@ -79,6 +79,28 @@ processors:
     override: false
 ```
 
+Use `attributes.included` and `attributes.excluded` to filter which keys from
+`OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` (matches any run
+of characters, including none) and `?` (matches any single character) as
+wildcards. When `included` is empty every key is included by default.
+`excluded` is applied after `included`, so a key matched by both is dropped.
+
+For example, inject `deployment.environment.name` and every `k8s.*` key via
+`OTEL_RESOURCE_ATTRIBUTES` while dropping `k8s.pod.name`, so other env vars on
+the collector itself (e.g. its own pod name) don't leak into the telemetry:
+
+```yaml
+processors:
+  resource_detection/env:
+    detectors: [env]
+    env:
+      attributes:
+        included:
+          - deployment.environment.name
+          - k8s.*
+        excluded:
+          - k8s.pod.name
+```
 
 > [!NOTE]
 > The deprecated component type `resourcedetection` (without the underscore) can still be used as an alias and will log a deprecation warning.
@@ -348,9 +370,11 @@ If the instance is part of AWS ParallelCluster and the detector is failing to co
 
 In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
 
-By default, the client retries 3 times with a max backoff delay of 20s.
+By default, the client makes up to 3 total attempts (the initial request and 2 retries),
+with a maximum backoff delay of 20s between attempts.
 
-We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+You can override these defaults. For example, this configuration allows up to 10 total
+attempts with a maximum backoff delay of 5 minutes between attempts:
 
 ```yaml
 processors:
@@ -363,6 +387,12 @@ processors:
 
 > **Deprecated**: The per-detector `fail_on_missing_metadata` field is deprecated. Use the top-level
 > `fail_on_missing_metadata` in the processor config instead. See [Using the fail_on_missing_metadata parameter](#using-the-fail_on_missing_metadata-parameter).
+
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the instance ID or the instance identity document cannot be retrieved from IMDS.
+> When `false` (default), those failures are logged and an empty resource is returned.
+> This matters on hosts whose metadata service implements the EC2-compatible `meta-data` tree but not the AWS-specific `dynamic/instance-identity` tree, such as OpenStack Nova based clouds.
+> A dedicated [OpenStack Nova detector](#openstack-nova) is also available.
+> The same applies to the hostname: when `fail_on_missing_metadata` is `true`, a hostname that cannot be retrieved results in an error, otherwise the failure is logged and the resource is returned without the `host.name` attribute.
 
 ### Amazon ECS
 

@@ -1,7 +1,7 @@
-sqlserver:
+sql_server:
   collection_interval: 10s
 
-sqlserver/named:
+sql_server/named:
   collection_interval: 10s
   computer_name: CustomServer
   instance_name: CustomInstance
