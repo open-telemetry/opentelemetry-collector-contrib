@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -120,10 +121,27 @@ func TestGetPrometheusConfig(t *testing.T) {
 								},
 							},
 						},
+						HTTPClientConfig: configutil.HTTPClientConfig{
+							TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+						},
 					},
 				},
 			},
 		}
+	}
+
+	clientConfigWith := func(headers configopaque.MapList, proxyURL string) confighttp.ClientConfig {
+		c := confighttp.NewDefaultClientConfig()
+		c.Endpoint = "localhost:1234"
+		c.Headers = headers
+		c.ProxyURL = proxyURL
+		return c
+	}
+
+	wantWithHTTPClientConfig := func(httpConfig configutil.HTTPClientConfig) *prometheusreceiver.Config {
+		want := wantWithScrapeTimeout(10 * time.Second)
+		want.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig = httpConfig
+		return want
 	}
 
 	tests := []struct {
@@ -196,6 +214,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
+							HTTPClientConfig: configutil.HTTPClientConfig{
+								TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+							},
 						},
 					},
 				},
@@ -233,6 +254,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 								TLSConfig: configutil.TLSConfig{
 									CAFile:             "./testdata/test_cert.pem",
 									InsecureSkipVerify: true,
+									MinVersion:         configutil.TLSVersions["TLS12"],
 								},
 							},
 						},
@@ -274,6 +296,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 										},
 									},
 								},
+							},
+							HTTPClientConfig: configutil.HTTPClientConfig{
+								TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 							},
 						},
 					},
@@ -317,6 +342,60 @@ func TestGetPrometheusConfig(t *testing.T) {
 			want:     wantWithScrapeTimeout(10 * time.Second),
 			wantWarn: true,
 		},
+		{
+			name: "Test with no headers",
+			config: &Config{
+				ClientConfig:       clientConfigWith(configopaque.MapList{}, ""),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithHTTPClientConfig(configutil.HTTPClientConfig{}),
+		},
+		{
+			name: "Test with one header",
+			config: &Config{
+				ClientConfig: clientConfigWith(configopaque.MapList{
+					{Name: "X-Scope-OrgID", Value: "tenant-a"},
+				}, ""),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithHTTPClientConfig(configutil.HTTPClientConfig{
+				HTTPHeaders: &configutil.Headers{Headers: map[string]configutil.Header{
+					"X-Scope-OrgID": {Secrets: []configutil.Secret{"tenant-a"}},
+				}},
+			}),
+		},
+		{
+			name: "Test with several headers",
+			config: &Config{
+				ClientConfig: clientConfigWith(configopaque.MapList{
+					{Name: "X-Scope-OrgID", Value: "tenant-a"},
+					{Name: "X-Api-Key", Value: "secret"},
+				}, ""),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithHTTPClientConfig(configutil.HTTPClientConfig{
+				HTTPHeaders: &configutil.Headers{Headers: map[string]configutil.Header{
+					"X-Scope-OrgID": {Secrets: []configutil.Secret{"tenant-a"}},
+					"X-Api-Key":     {Secrets: []configutil.Secret{"secret"}},
+				}},
+			}),
+		},
+		{
+			name: "Test with proxy_url",
+			config: &Config{
+				ClientConfig:       clientConfigWith(nil, "http://proxy.local:3128"),
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			},
+			want: wantWithHTTPClientConfig(configutil.HTTPClientConfig{
+				ProxyConfig: configutil.ProxyConfig{
+					ProxyURL: configutil.URL{URL: &url.URL{Scheme: "http", Host: "proxy.local:3128"}},
+				},
+			}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -338,6 +417,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 			require.NoError(t, got.PrometheusConfig.Reload())
 			require.Len(t, got.PrometheusConfig.ScrapeConfigs, 1)
 			assert.Equal(t, wantTimeout, got.PrometheusConfig.ScrapeConfigs[0].ScrapeTimeout)
+
+			// Headers and proxy_url must survive that round trip unchanged.
+			wantHTTPConfig := tt.want.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig
+			gotHTTPConfig := got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig
+			assert.Equal(t, wantHTTPConfig.HTTPHeaders, gotHTTPConfig.HTTPHeaders)
+			assert.Equal(t, wantHTTPConfig.ProxyURL, gotHTTPConfig.ProxyURL)
 		})
 	}
 }
@@ -358,6 +443,7 @@ func TestGetPrometheusConfigScheme(t *testing.T) {
 			name:       "insecure false",
 			tls:        configtls.ClientConfig{Insecure: false},
 			wantScheme: "https",
+			wantTLS:    configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 		},
 		{
 			name: "ca_file with default insecure",
@@ -366,7 +452,10 @@ func TestGetPrometheusConfigScheme(t *testing.T) {
 				Insecure: true,
 			},
 			wantScheme: "https",
-			wantTLS:    configutil.TLSConfig{CAFile: "./testdata/test_cert.pem"},
+			wantTLS: configutil.TLSConfig{
+				CAFile:     "./testdata/test_cert.pem",
+				MinVersion: configutil.TLSVersions["TLS12"],
+			},
 		},
 		{
 			name: "cert_file and key_file without ca_file are not used with default insecure",

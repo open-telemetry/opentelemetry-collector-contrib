@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
@@ -212,6 +213,48 @@ func TestSpanWithNoStatus(t *testing.T) {
 	resource := pcommon.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.NotNil(t, segment)
+}
+
+func TestClientSpanDBSegmentNameWithEmitV1DB(t *testing.T) {
+	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
+
+	tests := []struct {
+		name       string
+		attributes map[string]any
+		want       string
+	}{
+		{
+			name:       "namespace and server address",
+			attributes: map[string]any{"db.system.name": "mysql", "db.namespace": "customers", "server.address": "db.dev.example.com"},
+			want:       "customers@db.dev.example.com",
+		},
+		{
+			name:       "namespace only",
+			attributes: map[string]any{"db.system.name": "mysql", "db.namespace": "customers"},
+			want:       "customers",
+		},
+		{
+			name: "new attributes win over legacy",
+			attributes: map[string]any{
+				"db.system.name": "mysql", "db.namespace": "customers", "server.address": "db.dev.example.com",
+				"db.system": "mysql", "db.name": "legacy", "db.connection_string": "jdbc:mysql://legacy.example.com:3306",
+			},
+			want: "customers@db.dev.example.com",
+		},
+		{
+			name:       "legacy fallback",
+			attributes: map[string]any{"db.system": "mysql", "db.name": "legacy", "db.connection_string": "jdbc:mysql://legacy.example.com:3306"},
+			want:       "legacy@legacy.example.com",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := constructClientSpan(newSegmentID(), "SELECT", ptrace.StatusCodeUnset, "OK", tt.attributes)
+			segment, err := MakeSegment(span, constructDefaultResource(), nil, false, nil, false)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, *segment.Name)
+		})
+	}
 }
 
 func TestClientSpanWithDbComponent(t *testing.T) {

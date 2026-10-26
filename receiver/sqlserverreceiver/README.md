@@ -46,12 +46,12 @@ When configured to directly connect to the SQL Server instance, the user must ha
    - `VIEW ANY DEFINITION` — makes the index, object, and schema catalog views visible in
      every database so the physical stats query can resolve index metadata.
 
-4. To collect the `db.server.top_procedure` event, `VIEW ANY DEFINITION` is also required.
-   The query resolves each procedure's schema and name with `OBJECT_SCHEMA_NAME` and
-   `OBJECT_NAME` across databases, and both return `NULL` without metadata visibility in the
-   target database. Rows that cannot be resolved are skipped, so a login missing this grant
-   sees procedures silently absent rather than an error. Procedures in the system databases
-   (`master`, `tempdb`, `model`, `msdb`) are never reported.
+4. To collect the `db.server.top_procedure` and `db.server.procedure_definition` events,
+   `VIEW ANY DEFINITION` is also required. The query resolves each procedure's schema and name
+   with `OBJECT_SCHEMA_NAME` and `OBJECT_NAME` across databases, and both return `NULL` without
+   metadata visibility in the target database. Rows that cannot be resolved are skipped, so a
+   login missing this grant sees procedures silently absent rather than an error. Procedures in
+   the system databases (`master`, `tempdb`, `model`, `msdb`) are never reported.
 
 > [!NOTE]
 > `db.server.top_procedure` requires SQL Server 2017 CU3 or later, where
@@ -80,6 +80,8 @@ sql_server:
     db.server.top_query:
       enabled: true
     db.server.top_procedure:
+      enabled: true
+    db.server.procedure_definition:
       enabled: true
     db.server.query_plan:
       enabled: true
@@ -174,6 +176,12 @@ previous behavior exactly.
 
 `db.server.query_plan` is sourced from the same query as `db.server.top_query` and only splits the
 plan out of it, so it collects nothing unless `db.server.top_query` is enabled too.
+
+`db.server.procedure_definition` captures the DDL definition of each stored procedure observed in
+`db.server.top_procedure` during the same collection interval. It correlates with
+`db.server.top_procedure` via `sqlserver.procedure_id` + `db.namespace`. An empty string is
+emitted for `sqlserver.procedure.definition` when the definition is unavailable, rather than
+dropping the row. This event collects nothing unless `db.server.top_procedure` is enabled too.
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
