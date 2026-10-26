@@ -30,6 +30,12 @@ var supportedMetricTypes = map[pmetric.MetricType]string{
 	pmetric.MetricTypeSummary:              sqltemplates.MetricsSummaryCreateTable,
 }
 
+// MaxConcurrentInserts returns the maximum number of concurrent inserts InsertMetrics
+// may run for a single batch, one per supported metric type.
+func MaxConcurrentInserts() int {
+	return len(supportedMetricTypes)
+}
+
 var logger *zap.Logger
 
 type MetricTablesConfigMapper map[pmetric.MetricType]MetricTypeConfig
