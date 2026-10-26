@@ -1038,6 +1038,203 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 	}
 }
 
+func enablePVCMetrics(mbc *metadata.MetricsBuilderConfig) {
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeAvailable.Enabled = true
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeCapacity.Enabled = true
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeUsage.Enabled = true
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeInodeCount.Enabled = true
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeInodeFree.Enabled = true
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeInodeUsed.Enabled = true
+}
+
+// TestScraperWithPVCMetrics uses testdata/stats-summary-pvc.json, which contains:
+//   - PVC "default/shared-data" mounted by two pods on the node,
+//   - PVC "jobs/batch-scratch" backing a generic ephemeral volume,
+//   - an emptyDir volume, which has no pvcRef.
+func TestScraperWithPVCMetrics(t *testing.T) {
+	tests := []struct {
+		name         string
+		enabled      bool
+		uidEnabled   bool
+		k8sAPIClient kubernetes.Interface
+		// expectedUIDs maps PVC name to the expected k8s.persistentvolumeclaim.uid value,
+		// or "" if the attribute is expected to be absent.
+		expectedUIDs map[string]string
+		numDebugLogs int
+	}{
+		{
+			name:    "disabled_by_default",
+			enabled: false,
+		},
+		{
+			name:    "without_uid",
+			enabled: true,
+			expectedUIDs: map[string]string{
+				"shared-data":   "",
+				"batch-scratch": "",
+			},
+		},
+		{
+			name:       "with_uid",
+			enabled:    true,
+			uidEnabled: true,
+			k8sAPIClient: fake.NewClientset(
+				getPVC("shared-data", "default", "pv-1"),
+				getPVC("batch-scratch", "jobs", "pv-2"),
+			),
+			expectedUIDs: map[string]string{
+				"shared-data":   "shared-data",
+				"batch-scratch": "batch-scratch",
+			},
+		},
+		{
+			name:       "uid_lookup_fails",
+			enabled:    true,
+			uidEnabled: true,
+			// batch-scratch is missing, e.g. deleted or not readable due to RBAC.
+			k8sAPIClient: fake.NewClientset(getPVC("shared-data", "default", "pv-1")),
+			expectedUIDs: map[string]string{
+				"shared-data":   "shared-data",
+				"batch-scratch": "",
+			},
+			numDebugLogs: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zap.DebugLevel)
+			settings := receivertest.NewNopSettings(metadata.Type)
+			settings.Logger = zap.New(core)
+
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			if test.enabled {
+				enablePVCMetrics(&mbc)
+			}
+			mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.Enabled = test.uidEnabled
+
+			r, err := newKubeletScraper(
+				&fakeRestClient{statsSummaryFiles: []string{"testdata/stats-summary-pvc.json"}},
+				settings,
+				&scraperOptions{
+					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+						kubelet.VolumeMetricGroup: true,
+					},
+					k8sAPIClient: test.k8sAPIClient,
+				},
+				mbc,
+				"worker-1",
+			)
+			require.NoError(t, err)
+
+			md, err := r.ScrapeMetrics(t.Context())
+			require.NoError(t, err)
+
+			// Exactly one resource per PVC, each with one data point per PVC metric.
+			uids := map[string]string{}
+			rms := md.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				attrs := rms.At(i).Resource().Attributes()
+				pvcName, ok := attrs.Get("k8s.persistentvolumeclaim.name")
+				if !ok {
+					continue
+				}
+				if _, isVolume := attrs.Get("k8s.volume.name"); isVolume {
+					continue
+				}
+				require.NotContains(t, uids, pvcName.Str(), "PVC reported more than once")
+				nodeName, _ := attrs.Get("k8s.node.name")
+				require.Equal(t, "worker-1", nodeName.Str())
+				uid := ""
+				if v, ok := attrs.Get("k8s.persistentvolumeclaim.uid"); ok {
+					uid = v.Str()
+				}
+				uids[pvcName.Str()] = uid
+				require.Equal(t, 6, rms.At(i).ScopeMetrics().At(0).Metrics().Len())
+			}
+			if test.expectedUIDs == nil {
+				require.Empty(t, uids)
+			} else {
+				require.Equal(t, test.expectedUIDs, uids)
+			}
+			require.Equal(t, test.numDebugLogs, observedLogs.FilterMessage("Failed to look up PersistentVolumeClaim UID.").Len())
+
+			expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_pvc_metrics_"+test.name+"_expected.yaml")
+
+			// Uncomment to regenerate '*_expected.yaml' files
+			// golden.WriteMetrics(t, expectedFile, md)
+
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
+		})
+	}
+}
+
+// TestScraperWithPVCMetricsRecreatedPVC verifies that the PVC UID is not cached
+// across scrapes: a PVC recreated under the same name reports its new UID.
+func TestScraperWithPVCMetricsRecreatedPVC(t *testing.T) {
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
+	enablePVCMetrics(&mbc)
+	mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.Enabled = true
+
+	oldPVC := getPVC("shared-data", "default", "pv-1")
+	oldPVC.UID = "uid-old"
+	client := fake.NewClientset(oldPVC, getPVC("batch-scratch", "jobs", "pv-2"))
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{statsSummaryFiles: []string{"testdata/stats-summary-pvc.json"}},
+		receivertest.NewNopSettings(metadata.Type),
+		&scraperOptions{
+			metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+				kubelet.VolumeMetricGroup: true,
+			},
+			k8sAPIClient: client,
+		},
+		mbc,
+		"worker-1",
+	)
+	require.NoError(t, err)
+
+	pvcUID := func(md pmetric.Metrics, pvcName string) string {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			attrs := rms.At(i).Resource().Attributes()
+			if name, ok := attrs.Get("k8s.persistentvolumeclaim.name"); !ok || name.Str() != pvcName {
+				continue
+			}
+			if _, isVolume := attrs.Get("k8s.volume.name"); isVolume {
+				continue
+			}
+			uid, ok := attrs.Get("k8s.persistentvolumeclaim.uid")
+			require.True(t, ok, "missing k8s.persistentvolumeclaim.uid for %s", pvcName)
+			return uid.Str()
+		}
+		require.Failf(t, "PVC not found", "no PVC resource for %s", pvcName)
+		return ""
+	}
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "uid-old", pvcUID(md, "shared-data"))
+
+	pvcs := client.CoreV1().PersistentVolumeClaims("default")
+	require.NoError(t, pvcs.Delete(t.Context(), "shared-data", metav1.DeleteOptions{}))
+	newPVC := getPVC("shared-data", "default", "pv-3")
+	newPVC.UID = "uid-new"
+	_, err = pvcs.Create(t.Context(), newPVC, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	md, err = r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, "uid-new", pvcUID(md, "shared-data"))
+}
+
 func TestClientErrors(t *testing.T) {
 	tests := []struct {
 		name                  string

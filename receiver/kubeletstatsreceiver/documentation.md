@@ -528,6 +528,54 @@ The time since the node started
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
+### k8s.persistentvolumeclaim.volume.available
+
+The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.volume.capacity
+
+The total capacity in bytes of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.volume.inode.count
+
+The total inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.volume.inode.free
+
+The free inodes in the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.volume.inode.used
+
+The inodes used by the filesystem of the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.persistentvolumeclaim.volume.usage
+
+The number of used bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### k8s.pod.cpu.node.utilization
 
 Pod cpu utilization as a ratio of the node's capacity
@@ -607,6 +655,7 @@ The number of used bytes in the pod volume.
 | k8s.node.name | The name of the Node | Any Str | true | - | - |
 | k8s.node.system_container.name | The name of the system container | Any Str | true | - | - |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - | - |
+| k8s.persistentvolumeclaim.uid | The UID of the Persistent Volume Claim. Requires `k8s_api_config` to be set. | Any Str | false | - | - |
 | k8s.pod.name | The name of the Pod | Any Str | true | - | - |
 | k8s.pod.uid | The UID of the Pod | Any Str | true | - | - |
 | k8s.volume.name | The name of the Volume | Any Str | true | - | - |

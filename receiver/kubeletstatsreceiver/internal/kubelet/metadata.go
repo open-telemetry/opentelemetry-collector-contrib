@@ -50,6 +50,7 @@ type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
+	PVCUIDGetter              func(namespace, name string) (string, error)
 	podResources              map[string]resources
 	containerResources        map[string]resources
 	nodeInfo                  NodeInfo
