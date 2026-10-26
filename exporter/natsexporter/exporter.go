@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -96,7 +95,7 @@ func (e *natsExporter) Start(ctx context.Context, host component.Host) error {
 		return errs
 	}
 
-	pub, err := newPublisher(ctx, e.config, e.settings.ID.String(), e.settings.Logger)
+	pub, err := newPublisher(ctx, e.config, e.settings.ID.String(), host, e.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -159,7 +158,7 @@ type publisher interface {
 
 // corePublisher publishes with core NATS (fire-and-forget, no delivery guarantee).
 type corePublisher struct {
-	conn *nats.Conn
+	conn *natsclient.Conn
 }
 
 func (p *corePublisher) publish(_ context.Context, subject string, data []byte) error {
@@ -188,11 +187,11 @@ func (p *corePublisher) close(ctx context.Context) error {
 // newPublisher connects to NATS and returns a core-NATS publisher. JetStream
 // publishing lands in a follow-up PR; until then a configured jetstream block is
 // rejected rather than silently downgraded to fire-and-forget delivery.
-func newPublisher(ctx context.Context, cfg *Config, name string, logger *zap.Logger) (publisher, error) {
+func newPublisher(ctx context.Context, cfg *Config, name string, host component.Host, logger *zap.Logger) (publisher, error) {
 	if cfg.JetStream != nil {
 		return nil, errors.New("jetstream publishing is not yet implemented")
 	}
-	conn, err := natsclient.Connect(ctx, &cfg.ClientConfig, name, logger)
+	conn, err := natsclient.Connect(ctx, &cfg.ClientConfig, name, host, logger)
 	if err != nil {
 		return nil, err
 	}

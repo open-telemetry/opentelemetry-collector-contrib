@@ -29,6 +29,19 @@ With default settings, the two components use the same subjects and encoding.
   redelivery; a payload that fails to decode or that the pipeline rejects is
   logged and dropped. Set `queue_group` to load balance a subject across several
   collector instances instead of each instance receiving every message.
+
+  If the pipeline cannot keep up, messages queue in the NATS client up to its
+  default pending limits (500,000 messages or 64 MiB per subscription). Beyond
+  that, NATS drops messages for that subscription and the receiver logs a slow
+  consumer warning. On shutdown, the receiver stops its subscriptions and hands
+  the messages already queued to the pipeline before closing the connection.
+
+  If the connection to NATS is lost, the receiver reconnects indefinitely and
+  resubscribes; messages published while it is disconnected are not received.
+  As with the NATS exporter, the connection state is reported as component
+  status: a recoverable error while reconnecting, and a permanent error if the
+  client gives up (for example, when the server rejects the credentials twice
+  in a row).
 - **JetStream** (`jetstream` set): the receiver consumes from a stream and:
   - **acks** a message once the pipeline accepts it,
   - **naks** it (triggering redelivery) when the pipeline returns an error,
@@ -40,7 +53,7 @@ With default settings, the two components use the same subjects and encoding.
 | Field       | Default            | Description |
 | ----------- | ------------------ | ----------- |
 | `endpoint`  | `nats://127.0.0.1:4222` | NATS server URL. |
-| `pedantic`  | `false`            | Enable NATS [pedantic](https://docs.nats.io/reference/reference-protocols/nats-protocol#connect) mode, which makes the server strictly validate subscribed subjects. |
+| `pedantic`  | `false`            | Enable NATS [pedantic](https://docs.nats.io/reference/reference-protocols/nats-protocol#connect) mode. Shared with the NATS exporter; it has no effect on subscriptions. |
 | `tls`       | (disabled)         | TLS client configuration. See [configtls](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). |
 | `jetstream` | (unset)            | When set, consume via JetStream instead of core NATS. See [JetStream](#jetstream) below. |
 | `logs`      |                    | Per-signal configuration for logs. See [Signal configuration](#signal-configuration). |
@@ -61,11 +74,16 @@ Each of `logs`, `metrics`, and `traces` accepts:
 | `stream`             | (looked up by `subject`)                       | JetStream only. Stream to consume from. |
 | `durable`            | (unset)                                        | JetStream only. Durable consumer name. Set it so progress survives restarts and so several collector instances can share the work; empty creates an ephemeral consumer. |
 
+Only signals used in a pipeline are subscribed, and only their
+`encoding_extension` is looked up at startup. The settings of every signal are
+still validated when the configuration loads.
+
 ### JetStream
 
 > [!NOTE]
-> JetStream consumption is not yet implemented. The behavior described in this
-> section is the planned design and is contributed in a follow-up.
+> JetStream consumption is not yet implemented; a configured `jetstream` block is
+> rejected at startup. The behavior described in this section is the planned
+> design and is contributed in a follow-up.
 
 When the `jetstream` block is present, each signal consumes from a JetStream
 stream with explicit acknowledgement. The receiver does not create or manage

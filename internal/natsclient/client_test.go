@@ -4,17 +4,25 @@
 package natsclient
 
 import (
+	"net"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/nats-io/jwt/v2"
+	"github.com/nats-io/nats-server/v2/server"
 	natstest "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nkeys"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 // newUserNKey returns a fresh user key pair and its public key / seed.
@@ -175,12 +183,13 @@ func TestConnect(t *testing.T) {
 	cfg.Endpoint = srv.ClientURL()
 	cfg.Pedantic = true
 
-	conn, err := Connect(t.Context(), &cfg, "otelcol-test", zap.NewNop())
+	conn, err := Connect(t.Context(), &cfg, "otelcol-test", &statusHost{}, zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	assert.True(t, conn.IsConnected())
 	assert.Equal(t, "otelcol-test", conn.Opts.Name)
 	assert.True(t, conn.Opts.Pedantic)
+	assert.Equal(t, -1, conn.Opts.MaxReconnect, "the connection must never give up reconnecting")
 }
 
 func TestConnectInvalidAuth(t *testing.T) {
@@ -189,6 +198,149 @@ func TestConnectInvalidAuth(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Auth.Nkey = &NkeyConfig{PublicKey: "U", Seed: []byte("bad")}
 
-	_, err := Connect(t.Context(), &cfg, "otelcol-test", zap.NewNop())
+	_, err := Connect(t.Context(), &cfg, "otelcol-test", &statusHost{}, zap.NewNop())
 	assert.Error(t, err)
+}
+
+// TestConnectLogsSlowConsumer verifies that async errors such as a slow
+// consumer dropping messages are logged with the affected subject.
+func TestConnectLogsSlowConsumer(t *testing.T) {
+	t.Parallel()
+
+	opts := natstest.DefaultTestOptions
+	opts.Port = -1 // random free port
+	srv := natstest.RunServer(&opts)
+	defer srv.Shutdown()
+
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = srv.ClientURL()
+	core, logs := observer.New(zapcore.WarnLevel)
+
+	conn, err := Connect(t.Context(), &cfg, "otelcol-test", &statusHost{}, zap.New(core))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// A handler that blocks with a pending limit of one message makes the
+	// following publishes overflow the subscription.
+	release := make(chan struct{})
+	defer close(release)
+	sub, err := conn.Subscribe("slow", func(*nats.Msg) { <-release })
+	require.NoError(t, err)
+	require.NoError(t, sub.SetPendingLimits(1, -1))
+	for range 3 {
+		require.NoError(t, conn.Publish("slow", []byte("x")))
+	}
+	require.NoError(t, conn.Flush())
+
+	require.Eventually(t, func() bool { return logs.FilterMessage("NATS async error").Len() > 0 }, 5*time.Second, 10*time.Millisecond)
+	entry := logs.FilterMessage("NATS async error").All()[0]
+	assert.Equal(t, "slow", entry.ContextMap()["subject"])
+	assert.Contains(t, entry.ContextMap()["error"], nats.ErrSlowConsumer.Error())
+}
+
+// statusHost is a component.Host that records the reported status events.
+type statusHost struct {
+	mu     sync.Mutex
+	events []*componentstatus.Event
+}
+
+func (*statusHost) GetExtensions() map[component.ID]component.Component { return nil }
+
+func (h *statusHost) Report(e *componentstatus.Event) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.events = append(h.events, e)
+}
+
+func (h *statusHost) statuses() []componentstatus.Status {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	out := make([]componentstatus.Status, len(h.events))
+	for i, e := range h.events {
+		out[i] = e.Status()
+	}
+	return out
+}
+
+func (h *statusHost) last() *componentstatus.Event {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.events) == 0 {
+		return nil
+	}
+	return h.events[len(h.events)-1]
+}
+
+// runRestartableServer starts a server on a random port and returns its
+// options with that port fixed, so it can be restarted on the same address.
+func runRestartableServer(t *testing.T) (*server.Server, server.Options) {
+	t.Helper()
+	opts := natstest.DefaultTestOptions
+	opts.Port = -1 // random free port
+	srv := natstest.RunServer(&opts)
+	opts.Port = srv.Addr().(*net.TCPAddr).Port
+	return srv, opts
+}
+
+// TestConnectReportsStatus verifies that a lost connection is reported as a
+// recoverable error, a reconnect as OK, and an intentional close not at all.
+func TestConnectReportsStatus(t *testing.T) {
+	t.Parallel()
+
+	srv, opts := runRestartableServer(t)
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = srv.ClientURL()
+	host := &statusHost{}
+
+	conn, err := Connect(t.Context(), &cfg, "otelcol-test", host, zap.NewNop())
+	require.NoError(t, err)
+	assert.Empty(t, host.statuses())
+
+	srv.Shutdown()
+	require.Eventually(t, func() bool {
+		e := host.last()
+		return e != nil && e.Status() == componentstatus.StatusRecoverableError
+	}, 5*time.Second, 10*time.Millisecond)
+
+	srv = natstest.RunServer(&opts)
+	defer srv.Shutdown()
+	require.Eventually(t, func() bool {
+		e := host.last()
+		return e != nil && e.Status() == componentstatus.StatusOK
+	}, 10*time.Second, 10*time.Millisecond)
+
+	reported := len(host.statuses())
+	conn.Close()
+	require.Eventually(t, conn.IsClosed, 5*time.Second, 10*time.Millisecond)
+	// Close callbacks run asynchronously; give them time to (not) report.
+	time.Sleep(100 * time.Millisecond)
+	assert.Len(t, host.statuses(), reported, "an intentional close must not report status")
+}
+
+// TestConnectReportsPermanentWhenGivingUp verifies that a connection nats.go
+// closes for good, here after the server rejects the credentials twice, is
+// reported as a permanent error rather than going silent.
+func TestConnectReportsPermanentWhenGivingUp(t *testing.T) {
+	t.Parallel()
+
+	srv, opts := runRestartableServer(t)
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = srv.ClientURL()
+	host := &statusHost{}
+
+	conn, err := Connect(t.Context(), &cfg, "otelcol-test", host, zap.NewNop())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Come back requiring credentials the client does not have.
+	srv.Shutdown()
+	opts.Username, opts.Password = "otel", "s3cret"
+	srv = natstest.RunServer(&opts)
+	defer srv.Shutdown()
+
+	require.Eventually(t, func() bool {
+		e := host.last()
+		return e != nil && e.Status() == componentstatus.StatusPermanentError
+	}, 20*time.Second, 50*time.Millisecond)
+	assert.ErrorIs(t, host.last().Err(), nats.ErrAuthorization)
 }
