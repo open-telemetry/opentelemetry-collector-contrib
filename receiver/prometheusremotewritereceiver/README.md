@@ -38,6 +38,19 @@ receivers:
     endpoint: 0.0.0.0:9090
 ```
 
+In addition to the `confighttp` server settings, the following settings are available:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `resource_cache_size` | `1000` | Maximum number of job/instance pairs whose resource attributes are kept in the [Resource Metrics Cache](#resource-metrics-cache). Must be greater than 0. Set it to at least the number of distinct job/instance pairs your Prometheus servers send, otherwise `target_info` attributes are lost between requests. |
+
+```yaml
+receivers:
+  prometheus_remote_write:
+    endpoint: 0.0.0.0:9090
+    resource_cache_size: 5000
+```
+
 ## Configuring your Prometheus
 
 To make Prometheus work with this component, you'll need to add a few extra configuration options. As described below:
@@ -112,12 +125,13 @@ Histograms past either limit are dropped, are not counted in the `X-Prometheus-R
 
 `target_info` metrics and "normal" metrics are a match when they have the same job/instance labels (Please read the [specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1) for more details). But these metrics do not always come in the same Remote-Write request. For this reason, the receiver uses an internal LRU (Least Recently Used) and stateless cache implementation to store resource metrics across requests.
 
-The cleanup is based on a maximum size of 1000 resource metrics, and it will be cleaned when the limit is reached, cleaning the less recently used resource metrics.
+The cache holds one entry per job/instance pair, up to `resource_cache_size` entries (default `1000`). When the limit is reached, the least recently used entry is evicted. Each entry keeps a copy of the resource attributes of its job/instance pair (the `job` and `instance` labels plus the labels of its `target_info` series), so the memory used by the cache grows with `resource_cache_size` and with the number of `target_info` labels; a very large value costs memory even when the cache is full of small entries.
+
+If your Prometheus servers send more distinct job/instance pairs than the cache can hold, entries are evicted on every request: metrics received after `target_info` no longer get its resource attributes and end up in a different resource than earlier samples of the same series. Raise `resource_cache_size` above the number of job/instance pairs to avoid this.
 
 This approach has some limitations, for example:
     - If the process dies or restarts, the cache will be lost.
     - Some inconsistencies can happen according to the order of the requests and the current cache size.
-    - The limit of 1000 resource metrics is hardcoded and not configurable for now.
 
 The receiver reports every eviction in the `otelcol_receiver_prometheusremotewrite_resource_cache_evictions` internal metric. A counter that keeps growing means the cache is smaller than the number of job/instance pairs sent to the receiver.
 
