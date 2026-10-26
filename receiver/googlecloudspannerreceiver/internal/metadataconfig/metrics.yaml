@@ -32,6 +32,43 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Column Operations Stats -------------------------------------------------------------
+#
+  - name: "minute column operations stats"
+    query: "SELECT INTERVAL_END, TABLE_NAME, COLUMN_NAME, IS_QUERY_CACHE_MEMORY_CAPPED, READ_COUNT, QUERY_COUNT, WRITE_COUNT FROM SPANNER_SYS.COLUMN_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, READ_COUNT + QUERY_COUNT + WRITE_COUNT DESC"
+    metric_name_prefix: "database/spanner/column_operations/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "column_name"
+        column_name: "COLUMN_NAME"
+        value_type: "string"
+      - name: "is_query_cache_memory_capped"
+        column_name: "IS_QUERY_CACHE_MEMORY_CAPPED"
+        value_type: "bool"
+    metrics:
+      - name: "read_count"
+        column_name: "READ_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "query_count"
+        column_name: "QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Locks Stats -------------------------------------------------------------
 #
   - name: "top minute lock stats"
@@ -648,6 +685,30 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Supported Optimizer Versions ------------------------------------------------------
+#
+  - name: "supported optimizer versions"
+    query: "SELECT 1 AS VERSION_COUNT, VERSION, RELEASE_DATE, IS_DEFAULT FROM SPANNER_SYS.SUPPORTED_OPTIMIZER_VERSIONS ORDER BY IS_DEFAULT DESC, RELEASE_DATE DESC"
+    metric_name_prefix: "database/spanner/supported_optimizer_versions/"
+    high_cardinality: true
+    labels:
+      - name: "version"
+        column_name: "VERSION"
+        value_type: "int"
+      - name: "release_date"
+        column_name: "RELEASE_DATE"
+        value_type: "date"
+      - name: "is_default"
+        column_name: "IS_DEFAULT"
+        value_type: "bool"
+    metrics:
+      - name: "version_count"
+        column_name: "VERSION_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
   - name: "top minute transaction stats"
@@ -1043,6 +1104,34 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+#
+# -------------------------------------------- Table Size Per Locality Group Stats ------------------------------------------------------
+#
+  - name: "hourly table size per locality group stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_SIZES_STATS_PER_LOCALITY_GROUP_1HOUR WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC"
+    metric_name_prefix: "database/spanner/table_sizes_per_locality_group/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "locality_group"
+        column_name: "LOCALITY_GROUP"
+        value_type: "string"
+    metrics:
+      - name: "used_ssd_bytes"
+        column_name: "USED_SSD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
+      - name: "used_hdd_bytes"
+        column_name: "USED_HDD_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"
 #
 #----------------------------------------Split Stats-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #

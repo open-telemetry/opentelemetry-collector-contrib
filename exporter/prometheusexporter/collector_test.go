@@ -1043,6 +1043,57 @@ func TestConvertExponentialHistogramInvalidScale(t *testing.T) {
 	require.Contains(t, err.Error(), "scale must be >= -4")
 }
 
+func TestCollectExponentialHistogramSum(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		hasSum bool
+		sum    float64
+	}{
+		{name: "absent sum"},
+		{name: "zero sum", hasSum: true},
+		{name: "nonzero sum", hasSum: true, sum: -0.5},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rm := pmetric.NewResourceMetrics()
+			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName("test_native_hist")
+			h := metric.SetEmptyExponentialHistogram()
+			h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			dp := h.DataPoints().AppendEmpty()
+			dp.SetCount(2)
+			dp.Positive().BucketCounts().FromRaw([]uint64{1})
+			dp.Negative().BucketCounts().FromRaw([]uint64{1})
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			if tt.hasSum {
+				dp.SetSum(tt.sum)
+			}
+			// Another series must still be exported when the first one is dropped.
+			valid := h.DataPoints().AppendEmpty()
+			dp.CopyTo(valid)
+			valid.Attributes().PutStr("series", "valid")
+			valid.SetSum(0.5)
+
+			c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+			c.accumulator.Accumulate(rm)
+			registry := prometheus.NewRegistry()
+			registry.MustRegister(c)
+			families, err := registry.Gather()
+			require.NoError(t, err)
+			require.Len(t, families, 1)
+			wantSums := []float64{0.5}
+			if tt.hasSum {
+				wantSums = append(wantSums, tt.sum)
+			}
+			var sums []float64
+			for _, m := range families[0].GetMetric() {
+				require.NotNil(t, m.GetHistogram().Schema)
+				sums = append(sums, m.GetHistogram().GetSampleSum())
+			}
+			require.ElementsMatch(t, wantSums, sums)
+		})
+	}
+}
+
 func TestAccumulateSummary(t *testing.T) {
 	fillQuantileValue := func(pN, value float64, dest pmetric.SummaryDataPointValueAtQuantile) {
 		dest.SetQuantile(pN)
