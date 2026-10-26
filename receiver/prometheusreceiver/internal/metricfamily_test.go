@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -1517,6 +1518,21 @@ func TestConvertExemplar(t *testing.T) {
 				return e
 			},
 		},
+		{
+			name: "valid ids with no extra labels leave filtered attributes empty",
+			labels: labels.New(
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.SetTraceID(validTraceIDBytes)
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1529,6 +1545,31 @@ func TestConvertExemplar(t *testing.T) {
 			got := pmetric.NewExemplar()
 			convertExemplar(pe, got)
 			require.Equal(t, tt.want(), got)
+		})
+	}
+}
+
+func TestPopulateAttributes(t *testing.T) {
+	for _, keptCount := range []int{0, 5, 16, 20} {
+		t.Run(fmt.Sprintf("kept=%d", keptCount), func(t *testing.T) {
+			lb := labels.NewBuilder(labels.EmptyLabels())
+			lb.Set(model.MetricNameLabel, "http_requests_total")
+			lb.Set(model.JobLabel, "api")
+			lb.Set(model.InstanceLabel, "localhost:8080")
+			lb.Set(model.BucketLabel, "0.5")
+			lb.Set("otel_scope_name", "my.scope")
+			lb.Set("empty_label", "")
+			want := pcommon.NewMap()
+			for i := range keptCount {
+				k := fmt.Sprintf("label_%02d", i)
+				v := fmt.Sprintf("val_%02d", i)
+				lb.Set(k, v)
+				want.PutStr(k, v)
+			}
+
+			got := pcommon.NewMap()
+			populateAttributes(pmetric.MetricTypeHistogram, lb.Labels(), got)
+			require.Equal(t, want, got)
 		})
 	}
 }

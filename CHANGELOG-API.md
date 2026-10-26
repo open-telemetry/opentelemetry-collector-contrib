@@ -7,6 +7,38 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.3.0/v0.164.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/nats`: Move NATS connection settings and auth types to the shared `internal/natsclient` module. The YAML configuration is unchanged. (#50735)
+  `Config.Endpoint`, `Config.Pedantic`, `Config.TLS`, and `Config.Auth` are now under `Config.ClientConfig`. `AuthConfig`, `TokenConfig`, `UserConfig`, `NkeyConfig`, `NkeyJWTConfig`, and `NkeyUserFileConfig` moved to `internal/natsclient`.
+- `pkg/azurelogs`: Promote the `pkg.translator.azurelogs.EmitV1LogConventions` and `pkg.translator.azurelogs.DontEmitV0LogConventions` feature gates to beta. (#52096)
+  `code.function.name` and `code.file.path` are now emitted instead of `code.function` and `code.filepath` by default.
+  The gates no longer control the `event.name` resource attribute, which is always emitted.
+  
+- `pkg/ottl`: Remove the stable `ottl.set.allowNil` feature gate. (#48714)
+- `pkg/prometheus`: Promote the pkg.translator.prometheus.PermissiveLabelSanitization feature gate to stable and deprecate DropSanitizationGate. (#50429)
+  The gate can no longer be disabled and will be removed in v0.166.0.
+  
+- `pkg/prometheus`: Remove NormalizeLabel. Use github.com/prometheus/otlptranslator.LabelNamer.Build for label name translation instead. (#50429)
+
+### 🚩 Deprecations 🚩
+
+- `processor/transform`: Deprecate the `flatten_data` option in favor of the new `flatten.log` option. (#51766)
+  Replace `flatten_data: true` with `flatten: {log: true}`. `flatten_data` will be removed in a future release.
+
+### 💡 Enhancements 💡
+
+- `extension/datadog`: Add `NewFactoryWithOptions` so a host embedding the collector can supply extra Agent-config options, for example to propagate an API key rotation into the extension's forwarder. (#51877)
+- `extension/redis_storage`: Add `IncrementBy` and `BatchIncrementBy` for atomic integer counters shared across Collector instances. (#51567)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/prometheus_remote_write`: Drop exponential histogram data points without a sum instead of exporting a zero sum. (#52232)
+
+<!-- previous-version -->
+
 ## v1.2.0/v0.163.0
 
 ### 🛑 Breaking changes 🛑
