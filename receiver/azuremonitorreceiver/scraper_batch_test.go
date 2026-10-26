@@ -262,6 +262,83 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 	}
 }
 
+func TestAzureBatchScraperLoadResourceMetricsDefinitionsByType_MergesResources(t *testing.T) {
+	const (
+		subscriptionID = "subscriptionId1"
+		resourceType   = "Microsoft.EventHub/namespaces"
+		standardID     = "/subscriptions/subscriptionId1/resourceGroups/group1/providers/Microsoft.EventHub/namespaces/standard"
+		premiumID      = "/subscriptions/subscriptionId1/resourceGroups/group1/providers/Microsoft.EventHub/namespaces/premium"
+		otherPremiumID = "/subscriptions/subscriptionId1/resourceGroups/group1/providers/Microsoft.EventHub/namespaces/other-premium"
+	)
+
+	metricDefinitions := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		standardID: {
+			{namespace: resourceType, name: "ActiveConnections", timeGrain: "PT1M"},
+		},
+		premiumID: {
+			{namespace: resourceType, name: "ActiveConnections", timeGrain: "PT1M"},
+			{namespace: resourceType, name: "NamespaceCpuUsage", timeGrain: "PT1M"},
+		},
+		otherPremiumID: {
+			{namespace: resourceType, name: "ShouldNotBeDiscovered", timeGrain: "PT1M"},
+		},
+	})
+
+	s := &azureBatchScraper{
+		cfg:                   createDefaultTestConfig(),
+		clientOptionsResolver: newMockClientOptionsResolver(nil, nil, nil, metricDefinitions, nil, nil),
+		settings:              receivertest.NewNopSettings(metadata.Type).TelemetrySettings,
+		resources: map[string]map[string]*azureResource{
+			subscriptionID: {
+				standardID:     {metricDefinitionGroup: "eventhub-westus-standard"},
+				premiumID:      {metricDefinitionGroup: "eventhub-westus-premium"},
+				otherPremiumID: {metricDefinitionGroup: "eventhub-westus-premium"},
+			},
+		},
+		resourceTypes: map[string]map[string]*azureType{
+			subscriptionID: {
+				resourceType: {
+					resourceIDs: []string{standardID, premiumID, otherPremiumID},
+				},
+			},
+		},
+	}
+
+	s.loadResourceMetricsDefinitionsByType(t.Context(), subscriptionID, resourceType)
+
+	require.Len(t, s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey, 1)
+	for _, metrics := range s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey {
+		require.ElementsMatch(t, []string{"ActiveConnections", "NamespaceCpuUsage"}, metrics.metrics)
+	}
+}
+
+func TestMetricDefinitionGroup(t *testing.T) {
+	resourceType := "Microsoft.EventHub/namespaces"
+	location := "WestUS2"
+	kind := "EventHub"
+	name := "Premium"
+	tier := "Premium"
+	capacityOne := int32(1)
+	capacityTwo := int32(2)
+
+	first := &armresources.GenericResourceExpanded{
+		Type:     &resourceType,
+		Location: &location,
+		Kind:     &kind,
+		SKU:      &armresources.SKU{Name: &name, Tier: &tier, Capacity: &capacityOne},
+	}
+	second := &armresources.GenericResourceExpanded{
+		Type:     &resourceType,
+		Location: new("westus2"),
+		Kind:     new("eventhub"),
+		SKU:      &armresources.SKU{Name: new("premium"), Tier: new("premium"), Capacity: &capacityTwo},
+	}
+
+	require.Equal(t, metricDefinitionGroup(first), metricDefinitionGroup(second), "capacity and casing must not create additional definition groups")
+	second.SKU.Name = new("Standard")
+	require.NotEqual(t, metricDefinitionGroup(first), metricDefinitionGroup(second), "different SKUs may expose different metric definitions")
+}
+
 // TestAzureScraperBatchScrape_NoDuplicateOnRescrape is a regression test for the
 // "duplicate sample for timestamp" 409 errors emitted by Prometheus-compatible
 // backends (Thanos/Mimir/Cortex) when the batch scraper was re-emitting the
