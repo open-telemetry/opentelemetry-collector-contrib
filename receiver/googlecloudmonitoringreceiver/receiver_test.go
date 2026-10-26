@@ -280,3 +280,38 @@ func TestConvertGCPTimeSeriesToMetrics_CumulativePointsOrdering(t *testing.T) {
 func timeFromSec(sec int64) time.Time {
 	return time.Unix(sec, 0).UTC()
 }
+
+func TestShiftTimeSeriesTimestamps(t *testing.T) {
+	delay := 4 * time.Minute
+	timeSeries := &monitoringpb.TimeSeries{
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: timestamppb.New(timeFromSec(1000)),
+					EndTime:   timestamppb.New(timeFromSec(1060)),
+				},
+			},
+			{
+				// Gauge-style point without a start time
+				Interval: &monitoringpb.TimeInterval{
+					EndTime: timestamppb.New(timeFromSec(1120)),
+				},
+			},
+			{
+				// Point without an interval must not panic
+				Interval: nil,
+			},
+		},
+	}
+
+	shiftTimeSeriesTimestamps(timeSeries, delay)
+
+	first := timeSeries.Points[0].GetInterval()
+	assert.Equal(t, timeFromSec(1240), first.GetStartTime().AsTime())
+	assert.Equal(t, timeFromSec(1300), first.GetEndTime().AsTime())
+	assert.Equal(t, int64(60), first.GetEndTime().Seconds-first.GetStartTime().Seconds, "interval width must be preserved")
+
+	second := timeSeries.Points[1].GetInterval()
+	assert.Nil(t, second.GetStartTime())
+	assert.Equal(t, timeFromSec(1360), second.GetEndTime().AsTime())
+}

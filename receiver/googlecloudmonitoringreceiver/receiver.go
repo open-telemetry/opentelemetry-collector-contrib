@@ -99,7 +99,8 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 			gInterval = defaultCollectionInterval
 		}
 
-		gDelay = metricDesc.GetMetadata().GetIngestDelay().AsDuration()
+		ingestDelay := metricDesc.GetMetadata().GetIngestDelay().AsDuration()
+		gDelay = ingestDelay
 		if gDelay <= 0 {
 			gDelay = defaultFetchDelay
 		}
@@ -136,6 +137,14 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 			if err != nil {
 				gErr = fmt.Errorf("failed to retrieve time series data: %w", err)
 				return metrics, gErr
+			}
+
+			// Optionally compensate the ingest delay so datapoints carry the
+			// timestamp at which they became available instead of the
+			// observation time. Shifted timestamps never exceed "now" because
+			// the query window end time is already offset by the same delay.
+			if mr.config.CompensateIngestDelay && ingestDelay > 0 {
+				shiftTimeSeriesTimestamps(timeSeries, ingestDelay)
 			}
 
 			// Convert and append the metric directly within the loop
@@ -238,6 +247,26 @@ func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time)
 
 	// Return start and end times
 	return startTime, endTime
+}
+
+// shiftTimeSeriesTimestamps moves every point's interval forward by the given
+// delay, in place, before conversion to pdata. Both start and end times are
+// shifted so interval widths (and therefore delta/cumulative semantics) are
+// preserved.
+func shiftTimeSeriesTimestamps(timeSeries *monitoringpb.TimeSeries, delay time.Duration) {
+	seconds := int64(delay.Seconds())
+	for _, point := range timeSeries.GetPoints() {
+		interval := point.GetInterval()
+		if interval == nil {
+			continue
+		}
+		if startTime := interval.GetStartTime(); startTime != nil {
+			startTime.Seconds += seconds
+		}
+		if endTime := interval.GetEndTime(); endTime != nil {
+			endTime.Seconds += seconds
+		}
+	}
 }
 
 // getFilterQuery constructs a filter query string based on the provided metric.

@@ -42,6 +42,7 @@ receivers:
 - `project_id` (Required): The GCP project ID.
 - `endpoint` (Optional): Overrides the default `monitoring.googleapis.com:443` endpoint. Use this when targeting non-standard universe domains.
 - `metrics_list` (Required): A list of services metrics to monitor.
+- `compensate_ingest_delay` (Optional, default = `false`): When enabled, each datapoint's timestamps are shifted forward by the metric's ingest delay ([`MetricDescriptor.metadata.ingest_delay`](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#metricdescriptormetadata)), so samples carry the wall-clock time they became available instead of the source-observation time. Without this, the newest emitted sample always trails the current time by `ingest_delay + collection_interval`, which can make metrics invisible to downstream consumers that evaluate queries at "now" (e.g. alerting rules with a limited lookback window). Enabling it trades timestamp fidelity for immediate queryability; interval widths are preserved, so delta and cumulative semantics are unaffected.
 
 Each single metric can have the following configuration:
 

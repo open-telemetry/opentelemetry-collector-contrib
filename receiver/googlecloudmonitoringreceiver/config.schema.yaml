@@ -9,6 +9,9 @@ $defs:
         type: string
 type: object
 properties:
+  compensate_ingest_delay:
+    description: CompensateIngestDelay shifts each datapoint's timestamps forward by the metric's ingest delay (MetricDescriptor.metadata.ingest_delay), so samples carry the wall-clock time they became available rather than the source-observation time. Defaults to false (source-true timestamps).
+    type: boolean
   endpoint:
     description: Overrides the default monitoring.googleapis.com:443 endpoint. Use this when targeting non-standard universe domains.
     type: string
