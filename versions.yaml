@@ -9,7 +9,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
   contrib-base:
-    version: v0.163.0
+    version: v0.164.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
