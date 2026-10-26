@@ -5,9 +5,11 @@ package rabbitmqexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -18,6 +20,9 @@ type Config struct {
 	EncodingExtensionID *component.ID             `mapstructure:"encoding_extension"`
 	Durable             bool                      `mapstructure:"durable"`
 	RetrySettings       configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	// Compression compresses message bodies and sets their content-encoding.
+	// Valid values are `gzip`, `zstd`, `none` or no value set.
+	Compression configcompression.Type `mapstructure:"compression"`
 }
 
 type ConnectionConfig struct {
@@ -58,6 +63,12 @@ func (cfg *Config) Validate() error {
 	// Password-less users are possible so only validate username
 	if cfg.Connection.Auth.Plain.Username == "" {
 		return errors.New("connection.auth.plain.username is required")
+	}
+
+	switch {
+	case !cfg.Compression.IsCompressed(), cfg.Compression == configcompression.TypeGzip, cfg.Compression == configcompression.TypeZstd:
+	default:
+		return fmt.Errorf("compression %q is not supported, use %q or %q", cfg.Compression, configcompression.TypeGzip, configcompression.TypeZstd)
 	}
 
 	return nil
