@@ -4,7 +4,6 @@
 package clickhouseexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,9 +96,9 @@ func TestMetricsExporterConnectionPoolSize(t *testing.T) {
 			cfg.CreateSchema = false
 
 			exporter := newMetricsExporter(zap.NewNop(), cfg)
-			require.NoError(t, exporter.start(context.Background(), nil))
+			require.NoError(t, exporter.start(t.Context(), nil))
 			defer func() {
-				require.NoError(t, exporter.shutdown(context.Background()))
+				require.NoError(t, exporter.shutdown(t.Context()))
 			}()
 
 			stats := exporter.db.Stats()
