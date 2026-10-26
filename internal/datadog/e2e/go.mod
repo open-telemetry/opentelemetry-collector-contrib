@@ -336,7 +336,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.164.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.164.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.163.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.2.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.164.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.164.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.164.0 // indirect

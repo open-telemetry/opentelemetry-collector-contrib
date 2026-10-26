@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.2.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
