@@ -526,26 +526,54 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 		}
 
 		if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+			if rejected, ok := errors.AsType[*payloadRejectionError](errExecute); ok {
+				rejected.sampleCount = writeRequestSampleCount(request)
+			}
 			errs = multierr.Append(errs, errExecute)
 		}
 	}
 }
 
-// nonRetryableStatusError reports that the remote endpoint rejected the write
-// with an HTTP status that will reject the identical payload again, so no
-// amount of retrying can make the batch succeed. It is distinct from a
-// permanent error, which also covers a retryable failure that merely ran out
-// of retry budget.
-type nonRetryableStatusError struct {
+// payloadRejectionError reports that the remote endpoint rejected the content
+// of a write request, so the identical payload will be rejected again and no
+// amount of retrying can make it succeed. It is distinct from a permanent error,
+// which also covers a retryable failure that merely ran out of retry budget, and
+// from a status such as 401 that rejects every request regardless of content.
+type payloadRejectionError struct {
 	StatusCode int
-	err        error
+	// sampleCount is the number of samples the rejected request carried.
+	sampleCount int
+	err         error
 }
 
-func (e *nonRetryableStatusError) Error() string {
+func (e *payloadRejectionError) Error() string {
 	return fmt.Sprintf("%s (http status %d)", e.err.Error(), e.StatusCode)
 }
 
-func (e *nonRetryableStatusError) Unwrap() error { return e.err }
+func (e *payloadRejectionError) Unwrap() error { return e.err }
+
+// isPayloadRejection reports whether status rejects the content of the request rather than every request.
+func isPayloadRejection(status int) bool {
+	switch status {
+	case http.StatusBadRequest, http.StatusConflict, http.StatusRequestEntityTooLarge, http.StatusUnprocessableEntity:
+		return true
+	default:
+		return false
+	}
+}
+
+// writeRequestSampleCount reports how many samples a write request carries. A
+// native histogram is one sample in Prometheus terms, so it is counted here;
+// exemplars are accounted for separately by the backend and are not.
+func writeRequestSampleCount(req *prompb.WriteRequest) int {
+	n := 0
+	// Indexed rather than ranged by value: a TimeSeries is large enough that
+	// copying one per iteration shows up in the linter.
+	for i := range req.Timeseries {
+		n += len(req.Timeseries[i].Samples) + len(req.Timeseries[i].Histograms)
+	}
+	return n
+}
 
 func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	retryCount := 0
@@ -650,7 +678,12 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return resp.StatusCode, rerr
 		}
 
-		rejected := &nonRetryableStatusError{StatusCode: resp.StatusCode, err: rerr}
+		// Only a rejection of this payload is tagged; any other status rejects every request, so the WAL keeps the batch.
+		if !isPayloadRejection(resp.StatusCode) {
+			return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		}
+
+		rejected := &payloadRejectionError{StatusCode: resp.StatusCode, err: rerr}
 		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rejected))
 	}
 

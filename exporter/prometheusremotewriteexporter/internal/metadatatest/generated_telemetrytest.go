@@ -181,7 +181,7 @@ func AssertEqualExporterPrometheusremotewriteWalReadsFailures(t *testing.T, tt *
 func AssertEqualExporterPrometheusremotewriteWalSendFailedBatches(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_send_failed_batches",
-		Description: "Number of WAL write request batches dropped because the remote endpoint rejected them with a non-retryable status. A retryable failure is retried, not counted here. [Development]",
+		Description: "Number of remote write request batches dropped from the WAL because the remote endpoint rejected their content (HTTP 400, 409, 413 or 422). Any other failure keeps the batch in the WAL and is not counted here. [Development]",
 		Unit:        "{batch}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -197,7 +197,7 @@ func AssertEqualExporterPrometheusremotewriteWalSendFailedBatches(t *testing.T, 
 func AssertEqualExporterPrometheusremotewriteWalSendFailedSamples(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_send_failed_samples",
-		Description: "Number of samples dropped because the remote endpoint rejected them with a non-retryable status. Counts samples and native histograms; a retryable failure is retried, not counted here. [Development]",
+		Description: "Number of samples and native histograms in the batches counted by exporter_prometheusremotewrite_wal_send_failed_batches. This is an upper bound on the samples lost, because the endpoint may have stored part of a rejected batch. [Development]",
 		Unit:        "{sample}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

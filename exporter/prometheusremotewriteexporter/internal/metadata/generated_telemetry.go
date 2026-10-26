@@ -137,13 +137,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalSendFailedBatches, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_send_failed_batches",
-		metric.WithDescription("Number of WAL write request batches dropped because the remote endpoint rejected them with a non-retryable status. A retryable failure is retried, not counted here. [Development]"),
+		metric.WithDescription("Number of remote write request batches dropped from the WAL because the remote endpoint rejected their content (HTTP 400, 409, 413 or 422). Any other failure keeps the batch in the WAL and is not counted here. [Development]"),
 		metric.WithUnit("{batch}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalSendFailedSamples, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_send_failed_samples",
-		metric.WithDescription("Number of samples dropped because the remote endpoint rejected them with a non-retryable status. Counts samples and native histograms; a retryable failure is retried, not counted here. [Development]"),
+		metric.WithDescription("Number of samples and native histograms in the batches counted by exporter_prometheusremotewrite_wal_send_failed_batches. This is an upper bound on the samples lost, because the endpoint may have stored part of a rejected batch. [Development]"),
 		metric.WithUnit("{sample}"),
 	)
 	errs = errors.Join(errs, err)
