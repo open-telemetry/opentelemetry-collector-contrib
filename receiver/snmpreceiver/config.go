@@ -274,6 +274,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 				SecurityLevel: "auth_priv",
 				AuthType:      "SHA256",
 				PrivacyType:   "AES",
+				Engine:        &TrapEngineConfig{Cache: defaultTrapEngineCacheConfig()},
 			}
 		}
 	}

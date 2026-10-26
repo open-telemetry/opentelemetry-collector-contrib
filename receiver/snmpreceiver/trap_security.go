@@ -27,6 +27,16 @@ type trapEngineTime struct {
 }
 
 func admitTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket, engines map[string]trapEngineTime, now time.Time) error {
+	if err := validateTrap(cfg, packet); err != nil {
+		return err
+	}
+	if packet.Version == gosnmp.Version3 && packet.MsgFlags&gosnmp.AuthNoPriv != 0 {
+		return checkTrapTime(engines, packet.SecurityParameters.(*gosnmp.UsmSecurityParameters), now)
+	}
+	return nil
+}
+
+func validateTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket) error {
 	var version string
 	switch packet.Version {
 	case gosnmp.Version1:
@@ -88,42 +98,46 @@ func admitTrap(cfg *TrapsConfig, packet *gosnmp.SnmpPacket, engines map[string]t
 	if len(params.AuthoritativeEngineID) < 5 || len(params.AuthoritativeEngineID) > 32 {
 		return errors.New("SNMPv3 authoritative engine ID must contain 5 to 32 bytes")
 	}
-	if level&gosnmp.AuthNoPriv != 0 {
-		return checkTrapTime(engines, params, now)
-	}
 	return nil
 }
 
 func checkTrapTime(engines map[string]trapEngineTime, params *gosnmp.UsmSecurityParameters, now time.Time) error {
-	boots, engineTime := params.AuthoritativeEngineBoots, params.AuthoritativeEngineTime
-	if boots >= math.MaxInt32 || engineTime > math.MaxInt32 {
-		return errTrapTimeWindow
-	}
 	key := params.AuthoritativeEngineID
 	previous, exists := engines[key]
+	next, err := nextTrapEngineTime(previous, exists, params, now)
+	if err != nil {
+		return err
+	}
+	if !exists && len(engines) >= maxTrapEngines {
+		return errTrapEngineLimit
+	}
+	engines[key] = next
+	return nil
+}
+
+// nextTrapEngineTime calculates a candidate clock without mutating retained
+// state. Callers commit it only after the notification is fully validated.
+func nextTrapEngineTime(previous trapEngineTime, exists bool, params *gosnmp.UsmSecurityParameters, now time.Time) (trapEngineTime, error) {
+	boots, engineTime := params.AuthoritativeEngineBoots, params.AuthoritativeEngineTime
+	if boots >= math.MaxInt32 || engineTime > math.MaxInt32 {
+		return previous, errTrapTimeWindow
+	}
 	if !exists {
-		// Refuse additional engines instead of evicting synchronized state and
-		// allowing an old authenticated message to establish a fresh window.
-		if len(engines) >= maxTrapEngines {
-			return errTrapEngineLimit
-		}
-		engines[key] = trapEngineTime{boots: boots, latest: engineTime, received: now}
-		return nil
+		return trapEngineTime{boots: boots, latest: engineTime, received: now}, nil
 	}
 	if boots < previous.boots {
-		return errTrapTimeWindow
+		return previous, errTrapTimeWindow
 	}
 	// RFC 3414 section 3.2 step 7b: only a newer engine boot or a later
 	// authenticated engine time may re-synchronize the local clock.
 	if boots > previous.boots || engineTime > previous.latest {
-		engines[key] = trapEngineTime{boots: boots, latest: engineTime, received: now}
-		return nil
+		return trapEngineTime{boots: boots, latest: engineTime, received: now}, nil
 	}
 	expected := time.Duration(previous.latest)*time.Second + now.Sub(previous.received)
 	if expected-time.Duration(engineTime)*time.Second > trapTimeWindow {
-		return errTrapTimeWindow
+		return previous, errTrapTimeWindow
 	}
-	return nil
+	return previous, nil
 }
 
 // checkTrapEnvelope checks privacy against the wire representation before gosnmp

@@ -17,6 +17,32 @@ status:
     active: [ajimenez1503, svencowart]
     emeritus: [StefanKurek, tamir-michaeli]
 
+telemetry:
+  metrics:
+    snmp_traps_engine_cache_entries:
+      enabled: true
+      stability: development
+      description: Number of authenticated SNMPv3 engines currently tracked in the notification engine cache.
+      unit: "{engine}"
+      gauge:
+        value_type: int
+    snmp_traps_engine_cache_expirations:
+      enabled: true
+      stability: development
+      description: Number of authenticated SNMPv3 engine cache entries removed after the configured idle timeout.
+      unit: "{engine}"
+      sum:
+        value_type: int
+        monotonic: true
+    snmp_traps_engine_limit_rejections:
+      enabled: true
+      stability: development
+      description: Number of SNMP notifications rejected because the engine cache reached capacity.
+      unit: "{notification}"
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
     traps:

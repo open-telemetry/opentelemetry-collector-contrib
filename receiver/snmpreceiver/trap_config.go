@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 )
@@ -33,6 +34,36 @@ type TrapV3Config struct {
 	AuthPassword    configopaque.String `mapstructure:"auth_password"`
 	PrivacyType     string              `mapstructure:"privacy_type"`
 	PrivacyPassword configopaque.String `mapstructure:"privacy_password"`
+	Engine          *TrapEngineConfig   `mapstructure:"engine,omitempty"`
+}
+
+// TrapEngineConfig configures state retained for authenticated SNMPv3 engines.
+type TrapEngineConfig struct {
+	Cache TrapEngineCacheConfig `mapstructure:"cache"`
+}
+
+// TrapEngineCacheConfig bounds retained keys and time synchronization state.
+type TrapEngineCacheConfig struct {
+	// MaxEntries is the maximum number of authenticated engine identities.
+	MaxEntries int `mapstructure:"max_entries"`
+	// IdleTimeout is the duration since the last successfully validated
+	// notification before state expires. Zero disables expiration. An expired
+	// engine establishes a new time baseline on its next authenticated trap.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+}
+
+func defaultTrapEngineCacheConfig() TrapEngineCacheConfig {
+	return TrapEngineCacheConfig{
+		MaxEntries:  maxTrapEngines,
+		IdleTimeout: 24 * time.Hour,
+	}
+}
+
+func (cfg *TrapV3Config) engineCacheConfig() TrapEngineCacheConfig {
+	if cfg == nil || cfg.Engine == nil {
+		return defaultTrapEngineCacheConfig()
+	}
+	return cfg.Engine.Cache
 }
 
 func defaultTrapsConfig() *TrapsConfig {
@@ -78,6 +109,13 @@ func (cfg *TrapsConfig) validate() error {
 			errs = errors.Join(errs, errors.New("traps.v3 must be configured when traps.versions includes v3"))
 		} else {
 			v3 := cfg.V3
+			cache := v3.engineCacheConfig()
+			if cache.MaxEntries < 1 {
+				errs = errors.Join(errs, errors.New("traps.v3.engine.cache.max_entries must be positive"))
+			}
+			if cache.IdleTimeout < 0 {
+				errs = errors.Join(errs, errors.New("traps.v3.engine.cache.idle_timeout must be non-negative"))
+			}
 			if len(v3.User) > 32 {
 				errs = errors.Join(errs, errors.New("traps.v3.user must contain at most 32 bytes"))
 			}

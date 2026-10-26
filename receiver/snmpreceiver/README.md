@@ -146,6 +146,8 @@ The `traps.v3` settings are independent of the top-level polling credentials.
 | `auth_password` | Required for `auth_no_priv` and `auth_priv`; must contain at least 8 bytes. | unset |
 | `privacy_type` | Privacy protocol. Uses the same supported protocol names as polling. | `AES` |
 | `privacy_password` | Required for `auth_priv`; must contain at least 8 bytes. | unset |
+| `engine.cache.max_entries` | Maximum number of authenticated engine identities retained by this receiver. Must be positive. | `4096` |
+| `engine.cache.idle_timeout` | Duration since the last successfully validated notification before an engine's keys and time state expire. Must be nonnegative; `0s` disables expiration. | `24h` |
 
 The listener validates v3 engine identities, usernames, and security levels
 before deriving keys. It authenticates messages before deriving privacy keys.
@@ -153,11 +155,29 @@ Keys remain local to the receiver; trap parsing does not use GoSNMP's global
 password cache.
 
 Authenticated v3 traps synchronize device engine times using the USM 150-second
-window. The receiver retains keys and time synchronization state for at most
-4096 authenticated engine identities and refuses new identities once that limit
-is reached. State is not evicted or persisted and is reset when the receiver
-restarts. Initial synchronization and restarts do not provide durable replay
-protection.
+window. The receiver retains keys and time synchronization state together in a
+bounded cache. Idle entries expire after `engine.cache.idle_timeout`, including
+when no notifications arrive. Successfully validated notifications refresh
+activity even if the delivery queue is full. Failed authentication, invalid
+notifications, and rejected old packets do not refresh activity. If the cache is
+full and no entries have expired, existing engines continue working and new
+identities are refused.
+
+Expiration forgets the engine's previous time baseline. The next authenticated
+notification from that engine establishes a new baseline, so a previously
+captured valid packet can become acceptable again after expiration. A timeout
+longer than 150 seconds does not preserve that forgotten replay history. Set
+`engine.cache.idle_timeout: 0s` to retain state until restart. State is not
+persisted, so initial synchronization and receiver restarts also establish new
+baselines. Idle expiration recovers capacity after inactive identities stop
+sending; it does not prevent a credential holder from keeping identities active.
+
+Internal Collector metrics expose the current cache occupancy
+(`otelcol_snmp_traps_engine_cache_entries`), idle expirations
+(`otelcol_snmp_traps_engine_cache_expirations`), and notifications rejected at
+capacity (`otelcol_snmp_traps_engine_limit_rejections`). These metrics use the
+receiver instance as an attribute and include no engine IDs or peer addresses.
+Capacity rejections are counted independently of debug-log sampling.
 
 ```yaml
 receivers:
@@ -172,6 +192,10 @@ receivers:
         auth_password: ${env:SNMP_TRAP_AUTH_PASSWORD}
         privacy_type: AES
         privacy_password: ${env:SNMP_TRAP_PRIVACY_PASSWORD}
+        engine:
+          cache:
+            max_entries: 4096
+            idle_timeout: 24h
 ```
 
 #### Notification Logs and Delivery

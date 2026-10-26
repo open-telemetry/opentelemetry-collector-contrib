@@ -27,12 +27,9 @@ type trapParser struct {
 	privacy gosnmp.SnmpV3PrivProtocol
 	authKey []byte
 	privKey []byte
+	cache   *trapEngineCache
 	engines map[string]trapUSMKeys
-}
-
-type trapUSMKeys struct {
-	auth    []byte
-	privacy []byte
+	pending *trapEngineCandidate
 }
 
 type trapUSMEnvelope struct {
@@ -48,10 +45,12 @@ type trapUSMEnvelope struct {
 }
 
 func newTrapParser(cfg *TrapsConfig) (*trapParser, error) {
+	cacheConfig := cfg.V3.engineCacheConfig()
+	cache := newTrapEngineCache(cacheConfig.MaxEntries, cacheConfig.IdleTimeout)
 	parser := &trapParser{
 		cfg: cfg, plain: gosnmp.GoSNMP{Version: gosnmp.Version2c},
 		auth: gosnmp.NoAuth, privacy: gosnmp.NoPriv,
-		engines: make(map[string]trapUSMKeys),
+		cache: cache, engines: cache.entries,
 	}
 	if cfg.V3 == nil {
 		return parser, nil
@@ -79,6 +78,7 @@ func newTrapParser(cfg *TrapsConfig) (*trapParser, error) {
 }
 
 func (p *trapParser) UnmarshalTrap(wire []byte, useResponseSecurityParameters bool) (*gosnmp.SnmpPacket, error) {
+	p.pending = nil
 	if err := checkTrapEnvelope(wire); err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (p *trapParser) UnmarshalTrap(wire []byte, useResponseSecurityParameters bo
 		if !verifyTrapDigest(wire, envelope, p.auth.HashType(), keys.auth) {
 			return nil, errTrapAuthenticationFailed
 		}
-		if !cached && len(p.engines) >= maxTrapEngines {
+		if !cached && len(p.engines) >= p.cache.maxEntries {
 			return nil, errTrapEngineLimit
 		}
 	} else if len(envelope.digest) != 0 || len(envelope.privacy) != 0 {
@@ -168,8 +168,13 @@ func (p *trapParser) UnmarshalTrap(wire []byte, useResponseSecurityParameters bo
 			decoded.AuthenticationParameters = string(envelope.digest)
 		}
 	}
-	if err == nil && level&gosnmp.AuthNoPriv != 0 && packet.PDUType == gosnmp.SNMPv2Trap && !cached {
-		p.engines[envelope.engine] = keys
+	if err == nil && level&gosnmp.AuthNoPriv != 0 && packet.PDUType == gosnmp.SNMPv2Trap {
+		if !cached {
+			// Keys remain provisional until security and notification decoding
+			// succeed. A failed admission rolls back an unsynchronized entry.
+			p.engines[envelope.engine] = keys
+		}
+		p.pending = &trapEngineCandidate{packet: packet, engine: envelope.engine}
 	}
 	return packet, err
 }

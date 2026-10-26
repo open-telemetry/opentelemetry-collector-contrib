@@ -31,11 +31,12 @@ type queuedTrap struct {
 }
 
 type trapReceiver struct {
-	cfg    *TrapsConfig
-	next   consumer.Logs
-	logger *zap.Logger
-	obs    *receiverhelper.ObsReport
-	parser *trapParser
+	cfg            *TrapsConfig
+	next           consumer.Logs
+	logger         *zap.Logger
+	obs            *receiverhelper.ObsReport
+	parser         *trapParser
+	cacheTelemetry *trapCacheTelemetry
 
 	mu       sync.Mutex
 	conn     net.PacketConn
@@ -46,7 +47,6 @@ type trapReceiver struct {
 	queue       chan queuedTrap
 	receiveDone chan struct{}
 	consumeDone chan struct{}
-	engines     map[string]trapEngineTime
 
 	// Owned by the receive goroutine and shared across all rejection reasons.
 	nextRejectionLog time.Time
@@ -74,16 +74,20 @@ func newTrapReceiver(cfg *TrapsConfig, settings receiver.Settings, next consumer
 	if err != nil {
 		return nil, err
 	}
+	cacheTelemetry, err := newTrapCacheTelemetry(settings)
+	if err != nil {
+		return nil, err
+	}
 	return &trapReceiver{
-		cfg:         cfg,
-		next:        next,
-		logger:      settings.Logger,
-		obs:         obs,
-		parser:      parser,
-		queue:       make(chan queuedTrap, cfg.QueueSize),
-		receiveDone: make(chan struct{}),
-		consumeDone: make(chan struct{}),
-		engines:     make(map[string]trapEngineTime),
+		cfg:            cfg,
+		next:           next,
+		logger:         settings.Logger,
+		obs:            obs,
+		parser:         parser,
+		cacheTelemetry: cacheTelemetry,
+		queue:          make(chan queuedTrap, cfg.QueueSize),
+		receiveDone:    make(chan struct{}),
+		consumeDone:    make(chan struct{}),
 	}, nil
 }
 
@@ -156,15 +160,34 @@ func (r *trapReceiver) receive(ctx context.Context, host component.Host, conn ne
 	// Cover a complete UDP datagram, including notifications larger than
 	// gosnmp.TrapListener's default 4096-byte buffer.
 	buffer := make([]byte, 65535)
+	var readDeadline time.Time
 	for {
+		r.expireEngineCache(ctx, time.Now())
+		// Wake at the oldest entry's expiration even when no device sends data.
+		// The receive goroutine remains the sole owner of the cache.
+		deadline := r.parser.nextEngineExpiration()
+		if !deadline.Equal(readDeadline) {
+			if err := conn.SetReadDeadline(deadline); err != nil {
+				if !errors.Is(err, net.ErrClosed) {
+					componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("set SNMP notification read deadline: %w", err)))
+				}
+				return
+			}
+			readDeadline = deadline
+		}
 		n, remote, err := conn.ReadFrom(buffer)
 		if err != nil {
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				continue
+			}
 			if !errors.Is(err, net.ErrClosed) {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("read SNMP notification: %w", err)))
 			}
 			return
 		}
 		received := time.Now()
+		r.expireEngineCache(ctx, received)
 		obsCtx := r.obs.StartLogsOp(ctx)
 		// Validate the message envelope before decoding and authenticating it.
 		// Admission independently enforces the configured version, username,
@@ -178,19 +201,26 @@ func (r *trapReceiver) receive(ctx context.Context, host component.Host, conn ne
 			r.rejectTrap(obsCtx, remote, 1, "malformed_notification", err)
 			continue
 		}
-		if err := admitTrap(r.cfg, packet, r.engines, received); err != nil {
+		if err := r.parser.admitTrap(packet, received); err != nil {
+			r.parser.discardEngine(packet)
 			r.rejectTrap(obsCtx, remote, 1, "notification_not_allowed", err)
 			continue
 		}
 		sender, ok := remote.(*net.UDPAddr)
 		if !ok {
+			r.parser.discardEngine(packet)
 			r.rejectTrap(obsCtx, remote, 1, "invalid_peer", errors.New("SNMP notification sender is not a UDP address"))
 			continue
 		}
 		logs, err := decodeTrap(packet, sender, received, r.cfg.IncludeCommunity)
 		if err != nil {
+			r.parser.discardEngine(packet)
 			r.rejectTrap(obsCtx, remote, 1, "invalid_notification", err)
 			continue
+		}
+		// Valid activity refreshes engine state even when delivery is congested.
+		if r.parser.commitEngine(packet, received) {
+			r.cacheTelemetry.recordEntries(ctx, len(r.parser.engines))
 		}
 		for _, rl := range logs.ResourceLogs().All() {
 			for _, sl := range rl.ScopeLogs().All() {
@@ -211,6 +241,13 @@ func (r *trapReceiver) receive(ctx context.Context, host component.Host, conn ne
 		default:
 			r.rejectTrap(obsCtx, remote, logs.LogRecordCount(), "queue_full", errTrapQueueFull)
 		}
+	}
+}
+
+func (r *trapReceiver) expireEngineCache(ctx context.Context, now time.Time) {
+	if count := r.parser.expireEngines(now); count > 0 {
+		r.cacheTelemetry.recordExpiration(ctx, count)
+		r.cacheTelemetry.recordEntries(ctx, len(r.parser.engines))
 	}
 }
 

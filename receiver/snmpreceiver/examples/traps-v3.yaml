@@ -13,6 +13,10 @@ receivers:
         auth_password: ${env:SNMP_TRAP_AUTH_PASSWORD}
         privacy_type: AES
         privacy_password: ${env:SNMP_TRAP_PRIVACY_PASSWORD}
+        engine:
+          cache:
+            max_entries: 4096
+            idle_timeout: 24h
 
 exporters:
   debug:

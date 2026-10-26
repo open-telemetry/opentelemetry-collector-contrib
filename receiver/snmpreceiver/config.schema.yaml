@@ -126,6 +126,23 @@ $defs:
       value_type:
         description: ValueType is required and can be either int or double
         type: string
+  trap_engine_cache_config:
+    description: TrapEngineCacheConfig bounds retained keys and time synchronization state.
+    type: object
+    properties:
+      idle_timeout:
+        description: IdleTimeout is the duration since the last successfully validated notification before state expires. Zero disables expiration. An expired engine establishes a new time baseline on its next authenticated trap.
+        type: string
+        format: duration
+      max_entries:
+        description: MaxEntries is the maximum number of authenticated engine identities.
+        type: integer
+  trap_engine_config:
+    description: TrapEngineConfig configures state retained for authenticated SNMPv3 engines.
+    type: object
+    properties:
+      cache:
+        $ref: trap_engine_cache_config
   trap_v_3_config:
     description: TrapV3Config configures a USM user for incoming SNMPv3 traps.
     type: object
@@ -134,6 +151,9 @@ $defs:
         $ref: go.opentelemetry.io/collector/config/configopaque.string
       auth_type:
         type: string
+      engine:
+        x-pointer: true
+        $ref: trap_engine_config
       privacy_password:
         $ref: go.opentelemetry.io/collector/config/configopaque.string
       privacy_type:

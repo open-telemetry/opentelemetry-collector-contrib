@@ -30,6 +30,9 @@ var (
 // all peers and reasons without keeping per-peer state or sampling telemetry.
 func (r *trapReceiver) rejectTrap(ctx context.Context, peer net.Addr, count int, fallbackReason string, err error) {
 	r.obs.EndLogsOp(ctx, trapDataFormat, count, err)
+	if errors.Is(err, errTrapEngineLimit) {
+		r.cacheTelemetry.recordRejection(ctx)
+	}
 	if !r.logger.Core().Enabled(zap.DebugLevel) {
 		return
 	}
