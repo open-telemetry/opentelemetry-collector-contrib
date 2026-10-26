@@ -4,11 +4,13 @@ display_name: LogicMonitor Exporter
 status:
   class: exporter
   stability:
-    alpha: [traces, logs]
+    unmaintained: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [bogdandrutu, avadhut123pisal]
-    emeritus: [khyatigandhi6]
+    emeritus: [khyatigandhi6, avadhut123pisal, bogdandrutu]
+
+sending_queue:
+  support: default
 
 tests:
   config:

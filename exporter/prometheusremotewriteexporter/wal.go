@@ -311,6 +311,12 @@ func (prweWAL *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalS
 	defer func() {
 		// Keeping it within a closure to ensure that the later
 		// updated value of reqL is always flushed to disk.
+		// Skip the export when the loop returned with an error, as the export of these requests
+		// is what failed, or once the context is done, like exportThenFrontTruncateWAL does. The
+		// requests were not truncated, so they are read again when the loop restarts.
+		if err != nil || ctx.Err() != nil {
+			return
+		}
 		if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
 			err = multierr.Append(err, errL)
 		}
