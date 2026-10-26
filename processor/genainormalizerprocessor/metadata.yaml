@@ -1,5 +1,6 @@
 display_name: GenAI Normalizer Processor
 type: gen_ai_normalizer
+sem_conv_version: 1.40.0
 
 status:
   class: processor
