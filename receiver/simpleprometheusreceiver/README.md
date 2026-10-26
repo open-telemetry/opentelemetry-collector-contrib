@@ -34,9 +34,17 @@ scraped.
 - `timeout` (default = `0`): The scrape timeout. It is capped at
 `collection_interval`; a larger value logs a warning and `collection_interval`
 is used. When unset, the scrape timeout is `collection_interval`.
+- `headers` (default = `{}`): Additional headers sent with each scrape request.
+Header names that Prometheus reserves, such as `Authorization`, `User-Agent` and
+`Host`, are rejected at configuration validation (case-insensitive).
 - `job_name` (default = `prometheus_simple/${endpoint}`): Prometheus scrape job name.
 - `labels` (default = `{}`): Static prometheus labels to assign to all metrics scraped from this endpoint.
 - `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
+- `proxy_url` (default = `""`): The URL of the HTTP proxy used for the scrape.
+It must not contain credentials (`user:password@`): the prometheus receiver
+redacts the password when it loads the scrape config, so a proxy URL with
+credentials is rejected at configuration validation. See
+[#52081](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52081).
 - `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
 - `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.
@@ -51,8 +59,8 @@ effect.
   `http` and the other `tls` settings, including `cert_file` and `key_file`,
   are not used.
 
-Other HTTP client settings that the configuration accepts, such as `headers`,
-`auth`, `proxy_url` and `compression`, are not applied to the scrape.
+Other HTTP client settings that the configuration accepts, such as `auth` and
+`compression`, are not applied to the scrape.
 
 Example:
 
