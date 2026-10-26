@@ -50,6 +50,15 @@ func setConnHandlers(options *nats.Options, logger *zap.Logger) {
 	options.ClosedCB = func(_ *nats.Conn) {
 		logger.Info("NATS connection closed")
 	}
+	// Async errors include slow consumers: a subscription whose pending buffer
+	// is full drops messages until the handler catches up.
+	options.AsyncErrorCB = func(_ *nats.Conn, sub *nats.Subscription, err error) {
+		if sub == nil {
+			logger.Warn("NATS async error", zap.Error(err))
+			return
+		}
+		logger.Warn("NATS async error", zap.String("subject", sub.Subject), zap.Error(err))
+	}
 }
 
 func setTLSOption(ctx context.Context, options *nats.Options, cfg *configtls.ClientConfig) error {

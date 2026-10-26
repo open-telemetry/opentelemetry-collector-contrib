@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/nats-io/jwt/v2"
 	natstest "github.com/nats-io/nats-server/v2/test"
@@ -15,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 // newUserNKey returns a fresh user key pair and its public key / seed.
@@ -191,4 +194,40 @@ func TestConnectInvalidAuth(t *testing.T) {
 
 	_, err := Connect(t.Context(), &cfg, "otelcol-test", zap.NewNop())
 	assert.Error(t, err)
+}
+
+// TestConnectLogsSlowConsumer verifies that async errors such as a slow
+// consumer dropping messages are logged with the affected subject.
+func TestConnectLogsSlowConsumer(t *testing.T) {
+	t.Parallel()
+
+	opts := natstest.DefaultTestOptions
+	opts.Port = -1 // random free port
+	srv := natstest.RunServer(&opts)
+	defer srv.Shutdown()
+
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = srv.ClientURL()
+	core, logs := observer.New(zapcore.WarnLevel)
+
+	conn, err := Connect(t.Context(), &cfg, "otelcol-test", zap.New(core))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// A handler that blocks with a pending limit of one message makes the
+	// following publishes overflow the subscription.
+	release := make(chan struct{})
+	defer close(release)
+	sub, err := conn.Subscribe("slow", func(*nats.Msg) { <-release })
+	require.NoError(t, err)
+	require.NoError(t, sub.SetPendingLimits(1, -1))
+	for range 3 {
+		require.NoError(t, conn.Publish("slow", []byte("x")))
+	}
+	require.NoError(t, conn.Flush())
+
+	require.Eventually(t, func() bool { return logs.FilterMessage("NATS async error").Len() > 0 }, 5*time.Second, 10*time.Millisecond)
+	entry := logs.FilterMessage("NATS async error").All()[0]
+	assert.Equal(t, "slow", entry.ContextMap()["subject"])
+	assert.Contains(t, entry.ContextMap()["error"], nats.ErrSlowConsumer.Error())
 }
