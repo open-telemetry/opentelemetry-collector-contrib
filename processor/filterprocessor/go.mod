@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.2.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.164.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
 	github.com/stretchr/testify v1.12.1
