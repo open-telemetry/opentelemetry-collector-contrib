@@ -11,5 +11,5 @@ var ProcessorResourcedetectionOpenshiftRemoveCloudNameRegionFeatureGate = featur
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the detector no longer sets `cloud.region` from the Azure or OpenStack `cloudName`, which names a cloud environment or a `clouds.yaml` entry rather than a region."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48159"),
-	featuregate.WithRegisterFromVersion("v0.163.0"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
 )
