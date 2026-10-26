@@ -17,41 +17,10 @@ status:
 sem_conv_version: 1.43.0
 
 resource_attributes:
-  aws.volume.id:
-    description: "[DEPRECATED] The id of the AWS Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   container.id:
     description: "Container id used to identify container"
     enabled: true
     type: string
-  fs.type:
-    description: "[DEPRECATED] The filesystem type of the Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  gce.pd.name:
-    description: "[DEPRECATED] The name of the persistent disk in GCE"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  glusterfs.endpoints.name:
-    description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  glusterfs.path:
-    description: "[DEPRECATED] Glusterfs volume path"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-
   k8s.container.name:
     description: "Container name used by container runtime"
     enabled: true
@@ -88,12 +57,6 @@ resource_attributes:
     description: "The type of the Volume"
     enabled: true
     type: string
-  partition:
-    description: "[DEPRECATED] The partition in the Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).

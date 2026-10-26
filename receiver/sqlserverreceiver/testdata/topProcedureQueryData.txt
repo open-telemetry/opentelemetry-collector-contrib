@@ -15,6 +15,7 @@
     "min_elapsed_time": "1200",
     "max_elapsed_time": "8500000",
     "last_execution_time": "2026-09-08T10:15:30.0000000+00:00",
+    "definition": "CREATE PROCEDURE [dbo].[usp_GetOrderDetails] AS BEGIN SELECT * FROM Orders END",
     "computer_name": "test-computer",
     "sql_instance": "test-instance"
   },
@@ -34,6 +35,7 @@
     "min_elapsed_time": "900",
     "max_elapsed_time": "150000",
     "last_execution_time": "2026-09-08T10:15:31.0000000+00:00",
+    "definition": "CREATE PROCEDURE [sales].[usp_UpdateInventory] AS BEGIN UPDATE Inventory SET quantity = quantity - 1 END",
     "computer_name": "test-computer",
     "sql_instance": "test-instance"
   }

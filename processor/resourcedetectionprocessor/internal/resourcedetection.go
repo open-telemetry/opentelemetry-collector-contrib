@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
@@ -260,7 +260,7 @@ func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Cli
 		base := []attribute.KeyValue{detectorAttr, attribute.String("outcome", outcome)}
 		p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), metric.WithAttributes(base...))
 		if failErr != nil {
-			base = append(base, semconv.ErrorType(failErr))
+			base = append(base, conventions.ErrorType(failErr))
 		}
 		p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, metric.WithAttributes(base...))
 	}
