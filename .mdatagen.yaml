@@ -744,6 +744,10 @@ exclusions:
       enabled: false
     goleak:
       enabled: false
+    feature_gates:
+      - name: receiver.k8sobjects.useInformerObserver
+        validation:
+          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
     # TODO: Update the receiver to pass the tests
     lifecycle_test:
