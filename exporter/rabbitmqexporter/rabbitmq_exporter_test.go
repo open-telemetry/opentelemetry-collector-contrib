@@ -4,6 +4,7 @@
 package rabbitmqexporter
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/metadata"
@@ -127,6 +129,19 @@ func TestPublishLogs(t *testing.T) {
 
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
+	})).Return(nil)
+	err := exporter.publishLogs(t.Context(), testdata.GenerateLogsOneLogRecord())
+
+	require.NoError(t, err)
+	pub.AssertExpectations(t)
+}
+
+func TestPublishLogsCompressed(t *testing.T) {
+	pub, exporter := exporterForPublishing(t)
+	exporter.config.Compression = configcompression.TypeGzip
+
+	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
+		return message.ContentEncoding == "gzip" && bytes.HasPrefix(message.Body, []byte{0x1f, 0x8b})
 	})).Return(nil)
 	err := exporter.publishLogs(t.Context(), testdata.GenerateLogsOneLogRecord())
 
