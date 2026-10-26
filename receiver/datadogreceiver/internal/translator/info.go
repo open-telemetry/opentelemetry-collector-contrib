@@ -40,5 +40,6 @@ type DDInfo struct {
 	ClientDropP0s    bool           `json:"client_drop_p0s"`
 	SpanMetaStructs  bool           `json:"span_meta_structs"`
 	LongRunningSpans bool           `json:"long_running_spans"`
+	SpanEvents       bool           `json:"span_events,omitempty"`
 	Config           *ReducedConfig `json:"config"`
 }

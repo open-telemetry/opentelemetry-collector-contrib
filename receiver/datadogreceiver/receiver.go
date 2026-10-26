@@ -102,6 +102,12 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 				Handler: ddr.handleTraces,
 			},
 		}...)
+		if ddr.config.Traces.EnableV1Endpoint {
+			endpoints = append(endpoints, endpoint{
+				Pattern: "/v1.0/traces",
+				Handler: ddr.handleTraces,
+			})
+		}
 	}
 
 	if ddr.nextMetricsConsumer != nil {
@@ -302,6 +308,9 @@ func (ddr *datadogReceiver) buildInfoResponse(endpoints []endpoint) ([]byte, err
 		ClientDropP0s:    false,
 		SpanMetaStructs:  false,
 		LongRunningSpans: false,
+		// Tracers then send span events natively, instead of as a JSON tag. Like the v1.0 endpoint, this is
+		// only advertised when the option is enabled.
+		SpanEvents: ddr.nextTracesConsumer != nil && ddr.config.Traces.EnableV1Endpoint,
 	}, "", "\t")
 }
 
@@ -474,17 +483,31 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
 
-	var ddTraces []*pb.TracerPayload
-	ddTraces, err = translator.HandleTracesPayload(req)
+	var payloads translator.TracerPayloads
+	payloads, err = translator.HandleTracesPayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
 		ddr.params.Logger.Error("Unable to unmarshal reqs", zap.Error(err))
 		return
 	}
-	for _, ddTrace := range ddTraces {
+	for _, ddTrace := range payloads.Legacy {
 		otelTraces, err := translator.ToTraces(ddr.params.Logger, ddTrace, req, ddr.traceIDCache)
 		if err != nil {
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
+			continue
+		}
+		spanCount += otelTraces.SpanCount()
+		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
+		if err != nil {
+			errorutil.HTTPError(w, err)
+			ddr.params.Logger.Error("Trace consumer errored out", zap.Error(err))
+			return
+		}
+	}
+	for _, v1Trace := range payloads.V1 {
+		otelTraces, err := translator.ToTracesV1(ddr.params.Logger, v1Trace, req)
+		if err != nil {
+			ddr.params.Logger.Error("Error converting v1 traces", zap.Error(err))
 			continue
 		}
 		spanCount += otelTraces.SpanCount()

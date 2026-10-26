@@ -18,6 +18,7 @@ import (
 	"sync"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace/idx"
 	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -47,7 +48,33 @@ const (
 	attributeDatadogSpanID = "datadog.span.id"
 )
 
-var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
+// spanView is the part of a span that the span processors look at, independent of the payload format it came from.
+type spanView struct {
+	name     string
+	resource string
+	err      int32
+	// meta looks up a string tag of the span.
+	meta func(key string) (string, bool)
+}
+
+func (s spanView) tag(key string) string {
+	v, _ := s.meta(key)
+	return v
+}
+
+func legacySpanView(span *pb.Span) spanView {
+	return spanView{
+		name:     span.Name,
+		resource: span.Resource,
+		err:      span.Error,
+		meta: func(key string) (string, bool) {
+			v, ok := span.Meta[key]
+			return v, ok
+		},
+	}
+}
+
+var spanProcessor = map[string]func(spanView, *ptrace.Span){
 	// HTTP
 	"servlet.request": processHTTPSpan,
 	"http.request":    processHTTPSpan,
@@ -113,16 +140,16 @@ func traceID64to128(span *pb.Span, traceIDCache *lru.Cache[uint64, pcommon.Trace
 	return pcommon.TraceID{}, nil
 }
 
-func processInternalSpan(span *pb.Span, newSpan *ptrace.Span) {
-	newSpan.SetName(span.Resource)
+func processInternalSpan(span spanView, newSpan *ptrace.Span) {
+	newSpan.SetName(span.resource)
 	newSpan.SetKind(ptrace.SpanKindInternal)
 }
 
-func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) {
+func processHTTPSpan(span spanView, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name
 	// We assume that http.route coming from datadog is low cardinality
-	if val, ok := span.Meta["http.method"]; ok {
-		if suffix, ok := span.Meta["http.route"]; ok {
+	if val, ok := span.meta("http.method"); ok {
+		if suffix, ok := span.meta("http.route"); ok {
 			newSpan.SetName(val + " " + suffix)
 		} else {
 			newSpan.SetName(val)
@@ -130,26 +157,26 @@ func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
+func processDBSpan(span spanView, newSpan *ptrace.Span) {
 	// references:
 	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#database
 	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
-	if val, ok := span.Meta["db.query.summary"]; ok {
+	if val, ok := span.meta("db.query.summary"); ok {
 		newSpan.SetName(val)
 	} else {
-		if val, ok = span.Meta["db.operation"]; ok {
+		if val, ok = span.meta("db.operation"); ok {
 			newSpan.SetName(val)
-			suffix := cmp.Or(span.Meta["db.instance"], span.Meta["db.namespace"], span.Meta["peer.hostname"])
+			suffix := cmp.Or(span.tag("db.instance"), span.tag("db.namespace"), span.tag("peer.hostname"))
 			if suffix != "" {
 				newSpan.SetName(val + " " + suffix)
 			}
-		} else if val, ok = span.Meta["db.type"]; ok {
+		} else if val, ok = span.meta("db.type"); ok {
 			newSpan.SetName(val)
 		}
 	}
 }
 
-func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
+func processGRPCSpan(span spanView, newSpan *ptrace.Span) {
 	// references:
 	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#remote-procedure-calls
 	// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
@@ -158,17 +185,17 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// not the numeric value (eg "0")
 	// it's ddSpan.error that indicates holds the gRPC status code numeric value
 	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), conventions.RPCSystemNameGRPC.Value.AsString())
-	newSpan.Attributes().PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.Itoa(int(span.GetError())))
+	newSpan.Attributes().PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.Itoa(int(span.err)))
 
 	method := ""
 	service := ""
-	if rpcMethod, ok := span.Meta["rpc.method"]; ok {
+	if rpcMethod, ok := span.meta("rpc.method"); ok {
 		// "rpc.method" is used by dd-trace-rb, check dd-trace-php
 		method = rpcMethod
-		if rpcService, ok := span.Meta["rpc.service"]; ok {
+		if rpcService, ok := span.meta("rpc.service"); ok {
 			service = rpcService
 		}
-	} else if grpcFullMethod, ok := span.Meta["rpc.grpc.full_method"]; ok {
+	} else if grpcFullMethod, ok := span.meta("rpc.grpc.full_method"); ok {
 		// "rpc.grpc.full_method" is used by dd-trace-go & dd-trace-rb, they also set span.Resource to the full method name
 		// format: /$package.$service/$method
 		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
@@ -176,7 +203,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 			method = grpcFullMethodElements[1]
 			service = grpcFullMethodElements[0]
 		}
-	} else if grpcMethod, ok := span.Meta["grpc.method.name"]; ok {
+	} else if grpcMethod, ok := span.meta("grpc.method.name"); ok {
 		// format: /$package.$service/$method
 		// "grpc.method.name" is used by dd-trace-dotnet dd-trace-python & dd-trace-go
 		grpcMethodElements := strings.SplitN(strings.TrimPrefix(grpcMethod, "/"), "/", 2)
@@ -190,7 +217,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 		}
 	} else {
 		// resource is used by dd-trace-java
-		ddResource := strings.SplitN(strings.TrimPrefix(span.Resource, "/"), "/", 2)
+		ddResource := strings.SplitN(strings.TrimPrefix(span.resource, "/"), "/", 2)
 		if len(ddResource) == 2 {
 			method = ddResource[1]
 			service = ddResource[0]
@@ -215,11 +242,11 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
+func processAWSSdkSpan(span spanView, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
 	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), "aws-api")
-	if service, ok := span.Meta["aws.service"]; ok {
-		if operation, ok := span.Meta["aws.operation"]; ok {
+	if service, ok := span.meta("aws.service"); ok {
+		if operation, ok := span.meta("aws.operation"); ok {
 			newSpan.SetName(service + "/" + operation)
 		} else {
 			newSpan.SetName(service)
@@ -227,8 +254,8 @@ func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
-	if processor, ok := spanProcessor[span.Name]; ok {
+func processSpanByName(span spanView, newSpan *ptrace.Span) {
+	if processor, ok := spanProcessor[span.name]; ok {
 		processor(span, newSpan)
 	}
 }
@@ -389,7 +416,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			}
 
 			// Some spans need specific processing (http, db, grpc...)
-			processSpanByName(span, &newSpan)
+			processSpanByName(legacySpanView(span), &newSpan)
 		}
 	}
 
@@ -647,38 +674,59 @@ func PutBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
-	var tracerPayloads []*pb.TracerPayload
+// TracerPayloads are the tracer payloads decoded from a request, by payload format.
+type TracerPayloads struct {
+	// Legacy holds payloads in the format of the v0.x endpoints.
+	Legacy []*pb.TracerPayload
+	// V1 holds payloads in the v1 format, from the v1.0 endpoint and from agent payloads that carry v1 traces.
+	V1 []*idx.InternalTracerPayload
+}
 
+// HandleTracesPayload decodes the traces of a request into tracer payloads.
+func HandleTracesPayload(req *http.Request) (payloads TracerPayloads, err error) {
 	defer func() {
 		_, errs := io.Copy(io.Discard, req.Body)
 		err = errors.Join(err, errs, req.Body.Close())
 	}()
 
 	switch {
+	case strings.HasPrefix(req.URL.Path, "/v1.0"):
+		buf := GetBuffer()
+		defer PutBuffer(buf)
+		if _, err = io.Copy(buf, req.Body); err != nil {
+			return TracerPayloads{}, err
+		}
+		var tracerPayload idx.InternalTracerPayload
+		if _, err = tracerPayload.UnmarshalMsg(buf.Bytes()); err != nil {
+			return TracerPayloads{}, err
+		}
+		if tracerPayload.ContainerID() == "" {
+			tracerPayload.SetContainerID(req.Header.Get(header.ContainerID))
+		}
+		payloads.V1 = append(payloads.V1, &tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/v0.7"):
 		buf := GetBuffer()
 		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 		var tracerPayload pb.TracerPayload
 		if _, err = tracerPayload.UnmarshalMsg(buf.Bytes()); err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 
-		tracerPayloads = append(tracerPayloads, &tracerPayload)
+		payloads.Legacy = append(payloads.Legacy, &tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/v0.5"):
 		buf := GetBuffer()
 		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 		var traces pb.Traces
 
 		err = traces.UnmarshalMsgDictionary(buf.Bytes())
 		if err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 
 		traceChunks := traceChunksFromTraces(traces)
@@ -692,13 +740,13 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			Chunks:          traceChunks,
 			AppVersion:      appVersion,
 		}
-		tracerPayloads = append(tracerPayloads, tracerPayload)
+		payloads.Legacy = append(payloads.Legacy, tracerPayload)
 
 	case strings.HasPrefix(req.URL.Path, "/v0.1"):
 		var spans []pb.Span
 		err = json.NewDecoder(req.Body).Decode(&spans)
 		if err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get(header.Lang),
@@ -706,27 +754,31 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			TracerVersion:   req.Header.Get(header.TracerVersion),
 			Chunks:          traceChunksFromSpans(spans),
 		}
-		tracerPayloads = append(tracerPayloads, tracerPayload)
+		payloads.Legacy = append(payloads.Legacy, tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/api/v0.2"):
 		buf := GetBuffer()
 		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 
 		var agentPayload pb.AgentPayload
 		err = proto.Unmarshal(buf.Bytes(), &agentPayload)
 		if err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 
-		return agentPayload.TracerPayloads, err
+		payloads.Legacy = agentPayload.TracerPayloads
+		// Agents forward the traces they received in the v1 format in a separate field.
+		for _, idxPayload := range agentPayload.IdxTracerPayloads {
+			payloads.V1 = append(payloads.V1, idx.FromProto(idxPayload))
+		}
 
 	default:
 		var traces pb.Traces
 		err = decodeRequest(req, &traces)
 		if err != nil {
-			return nil, err
+			return TracerPayloads{}, err
 		}
 		traceChunks := traceChunksFromTraces(traces)
 		appVersion := appVersionFromTraceChunks(traceChunks)
@@ -737,10 +789,10 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			Chunks:          traceChunks,
 			AppVersion:      appVersion,
 		}
-		tracerPayloads = append(tracerPayloads, tracerPayload)
+		payloads.Legacy = append(payloads.Legacy, tracerPayload)
 	}
 
-	return tracerPayloads, nil
+	return payloads, nil
 }
 
 func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
