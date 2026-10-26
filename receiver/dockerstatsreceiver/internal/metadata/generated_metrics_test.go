@@ -221,6 +221,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerDiskIoDataPoint(ts, 1, "system.device-val", "disk.io.direction-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerDiskIoDataPoint(ts, 3, "system.device-val-2", "disk.io.direction-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerDiskIoDataPoint(ts+1, 3, "system.device-val-2", "disk.io.direction-val-2")
+				assert.Equal(t, 2, mb.metricContainerDiskIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -356,6 +359,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerNetworkIoDataPoint(ts, 1, "network.io.direction-val", "network.interface.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoDataPoint(ts, 3, "network.io.direction-val-2", "network.interface.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoDataPoint(ts+1, 3, "network.io.direction-val-2", "network.interface.name-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1213,7 +1219,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.disk.io"], "Found a duplicate in the metrics slice: container.disk.io")
 						validatedMetrics["container.disk.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk bytes for the container.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1862,7 +1870,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.network.io"], "Found a duplicate in the metrics slice: container.network.io")
 						validatedMetrics["container.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Network bytes for the container.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
