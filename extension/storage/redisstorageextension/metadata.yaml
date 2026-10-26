@@ -11,3 +11,10 @@ status:
   codeowners:
     active: [atoulme]
     seeking_new: true
+
+tests:
+  goleak:
+    ignore:
+      top:
+        # go-redis starts a circuit breaker cleanup goroutine per client that Close does not stop.
+        - "github.com/redis/go-redis/v9/maintnotifications.(*CircuitBreakerManager).cleanupLoop"

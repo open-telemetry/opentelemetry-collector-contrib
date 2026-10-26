@@ -45,6 +45,7 @@ receivers:
     cardinality_total_limit: 200000
     hide_topn_lockstats_rowrangestartkey: false
     hide_split_stats_keys: false
+    hide_client_ip_address: false
     truncate_text: false
     projects:
       - project_id: "spanner project 1"
@@ -80,6 +81,7 @@ Brief description of configuration properties:
 - **cardinality_total_limit** - limit of active series per 24 hours period. If specified, turns on cardinality filtering and handling. If zero or not specified, cardinality is not handled. You can read [this document](cardinality.md) for more information about cardinality handling and filtering.
 - **hide_topn_lockstats_rowrangestartkey** - if true, masks PII (key values) in row_range_start_key label for the "top minute lock stats" metric
 - **hide_split_stats_keys** - if true, masks sensitive values by hashing them using SHA256 for supported split stats labels (e.g., split_start, split_limit)
+- **hide_client_ip_address** - if true, masks PII (IP address) in client_ip_address label for the "oldest active queries" metric by hashing it
 - **truncate_text** - if true, the query text is truncated to 1024 characters.
 - **projects** - list of GCP projects
     - **project_id** - identifier of GCP project

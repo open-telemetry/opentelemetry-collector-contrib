@@ -25,7 +25,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+var (
+	errFlatLogsGateDisabled     = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlattenDataGateDisabled  = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errFlattenDataAndFlattenLog = errors.New("'flatten_data' and 'flatten.log' cannot both be set, use only 'flatten.log'")
+)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -44,6 +48,8 @@ type Config struct {
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
+	Flatten FlattenConfig `mapstructure:"flatten"`
+	// Deprecated: [v0.164.0] use flatten.log instead.
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
 
@@ -54,6 +60,13 @@ type Config struct {
 	spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
 	profileFunctions   map[string]ottl.Factory[*ottlprofile.TransformContext]
+}
+
+// FlattenConfig configures which OTTL contexts the data is flattened to before the statements run.
+type FlattenConfig struct {
+	// Log gives each log record a distinct copy of its resource and scope.
+	// Requires the transform.flatten.logs feature gate.
+	Log bool `mapstructure:"log"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -197,8 +210,16 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.FlattenData && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
+	if c.Flatten.Log && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
 		errors = multierr.Append(errors, errFlatLogsGateDisabled)
+	}
+
+	if c.FlattenData && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
+		errors = multierr.Append(errors, errFlattenDataGateDisabled)
+	}
+
+	if c.FlattenData && c.Flatten.Log {
+		errors = multierr.Append(errors, errFlattenDataAndFlattenLog)
 	}
 
 	return errors
