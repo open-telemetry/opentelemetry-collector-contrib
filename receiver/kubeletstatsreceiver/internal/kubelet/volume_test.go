@@ -53,9 +53,6 @@ func TestDetailedPVCLabels(t *testing.T) {
 			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "awsElasticBlockStore",
-				"aws.volume.id":                  "volume_id",
-				"fs.type":                        "fs_type",
-				"partition":                      "10",
 				"k8s.persistentvolumeclaim.name": "claim-name",
 				"k8s.pod.uid":                    "uid-1234",
 				"k8s.pod.name":                   "pod-name",
@@ -84,9 +81,6 @@ func TestDetailedPVCLabels(t *testing.T) {
 			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "gcePersistentDisk",
-				"gce.pd.name":                    "pd_name",
-				"fs.type":                        "fs_type",
-				"partition":                      "10",
 				"k8s.persistentvolumeclaim.name": "claim-name",
 				"k8s.pod.uid":                    "uid-1234",
 				"k8s.pod.name":                   "pod-name",
@@ -114,8 +108,6 @@ func TestDetailedPVCLabels(t *testing.T) {
 			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                "glusterfs",
-				"glusterfs.endpoints.name":       "endpoints_name",
-				"glusterfs.path":                 "path",
 				"k8s.persistentvolumeclaim.name": "claim-name",
 				"k8s.pod.uid":                    "uid-1234",
 				"k8s.pod.name":                   "pod-name",
@@ -159,12 +151,6 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			}
 			rac := metadata.DefaultResourceAttributesConfig()
-			rac.AwsVolumeID.Enabled = true
-			rac.FsType.Enabled = true
-			rac.GcePdName.Enabled = true
-			rac.GlusterfsEndpointsName.Enabled = true
-			rac.GlusterfsPath.Enabled = true
-			rac.Partition.Enabled = true
 			rb := metadata.NewResourceBuilder(rac)
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
