@@ -8,12 +8,13 @@ description: |
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: []
+    alpha: [traces]
+  distributions: [contrib]
   codeowners:
     active: [MikeGoldsmith, VinozzZ, jmacd]
 
 tests:
+  skip_context_propagation: true
   config:
 
 telemetry:
@@ -40,6 +41,21 @@ telemetry:
       histogram:
         value_type: int
       stability: development
+    processor_adaptive_tail_sampling_fleet_member_count:
+      enabled: true
+      description: Current fleet member count reported by the fleet_tracker extension; the processor divides each rule's goal_throughput by this value. Not emitted when fleet_tracker is unset.
+      unit: "{instances}"
+      gauge:
+        value_type: int
+      stability: development
+    processor_adaptive_tail_sampling_fleet_tracker_errors:
+      enabled: true
+      description: Number of non-positive member counts received from the fleet tracker; the last good count is kept.
+      unit: "{errors}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
     processor_adaptive_tail_sampling_incoming_tracestate_unparseable:
       enabled: true
       description: Number of spans whose incoming W3C tracestate could not be parsed when applying the sampling threshold.
@@ -55,6 +71,14 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      stability: development
+    processor_adaptive_tail_sampling_root_span_condition_multiple_matches:
+      enabled: true
+      description: Distribution of root span condition matches for traces where the condition matched more than once.
+      unit: "{spans}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [2, 3, 5, 10, 25, 100]
       stability: development
     processor_adaptive_tail_sampling_sampler_burst_count:
       enabled: true

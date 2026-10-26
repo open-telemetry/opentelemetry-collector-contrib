@@ -20,9 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -35,23 +33,28 @@ const (
 	clientKind         = "client"
 	serverKind         = "server"
 	virtualNodeLabel   = "virtual_node"
-	millisecondsUnit   = "ms"
 	secondsUnit        = "s"
 )
 
 var (
-	legacyDefaultLatencyHistogramBuckets = []float64{
-		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
-	}
 	defaultLatencyHistogramBuckets = []float64{
 		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
 	}
 
+	// defaultPeerAttributes lists the span attributes used to identify a peer,
+	// in priority order (higher = higher priority). It supports both the current
+	// semantic conventions and their legacy predecessors so spans emitted with
+	// either convention are matched:
+	//   - peer.service.name (current) / "peer.service" (legacy PeerServiceKey).
+	//   - "db.name" (legacy) / db.namespace (DBNamespaceKey, current).
+	//   - "db.system" (legacy) / db.system.name (DBSystemNameKey, current).
 	defaultPeerAttributes = []string{
-		string(conventionsv138.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
+		"peer.service.name", "peer.service",
+		"db.name", string(conventions.DBNamespaceKey),
+		"db.system", string(conventions.DBSystemNameKey),
 	}
 
-	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
+	defaultDatabaseNameAttributes = []string{"db.name", string(conventions.DBNamespaceKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
@@ -99,9 +102,6 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 	var bounds []float64
 	if pConfig.ExponentialHistogramMaxSize == 0 {
 		bounds = defaultLatencyHistogramBuckets
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			bounds = legacyDefaultLatencyHistogramBuckets
-		}
 		if pConfig.LatencyHistogramBuckets != nil {
 			bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
 		}
@@ -267,9 +267,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if virtualNodeFeatureGate.IsEnabled() {
-							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
-						}
+						p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -290,9 +288,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if virtualNodeFeatureGate.IsEnabled() {
-							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
-						}
+						p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -460,7 +456,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		return
 	}
 
-	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
+	if len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if e.ClientService == "" && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
@@ -668,11 +664,6 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 }
 
 func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	// TODO: Remove this once legacy metric names are removed
-	if legacyMetricNamesFeatureGate.IsEnabled() {
-		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration")
-	}
-
 	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server"); err != nil {
 		return err
 	}
@@ -685,9 +676,6 @@ func (p *serviceGraphConnector) collectClientLatencyMetrics(ilm pmetric.ScopeMet
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName("traces_service_graph_request_client")
 	mDuration.SetUnit(secondsUnit)
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		mDuration.SetUnit(millisecondsUnit)
-	}
 
 	if p.reqDurationBounds == nil {
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -738,9 +726,6 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 	mDuration := pmetric.NewMetric()
 	mDuration.SetName(mName)
 	mDuration.SetUnit(secondsUnit)
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		mDuration.SetUnit(millisecondsUnit)
-	}
 
 	if p.reqDurationBounds == nil {
 		mDuration.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -875,24 +860,13 @@ func (p *serviceGraphConnector) cleanCache() {
 
 // spanDuration returns the duration of the given span in seconds (legacy ms).
 func spanDuration(span ptrace.Span) float64 {
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-	}
 	return float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Second.Nanoseconds())
-}
-
-// durationToFloat converts the given duration to the number of seconds (legacy ms) it represents.
-func durationToFloat(d time.Duration) float64 {
-	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-		return float64(d.Milliseconds())
-	}
-	return d.Seconds()
 }
 
 func mapDurationsToFloat(vs []time.Duration) []float64 {
 	vsm := make([]float64, len(vs))
 	for i, v := range vs {
-		vsm[i] = durationToFloat(v)
+		vsm[i] = v.Seconds()
 	}
 	return vsm
 }

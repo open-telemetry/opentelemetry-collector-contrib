@@ -17,36 +17,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-const (
-	stableSignaturesGolden       = "testdata/stable_function_signatures.txt"
-	experimentalSignaturesGolden = "testdata/experimental_function_signatures.txt"
-)
+const stableSignaturesGolden = "testdata/stable_function_signatures.txt"
 
 const ottlPkgPath = "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 // Test_StableFunctionSignatures locks the stable OTTL function surface: name,
 // argument order, argument type, and optionality. Any diff here is a breaking
 // change to the statements users write, so it must be paired with a changelog
-// entry and treated as a compatibility break. A function moving between the
-// stable and experimental goldens is itself a surface change.
+// entry and treated as a compatibility break. Experimental functions live in the
+// xottl module, so a function moving into this golden is itself a surface change.
 //
 // Regenerate intentionally from the pkg/ottl module with:
 //
 //	make update-ottl-signatures
 func Test_StableFunctionSignatures(t *testing.T) {
-	assertSignaturesGolden(t, stableSignaturesGolden, renderSignatures(false))
-}
-
-// Test_ExperimentalFunctionSignatures locks the experimental OTTL function
-// surface. Experimental functions are not covered by the 1.0 stability
-// guarantee, but the golden still makes any change to their surface, and any
-// promotion to the stable golden, an intentional reviewed diff.
-//
-// Regenerate intentionally from the pkg/ottl module with:
-//
-//	make update-ottl-signatures
-func Test_ExperimentalFunctionSignatures(t *testing.T) {
-	assertSignaturesGolden(t, experimentalSignaturesGolden, renderSignatures(true))
+	assertSignaturesGolden(t, stableSignaturesGolden, renderSignatures())
 }
 
 func assertSignaturesGolden(t *testing.T, golden, got string) {
@@ -64,17 +49,12 @@ func assertSignaturesGolden(t *testing.T, golden, got string) {
 			"If intended, regenerate the goldens (make update-ottl-signatures) and add a changelog entry.")
 }
 
-func renderSignatures(experimental bool) string {
+func renderSignatures() string {
 	var lines []string
 	for _, f := range StandardFuncs[any]() {
-		if f.Experimental() == experimental {
-			lines = append(lines, renderSignature(f))
-		}
+		lines = append(lines, renderSignature(f))
 	}
-
-	if !experimental {
-		lines = append(lines, renderSignature(NewIsRootSpanFactory()))
-	}
+	lines = append(lines, renderSignature(NewIsRootSpanFactory()))
 	slices.Sort(lines)
 
 	var b strings.Builder
