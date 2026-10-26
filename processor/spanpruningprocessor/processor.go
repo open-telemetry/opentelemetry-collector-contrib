@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/gobwas/glob"
@@ -46,6 +47,11 @@ type spanPruningProcessor struct {
 	enableAttributeLossAnalysis bool
 	conditions                  *ottl.ConditionSequence[*ottlspan.TransformContext]
 	enableBytesMetrics          bool
+	// mergeSummaryPrefix is the aggregation attribute prefix while
+	// MergeExistingSummaries is on, and empty otherwise. Everything gated on
+	// merging reads this one field, so single-pass behavior is unchanged by
+	// construction.
+	mergeSummaryPrefix string
 }
 
 func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder, conditions *ottl.ConditionSequence[*ottlspan.TransformContext]) (*spanPruningProcessor, error) {
@@ -61,6 +67,11 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 		})
 	}
 
+	var mergeSummaryPrefix string
+	if cfg.MergeExistingSummaries {
+		mergeSummaryPrefix = cfg.AggregationAttributePrefix
+	}
+
 	return &spanPruningProcessor{
 		config:                      cfg,
 		logger:                      set.Logger,
@@ -69,6 +80,7 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
 		conditions:                  conditions,
 		enableBytesMetrics:          cfg.EnableBytesMetrics,
+		mergeSummaryPrefix:          mergeSummaryPrefix,
 	}, nil
 }
 
@@ -329,7 +341,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			// Leaf group: drop protected (preserved outlier or exemplar) subtrees,
 			// then re-check the floor.
 			nodes = excludeProtectedNodes(nodes)
-			if len(nodes) < p.config.MinSpansToAggregate {
+			if !p.groupMeetsMinimum(nodes) {
 				continue
 			}
 		} else {
@@ -392,7 +404,7 @@ func (p *spanPruningProcessor) recordAttributeLoss(ctx context.Context, isLeaf b
 	if !p.enableAttributeLossAnalysis {
 		return attributeLossSummary{}
 	}
-	lossInfo := analyzeAttributeLoss(nodes, templateNode)
+	lossInfo := analyzeAttributeLoss(nodes, templateNode, p.mergeSummaryPrefix)
 	if lossInfo.isEmpty() {
 		return lossInfo
 	}
@@ -458,8 +470,15 @@ func (p *spanPruningProcessor) detectAndProtect(ctx context.Context, groups []ca
 			continue
 		}
 
+		// Outlier detection and exemplar sampling both work on individual
+		// duration observations, which a summary span from a prior run does not
+		// have: it carries only rolled-up scalars. Run both over the raw members
+		// alone, so a summary is never reported as an outlier or drawn as an
+		// exemplar. The weighted scalar statistics still use the whole group.
+		analyzed := rawNodes(group.nodes)
+
 		if outliersEnabled {
-			if res := analyzeOutliers(group.nodes, p.config.OutlierAnalysis); res != nil {
+			if res := analyzeOutliers(analyzed, p.config.OutlierAnalysis); res != nil {
 				outlierResultByKey[group.key] = res
 				if res.hasOutliers {
 					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(res.outlierIndices)))
@@ -468,7 +487,7 @@ func (p *spanPruningProcessor) detectAndProtect(ctx context.Context, groups []ca
 					}
 				}
 				if preserve {
-					p.protectOutliers(group, res, protectedRootsByKey)
+					p.protectOutliers(group.key, analyzed, res, protectedRootsByKey)
 				}
 			}
 		}
@@ -480,7 +499,7 @@ func (p *spanPruningProcessor) detectAndProtect(ctx context.Context, groups []ca
 		// group is examined, protects each exemplar's whole subtree so deeper
 		// detection skips it.
 		if exemplarsEnabled && isTopLevelGroup(group, inGroup) {
-			if sel, ok := p.sampleExemplarsFromGroup(group.nodes); ok {
+			if sel, ok := p.sampleExemplarsFromGroup(analyzed); ok {
 				exemplarByKey[group.key] = sel
 			}
 		}
@@ -490,7 +509,9 @@ func (p *spanPruningProcessor) detectAndProtect(ctx context.Context, groups []ca
 
 // protectOutliers selects and protects the outlier subtrees for a single group,
 // appending the preserved roots to protectedRootsByKey under the group key.
-func (p *spanPruningProcessor) protectOutliers(group candidateGroup, res *outlierAnalysisResult, protectedRootsByKey map[string][]*spanNode) {
+// nodes must be the same slice analyzeOutliers ran over, since the analysis
+// result indexes into it.
+func (p *spanPruningProcessor) protectOutliers(key string, nodes []*spanNode, res *outlierAnalysisResult, protectedRootsByKey map[string][]*spanNode) {
 	// filterOutlierNodes applies correlation gating and orders outliers most
 	// extreme first. Ask it for all of them (cap 0) and apply
 	// MaxPreservedOutliers here, after dropping outliers already kept by an
@@ -499,18 +520,18 @@ func (p *spanPruningProcessor) protectOutliers(group candidateGroup, res *outlie
 	// not-yet-preserved one further down the order.
 	unlimited := p.config.OutlierAnalysis
 	unlimited.MaxPreservedOutliers = 0
-	_, outliers := filterOutlierNodes(group.nodes, res, unlimited)
+	_, outliers := filterOutlierNodes(nodes, res, unlimited)
 	limit := p.config.OutlierAnalysis.MaxPreservedOutliers
 	for _, o := range outliers {
 		// Skip outliers already kept by an enclosing protected subtree.
 		if o.protected {
 			continue
 		}
-		if limit > 0 && len(protectedRootsByKey[group.key]) >= limit {
+		if limit > 0 && len(protectedRootsByKey[key]) >= limit {
 			break
 		}
 		markOutlierSubtree(o)
-		protectedRootsByKey[group.key] = append(protectedRootsByKey[group.key], o)
+		protectedRootsByKey[key] = append(protectedRootsByKey[key], o)
 	}
 }
 
@@ -599,12 +620,18 @@ func (p *spanPruningProcessor) planCandidateGroups(tree *traceTree) []candidateG
 		return nil
 	}
 
+	// A prior run's parent-level summary looks like a leaf (its children were
+	// deleted when it was created), but leaf keys and parent keys never collide,
+	// so grouping it with true leaves could only ever isolate it. Split it out
+	// here and re-seed it below at the aggregation level it stores.
+	leafNodes, summariesByLevel := partitionParentLevelSummaries(leafNodes)
+
 	var groups []candidateGroup
 	would := make(map[*spanNode]bool)
 	var marked []*spanNode
 
 	for key, nodes := range p.groupLeafNodesByKey(leafNodes) {
-		if len(nodes) < p.config.MinSpansToAggregate {
+		if !p.groupMeetsMinimum(nodes) {
 			continue
 		}
 		groups = append(groups, candidateGroup{key: key, depth: 0, nodes: nodes})
@@ -618,31 +645,62 @@ func (p *spanPruningProcessor) planCandidateGroups(tree *traceTree) []candidateG
 		return groups
 	}
 
+	// The level comes off span data and bounds the loop below, which has no other
+	// exit while depth <= maxSeededLevel (max_parent_depth: -1 disables the guard
+	// that would stop it). Cap it at the span count: a level above that has no
+	// partner to merge with anyway, so those summaries are left alone.
+	maxLevel := len(tree.nodeByID)
+	if p.config.MaxParentDepth > 0 && p.config.MaxParentDepth < maxLevel {
+		maxLevel = p.config.MaxParentDepth
+	}
+	maxSeededLevel := 0
+	for level := range summariesByLevel {
+		if level > maxLevel {
+			continue
+		}
+		maxSeededLevel = max(maxSeededLevel, level)
+	}
+
 	candidates := collectParentCandidates(marked)
 	depth := 1
-	for len(candidates) > 0 {
+	for len(candidates) > 0 || depth <= maxSeededLevel {
 		if p.config.MaxParentDepth > 0 && depth > p.config.MaxParentDepth {
 			break
 		}
 
+		// Existing summaries stored at this level join the parents newly marked
+		// at the level below, so a late-arriving subtree that just aggregated up
+		// to this level can regroup with the summary it belongs beside.
 		var eligible []*spanNode
 		for _, n := range candidates {
 			if planEligibleForParentAggregation(n, would) {
 				eligible = append(eligible, n)
 			}
 		}
-		if len(eligible) == 0 {
+		for _, n := range summariesByLevel[depth] {
+			if planEligibleForParentAggregation(n, would) {
+				eligible = append(eligible, n)
+			}
+		}
+		if len(eligible) == 0 && depth >= maxSeededLevel {
 			break
 		}
 
 		parentGroups := make(map[string][]*spanNode)
 		for _, n := range eligible {
-			key := p.buildParentGroupKey(n.span, n.depth())
+			// buildParentGroupKey keys on tree depth, but a seeded summary joins at
+			// its stored level, so groups formed at different aggregation depths can
+			// share one. A collision drops a group whose nodes are already marked
+			// for removal, deleting those spans with no summary to stand for them.
+			key := "agg" + strconv.Itoa(depth) + "|" + p.buildParentGroupKey(n.span, n.depth())
 			parentGroups[key] = append(parentGroups[key], n)
 		}
 
 		marked = marked[:0]
 		for key, nodes := range parentGroups {
+			// The parent floor is already 2, which is also the floor a group
+			// holding an existing summary bypasses down to, so no relaxation is
+			// needed here.
 			if len(nodes) < 2 {
 				continue
 			}
@@ -652,13 +710,41 @@ func (p *spanPruningProcessor) planCandidateGroups(tree *traceTree) []candidateG
 				marked = append(marked, n)
 			}
 		}
-		if len(marked) == 0 {
+		if len(marked) == 0 && depth >= maxSeededLevel {
 			break
 		}
 		candidates = collectParentCandidates(marked)
 		depth++
 	}
 	return groups
+}
+
+// partitionParentLevelSummaries splits leaf nodes into the true leaves (and
+// leaf-level summaries, which the leaf path handles correctly) and the
+// parent-level summaries from a prior run, the latter keyed by the aggregation
+// level they store. When merging is disabled no node carries summary rollups,
+// so the input is returned unchanged.
+func partitionParentLevelSummaries(leaves []*spanNode) ([]*spanNode, map[int][]*spanNode) {
+	var count int
+	for _, n := range leaves {
+		if n.isParentLevelSummary() {
+			count++
+		}
+	}
+	if count == 0 {
+		return leaves, nil
+	}
+
+	byLevel := make(map[int][]*spanNode)
+	trueLeaves := make([]*spanNode, 0, len(leaves)-count)
+	for _, n := range leaves {
+		if n.isParentLevelSummary() {
+			byLevel[n.existingSummary.level] = append(byLevel[n.existingSummary.level], n)
+			continue
+		}
+		trueLeaves = append(trueLeaves, n)
+	}
+	return trueLeaves, byLevel
 }
 
 // recordPreserved emits preserved-outlier telemetry: every span kept across the
@@ -674,7 +760,13 @@ func (p *spanPruningProcessor) recordPreserved(ctx context.Context, roots []*spa
 // the planning phase, using the local would-aggregate set rather than node
 // flags and ignoring protection (not yet decided during planning).
 func planEligibleForParentAggregation(node *spanNode, would map[*spanNode]bool) bool {
-	if node.isLeaf || node.parent == nil || would[node] {
+	if node.parent == nil || would[node] {
+		return false
+	}
+	// A parent-level summary from a prior run has no children left to check —
+	// its subtree was already complete when it was created — so it is eligible
+	// at its stored level even though the tree sees it as a leaf.
+	if node.isLeaf && !node.isParentLevelSummary() {
 		return false
 	}
 	for _, child := range node.children {
