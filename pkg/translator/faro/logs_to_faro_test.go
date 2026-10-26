@@ -483,6 +483,37 @@ func Test_extractAppFromKeyVal_InstallationID(t *testing.T) {
 	}
 }
 
+func Test_extractTimestampFromKeyVal(t *testing.T) {
+	testcases := []struct {
+		name string
+		kv   map[string]string
+		want time.Time
+	}{
+		{
+			name: "timestamp only",
+			kv:   map[string]string{"timestamp": "2026-10-05T12:05:34.123Z"},
+			want: time.Date(2026, 10, 5, 12, 5, 34, 123000000, time.UTC),
+		},
+		{
+			name: "timestamp_micros restores sub-millisecond precision",
+			kv:   map[string]string{"timestamp": "2026-10-05T12:05:34.123Z", "timestamp_micros": "1791201934123789"},
+			want: time.Date(2026, 10, 5, 12, 5, 34, 123789000, time.UTC),
+		},
+		{
+			name: "malformed timestamp_micros falls back to timestamp",
+			kv:   map[string]string{"timestamp": "2026-10-05T12:05:34.123Z", "timestamp_micros": "nope"},
+			want: time.Date(2026, 10, 5, 12, 5, 34, 123000000, time.UTC),
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			timestamp, err := extractTimestampFromKeyVal(tt.kv)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, timestamp)
+		})
+	}
+}
+
 func Test_extractExceptionFromKeyVal_Fatal(t *testing.T) {
 	baseKV := func(extra map[string]string) map[string]string {
 		kv := map[string]string{
