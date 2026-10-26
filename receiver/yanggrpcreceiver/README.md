@@ -100,10 +100,19 @@ The `yang_grpc` receiver configuration parameters are mapped into three main blo
 
 ### YANG Parser Settings (`yang`)
 
-* `module_paths`: (Optional) A list of local directories where `.yang` schema files are stored. These schemas are used by the internal parser to resolve platform-specific keys and nodes (e.g., Cisco Catalyst or Nexus structures). If omitted, the receiver automatically falls back to a built-in naming heuristic.
+* `module_paths`: (Optional) A list of local directories where `.yang` schema files are stored. These directories are scanned recursively for all `.yang` files. Schemas are used by the internal parser to resolve platform-specific keys and nodes (e.g., Cisco Catalyst or Nexus structures). If omitted, the receiver automatically falls back to a built-in naming heuristic.
 * `enable_rfc_parser`: Enables the RFC 6020/7950 compliant YANG parser (Default: `true`).
 * `cache_modules`: Enables caching of discovered and parsed YANG modules to drastically reduce CPU overhead under heavy telemetry stream processing (Default: `true`).
 * `max_modules`: Specifies the maximum number of YANG modules allowed in the internal cache concurrently (Default: `1000`).
+
+#### Schema Loading and Duplicate Module Behavior
+
+When `module_paths` is configured:
+* **Recursive scanning**: Each configured directory path is scanned recursively for files ending in `.yang`.
+* **Keyed by module name**: Parsed modules are stored in a map keyed strictly by the YANG module name.
+* **Last-write-wins collision resolution**: If duplicate definitions with the same module name are encountered across configured paths or nested directories, the last loaded module definition replaces any previously loaded definition.
+* **Collision warning**: When a duplicate module is detected during loading, the receiver logs a warning containing the module name, the previously loaded source path, and the new source path. If identical files or directories are scanned multiple times, each encounter redefines the module and logs a warning.
+* **Single active schema per module**: Because schemas are resolved globally by module name, different versions of the same module cannot be used simultaneously for different devices.
 
 ### Security Hardening Settings (`security`)
 

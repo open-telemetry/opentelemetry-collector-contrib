@@ -12,7 +12,9 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+
 	"github.com/microsoft/go-mssqldb/msdsn"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -20,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
@@ -618,7 +622,46 @@ func TestSetupQueries(t *testing.T) {
 
 	metricsMetadata, ok := metadata["metrics"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, metricsMetadata, 100, "Every time metrics are added or removed, the function `setupQueries` must "+
+	require.Len(t, metricsMetadata, 102, "Every time metrics are added or removed, the function `setupQueries` must "+
 		"be modified to properly account for the change. Please update `setupQueries` and then, "+
 		"and only then, update the expected metric count here.")
+}
+
+func TestProcedureDefinitionWithoutTopProcedureLogsWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.WarnLevel)
+	params := receivertest.NewNopSettings(metadata.Type)
+	params.Logger = zap.New(core)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = false
+	require.NoError(t, cfg.Validate())
+
+	setupSQLServerLogsScrapers(params, cfg)
+
+	require.Equal(t, 1, observedLogs.Len(), "expected exactly one warning log")
+	assert.Contains(t, observedLogs.All()[0].Message, "db.server.procedure_definition is enabled but db.server.top_procedure is not")
+}
+
+func TestProcedureDefinitionWithTopProcedureLogsNoWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.WarnLevel)
+	params := receivertest.NewNopSettings(metadata.Type)
+	params.Logger = zap.New(core)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	setupSQLServerLogsScrapers(params, cfg)
+
+	assert.Equal(t, 0, observedLogs.Len(), "no warning expected when top_procedure is also enabled")
 }

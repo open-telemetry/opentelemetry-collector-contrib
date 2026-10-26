@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Add table sizes per locality group metrics (`used_ssd_bytes`, `used_hdd_bytes`) to monitor SSD and HDD storage usage."
+issues: [51550]
+subtext: ""
+change_logs: [user]

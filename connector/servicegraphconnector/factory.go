@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	virtualNodeFeatureGate = metadata.ConnectorServicegraphVirtualNodeFeatureGate
 	// TODO: Remove this feature gate when the legacy metric names are removed.
 	legacyMetricNamesFeatureGate   = metadata.ConnectorServicegraphLegacyLatencyMetricNamesFeatureGate
 	legacyLatencyUnitMsFeatureGate = metadata.ConnectorServicegraphLegacyLatencyUnitMsFeatureGate

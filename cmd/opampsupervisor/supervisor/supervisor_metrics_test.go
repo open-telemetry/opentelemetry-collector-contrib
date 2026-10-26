@@ -45,6 +45,7 @@ func newTestSupervisorConfig(t *testing.T) config.Supervisor {
 		OrphanDetectionInterval: time.Second,
 		ConfigApplyTimeout:      time.Second,
 		BootstrapTimeout:        time.Second,
+		StopGracePeriod:         time.Second,
 	}
 	return cfg
 }
