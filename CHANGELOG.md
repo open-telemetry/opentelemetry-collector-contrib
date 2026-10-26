@@ -11,7 +11,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 🧰 Bug fixes 🧰
 
-- `pkg/ottl`: Fix modules requiring the nonexistent `pkg/ottl` v1.2.0; they now require v1.3.0. (#52356)
+- `all`: Fix modules requiring the nonexistent v1.2.0 of `pkg/ottl` and `processor/k8sattributesprocessor`. (#52356)
 
 <!-- previous-version -->
 
