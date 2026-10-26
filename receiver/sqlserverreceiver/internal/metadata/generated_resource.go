@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbSystemVersion sets provided value as "db.system.version" attribute.
+func (rb *ResourceBuilder) SetDbSystemVersion(val string) {
+	if rb.config.DbSystemVersion.Enabled {
+		rb.res.Attributes().PutStr("db.system.version", val)
+	}
+}
+
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {
@@ -74,6 +81,48 @@ func (rb *ResourceBuilder) SetSqlserverComputerName(val string) {
 func (rb *ResourceBuilder) SetSqlserverDatabaseName(val string) {
 	if rb.config.SqlserverDatabaseName.Enabled {
 		rb.res.Attributes().PutStr("sqlserver.database.name", val)
+	}
+}
+
+// SetSqlserverDbEditionStandard sets "sqlserver.db.edition=standard" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionStandard() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "standard")
+	}
+}
+
+// SetSqlserverDbEditionEnterprise sets "sqlserver.db.edition=enterprise" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionEnterprise() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "enterprise")
+	}
+}
+
+// SetSqlserverDbEditionExpress sets "sqlserver.db.edition=express" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionExpress() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "express")
+	}
+}
+
+// SetSqlserverDbEditionAzureSQLDatabase sets "sqlserver.db.edition=azure_sql_database" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionAzureSQLDatabase() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "azure_sql_database")
+	}
+}
+
+// SetSqlserverDbEditionManagedInstance sets "sqlserver.db.edition=managed_instance" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionManagedInstance() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "managed_instance")
+	}
+}
+
+// SetSqlserverDbEditionUnknown sets "sqlserver.db.edition=unknown" attribute.
+func (rb *ResourceBuilder) SetSqlserverDbEditionUnknown() {
+	if rb.config.SqlserverDbEdition.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.db.edition", "unknown")
 	}
 }
 

@@ -163,6 +163,108 @@ func TestUnmarshalLogsLargeMessage(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 }
 
+func TestUnmarshalLogsInvalidTraceAndSpanID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		trace         string
+		spanID        string
+		expectTraceID string
+		expectSpanID  string
+		expectAttrs   map[string]any
+	}{
+		{
+			name:          "decimal span id with 20 digits",
+			trace:         "projects/example-project/traces/6771e4fd4be0981577117f6d473eff33",
+			spanID:        "17028117370332828846",
+			expectTraceID: "6771e4fd4be0981577117f6d473eff33",
+			expectAttrs:   map[string]any{gcpSpanIDField: "17028117370332828846"},
+		},
+		{
+			name:          "decimal span id with 19 digits",
+			trace:         "projects/example-project/traces/41c02a6e7c6848d02a12622beac42529",
+			spanID:        "5673238915494838914",
+			expectTraceID: "41c02a6e7c6848d02a12622beac42529",
+			expectAttrs:   map[string]any{gcpSpanIDField: "5673238915494838914"},
+		},
+		{
+			name:          "bare trace id",
+			trace:         "a25a1da368c91f36936b0a3496cc37fa",
+			spanID:        "9a744d00f839aa11",
+			expectTraceID: "a25a1da368c91f36936b0a3496cc37fa",
+			expectSpanID:  "9a744d00f839aa11",
+			expectAttrs:   map[string]any{},
+		},
+		{
+			name:   "invalid trace and span id",
+			trace:  "projects/example-project/traces/not-hex",
+			spanID: "not-hex",
+			expectAttrs: map[string]any{
+				gcpTraceField:  "projects/example-project/traces/not-hex",
+				gcpSpanIDField: "not-hex",
+			},
+		},
+	}
+
+	extension := newTestExtension(t, Config{
+		HandleJSONPayloadAs:  HandleAsJSON,
+		HandleProtoPayloadAs: HandleAsJSON,
+	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			line := fmt.Sprintf(`{"logName":"projects/example-project/logs/app","resource":{"type":"k8s_container"},"severity":"WARNING","textPayload":"hello","timestamp":"2026-09-30T15:07:44.8Z","trace":%q,"spanId":%q}`, tt.trace, tt.spanID)
+			logs, err := extension.UnmarshalLogs([]byte(line))
+			require.NoError(t, err)
+			require.Equal(t, 1, logs.LogRecordCount())
+
+			rl := logs.ResourceLogs().At(0)
+			resourceType, ok := rl.Resource().Attributes().Get(gcpResourceTypeField)
+			require.True(t, ok)
+			require.Equal(t, "k8s_container", resourceType.Str())
+
+			record := rl.ScopeLogs().At(0).LogRecords().At(0)
+			require.Equal(t, "hello", record.Body().Str())
+			require.Equal(t, plog.SeverityNumberWarn, record.SeverityNumber())
+			if tt.expectTraceID == "" {
+				require.True(t, record.TraceID().IsEmpty())
+			} else {
+				require.Equal(t, tt.expectTraceID, record.TraceID().String())
+			}
+			if tt.expectSpanID == "" {
+				require.True(t, record.SpanID().IsEmpty())
+			} else {
+				require.Equal(t, tt.expectSpanID, record.SpanID().String())
+			}
+			require.Equal(t, tt.expectAttrs, record.Attributes().AsRaw())
+		})
+	}
+}
+
+func TestUnmarshalLogsInvalidRequestURL(t *testing.T) {
+	t.Parallel()
+
+	extension := newTestExtension(t, Config{
+		HandleJSONPayloadAs:  HandleAsJSON,
+		HandleProtoPayloadAs: HandleAsJSON,
+	})
+	line := `{"httpRequest":{"protocol":"HTTP/1.1","remoteIp":"192.0.2.1","requestMethod":"GET","requestUrl":"https://example.com/x/%u2028foo","status":400},"jsonPayload":{"@type":"type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry","statusDetails":"response_sent_by_backend"},"logName":"projects/example-project/logs/requests","resource":{"type":"http_load_balancer"},"timestamp":"2026-10-14T11:46:14.764182Z"}`
+	logs, err := extension.UnmarshalLogs([]byte(line))
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+	urlFull, ok := attrs.Get("url.full")
+	require.True(t, ok)
+	require.Equal(t, "https://example.com/x/%u2028foo", urlFull.Str())
+	for _, key := range []string{"url.path", "url.query", "url.domain"} {
+		_, ok := attrs.Get(key)
+		require.False(t, ok, key)
+	}
+}
+
 func TestPayloads(t *testing.T) {
 	t.Parallel()
 

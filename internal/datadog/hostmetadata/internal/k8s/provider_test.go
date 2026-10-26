@@ -56,13 +56,13 @@ func TestProvider(t *testing.T) {
 			name:                "node name but no cluster name",
 			nodeNameProvider:    StringProvider("nodeName"),
 			clusterNameProvider: ErrorProvider("errClusterName"),
-			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName"},
+			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName", SourceIdentifier: source.SourceIdentifier{Primary: "nodeName"}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		},
 		{
 			name:                "node and cluster name",
 			nodeNameProvider:    StringProvider("nodeName"),
 			clusterNameProvider: StringProvider("clusterName"),
-			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName-clusterName"},
+			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName-clusterName", SourceIdentifier: source.SourceIdentifier{Primary: "nodeName-clusterName"}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		},
 	}
 

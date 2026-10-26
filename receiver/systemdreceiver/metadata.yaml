@@ -84,7 +84,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    unit: "{restarts}"
+    unit: "{restart}"
 
   systemd.unit.state:
     description: 1 if the check resulted in active_state matching the current state, otherwise 0.

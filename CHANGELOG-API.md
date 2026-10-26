@@ -7,6 +7,140 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.3.0/v0.164.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/nats`: Move NATS connection settings and auth types to the shared `internal/natsclient` module. The YAML configuration is unchanged. (#50735)
+  `Config.Endpoint`, `Config.Pedantic`, `Config.TLS`, and `Config.Auth` are now under `Config.ClientConfig`. `AuthConfig`, `TokenConfig`, `UserConfig`, `NkeyConfig`, `NkeyJWTConfig`, and `NkeyUserFileConfig` moved to `internal/natsclient`.
+- `pkg/azurelogs`: Promote the `pkg.translator.azurelogs.EmitV1LogConventions` and `pkg.translator.azurelogs.DontEmitV0LogConventions` feature gates to beta. (#52096)
+  `code.function.name` and `code.file.path` are now emitted instead of `code.function` and `code.filepath` by default.
+  The gates no longer control the `event.name` resource attribute, which is always emitted.
+  
+- `pkg/ottl`: Remove the stable `ottl.set.allowNil` feature gate. (#48714)
+- `pkg/prometheus`: Promote the pkg.translator.prometheus.PermissiveLabelSanitization feature gate to stable and deprecate DropSanitizationGate. (#50429)
+  The gate can no longer be disabled and will be removed in v0.166.0.
+  
+- `pkg/prometheus`: Remove NormalizeLabel. Use github.com/prometheus/otlptranslator.LabelNamer.Build for label name translation instead. (#50429)
+
+### 🚩 Deprecations 🚩
+
+- `processor/transform`: Deprecate the `flatten_data` option in favor of the new `flatten.log` option. (#51766)
+  Replace `flatten_data: true` with `flatten: {log: true}`. `flatten_data` will be removed in a future release.
+
+### 💡 Enhancements 💡
+
+- `extension/datadog`: Add `NewFactoryWithOptions` so a host embedding the collector can supply extra Agent-config options, for example to propagate an API key rotation into the extension's forwarder. (#51877)
+- `extension/redis_storage`: Add `IncrementBy` and `BatchIncrementBy` for atomic integer counters shared across Collector instances. (#51567)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/prometheus_remote_write`: Drop exponential histogram data points without a sum instead of exporting a zero sum. (#52232)
+
+<!-- previous-version -->
+
+## v1.2.0/v0.163.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: `FunctionContext` and the `Standard*Getter` structs can no longer be initialized with unkeyed struct literals. (#47305)
+- `pkg/ottl`: Move the experimental lambda expression Go API into the `pkg/ottl/xottl` module so it is excluded from OTTL's stability guarantees. (#51566)
+  `LambdaExpression`, `LambdaActivation`, and `NewTestingLambdaExpression` moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl`. `LocalIdentifierDecl` and
+  `LambdaExpression.Formals` were removed.
+  
+- `pkg/ottl`: Move the experimental `SliceGetter` API to the `xottl` module. (#51565)
+  `ottl.SliceGetter`, `ottl.GetLiteralValues`, `ottl.GetScalarLiteralValues`, and `ottl.NewTestingSliceGetter` are now in `xottl`.
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Create `With*Functions` factory options to allow custom OTTL functions registration. (#51709)
+- `pkg/ottl`: Improve OTTL parse error diagnostics by reporting the line and column of the input where available. (#51680)
+  Not all parse errors carry a position: errors that aggregate multiple statements, and some
+  inner errors that didn't already carry one, are still returned without one. The exact
+  wording and position of statement, condition, and value expression parse error messages
+  has changed as a result. The position is exposed programmatically via the new experimental
+  `xottl.Error` type.
+  
+- `pkg/ottl`: Add `WithCache` option to the `ottlotelcol` `TransformContext`. (#51652)
+- `pkg/pdatatest`: Add pmetricassert numeric comparison operators (#48470)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Preserve the distinction between nil and empty slices in the `xottl` `GetScalarLiteralValues` and `GetLiteralValues` helpers. (#51814)
+
+<!-- previous-version -->
+
+## v1.1.0/v0.162.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove the `pkg/pdatautil` module. Its hash helpers moved to `go.opentelemetry.io/collector/pdata/xpdata/xhash` in opentelemetry-collector. (#51108)
+  Replace imports of `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil`
+  (`Hash`, `Hash64`, `MapHash`, `ValueHash`, and the `With*` options) with
+  `go.opentelemetry.io/collector/pdata/xpdata/xhash`.
+  
+- `exporter/elasticsearch`: Remove the deprecated `flush` and `num_workers` configuration settings. (#42718)
+  Migrate `num_workers` to `sending_queue::num_consumers`, `flush::interval` to
+  `sending_queue::batch::flush_timeout`, and `flush::bytes` to
+  `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes`.
+  This also removes `Config.NumWorkers`, `Config.Flush`, and `FlushSettings` from
+  the exported Go API.
+  
+- `pkg/ottl`: Unexport the implementations of the standard OTTL functions (#50927)
+- `pkg/ottl`: Move profiles support into a separate `pkg/ottl/contexts/xprofile` module so it is excluded from OTTL's stability guarantees. (#50906)
+  The `ottlprofile` and `ottlprofilesample` contexts moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile`,
+  and the `ProfileID` converter and `NewProfileIDFactory` moved from `ottlfuncs` into that
+  module's `ottlfuncs` package. `ProfileID` is no longer part of `StandardFuncs` and
+  `StandardConverters`. Importers must update their import paths, depend on the new module,
+  and merge the profiles converters (for example via
+  `xprofilefuncs.WithProfileConverters`) to keep `ProfileID` available.
+  
+- `pkg/ottl`: Remove the unused `Strp`, `Floatp`, `Intp`, and `Boolp` helpers from the `ottltest` package. (#51037)
+- `pkg/ottl`: Move the experimental lambda converters into the `pkg/ottl/xottl` module so they are excluded from OTTL's stability guarantees. (#51563)
+  The `All`, `Any`, `Filter`, `Find`, `MapEach`, `MapKeys`, `Reduce`, and `When` converters and their `New*Factory`
+  functions moved to `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs`. They are no
+  longer part of `StandardFuncs` and `StandardConverters`; merge them (for example via
+  `xottlfuncs.WithExperimentalConverters`) to keep them available.
+  
+- `pkg/ottl`: Unexport the `ParserCollection` `Settings` and `ErrorMode` fields in favor of read-only `Settings()` and `ErrorMode()` accessor methods (#51156)
+- `pkg/ottl`: `SliceGetter.Range` now returns (bool, error); the boolean reports whether the underlying slice is non-nil. (#51494)
+- `pkg/ottl`: Remove the `ottltest` package and its `SetFeatureGateForTest` function from the public API. (#47305)
+- `pkg/ottl`: Remove the stable `ottl.PanicDuplicateName` and `ottl.contexts.enableOTelColContext` feature gates. (#44630, #46437)
+- `pkg/ottl`: Unexport the argument structs of the standard OTTL functions (#51023)
+- `receiver/carbon`: Move the `protocol` package to `internal/protocol`, removing it from the public API. (#51500)
+
+### 🚀 New components 🚀
+
+- `pkg/ottl/xottl`: Add the `pkg/ottl/xottl` module to hold OTTL's experimental Go API outside of OTTL's stability guarantees. (#51561)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `Experimental()` to the `Factory` interface and a `WithExperimental` option so functions can declare whether they are covered by stability guarantees. (#50927)
+- `pkg/pdatatest`: Add the `/count` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`. (#48472)
+  `<collection>/count` takes `exact`, or `min` and/or `max`, and composes with
+  `/include`. Pairing it with an exact `<collection>` list is a schema error.
+  
+- `pkg/pdatatest`: Add `WithAttributeExists` and `WithAttributeRegex` options to pmetricassert snapshot generation. (#49734)
+- `pkg/pdatatest`: Add the `/include` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`. (#48472)
+  Collections without an operator keep matching exactly. Within an item matched
+  by `/include`, an omitted nested collection asserts nothing about it.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Fix `SliceGetter.Get` and literal slice folding so a coerced typed-nil slice (for example `[]string(nil)` when elements are getters) is treated as nil instead of an empty non-nil slice. (#51494)
+- `pkg/ottl`: Fix `GetLiteralValues` and `GetScalarLiteralValues` so they do not evaluate dynamic slices when checking for literal values. (#51438)
+- `pkg/ottl`: Prevent `SliceGetter.Get` and `SliceGetter.Range` from panicking when constructed from `nil`. (#51174)
+- `processor/transform`: Fix exponential-to-explicit histogram conversion (#50737)
+  The conversion now handles positive, negative, and zero buckets, includes the
+  required overflow bucket, preserves data point metadata, and uses the
+  exponential histogram mapping implementation for bucket boundaries.
+  
+
+<!-- previous-version -->
+
 ## v0.161.0
 
 ### 🛑 Breaking changes 🛑

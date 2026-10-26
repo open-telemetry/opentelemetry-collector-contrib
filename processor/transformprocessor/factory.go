@@ -55,7 +55,7 @@ type transformProcessorFactory struct {
 type FactoryOption func(factory *transformProcessorFactory)
 
 // WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
-// Subsequent uses of WithDataPointFunctionsNew will merge the provided dataPointFunctions with the previously registered functions.
+// Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
 func WithDataPointFunctions(dataPointFunctions []ottl.Factory[*ottldatapoint.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultDataPointFunctionsOverridden {
@@ -128,6 +128,8 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext])
 
 // WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
 // Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithProfileFunctions(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultProfileFunctionsOverridden {
@@ -194,7 +196,10 @@ func (f *transformProcessorFactory) createLogsProcessor(
 	if f.defaultLogFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor", zap.Bool("log", f.defaultLogFunctionsOverridden))
 	}
-	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, f.logFunctions)
+	if oCfg.FlattenData {
+		set.Logger.Warn("'flatten_data' is deprecated and will be removed in a future release, use 'flatten.log' instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#transformflattenlogs")
+	}
+	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.Flatten.Log || oCfg.FlattenData, set.TelemetrySettings, f.logFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

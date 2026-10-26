@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -835,6 +835,8 @@ type tableStats struct {
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
 	// explicitly ignore the relations which have an active `AccessExclusiveLock`
 	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	// table_size is -1 when the table is dropped after its stats row is read, as the
+	// size function then returns NULL; the scraper skips the size for that row only
 	query := `SELECT
     s.schemaname AS schema,
     s.relname AS table,
@@ -845,7 +847,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
     s.n_tup_del AS del,
     s.n_tup_hot_upd AS hot_upd,
     s.seq_scan AS seq_scans,
-    pg_total_relation_size(s.relid) AS table_size,
+    coalesce(pg_total_relation_size(s.relid), -1) AS table_size,
     s.vacuum_count
 FROM pg_stat_user_tables s
 LEFT JOIN (
@@ -863,6 +865,7 @@ WHERE l.relation IS NULL;`
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var schema, table string
 		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
@@ -886,7 +889,7 @@ WHERE l.relation IS NULL;`
 			vacuumCount: vacuumCount,
 		}
 	}
-	return ts, errors
+	return ts, multierr.Append(errors, rows.Err())
 }
 
 type tableIOStats struct {
@@ -921,6 +924,7 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var schema, table string
 		var heapRead, heapHit, idxRead, idxHit, toastRead, toastHit, tidxRead, tidxHit int64
@@ -943,7 +947,7 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 			tidxHit:   tidxHit,
 		}
 	}
-	return tios, errors
+	return tios, multierr.Append(errors, rows.Err())
 }
 
 // getTableCount is a cheap COUNT(*) alternative to getDatabaseTableMetrics;
@@ -994,8 +998,10 @@ type indexStat struct {
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
 	// explicitly ignore indexes which have an active `AccessExclusiveLock`
 	// this is to prevent the current query's `AccessShareLock` from getting stalled
+	// index_size is -1 when the index is dropped after its stats row is read, as the
+	// size function then returns NULL; the scraper skips the size for that row only
 	query := `SELECT schemaname, relname, indexrelname,
-	pg_relation_size(indexrelid) AS index_size,
+	coalesce(pg_relation_size(indexrelid), -1) AS index_size,
 	idx_scan
 	FROM pg_stat_user_indexes s
 	LEFT JOIN (
@@ -1035,6 +1041,7 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 			scans:    indexScans,
 		}
 	}
+	errs = append(errs, rows.Err())
 	return stats, multierr.Combine(errs...)
 }
 
@@ -1436,8 +1443,17 @@ func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
 	query := "SHOW server_version;"
 	row := c.client.QueryRowContext(ctx, query)
 	var version string
-	err := row.Scan(&version)
-	return version, err
+	if err := row.Scan(&version); err != nil {
+		return "", err
+	}
+	// SHOW server_version includes a packaging suffix on Debian/pgdg builds
+	// e.g. "17.2 (Debian 17.2-1.pgdg120+1)". Take only the leading token so
+	// db.system.version is consistent across packaging variants.
+	fields := strings.Fields(version)
+	if len(fields) == 0 {
+		return "", errors.New("empty server version")
+	}
+	return fields[0], nil
 }
 
 func parseMajorVersion(ver string) (int, error) {
@@ -1528,6 +1544,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 		querySampleSimpleColumns := []string{
 			querySampleColumnClientHostname,
 			querySampleColumnQueryStart,
+			querySampleColumnBackendStart,
 			querySampleColumnWaitEventType,
 			querySampleColumnWaitEvent,
 			querySampleColumnQueryID,
@@ -1611,11 +1628,11 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			obfuscated = ""
 		}
 		currentAttributes[dbAttributePrefix+querySampleColumnPID] = pid
-		currentAttributes[string(semconv.NetworkPeerPortKey)] = clientPort
-		currentAttributes[string(semconv.NetworkPeerAddressKey)] = row[querySampleColumnClientAddr]
-		currentAttributes[string(semconv.DBQueryTextKey)] = obfuscated
-		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
-		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
+		currentAttributes[string(conventions.NetworkPeerPortKey)] = clientPort
+		currentAttributes[string(conventions.NetworkPeerAddressKey)] = row[querySampleColumnClientAddr]
+		currentAttributes[string(conventions.DBQueryTextKey)] = obfuscated
+		currentAttributes[string(conventions.DBNamespaceKey)] = row[querySampleColumnDatname]
+		currentAttributes[string(conventions.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
 		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
@@ -1685,8 +1702,8 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 
 	for _, row := range rows {
 		hasConvention := map[string]string{
-			"datname": string(semconv.DBNamespaceKey),
-			"query":   string(semconv.DBQueryTextKey),
+			"datname": string(conventions.DBNamespaceKey),
+			"query":   string(conventions.DBQueryTextKey),
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){

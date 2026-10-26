@@ -326,3 +326,27 @@ func Test_extractAvgMetric(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkExtractAvgMetric(b *testing.B) {
+	template := getTestHistogramMetric()
+	metric := pmetric.NewMetric()
+	resourceMetrics := pmetric.NewResourceMetrics()
+	scopeMetrics := pmetric.NewScopeMetrics()
+	transformContext := ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
+	b.Cleanup(transformContext.Close)
+
+	expr, err := extractAvgMetric(ottl.Optional[string]{})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		scopeMetrics.Metrics().RemoveIf(func(pmetric.Metric) bool { return true })
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

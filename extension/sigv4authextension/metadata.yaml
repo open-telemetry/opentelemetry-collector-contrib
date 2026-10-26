@@ -14,7 +14,8 @@ status:
   distributions:
   - contrib
   codeowners:
-    active: [Aneurysm9, erichsueh3]
+    active: [Aneurysm9]
+    emeritus: [erichsueh3]
 
 tests:
   goleak:
