@@ -97,8 +97,8 @@ components:
     - extension/encoding
     - extension/file_storage
     - extension/file_telemetry_policy
+    - extension/google_client_auth
     - extension/google_cloud_logentry_encoding
-    - extension/googleclientauth
     - extension/headers_setter
     - extension/health_check
     - extension/healthcheckv2
@@ -118,6 +118,7 @@ components:
     - extension/otlp_encoding
     - extension/pebble_tail_storage
     - extension/pprof
+    - extension/redis_fleet_tracker
     - extension/redis_storage
     - extension/remotetap
     - extension/sd_notify
@@ -242,6 +243,7 @@ components:
     - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
+    - processor/verify
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager

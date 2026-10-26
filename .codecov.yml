@@ -337,6 +337,10 @@ component_management:
     name: extension_filetelemetrypolicy
     paths:
     - extension/filetelemetrypolicyextension/**
+  - component_id: extension_fleettracker_redisfleettracker
+    name: extension_fleettracker_redisfleettracker
+    paths:
+    - extension/fleettracker/redisfleettrackerextension/**
   - component_id: extension_googleclientauth
     name: extension_googleclientauth
     paths:
@@ -741,6 +745,10 @@ component_management:
     name: processor_unroll
     paths:
     - processor/unrollprocessor/**
+  - component_id: processor_verify
+    name: processor_verify
+    paths:
+    - processor/verifyprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:
