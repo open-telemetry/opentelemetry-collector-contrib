@@ -246,14 +246,13 @@ func Test_timeSeriesSignature(t *testing.T) {
 // collision happens. It does not check whether labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
-		name                        string
-		resource                    pcommon.Resource
-		orig                        pcommon.Map
-		externalLabels              map[string]string
-		extras                      []string
-		want                        []prompb.Label
-		expectErr                   bool
-		underscoreLabelSanitization bool
+		name           string
+		resource       pcommon.Resource
+		orig           pcommon.Map
+		externalLabels map[string]string
+		extras         []string
+		want           []prompb.Label
+		expectErr      bool
 	}{
 		{
 			name:           "labels_clean",
@@ -304,15 +303,6 @@ func Test_createLabelSet(t *testing.T) {
 			externalLabels: map[string]string{},
 			extras:         []string{label31 + dirty1, value31, label32, value32},
 			want:           getPromLabels(label11+"_", value11, "_"+label12, value12, label31+"_", value31, label32, value32),
-		},
-		{
-			name:                        "labels_dirty_with_sanitization",
-			resource:                    pcommon.NewResource(),
-			orig:                        lbs1Dirty,
-			externalLabels:              map[string]string{},
-			extras:                      []string{label31 + dirty1, value31, label32, value32},
-			want:                        getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
-			underscoreLabelSanitization: true,
 		},
 		{
 			name:           "no_original_case",
@@ -380,15 +370,6 @@ func Test_createLabelSet(t *testing.T) {
 			want:           getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 		{
-			name:                        "sanitize_labels_starts_with_underscore_with_sanitization",
-			resource:                    pcommon.NewResource(),
-			orig:                        lbs3,
-			externalLabels:              exlbs1,
-			extras:                      []string{label31, value31, label32, value32},
-			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
-			underscoreLabelSanitization: true,
-		},
-		{
 			name: "empty_attribute_value_excluded",
 			resource: func() pcommon.Resource {
 				res := pcommon.NewResource()
@@ -420,11 +401,7 @@ func Test_createLabelSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			labelNamer := otlptranslator.LabelNamer{
-				// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
-				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
-				UnderscoreLabelSanitization: tt.underscoreLabelSanitization, //nolint:staticcheck
-			}
+			labelNamer := otlptranslator.LabelNamer{PreserveMultipleUnderscores: true}
 			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
@@ -820,6 +797,23 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			desc:      "with resource, with service attributes, without timestamp",
 			resource:  resourceWithServiceAttrs,
 			timestamp: 0,
+		},
+		{
+			desc: "preserve leading and consecutive underscores in target_info labels",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("_foo", "leading")
+				r.Attributes().PutStr("app__component", "backend")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: "_foo", Value: "leading"},
+				{Name: "app__component", Value: "backend"},
+				{Name: model.JobLabel, Value: "my_service"},
+			},
 		},
 		{
 			desc: "with resource, NoTranslation strategy preserves dots in attribute names",
