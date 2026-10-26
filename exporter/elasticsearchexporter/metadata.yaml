@@ -4,13 +4,16 @@ display_name: Elasticsearch Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, logs]
-    development: [metrics, profiles]
+    beta: [traces, logs, metrics]
+    development: [profiles]
   distributions: [contrib]
   codeowners:
     active: [JaredTan95, blakerouse, carsonip, lahsivjar]
 
 attributes:
+  db.collection.name:
+    description: The index or data stream documents were written to, as reported in the bulk response `_index`, with backing and failure store indices folded into their data stream name. Only set when `telemetry::include_destination_index` is enabled.
+    type: string
   error.type:
     description: The type of error that occurred when processing the documents.
     type: string
@@ -57,7 +60,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [outcome, http.response.status_code, failure_store, error.type]
+      attributes: [outcome, http.response.status_code, failure_store, error.type, db.collection.name]
     elasticsearch.docs.received:
       prefix: otelcol.
       stability: alpha

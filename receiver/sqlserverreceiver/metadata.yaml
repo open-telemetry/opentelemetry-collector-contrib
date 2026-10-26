@@ -57,6 +57,11 @@ resource_attributes:
     description: The name of the SQL Server database.
     enabled: true
     type: string
+  sqlserver.db.edition:
+    description: The edition of the SQL Server instance (e.g. "standard", "enterprise", "express").
+    enabled: false
+    type: string
+    enum: [standard, enterprise, express, azure_sql_database, managed_instance, unknown]
   sqlserver.instance.name:
     description: The name of the SQL Server instance being monitored.
     enabled: false
@@ -279,6 +284,10 @@ attributes:
     requirement_level: recommended
     enum: [guided, misguided]
   # Stored Procedures
+  sqlserver.procedure.definition:
+    description: The SQL source text of the stored procedure as returned by sys.dm_exec_sql_text. Empty string when the procedure is encrypted (WITH ENCRYPTION) or its plan has been evicted from cache.
+    type: string
+    requirement_level: recommended
   sqlserver.procedure.last_execution_time:
     description: ISO 8601 timestamp of the last execution of the procedure.
     type: string
@@ -367,6 +376,15 @@ attributes:
     description: Status of the session (e.g., running, sleeping).
     type: string
     requirement_level: recommended
+  sqlserver.tempdb.allocation.page_type:
+    description: The type of tempdb page latch wait. `other` covers page latch waits on ordinary (non-allocation-map) pages.
+    type: string
+    requirement_level: recommended
+    enum: [gam, sgam, pfs, other]
+  sqlserver.tempdb.file.id:
+    description: Numeric identifier of the tempdb file.
+    type: int
+    requirement_level: recommended
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
     type: double
@@ -454,10 +472,10 @@ attributes:
     requirement_level: recommended
     enum: [running, limit_reached]
   tempdb.state:
-    description: The status of the tempdb space usage.
+    description: The tempdb space usage category. The values are mutually exclusive and partition total tempdb space.
     type: string
     requirement_level: recommended
-    enum: [free, used]
+    enum: [free, user_objects, internal_objects, version_store, mixed_extents]
   transition.direction:
     description: The direction of a superlatch transition.
     type: string
@@ -484,6 +502,16 @@ attributes:
   # attributes for events
   ## common
 events:
+  db.server.procedure_definition:
+    enabled: false
+    description: The SQL source text of stored procedures observed in db.server.top_procedure. Correlates with db.server.top_procedure via sqlserver.procedure_id and db.namespace.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - sqlserver.procedure_id
+      - sqlserver.procedure_name
+      - sqlserver.procedure.definition
+
   db.server.query_plan:
     enabled: false
     description: query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
@@ -802,7 +830,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.space:
     enabled: false
-    description: Total free space in temporary DB.
+    description: TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
     stability: development
     unit: kBy
     sum:
@@ -810,6 +838,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [tempdb.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.version_store.size:
     enabled: false
     description: TempDB version store size.
@@ -1357,6 +1386,26 @@ metrics:
     gauge:
       value_type: double
     attributes: [task.result]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.allocation.waiters.count:
+    enabled: false
+    description: Number of tasks currently waiting on a tempdb page latch, broken down by page type.
+    stability: development
+    unit: "{waiters}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.tempdb.allocation.page_type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.file.size:
+    enabled: false
+    description: Size of each tempdb data or log file.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [file_type, sqlserver.tempdb.file.id]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false
