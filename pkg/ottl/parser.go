@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/failurecounter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
@@ -494,16 +495,10 @@ func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenc
 	}
 }
 
-// WithStatementSequenceFailureCounter sets a counter that is incremented by 1 each time a call to Execute
-// ignores at least one statement error, which happens when the ErrorMode is `ignore` or `silent`.
-// A call to Execute in which several statements fail is counted once. Errors are never counted
-// when the ErrorMode is `propagate`, as they are returned to the caller.
-// The counter measures OTTL executions only, not records: Execute is called once per item of the
-// OTTL context being processed (e.g. per span, per resource), so the rate depends on that context.
-func WithStatementSequenceFailureCounter[K any](counter metric.Int64Counter) StatementSequenceOption[K] {
-	return func(s *StatementSequence[K]) {
-		s.failureCounter = counter
-	}
+// SetFailureCounter sets the counter incremented by Execute each time at least one statement error is ignored.
+// It can only be called from within OTTL; use xottl.WithStatementSequenceFailureCounter instead.
+func (s *StatementSequence[K]) SetFailureCounter(counter failurecounter.Counter) {
+	s.failureCounter = counter.Int64Counter
 }
 
 // NewStatementSequence creates a new StatementSequence with the provided Statement slice and component.TelemetrySettings.
@@ -525,7 +520,7 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
-// When ignoring errors and a failure counter is set (see WithStatementSequenceFailureCounter), the counter is incremented once per call that had at least one error.
+// When ignoring errors and a failure counter is set (see xottl.WithStatementSequenceFailureCounter), the counter is incremented once per call that had at least one error.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
@@ -580,16 +575,10 @@ func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K
 	}
 }
 
-// WithConditionSequenceFailureCounter sets a counter that is incremented by 1 each time a call to Eval
-// ignores at least one condition error, which happens when the ErrorMode is `ignore` or `silent`.
-// A call to Eval in which several conditions fail is counted once. Errors are never counted
-// when the ErrorMode is `propagate`, as they are returned to the caller.
-// The counter measures OTTL evaluations only, not records: Eval is called once per item of the
-// OTTL context being processed (e.g. per span, per resource), so the rate depends on that context.
-func WithConditionSequenceFailureCounter[K any](counter metric.Int64Counter) ConditionSequenceOption[K] {
-	return func(c *ConditionSequence[K]) {
-		c.failureCounter = counter
-	}
+// SetFailureCounter sets the counter incremented by Eval each time at least one condition error is ignored.
+// It can only be called from within OTTL; use xottl.WithConditionSequenceFailureCounter instead.
+func (c *ConditionSequence[K]) SetFailureCounter(counter failurecounter.Counter) {
+	c.failureCounter = counter.Int64Counter
 }
 
 // NewConditionSequence creates a new ConditionSequence with the provided Condition slice and component.TelemetrySettings.
@@ -616,7 +605,7 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
 // When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
-// When ignoring errors and a failure counter is set (see WithConditionSequenceFailureCounter), the counter is incremented once per call that had at least one error.
+// When ignoring errors and a failure counter is set (see xottl.WithConditionSequenceFailureCounter), the counter is incremented once per call that had at least one error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	var failed bool
