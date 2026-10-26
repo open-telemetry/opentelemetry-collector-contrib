@@ -10,13 +10,13 @@ require (
 	github.com/tg123/go-htpasswd v1.2.5
 	go.opentelemetry.io/collector/client v1.70.0
 	go.opentelemetry.io/collector/component v1.70.0
-	go.opentelemetry.io/collector/component/componenttest v0.163.1-0.20261023190401-82148555675e
+	go.opentelemetry.io/collector/component/componenttest v0.164.0
 	go.opentelemetry.io/collector/config/configopaque v1.70.0
 	go.opentelemetry.io/collector/confmap v1.70.0
 	go.opentelemetry.io/collector/extension v1.70.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.0
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.163.1-0.20261023190401-82148555675e
-	go.opentelemetry.io/collector/extension/extensiontest v0.163.1-0.20261023190401-82148555675e
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.164.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/grpc v1.84.0
@@ -42,7 +42,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.163.1-0.20261023190401-82148555675e // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.70.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
