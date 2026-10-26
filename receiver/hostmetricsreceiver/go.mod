@@ -4,12 +4,12 @@ go 1.26.0
 
 require (
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.164.0
 	github.com/prometheus/procfs v0.22.0
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/stretchr/testify v1.12.1
@@ -81,7 +81,7 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.163.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect

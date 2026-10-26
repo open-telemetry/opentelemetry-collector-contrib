@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/gosnmp/gosnmp v1.45.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.70.0

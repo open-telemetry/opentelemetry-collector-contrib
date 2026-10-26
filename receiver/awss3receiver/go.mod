@@ -10,7 +10,7 @@ require (
 	github.com/itchyny/timefmt-go v0.1.8
 	github.com/klauspost/compress v1.20.1
 	github.com/open-telemetry/opamp-go v0.24.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.164.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0

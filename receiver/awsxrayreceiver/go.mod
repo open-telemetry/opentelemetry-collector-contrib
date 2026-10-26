@@ -7,11 +7,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/xray v1.45.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
@@ -66,7 +66,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.163.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.164.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
