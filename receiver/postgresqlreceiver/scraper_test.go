@@ -2910,7 +2910,7 @@ func TestCollectTablesSkipsUnavailableSize(t *testing.T) {
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newPoolClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
 	var errs errsMux
@@ -2934,7 +2934,7 @@ func TestCollectIndexesSkipsUnavailableSize(t *testing.T) {
 	}, nil)
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newPoolClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
 	var errs errsMux
@@ -2954,7 +2954,7 @@ func TestCollectIndexesKeepsRowsReadBeforeError(t *testing.T) {
 	}, errors.New("connection reset by peer"))
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newPoolClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
 	var errs errsMux
@@ -3494,7 +3494,7 @@ func TestSetupLegacyResourceBuilder(t *testing.T) {
 func TestServerEndpointResolvedAtConstruction(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.AddrConfig.Endpoint = "db.example.com:5432"
-	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newPoolClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
 	cfg.AddrConfig.Endpoint = "other.example.com:5433"
