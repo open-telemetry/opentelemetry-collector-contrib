@@ -1880,6 +1880,12 @@ func TestRegistrationRetriesWithoutInvalidFleetID(t *testing.T) {
 		case 3:
 			assert.Equal(t, metadataURL, req.URL.Path)
 			w.WriteHeader(http.StatusOK)
+
+		// any subsequent request must be a heartbeat fired by the
+		// heartbeat loop that Start() launches in a goroutine
+		default:
+			assert.Equal(t, heartbeatURL, req.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
 		}
 	}))
 
@@ -1901,7 +1907,11 @@ func TestRegistrationRetriesWithoutInvalidFleetID(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
-	assert.Equal(t, int32(3), reqCount.Load(), "expected exactly 3 requests: failed register, successful register, metadata")
+	// The heartbeat loop that Start() launches in a goroutine can fire an
+	// additional request before this assertion runs, so require at least the
+	// three registration/metadata requests rather than an exact count. The
+	// server handler asserts that any extra request is a heartbeat.
+	assert.GreaterOrEqual(t, reqCount.Load(), int32(3), "expected at least 3 requests: failed register, successful register, metadata")
 
 	require.NoError(t, se.Shutdown(t.Context()))
 }
@@ -1949,6 +1959,12 @@ func TestRegistrationRetriesWithoutFleetIDWhenFleetNotFound(t *testing.T) {
 		case 3:
 			assert.Equal(t, metadataURL, req.URL.Path)
 			w.WriteHeader(http.StatusOK)
+
+		// any subsequent request must be a heartbeat fired by the
+		// heartbeat loop that Start() launches in a goroutine
+		default:
+			assert.Equal(t, heartbeatURL, req.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
 		}
 	}))
 
@@ -1970,7 +1986,11 @@ func TestRegistrationRetriesWithoutFleetIDWhenFleetNotFound(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
-	assert.Equal(t, int32(3), reqCount.Load(), "expected exactly 3 requests: failed register, successful register, metadata")
+	// The heartbeat loop that Start() launches in a goroutine can fire an
+	// additional request before this assertion runs, so require at least the
+	// three registration/metadata requests rather than an exact count. The
+	// server handler asserts that any extra request is a heartbeat.
+	assert.GreaterOrEqual(t, reqCount.Load(), int32(3), "expected at least 3 requests: failed register, successful register, metadata")
 
 	require.NoError(t, se.Shutdown(t.Context()))
 }
