@@ -1,0 +1,10 @@
+[
+  {
+    "measurement": "sqlserver_tempdb_contention",
+    "sql_instance": "testhost",
+    "gam_waiters": "1",
+    "sgam_waiters": "1",
+    "pfs_waiters": "2",
+    "other_waiters": "3"
+  }
+]

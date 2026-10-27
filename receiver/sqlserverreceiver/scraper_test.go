@@ -53,6 +53,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitersCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskOperations.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDiskIo.Enabled = enabled
@@ -376,6 +378,12 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedCPUMemory.yaml")
 				case getSQLServerDiskIOQuery():
 					expectedFile = filepath.Join("testdata", "expectedDiskIO.yaml")
+				case getSQLServerTempDBQuery():
+					expectedFile = filepath.Join("testdata", "expectedTempDB.yaml")
+				case getSQLServerTempDBContentionQuery():
+					expectedFile = filepath.Join("testdata", "expectedTempDBContention.yaml")
+				case getSQLServerTempDBFileQuery():
+					expectedFile = filepath.Join("testdata", "expectedTempDBFile.yaml")
 				}
 
 				// Uncomment line below to re-generate expected metrics.
@@ -1306,6 +1314,12 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("cpuMemoryQueryData.txt")
 	case getSQLServerDiskIOQuery():
 		queryResults, err = readFile("diskIOQueryData.txt")
+	case getSQLServerTempDBQuery():
+		queryResults, err = readFile("tempDBQueryData.txt")
+	case getSQLServerTempDBContentionQuery():
+		queryResults, err = readFile("tempDBContentionQueryData.txt")
+	case getSQLServerTempDBFileQuery():
+		queryResults, err = readFile("tempDBFileQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery(false):
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery(true):
@@ -2971,6 +2985,176 @@ func TestRecordDiskIOMetrics(t *testing.T) {
 	assert.Equal(t, 12, totalDP)
 }
 
+func TestRecordTempDBMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var tempDBScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerTempDBQuery() {
+			tempDBScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, tempDBScraper, "tempdb scraper should be present")
+
+	err := tempDBScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, tempDBScraper.Shutdown(t.Context()))
+
+	tempDBScraper.client = mockClient{
+		SQL: tempDBScraper.sqlQuery,
+	}
+
+	actualMetrics, err := tempDBScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 5 tempdb.space states (user_objects, internal_objects, version_store, free, mixed_extents)
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == metadata.MetricsInfo.SqlserverDatabaseTempdbSpace.Name {
+					totalDP += m.Sum().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 5, totalDP)
+}
+
+func TestRecordTempDBContentionMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitersCount.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var contentionScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerTempDBContentionQuery() {
+			contentionScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, contentionScraper, "tempdb contention scraper should be present")
+
+	err := contentionScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, contentionScraper.Shutdown(t.Context()))
+
+	contentionScraper.client = mockClient{
+		SQL: contentionScraper.sqlQuery,
+	}
+
+	actualMetrics, err := contentionScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 4 allocation page types = 4 data points
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == metadata.MetricsInfo.SqlserverTempdbAllocationWaitersCount.Name {
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 4, totalDP)
+}
+
+func TestRecordTempDBFileMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var tempDBFileScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerTempDBFileQuery() {
+			tempDBFileScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, tempDBFileScraper, "tempdb file scraper should be present")
+
+	err := tempDBFileScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, tempDBFileScraper.Shutdown(t.Context()))
+
+	tempDBFileScraper.client = mockClient{
+		SQL: tempDBFileScraper.sqlQuery,
+	}
+
+	actualMetrics, err := tempDBFileScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 2 tempdb files (1 data, 1 log) = 2 data points
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == metadata.MetricsInfo.SqlserverTempdbFileSize.Name {
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 2, totalDP)
+}
+
+func TestIsTempDBQueryEnabled(t *testing.T) {
+	assert.False(t, isTempDBQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isTempDBQueryEnabled(metrics))
+
+	metrics.SqlserverDatabaseTempdbSpace.Enabled = true
+	assert.True(t, isTempDBQueryEnabled(metrics))
+}
+
+func TestIsTempDBContentionQueryEnabled(t *testing.T) {
+	assert.False(t, isTempDBContentionQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isTempDBContentionQueryEnabled(metrics))
+
+	metrics.SqlserverTempdbAllocationWaitersCount.Enabled = true
+	assert.True(t, isTempDBContentionQueryEnabled(metrics))
+}
+
 func TestIsCPUMemoryQueryEnabled(t *testing.T) {
 	assert.False(t, isCPUMemoryQueryEnabled(nil))
 
@@ -3436,4 +3620,130 @@ func TestDetectSQLServerInstanceInfo(t *testing.T) {
 		require.Equal(t, "15.0.4261.1", *v)
 		require.Equal(t, "enterprise", *e)
 	})
+}
+
+// newProcedureDefinitionScraper builds a logs scraper with both the top procedure and
+// procedure definition events enabled.
+func newProcedureDefinitionScraper(t *testing.T) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	require.NotEmpty(t, scrapers)
+
+	scraper := scrapers[0]
+	require.NotNil(t, scraper.cache)
+	scraper.client = mockClient{
+		SQL: scraper.sqlQuery,
+	}
+	return scraper
+}
+
+func TestProcedureDefinitionEvent(t *testing.T) {
+	scraper := newProcedureDefinitionScraper(t)
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+	seedProcedureCache(scraper, "7654321", map[string]int64{
+		"execution_count":      200,
+		"total_worker_time":    4_000_000,
+		"total_elapsed_time":   8_000_000,
+		"total_physical_reads": 5,
+		"total_logical_reads":  15_000,
+		"total_logical_writes": 3_000,
+		"total_spills":         0,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "expectedProcedureDefinition.yaml")
+	// Uncomment line below to re-generate expected logs.
+	// golden.WriteLogs(t, expectedFile, actualLogs)
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+	// Verify both event types are present: top_procedure followed by procedure_definition.
+	eventNames := make([]string, records.Len())
+	for i := range records.Len() {
+		eventNames[i] = records.At(i).EventName()
+	}
+	assert.Contains(t, eventNames, "db.server.top_procedure")
+	assert.Contains(t, eventNames, "db.server.procedure_definition")
+}
+
+func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
+	// Use the standard top-procedure scraper which has procedure_definition disabled.
+	scraper := newTopProcedureScraper(t)
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition event must not be emitted when disabled")
+	}
+}
+
+func TestProcedureDefinitionEmptyDefinition(t *testing.T) {
+	scraper := newProcedureDefinitionScraper(t)
+	scraper.client = mockClient{
+		SQL:                  scraper.sqlQuery,
+		procedureFixtureFile: "topProcedureQueryEmptyDefinition.txt",
+	}
+
+	seedProcedureCache(scraper, "1234567", map[string]int64{
+		"execution_count":      1000,
+		"total_worker_time":    30_000_000,
+		"total_elapsed_time":   60_000_000,
+		"total_physical_reads": 100,
+		"total_logical_reads":  400_000,
+		"total_logical_writes": 500,
+		"total_spills":         20,
+	})
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("sqlserver.procedure.definition")
+			require.True(t, ok)
+			assert.Empty(t, def.Str(), "empty definition should be emitted as an empty string")
+			return
+		}
+	}
+	t.Fatal("expected at least one db.server.procedure_definition event")
 }
