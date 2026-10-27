@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/nats-io/nats-server/v2 v2.15.1
-	github.com/nats-io/nats.go v1.54.0
+	github.com/nats-io/nats.go v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.3.1
@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
-	github.com/antchfx/xmlquery v1.5.1 // indirect
+	github.com/antchfx/xmlquery v1.5.2 // indirect
 	github.com/antchfx/xpath v1.3.9 // indirect
 	github.com/antithesishq/antithesis-sdk-go v0.8.0-default-no-op // indirect
 	github.com/cenkalti/backoff/v7 v7.0.1 // indirect

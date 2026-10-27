@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.10.0
 	cloud.google.com/go/storage v1.70.0
 	github.com/google/uuid v1.6.0
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/lestrrat-go/strftime v1.2.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.70.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/api v0.307.0
+	google.golang.org/api v0.308.0
 )
 
 require (
