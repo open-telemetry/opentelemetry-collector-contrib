@@ -606,7 +606,8 @@ func isWorkerThreadsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverWorkerRequestCount.Enabled ||
-		metrics.SqlserverWorkerThreadCount.Enabled
+		metrics.SqlserverWorkerThreadCount.Enabled ||
+		metrics.SqlserverThreadPoolTasksCount.Enabled
 }
 
 func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
