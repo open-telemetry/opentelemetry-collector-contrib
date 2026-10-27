@@ -333,9 +333,6 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			args: []string{"uid-1234", "k8s.volume.type"},
 			want: map[string]any{
 				"k8s.volume.type": "awsElasticBlockStore",
-				"aws.volume.id":   "volume_id",
-				"fs.type":         "fs_type",
-				"partition":       "10",
 			},
 		},
 		{
@@ -350,9 +347,6 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			args: []string{"uid-1234", "k8s.volume.type"},
 			want: map[string]any{
 				"k8s.volume.type": "gcePersistentDisk",
-				"gce.pd.name":     "pd_name",
-				"fs.type":         "fs_type",
-				"partition":       "10",
 			},
 		},
 		{
@@ -365,9 +359,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
 			want: map[string]any{
-				"k8s.volume.type":          "glusterfs",
-				"glusterfs.endpoints.name": "endpoints_name",
-				"glusterfs.path":           "path",
+				"k8s.volume.type": "glusterfs",
 			},
 		},
 		{
@@ -400,12 +392,6 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				return nil
 			})
 			rac := metadata.DefaultResourceAttributesConfig()
-			rac.AwsVolumeID.Enabled = true
-			rac.FsType.Enabled = true
-			rac.GcePdName.Enabled = true
-			rac.GlusterfsEndpointsName.Enabled = true
-			rac.GlusterfsPath.Enabled = true
-			rac.Partition.Enabled = true
 			rb := metadata.NewResourceBuilder(rac)
 			err := md.setExtraResources(rb, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
 			require.NoError(t, err)

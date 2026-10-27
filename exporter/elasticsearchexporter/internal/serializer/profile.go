@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // CheckProfileType acts as safeguard to make sure only known profiles are

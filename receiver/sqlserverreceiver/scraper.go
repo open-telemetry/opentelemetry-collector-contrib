@@ -254,6 +254,12 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordCPUMemoryMetrics(ctx)
 	case getSQLServerDiskIOQuery():
 		err = s.recordDiskIOMetrics(ctx)
+	case getSQLServerTempDBQuery():
+		err = s.recordTempDBMetrics(ctx)
+	case getSQLServerTempDBContentionQuery():
+		err = s.recordTempDBContentionMetrics(ctx)
+	case getSQLServerTempDBFileQuery():
+		err = s.recordTempDBFileMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -909,7 +915,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const failedAutoParamsPerSec = "Failed Auto-Params/sec"
 	const forcedParameterizationsPerSec = "Forced Parameterizations/sec"
 	const freeListStalls = "Free list stalls/sec"
-	const freeSpaceInTempdb = "Free Space in tempdb (KB)"
 	const freeSpaceScansPerSec = "FreeSpace Scans/sec"
 	const fullScansPerSec = "Full Scans/sec"
 	const guidedPlanExecutionsPerSec = "Guided plan executions/sec"
@@ -1312,14 +1317,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolFree)
-			}
-		case freeSpaceInTempdb:
-			val, err := retrieveInt(row, valueKey)
-			if err != nil {
-				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeSpaceInTempdb)
-				errs = append(errs, err)
-			} else {
-				s.mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(now, val.(int64), metadata.AttributeTempdbStateFree)
 			}
 		case freeSpaceScansPerSec:
 			val, err := retrieveFloat(row, valueKey)
@@ -2817,6 +2814,127 @@ func (s *sqlServerScraperHelper) recordDiskIOMetrics(ctx context.Context) error 
 	return errors.Join(errs...)
 }
 
+// recordTempDBMetrics records the tempdb space-usage breakdown by allocation category.
+func (s *sqlServerScraperHelper) recordTempDBMetrics(ctx context.Context) error {
+	const (
+		kbUserObjects     = "kb_user_objects"
+		kbInternalObjects = "kb_internal_objects"
+		kbVersionStore    = "kb_version_store"
+		kbFree            = "kb_free"
+		kbMixedExtents    = "kb_mixed_extents"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		for _, w := range []struct {
+			col   string
+			value metadata.AttributeTempdbState
+		}{
+			{kbUserObjects, metadata.AttributeTempdbStateUserObjects},
+			{kbInternalObjects, metadata.AttributeTempdbStateInternalObjects},
+			{kbVersionStore, metadata.AttributeTempdbStateVersionStore},
+			{kbFree, metadata.AttributeTempdbStateFree},
+			{kbMixedExtents, metadata.AttributeTempdbStateMixedExtents},
+		} {
+			val, parseErr := retrieveInt(row, w.col)
+			if parseErr != nil {
+				errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", w.col, i, parseErr))
+				continue
+			}
+			s.mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(now, val.(int64), w.value)
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+// recordTempDBContentionMetrics records the number of tasks currently waiting on tempdb
+// page latches (PAGELATCH_* waits), classified by allocation page type.
+func (s *sqlServerScraperHelper) recordTempDBContentionMetrics(ctx context.Context) error {
+	const (
+		gamWaiters   = "gam_waiters"
+		sgamWaiters  = "sgam_waiters"
+		pfsWaiters   = "pfs_waiters"
+		otherWaiters = "other_waiters"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		for _, w := range []struct {
+			col   string
+			value metadata.AttributeSqlserverTempdbAllocationPageType
+		}{
+			{gamWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypeGam},
+			{sgamWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypeSgam},
+			{pfsWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypePfs},
+			{otherWaiters, metadata.AttributeSqlserverTempdbAllocationPageTypeOther},
+		} {
+			errs = append(errs, s.mb.RecordSqlserverTempdbAllocationWaitersCountDataPoint(now, row[w.col], w.value))
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+// recordTempDBFileMetrics records one data point per tempdb data/log file.
+func (s *sqlServerScraperHelper) recordTempDBFileMetrics(ctx context.Context) error {
+	const (
+		fileID    = "file_id"
+		fileType  = "file_type"
+		sizeBytes = "size_bytes"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		idVal, parseErr := retrieveInt(row, fileID)
+		if parseErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", fileID, i, parseErr))
+			continue
+		}
+		errs = append(errs, s.mb.RecordSqlserverTempdbFileSizeDataPoint(now, row[sizeBytes], row[fileType], idVal.(int64)))
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
 func (s *sqlServerScraperHelper) procedureLookbackSeconds() int {
 	const schedulingBuffer = 10 * time.Second
 	if s.lastExecutionTimestamp.Equal(time.Unix(0, 0)) {
@@ -2842,6 +2960,7 @@ func (s *sqlServerScraperHelper) recordDatabaseTopProcedure(ctx context.Context)
 		colMinElapsedTime   = "min_elapsed_time"
 		colMaxElapsedTime   = "max_elapsed_time"
 		colLastExecTime     = "last_execution_time"
+		colDefinition       = "definition"
 
 		dbSystemNameVal = "microsoft.sql_server"
 	)
@@ -2965,6 +3084,18 @@ func (s *sqlServerScraperHelper) recordDatabaseTopProcedure(ctx context.Context)
 			float64(minElapsedTime.(int64))/1_000_000,
 			row[colLastExecTime],
 		)
+
+		if s.config.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+			s.lb.RecordDbServerProcedureDefinitionEvent(
+				context.Background(),
+				timestamp,
+				dbSystemNameVal,
+				row[colDatabaseName],
+				procedureID,
+				row[colProcedureName],
+				row[colDefinition],
+			)
+		}
 	}
 
 	if !resourcesAdded {
