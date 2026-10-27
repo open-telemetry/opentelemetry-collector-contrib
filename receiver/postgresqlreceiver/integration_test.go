@@ -65,7 +65,6 @@ func TestIntegrationWithConnectionPool(t *testing.T) {
 
 func TestIntegrationSemconv(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, true)()
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlConnectionPoolFeatureGate, false)()
 	t.Run("multi_db", integrationTestSemconv("multi_db_semconv", []string{"otel", "otel2"}, pre17TestVersion))
 }
 
