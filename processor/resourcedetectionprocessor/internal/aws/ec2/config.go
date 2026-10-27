@@ -12,6 +12,7 @@ import (
 // These mirror aws-sdk-go-v2's retry.DefaultMaxAttempts and retry.DefaultMaxBackoff.
 // They are declared locally so that this config package does not import the AWS SDK
 // just for two constants, which would pull the SDK into every build's config schema.
+// TestDefaultRetrySettingsMatchSDK checks for drift when the SDK is upgraded.
 const (
 	defaultMaxAttempts = 3
 	defaultMaxBackoff  = 20 * time.Second

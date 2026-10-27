@@ -73,7 +73,7 @@ properties:
     items:
       $ref: ./internal/translation/dpfilters.metric_filter
   ingest_tls:
-    description: ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+    description: TLS settings for the SignalFx ingest endpoint. Configure a CA file when the endpoint uses a self-signed certificate whose CA is not loaded in the system cert pool.
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
   ingest_url:
     description: 'IngestURL is the destination to where SignalFx metrics will be sent to, it is intended for tests and debugging. The value of Realm is ignored if the URL is specified. The exporter will automatically append the appropriate path: "/v2/datapoint" for metrics, and "/v2/event" for events.'

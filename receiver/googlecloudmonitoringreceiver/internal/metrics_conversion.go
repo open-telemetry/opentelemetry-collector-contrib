@@ -318,6 +318,10 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 			continue
 		}
 
+		if count := distributionValue.GetCount(); count > 0 {
+			targetDataPoint.SetSum(distributionValue.GetMean() * float64(count))
+		}
+
 		targetBucketCounts := targetDataPoint.BucketCounts()
 
 		// The number of elements in bucket_counts array must be by one greater than the number of elements in explicit_bounds array.
