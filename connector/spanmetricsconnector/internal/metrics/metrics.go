@@ -57,6 +57,7 @@ type explicitHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
+	isFirst        bool
 	lastSeen       time.Time
 }
 
@@ -69,7 +70,9 @@ type exponentialHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
-	lastSeen       time.Time
+	// isFirst has the same meaning as explicitHistogram.isFirst.
+	isFirst  bool
+	lastSeen time.Time
 }
 
 type BuildAttributesFun func() pcommon.Map
@@ -124,6 +127,7 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 			bucketCounts:     make([]uint64, len(m.bounds)+1),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
+			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = h
@@ -147,9 +151,17 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
 		dp.ExplicitBounds().FromRaw(h.bounds)
-		dp.BucketCounts().FromRaw(h.bucketCounts)
-		dp.SetCount(h.count)
-		dp.SetSum(h.sum)
+		if temporality == pmetric.AggregationTemporalityCumulative && h.isFirst {
+			// Report an empty histogram for the first flush of a new series.
+			dp.BucketCounts().FromRaw(make([]uint64, len(h.bucketCounts)))
+			dp.SetCount(0)
+			dp.SetSum(0)
+			h.isFirst = false
+		} else {
+			dp.BucketCounts().FromRaw(h.bucketCounts)
+			dp.SetCount(h.count)
+			dp.SetSum(h.sum)
+		}
 		for i := 0; i < h.exemplars.Len(); i++ {
 			h.exemplars.At(i).SetTimestamp(timestamp)
 		}
@@ -212,6 +224,7 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimeStamp,
+			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = h
@@ -234,7 +247,12 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 		startTimestamp := startTimeStampGenerator(k, e.startTimestamp)
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
-		expoHistToExponentialDataPoint(e.histogram, dp)
+		if temporality == pmetric.AggregationTemporalityCumulative && e.isFirst {
+			emptyExponentialDataPoint(e.histogram, dp)
+			e.isFirst = false
+		} else {
+			expoHistToExponentialDataPoint(e.histogram, dp)
+		}
 		for i := 0; i < e.exemplars.Len(); i++ {
 			e.exemplars.At(i).SetTimestamp(timestamp)
 		}
@@ -272,6 +290,10 @@ func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetri
 			out.BucketCounts().Append(in.At(i))
 		}
 	}
+}
+
+func emptyExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
+	dp.SetScale(agg.Scale())
 }
 
 func (m *exponentialHistogramMetrics) ClearExemplars() {

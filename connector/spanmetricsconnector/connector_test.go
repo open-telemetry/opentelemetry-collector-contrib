@@ -283,30 +283,38 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		assert.Equal(tb, metricNameDuration, metric.Name())
 		assert.Equal(tb, defaultUnit.String(), metric.Unit())
 
+		expectedObservations := numCumulativeConsumptions
+		if expectedTemporality == pmetric.AggregationTemporalityCumulative && numCumulativeConsumptions == 1 {
+			expectedObservations = 0
+		}
+
 		if metric.Type() == pmetric.MetricTypeExponentialHistogram {
 			hist := metric.ExponentialHistogram()
 			assert.Equal(tb, expectedTemporality, hist.AggregationTemporality())
-			verifyExponentialHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
+			verifyExponentialHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, expectedObservations)
 		} else {
 			hist := metric.Histogram()
 			assert.Equal(tb, expectedTemporality, hist.AggregationTemporality())
-			verifyExplicitHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
+			verifyExplicitHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, expectedObservations)
 		}
 	}
 	return true
 }
 
-func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
+// verifyExplicitHistogramDataPoints checks that every data point holds exactly
+// expectedObservations observations of sampleDuration.
+func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, expectedObservations int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
 	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(expectedObservations),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
 		)
+		assert.Equal(tb, uint64(expectedObservations), dp.Count())
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
@@ -328,7 +336,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
 			wantBucketCount = 0
 			if bi == foundDurationIndex {
-				wantBucketCount = uint64(numCumulativeConsumptions)
+				wantBucketCount = uint64(expectedObservations)
 			}
 			assert.Equal(tb, wantBucketCount, dp.BucketCounts().At(bi))
 		}
@@ -336,19 +344,25 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 	}
 }
 
-func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
+// verifyExponentialHistogramDataPoints checks that every data point holds exactly
+// expectedObservations observations of sampleDuration.
+func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, expectedObservations int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
 	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(expectedObservations),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
 		)
-		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
-		assert.Equal(tb, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
+		assert.Equal(tb, uint64(expectedObservations), dp.Count())
+		if expectedObservations == 0 {
+			assert.Empty(tb, dp.Positive().BucketCounts().AsRaw())
+		} else {
+			assert.Equal(tb, []uint64{uint64(expectedObservations)}, dp.Positive().BucketCounts().AsRaw())
+		}
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(tb, dp, seenMetricIDs)
@@ -1430,6 +1444,102 @@ func TestSeriesExpiration(t *testing.T) {
 	exported = p.buildMetrics()
 	assert.False(t, hasDataPointWithStringAttrValue(exported, "A"))
 	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
+}
+
+func TestSeriesRestartAtZeroAfterExpiration(t *testing.T) {
+	for _, histCfg := range []struct {
+		name string
+		cfg  func() HistogramConfig
+	}{
+		{name: "explicit", cfg: explicitHistogramsConfig},
+		{name: "exponential", cfg: exponentialHistogramsConfig},
+	} {
+		t.Run(histCfg.name, func(t *testing.T) {
+			mockClock := clockwork.NewFakeClock()
+			p, err := newConnectorImp(new("defaultNullValue"), histCfg.cfg, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+			require.NoError(t, err)
+
+			p.config.SeriesExpiration = time.Millisecond
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			traces := buildSampleTrace()
+			setSpanAttributeValue(traces, stringAttrName, "A")
+
+			flush := func() pmetric.Metrics {
+				exported := p.buildMetrics()
+				p.resetState()
+				return exported
+			}
+
+			require.NoError(t, p.ConsumeTraces(ctx, traces))
+			calls, duration := sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(0), calls)
+			assert.Equal(t, uint64(0), duration)
+
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(sampleTraceSeries), calls)
+			assert.Equal(t, uint64(sampleTraceSeries), duration)
+
+			mockClock.Advance(time.Millisecond)
+			assert.True(t, hasDataPointWithStringAttrValue(flush(), "A"))
+			assert.False(t, hasDataPointWithStringAttrValue(flush(), "A"))
+
+			require.NoError(t, p.ConsumeTraces(ctx, traces))
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(0), calls)
+			assert.Equal(t, uint64(0), duration)
+
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(sampleTraceSeries), calls)
+			assert.Equal(t, uint64(sampleTraceSeries), duration)
+		})
+	}
+}
+
+const sampleTraceSeries = 3
+
+func sumSeriesValuesWithStringAttrValue(tb testing.TB, metrics pmetric.Metrics) (calls int64, durationCount uint64) {
+	const value = "A"
+	var callsFound, durationFound int
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		scopeMetrics := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						if attr, ok := dps.At(l).Attributes().Get(stringAttrName); ok && attr.Str() == value {
+							calls += dps.At(l).IntValue()
+							callsFound++
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						if attr, ok := dps.At(l).Attributes().Get(stringAttrName); ok && attr.Str() == value {
+							durationCount += dps.At(l).Count()
+							durationFound++
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						if attr, ok := dps.At(l).Attributes().Get(stringAttrName); ok && attr.Str() == value {
+							durationCount += dps.At(l).Count()
+							durationFound++
+						}
+					}
+				default:
+				}
+			}
+		}
+	}
+	require.Equal(tb, sampleTraceSeries, callsFound, "unexpected number of calls data points with %s=%s", stringAttrName, value)
+	require.Equal(tb, sampleTraceSeries, durationFound, "unexpected number of duration data points with %s=%s", stringAttrName, value)
+	return calls, durationCount
 }
 
 func TestResourceMetricsKeyAttributes(t *testing.T) {
