@@ -6,8 +6,8 @@ require (
 	github.com/Microsoft/go-winio v0.6.4
 	github.com/containerd/errdefs v1.0.0
 	github.com/gobwas/glob v0.2.3
-	github.com/moby/moby/api v1.56.0
-	github.com/moby/moby/client v0.6.0
+	github.com/moby/moby/api v1.56.1
+	github.com/moby/moby/client v0.6.2
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/config/configoptional v1.70.0
 	go.opentelemetry.io/collector/config/configtls v1.70.0
@@ -21,7 +21,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.7.0 // indirect
+	github.com/docker/go-connections v0.8.2 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d // indirect

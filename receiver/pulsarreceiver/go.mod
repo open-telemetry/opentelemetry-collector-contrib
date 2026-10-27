@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.21.0
 	github.com/apache/thrift v0.25.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger-idl v0.13.1
+	github.com/jaegertracing/jaeger-idl v0.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.164.1
 	github.com/openzipkin/zipkin-go v0.4.3
@@ -39,7 +39,7 @@ require (
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect

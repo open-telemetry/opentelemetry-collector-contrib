@@ -472,7 +472,11 @@ func (dc *Client) RemoveContainer(cid string) {
 // Close shuts down the client and waits for all background streams to finish.
 func (dc *Client) Close() error {
 	dc.streamClientCancel()
-	return dc.streamErrorGroup.Wait()
+	err := dc.streamErrorGroup.Wait()
+	if dc.client != nil {
+		return errors.Join(err, dc.client.Close())
+	}
+	return err
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {
