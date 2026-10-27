@@ -296,8 +296,8 @@ github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b/go.mod h1:fvzegU4
 github.com/antchfx/xmlquery v1.5.1 h1:T9I4Ns1EXiWHy0IqKupGhnfTQtJwlGrpXtauYOoNv78=
 github.com/antchfx/xmlquery v1.5.1/go.mod h1:bVqnl7TaDXSReKINrhZz+2E/PbCu2tUahb+wZ7WZNT8=
 github.com/antchfx/xpath v1.3.6/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
-github.com/antchfx/xpath v1.3.8 h1:RQlkLaJDKk1Ew1H6CUPUTKM+IQxm+6HTyOgcrfqOU9c=
-github.com/antchfx/xpath v1.3.8/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
+github.com/antchfx/xpath v1.3.9 h1:muXJSod6jRzhsiUjvduNSxsRSptFZ2GOJ1oMD1QkPSA=
+github.com/antchfx/xpath v1.3.9/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
 github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+3JqfkOG4=
 github.com/aws/aws-sdk-go v1.55.8 h1:JRmEUbU52aJQZ2AjX4q4Wu7t4uZjOu71uyNmaWlUkJQ=
@@ -1155,6 +1155,8 @@ go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0 h1:jxs+/EjbVFUyPmqWWF
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0/go.mod h1:6ZgR/POYxoG0KRkequLUifFH4SIKPmwyEeOCty2qsZU=
 go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0 h1:rDvASawsxGFjokcb1ztkpMGq/A3+Hk60hOhemPLeWT4=
 go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0/go.mod h1:Z6X+V9BjLNC5vNwOjE7c03lkQfvOhj5QsLP06/jJW/o=
+go.opentelemetry.io/contrib/detectors/openshift v0.19.0 h1:aB79K0O6F9w275yLeHYYk5g+pmRp62A9r8FpNQfr8us=
+go.opentelemetry.io/contrib/detectors/openshift v0.19.0/go.mod h1:vgFY5LC9WbKGUxrQKDWEOd0LA1fOCRpSPi98aDoDtN0=
 go.opentelemetry.io/contrib/detectors/vultr v0.19.0 h1:xFmRazM+v0Kbk7YbkgeX5JajCL5HC+U6cGN3gbpow6k=
 go.opentelemetry.io/contrib/detectors/vultr v0.19.0/go.mod h1:Jmz+cuPSup8pd8LOSRPd7ioFoy+n9Z8ScYmCXbgpQVo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 h1:oECp5f+hN7nkwjU/8BxQ/q23bGPb8FIrD839owX222E=

@@ -18,12 +18,12 @@ require (
 	github.com/hashicorp/consul/api v1.34.4
 	github.com/linode/go-metadata v0.3.1
 	github.com/moby/moby/api v1.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.1
 	github.com/scaleway/scaleway-sdk-go v1.39.0
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/stretchr/testify v1.12.1
@@ -55,6 +55,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/hetzner v0.19.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0
 	go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0
+	go.opentelemetry.io/contrib/detectors/openshift v0.19.0
 	go.opentelemetry.io/contrib/detectors/vultr v0.19.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/metric v1.47.0
@@ -153,7 +154,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect

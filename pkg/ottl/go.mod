@@ -5,15 +5,15 @@ go 1.26.0
 require (
 	github.com/alecthomas/participle/v2 v2.1.4
 	github.com/antchfx/xmlquery v1.5.1
-	github.com/antchfx/xpath v1.3.8
+	github.com/antchfx/xpath v1.3.9
 	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.6
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
 	github.com/stretchr/testify v1.12.1
 	github.com/twmb/murmur3 v1.2.1
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8
