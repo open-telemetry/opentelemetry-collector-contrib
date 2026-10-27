@@ -237,10 +237,11 @@ func TestPartitionProcessing(t *testing.T) {
 		waitAtomic(t, &processed, 4)
 	})
 
-	t.Run("resume cancels cold fetch", func(t *testing.T) {
+	t.Run("resume interrupts poll", func(t *testing.T) {
 		// An idle sibling partition keeps the fetch that omitted the paused partition
-		// in flight until MaxFetchWait. Resuming must cancel that poll so the
-		// next hot record does not wait it out.
+		// in flight until MaxFetchWait. Resuming cancels that PollRecords call.
+		// The broker read keeps running, so the next hot record can still wait
+		// out the fetch that was already on the socket.
 		const fetchWait = time.Second
 		h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
 			cfg.ConsumerConfig.MaxFetchSize = 1
@@ -269,16 +270,19 @@ func TestPartitionProcessing(t *testing.T) {
 		h.produce(0, "second")
 		h.waitPaused(1)
 		h.produce(0, "third")
-		startedAt := time.Now()
+		h.waitPollBlocked()
+		interrupted := h.logs.FilterMessage("interrupted poll").Len()
 		close(release)
-		waitSignal(t, third, "third record waited on the cold fetch")
-		require.Less(t, time.Since(startedAt), fetchWait/2) // The record produced with less than half of fetchWait.
+		require.Eventually(t, func() bool {
+			return h.logs.FilterMessage("interrupted poll").Len() > interrupted
+		}, fetchWait/2, 10*time.Millisecond, "resume did not return PollRecords")
+		waitSignal(t, third, "third record was not consumed")
 	})
 
-	t.Run("resume reconnect keeps records", func(t *testing.T) {
-		// abortInFlightFetches fails the broker read and reconnects. Records
-		// already queued, and records still only on the broker, must all be
-		// consumed in offset order after that reconnect.
+	t.Run("resume keeps records", func(t *testing.T) {
+		// Records already queued, and records still only on the broker, must all
+		// be consumed in offset order after the poll is interrupted. The in-flight
+		// broker read is not failed, so this must not depend on a reconnect.
 		const fetchWait = time.Second
 		h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
 			cfg.ConsumerConfig.MaxFetchSize = 1
@@ -310,19 +314,19 @@ func TestPartitionProcessing(t *testing.T) {
 		// p0-0 occupies the worker. p0-1 fills the mailbox and pauses partition 0.
 		h.produce(0, "p0-1")
 		h.waitPaused(1)
-		// Let the poll block in the fetch that excludes partition 0. Records
-		// produced on partition 1 would satisfy that fetch and it would return
-		// before resume, so they are produced after the read is aborted.
-		time.Sleep(50 * time.Millisecond)
+		// Wait until the poll is blocked in the fetch that excludes partition 0.
+		// Records produced on partition 1 would satisfy that fetch and it would
+		// return before resume, so they are produced after the poll is blocked.
+		h.waitPollBlocked()
 		h.produce(0, "p0-2")
 		h.produce(0, "p0-3")
-		closedBefore := int64Sum(t, h.telemetry, "otelcol_kafka_broker_closed")
+		interrupted := h.logs.FilterMessage("interrupted poll").Len()
 		close(release)
 		h.produce(1, "p1-0")
 		h.produce(1, "p1-1")
 		require.Eventually(t, func() bool {
-			return int64Sum(t, h.telemetry, "otelcol_kafka_broker_closed") > closedBefore
-		}, 5*time.Second, 10*time.Millisecond, "resume did not close a broker connection")
+			return h.logs.FilterMessage("interrupted poll").Len() > interrupted
+		}, fetchWait/2, 10*time.Millisecond, "resume did not return PollRecords")
 		require.EventuallyWithT(t, func(ct *assert.CollectT) {
 			mu.Lock()
 			defer mu.Unlock()
@@ -413,6 +417,7 @@ type partitionProcessingHarness struct {
 	cfg        *Config
 	consumer   *franzConsumer
 	telemetry  *componenttest.Telemetry
+	logs       *observer.ObservedLogs
 	partitions int
 }
 
@@ -653,7 +658,7 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Record, attribute.Set) error) {
 	h.t.Helper()
 
-	settings, telemetry, _ := mustNewSettings(h.t)
+	settings, telemetry, logs := mustNewSettings(h.t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
 		return consumeMessageFunc(consume), nil
 	}
@@ -662,6 +667,7 @@ func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Re
 	require.NoError(h.t, consumer.Start(h.t.Context(), componenttest.NewNopHost()))
 	h.consumer = consumer
 	h.telemetry = telemetry
+	h.logs = logs
 	h.t.Cleanup(func() {
 		// Cleanup runs after t.Context() is canceled. Shutdown needs a live context.
 		require.NoError(h.t, h.consumer.Shutdown(context.Background()))
@@ -704,6 +710,16 @@ func (h *partitionProcessingHarness) waitPaused(want int) {
 		paused := h.consumer.client.PauseFetchPartitions(nil)
 		return len(paused[h.topic]) == want
 	}, 5*time.Second, 10*time.Millisecond)
+}
+
+// waitPollBlocked reports when PollRecords is inside the cancellable poll context.
+func (h *partitionProcessingHarness) waitPollBlocked() {
+	h.t.Helper()
+	require.Eventually(h.t, func() bool {
+		h.consumer.pollMu.Lock()
+		defer h.consumer.pollMu.Unlock()
+		return h.consumer.pollCancel != nil
+	}, 5*time.Second, time.Millisecond, "poll was not blocked")
 }
 
 func (h *partitionProcessingHarness) assignment(partition int32) *pc {

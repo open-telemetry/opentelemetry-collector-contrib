@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -80,12 +79,6 @@ type franzConsumer struct {
 	pollMu     sync.Mutex
 	pollCancel context.CancelFunc
 
-	// conns holds the open broker sockets. A Fetch blocked on one of them runs
-	// under the consumer-session context, which is separate from the context
-	// passed to PollRecords, so pollCancel cannot unblock that read.
-	connsMu sync.Mutex
-	conns   map[net.Conn]struct{}
-
 	// brokerReadOpts caches MeasurementOptions for OnBrokerRead, which fires on
 	// every fetch request. Entries are evicted in OnBrokerDisconnect; growth is
 	// bounded by 2 × number-of-brokers (success + failure).
@@ -124,7 +117,6 @@ func newFranzKafkaConsumer(
 		assignments:      make(map[topicPartition]*pc),
 		controls:         make(chan partitionControl, 1),
 		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
-		conns:            make(map[net.Conn]struct{}),
 	}
 
 	// otelcol_kafka_receiver_offset_lag and otelcol_kafka_receiver_current_offset are
@@ -329,6 +321,9 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// simply be logged and keep fetching.
 	fetch.EachError(func(topic string, partition int32, err error) {
 		if c.config.PartitionProcessing.Independent && errors.Is(err, context.Canceled) {
+			// interruptPoll cancels the poll context. PollRecords returns, and a
+			// Fetch already on the socket is left for the broker to finish.
+			c.settings.Logger.Debug("interrupted poll")
 			return
 		}
 		c.settings.Logger.Error("consumer fetch error", zap.Error(err),
@@ -461,38 +456,6 @@ func (c *franzConsumer) interruptPoll() {
 	defer c.pollMu.Unlock()
 	if c.pollCancel != nil {
 		c.pollCancel()
-	}
-}
-
-// abortInFlightFetches unblocks broker reads so a Fetch that omitted a paused
-// partition does not occupy the connection until MaxFetchWait.
-//
-// Canceling the poll context only returns PollRecords. The Fetch request
-// itself is bound to the consumer session, and franz-go retries a failed read
-// after at least the metadata retry backoff. Aborting is faster than waiting
-// only when MaxFetchWait is longer than that backoff.
-func (c *franzConsumer) abortInFlightFetches() {
-	minBackoff := c.config.ClientConfig.Metadata.Retry.Backoff
-	if minBackoff <= 0 {
-		// A zero backoff leaves the client on the default metadata retry backoff.
-		minBackoff = configkafka.NewDefaultMetadataConfig().Retry.Backoff
-	}
-	// The first retry waits about minBackoff, jittered up to 1.2x, plus a reconnect.
-	if c.config.ConsumerConfig.MaxFetchWait <= 2*minBackoff {
-		return
-	}
-
-	c.connsMu.Lock()
-	conns := make([]net.Conn, 0, len(c.conns))
-	for conn := range c.conns {
-		conns = append(conns, conn)
-	}
-	c.connsMu.Unlock()
-	for _, conn := range conns {
-		// SetReadDeadline interrupts a blocked Read. The fetch loop treats the
-		// resulting error as a transport failure, drops the connection, and
-		// issues a new Fetch that includes partitions resumed just above.
-		_ = conn.SetReadDeadline(time.Now())
 	}
 }
 
@@ -890,12 +853,7 @@ func (c *franzConsumer) brokerReadOpt(nodeID int32, outcome string) metric.Measu
 	return opt
 }
 
-func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, conn net.Conn, err error) {
-	if err == nil && conn != nil {
-		c.connsMu.Lock()
-		c.conns[conn] = struct{}{}
-		c.connsMu.Unlock()
-	}
+func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
@@ -910,12 +868,7 @@ func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration
 	)
 }
 
-func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, conn net.Conn) {
-	if conn != nil {
-		c.connsMu.Lock()
-		delete(c.conns, conn)
-		c.connsMu.Unlock()
-	}
+func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
 	c.telemetryBuilder.KafkaBrokerClosed.Add(
 		context.Background(),
 		1,
