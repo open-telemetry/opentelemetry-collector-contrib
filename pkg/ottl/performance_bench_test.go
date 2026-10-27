@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -759,4 +760,50 @@ func newMixedTypesMap(n int) pcommon.Map {
 		s.AppendEmpty().SetStr("c")
 	}
 	return m
+}
+
+// Recommended CLI invocation:
+//
+//	go test -run '^$' -bench '^BenchmarkDataPointPMapAccess$' -benchtime 500ms -count 6 -cpu 2 -timeout 999m -benchmem | tee bench.txt
+func BenchmarkDataPointPMapAccess(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottldatapoint.NewParser(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext](), settings, ottldatapoint.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create datapoint parser: %v", err)
+	}
+
+	statements := []string{
+		`delete_key(datapoint.attributes, "missing_key")`,
+		`keep_matching_keys(datapoint.attributes, ".*")`,
+		`replace_all_patterns(datapoint.attributes, "value", "^nonexistent_", "")`,
+		`merge_maps(datapoint.attributes, resource.attributes, "update")`,
+	}
+	parsed, err := parser.ParseStatements(statements)
+	if err != nil {
+		b.Fatalf("failed to parse datapoint statements: %v", err)
+	}
+	sequence := ottldatapoint.NewStatementSequence(parsed, settings)
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "benchmark-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("service.name", "old-service")
+	for i := range 10 {
+		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
+	}
+
+	tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
+	b.Cleanup(tCtx.Close)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if err := sequence.Execute(ctx, tCtx); err != nil {
+			b.Fatalf("failed to execute datapoint statements: %v", err)
+		}
+	}
 }
