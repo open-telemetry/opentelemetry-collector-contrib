@@ -392,9 +392,6 @@ exclusions:
       - name: filelog.mtimeSortType
         validation:
           enabled: false
-      - name: filelog.protobufCheckpointEncoding
-        validation:
-          enabled: false
       - name: filelog.requireExplicitTopN
         validation:
           enabled: false
