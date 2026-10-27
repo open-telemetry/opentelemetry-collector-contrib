@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsec
 go 1.26.0
 
 require (
-	github.com/moby/moby/api v1.54.2
+	github.com/moby/moby/api v1.56.1
 	github.com/moby/moby/client v0.4.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
