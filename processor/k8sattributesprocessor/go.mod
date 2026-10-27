@@ -6,13 +6,13 @@ require (
 	github.com/distribution/reference v0.6.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.70.0
 	go.opentelemetry.io/collector/component v1.70.0
