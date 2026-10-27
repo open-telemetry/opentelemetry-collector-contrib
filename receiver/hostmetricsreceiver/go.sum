@@ -110,8 +110,8 @@ github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgr
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 h1:jL3a8soXdzuTCcRnKhOmtcsVOObdDTFf4O2B403HPRU=
 github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
-github.com/prometheus/procfs v0.22.0 h1:6q9+/JL9IKAPbCmBrv9n5O5Ty3NKnciV5X7YGw0oics=
-github.com/prometheus/procfs v0.22.0/go.mod h1:CvmFr/GVhIjIvWJZW3tgkODBQMRIf0EyWMQLHCHab58=
+github.com/prometheus/procfs v0.23.0 h1:ad+S6FTkzwaMgacKLM5h6bNKExS+DMH0YiUwXItH/o4=
+github.com/prometheus/procfs v0.23.0/go.mod h1:3AVXO0FqLafyYFU/V/IQRZlC8Rgqz8Dm/x6pKLK+RIk=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/shirou/gopsutil/v4 v4.26.9 h1:CaBo/hBFqvlJoLvAQEKdHdf5GD97/MN2ACfyv63+2Ig=
