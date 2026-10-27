@@ -275,7 +275,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -657,7 +657,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.integerHistogram, tt.floatHistogram)
 			require.NoError(t, err)
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -883,7 +883,7 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -1168,7 +1168,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -1293,7 +1293,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				require.NoError(t, mp.addSeries(sRef, tv.metric, lb, tv.at, tv.value))
 			}
 
-			require.Len(t, mp.groups, 1)
+			require.Len(t, mp.groupOrders, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl, false)
@@ -1604,4 +1604,49 @@ func TestPopulateAttributes(t *testing.T) {
 			require.Equal(t, want, got)
 		})
 	}
+}
+
+func TestMetricFamilyMultiGroup(t *testing.T) {
+	mp := newMetricFamily("counter", mc, zap.NewNop(), false, false)
+
+	lsA := labels.FromStrings("__name__", "counter", "series", "a")
+	lsB := labels.FromStrings("__name__", "counter", "series", "b")
+	lsC := labels.FromStrings("__name__", "counter", "series", "c")
+	refA, _ := getSeriesRefWithoutScopeLabels(nil, lsA, mp.mtype)
+	refB, _ := getSeriesRefWithoutScopeLabels(nil, lsB, mp.mtype)
+	refC, _ := getSeriesRefWithoutScopeLabels(nil, lsC, mp.mtype)
+
+	// Group A uses inlineGroup without allocating mp.groups.
+	require.NoError(t, mp.addSeries(refA, "counter_created", lsA, 11, 1.0))
+	require.Len(t, mp.groupOrders, 1)
+	require.Nil(t, mp.groups)
+
+	// Group B transitions to multi-group map + slice.
+	require.NoError(t, mp.addSeries(refB, "counter_created", lsB, 11, 2.0))
+	require.Len(t, mp.groupOrders, 2)
+	require.NotNil(t, mp.groups)
+
+	// Group C appends a 3rd group into existing groups map.
+	require.NoError(t, mp.addSeries(refC, "counter_created", lsC, 11, 3.0))
+	require.Len(t, mp.groupOrders, 3)
+
+	// Interleaved updates across groups hit the mf.groups map lookup path.
+	require.NoError(t, mp.addSeries(refA, "counter", lsA, 11, 10.0))
+	require.NoError(t, mp.addSeries(refB, "counter", lsB, 11, 20.0))
+	require.NoError(t, mp.addSeries(refC, "counter", lsC, 11, 30.0))
+
+	mp.addExemplar(refA, exemplar.Exemplar{Value: 1, Ts: 11, Labels: labels.FromStrings("ex", "a1")})
+	mp.addExemplar(refB, exemplar.Exemplar{Value: 2, Ts: 11, Labels: labels.FromStrings("ex", "b1")})
+	mp.addExemplar(refA, exemplar.Exemplar{Value: 3, Ts: 11, Labels: labels.FromStrings("ex", "a2")})
+
+	sl := pmetric.NewMetricSlice()
+	mp.appendMetric(sl, false)
+	require.Equal(t, 1, sl.Len())
+	dps := sl.At(0).Sum().DataPoints()
+	require.Equal(t, 3, dps.Len())
+	require.Equal(t, 10.0, dps.At(0).DoubleValue())
+	require.Equal(t, 2, dps.At(0).Exemplars().Len())
+	require.Equal(t, 20.0, dps.At(1).DoubleValue())
+	require.Equal(t, 1, dps.At(1).Exemplars().Len())
+	require.Equal(t, 30.0, dps.At(2).DoubleValue())
 }
