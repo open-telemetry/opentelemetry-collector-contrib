@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xspanlink/internal/ctxspanlink"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xspanlink/internal/ctxspanlink"
 )
 
 var tcPool = sync.Pool{
