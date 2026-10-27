@@ -383,6 +383,7 @@ body:
       - receiver/zookeeper
       - scraper/zookeeperscraper
       - testbed
+      - testbed/integrationtests/elasticsearch
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End components list
   - type: textarea
