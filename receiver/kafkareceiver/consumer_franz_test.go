@@ -270,12 +270,9 @@ func TestPartitionProcessing(t *testing.T) {
 		h.produce(0, "second")
 		h.waitPaused(1)
 		h.produce(0, "third")
-		h.waitPollBlocked()
-		interrupted := h.logs.FilterMessage("interrupted poll").Len()
+		before := h.waitPollBlocked()
 		close(release)
-		require.Eventually(t, func() bool {
-			return h.logs.FilterMessage("interrupted poll").Len() > interrupted
-		}, fetchWait/2, 10*time.Millisecond, "resume did not return PollRecords")
+		h.waitPollReturned(before, fetchWait/2)
 		waitSignal(t, third, "third record was not consumed")
 	})
 
@@ -320,13 +317,11 @@ func TestPartitionProcessing(t *testing.T) {
 		h.waitPollBlocked()
 		h.produce(0, "p0-2")
 		h.produce(0, "p0-3")
-		interrupted := h.logs.FilterMessage("interrupted poll").Len()
+		before := h.waitPollBlocked()
 		close(release)
 		h.produce(1, "p1-0")
 		h.produce(1, "p1-1")
-		require.Eventually(t, func() bool {
-			return h.logs.FilterMessage("interrupted poll").Len() > interrupted
-		}, fetchWait/2, 10*time.Millisecond, "resume did not return PollRecords")
+		h.waitPollReturned(before, fetchWait/2)
 		require.EventuallyWithT(t, func(ct *assert.CollectT) {
 			mu.Lock()
 			defer mu.Unlock()
@@ -417,7 +412,6 @@ type partitionProcessingHarness struct {
 	cfg        *Config
 	consumer   *franzConsumer
 	telemetry  *componenttest.Telemetry
-	logs       *observer.ObservedLogs
 	partitions int
 }
 
@@ -658,7 +652,7 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Record, attribute.Set) error) {
 	h.t.Helper()
 
-	settings, telemetry, logs := mustNewSettings(h.t)
+	settings, telemetry, _ := mustNewSettings(h.t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
 		return consumeMessageFunc(consume), nil
 	}
@@ -667,7 +661,6 @@ func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Re
 	require.NoError(h.t, consumer.Start(h.t.Context(), componenttest.NewNopHost()))
 	h.consumer = consumer
 	h.telemetry = telemetry
-	h.logs = logs
 	h.t.Cleanup(func() {
 		// Cleanup runs after t.Context() is canceled. Shutdown needs a live context.
 		require.NoError(h.t, h.consumer.Shutdown(context.Background()))
@@ -712,14 +705,29 @@ func (h *partitionProcessingHarness) waitPaused(want int) {
 	}, 5*time.Second, 10*time.Millisecond)
 }
 
-// waitPollBlocked reports when PollRecords is inside the cancellable poll context.
-func (h *partitionProcessingHarness) waitPollBlocked() {
+// waitPollBlocked waits until PollRecords is inside the cancellable poll context
+// and returns how many PollRecords calls have returned so far.
+func (h *partitionProcessingHarness) waitPollBlocked() uint64 {
 	h.t.Helper()
+	var returned uint64
 	require.Eventually(h.t, func() bool {
 		h.consumer.pollMu.Lock()
 		defer h.consumer.pollMu.Unlock()
-		return h.consumer.pollCancel != nil
+		if h.consumer.pollCancel == nil {
+			return false
+		}
+		returned = h.consumer.pollsReturned.Load()
+		return true
 	}, 5*time.Second, time.Millisecond, "poll was not blocked")
+	return returned
+}
+
+// waitPollReturned waits until the PollRecords call observed by waitPollBlocked has returned.
+func (h *partitionProcessingHarness) waitPollReturned(before uint64, timeout time.Duration) {
+	h.t.Helper()
+	require.Eventually(h.t, func() bool {
+		return h.consumer.pollsReturned.Load() > before
+	}, timeout, 10*time.Millisecond, "resume did not return PollRecords")
 }
 
 func (h *partitionProcessingHarness) assignment(partition int32) *pc {

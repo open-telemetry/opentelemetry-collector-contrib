@@ -78,6 +78,8 @@ type franzConsumer struct {
 
 	pollMu     sync.Mutex
 	pollCancel context.CancelFunc
+	// pollsReturned counts PollRecords calls that have returned.
+	pollsReturned atomic.Uint64
 
 	// brokerReadOpts caches MeasurementOptions for OnBrokerRead, which fires on
 	// every fetch request. Entries are evicted in OnBrokerDisconnect; growth is
@@ -321,9 +323,6 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 	// simply be logged and keep fetching.
 	fetch.EachError(func(topic string, partition int32, err error) {
 		if c.config.PartitionProcessing.Independent && errors.Is(err, context.Canceled) {
-			// interruptPoll cancels the poll context. PollRecords returns, and a
-			// Fetch already on the socket is left for the broker to finish.
-			c.settings.Logger.Debug("interrupted poll")
 			return
 		}
 		c.settings.Logger.Error("consumer fetch error", zap.Error(err),
@@ -419,6 +418,7 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) kgo.Fetches {
 	c.pollMu.Unlock()
 
 	fetch := c.client.PollRecords(pollCtx, size)
+	c.pollsReturned.Add(1)
 
 	c.pollMu.Lock()
 	c.pollCancel = nil
