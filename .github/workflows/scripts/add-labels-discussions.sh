@@ -84,7 +84,7 @@ for LABEL_REQ in ${LABELS}; do
         if [[ ${IS_COMPONENT} = true ]]; then
             # Labels added by a GitHub Actions workflow don't trigger other workflows
             # by design, so we have to manually ping code owners here.
-            COMPONENT="${LABEL}" DISCUSSION_ID="${DISCUSSION_ID}" bash "${CUR_DIRECTORY}/ping-codeowners-discussions.sh"
+            COMPONENT="${LABEL}" DISCUSSION_ID="${DISCUSSION_ID}" bash "${CUR_DIRECTORY}/ping-codeowners-issues.sh" discussion
         fi
     else
         mutate_label "removeLabelsFromLabelable" "${LABEL_ID}"
