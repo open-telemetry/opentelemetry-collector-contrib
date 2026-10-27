@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.6
 	github.com/itchyny/timefmt-go v0.1.9
 	github.com/klauspost/compress v1.20.1
-	github.com/open-telemetry/opamp-go v0.24.0
+	github.com/open-telemetry/opamp-go v0.25.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
