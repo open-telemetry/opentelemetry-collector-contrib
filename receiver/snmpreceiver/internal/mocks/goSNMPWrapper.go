@@ -116,6 +116,20 @@ func (_m *MockGoSNMPWrapper) GetMaxOids() int {
 	return r0
 }
 
+// GetMaxRepetitions provides a mock function with given fields:
+func (_m *MockGoSNMPWrapper) GetMaxRepetitions() uint32 {
+	ret := _m.Called()
+
+	var r0 uint32
+	if rf, ok := ret.Get(0).(func() uint32); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(uint32)
+	}
+
+	return r0
+}
+
 // GetMsgFlags provides a mock function with given fields:
 func (_m *MockGoSNMPWrapper) GetMsgFlags() gosnmp.SnmpV3MsgFlags {
 	ret := _m.Called()
@@ -238,6 +252,11 @@ func (_m *MockGoSNMPWrapper) SetCommunity(community string) {
 // SetMaxOids provides a mock function with given fields: maxOids
 func (_m *MockGoSNMPWrapper) SetMaxOids(maxOids int) {
 	_m.Called(maxOids)
+}
+
+// SetMaxRepetitions provides a mock function with given fields: maxRepetitions
+func (_m *MockGoSNMPWrapper) SetMaxRepetitions(maxRepetitions uint32) {
+	_m.Called(maxRepetitions)
 }
 
 // SetMsgFlags provides a mock function with given fields: msgFlags
