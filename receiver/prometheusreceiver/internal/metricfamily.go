@@ -26,35 +26,39 @@ import (
 type metricFamily struct {
 	mtype pmetric.MetricType
 	// isMonotonic only applies to sums
-	isMonotonic bool
-	groups      map[uint64]*metricGroup
-	name        string
-	metadata    scrape.MetricMetadata
-	groupOrders []*metricGroup
-	logger      *zap.Logger
+	isMonotonic     bool
+	groups          map[uint64]int
+	name            string
+	metadata        scrape.MetricMetadata
+	groupOrders     []*metricGroup
+	inlineGroup     metricGroup
+	inlineGroupSlot [1]*metricGroup
+	lastGroupKey    uint64
+	lastGroupIdx    int
+	logger          *zap.Logger
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	mtype    pmetric.MetricType
-	ts       int64
-	ls       labels.Labels
-	count    float64
-	hasCount bool
-	sum      float64
-	hasSum   bool
+	ts    int64
+	ls    labels.Labels
+	count float64
+	sum   float64
 	// This corresponds to the `_created` sample found from the metric parsing.
 	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#timestamps
 	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#counter-1
 	createdSeconds float64
 	value          float64
-	hasValue       bool
 	hValue         *histogram.Histogram
 	fhValue        *histogram.FloatHistogram
 	complexValue   []dataPoint
 	exemplars      pmetric.ExemplarSlice
+	mtype          pmetric.MetricType
+	hasCount       bool
+	hasSum         bool
+	hasValue       bool
 	hasExemplars   bool
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
@@ -73,12 +77,12 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 	}
 
 	return &metricFamily{
-		mtype:       mtype,
-		isMonotonic: isMonotonic,
-		groups:      make(map[uint64]*metricGroup),
-		name:        familyName,
-		metadata:    metadata,
-		logger:      logger,
+		mtype:        mtype,
+		isMonotonic:  isMonotonic,
+		name:         familyName,
+		metadata:     metadata,
+		lastGroupIdx: -1,
+		logger:       logger,
 	}
 }
 
@@ -513,29 +517,77 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 	}
 }
 
-func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
-	mg, ok := mf.groups[groupKey]
-	if !ok {
-		mg = &metricGroup{
-			mtype: mf.mtype,
-			ts:    ts,
-			ls:    ls,
-		}
-		switch mf.mtype {
-		case pmetric.MetricTypeHistogram:
-			// Pre-allocate to 16 to accommodate the default OpenTelemetry ExplicitBucketHistogram
-			// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
-			mg.complexValue = make([]dataPoint, 0, 16)
-		case pmetric.MetricTypeSummary:
-			// Pre-allocate to 5 to accommodate the 5 quantiles of Prometheus's default
-			// go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
-			mg.complexValue = make([]dataPoint, 0, 5)
-		}
-		mf.groups[groupKey] = mg
-		// maintaining data insertion order is helpful to generate stable/reproducible metric output
-		mf.groupOrders = append(mf.groupOrders, mg)
+func (mf *metricFamily) initMetricGroup(mg *metricGroup, ls labels.Labels, ts int64) {
+	*mg = metricGroup{
+		mtype: mf.mtype,
+		ts:    ts,
+		ls:    ls,
 	}
+	switch mf.mtype {
+	case pmetric.MetricTypeHistogram:
+		// Pre-allocate to 16 to accommodate the default OpenTelemetry ExplicitBucketHistogram
+		// boundaries (15 bounds + +Inf = 16 buckets) and Prometheus DefBuckets (11 bounds + +Inf = 12 buckets).
+		mg.complexValue = make([]dataPoint, 0, 16)
+	case pmetric.MetricTypeSummary:
+		// Pre-allocate to 5 to accommodate the 5 quantiles of Prometheus's default
+		// go_gc_duration_seconds summary (0, 0.25, 0.5, 0.75, 1).
+		mg.complexValue = make([]dataPoint, 0, 5)
+	}
+}
+
+func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
+	if mf.lastGroupIdx >= 0 && mf.lastGroupKey == groupKey {
+		return mf.groupOrders[mf.lastGroupIdx]
+	}
+	if len(mf.groupOrders) == 0 {
+		mg := &mf.inlineGroup
+		mf.initMetricGroup(mg, ls, ts)
+		mf.inlineGroupSlot[0] = mg
+		mf.groupOrders = mf.inlineGroupSlot[:1]
+		mf.lastGroupKey = groupKey
+		mf.lastGroupIdx = 0
+		return mg
+	}
+	if mf.groups == nil {
+		// Transition from 1 inline group to a multi-group map + pointer slice.
+		mf.groups = make(map[uint64]int, 8)
+		mf.groups[mf.lastGroupKey] = 0
+		newOrders := make([]*metricGroup, 2, 8)
+		newOrders[0] = mf.inlineGroupSlot[0]
+		mg := &metricGroup{}
+		mf.initMetricGroup(mg, ls, ts)
+		newOrders[1] = mg
+		mf.groupOrders = newOrders
+		mf.groups[groupKey] = 1
+		mf.lastGroupKey = groupKey
+		mf.lastGroupIdx = 1
+		return mg
+	}
+	if idx, ok := mf.groups[groupKey]; ok {
+		mf.lastGroupKey = groupKey
+		mf.lastGroupIdx = idx
+		return mf.groupOrders[idx]
+	}
+	idx := len(mf.groupOrders)
+	mg := &metricGroup{}
+	mf.initMetricGroup(mg, ls, ts)
+	mf.groupOrders = append(mf.groupOrders, mg)
+	mf.groups[groupKey] = idx
+	mf.lastGroupKey = groupKey
+	mf.lastGroupIdx = idx
 	return mg
+}
+
+func (mf *metricFamily) getGroup(groupKey uint64) *metricGroup {
+	if mf.lastGroupIdx >= 0 && mf.lastGroupKey == groupKey {
+		return mf.groupOrders[mf.lastGroupIdx]
+	}
+	if mf.groups != nil {
+		if idx, ok := mf.groups[groupKey]; ok {
+			return mf.groupOrders[idx]
+		}
+	}
+	return nil
 }
 
 func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, v float64) error {
@@ -736,7 +788,7 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 	if mf.mtype == pmetric.MetricTypeSummary {
 		return
 	}
-	mg := mf.groups[seriesRef]
+	mg := mf.getGroup(seriesRef)
 	if mg == nil {
 		return
 	}
