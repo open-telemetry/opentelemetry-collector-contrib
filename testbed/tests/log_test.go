@@ -16,8 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers/splunkdatareceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/fluentdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/k8sdatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/stanzadatasender"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders/tcpudpdatasender"
@@ -131,15 +129,6 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
-				ExpectedMaxRAM: 150,
-			},
-		},
-		{
-			name:     "FluentForward-SplunkHEC",
-			sender:   fluentdatasender.NewFluentLogsForwarder(t, testutil.GetAvailablePort(t)),
-			receiver: splunkdatareceiver.NewSplunkHECDataReceiver(testutil.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 150,
 			},
 		},

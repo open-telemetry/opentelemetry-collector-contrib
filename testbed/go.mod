@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/elastic/go-docappender/v2 v2.15.0
-	github.com/fluent/fluent-logger-golang v1.10.2
 	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger-idl v0.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.164.1
