@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest"
+package elasticsearch // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/integrationtests/elasticsearch"
 
 import (
 	"context"
@@ -28,11 +28,15 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
+
+// esType is the Elasticsearch exporter's component type, reused by the mock receiver
+// that stands in for Elasticsearch in these tests.
+var esType = elasticsearchexporter.NewFactory().Type()
 
 const (
 	// TestLogsIndex is used by the mock ES data receiver to identify log events.
@@ -119,7 +123,7 @@ func withMaxRetries(n int) dataReceiverOption {
 
 func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
-		metadata.Type,
+		esType,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
@@ -133,7 +137,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 	cfg.ServerConfig.NetAddr.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
-	set := receivertest.NewNopSettings(metadata.Type)
+	set := receivertest.NewNopSettings(esType)
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	logsReceiver, err := factory.CreateLogs(context.Background(), set, cfg, lc)
