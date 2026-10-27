@@ -297,6 +297,16 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
 
+### sqlserver.batch.compilation.utilization
+
+Number of SQL compilations per batch request.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
 ### sqlserver.clr.execution.time
 
 Total time spent executing in the CLR. Only non-zero when CLR integration is enabled and CLR code has been executed.
@@ -1013,6 +1023,16 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {page}/s | Gauge | Double | Development |
+
+### sqlserver.page.split.utilization
+
+Number of page splits per batch request.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
 
 ### sqlserver.parameterization.rate
 
