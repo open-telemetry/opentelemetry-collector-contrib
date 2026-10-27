@@ -132,36 +132,54 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectTypeCollection)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDbCountsDataPoint(ts, 3, AttributeObjectTypeIndex)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDbCountsDataPoint(ts+1, 3, AttributeObjectTypeIndex)
+				assert.Equal(t, 2, mb.metricMongodbatlasDbCounts.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectTypeCollection)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDbSizeDataPoint(ts, 3, AttributeObjectTypeIndex)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDbSizeDataPoint(ts+1, 3, AttributeObjectTypeIndex)
+				assert.Equal(t, 2, mb.metricMongodbatlasDbSize.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 3, AttributeDiskDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts+1, 3, AttributeDiskDirectionWrite)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionIopsAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 3, AttributeDiskDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts+1, 3, AttributeDiskDirectionWrite)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionIopsMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 3, AttributeDiskDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts+1, 3, AttributeDiskDirectionWrite)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionLatencyAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 3, AttributeDiskDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts+1, 3, AttributeDiskDirectionWrite)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionLatencyMax.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -171,30 +189,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 3, AttributeDiskStatusUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts+1, 3, AttributeDiskStatusUsed)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionSpaceAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 3, AttributeDiskStatusUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts+1, 3, AttributeDiskStatusUsed)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionSpaceMax.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts+1, 3, AttributeDiskDirectionWrite)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionThroughput.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 3, AttributeDiskStatusUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts+1, 3, AttributeDiskStatusUsed)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatusFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 3, AttributeDiskStatusUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts+1, 3, AttributeDiskStatusUsed)
+				assert.Equal(t, 2, mb.metricMongodbatlasDiskPartitionUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -207,6 +240,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertTypeRegular)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 3, AttributeAssertTypeWarning)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessAssertsDataPoint(ts+1, 3, AttributeAssertTypeWarning)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessAsserts.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -216,18 +252,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 3, AttributeCacheDirectionWrittenFrom)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCacheIoDataPoint(ts+1, 3, AttributeCacheDirectionWrittenFrom)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCacheIo.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, 1, AttributeCacheRatioTypeCacheFill)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, 3, AttributeCacheRatioTypeDirtyFill)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts+1, 3, AttributeCacheRatioTypeDirtyFill)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCacheRatio.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatusDirty)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 3, AttributeCacheStatusUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts+1, 3, AttributeCacheStatusUsed)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCacheSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -237,96 +282,144 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUChildrenUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUChildrenUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUNormalizedUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCPUUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorStateTimedOut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 3, AttributeCursorStateOpen)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessCursorsDataPoint(ts+1, 3, AttributeCursorStateOpen)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessCursors.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatusReturned)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 3, AttributeDocumentStatusInserted)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts+1, 3, AttributeDocumentStatusInserted)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessDbDocumentRate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperationCmd, AttributeClusterRolePrimary)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 3, AttributeOperationQuery, AttributeClusterRoleReplica)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts+1, 3, AttributeOperationQuery, AttributeClusterRoleReplica)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessDbOperationsRate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionTypeReads)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 3, AttributeExecutionTypeWrites)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts+1, 3, AttributeExecutionTypeWrites)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessDbOperationsTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 3, AttributeScannedTypeObjects)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts+1, 3, AttributeScannedTypeObjects)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessDbQueryExecutorScanned.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 3, AttributeScannedTypeObjects)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts+1, 3, AttributeScannedTypeObjects)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatusTotal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 3, AttributeStorageStatusDataSize)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessDbStorageDataPoint(ts+1, 3, AttributeStorageStatusDataSize)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessDbStorage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockStateCurrentQueueTotal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 3, AttributeGlobalLockStateCurrentQueueReaders)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts+1, 3, AttributeGlobalLockStateCurrentQueueReaders)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessGlobalLock.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -336,6 +429,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterTypeAccesses)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 3, AttributeBtreeCounterTypeHits)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts+1, 3, AttributeBtreeCounterTypeHits)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessIndexCounters.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -351,12 +447,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 3, AttributeMemoryStateVirtual)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts+1, 3, AttributeMemoryStateVirtual)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessMemoryUsage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 3, AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts+1, 3, AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessNetworkIo.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -369,12 +471,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogTypeSlaveLagMasterTime)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 3, AttributeOplogTypeMasterTime)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts+1, 3, AttributeOplogTypeMasterTime)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessOplogTime.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueTypeExtraInfo)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 3, AttributeMemoryIssueTypeGlobalAccessesNotInMemory)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts+1, 3, AttributeMemoryIssueTypeGlobalAccessesNotInMemory)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessPageFaults.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -384,42 +492,63 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketTypeAvailableReads)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 3, AttributeTicketTypeAvailableWrites)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasProcessTicketsDataPoint(ts+1, 3, AttributeTicketTypeAvailableWrites)
+				assert.Equal(t, 2, mb.metricMongodbatlasProcessTickets.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemCPUNormalizedUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemCPUUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemCPUUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUStateKernel)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 3, AttributeCPUStateUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts+1, 3, AttributeCPUStateUser)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemFtsCPUUsage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -429,54 +558,81 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 3, AttributeMemoryStateVirtual)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts+1, 3, AttributeMemoryStateVirtual)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemFtsMemoryUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatusAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 3, AttributeMemoryStatusBuffers)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts+1, 3, AttributeMemoryStatusBuffers)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemMemoryUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatusAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 3, AttributeMemoryStatusBuffers)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts+1, 3, AttributeMemoryStatusBuffers)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemMemoryUsageMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 3, AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts+1, 3, AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemNetworkIoAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 3, AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts+1, 3, AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemNetworkIoMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 3, AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts+1, 3, AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemPagingIoAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 3, AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts+1, 3, AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemPagingIoMax.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 3, AttributeMemoryStateVirtual)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts+1, 3, AttributeMemoryStateVirtual)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemPagingUsageAverage.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
 			if tt.name == "reaggregate_set" {
 				mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 3, AttributeMemoryStateVirtual)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts+1, 3, AttributeMemoryStateVirtual)
+				assert.Equal(t, 2, mb.metricMongodbatlasSystemPagingUsageMax.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -595,7 +751,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.db.counts"], "Found a duplicate in the metrics slice: mongodbatlas.db.counts")
 						validatedMetrics["mongodbatlas.db.counts"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Database feature size", mi.Description())
 						assert.Equal(t, "{objects}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -635,7 +793,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.db.size"], "Found a duplicate in the metrics slice: mongodbatlas.db.size")
 						validatedMetrics["mongodbatlas.db.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Database feature size", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -675,7 +835,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.average")
 						validatedMetrics["mongodbatlas.disk.partition.iops.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition iops", mi.Description())
 						assert.Equal(t, "{ops}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -715,7 +877,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.max")
 						validatedMetrics["mongodbatlas.disk.partition.iops.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition iops", mi.Description())
 						assert.Equal(t, "{ops}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -755,7 +919,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.average")
 						validatedMetrics["mongodbatlas.disk.partition.latency.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition latency", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -795,7 +961,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.max")
 						validatedMetrics["mongodbatlas.disk.partition.latency.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition latency", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -847,7 +1015,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.average")
 						validatedMetrics["mongodbatlas.disk.partition.space.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition space", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -887,7 +1057,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.max")
 						validatedMetrics["mongodbatlas.disk.partition.space.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition space", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -927,7 +1099,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.throughput"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.throughput")
 						validatedMetrics["mongodbatlas.disk.partition.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk throughput", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -967,7 +1141,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.average")
 						validatedMetrics["mongodbatlas.disk.partition.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1007,7 +1183,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.max")
 						validatedMetrics["mongodbatlas.disk.partition.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk partition usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1071,7 +1249,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
 						validatedMetrics["mongodbatlas.process.asserts"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of assertions per second", mi.Description())
 						assert.Equal(t, "{assertions}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1123,7 +1303,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cache.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.io")
 						validatedMetrics["mongodbatlas.process.cache.io"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cache throughput (per second)", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1163,7 +1345,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cache.ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.ratio")
 						validatedMetrics["mongodbatlas.process.cache.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cache ratios represented as (%)", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1205,7 +1389,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cache.size"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.size")
 						validatedMetrics["mongodbatlas.process.cache.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cache sizes", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1261,7 +1447,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.average")
 						validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1301,7 +1489,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.max")
 						validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage for child processes, normalized to pct", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1341,7 +1531,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.average")
 						validatedMetrics["mongodbatlas.process.cpu.children.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1381,7 +1573,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.max")
 						validatedMetrics["mongodbatlas.process.cpu.children.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage for child processes (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1421,7 +1615,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.average")
 						validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1461,7 +1657,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.max")
 						validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage, normalized to pct", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1501,7 +1699,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.average")
 						validatedMetrics["mongodbatlas.process.cpu.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1541,7 +1741,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.max")
 						validatedMetrics["mongodbatlas.process.cpu.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU Usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1581,7 +1783,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.cursors"], "Found a duplicate in the metrics slice: mongodbatlas.process.cursors")
 						validatedMetrics["mongodbatlas.process.cursors"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of cursors", mi.Description())
 						assert.Equal(t, "{cursors}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1621,7 +1825,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.db.document.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.document.rate")
 						validatedMetrics["mongodbatlas.process.db.document.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Document access rates", mi.Description())
 						assert.Equal(t, "{documents}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1664,7 +1870,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.rate")
 						validatedMetrics["mongodbatlas.process.db.operations.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "DB Operation Rates", mi.Description())
 						assert.Equal(t, "{operations}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1708,7 +1916,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.time")
 						validatedMetrics["mongodbatlas.process.db.operations.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "DB Operation Times", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1750,7 +1960,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.db.query_executor.scanned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_executor.scanned")
 						validatedMetrics["mongodbatlas.process.db.query_executor.scanned"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Scanned objects", mi.Description())
 						assert.Equal(t, "{objects}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1790,7 +2002,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_targeting.scanned_per_returned")
 						validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Scanned objects per returned", mi.Description())
 						assert.Equal(t, "{scanned}/{returned}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1830,7 +2044,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.db.storage"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.storage")
 						validatedMetrics["mongodbatlas.process.db.storage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Storage used by the database", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1870,7 +2086,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
 						validatedMetrics["mongodbatlas.process.global_lock"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number and status of locks", mi.Description())
 						assert.Equal(t, "{locks}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1922,7 +2140,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.index.counters"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.counters")
 						validatedMetrics["mongodbatlas.process.index.counters"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Indexes", mi.Description())
 						assert.Equal(t, "{indexes}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1998,7 +2218,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.memory.usage")
 						validatedMetrics["mongodbatlas.process.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Memory Usage", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2038,7 +2260,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.network.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.io")
 						validatedMetrics["mongodbatlas.process.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Network IO", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2104,7 +2328,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.oplog.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.oplog.time")
 						validatedMetrics["mongodbatlas.process.oplog.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Execution time by operation", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2144,7 +2370,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.page_faults"], "Found a duplicate in the metrics slice: mongodbatlas.process.page_faults")
 						validatedMetrics["mongodbatlas.process.page_faults"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Page faults", mi.Description())
 						assert.Equal(t, "{faults}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2196,7 +2424,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.process.tickets"], "Found a duplicate in the metrics slice: mongodbatlas.process.tickets")
 						validatedMetrics["mongodbatlas.process.tickets"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Tickets", mi.Description())
 						assert.Equal(t, "{tickets}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2236,7 +2466,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.average")
 						validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System CPU Normalized to pct", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2276,7 +2508,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.max")
 						validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System CPU Normalized to pct", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2316,7 +2550,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.average")
 						validatedMetrics["mongodbatlas.system.cpu.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System CPU Usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2356,7 +2592,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.max")
 						validatedMetrics["mongodbatlas.system.cpu.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System CPU Usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2396,7 +2634,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.normalized.usage")
 						validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Full text search disk usage (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2436,7 +2676,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.usage")
 						validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Full-text search (%)", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2490,7 +2732,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.fts.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.memory.usage")
 						validatedMetrics["mongodbatlas.system.fts.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Full-text search", mi.Description())
 						assert.Equal(t, "MiBy", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2532,7 +2776,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.average")
 						validatedMetrics["mongodbatlas.system.memory.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System Memory Usage", mi.Description())
 						assert.Equal(t, "KiBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2572,7 +2818,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.max")
 						validatedMetrics["mongodbatlas.system.memory.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System Memory Usage", mi.Description())
 						assert.Equal(t, "KiBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2612,7 +2860,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.network.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.average")
 						validatedMetrics["mongodbatlas.system.network.io.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System Network IO", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2652,7 +2902,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.network.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.max")
 						validatedMetrics["mongodbatlas.system.network.io.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "System Network IO", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2692,7 +2944,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.average")
 						validatedMetrics["mongodbatlas.system.paging.io.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Swap IO", mi.Description())
 						assert.Equal(t, "{pages}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2732,7 +2986,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.max")
 						validatedMetrics["mongodbatlas.system.paging.io.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Swap IO", mi.Description())
 						assert.Equal(t, "{pages}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2772,7 +3028,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.average")
 						validatedMetrics["mongodbatlas.system.paging.usage.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Swap usage", mi.Description())
 						assert.Equal(t, "KiBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2812,7 +3070,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.max")
 						validatedMetrics["mongodbatlas.system.paging.usage.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Swap usage", mi.Description())
 						assert.Equal(t, "KiBy", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

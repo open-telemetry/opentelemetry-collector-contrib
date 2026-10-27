@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 				RetryInterval: 5 * time.Minute,
 				Condition: configoptional.Some(ConditionsConfig{
 					ErrorCond: &ErrorCondition{
-						Contains: "network failure",
+						Contains: []string{"network failure", "connection refused"},
 					},
 				}),
 			},
@@ -119,6 +119,11 @@ func TestValidateConfig(t *testing.T) {
 			name: "empty condition block",
 			id:   component.NewIDWithName(metadata.Type, "emptycondition"),
 			err:  errNoConditionDefined,
+		},
+		{
+			name: "empty error contains string",
+			id:   component.NewIDWithName(metadata.Type, "emptyerrorcontains"),
+			err:  errEmptyErrorContains,
 		},
 	}
 

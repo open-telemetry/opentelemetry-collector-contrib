@@ -16,9 +16,9 @@ metrics:
 
 Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| s | Sum | Double | Cumulative | true | Beta | [container.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/system/container-metrics.md#metric-containercputime) |
 
 ### container.cpu.usage
 
@@ -646,6 +646,22 @@ Cumulative total time tasks in the node cgroup were stalled waiting for memory. 
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | psi.type | The PSI pressure type (some = at least one task stalled; full = all tasks stalled). | Str: ``some``, ``full`` | Recommended | - |
 
+### k8s.node.pid.limit
+
+Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit (the lower of kernel.pid_max and kernel.threads-max).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.pid.usage
+
+Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {thread} | Sum | Int | Cumulative | false | Development |
+
 ### k8s.node.system_container.cpu.time
 
 Total cumulative CPU time (sum of all cores) spent by the system container since its creation
@@ -841,12 +857,7 @@ The number of used bytes in the pod volume.
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | false | - | - |
 | container.id | Container id used to identify container | Any Str | true | - | - |
-| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | false | - | - |
-| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | false | - | - |
-| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | false | - | - |
-| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | false | - | - |
 | k8s.container.name | Container name used by container runtime | Any Str | true | - | - |
 | k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - | - |
 | k8s.node.name | The name of the Node | Any Str | true | - | - |
@@ -856,7 +867,6 @@ The number of used bytes in the pod volume.
 | k8s.pod.uid | The UID of the Pod | Any Str | true | - | - |
 | k8s.volume.name | The name of the Volume | Any Str | true | - | - |
 | k8s.volume.type | The type of the Volume | Any Str | true | - | - |
-| partition | [DEPRECATED] The partition in the Volume | Any Str | false | - | - |
 
 ## Feature Gates
 

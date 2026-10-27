@@ -194,6 +194,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
 					},
+					K8sNodePidLimit: K8sNodePidLimitMetricConfig{
+						Enabled: true,
+					},
+					K8sNodePidUsage: K8sNodePidUsageMetricConfig{
+						Enabled: true,
+					},
 					K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
 						Enabled: true,
 					},
@@ -323,12 +329,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
 					ContainerID:                  ResourceAttributeConfig{Enabled: true},
-					FsType:                       ResourceAttributeConfig{Enabled: true},
-					GcePdName:                    ResourceAttributeConfig{Enabled: true},
-					GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: true},
-					GlusterfsPath:                ResourceAttributeConfig{Enabled: true},
 					K8sContainerName:             ResourceAttributeConfig{Enabled: true},
 					K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
 					K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
@@ -338,7 +339,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
 					K8sVolumeName:                ResourceAttributeConfig{Enabled: true},
 					K8sVolumeType:                ResourceAttributeConfig{Enabled: true},
-					Partition:                    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -514,6 +514,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
 					},
+					K8sNodePidLimit: K8sNodePidLimitMetricConfig{
+						Enabled: false,
+					},
+					K8sNodePidUsage: K8sNodePidUsageMetricConfig{
+						Enabled: false,
+					},
 					K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
 						Enabled: false,
 					},
@@ -643,12 +649,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
 					ContainerID:                  ResourceAttributeConfig{Enabled: false},
-					FsType:                       ResourceAttributeConfig{Enabled: false},
-					GcePdName:                    ResourceAttributeConfig{Enabled: false},
-					GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: false},
-					GlusterfsPath:                ResourceAttributeConfig{Enabled: false},
 					K8sContainerName:             ResourceAttributeConfig{Enabled: false},
 					K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
 					K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
@@ -658,7 +659,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodUID:                    ResourceAttributeConfig{Enabled: false},
 					K8sVolumeName:                ResourceAttributeConfig{Enabled: false},
 					K8sVolumeType:                ResourceAttributeConfig{Enabled: false},
-					Partition:                    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -666,7 +666,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUPressureAvgMetricConfig{}, ContainerCPUPressureTimeMetricConfig{}, ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerIoPressureAvgMetricConfig{}, ContainerIoPressureTimeMetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryPressureAvgMetricConfig{}, ContainerMemoryPressureTimeMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerEphemeralStorageUsageMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUPressureAvgMetricConfig{}, K8sNodeCPUPressureTimeMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemInodeCountMetricConfig{}, K8sNodeFilesystemInodeFreeMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeIoPressureAvgMetricConfig{}, K8sNodeIoPressureTimeMetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryPressureAvgMetricConfig{}, K8sNodeMemoryPressureTimeMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUPressureAvgMetricConfig{}, K8sPodCPUPressureTimeMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodIoPressureAvgMetricConfig{}, K8sPodIoPressureTimeMetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryPressureAvgMetricConfig{}, K8sPodMemoryPressureTimeMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUPressureAvgMetricConfig{}, ContainerCPUPressureTimeMetricConfig{}, ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerIoPressureAvgMetricConfig{}, ContainerIoPressureTimeMetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryPressureAvgMetricConfig{}, ContainerMemoryPressureTimeMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerEphemeralStorageUsageMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUPressureAvgMetricConfig{}, K8sNodeCPUPressureTimeMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemInodeCountMetricConfig{}, K8sNodeFilesystemInodeFreeMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeIoPressureAvgMetricConfig{}, K8sNodeIoPressureTimeMetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryPressureAvgMetricConfig{}, K8sNodeMemoryPressureTimeMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodePidLimitMetricConfig{}, K8sNodePidUsageMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUPressureAvgMetricConfig{}, K8sPodCPUPressureTimeMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodIoPressureAvgMetricConfig{}, K8sPodIoPressureTimeMetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryPressureAvgMetricConfig{}, K8sPodMemoryPressureTimeMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -969,12 +969,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
 				ContainerID:                  ResourceAttributeConfig{Enabled: true},
-				FsType:                       ResourceAttributeConfig{Enabled: true},
-				GcePdName:                    ResourceAttributeConfig{Enabled: true},
-				GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: true},
-				GlusterfsPath:                ResourceAttributeConfig{Enabled: true},
 				K8sContainerName:             ResourceAttributeConfig{Enabled: true},
 				K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
 				K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
@@ -984,18 +979,12 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
 				K8sVolumeName:                ResourceAttributeConfig{Enabled: true},
 				K8sVolumeType:                ResourceAttributeConfig{Enabled: true},
-				Partition:                    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
 				ContainerID:                  ResourceAttributeConfig{Enabled: false},
-				FsType:                       ResourceAttributeConfig{Enabled: false},
-				GcePdName:                    ResourceAttributeConfig{Enabled: false},
-				GlusterfsEndpointsName:       ResourceAttributeConfig{Enabled: false},
-				GlusterfsPath:                ResourceAttributeConfig{Enabled: false},
 				K8sContainerName:             ResourceAttributeConfig{Enabled: false},
 				K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
 				K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
@@ -1005,7 +994,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sPodUID:                    ResourceAttributeConfig{Enabled: false},
 				K8sVolumeName:                ResourceAttributeConfig{Enabled: false},
 				K8sVolumeType:                ResourceAttributeConfig{Enabled: false},
-				Partition:                    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

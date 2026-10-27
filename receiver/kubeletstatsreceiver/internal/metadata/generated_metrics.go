@@ -3,14 +3,15 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"slices"
+	"time"
 )
 
 const (
@@ -19,6 +20,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 // AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
@@ -282,6 +292,12 @@ var MetricsInfo = metricsInfo{
 		Name:       "k8s.node.network.io",
 		Attributes: []string{"interface", "direction"},
 	},
+	K8sNodePidLimit: metricInfo{
+		Name: "k8s.node.pid.limit",
+	},
+	K8sNodePidUsage: metricInfo{
+		Name: "k8s.node.pid.usage",
+	},
 	K8sNodeSystemContainerCPUTime: metricInfo{
 		Name: "k8s.node.system_container.cpu.time",
 	},
@@ -450,6 +466,8 @@ type metricsInfo struct {
 	K8sNodeMemoryWorkingSet                metricInfo
 	K8sNodeNetworkErrors                   metricInfo
 	K8sNodeNetworkIo                       metricInfo
+	K8sNodePidLimit                        metricInfo
+	K8sNodePidUsage                        metricInfo
 	K8sNodeSystemContainerCPUTime          metricInfo
 	K8sNodeSystemContainerCPUUsage         metricInfo
 	K8sNodeSystemContainerMemoryUsage      metricInfo
@@ -499,6 +517,7 @@ type metricContainerCPUPressureAvg struct {
 	config        ContainerCPUPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                                 // max observed number of data points added to the metric.
 	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills container.cpu.pressure.avg metric with initial data.
@@ -509,6 +528,7 @@ func (m *metricContainerCPUPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricContainerCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -527,31 +547,31 @@ func (m *metricContainerCPUPressureAvg) recordDataPoint(start pcommon.Timestamp,
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -591,6 +611,7 @@ type metricContainerCPUPressureTime struct {
 	config        ContainerCPUPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills container.cpu.pressure.time metric with initial data.
@@ -603,6 +624,7 @@ func (m *metricContainerCPUPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricContainerCPUPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -618,31 +640,31 @@ func (m *metricContainerCPUPressureTime) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -934,6 +956,7 @@ type metricContainerIoPressureAvg struct {
 	config        ContainerIoPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                                // max observed number of data points added to the metric.
 	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                     // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills container.io.pressure.avg metric with initial data.
@@ -944,6 +967,7 @@ func (m *metricContainerIoPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricContainerIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -962,31 +986,31 @@ func (m *metricContainerIoPressureAvg) recordDataPoint(start pcommon.Timestamp, 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1026,6 +1050,7 @@ type metricContainerIoPressureTime struct {
 	config        ContainerIoPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                                 // max observed number of data points added to the metric.
 	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills container.io.pressure.time metric with initial data.
@@ -1038,6 +1063,7 @@ func (m *metricContainerIoPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricContainerIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -1053,31 +1079,31 @@ func (m *metricContainerIoPressureTime) recordDataPoint(start pcommon.Timestamp,
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1267,6 +1293,7 @@ type metricContainerMemoryPressureAvg struct {
 	config        ContainerMemoryPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                                    // max observed number of data points added to the metric.
 	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills container.memory.pressure.avg metric with initial data.
@@ -1277,6 +1304,7 @@ func (m *metricContainerMemoryPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricContainerMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -1295,31 +1323,31 @@ func (m *metricContainerMemoryPressureAvg) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1359,6 +1387,7 @@ type metricContainerMemoryPressureTime struct {
 	config        ContainerMemoryPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                                     // max observed number of data points added to the metric.
 	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills container.memory.pressure.time metric with initial data.
@@ -1371,6 +1400,7 @@ func (m *metricContainerMemoryPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricContainerMemoryPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -1386,31 +1416,31 @@ func (m *metricContainerMemoryPressureTime) recordDataPoint(start pcommon.Timest
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1802,6 +1832,7 @@ type metricK8sContainerEphemeralStorageUsage struct {
 	config        K8sContainerEphemeralStorageUsageMetricConfig // metric config provided by user.
 	capacity      int                                           // max observed number of data points added to the metric.
 	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.container.ephemeral_storage.usage metric with initial data.
@@ -1814,6 +1845,7 @@ func (m *metricK8sContainerEphemeralStorageUsage) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sContainerEphemeralStorageUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fsTypeAttributeValue string) {
@@ -1829,31 +1861,31 @@ func (m *metricK8sContainerEphemeralStorageUsage) recordDataPoint(start pcommon.
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2043,6 +2075,7 @@ type metricK8sNodeCPUPressureAvg struct {
 	config        K8sNodeCPUPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.cpu.pressure.avg metric with initial data.
@@ -2053,6 +2086,7 @@ func (m *metricK8sNodeCPUPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -2071,31 +2105,31 @@ func (m *metricK8sNodeCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2135,6 +2169,7 @@ type metricK8sNodeCPUPressureTime struct {
 	config        K8sNodeCPUPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                                // max observed number of data points added to the metric.
 	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                     // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.cpu.pressure.time metric with initial data.
@@ -2147,6 +2182,7 @@ func (m *metricK8sNodeCPUPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeCPUPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -2162,31 +2198,31 @@ func (m *metricK8sNodeCPUPressureTime) recordDataPoint(start pcommon.Timestamp, 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2582,6 +2618,7 @@ type metricK8sNodeIoPressureAvg struct {
 	config        K8sNodeIoPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.io.pressure.avg metric with initial data.
@@ -2592,6 +2629,7 @@ func (m *metricK8sNodeIoPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -2610,31 +2648,31 @@ func (m *metricK8sNodeIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2674,6 +2712,7 @@ type metricK8sNodeIoPressureTime struct {
 	config        K8sNodeIoPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.io.pressure.time metric with initial data.
@@ -2686,6 +2725,7 @@ func (m *metricK8sNodeIoPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -2701,31 +2741,31 @@ func (m *metricK8sNodeIoPressureTime) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2915,6 +2955,7 @@ type metricK8sNodeMemoryPressureAvg struct {
 	config        K8sNodeMemoryPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.memory.pressure.avg metric with initial data.
@@ -2925,6 +2966,7 @@ func (m *metricK8sNodeMemoryPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -2943,31 +2985,31 @@ func (m *metricK8sNodeMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3007,6 +3049,7 @@ type metricK8sNodeMemoryPressureTime struct {
 	config        K8sNodeMemoryPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                                   // max observed number of data points added to the metric.
 	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.memory.pressure.time metric with initial data.
@@ -3019,6 +3062,7 @@ func (m *metricK8sNodeMemoryPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeMemoryPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -3034,31 +3078,31 @@ func (m *metricK8sNodeMemoryPressureTime) recordDataPoint(start pcommon.Timestam
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3248,6 +3292,7 @@ type metricK8sNodeNetworkErrors struct {
 	config        K8sNodeNetworkErrorsMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.network.errors metric with initial data.
@@ -3260,6 +3305,7 @@ func (m *metricK8sNodeNetworkErrors) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue string) {
@@ -3278,31 +3324,31 @@ func (m *metricK8sNodeNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3342,6 +3388,7 @@ type metricK8sNodeNetworkIo struct {
 	config        K8sNodeNetworkIoMetricConfig // metric config provided by user.
 	capacity      int                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.node.network.io metric with initial data.
@@ -3354,6 +3401,7 @@ func (m *metricK8sNodeNetworkIo) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue string) {
@@ -3372,31 +3420,31 @@ func (m *metricK8sNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pco
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3423,6 +3471,110 @@ func (m *metricK8sNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeNetworkIo(cfg K8sNodeNetworkIoMetricConfig) metricK8sNodeNetworkIo {
 	m := metricK8sNodeNetworkIo{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodePidLimit struct {
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   K8sNodePidLimitMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.pid.limit metric with initial data.
+func (m *metricK8sNodePidLimit) init() {
+	m.data.SetName("k8s.node.pid.limit")
+	m.data.SetDescription("Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit (the lower of kernel.pid_max and kernel.threads-max).")
+	m.data.SetUnit("{thread}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodePidLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodePidLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodePidLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodePidLimit(cfg K8sNodePidLimitMetricConfig) metricK8sNodePidLimit {
+	m := metricK8sNodePidLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodePidUsage struct {
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   K8sNodePidUsageMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.pid.usage metric with initial data.
+func (m *metricK8sNodePidUsage) init() {
+	m.data.SetName("k8s.node.pid.usage")
+	m.data.SetDescription("Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.")
+	m.data.SetUnit("{thread}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodePidUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodePidUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodePidUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodePidUsage(cfg K8sNodePidUsageMetricConfig) metricK8sNodePidUsage {
+	m := metricK8sNodePidUsage{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3740,6 +3892,7 @@ type metricK8sPodCPUPressureAvg struct {
 	config        K8sPodCPUPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.cpu.pressure.avg metric with initial data.
@@ -3750,6 +3903,7 @@ func (m *metricK8sPodCPUPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -3768,31 +3922,31 @@ func (m *metricK8sPodCPUPressureAvg) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3832,6 +3986,7 @@ type metricK8sPodCPUPressureTime struct {
 	config        K8sPodCPUPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.cpu.pressure.time metric with initial data.
@@ -3844,6 +3999,7 @@ func (m *metricK8sPodCPUPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodCPUPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -3859,31 +4015,31 @@ func (m *metricK8sPodCPUPressureTime) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4275,6 +4431,7 @@ type metricK8sPodIoPressureAvg struct {
 	config        K8sPodIoPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                             // max observed number of data points added to the metric.
 	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                  // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.io.pressure.avg metric with initial data.
@@ -4285,6 +4442,7 @@ func (m *metricK8sPodIoPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -4303,31 +4461,31 @@ func (m *metricK8sPodIoPressureAvg) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4367,6 +4525,7 @@ type metricK8sPodIoPressureTime struct {
 	config        K8sPodIoPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.io.pressure.time metric with initial data.
@@ -4379,6 +4538,7 @@ func (m *metricK8sPodIoPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -4394,31 +4554,31 @@ func (m *metricK8sPodIoPressureTime) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4658,6 +4818,7 @@ type metricK8sPodMemoryPressureAvg struct {
 	config        K8sPodMemoryPressureAvgMetricConfig // metric config provided by user.
 	capacity      int                                 // max observed number of data points added to the metric.
 	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.memory.pressure.avg metric with initial data.
@@ -4668,6 +4829,7 @@ func (m *metricK8sPodMemoryPressureAvg) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string, psiWindowAttributeValue string) {
@@ -4686,31 +4848,31 @@ func (m *metricK8sPodMemoryPressureAvg) recordDataPoint(start pcommon.Timestamp,
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4750,6 +4912,7 @@ type metricK8sPodMemoryPressureTime struct {
 	config        K8sPodMemoryPressureTimeMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.memory.pressure.time metric with initial data.
@@ -4762,6 +4925,7 @@ func (m *metricK8sPodMemoryPressureTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodMemoryPressureTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, psiTypeAttributeValue string) {
@@ -4777,31 +4941,31 @@ func (m *metricK8sPodMemoryPressureTime) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetDoubleValue(dpi.DoubleValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.DoubleValue() > val {
-					dpi.SetDoubleValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.DoubleValue() < val {
-					dpi.SetDoubleValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5091,6 +5255,7 @@ type metricK8sPodNetworkErrors struct {
 	config        K8sPodNetworkErrorsMetricConfig // metric config provided by user.
 	capacity      int                             // max observed number of data points added to the metric.
 	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                  // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.network.errors metric with initial data.
@@ -5103,6 +5268,7 @@ func (m *metricK8sPodNetworkErrors) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue string) {
@@ -5121,31 +5287,31 @@ func (m *metricK8sPodNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5185,6 +5351,7 @@ type metricK8sPodNetworkIo struct {
 	config        K8sPodNetworkIoMetricConfig // metric config provided by user.
 	capacity      int                         // max observed number of data points added to the metric.
 	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int              // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.pod.network.io metric with initial data.
@@ -5197,6 +5364,7 @@ func (m *metricK8sPodNetworkIo) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sPodNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue string) {
@@ -5215,31 +5383,31 @@ func (m *metricK8sPodNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5684,6 +5852,8 @@ type MetricsBuilder struct {
 	metricK8sNodeMemoryWorkingSet                metricK8sNodeMemoryWorkingSet
 	metricK8sNodeNetworkErrors                   metricK8sNodeNetworkErrors
 	metricK8sNodeNetworkIo                       metricK8sNodeNetworkIo
+	metricK8sNodePidLimit                        metricK8sNodePidLimit
+	metricK8sNodePidUsage                        metricK8sNodePidUsage
 	metricK8sNodeSystemContainerCPUTime          metricK8sNodeSystemContainerCPUTime
 	metricK8sNodeSystemContainerCPUUsage         metricK8sNodeSystemContainerCPUUsage
 	metricK8sNodeSystemContainerMemoryUsage      metricK8sNodeSystemContainerMemoryUsage
@@ -5753,24 +5923,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		settings.Logger.Warn("[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.")
 	}
-	if mbc.ResourceAttributes.AwsVolumeID.Enabled {
-		settings.Logger.Warn("[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.FsType.Enabled {
-		settings.Logger.Warn("[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.GcePdName.Enabled {
-		settings.Logger.Warn("[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.Enabled {
-		settings.Logger.Warn("[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.GlusterfsPath.Enabled {
-		settings.Logger.Warn("[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.Partition.Enabled {
-		settings.Logger.Warn("[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
 	mb := &MetricsBuilder{
 		config:                                       mbc,
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
@@ -5822,6 +5974,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeMemoryWorkingSet:                newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
 		metricK8sNodeNetworkErrors:                   newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
 		metricK8sNodeNetworkIo:                       newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
+		metricK8sNodePidLimit:                        newMetricK8sNodePidLimit(mbc.Metrics.K8sNodePidLimit),
+		metricK8sNodePidUsage:                        newMetricK8sNodePidUsage(mbc.Metrics.K8sNodePidUsage),
 		metricK8sNodeSystemContainerCPUTime:          newMetricK8sNodeSystemContainerCPUTime(mbc.Metrics.K8sNodeSystemContainerCPUTime),
 		metricK8sNodeSystemContainerCPUUsage:         newMetricK8sNodeSystemContainerCPUUsage(mbc.Metrics.K8sNodeSystemContainerCPUUsage),
 		metricK8sNodeSystemContainerMemoryUsage:      newMetricK8sNodeSystemContainerMemoryUsage(mbc.Metrics.K8sNodeSystemContainerMemoryUsage),
@@ -5862,41 +6016,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.AwsVolumeID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.AwsVolumeID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.FsType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.FsType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.GcePdName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GcePdName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsPath.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsPath.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
@@ -5951,12 +6075,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.Partition.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.Partition.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -6023,6 +6141,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -6073,6 +6192,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
+	mb.metricK8sNodePidLimit.emit(ils.Metrics())
+	mb.metricK8sNodePidUsage.emit(ils.Metrics())
 	mb.metricK8sNodeSystemContainerCPUTime.emit(ils.Metrics())
 	mb.metricK8sNodeSystemContainerCPUUsage.emit(ils.Metrics())
 	mb.metricK8sNodeSystemContainerMemoryUsage.emit(ils.Metrics())
@@ -6369,6 +6490,16 @@ func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsDataPoint(ts pcommon.Timesta
 // RecordK8sNodeNetworkIoDataPoint adds a data point to k8s.node.network.io metric.
 func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricK8sNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+}
+
+// RecordK8sNodePidLimitDataPoint adds a data point to k8s.node.pid.limit metric.
+func (mb *MetricsBuilder) RecordK8sNodePidLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodePidLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodePidUsageDataPoint adds a data point to k8s.node.pid.usage metric.
+func (mb *MetricsBuilder) RecordK8sNodePidUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodePidUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNodeSystemContainerCPUTimeDataPoint adds a data point to k8s.node.system_container.cpu.time metric.

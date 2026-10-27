@@ -108,30 +108,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 			if tt.metricsSet != testDataSetReag {
 				assert.Equal(t, expectedWarnings, observedLogs.Len())
 			}
@@ -143,12 +119,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPUPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerCPUPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerCPUPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricContainerCPUPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerCPUPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerCPUPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerCPUPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricContainerCPUPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -170,12 +152,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerIoPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerIoPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerIoPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricContainerIoPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerIoPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerIoPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerIoPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricContainerIoPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -191,12 +179,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerMemoryPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerMemoryPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerMemoryPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricContainerMemoryPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerMemoryPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerMemoryPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerMemoryPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricContainerMemoryPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -224,6 +218,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 1, AttributeFsTypeRootfs)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 3, AttributeFsTypeLogs)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts+1, 3, AttributeFsTypeLogs)
+				assert.Equal(t, 2, mb.metricK8sContainerEphemeralStorageUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -239,12 +236,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeCPUPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeCPUPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeCPUPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricK8sNodeCPUPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordK8sNodeCPUPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeCPUPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeCPUPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricK8sNodeCPUPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -272,12 +275,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeIoPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeIoPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeIoPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricK8sNodeIoPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordK8sNodeIoPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeIoPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeIoPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricK8sNodeIoPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -293,12 +302,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeMemoryPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeMemoryPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeMemoryPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricK8sNodeMemoryPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeMemoryPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeMemoryPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricK8sNodeMemoryPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -314,13 +329,25 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeNetworkErrorsDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sNodeNetworkErrors.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sNodeNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sNodeNetworkIoDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sNodeNetworkIo.data.Sum().DataPoints().Len())
 			}
+
+			allMetricsCount++
+			mb.RecordK8sNodePidLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodePidUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sNodeSystemContainerCPUTimeDataPoint(ts, 1)
@@ -344,12 +371,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sPodCPUPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodCPUPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodCPUPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricK8sPodCPUPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordK8sPodCPUPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodCPUPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodCPUPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricK8sPodCPUPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -377,12 +410,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sPodIoPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodIoPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodIoPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricK8sPodIoPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordK8sPodIoPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodIoPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodIoPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricK8sPodIoPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -401,12 +440,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sPodMemoryPressureAvgDataPoint(ts, 1, AttributePsiTypeSome, AttributePsiWindow10s)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodMemoryPressureAvgDataPoint(ts, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodMemoryPressureAvgDataPoint(ts+1, 3, AttributePsiTypeFull, AttributePsiWindow60s)
+				assert.Equal(t, 2, mb.metricK8sPodMemoryPressureAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordK8sPodMemoryPressureTimeDataPoint(ts, 1, AttributePsiTypeSome)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodMemoryPressureTimeDataPoint(ts, 3, AttributePsiTypeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodMemoryPressureTimeDataPoint(ts+1, 3, AttributePsiTypeFull)
+				assert.Equal(t, 2, mb.metricK8sPodMemoryPressureTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -428,12 +473,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodNetworkErrorsDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodNetworkErrorsDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sPodNetworkErrors.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordK8sPodNetworkIoDataPoint(ts, 3, "interface-val-2", AttributeDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordK8sPodNetworkIoDataPoint(ts+1, 3, "interface-val-2", AttributeDirectionTransmit)
+				assert.Equal(t, 2, mb.metricK8sPodNetworkIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -458,12 +509,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
-			rb.SetAwsVolumeID("aws.volume.id-val")
 			rb.SetContainerID("container.id-val")
-			rb.SetFsType("fs.type-val")
-			rb.SetGcePdName("gce.pd.name-val")
-			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
-			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
@@ -473,7 +519,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sVolumeName("k8s.volume.name-val")
 			rb.SetK8sVolumeType("k8s.volume.type-val")
-			rb.SetPartition("partition-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
@@ -550,7 +595,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.cpu.pressure.avg"], "Found a duplicate in the metrics slice: container.cpu.pressure.avg")
 						validatedMetrics["container.cpu.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -594,7 +641,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.cpu.pressure.time"], "Found a duplicate in the metrics slice: container.cpu.pressure.time")
 						validatedMetrics["container.cpu.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -701,7 +750,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.io.pressure.avg"], "Found a duplicate in the metrics slice: container.io.pressure.avg")
 						validatedMetrics["container.io.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -745,7 +796,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.io.pressure.time"], "Found a duplicate in the metrics slice: container.io.pressure.time")
 						validatedMetrics["container.io.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -826,7 +879,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.memory.pressure.avg"], "Found a duplicate in the metrics slice: container.memory.pressure.avg")
 						validatedMetrics["container.memory.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -870,7 +925,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.memory.pressure.time"], "Found a duplicate in the metrics slice: container.memory.pressure.time")
 						validatedMetrics["container.memory.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the container cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1000,7 +1057,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.container.ephemeral_storage.usage"], "Found a duplicate in the metrics slice: k8s.container.ephemeral_storage.usage")
 						validatedMetrics["k8s.container.ephemeral_storage.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Ephemeral storage used by the container.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1081,7 +1140,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.cpu.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.cpu.pressure.avg")
 						validatedMetrics["k8s.node.cpu.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1125,7 +1186,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.cpu.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.cpu.pressure.time")
 						validatedMetrics["k8s.node.cpu.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1260,7 +1323,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.io.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.io.pressure.avg")
 						validatedMetrics["k8s.node.io.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1304,7 +1369,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.io.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.io.pressure.time")
 						validatedMetrics["k8s.node.io.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1385,7 +1452,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.memory.pressure.avg"], "Found a duplicate in the metrics slice: k8s.node.memory.pressure.avg")
 						validatedMetrics["k8s.node.memory.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1429,7 +1498,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.memory.pressure.time"], "Found a duplicate in the metrics slice: k8s.node.memory.pressure.time")
 						validatedMetrics["k8s.node.memory.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the node cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1512,7 +1583,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
 						validatedMetrics["k8s.node.network.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Node network errors", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1561,7 +1634,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
 						validatedMetrics["k8s.node.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Node network IO", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1585,6 +1660,34 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("direction")
 						assert.False(t, ok)
 					}
+				case "k8s.node.pid.limit":
+					assert.False(t, validatedMetrics["k8s.node.pid.limit"], "Found a duplicate in the metrics slice: k8s.node.pid.limit")
+					validatedMetrics["k8s.node.pid.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of processes/threads allowed by the operating system on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit (the lower of kernel.pid_max and kernel.threads-max).", mi.Description())
+					assert.Equal(t, "{thread}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.pid.usage":
+					assert.False(t, validatedMetrics["k8s.node.pid.usage"], "Found a duplicate in the metrics slice: k8s.node.pid.usage")
+					validatedMetrics["k8s.node.pid.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of existing processes and threads on the node. Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.", mi.Description())
+					assert.Equal(t, "{thread}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.system_container.cpu.time":
 					assert.False(t, validatedMetrics["k8s.node.system_container.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.system_container.cpu.time")
 					validatedMetrics["k8s.node.system_container.cpu.time"] = true
@@ -1684,7 +1787,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.cpu.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.cpu.pressure.avg")
 						validatedMetrics["k8s.pod.cpu.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1728,7 +1833,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.cpu.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.pressure.time")
 						validatedMetrics["k8s.pod.cpu.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for CPU. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1859,7 +1966,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.io.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.io.pressure.avg")
 						validatedMetrics["k8s.pod.io.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1903,7 +2012,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.io.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.io.pressure.time")
 						validatedMetrics["k8s.pod.io.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for IO. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1996,7 +2107,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.memory.pressure.avg"], "Found a duplicate in the metrics slice: k8s.pod.memory.pressure.avg")
 						validatedMetrics["k8s.pod.memory.pressure.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rolling average percentage of time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2. Values may transiently exceed 100.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2040,7 +2153,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.memory.pressure.time"], "Found a duplicate in the metrics slice: k8s.pod.memory.pressure.time")
 						validatedMetrics["k8s.pod.memory.pressure.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative total time tasks in the pod cgroup were stalled waiting for memory. Requires Linux >= 4.20 with cgroup v2.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2147,7 +2262,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
 						validatedMetrics["k8s.pod.network.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Pod network errors", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2196,7 +2313,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
 						validatedMetrics["k8s.pod.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Pod network IO", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

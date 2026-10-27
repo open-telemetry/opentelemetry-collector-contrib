@@ -9,10 +9,11 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 type concatArguments[K any] struct {
-	Vals      ottl.SliceGetter[K, ottl.StringLikeGetter[K]]
+	Vals      slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]]
 	Delimiter ottl.StringGetter[K]
 }
 
@@ -32,7 +33,7 @@ func createConcatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return concat(&args.Vals, args.Delimiter), nil
 }
 
-func concat[K any](vals *ottl.SliceGetter[K, ottl.StringLikeGetter[K]], delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func concat[K any](vals *slicegetter.SliceGetter[K, ottl.StringLikeGetter[K]], delimiter ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		builder := strings.Builder{}
 		delimiterVal, err := delimiter.Get(ctx, tCtx)

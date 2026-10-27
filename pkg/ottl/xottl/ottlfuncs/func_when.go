@@ -9,11 +9,12 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type whenArguments[K any] struct {
-	Condition  *ottl.LambdaExpression[K]
+	Condition  *xottl.LambdaExpression[K]
 	TrueValue  ottl.Getter[K]
 	FalseValue ottl.Getter[K]
 }
@@ -34,7 +35,7 @@ func createWhenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return whenFunction(args.Condition, args.TrueValue, args.FalseValue)
 }
 
-func whenFunction[K any](condition *ottl.LambdaExpression[K], trueValueGetter, falseValueGetter ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+func whenFunction[K any](condition *xottl.LambdaExpression[K], trueValueGetter, falseValueGetter ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 	err := condition.ValidateArity(0)
 	if err != nil {
 		return nil, err

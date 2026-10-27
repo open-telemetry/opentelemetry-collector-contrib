@@ -1357,6 +1357,46 @@ func (ms *K8sNodeNetworkIoMetricConfig) Validate() error {
 	return nil
 }
 
+// K8sNodePidLimitMetricConfig provides config for the k8s.node.pid.limit metric.
+type K8sNodePidLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodePidLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodePidUsageMetricConfig provides config for the k8s.node.pid.usage metric.
+type K8sNodePidUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodePidUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sNodeSystemContainerCPUTimeMetricConfig provides config for the k8s.node.system_container.cpu.time metric.
 type K8sNodeSystemContainerCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2374,6 +2414,8 @@ type MetricsConfig struct {
 	K8sNodeMemoryWorkingSet                K8sNodeMemoryWorkingSetMetricConfig                `mapstructure:"k8s.node.memory.working_set"`
 	K8sNodeNetworkErrors                   K8sNodeNetworkErrorsMetricConfig                   `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo                       K8sNodeNetworkIoMetricConfig                       `mapstructure:"k8s.node.network.io"`
+	K8sNodePidLimit                        K8sNodePidLimitMetricConfig                        `mapstructure:"k8s.node.pid.limit"`
+	K8sNodePidUsage                        K8sNodePidUsageMetricConfig                        `mapstructure:"k8s.node.pid.usage"`
 	K8sNodeSystemContainerCPUTime          K8sNodeSystemContainerCPUTimeMetricConfig          `mapstructure:"k8s.node.system_container.cpu.time"`
 	K8sNodeSystemContainerCPUUsage         K8sNodeSystemContainerCPUUsageMetricConfig         `mapstructure:"k8s.node.system_container.cpu.usage"`
 	K8sNodeSystemContainerMemoryUsage      K8sNodeSystemContainerMemoryUsageMetricConfig      `mapstructure:"k8s.node.system_container.memory.usage"`
@@ -2583,6 +2625,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
 		},
+		K8sNodePidLimit: K8sNodePidLimitMetricConfig{
+			Enabled: false,
+		},
+		K8sNodePidUsage: K8sNodePidUsageMetricConfig{
+			Enabled: false,
+		},
 		K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
 			Enabled: false,
 		},
@@ -2741,12 +2789,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for kubelet_stats resource attributes.
 type ResourceAttributesConfig struct {
-	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
-	FsType                       ResourceAttributeConfig `mapstructure:"fs.type"`
-	GcePdName                    ResourceAttributeConfig `mapstructure:"gce.pd.name"`
-	GlusterfsEndpointsName       ResourceAttributeConfig `mapstructure:"glusterfs.endpoints.name"`
-	GlusterfsPath                ResourceAttributeConfig `mapstructure:"glusterfs.path"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -2756,28 +2799,12 @@ type ResourceAttributesConfig struct {
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
 	K8sVolumeName                ResourceAttributeConfig `mapstructure:"k8s.volume.name"`
 	K8sVolumeType                ResourceAttributeConfig `mapstructure:"k8s.volume.type"`
-	Partition                    ResourceAttributeConfig `mapstructure:"partition"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		AwsVolumeID: ResourceAttributeConfig{
-			Enabled: false,
-		},
 		ContainerID: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		FsType: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GcePdName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GlusterfsEndpointsName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GlusterfsPath: ResourceAttributeConfig{
-			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -2805,9 +2832,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sVolumeType: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		Partition: ResourceAttributeConfig{
-			Enabled: false,
 		},
 	}
 }

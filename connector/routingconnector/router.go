@@ -47,23 +47,24 @@ type router[C any] struct {
 // newRouter creates a new router instance with based on type parameters C and K.
 // see router struct definition for the allowed types.
 func newRouter[C any](
-	table []RoutingTableItem,
-	defaultPipelineIDs []pipeline.ID,
+	cfg *Config,
 	provider consumerProvider[C],
 	settings component.TelemetrySettings,
 ) (*router[C], error) {
 	r := &router[C]{
 		logger:           settings.Logger,
-		table:            table,
+		table:            cfg.Table,
 		routes:           make(map[string]routingItem[C]),
 		consumerProvider: provider,
 	}
 
-	if err := r.buildParsers(table, settings); err != nil {
+	var err error
+	r.parserCollection, err = newParserCollection(cfg, settings)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := r.registerConsumers(defaultPipelineIDs); err != nil {
+	if err := r.registerConsumers(cfg.DefaultPipelines); err != nil {
 		return nil, err
 	}
 
@@ -84,57 +85,64 @@ type routingItem[C any] struct {
 	action             Action
 }
 
-func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.TelemetrySettings) error {
+func parserFunctions[T any](functions map[string]ottl.Factory[T], defaultFunc func() map[string]ottl.Factory[T]) map[string]ottl.Factory[T] {
+	if functions == nil {
+		return defaultFunc()
+	}
+	return functions
+}
+
+func newParserCollection(cfg *Config, settings component.TelemetrySettings) (*ottl.ParserCollection[any], error) {
 	otelcolParser, err := ottlotelcol.NewParser(
-		standardFunctions[*ottlotelcol.TransformContext](),
+		parserFunctions(cfg.otelColFunctions, defaultOtelColFunctionsMap),
 		settings,
 		ottlotelcol.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resourceParser, err := ottlresource.NewParser(
-		standardFunctions[*ottlresource.TransformContext](),
+		parserFunctions(cfg.resourceFunctions, defaultResourceFunctionsMap),
 		settings,
 		ottlresource.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	spanParser, err := ottlspan.NewParser(
-		spanFunctions(),
+		parserFunctions(cfg.spanFunctions, defaultSpanFunctionsMap),
 		settings,
 		ottlspan.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	metricParser, err := ottlmetric.NewParser(
-		standardFunctions[*ottlmetric.TransformContext](),
+		parserFunctions(cfg.metricFunctions, defaultMetricFunctionsMap),
 		settings,
 		ottlmetric.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	dataPointParser, err := ottldatapoint.NewParser(
-		standardFunctions[*ottldatapoint.TransformContext](),
+		parserFunctions(cfg.dataPointFunctions, defaultDataPointFunctionsMap),
 		settings,
 		ottldatapoint.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	logParser, err := ottllog.NewParser(
-		standardFunctions[*ottllog.TransformContext](),
+		parserFunctions(cfg.logFunctions, defaultLogFunctionsMap),
 		settings,
 		ottllog.EnablePathContextNames(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	r.parserCollection, err = ottl.NewParserCollection(
+	return ottl.NewParserCollection(
 		settings,
 		ottl.EnableParserCollectionModifiedPathsLogging[any](true),
 		ottl.WithParserCollectionContext(
@@ -168,7 +176,6 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 			ottl.WithStatementConverter(singleStatementConverter[*ottllog.TransformContext]()),
 		),
 	)
-	return err
 }
 
 // singleStatementConverter extracts a single parsed statement from the parser output.
@@ -219,9 +226,7 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []pipeline.ID) error {
 func (r *router[C]) normalizeConditions() {
 	for i := range r.table {
 		item := &r.table[i]
-		if item.Condition != "" {
-			item.Statement = fmt.Sprintf("route() where %s", item.Condition)
-		}
+		item.Statement = item.ottlStatement()
 	}
 }
 
@@ -242,25 +247,8 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 			route.statementContext = "request"
 			route.statementText = item.Condition
 		} else {
-			statementsGetter := ottl.NewStatementsGetter([]string{item.Statement})
 			var result any
-			if item.Context == "" {
-				// Try context inference first. If that fails, fall back to "resource" for
-				// backward compatibility: unqualified paths (e.g. attributes["x"]) previously
-				// implied resource context.
-				result, err = r.parserCollection.ParseStatements(statementsGetter)
-				if err != nil {
-					r.logger.Debug("Failed to parse statement with context inference, retrying with 'resource' context.", zap.Error(err))
-					var retryErr error
-					result, retryErr = r.parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
-					if retryErr == nil {
-						err = nil
-					}
-				}
-			} else {
-				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter, true)
-			}
-
+			result, err = parseRoutingStatement(r.parserCollection, item.Context, item.Statement, r.logger)
 			if err != nil {
 				return err
 			}
@@ -321,6 +309,33 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 		r.routes[k] = route
 	}
 	return nil
+}
+
+func parseRoutingStatement(
+	parserCollection *ottl.ParserCollection[any],
+	contextName string,
+	statement string,
+	logger *zap.Logger,
+) (any, error) {
+	statementsGetter := ottl.NewStatementsGetter([]string{statement})
+	if contextName != "" {
+		return parserCollection.ParseStatementsWithContext(contextName, statementsGetter, true)
+	}
+
+	// Try context inference first. If that fails, fall back to "resource" for
+	// backward compatibility: unqualified paths (e.g. attributes["x"]) previously
+	// implied resource context.
+	result, err := parserCollection.ParseStatements(statementsGetter)
+	if err == nil {
+		return result, nil
+	}
+
+	logger.Debug("Failed to parse statement with context inference, retrying with 'resource' context.", zap.Error(err))
+	result, retryErr := parserCollection.ParseStatementsWithContext(ottlresource.ContextName, statementsGetter, true)
+	if retryErr == nil {
+		return result, nil
+	}
+	return nil, err
 }
 
 func key(resolvedContext, ottlText string) string {

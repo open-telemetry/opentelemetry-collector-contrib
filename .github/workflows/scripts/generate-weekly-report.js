@@ -153,9 +153,9 @@ async function getIssuesData({octokit, context}) {
       filterPrs: false,
       alias: "issuesCodeOwnerNeeded",
     },
-    "waiting-for-maintainers": {
+    "waiting-for-approvers": {
       filterPrs: false,
-      alias: "issuesMaintainerNeeded",
+      alias: "issuesApproverNeeded",
     }
   };
 
@@ -199,7 +199,7 @@ async function getIssuesData({octokit, context}) {
       count: 0,
       data: []
     },
-    issuesMaintainerNeeded: {
+    issuesApproverNeeded: {
       title: "PRs that need approver/maintainer review",
       count: 0,
       data: []

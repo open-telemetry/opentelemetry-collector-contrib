@@ -297,6 +297,43 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
+func TestScraperWithRlimitMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sNodePidUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodePidLimit.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+2, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_rlimit_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
 func TestScraperWithInterfacesMetrics(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
@@ -848,30 +885,19 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			k8sAPIClient: fake.NewClientset(getValidMockedObjects()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
-					name: "storage-provisioner-token-qzlx6",
-					typ:  "awsElasticBlockStore",
-					labels: map[string]string{
-						"aws.volume.id": "volume_id",
-						"fs.type":       "fs_type",
-						"partition":     "10",
-					},
+					name:   "storage-provisioner-token-qzlx6",
+					typ:    "awsElasticBlockStore",
+					labels: map[string]string{},
 				},
 				"volume_claim_2": {
-					name: "kube-proxy",
-					typ:  "gcePersistentDisk",
-					labels: map[string]string{
-						"gce.pd.name": "pd_name",
-						"fs.type":     "fs_type",
-						"partition":   "10",
-					},
+					name:   "kube-proxy",
+					typ:    "gcePersistentDisk",
+					labels: map[string]string{},
 				},
 				"volume_claim_3": {
-					name: "coredns-token-dzc5t",
-					typ:  "glusterfs",
-					labels: map[string]string{
-						"glusterfs.endpoints.name": "endpoints_name",
-						"glusterfs.path":           "path",
-					},
+					name:   "coredns-token-dzc5t",
+					typ:    "glusterfs",
+					labels: map[string]string{},
 				},
 			},
 			dataLen: numVolumes,
@@ -892,22 +918,14 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			k8sAPIClient: fake.NewClientset(getMockedObjectsWithEmptyVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
-					name: "storage-provisioner-token-qzlx6",
-					typ:  "awsElasticBlockStore",
-					labels: map[string]string{
-						"aws.volume.id": "volume_id",
-						"fs.type":       "fs_type",
-						"partition":     "10",
-					},
+					name:   "storage-provisioner-token-qzlx6",
+					typ:    "awsElasticBlockStore",
+					labels: map[string]string{},
 				},
 				"volume_claim_2": {
-					name: "kube-proxy",
-					typ:  "gcePersistentDisk",
-					labels: map[string]string{
-						"gce.pd.name": "pd_name",
-						"fs.type":     "fs_type",
-						"partition":   "10",
-					},
+					name:   "kube-proxy",
+					typ:    "gcePersistentDisk",
+					labels: map[string]string{},
 				},
 			},
 			// Two of mocked volumes are invalid and do not match any of volumes in
@@ -923,22 +941,14 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			k8sAPIClient: fake.NewClientset(getMockedObjectsWithNonExistentVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
-					name: "storage-provisioner-token-qzlx6",
-					typ:  "awsElasticBlockStore",
-					labels: map[string]string{
-						"aws.volume.id": "volume_id",
-						"fs.type":       "fs_type",
-						"partition":     "10",
-					},
+					name:   "storage-provisioner-token-qzlx6",
+					typ:    "awsElasticBlockStore",
+					labels: map[string]string{},
 				},
 				"volume_claim_2": {
-					name: "kube-proxy",
-					typ:  "gcePersistentDisk",
-					labels: map[string]string{
-						"gce.pd.name": "pd_name",
-						"fs.type":     "fs_type",
-						"partition":   "10",
-					},
+					name:   "kube-proxy",
+					typ:    "gcePersistentDisk",
+					labels: map[string]string{},
 				},
 			},
 			// Two of mocked volumes are invalid and do not match any of volumes in
@@ -958,12 +968,6 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mbc := metadata.NewDefaultMetricsBuilderConfig()
-			mbc.ResourceAttributes.AwsVolumeID.Enabled = true
-			mbc.ResourceAttributes.FsType.Enabled = true
-			mbc.ResourceAttributes.GcePdName.Enabled = true
-			mbc.ResourceAttributes.GlusterfsEndpointsName.Enabled = true
-			mbc.ResourceAttributes.GlusterfsPath.Enabled = true
-			mbc.ResourceAttributes.Partition.Enabled = true
 
 			r, err := newKubeletScraper(
 				&fakeRestClient{},

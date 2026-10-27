@@ -73,6 +73,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if s.IO != nil {
 		addPSIMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeIOPressureMetrics, s.IO.PSI, currentTime)
 	}
+	addRlimitMetrics(a.mbs.NodeMetricsBuilder, s.Rlimit, currentTime)
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
