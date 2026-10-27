@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.34.4
 	github.com/linode/go-metadata v0.3.1
-	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/api v1.56.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.164.1
