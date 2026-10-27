@@ -8,7 +8,7 @@ extensions:
           insecure: true
     ppid: {{.PID}}
     ppid_poll_interval: {{.PPIDPollInterval}}
-{{- if .ReportsRawConfig}}
+{{- if .ReportRawConfig}}
     reports_raw_config: true
 {{- end}}
     capabilities:

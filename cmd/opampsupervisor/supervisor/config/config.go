@@ -240,7 +240,7 @@ type Agent struct {
 	AutomaticConfigRollback     bool              `mapstructure:"automatic_config_rollback"`
 	UseHUPConfigReload          bool              `mapstructure:"use_hup_config_reload"`
 	ValidateConfig              bool              `mapstructure:"validate_config"`
-	ReportsRawConfig            bool              `mapstructure:"reports_raw_config"`
+	ReportRawConfig             bool              `mapstructure:"report_raw_config"`
 	ConfigFiles                 []string          `mapstructure:"config_files"`
 	Arguments                   []string          `mapstructure:"args"`
 	Env                         map[string]string `mapstructure:"env"`

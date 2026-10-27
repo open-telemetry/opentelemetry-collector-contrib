@@ -133,7 +133,7 @@ Visit [localhost:4321](http://localhost:4321) again to verify that your Collecto
 
 ## Raw configuration reporting
 
-Set `agent.reports_raw_config` to `true` to make the Supervisor add
+Set `agent.report_raw_config` to `true` to make the Supervisor add
 `reports_raw_config: true` to the Collector's OpAMP extension configuration.
 This option defaults to `false`. The Collector's OpAMP extension must support
 raw configuration reporting. Keep `capabilities.reports_effective_config`
@@ -141,7 +141,7 @@ enabled so the Supervisor forwards the reported configuration to the OpAMP serve
 
 ```yaml
 agent:
-  reports_raw_config: true
+  report_raw_config: true
 ```
 
 The Collector reports its configuration before provider references such as

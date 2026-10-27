@@ -3394,15 +3394,15 @@ service:
 	})
 }
 
-func TestSupervisorReportsRawConfig(t *testing.T) {
+func TestSupervisorReportRawConfig(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		setting string
 		want    any
 	}{
 		{name: "default"},
-		{name: "disabled", setting: "  reports_raw_config: false\n"},
-		{name: "enabled", setting: "  reports_raw_config: true\n", want: true},
+		{name: "disabled", setting: "  report_raw_config: false\n"},
+		{name: "enabled", setting: "  report_raw_config: true\n", want: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := setupSupervisorConfig(t, configTemplate+tt.setting)
