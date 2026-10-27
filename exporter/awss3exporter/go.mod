@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.113.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1
 	github.com/google/uuid v1.6.0
-	github.com/itchyny/timefmt-go v0.1.8
+	github.com/itchyny/timefmt-go v0.1.9
 	github.com/klauspost/compress v1.20.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.164.1
 	github.com/stretchr/testify v1.12.1
