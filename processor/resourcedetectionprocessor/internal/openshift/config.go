@@ -5,8 +5,9 @@ package openshift // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
-	"fmt"
+	"net"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/configtls"
 
@@ -23,7 +24,12 @@ func readK8STokenFromFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(token), nil
+	// Trailing whitespace would make the Authorization header value invalid.
+	t := strings.TrimSpace(string(token))
+	if t == "" {
+		return "", errors.New("empty service account token")
+	}
+	return t, nil
 }
 
 func readSVCAddressFromENV() (string, error) {
@@ -35,11 +41,12 @@ func readSVCAddressFromENV() (string, error) {
 	if port == "" {
 		return "", errors.New("could not extract openshift api port")
 	}
-	return fmt.Sprintf("https://%s:%s", host, port), nil
+	// JoinHostPort brackets the bare IPv6 host Kubernetes sets on IPv6 clusters.
+	return "https://" + net.JoinHostPort(host, port), nil
 }
 
 // Config can contain user-specified inputs to overwrite default values.
-// See `openshift.go#NewDetector` for more information.
+// Unset fields are resolved by the SDK detector from the pod environment.
 type Config struct {
 	// Address is the address of the openshift api server
 	Address string `mapstructure:"address"`
@@ -52,30 +59,6 @@ type Config struct {
 	TLSs configtls.ClientConfig `mapstructure:"tls"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
-// MergeWithDefaults fills unset fields with default values.
-func (c *Config) MergeWithDefaults() error {
-	if c.Token == "" {
-		token, err := readK8STokenFromFile()
-		if err != nil {
-			return err
-		}
-		c.Token = token
-	}
-
-	if c.Address == "" {
-		addr, err := readSVCAddressFromENV()
-		if err != nil {
-			return err
-		}
-		c.Address = addr
-	}
-
-	if !c.TLSs.Insecure && c.TLSs.CAFile == "" {
-		c.TLSs.CAFile = defaultCAPath
-	}
-	return nil
 }
 
 func CreateDefaultConfig() Config {
