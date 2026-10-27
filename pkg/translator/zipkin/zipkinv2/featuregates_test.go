@@ -18,11 +18,14 @@ func TestValidateFeatureGates(t *testing.T) {
 		emitV1HTTP        = "pkg.translator.zipkin.EmitV1HttpConventions"
 		dontEmitV0Scope   = "pkg.translator.zipkin.DontEmitV0ScopeConventions"
 		emitV1Scope       = "pkg.translator.zipkin.EmitV1ScopeConventions"
+		dontEmitV0Cloud   = "pkg.translator.zipkin.DontEmitV0CloudResourceConventions"
+		emitV1Cloud       = "pkg.translator.zipkin.EmitV1CloudResourceConventions"
 	)
 	allGates := []string{
 		dontEmitV0Network, emitV1Network,
 		dontEmitV0HTTP, emitV1HTTP,
 		dontEmitV0Scope, emitV1Scope,
+		dontEmitV0Cloud, emitV1Cloud,
 	}
 
 	tests := []struct {
@@ -50,6 +53,11 @@ func TestValidateFeatureGates(t *testing.T) {
 			name:    "scope DontEmitV0 without EmitV1",
 			disable: []string{emitV1Scope},
 			wantErr: "pkg.translator.zipkin.DontEmitV0ScopeConventions cannot be enabled without enabling pkg.translator.zipkin.EmitV1ScopeConventions",
+		},
+		{
+			name:    "cloud resource DontEmitV0 without EmitV1",
+			disable: []string{emitV1Cloud},
+			wantErr: "pkg.translator.zipkin.DontEmitV0CloudResourceConventions cannot be enabled without enabling pkg.translator.zipkin.EmitV1CloudResourceConventions",
 		},
 		{
 			name:    "http fully disabled is valid",
