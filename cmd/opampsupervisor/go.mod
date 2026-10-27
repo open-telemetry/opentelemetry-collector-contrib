@@ -188,3 +188,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oaut
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../../extension/internal/credentialsfile
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider => ../../extension/internal/secretprovider
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../../exporter/elasticsearchexporter
