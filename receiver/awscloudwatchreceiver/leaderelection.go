@@ -67,7 +67,7 @@ func (l *leaderElectedMetrics) Start(_ context.Context, host component.Host) err
 func (l *leaderElectedMetrics) startLeading(ctx context.Context) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.current != nil {
+	if l.current != nil || ctx.Err() != nil {
 		return
 	}
 
