@@ -1,5 +1,5 @@
-github.com/DeRuina/timberjack v1.4.8 h1:V7SIoCzkyWD93WmyKECSX+tMu/hLqQQvptlhEsbBIhI=
-github.com/DeRuina/timberjack v1.4.8/go.mod h1:DCXjOescYyzTrOryf57SEbSeCOqkBQ3QjH7Pn03i5Cs=
+github.com/DeRuina/timberjack v1.4.9 h1:9RjDMSkUDQRYzwVNB/FLonXNurcZVEh9sK43m2jw3A4=
+github.com/DeRuina/timberjack v1.4.9/go.mod h1:DCXjOescYyzTrOryf57SEbSeCOqkBQ3QjH7Pn03i5Cs=
 github.com/cenkalti/backoff/v7 v7.0.1 h1:+ulHti5s1d9QnfyOnLWVmQ/SaZ+TJQF9OdOI0i9BGZI=
 github.com/cenkalti/backoff/v7 v7.0.1/go.mod h1:qcKBGwsu4hpxHtQ8tWYsQ+ifzx2+sS+Xx/3jfe30lI8=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
