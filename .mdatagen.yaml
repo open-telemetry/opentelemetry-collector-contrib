@@ -744,9 +744,8 @@ exclusions:
       enabled: false
     goleak:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
     feature_gates:
-      - name: receiver.kafkametricsreceiver.UseFranzGo
+      - name: receiver.k8sobjects.useInformerObserver
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
