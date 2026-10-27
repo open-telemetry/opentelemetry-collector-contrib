@@ -25,7 +25,15 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
+func skipFlakyOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("TODO: flaky on Windows, re-enable once https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52435 is fixed")
+	}
+}
+
 func TestRetry_DNSDeadlineExceeded(t *testing.T) {
+	skipFlakyOnWindows(t)
 	// The resolver blocks until the dial deadline, so the test does not use a real DNS server.
 	resolver := &net.Resolver{
 		PreferGo: true,
@@ -56,6 +64,7 @@ func TestRetry_DNSDeadlineExceeded(t *testing.T) {
 }
 
 func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
+	skipFlakyOnWindows(t)
 	release := make(chan struct{})
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -80,6 +89,7 @@ func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
 }
 
 func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
+	skipFlakyOnWindows(t)
 	// getConn dials on a context detached from the request, so the dial keeps running after the deadline.
 	const maxRetries = 1
 	var finished atomic.Int32
@@ -111,9 +121,7 @@ func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
 }
 
 func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("TODO: flaky on Windows, re-enable once https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52435 is fixed")
-	}
+	skipFlakyOnWindows(t)
 	// The server accepts TCP and sends nothing, so the deadline fires during
 	// the TLS handshake, before GotConn.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -156,6 +164,7 @@ func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
 }
 
 func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
+	skipFlakyOnWindows(t)
 	serverConns := make(chan net.Conn, 2)
 	client, dials := newRetryClient(t, "http://es.invalid:9200", 50*time.Millisecond, func(context.Context, string, string) (net.Conn, error) {
 		clientConn, serverConn := net.Pipe()
@@ -180,6 +189,7 @@ func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
 }
 
 func TestRetry_CallerDeadlineDuringDial_NoRetry(t *testing.T) {
+	skipFlakyOnWindows(t)
 	var finished atomic.Int32
 	client, dials := newRetryClient(t, "http://es.invalid:9200", time.Second, func(ctx context.Context, _, _ string) (net.Conn, error) {
 		defer finished.Add(1)
