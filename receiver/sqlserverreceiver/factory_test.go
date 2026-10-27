@@ -12,7 +12,6 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-
 	"github.com/microsoft/go-mssqldb/msdsn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
