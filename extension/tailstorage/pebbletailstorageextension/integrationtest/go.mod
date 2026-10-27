@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/tails
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
@@ -34,8 +34,8 @@ require (
 	github.com/RaduBerinde/axisds v0.1.0 // indirect
 	github.com/RaduBerinde/btreemap v0.0.0-20250419174037-3d62b7205d54 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
-	github.com/antchfx/xmlquery v1.5.1 // indirect
-	github.com/antchfx/xpath v1.3.8 // indirect
+	github.com/antchfx/xmlquery v1.5.2 // indirect
+	github.com/antchfx/xpath v1.3.9 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/brunoscheufler/aws-ecs-metadata-go v0.0.0-20221221133751-67e37ae746cd // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -88,12 +88,12 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.2.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.3.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.164.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.164.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.164.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect

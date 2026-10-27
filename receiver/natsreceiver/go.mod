@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/natsre
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
@@ -38,7 +38,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/nats-io/nats.go v1.54.0 // indirect
+	github.com/nats-io/nats.go v1.55.0 // indirect
 	github.com/nats-io/nkeys v0.4.16 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

@@ -4,10 +4,10 @@ go 1.26.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.164.1
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
@@ -47,7 +47,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/jaegertracing/jaeger-idl v0.13.1 // indirect
+	github.com/jaegertracing/jaeger-idl v0.14.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.164.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

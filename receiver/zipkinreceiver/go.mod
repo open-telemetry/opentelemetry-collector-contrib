@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkin
 go 1.26.0
 
 require (
-	github.com/jaegertracing/jaeger-idl v0.13.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.164.0
+	github.com/jaegertracing/jaeger-idl v0.14.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.164.1
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
@@ -50,7 +50,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.164.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

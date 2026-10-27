@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslog
 go 1.26.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/confmap v1.70.0
@@ -38,7 +38,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/jpillora/backoff v1.0.0 // indirect
+	github.com/jpillora/backoff v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect

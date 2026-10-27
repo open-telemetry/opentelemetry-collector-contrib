@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileex
 go 1.26.0
 
 require (
-	github.com/DeRuina/timberjack v1.4.8
+	github.com/DeRuina/timberjack v1.4.9
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.20.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.0
+	github.com/klauspost/compress v1.20.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
@@ -47,7 +47,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.164.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.70.0 // indirect

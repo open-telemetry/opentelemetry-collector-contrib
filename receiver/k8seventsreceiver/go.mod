@@ -4,15 +4,15 @@ go 1.26.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
@@ -44,7 +44,7 @@ require (
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.7.0 // indirect
+	github.com/docker/go-connections v0.8.2 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
@@ -81,8 +81,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/moby/api v1.56.0 // indirect
-	github.com/moby/moby/client v0.6.0 // indirect
+	github.com/moby/moby/api v1.56.1 // indirect
+	github.com/moby/moby/client v0.6.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect

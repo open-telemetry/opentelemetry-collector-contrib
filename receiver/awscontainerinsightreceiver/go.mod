@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.26.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.47.1
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.1
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.336.1
+	github.com/aws/aws-sdk-go-v2 v1.47.4
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.4
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.341.0
 	github.com/google/cadvisor v0.57.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.164.1
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
@@ -35,18 +35,18 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.33.6 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.10.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.38.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1 // indirect
-	github.com/aws/smithy-go v1.28.1 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.33.10 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.10 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.22 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.10.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.38.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.5 // indirect
+	github.com/aws/smithy-go v1.28.6 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/containerd/api v1.10.0 // indirect
@@ -110,7 +110,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1 // indirect
 	github.com/opencontainers/cgroups v0.0.6 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect

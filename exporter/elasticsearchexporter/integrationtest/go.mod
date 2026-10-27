@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/elastic/go-docappender/v2 v2.15.0
 	github.com/gorilla/mux v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.164.1
 	github.com/shirou/gopsutil/v4 v4.26.9
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
@@ -53,7 +53,7 @@ require (
 	github.com/elastic/go-structform v0.0.12 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
-	github.com/fxamacker/cbor/v2 v2.9.4 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.6 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -80,9 +80,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.164.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.164.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
 	github.com/prometheus/client_golang v1.25.0 // indirect
@@ -182,7 +182,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
+	golang.org/x/exp v0.0.0-20261011100332-faecfb24eb49 // indirect
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
@@ -241,10 +241,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ../../../receiver/zipkinreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../../../receiver/signalfxreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../../pkg/experimentalmetricmetadata
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../../receiver/prometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../../../receiver/carbonreceiver
@@ -255,8 +251,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../../internal/splunk
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../signalfxexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../../pkg/batchperresourceattr
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../../receiver/datadogreceiver
@@ -266,8 +260,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../../prometheusexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../../pkg/translator/signalfx
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../../receiver/splunkhecreceiver
 
@@ -294,8 +286,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefe
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver => ../../../receiver/stefreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../../processor/deltatocumulativeprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../../internal/gopsutilenv
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../../pkg/datadog
 

@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 go 1.26.0
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.10.2
+	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/goccy/go-json v0.10.6
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/jpillora/backoff v1.0.0
+	github.com/jpillora/backoff v1.1.0
 	github.com/leodido/go-syslog/v4 v4.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.164.1
 	github.com/stretchr/testify v1.12.1
 	github.com/valyala/fastjson v1.6.10
 	go.opentelemetry.io/collector/client v1.70.0

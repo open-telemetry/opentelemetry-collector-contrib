@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/macosu
 go 1.26.0
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.10.2
+	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0

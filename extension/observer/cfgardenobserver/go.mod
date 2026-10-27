@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.26.0
 
 require (
-	code.cloudfoundry.org/garden v0.8.0
+	code.cloudfoundry.org/garden v0.9.0
 	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-beta.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.164.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.164.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	code.cloudfoundry.org/lager/v3 v3.91.0 // indirect
+	code.cloudfoundry.org/lager/v3 v3.92.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/google/pprof v0.0.0-20261012231050-2af12c3f4d87 // indirect
+	github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
