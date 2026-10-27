@@ -56,15 +56,26 @@ func (m *mockIMDSProvider) Tag(_ context.Context, _ string) (string, error) {
 }
 
 type mockAPIProvider struct {
-	clusterVersion    string
-	clusterVersionErr error
-	oidcIssuer        string
-	oidcIssuerErr     error
-	k8sMeta           apiprovider.InstanceMetadata
-	k8sErr            error
-	apiMeta           apiprovider.InstanceMetadata
-	apiErr            error
-	nodeName          string
+	clusterVersion        string
+	clusterVersionErr     error
+	oidcIssuer            string
+	oidcIssuerErr         error
+	clusterARN            string
+	clusterARNErr         error
+	clusterARNCalls       []string
+	clusterARNRegions     []string
+	instanceMetadataCalls int
+	k8sMeta               apiprovider.InstanceMetadata
+	k8sErr                error
+	apiMeta               apiprovider.InstanceMetadata
+	apiErr                error
+	nodeName              string
+}
+
+func (m *mockAPIProvider) ClusterARN(_ context.Context, region, clusterName string) (string, error) {
+	m.clusterARNRegions = append(m.clusterARNRegions, region)
+	m.clusterARNCalls = append(m.clusterARNCalls, clusterName)
+	return m.clusterARN, m.clusterARNErr
 }
 
 func (m *mockAPIProvider) ClusterVersion() (string, error) {
@@ -83,6 +94,7 @@ func (m *mockAPIProvider) GetK8sInstanceMetadata(_ context.Context) (apiprovider
 }
 
 func (m *mockAPIProvider) GetInstanceMetadata(ctx context.Context) (apiprovider.InstanceMetadata, error) {
+	m.instanceMetadataCalls++
 	if m.apiMeta.Region == "" || m.apiMeta.InstanceID == "" {
 		k8sMeta, err := m.GetK8sInstanceMetadata(ctx)
 		if err != nil {
