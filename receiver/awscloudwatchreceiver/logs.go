@@ -213,16 +213,14 @@ func (l *logsReceiver) startCollecting(ctx context.Context) {
 }
 
 func (l *logsReceiver) stopCollecting() {
-	l.mu.Lock()
-	cancel := l.pollCancel
-	l.pollCancel = nil
-	l.mu.Unlock()
-
-	if cancel == nil {
-		return
-	}
-	cancel()
-	l.wg.Wait()
+        l.mu.Lock()
+        defer l.mu.Unlock()
+        if l.pollCancel == nil {
+            return
+        }
+        l.pollCancel()
+        l.pollCancel = nil
+        l.wg.Wait()
 }
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
