@@ -6,12 +6,17 @@ package partitioningprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
+
+// errInvalidValueType is returned when a key expression evaluates to a value
+// that is neither a string nor nil.
+var errInvalidValueType = errors.New("expected value expression to evaluate to a string")
 
 // keyValue holds the result of evaluating a single partition key expression.
 // isNil is true when the expression returned no value (e.g. a missing
@@ -51,7 +56,7 @@ func evaluateStringExpressions[K closableOTTLContext](ctx context.Context, exprs
 		case string:
 			dst[i] = keyValue{value: v}
 		default:
-			return fmt.Errorf("key at index %d: expected value expression to evaluate to a string, got %T", i, val)
+			return fmt.Errorf("key at index %d: %w, got %T", i, errInvalidValueType, val)
 		}
 	}
 	return nil

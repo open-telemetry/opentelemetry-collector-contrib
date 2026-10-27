@@ -10,6 +10,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
@@ -61,6 +62,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Container cpu utilization as a ratio of the container's limits
