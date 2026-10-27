@@ -21,6 +21,7 @@ func ValidateFeatureGates() error {
 	for _, pair := range [][2]*featuregate.Gate{
 		{metadata.PkgTranslatorZipkinDontEmitV0HTTPConventionsFeatureGate, metadata.PkgTranslatorZipkinEmitV1HTTPConventionsFeatureGate},
 		{metadata.PkgTranslatorZipkinDontEmitV0ScopeConventionsFeatureGate, metadata.PkgTranslatorZipkinEmitV1ScopeConventionsFeatureGate},
+		{metadata.PkgTranslatorZipkinDontEmitV0CloudResourceConventionsFeatureGate, metadata.PkgTranslatorZipkinEmitV1CloudResourceConventionsFeatureGate},
 	} {
 		dontEmitV0, emitV1 := pair[0], pair[1]
 		if dontEmitV0.IsEnabled() && !emitV1.IsEnabled() {

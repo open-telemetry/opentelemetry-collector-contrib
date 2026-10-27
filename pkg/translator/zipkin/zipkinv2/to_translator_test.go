@@ -89,8 +89,8 @@ func TestZTagsToInternalAttrsCloudResourceConventionsMigration(t *testing.T) {
 			err = featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", tc.dontEmitV0)
 			assert.NoError(t, err)
 			t.Cleanup(func() {
-				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", false))
-				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0CloudResourceConventions", true))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1CloudResourceConventions", true))
 			})
 
 			zspan := &zipkinmodel.SpanModel{Tags: map[string]string{"faas.id": "my-faas"}}
