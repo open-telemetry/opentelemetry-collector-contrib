@@ -117,8 +117,8 @@ capabilities:
   reports_health: # true if unspecified
 
   # DEPRECATED: This option has no effect and will be removed in v0.165.0.
-  # Remote config status is reported whenever accepts_remote_config is
-  # enabled. See
+  # Setting it to true causes the Supervisor to fail to start. Remote config
+  # status is reported whenever accepts_remote_config is enabled. See
   # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
   reports_remote_config: # false if unspecified
 
@@ -144,6 +144,10 @@ agent:
 
   # The maximum wait duration for retrieving bootstrapping information from the agent
   bootstrap_timeout: 3s
+
+  # How long the Supervisor waits for the Collector to exit after sending it the
+  # graceful shutdown signal before killing it forcibly. Must be positive.
+  stop_grace_period: 10s
 
   # Extra command line flags to pass to the Collector executable.
   args:

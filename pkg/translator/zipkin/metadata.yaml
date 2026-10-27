@@ -10,7 +10,7 @@ status:
 
 feature_gates:
   - id: pkg.translator.zipkin.DontEmitV0CloudResourceConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator no longer emits the deprecated
       faas.id attribute (semconv v1.18.0).
@@ -18,7 +18,7 @@ feature_gates:
     from_version: v0.155.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080
   - id: pkg.translator.zipkin.DontEmitV0HttpConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator no longer emits the deprecated
       http.status_code attribute (semconv v1.25.0).
@@ -35,7 +35,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
   - id: pkg.translator.zipkin.DontEmitV0ScopeConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator no longer emits the deprecated
       otel.library.name and otel.library.version attributes (semconv v1.25.0).
@@ -43,7 +43,7 @@ feature_gates:
     from_version: v0.154.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
   - id: pkg.translator.zipkin.EmitV1CloudResourceConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator emits cloud.resource_id
       (semconv v1.40.0) instead of the deprecated faas.id
@@ -51,7 +51,7 @@ feature_gates:
     from_version: v0.155.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080
   - id: pkg.translator.zipkin.EmitV1HttpConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator emits http.response.status_code
       (semconv v1.40.0) instead of the deprecated http.status_code
@@ -68,7 +68,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
   - id: pkg.translator.zipkin.EmitV1ScopeConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator emits otel.scope.name and
       otel.scope.version (semconv v1.40.0) instead of the deprecated

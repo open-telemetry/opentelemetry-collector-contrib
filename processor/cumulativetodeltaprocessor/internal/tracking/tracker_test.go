@@ -411,6 +411,106 @@ func TestMetricTracker_ConvertExponentialHistogramResetRecovery(t *testing.T) {
 	assert.InDelta(t, 150.0, out.ExponentialHistogramPoint.Sum, 1e-9)
 }
 
+func TestMetricTracker_ConvertExponentialHistogramNaNSum(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exp_hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count: count,
+					Sum:   sum,
+					Scale: 0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: []uint64{count},
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	for _, tc := range []struct {
+		name          string
+		count         uint64
+		sum           float64
+		expectedCount uint64
+		expectedSum   float64
+	}{
+		{name: "initial point", count: 10, sum: 1000, expectedCount: 10, expectedSum: 1000},
+		{name: "NaN sum gives a zero delta sum", count: 20, sum: math.NaN(), expectedCount: 10, expectedSum: 0},
+		{name: "next sum is diffed against the sum before the NaN", count: 30, sum: 1200, expectedCount: 10, expectedSum: 200},
+		{name: "following sum is diffed as usual", count: 40, sum: 1300, expectedCount: 10, expectedSum: 100},
+	} {
+		out, valid, _ := m.Convert(point(tc.count, tc.sum))
+		require.True(t, valid, tc.name)
+		assert.Equal(t, tc.expectedCount, out.ExponentialHistogramPoint.Count, tc.name)
+		assert.InDelta(t, tc.expectedSum, out.ExponentialHistogramPoint.Sum, 1e-9, tc.name)
+	}
+}
+
+func TestMetricTracker_ConvertExponentialHistogramResetRecoveryNaNSum(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exp_hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count uint64, sum float64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count: count,
+					Sum:   sum,
+					Scale: 0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: []uint64{count},
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	m.Convert(point(100, 1000))
+	m.Convert(point(150, 1500))
+
+	// Reset frame omits Sum (NaN). It becomes the new baseline as-is.
+	_, valid, reason := m.Convert(point(10, math.NaN()))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// The baseline Sum is NaN, so there is nothing to diff against: the Sum delta is zero
+	// rather than the negative value a carried-forward pre-reset Sum would give.
+	out, valid, _ := m.Convert(point(25, 250))
+	require.True(t, valid)
+	assert.Equal(t, uint64(15), out.ExponentialHistogramPoint.Count)
+	assert.InDelta(t, 0.0, out.ExponentialHistogramPoint.Sum, 1e-9)
+
+	// The valid Sum is now the baseline, so the following delta is exact.
+	out, valid, _ = m.Convert(point(40, 400))
+	require.True(t, valid)
+	assert.InDelta(t, 150.0, out.ExponentialHistogramPoint.Sum, 1e-9)
+}
+
 func TestMetricTracker_ConvertHistogramResetRecoveryNaNSum(t *testing.T) {
 	miHist := MetricIdentity{
 		Resource:               pcommon.NewResource(),

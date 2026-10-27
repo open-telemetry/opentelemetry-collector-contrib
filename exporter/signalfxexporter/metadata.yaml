@@ -21,6 +21,9 @@ feature_gates:
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45595
 
+sending_queue:
+  support: default
+
 tests:
   config:
     access_token: "my_fake_token"

@@ -79,6 +79,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindTypeServer)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 3, AttributeBindTypeClient)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsBindRateDataPoint(ts+1, 3, AttributeBindTypeClient)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsBindRate.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -103,18 +106,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 3, AttributeOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsOperationRateDataPoint(ts+1, 3, AttributeOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsOperationRate.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirectionSent, AttributeNetworkDataTypeCompressed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 3, AttributeDirectionReceived, AttributeNetworkDataTypeUncompressed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts+1, 3, AttributeDirectionReceived, AttributeNetworkDataTypeUncompressed)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsReplicationNetworkIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 3, AttributeDirectionReceived)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts+1, 3, AttributeDirectionReceived)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsReplicationObjectRate.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -124,6 +136,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 3, AttributeDirectionReceived)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts+1, 3, AttributeDirectionReceived)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsReplicationPropertyRate.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -133,12 +148,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResultSuccess)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 3, AttributeSyncResultSchemaMismatch)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts+1, 3, AttributeSyncResultSchemaMismatch)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsReplicationSyncRequestCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistinguishedNames)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 3, AttributeDirectionReceived, AttributeValueTypeOther)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts+1, 3, AttributeDirectionReceived, AttributeValueTypeOther)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsReplicationValueRate.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -148,6 +169,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 3, AttributeSuboperationTypeSearch)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts+1, 3, AttributeSuboperationTypeSearch)
+				assert.Equal(t, 2, mb.metricActiveDirectoryDsSuboperationRate.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -213,7 +237,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.bind.rate"], "Found a duplicate in the metrics slice: active_directory.ds.bind.rate")
 						validatedMetrics["active_directory.ds.bind.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of binds per second serviced by this domain controller.", mi.Description())
 						assert.Equal(t, "{binds}/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -337,7 +363,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.operation.rate"], "Found a duplicate in the metrics slice: active_directory.ds.operation.rate")
 						validatedMetrics["active_directory.ds.operation.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations performed per second.", mi.Description())
 						assert.Equal(t, "{operations}/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -384,7 +412,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.network.io"], "Found a duplicate in the metrics slice: active_directory.ds.replication.network.io")
 						validatedMetrics["active_directory.ds.replication.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of network data transmitted by the Directory Replication Agent.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -430,7 +460,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.object.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.object.rate")
 						validatedMetrics["active_directory.ds.replication.object.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of objects transmitted by the Directory Replication Agent per second.", mi.Description())
 						assert.Equal(t, "{objects}/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -488,7 +520,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.property.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.property.rate")
 						validatedMetrics["active_directory.ds.replication.property.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of properties transmitted by the Directory Replication Agent per second.", mi.Description())
 						assert.Equal(t, "{properties}/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -546,7 +580,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.sync.request.count"], "Found a duplicate in the metrics slice: active_directory.ds.replication.sync.request.count")
 						validatedMetrics["active_directory.ds.replication.sync.request.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of sync requests made by the Directory Replication Agent.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -593,7 +629,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.value.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.value.rate")
 						validatedMetrics["active_directory.ds.replication.value.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of values transmitted by the Directory Replication Agent per second.", mi.Description())
 						assert.Equal(t, "{values}/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -653,7 +691,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["active_directory.ds.suboperation.rate"], "Found a duplicate in the metrics slice: active_directory.ds.suboperation.rate")
 						validatedMetrics["active_directory.ds.suboperation.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of sub-operations performed.", mi.Description())
 						assert.Equal(t, "{suboperations}/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

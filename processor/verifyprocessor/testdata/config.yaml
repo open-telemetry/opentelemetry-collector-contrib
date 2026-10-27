@@ -1,0 +1,62 @@
+# Verify processor — file-based HMAC key (minimal config).
+# mode, failure_mode, and verification_profile use their defaults
+# (sync, strict, default).
+verify:
+  key_source:
+    type: file
+    file:
+      hmac_key: /etc/otelcol/hmac.key
+
+# Asymmetric certificate verification with mark failure mode.
+verify/cert_mark:
+  mode: sync
+  failure_mode: mark
+  verification_profile: default
+  key_source:
+    type: file
+    file:
+      certificate: /etc/otelcol/cert.pem
+
+# Environment-variable key material (via Collector confmap ${env:} expansion).
+verify/env:
+  key_source:
+    type: env
+    env:
+      certificate: ${env:VERIFY_CERT_PEM}
+
+# Kubernetes Secret key material (values are keys within the Secret).
+verify/k8s:
+  key_source:
+    type: k8s_secret
+    k8s_secret:
+      name: verify-secret
+      namespace: default
+      hmac_key: hmac.key
+
+# OpenBao / Vault key material (KVv2 via OpenBao API v2).
+# mount_path defaults to "secret"; secret_path is relative to that mount.
+verify/bao:
+  key_source:
+    type: bao
+    bao:
+      address: https://bao.example.com
+      mount_path: secret
+      secret_path: verify
+      certificate: certificate
+
+# Dead-letter queue for verification failures.
+verify/dead_letter:
+  failure_mode: mark
+  key_source:
+    type: file
+    file:
+      hmac_key: /etc/otelcol/hmac.key
+  dead_letter:
+    enabled: true
+    storage: file_storage
+    key_prefix: audit_verify_dlq/
+    reasons:
+      - integrity_mismatch
+      - missing_integrity_value
+    partition_by_stream: true
+    fail_on_storage_error: true
