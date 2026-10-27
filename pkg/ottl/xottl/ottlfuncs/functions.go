@@ -19,7 +19,7 @@ func ExperimentalConverters[K any]() []ottl.Factory[K] {
 		NewMapEachFactory[K](),
 		NewMapKeysFactory[K](),
 		NewReduceFactory[K](),
-		NewSanitizeFactory[K](),
+		NewToValidUTF8Factory[K](),
 		NewWhenFactory[K](),
 	}
 }
