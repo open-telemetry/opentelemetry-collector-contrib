@@ -145,6 +145,10 @@ agent:
   # The maximum wait duration for retrieving bootstrapping information from the agent
   bootstrap_timeout: 3s
 
+  # How long the Supervisor waits for the Collector to exit after sending it the
+  # graceful shutdown signal before killing it forcibly. Must be positive.
+  stop_grace_period: 10s
+
   # Extra command line flags to pass to the Collector executable.
   args:
 

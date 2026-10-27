@@ -48,7 +48,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -397,6 +396,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
+	rw2Gate := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate
+	originalRW2Enabled := rw2Gate.IsEnabled()
+	t.Cleanup(func() {
+		assert.Equal(t, originalRW2Enabled, rw2Gate.IsEnabled(), "RW2 feature gate must be restored after the subtests")
+	})
+
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
@@ -566,11 +571,21 @@ func Test_PushMetrics(t *testing.T) {
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			name:               "exponential_histogram_no_sum_case",
-			metrics:            exponentialNoSumHistogramBatch,
-			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 1,
-			httpResponseCode:   http.StatusAccepted,
+			name:                       "exponential_histogram_no_sum_case",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+		},
+		{
+			name:                       "exponential_histogram_no_sum_case_rw2",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+			enableSendingRW2:           true,
 		},
 		{
 			name:               "histogram_case",
@@ -730,7 +745,10 @@ func Test_PushMetrics(t *testing.T) {
 					t.Skip("test not supported when using WAL")
 				}
 				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
+					// RW2 cases mutate a global feature gate and must run serially.
+					if !tt.enableSendingRW2 {
+						t.Parallel()
+					}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker, tt.enableSendingRW2)
@@ -1020,40 +1038,24 @@ func Test_validateAndSanitizeExternalLabels_TranslationStrategy(t *testing.T) {
 	}
 }
 
-func Test_validateAndSanitizeExternalLabels_DropSanitizationGate(t *testing.T) {
-	t.Run("gate enabled preserves multiple underscores and leading underscore", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, true)()
+func Test_validateAndSanitizeExternalLabelsPreservesUnderscores(t *testing.T) {
+	for _, strategy := range []translationStrategy{"", underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation} {
+		t.Run(string(strategy), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = strategy
+			cfg.ExternalLabels = map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}
 
-		cfg := createDefaultConfig().(*Config)
-		cfg.ExternalLabels = map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}
-
-		newLabels, err := validateAndSanitizeExternalLabels(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}, newLabels)
-	})
-
-	t.Run("gate disabled collapses multiple underscores and sanitizes leading underscore", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, false)()
-
-		cfg := createDefaultConfig().(*Config)
-		cfg.ExternalLabels = map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}
-
-		newLabels, err := validateAndSanitizeExternalLabels(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{
-			"app_component":    "backend",
-			"key_custom_label": "val",
-		}, newLabels)
-	})
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}, newLabels)
+		})
+	}
 }
 
 // Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,
