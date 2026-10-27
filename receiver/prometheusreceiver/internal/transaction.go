@@ -8,7 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"weak"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -30,6 +34,163 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
+
+const (
+	minSeriesCacheSets = 64
+	maxSeriesCacheSets = 16384
+	seriesCacheWays    = 4
+)
+
+// seriesCacheEntry caches the label-derived metadata and OTel attribute map for
+// a single Prometheus series across scrapes of the same target. All fields
+// except attrs are immutable once published to seriesCache; attrs is populated
+// lazily via atomic.Pointer on the first Commit().
+type seriesCacheEntry struct {
+	hash           uint64
+	ls             labels.Labels
+	externalLabels labels.Labels
+	mergedLS       labels.Labels
+	returnRef      storage.SeriesRef
+	rKey           resourceKey
+	metricName     string
+	scope          scopeID
+	scopeAttrs     pcommon.Map
+	hasScopeLabels bool
+	mtype          pmetric.MetricType
+	seriesRef      uint64
+	boundary       float64
+	boundaryErr    error
+	hasBoundary    bool
+	attrs          atomic.Pointer[pcommon.Map]
+}
+
+type seriesCacheTable struct {
+	mask uint64
+	sets [][seriesCacheWays]atomic.Pointer[seriesCacheEntry]
+}
+
+func newSeriesCacheTable(numSets int) *seriesCacheTable {
+	return &seriesCacheTable{
+		mask: uint64(numSets - 1),
+		sets: make([][seriesCacheWays]atomic.Pointer[seriesCacheEntry], numSets),
+	}
+}
+
+// NOTE: Once all ways in a set are occupied, do not evict existing entries.
+// Targets expose series in a consistent order across scrapes, so evicting when
+// a target's series count exceeds the cache capacity causes cyclic thrashing
+// where every sample misses and reallocates on every scrape. Keeping the first
+// seriesCacheWays entries pinned preserves a 100% hit rate for cached series
+// while excess series bypass cache admission with zero eviction overhead.
+func storeInSeriesCacheSet(set *[seriesCacheWays]atomic.Pointer[seriesCacheEntry], entry *seriesCacheEntry) bool {
+	for i := range seriesCacheWays {
+		if set[i].Load() == nil {
+			set[i].Store(entry)
+			return true
+		}
+	}
+	return false
+}
+
+// seriesCache is a per-target lock-free 4-way set-associative cache of series
+// metadata and OTel attribute maps. The underlying set table starts at
+// minSeriesCacheSets (2 KiB) and grows up to maxSeriesCacheSets as the target's
+// series count increases.
+type seriesCache struct {
+	table             atomic.Pointer[seriesCacheTable]
+	count             atomic.Int32
+	lastFamilyCount   atomic.Int32
+	lastGroupCount    atomic.Int32
+	lastExemplarCount atomic.Int32
+}
+
+func (c *seriesCache) lookup(hash uint64, ls, externalLabels labels.Labels) (*seriesCacheEntry, bool) {
+	t := c.table.Load()
+	if t == nil {
+		return nil, true
+	}
+	set := &t.sets[hash&t.mask]
+	for i := range seriesCacheWays {
+		e := set[i].Load()
+		if e == nil {
+			return nil, true
+		}
+		if e.hash == hash && labels.Equal(e.ls, ls) && labels.Equal(e.externalLabels, externalLabels) {
+			return e, true
+		}
+	}
+	return nil, int(c.count.Load())+1 > len(t.sets)*(seriesCacheWays/2) && len(t.sets) < maxSeriesCacheSets
+}
+
+func (c *seriesCache) put(entry *seriesCacheEntry) bool {
+	t := c.table.Load()
+	if t == nil {
+		newT := newSeriesCacheTable(minSeriesCacheSets)
+		if c.table.CompareAndSwap(nil, newT) {
+			t = newT
+		} else {
+			t = c.table.Load()
+		}
+	}
+	set := &t.sets[entry.hash&t.mask]
+	for i := range seriesCacheWays {
+		e := set[i].Load()
+		if e == nil {
+			break
+		}
+		if e.hash == entry.hash && labels.Equal(e.ls, entry.ls) && labels.Equal(e.externalLabels, entry.externalLabels) {
+			set[i].Store(entry)
+			return true
+		}
+	}
+	if int(c.count.Load())+1 > len(t.sets)*(seriesCacheWays/2) && len(t.sets) < maxSeriesCacheSets {
+		t = c.grow(t)
+		set = &t.sets[entry.hash&t.mask]
+	}
+	if storeInSeriesCacheSet(set, entry) {
+		c.count.Add(1)
+		return true
+	}
+	return false
+}
+
+func (c *seriesCache) grow(oldT *seriesCacheTable) *seriesCacheTable {
+	nextSets := min(len(oldT.sets)*4, maxSeriesCacheSets)
+	newT := newSeriesCacheTable(nextSets)
+	for i := range oldT.sets {
+		for w := range seriesCacheWays {
+			e := oldT.sets[i][w].Load()
+			if e == nil {
+				break
+			}
+			storeInSeriesCacheSet(&newT.sets[e.hash&newT.mask], e)
+		}
+	}
+	if c.table.CompareAndSwap(oldT, newT) {
+		return newT
+	}
+	return c.table.Load()
+}
+
+var targetSeriesCaches sync.Map // map[weak.Pointer[scrape.Target]]*seriesCache
+
+func getTargetSeriesCache(target *scrape.Target) *seriesCache {
+	if target == nil {
+		return nil
+	}
+	wp := weak.Make(target)
+	if v, ok := targetSeriesCaches.Load(wp); ok {
+		return v.(*seriesCache)
+	}
+	sc := &seriesCache{}
+	actual, loaded := targetSeriesCaches.LoadOrStore(wp, sc)
+	if !loaded {
+		runtime.AddCleanup(target, func(key weak.Pointer[scrape.Target]) {
+			targetSeriesCaches.Delete(key)
+		}, wp)
+	}
+	return actual.(*seriesCache)
+}
 
 type resourceKey struct {
 	job      string
@@ -62,20 +223,24 @@ type transaction struct {
 	buildInfo             component.BuildInfo
 	obsrecv               *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
-	bufBytes         []byte
-	mfSlab           []metricFamily
-	mgSlab           []metricGroup
-	exemplarSlab     []exemplar.Exemplar
-	familyAllocCount int
-	groupAllocCount  int
-	lastRKey         resourceKey
-	lastScope        scopeID
-	lastMetricName   string
-	lastMFIsExpHist  bool
-	lastMFIsNHCB     bool
-	lastMF           *metricFamily
-	lastScopeMap     map[metricFamilyKey]*metricFamily
-	hasLastScopeMap  bool
+	bufBytes          []byte
+	seriesCache       *seriesCache
+	mfSlab            []metricFamily
+	mgSlab            []metricGroup
+	exemplarSlab      []exemplar.Exemplar
+	prevFamilyCount   int
+	prevGroupCount    int
+	prevExemplarCount int
+	familyAllocCount  int
+	groupAllocCount   int
+	lastRKey          resourceKey
+	lastScope         scopeID
+	lastMetricName    string
+	lastMFIsExpHist   bool
+	lastMFIsNHCB      bool
+	lastMF            *metricFamily
+	lastScopeMap      map[metricFamilyKey]*metricFamily
+	hasLastScopeMap   bool
 }
 
 var emptyScopeID scopeID
@@ -114,7 +279,9 @@ func newTransaction(
 func (t *transaction) allocMetricFamily(metricName, familyName string, metadata scrape.MetricMetadata) *metricFamily {
 	if len(t.mfSlab) == cap(t.mfSlab) {
 		nextCap := 16
-		if cap(t.mfSlab) > 0 {
+		if remaining := t.prevFamilyCount - t.familyAllocCount; remaining > 0 {
+			nextCap = min(max(remaining, 16), 1024)
+		} else if cap(t.mfSlab) > 0 {
 			nextCap = min(cap(t.mfSlab)*2, 1024)
 		}
 		t.mfSlab = make([]metricFamily, 0, nextCap)
@@ -131,7 +298,9 @@ func (t *transaction) allocMetricFamily(metricName, familyName string, metadata 
 func (t *transaction) allocMetricGroup() *metricGroup {
 	if len(t.mgSlab) == cap(t.mgSlab) {
 		nextCap := 16
-		if cap(t.mgSlab) > 0 {
+		if remaining := t.prevGroupCount - t.groupAllocCount; remaining > 0 {
+			nextCap = min(max(remaining, 16), 1024)
+		} else if cap(t.mgSlab) > 0 {
 			nextCap = min(cap(t.mgSlab)*2, 1024)
 		}
 		t.mgSlab = make([]metricGroup, 0, nextCap)
@@ -144,7 +313,8 @@ func (t *transaction) allocMetricGroup() *metricGroup {
 
 func (t *transaction) appendExemplarToGroup(mg *metricGroup, e exemplar.Exemplar) {
 	if t.exemplarSlab == nil {
-		t.exemplarSlab = make([]exemplar.Exemplar, 0, 64)
+		capHint := max(t.prevExemplarCount, 64)
+		t.exemplarSlab = make([]exemplar.Exemplar, 0, capHint)
 	}
 	switch {
 	case mg.exemplarLen == 0:
@@ -168,19 +338,19 @@ func (t *transaction) append(ls labels.Labels, atMs int64, val float64) (storage
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
 
-	ls, rKey, metricName, err := t.prepareLabels(ls)
+	origLS, ls, rKey, metricName, inputHash, ce, canInsert, err := t.prepareLabelsWithCache(0, ls)
 	if err != nil {
 		return 0, err
 	}
 
-	sRef, _, _ := t.addSampleDatapoint(rKey, ls, metricName, atMs, val, 0)
+	sRef, _, _ := t.addSampleDatapoint(rKey, origLS, ls, metricName, inputHash, ce, canInsert, atMs, val, 0)
 	return sRef, nil
 }
 
 // addSampleDatapoint processes one scraped sample and stores it in the
 // appropriate metric family for the resource/scope context. It is shared by
 // both V1 and V2 appender paths.
-func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
+func (t *transaction) addSampleDatapoint(rKey resourceKey, origLS, ls labels.Labels, metricName string, inputHash uint64, ce *seriesCacheEntry, canInsert bool, atMs int64, val float64, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
 	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 	// But it can also be a staleNaN, which is inserted when the target goes away.
@@ -214,7 +384,16 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 		return 0, nil, 0
 	}
 
-	parsedScope, attrs, hasScopeLabels := getScopeID(ls)
+	var parsedScope scopeID
+	var attrs pcommon.Map
+	var hasScopeLabels bool
+	if ce != nil {
+		parsedScope = ce.scope
+		attrs = ce.scopeAttrs
+		hasScopeLabels = ce.hasScopeLabels
+	} else {
+		parsedScope, attrs, hasScopeLabels = getScopeID(ls)
+	}
 	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
 
 	if value.IsStaleNaN(val) {
@@ -224,13 +403,53 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	}
 
 	curMF := t.getOrCreateMetricFamily(rKey, parsedScope, metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
+	var seriesRef uint64
+	if ce != nil && ce.mtype == curMF.mtype {
+		seriesRef = ce.seriesRef
+	} else {
+		seriesRef = t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
+		if t.seriesCache != nil && canInsert {
+			returnRef := storage.SeriesRef(inputHash)
+			if !t.externalLabels.IsEmpty() || returnRef == 0 {
+				returnRef = storage.SeriesRef(ls.Hash())
+			}
+			var boundary float64
+			var boundaryErr error
+			var hasBoundary bool
+			if curMF.mtype == pmetric.MetricTypeHistogram || curMF.mtype == pmetric.MetricTypeSummary {
+				boundary, boundaryErr = getBoundary(curMF.mtype, ls)
+				hasBoundary = true
+			}
+			ce = &seriesCacheEntry{
+				hash:           inputHash,
+				ls:             origLS,
+				externalLabels: t.externalLabels,
+				mergedLS:       ls,
+				returnRef:      returnRef,
+				rKey:           rKey,
+				metricName:     metricName,
+				scope:          parsedScope,
+				scopeAttrs:     attrs,
+				hasScopeLabels: hasScopeLabels,
+				mtype:          curMF.mtype,
+				seriesRef:      seriesRef,
+				boundary:       boundary,
+				boundaryErr:    boundaryErr,
+				hasBoundary:    hasBoundary,
+			}
+			if !t.seriesCache.put(ce) {
+				ce = nil
+			}
+		} else {
+			ce = nil
+		}
+	}
 
 	if stMs != 0 {
 		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 	}
 
-	err := curMF.addSeries(seriesRef, metricName, ls, atMs, val)
+	err := curMF.addSeriesCached(seriesRef, metricName, ls, atMs, val, ce)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 		// never return errors, as that fails the whole scrape
@@ -240,6 +459,12 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 
 	// never return errors, as that fails the whole scrape
 	// return a stable ref so Prometheus can track series staleness
+	if ce != nil {
+		return ce.returnRef, curMF, seriesRef
+	}
+	if t.externalLabels.IsEmpty() && inputHash != 0 {
+		return storage.SeriesRef(inputHash), curMF, seriesRef
+	}
 	return storage.SeriesRef(ls.Hash()), curMF, seriesRef
 }
 
@@ -298,7 +523,8 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		}
 		scopeMap, ok = rMap[scope]
 		if !ok {
-			scopeMap = make(map[metricFamilyKey]*metricFamily, 16)
+			hint := max(t.prevFamilyCount, 16)
+			scopeMap = make(map[metricFamilyKey]*metricFamily, hint)
 			rMap[scope] = scopeMap
 		}
 		t.lastRKey = key
@@ -375,7 +601,7 @@ func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram
 	t.addingNativeHistogram = true
 	t.addingNHCB = schema == -53
 
-	ls, rKey, metricName, err := t.prepareLabels(ls)
+	origLS, ls, rKey, metricName, inputHash, ce, canInsert, err := t.prepareLabelsWithCache(0, ls)
 	if err != nil {
 		return 0, err
 	}
@@ -383,19 +609,58 @@ func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	sRef, _, _ := t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, 0)
+	sRef, _, _ := t.addHistogramDatapoint(rKey, origLS, ls, metricName, inputHash, ce, canInsert, atMs, h, fh, schema, 0)
 	return sRef, nil
 }
 
 // addHistogramDatapoint adds a native histogram or NHCB datapoint to the appropriate metric family.
 // When stMs != 0, it also records a creation timestamp on the metric family.
 // It is shared by both V1 and V2 appender paths.
-func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
-	parsedScope, attrs, hasScopeLabels := getScopeID(ls)
+func (t *transaction) addHistogramDatapoint(rKey resourceKey, origLS, ls labels.Labels, metricName string, inputHash uint64, ce *seriesCacheEntry, canInsert bool, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
+	var parsedScope scopeID
+	var attrs pcommon.Map
+	var hasScopeLabels bool
+	if ce != nil {
+		parsedScope = ce.scope
+		attrs = ce.scopeAttrs
+		hasScopeLabels = ce.hasScopeLabels
+	} else {
+		parsedScope, attrs, hasScopeLabels = getScopeID(ls)
+	}
 	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
 
 	curMF := t.getOrCreateMetricFamily(rKey, parsedScope, metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
+	var seriesRef uint64
+	if ce != nil && ce.mtype == curMF.mtype {
+		seriesRef = ce.seriesRef
+	} else {
+		seriesRef = t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
+		if t.seriesCache != nil && canInsert {
+			returnRef := storage.SeriesRef(inputHash)
+			if !t.externalLabels.IsEmpty() || returnRef == 0 {
+				returnRef = storage.SeriesRef(ls.Hash())
+			}
+			ce = &seriesCacheEntry{
+				hash:           inputHash,
+				ls:             origLS,
+				externalLabels: t.externalLabels,
+				mergedLS:       ls,
+				returnRef:      returnRef,
+				rKey:           rKey,
+				metricName:     metricName,
+				scope:          parsedScope,
+				scopeAttrs:     attrs,
+				hasScopeLabels: hasScopeLabels,
+				mtype:          curMF.mtype,
+				seriesRef:      seriesRef,
+			}
+			if !t.seriesCache.put(ce) {
+				ce = nil
+			}
+		} else {
+			ce = nil
+		}
+	}
 
 	if stMs != 0 {
 		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
@@ -407,9 +672,9 @@ func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, 
 
 	var err error
 	if schema == histogram.CustomBucketsSchema {
-		err = curMF.addNHCBSeries(seriesRef, metricName, ls, atMs, h, fh)
+		err = curMF.addNHCBSeriesCached(seriesRef, metricName, ls, atMs, h, fh, ce)
 	} else {
-		err = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, h, fh)
+		err = curMF.addExponentialHistogramSeriesCached(seriesRef, metricName, ls, atMs, h, fh, ce)
 	}
 	if err != nil {
 		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
@@ -420,6 +685,12 @@ func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, 
 
 	// never return errors, as that fails the whole scrape
 	// return a stable ref so Prometheus can track series staleness
+	if ce != nil {
+		return ce.returnRef, curMF, seriesRef
+	}
+	if t.externalLabels.IsEmpty() && inputHash != 0 {
+		return storage.SeriesRef(inputHash), curMF, seriesRef
+	}
 	return storage.SeriesRef(ls.Hash()), curMF, seriesRef
 }
 
@@ -441,16 +712,45 @@ func (t *transaction) appendHistogramSTZeroSample(ls labels.Labels, atMs, stMs i
 	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-// prepareLabels merges external labels, initializes the transaction, validates
-// labels and extracts the metric name. It is shared by both V1 and V2 appender paths.
-func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, resourceKey, string, error) {
+func (t *transaction) prepareLabelsWithCache(ref storage.SeriesRef, ls labels.Labels) (labels.Labels, labels.Labels, resourceKey, string, uint64, *seriesCacheEntry, bool, error) {
 	select {
 	case <-t.ctx.Done():
-		return labels.EmptyLabels(), resourceKey{}, "", errTransactionAborted
+		return labels.EmptyLabels(), labels.EmptyLabels(), resourceKey{}, "", 0, nil, false, errTransactionAborted
 	default:
 	}
 
-	if t.externalLabels.Len() != 0 {
+	origLS := ls
+	var inputHash uint64
+	hashFromRef := false
+	if ref != 0 && t.externalLabels.IsEmpty() {
+		inputHash = uint64(ref)
+		hashFromRef = true
+	} else if t.seriesCache != nil || t.externalLabels.IsEmpty() {
+		inputHash = origLS.Hash()
+	}
+
+	var ce *seriesCacheEntry
+	canInsert := true
+	if !t.isNew && t.seriesCache != nil {
+		ce, canInsert = t.seriesCache.lookup(inputHash, origLS, t.externalLabels)
+		if ce == nil && hashFromRef && canInsert {
+			inputHash = origLS.Hash()
+			hashFromRef = false
+			ce, canInsert = t.seriesCache.lookup(inputHash, origLS, t.externalLabels)
+		}
+		if ce != nil {
+			if ce.rKey == t.lastRKey {
+				return origLS, ce.mergedLS, ce.rKey, ce.metricName, inputHash, ce, true, nil
+			}
+			if _, ok := t.nodeResources[ce.rKey]; ok {
+				return origLS, ce.mergedLS, ce.rKey, ce.metricName, inputHash, ce, true, nil
+			}
+		}
+	}
+
+	if ce != nil {
+		ls = ce.mergedLS
+	} else if !t.externalLabels.IsEmpty() {
 		b := labels.NewBuilder(ls)
 		t.externalLabels.Range(func(l labels.Label) {
 			b.Set(l.Name, l.Value)
@@ -458,9 +758,29 @@ func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, resourceKe
 		ls = b.Labels()
 	}
 
+	wasNew := t.isNew
 	rKey, err := t.initTransaction(ls)
 	if err != nil {
-		return labels.EmptyLabels(), resourceKey{}, "", err
+		return labels.EmptyLabels(), labels.EmptyLabels(), resourceKey{}, "", 0, nil, false, err
+	}
+
+	if wasNew && t.seriesCache != nil {
+		if inputHash == 0 {
+			inputHash = origLS.Hash()
+			hashFromRef = false
+		}
+		ce, canInsert = t.seriesCache.lookup(inputHash, origLS, t.externalLabels)
+		if ce == nil && hashFromRef && canInsert {
+			inputHash = origLS.Hash()
+			hashFromRef = false
+			ce, canInsert = t.seriesCache.lookup(inputHash, origLS, t.externalLabels)
+		}
+	}
+	if ce != nil && ce.rKey == rKey {
+		return origLS, ce.mergedLS, ce.rKey, ce.metricName, inputHash, ce, true, nil
+	}
+	if hashFromRef && canInsert {
+		inputHash = origLS.Hash()
 	}
 
 	// Any datapoint with duplicate labels MUST be rejected per:
@@ -468,15 +788,22 @@ func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, resourceKe
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
 	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
-		return labels.EmptyLabels(), resourceKey{}, "", fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+		return labels.EmptyLabels(), labels.EmptyLabels(), resourceKey{}, "", 0, nil, false, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
 	}
 
 	metricName := ls.Get(model.MetricNameLabel)
 	if metricName == "" {
-		return labels.EmptyLabels(), resourceKey{}, "", errMetricNameNotFound
+		return labels.EmptyLabels(), labels.EmptyLabels(), resourceKey{}, "", 0, nil, false, errMetricNameNotFound
 	}
 
-	return ls, rKey, metricName, nil
+	return origLS, ls, rKey, metricName, inputHash, nil, canInsert, nil
+}
+
+// prepareLabels merges external labels, initializes the transaction, validates
+// labels and extracts the metric name. It is shared by both V1 and V2 appender paths.
+func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, resourceKey, string, error) {
+	_, mergedLS, rKey, metricName, _, _, _, err := t.prepareLabelsWithCache(0, ls)
+	return mergedLS, rKey, metricName, err
 }
 
 func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
@@ -655,6 +982,14 @@ func (t *transaction) initTransaction(lbs labels.Labels) (resourceKey, error) {
 		t.mc = emptyMetadataStoreInstance
 	}
 
+	if t.seriesCache == nil {
+		t.seriesCache = getTargetSeriesCache(target)
+	}
+	if t.seriesCache != nil && t.isNew {
+		t.prevFamilyCount = int(t.seriesCache.lastFamilyCount.Load())
+		t.prevGroupCount = int(t.seriesCache.lastGroupCount.Load())
+		t.prevExemplarCount = int(t.seriesCache.lastExemplarCount.Load())
+	}
 	t.nodeResources[rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
 
 	t.isNew = false
@@ -696,6 +1031,11 @@ func (t *transaction) getJobAndInstance(labels labels.Labels) (resourceKey, erro
 func (t *transaction) Commit() error {
 	if t.isNew {
 		return nil
+	}
+	if t.seriesCache != nil {
+		t.seriesCache.lastFamilyCount.Store(int32(t.familyAllocCount))
+		t.seriesCache.lastGroupCount.Store(int32(t.groupAllocCount))
+		t.seriesCache.lastExemplarCount.Store(int32(len(t.exemplarSlab)))
 	}
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
@@ -743,10 +1083,10 @@ func getSeriesRefWithoutScopeLabels(bytes []byte, ls labels.Labels, mtype pmetri
 }
 
 // Append implements storage.AppenderV2.
-func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs int64, val float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) (storage.SeriesRef, error) {
+func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, stMs, atMs int64, val float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) (storage.SeriesRef, error) {
 	isHistogram := h != nil || fh != nil
 
-	ls, rKey, metricName, err := t.prepareLabels(ls)
+	origLS, ls, rKey, metricName, inputHash, ce, canInsert, err := t.prepareLabelsWithCache(ref, ls)
 	if err != nil {
 		return 0, err
 	}
@@ -765,12 +1105,12 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs i
 		t.addingNativeHistogram = true
 		t.addingNHCB = schema == histogram.CustomBucketsSchema
 
-		sRef, curMF, seriesRef = t.addHistogramDatapoint(rKey, ls, metricName, atMs, h, fh, schema, stMs)
+		sRef, curMF, seriesRef = t.addHistogramDatapoint(rKey, origLS, ls, metricName, inputHash, ce, canInsert, atMs, h, fh, schema, stMs)
 	} else {
 		t.addingNativeHistogram = false
 		t.addingNHCB = false
 
-		sRef, curMF, seriesRef = t.addSampleDatapoint(rKey, ls, metricName, atMs, val, stMs)
+		sRef, curMF, seriesRef = t.addSampleDatapoint(rKey, origLS, ls, metricName, inputHash, ce, canInsert, atMs, val, stMs)
 	}
 
 	if len(opts.Exemplars) > 0 && curMF != nil && curMF.mtype != pmetric.MetricTypeSummary {

@@ -1666,4 +1666,3 @@ func TestMetricFamilyMultiGroupAndInterleavedExemplars(t *testing.T) {
 	nhcbMF := newMetricFamily("histogram", mc, zap.NewNop(), true, true)
 	require.Equal(t, pmetric.MetricTypeHistogram, nhcbMF.mtype)
 }
-

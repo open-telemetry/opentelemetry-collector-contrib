@@ -45,6 +45,7 @@ type metricFamily struct {
 type metricGroup struct {
 	ts    int64
 	ls    labels.Labels
+	ce    *seriesCacheEntry
 	count float64
 	sum   float64
 	// This corresponds to the `_created` sample found from the metric parsing.
@@ -223,7 +224,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	mg.populatePointAttributes(pmetric.MetricTypeHistogram, point.Attributes())
 }
 
 // toExponentialHistogramDataPoints is based on
@@ -297,7 +298,7 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	mg.populatePointAttributes(pmetric.MetricTypeHistogram, point.Attributes())
 }
 
 func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon.UInt64Slice) {
@@ -449,7 +450,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	if mg.createdSeconds != 0 {
 		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
-	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
+	mg.populatePointAttributes(pmetric.MetricTypeSummary, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
@@ -470,7 +471,22 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	} else {
 		point.SetDoubleValue(mg.value)
 	}
-	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
+	mg.populatePointAttributes(pmetric.MetricTypeGauge, point.Attributes())
+}
+
+func (mg *metricGroup) populatePointAttributes(mType pmetric.MetricType, dest pcommon.Map) {
+	if mg.ce != nil {
+		if cached := mg.ce.attrs.Load(); cached != nil {
+			cached.CopyTo(dest)
+			return
+		}
+		populateAttributes(mType, mg.ls, dest)
+		m := pcommon.NewMap()
+		dest.CopyTo(m)
+		mg.ce.attrs.Store(&m)
+		return
+	}
+	populateAttributes(mType, mg.ls, dest)
 }
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
@@ -599,7 +615,14 @@ func (mf *metricFamily) getGroup(groupKey uint64) *metricGroup {
 }
 
 func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, v float64) error {
+	return mf.addSeriesCached(seriesRef, metricName, ls, t, v, nil)
+}
+
+func (mf *metricFamily) addSeriesCached(seriesRef uint64, metricName string, ls labels.Labels, t int64, v float64, ce *seriesCacheEntry) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ce == nil && ce != nil {
+		mg.ce = ce
+	}
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
@@ -617,7 +640,13 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 		case isCreatedMetric(metricName, mf.metadata.MetricFamily):
 			mg.createdSeconds = v
 		default:
-			boundary, err := getBoundary(mf.mtype, ls)
+			var boundary float64
+			var err error
+			if ce != nil && ce.hasBoundary {
+				boundary, err = ce.boundary, ce.boundaryErr
+			} else {
+				boundary, err = getBoundary(mf.mtype, ls)
+			}
 			if err != nil {
 				return err
 			}
@@ -656,7 +685,14 @@ func (mf *metricFamily) addCreationTimestamp(seriesRef uint64, ls labels.Labels,
 }
 
 func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	return mf.addExponentialHistogramSeriesCached(seriesRef, metricName, ls, t, h, fh, nil)
+}
+
+func (mf *metricFamily) addExponentialHistogramSeriesCached(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram, ce *seriesCacheEntry) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ce == nil && ce != nil {
+		mg.ce = ce
+	}
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
@@ -688,7 +724,14 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 
 // addNHCBSeries adds a Native Histogram Custom Buckets (NHCB) series to the metric family.
 func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	return mf.addNHCBSeriesCached(seriesRef, metricName, ls, t, h, fh, nil)
+}
+
+func (mf *metricFamily) addNHCBSeriesCached(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram, ce *seriesCacheEntry) error {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ce == nil && ce != nil {
+		mg.ce = ce
+	}
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}

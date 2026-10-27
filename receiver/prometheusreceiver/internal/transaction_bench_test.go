@@ -194,26 +194,29 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 // without stopping the timer, providing a fair end-to-end comparison of memory and CPU performance.
 func BenchmarkE2ETransaction(b *testing.B) {
 	b.Run("ClassicMetrics", func(b *testing.B) {
-		benchmarkE2E(b, false, 0)
+		benchmarkE2E(b, numSeries, 50, false, 0)
 	})
 	b.Run("ClassicMetrics/MultiSeries", func(b *testing.B) {
-		benchmarkE2E(b, false, 100)
+		benchmarkE2E(b, numSeries, 50, false, 100)
+	})
+	b.Run("ClassicMetrics/HighCardinality", func(b *testing.B) {
+		benchmarkE2E(b, 100000, 10, false, 100)
 	})
 	b.Run("NativeHistogram", func(b *testing.B) {
-		benchmarkE2E(b, true, 0)
+		benchmarkE2E(b, numSeries, 50, true, 0)
 	})
 }
 
-func benchmarkE2E(b *testing.B, useNativeHistograms bool, numFamilies int) {
+func benchmarkE2E(b *testing.B, seriesCount, cardinality int, useNativeHistograms bool, numFamilies int) {
 	var labelSets []labels.Labels
 	if numFamilies > 0 {
-		labelSets = generateMultiSeriesLabelSets(numSeries, 50, numFamilies)
+		labelSets = generateMultiSeriesLabelSets(seriesCount, cardinality, numFamilies)
 	} else {
-		labelSets = generateLabelSets(numSeries, 50)
+		labelSets = generateLabelSets(seriesCount, cardinality)
 	}
 	var histograms []*histogram.Histogram
 	if useNativeHistograms {
-		histograms = generateNativeHistograms(numSeries)
+		histograms = generateNativeHistograms(seriesCount)
 	}
 	timestamp := int64(1234567890)
 
