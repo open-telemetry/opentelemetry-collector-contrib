@@ -200,7 +200,7 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 func (l *logsReceiver) startCollecting(ctx context.Context) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.pollCancel != nil {
+	if l.pollCancel != nil || ctx.Err() != nil {
 		return
 	}
 
