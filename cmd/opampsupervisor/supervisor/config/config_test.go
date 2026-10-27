@@ -708,6 +708,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					Package: AgentPackage{
 						Verifier: Verifier{
 							Type: VerifierTypeCosign,
@@ -739,6 +740,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					Package: AgentPackage{
 						Verifier: Verifier{Type: VerifierTypeCosign},
 					},
@@ -761,6 +763,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					Package: AgentPackage{
 						Verifier: Verifier{
 							Type: VerifierTypeCosign,
