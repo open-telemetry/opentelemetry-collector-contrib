@@ -192,28 +192,35 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 
 // BenchmarkE2ETransaction benchmarks the entire lifecycle of a transaction (new, Append, Commit)
 // without stopping the timer, providing a fair end-to-end comparison of memory and CPU performance.
+//
+// Recommended CLI invocation:
+//
+//	go test ./internal -run '^$' -bench '^BenchmarkE2ETransaction$' -benchtime 1s -count 6 -cpu 2 -timeout 999m -benchmem | tee ${bench}.txt
 func BenchmarkE2ETransaction(b *testing.B) {
 	b.Run("ClassicMetrics", func(b *testing.B) {
-		benchmarkE2E(b, false, 0)
+		benchmarkE2E(b, numSeries, 50, false, 0)
 	})
 	b.Run("ClassicMetrics/MultiSeries", func(b *testing.B) {
-		benchmarkE2E(b, false, 100)
+		benchmarkE2E(b, numSeries, 50, false, 100)
+	})
+	b.Run("ClassicMetrics/HighCardinality", func(b *testing.B) {
+		benchmarkE2E(b, 100000, 10, false, 1000)
 	})
 	b.Run("NativeHistogram", func(b *testing.B) {
-		benchmarkE2E(b, true, 0)
+		benchmarkE2E(b, numSeries, 50, true, 0)
 	})
 }
 
-func benchmarkE2E(b *testing.B, useNativeHistograms bool, numFamilies int) {
+func benchmarkE2E(b *testing.B, seriesCount, cardinality int, useNativeHistograms bool, numFamilies int) {
 	var labelSets []labels.Labels
 	if numFamilies > 0 {
-		labelSets = generateMultiSeriesLabelSets(numSeries, 50, numFamilies)
+		labelSets = generateMultiSeriesLabelSets(seriesCount, cardinality, numFamilies)
 	} else {
-		labelSets = generateLabelSets(numSeries, 50)
+		labelSets = generateLabelSets(seriesCount, cardinality)
 	}
 	var histograms []*histogram.Histogram
 	if useNativeHistograms {
-		histograms = generateNativeHistograms(numSeries)
+		histograms = generateNativeHistograms(seriesCount)
 	}
 	timestamp := int64(1234567890)
 
@@ -371,6 +378,10 @@ type benchPayload struct {
 // a 1,000-series metrics payload without network calls using Prometheus Protobuf format
 // (representing grouped wire formats such as Protobuf and OpenMetrics 2.0) as well as
 // Prometheus text format (text/plain; version=0.0.4) for ungrouped multi-line classic histograms.
+//
+// Recommended CLI invocation:
+//
+//	go test ./internal -run '^$' -bench '^BenchmarkScrapePayload$' -benchtime 1s -count 6 -cpu 2 -timeout 999m -benchmem | tee ${bench}.txt
 func BenchmarkScrapePayload(b *testing.B) {
 	b.Run("Counter", func(b *testing.B) {
 		// 1,000 counters in Protobuf format
@@ -833,17 +844,69 @@ func BenchmarkPopulateAttributes(b *testing.B) {
 	}
 }
 
+// Recommended CLI invocation:
+//
+//	go test ./internal -run '^$' -bench '^BenchmarkConvertExemplar$' -benchtime 1s -count 6 -cpu 2 -timeout 999m -benchmem | tee ${bench}.txt
 func BenchmarkConvertExemplar(b *testing.B) {
-	pe := exemplar.Exemplar{
-		Labels: labels.FromStrings("trace_id", "0102030405060708090a0b0c0d0e0f10", "span_id", "0102030405060708"),
-		Value:  1.0,
-		Ts:     1700000000000,
+	for _, tc := range []struct {
+		name   string
+		labels labels.Labels
+	}{
+		{
+			name:   "case=lowercase",
+			labels: labels.FromStrings("trace_id", "0102030405060708090a0b0c0d0e0f10", "span_id", "0102030405060708"),
+		},
+		{
+			name:   "case=mixed_case",
+			labels: labels.FromStrings("Trace_ID", "0102030405060708090A0B0C0D0E0F10", "SPAN_ID", "0102030405060708"),
+		},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			pe := exemplar.Exemplar{
+				Labels: tc.labels,
+				Value:  1.0,
+				Ts:     1700000000000,
+			}
+			ex := pmetric.NewExemplar()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				ex.FilteredAttributes().Clear()
+				convertExemplar(pe, ex)
+			}
+		})
 	}
-	ex := pmetric.NewExemplar()
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		ex.FilteredAttributes().Clear()
-		convertExemplar(pe, ex)
+}
+
+// Recommended CLI invocation:
+//
+//	go test ./internal -run '^$' -bench '^BenchmarkMetadataForMetric$' -benchtime 1s -count 6 -cpu 2 -timeout 999m -benchmem | tee ${bench}.txt
+func BenchmarkMetadataForMetric(b *testing.B) {
+	store := newFakeMetadataStore(map[string]scrape.MetricMetadata{
+		"http_requests_total": {
+			MetricFamily: "http_requests_total",
+			Type:         model.MetricTypeCounter,
+		},
+		"http_request_duration_seconds": {
+			MetricFamily: "http_request_duration_seconds",
+			Type:         model.MetricTypeHistogram,
+		},
+	})
+	for _, tc := range []struct {
+		name       string
+		metricName string
+	}{
+		{name: "metric=internal", metricName: scrapeUpMetricName},
+		{name: "metric=external_exact", metricName: "http_requests_total"},
+		{name: "metric=normalized_fallback", metricName: "http_request_duration_seconds_bucket"},
+		{name: "metric=unknown_no_suffix", metricName: "custom_metric_unknown"},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				_, _ = metadataForMetric(tc.metricName, store)
+			}
+		})
 	}
 }
