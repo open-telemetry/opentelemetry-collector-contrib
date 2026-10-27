@@ -171,12 +171,12 @@ func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, 
 		return err
 	}
 
-	switch containerName {
-	case p.logsContainerName:
+	switch {
+	case containerName == p.logsContainerName && p.logsDataConsumer != nil:
 		if err := p.logsDataConsumer.consumeLogs(ctx, blobData.Bytes()); err != nil {
 			return err
 		}
-	case p.tracesContainerName:
+	case containerName == p.tracesContainerName && p.tracesDataConsumer != nil:
 		if err := p.tracesDataConsumer.consumeTraces(ctx, blobData.Bytes()); err != nil {
 			return err
 		}

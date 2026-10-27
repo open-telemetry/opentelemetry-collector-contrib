@@ -116,6 +116,44 @@ func TestEventHubEventHandler_ProcessBlobCreated_DeletesAfterSuccessfulConsume(t
 	blobClient.AssertCalled(t, "deleteBlob", mock.Anything, logsContainerName, "logs-1")
 }
 
+func TestEventHubEventHandler_NewMessageHandler_MissingConsumerDoesNotPanic(t *testing.T) {
+	tests := []struct {
+		name      string
+		eventData []byte
+		setup     func(*eventHubEventHandler)
+	}{
+		{
+			name:      "logs event with only traces consumer",
+			eventData: logEventData,
+			setup: func(h *eventHubEventHandler) {
+				h.setTracesDataConsumer(newMockTracesDataConsumer())
+			},
+		},
+		{
+			name:      "traces event with only logs consumer",
+			eventData: traceEventData,
+			setup: func(h *eventHubEventHandler) {
+				h.setLogsDataConsumer(newMockLogsDataConsumer())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			blobClient := newMockBlobClient()
+			handler := getEventHubEventHandler(t, blobClient)
+			tt.setup(handler)
+
+			var err error
+			require.NotPanics(t, func() {
+				err = handler.newMessageHandler(t.Context(), getEventHubEvent(tt.eventData))
+			})
+			require.NoError(t, err)
+			blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
+		})
+	}
+}
+
 func TestEventHubEventHandler_NewMessageHandler_MalformedMessageDoesNotPanic(t *testing.T) {
 	tests := []struct {
 		name    string
