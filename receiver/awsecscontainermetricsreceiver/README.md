@@ -169,7 +169,7 @@ aws.ecs.launch_type | aws.ecs.launch_type
 &nbsp; | container.name
 &nbsp; | container.id
 &nbsp; | aws.ecs.docker.name 
-&nbsp; | container.image.tag
+&nbsp; | container.image.tags
 &nbsp; | aws.ecs.container.image.id
 &nbsp; | aws.ecs.container.exit_code
 
