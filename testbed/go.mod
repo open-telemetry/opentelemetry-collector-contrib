@@ -341,7 +341,7 @@ require (
 	github.com/splunk/stef/go/pdata v0.1.2 // indirect
 	github.com/splunk/stef/go/pkg v0.1.2 // indirect
 	github.com/stackitcloud/stackit-sdk-go/core v0.27.0 // indirect
-	github.com/tinylib/msgp v1.6.4 // indirect
+	github.com/tinylib/msgp v1.6.5 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/twmb/murmur3 v1.2.1 // indirect
