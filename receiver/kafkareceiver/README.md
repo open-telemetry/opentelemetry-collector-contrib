@@ -193,9 +193,10 @@ when the receiver creates a decoder for each Kafka message. The extension can re
 the message's headers from `client.FromContext(options.Context).Metadata`, where
 `options` is constructed with `encoding.NewDecoderOptions`. This works independently
 of `header_extraction`, which controls adding headers as resource attributes after
-decoding. The receiver combines all batches returned by the decoder before passing
-the message to the next consumer. A decoding error discards the message's decoded
-batches.
+decoding. The receiver disables flushing by byte count and item count because each
+Kafka message is processed as a unit. It still reads the decoder until EOF and
+combines any returned batches before passing the message to the next consumer.
+A decoding error discards the message's decoded batches.
 
 Existing byte-only encoding extensions continue to use their unmarshal methods. Their
 unmarshal methods do not receive the message context.

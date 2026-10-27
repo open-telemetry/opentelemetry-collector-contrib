@@ -38,8 +38,12 @@ func loadStreamingDecoder[Factory, Unmarshaler any](host component.Host, name, s
 
 func newLogsDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[plog.Logs], error) {
 	if factory, ok := loadStreamingDecoder[encoding.LogsDecoderFactory, plog.Unmarshaler](host, name, "logs"); ok {
+		flushBytes := encoding.WithFlushBytes(0)
+		flushItems := encoding.WithFlushItems(0)
 		return func(ctx context.Context, data []byte) (plog.Logs, error) {
-			decoder, err := factory.NewLogsDecoder(bytes.NewReader(data), encoding.WithContext(ctx))
+			decoder, err := factory.NewLogsDecoder(
+				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
+			)
 			if err != nil {
 				return plog.Logs{}, err
 			}
@@ -60,8 +64,12 @@ func newLogsDecoder(name string, set receiver.Settings, host component.Host) (me
 
 func newMetricsDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[pmetric.Metrics], error) {
 	if factory, ok := loadStreamingDecoder[encoding.MetricsDecoderFactory, pmetric.Unmarshaler](host, name, "metrics"); ok {
+		flushBytes := encoding.WithFlushBytes(0)
+		flushItems := encoding.WithFlushItems(0)
 		return func(ctx context.Context, data []byte) (pmetric.Metrics, error) {
-			decoder, err := factory.NewMetricsDecoder(bytes.NewReader(data), encoding.WithContext(ctx))
+			decoder, err := factory.NewMetricsDecoder(
+				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
+			)
 			if err != nil {
 				return pmetric.Metrics{}, err
 			}
@@ -82,8 +90,12 @@ func newMetricsDecoder(name string, set receiver.Settings, host component.Host) 
 
 func newTracesDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[ptrace.Traces], error) {
 	if factory, ok := loadStreamingDecoder[encoding.TracesDecoderFactory, ptrace.Unmarshaler](host, name, "traces"); ok {
+		flushBytes := encoding.WithFlushBytes(0)
+		flushItems := encoding.WithFlushItems(0)
 		return func(ctx context.Context, data []byte) (ptrace.Traces, error) {
-			decoder, err := factory.NewTracesDecoder(bytes.NewReader(data), encoding.WithContext(ctx))
+			decoder, err := factory.NewTracesDecoder(
+				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
+			)
 			if err != nil {
 				return ptrace.Traces{}, err
 			}
@@ -104,8 +116,12 @@ func newTracesDecoder(name string, set receiver.Settings, host component.Host) (
 
 func newProfilesDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[pprofile.Profiles], error) {
 	if factory, ok := loadStreamingDecoder[encoding.ProfilesDecoderFactory, pprofile.Unmarshaler](host, name, "profiles"); ok {
+		flushBytes := encoding.WithFlushBytes(0)
+		flushItems := encoding.WithFlushItems(0)
 		return func(ctx context.Context, data []byte) (pprofile.Profiles, error) {
-			decoder, err := factory.NewProfilesDecoder(bytes.NewReader(data), encoding.WithContext(ctx))
+			decoder, err := factory.NewProfilesDecoder(
+				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
+			)
 			if err != nil {
 				return pprofile.Profiles{}, err
 			}
