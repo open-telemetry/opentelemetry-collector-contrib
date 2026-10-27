@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ctxspanlink // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspanlink"
+package ctxspanlink // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xspanlink/internal/ctxspanlink"
 
 import (
 	"context"
