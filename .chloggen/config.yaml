@@ -243,6 +243,7 @@ components:
     - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
+    - processor/verify
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager
@@ -336,7 +337,6 @@ components:
     - receiver/redis
     - receiver/riak
     - receiver/saphana
-    - receiver/signalfx
     - receiver/skywalking
     - receiver/snmp
     - receiver/snowflake

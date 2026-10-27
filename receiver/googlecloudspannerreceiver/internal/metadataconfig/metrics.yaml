@@ -32,6 +32,43 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Column Operations Stats -------------------------------------------------------------
+#
+  - name: "minute column operations stats"
+    query: "SELECT INTERVAL_END, TABLE_NAME, COLUMN_NAME, IS_QUERY_CACHE_MEMORY_CAPPED, READ_COUNT, QUERY_COUNT, WRITE_COUNT FROM SPANNER_SYS.COLUMN_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, READ_COUNT + QUERY_COUNT + WRITE_COUNT DESC"
+    metric_name_prefix: "database/spanner/column_operations/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "column_name"
+        column_name: "COLUMN_NAME"
+        value_type: "string"
+      - name: "is_query_cache_memory_capped"
+        column_name: "IS_QUERY_CACHE_MEMORY_CAPPED"
+        value_type: "bool"
+    metrics:
+      - name: "read_count"
+        column_name: "READ_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "query_count"
+        column_name: "QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Locks Stats -------------------------------------------------------------
 #
   - name: "top minute lock stats"
@@ -1152,6 +1189,36 @@ metadata:
     metrics:
       - name: "cpu_usage_score"
         column_name: "CPU_USAGE_SCORE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- User Split Points -------------------------------------------------------
+#
+  - name: "user split points"
+    query: "SELECT TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME, COUNT(*) AS USER_SPLIT_POINTS_COUNT FROM SPANNER_SYS.USER_SPLIT_POINTS GROUP BY TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME ORDER BY TABLE_NAME ASC, INDEX_NAME ASC"
+    metric_name_prefix: "database/spanner/user_split_points/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "index_name"
+        column_name: "INDEX_NAME"
+        value_type: "string"
+      - name: "initiator"
+        column_name: "INITIATOR"
+        value_type: "string"
+      - name: "split_key"
+        column_name: "SPLIT_KEY"
+        value_type: "string"
+      - name: "expire_time"
+        column_name: "EXPIRE_TIME"
+        value_type: "timestamp"
+    metrics:
+      - name: "split_points_count"
+        column_name: "USER_SPLIT_POINTS_COUNT"
         value_type: "int"
         data:
           type: "gauge"

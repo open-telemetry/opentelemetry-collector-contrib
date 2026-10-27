@@ -7,6 +7,7 @@ and sends it down the metric pipeline for further processing.
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
+| Semantic Conventions Version | 1.43.0 |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkubeletstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkubeletstats) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kubeletstats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kubeletstats&displayType=list) |
@@ -198,12 +199,6 @@ include the following:
 
 - `container.id` - to augment metrics with Container ID label obtained from container statuses exposed via `/pods`.
 - `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
-If there's more information available from the endpoint than just volume type, those are synced as well depending on
-the available fields and the type of volume. For example, `aws.volume.id` would be synced from `awsElasticBlockStore`
-and `gce.pd.name` is synced for `gcePersistentDisk`.
-
-> [!WARNING]
-> `gce.pd.name`, `aws.volume.id`, `glusterfs.path`, and `glusterfs.endpoints.name` resource attributes are all deprecated and will be removed soon.
 
 If you want to have `container.id` label added to your metrics, use `extra_metadata_labels` field to enable
 it, for example:
@@ -243,9 +238,6 @@ receivers:
 If `k8s_api_config` is set, the receiver will attempt to collect metadata from underlying storage resources for
 Persistent Volume Claims. For example, if a Pod is using a PVC backed by an EBS instance on AWS, the receiver
 would set the `k8s.volume.type` label to be `awsElasticBlockStore` rather than `persistentVolumeClaim`.
-
-> [!WARNING]
-> awsElasticBlockStore resource attribute `aws.volume.id` is deprecated and will be removed soon
 
 **Important**: When using `k8s_api_config`, the service account must have `get` permissions for
 `persistentvolumeclaims` and `persistentvolumes` resources. See [Role-based access control](#role-based-access-control)
