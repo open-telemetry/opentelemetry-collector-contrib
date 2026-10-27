@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -110,6 +111,9 @@ func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
 }
 
 func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("TODO: flaky on Windows, re-enable once https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52435 is fixed")
+	}
 	// The server accepts TCP and sends nothing, so the deadline fires during
 	// the TLS handshake, before GotConn.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
