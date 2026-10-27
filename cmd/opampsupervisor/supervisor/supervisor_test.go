@@ -450,6 +450,7 @@ func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
 			Env: map[string]string{
 				supervisorRestartHelperEnv: "sleep",
 			},
+			StopGracePeriod: 10 * time.Second,
 		},
 	)
 	require.NoError(t, err)
@@ -487,6 +488,7 @@ func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testi
 			Env: map[string]string{
 				supervisorRestartHelperEnv: "emit-on-interrupt",
 			},
+			StopGracePeriod: 10 * time.Second,
 		},
 	)
 	require.NoError(t, err)

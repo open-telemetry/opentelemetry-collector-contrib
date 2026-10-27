@@ -109,7 +109,36 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			request: &httpRequest{
 				RequestURL: "http://::1]",
 			},
-			expectsErr: "failed to parse request url",
+			expectsAttributes: map[string]any{
+				"url.full": "http://::1]",
+			},
+		},
+		{
+			name: "url with %u escape",
+			request: &httpRequest{
+				RequestURL: "https://example.com/x/%u2028foo",
+			},
+			expectsAttributes: map[string]any{
+				"url.full": "https://example.com/x/%u2028foo",
+			},
+		},
+		{
+			name: "url with %U escape",
+			request: &httpRequest{
+				RequestURL: "https://example.com/%U000Afoo",
+			},
+			expectsAttributes: map[string]any{
+				"url.full": "https://example.com/%U000Afoo",
+			},
+		},
+		{
+			name: "url with truncated escape",
+			request: &httpRequest{
+				RequestURL: "https://example.com/%0%0Aafoo",
+			},
+			expectsAttributes: map[string]any{
+				"url.full": "https://example.com/%0%0Aafoo",
+			},
 		},
 		{
 			// Short ALPN token — well-known HTTP variants are normalised to

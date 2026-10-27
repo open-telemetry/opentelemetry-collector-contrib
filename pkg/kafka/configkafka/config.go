@@ -76,6 +76,9 @@ type ClientConfig struct {
 
 	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
 	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
+
+	// DialTimeout specifies the time allowed to establish a connection to a broker (default 10s).
+	DialTimeout time.Duration `mapstructure:"dial_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
@@ -85,6 +88,7 @@ func NewDefaultClientConfig() ClientConfig {
 		Metadata:        NewDefaultMetadataConfig(),
 		UseLeaderEpoch:  true,
 		ConnIdleTimeout: 9 * time.Minute,
+		DialTimeout:     10 * time.Second,
 	}
 }
 
@@ -99,6 +103,9 @@ func (c ClientConfig) Validate() error {
 	}
 	if c.ConnIdleTimeout <= 0 {
 		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
+	}
+	if c.DialTimeout <= 0 {
+		return fmt.Errorf("dial_timeout (%s) must be positive", c.DialTimeout)
 	}
 	if c.Metadata.Retry.Max < 0 {
 		return fmt.Errorf("metadata::retry::max (%d) must be non-negative", c.Metadata.Retry.Max)
@@ -144,6 +151,14 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
+	// MaxDecompressBatchBytes defines the maximum number of bytes to allow
+	// for decompressing a single Kafka record batch. This limit is applied
+	// after decompression, so it bounds the memory required for a decompressed
+	// record batch. The default is 1 GiB (1073741824 bytes).
+	// This setting is independent of MaxFetchSize and MaxPartitionFetchSize,
+	// which limit compressed bytes on the wire.
+	MaxDecompressBatchBytes int `mapstructure:"max_decompress_batch_bytes"`
+
 	// GroupRebalanceStrategies specifies the ordered strategies to advertise
 	// for partition assignment. Kafka selects the first strategy supported by
 	// every member of the consumer group. Built-in values are "range",
@@ -168,10 +183,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:          1,
-		MaxFetchSize:          1048576,
-		MaxFetchWait:          250 * time.Millisecond,
-		MaxPartitionFetchSize: 1048576,
+		MinFetchSize:            1,
+		MaxFetchSize:            1048576,
+		MaxFetchWait:            250 * time.Millisecond,
+		MaxPartitionFetchSize:   1048576,
+		MaxDecompressBatchBytes: 1073741824, // 1 GiB
 	}
 }
 
@@ -204,6 +220,9 @@ func (c ConsumerConfig) Validate() error {
 	}
 	if c.MaxPartitionFetchSize < 0 {
 		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
+	}
+	if c.MaxDecompressBatchBytes < 1 || c.MaxDecompressBatchBytes > math.MaxInt32 {
+		return fmt.Errorf("max_decompress_batch_bytes (%d) must be between 1 and %d", c.MaxDecompressBatchBytes, math.MaxInt32)
 	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(
