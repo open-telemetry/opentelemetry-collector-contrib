@@ -7,6 +7,7 @@ require (
 	github.com/goccy/go-json v0.10.6
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.14.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.164.1
@@ -31,6 +32,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.164.0
+	go.opentelemetry.io/collector/featuregate v1.70.0
 	go.opentelemetry.io/collector/pdata v1.70.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.0
 	go.opentelemetry.io/collector/pdata/testdata v0.164.0
@@ -103,7 +105,6 @@ require (
 	go.opentelemetry.io/collector/exporter v1.70.0 // indirect
 	go.opentelemetry.io/collector/extension v1.70.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.164.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.164.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.70.0 // indirect
@@ -122,6 +123,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils
 

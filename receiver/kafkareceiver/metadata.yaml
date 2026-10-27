@@ -18,6 +18,14 @@ status:
     active: [pavolloffay, MovieStoreGuy, paulojmdias]
     emeritus: [axw]
 
+feature_gates:
+  - id: receiver.kafka.PreferStreamingEncoding
+    stage: alpha
+    description: >-
+      Prefer streaming decoding for encoding extensions that also implement byte-only unmarshaling.
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51752
+
 tests:
   goleak:
     ignore:

@@ -188,6 +188,32 @@ Additionally, all Kafka message headers are included in the request metadata.
 
 This metadata can then be used throughout the pipeline, for example to set attributes using the [attributes processor](../../processor/attributesprocessor/README.md).
 
+Streaming encoding extensions also receive this context through `encoding.WithContext`
+when the receiver creates a decoder for each Kafka message. The extension can read
+the message's headers from `client.FromContext(options.Context).Metadata`, where
+`options` is constructed with `encoding.NewDecoderOptions`. This works independently
+of `header_extraction`, which controls adding headers as resource attributes after
+decoding. The receiver combines all batches returned by the decoder before passing
+the message to the next consumer. A decoding error discards the message's decoded
+batches.
+
+Existing byte-only encoding extensions continue to use their unmarshal methods. Their
+unmarshal methods do not receive the message context.
+
+Extensions that implement only the streaming decoder factory use it automatically.
+For extensions implementing both APIs, the receiver keeps using the byte-only
+unmarshaler by default. Enable the alpha feature gate
+`receiver.kafka.PreferStreamingEncoding` to use their streaming decoder factory:
+
+```shell
+otelcol-contrib --feature-gates=receiver.kafka.PreferStreamingEncoding --config=config.yaml
+```
+
+Before enabling this gate, check that the extension's streaming API supports the
+message format and compression you use. For example, the streaming API of
+`aws_logs_encoding` expects already decompressed input, while its byte-only API
+can decompress gzip payloads.
+
 ### Trace context propagation
 
 The receiver extracts the trace context from record headers, using the propagators configured in `service::telemetry::traces::propagators`. The receiver span starts a new trace and links to the extracted trace context. Propagators are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted.
@@ -333,7 +359,12 @@ Each partition has one worker and one mailbox. `max_prefetch.batches` is how man
 
 `max_in_flight.window: cross_fetch` lets the worker take the next batch while calls from earlier batches still run, up to `records` and `bytes` for the whole partition. Use it when the next consumer holds Consume open until it has aggregated enough data, for example an exporter with `sending_queue.wait_for_result: true` and `batch.min_size` set. With `per_fetch`, such a consumer never sees more than one fetched batch at once and flushes undersized batches on its timeout. Marking is the same in both modes: the worker marks only the contiguous accepted prefix, in fetch order. The cost is a larger replay window. Records that finished above a slow or failed record stay unmarked, and a crash or rebalance replays them. After a revoke, data already accepted by a batching exporter can still export while the next owner replays it. Under `wait_for_result`, the sending queue also limits the window, so `sending_queue.queue_size` must exceed `batch.min_size` by at least the largest record.
 
-Unmarshal must be safe for concurrent calls. The receiver uses one unmarshaler for all workers. It cannot clone encoding extensions. Independent workers call Unmarshal at the same time across partitions. `max_in_flight.records` above 1 does the same inside a partition. 
+Encoding extensions must support concurrent calls to their decoder factories. The
+receiver shares the extension across workers and creates a separate streaming
+decoder for each message. Each decoder holds its own reader, context, and decoding
+state. Legacy byte-only unmarshalers remain shared and must support concurrent
+unmarshal calls. Independent workers can decode at the same time across partitions.
+`max_in_flight.records` above 1 also permits concurrent decoding inside a partition.
 
 > **WARNING**: Built-in `text` and `text_*` encodings keep one decoder and are not concurrent-safe. Encoding extensions must be concurrent-safe as well.
 
