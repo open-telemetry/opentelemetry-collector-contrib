@@ -29,14 +29,3 @@ Total number of unique edges
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
-
-## Feature Gates
-
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `connector.servicegraph.legacyLatencyMetricNames` | deprecated | When enabled, connector uses legacy latency metric names. | v0.80.0 | v0.154.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743) |
-| `connector.servicegraph.legacyLatencyUnitMs` | deprecated | When enabled, connector reports latency in milliseconds, instead of seconds. | v0.89.0 | v0.154.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

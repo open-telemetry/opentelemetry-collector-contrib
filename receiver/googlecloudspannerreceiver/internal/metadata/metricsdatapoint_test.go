@@ -410,6 +410,16 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			expectedValue: "UsersTable(1994209726)",
 		},
 		{
+			name:          "user split points table key",
+			originalValue: "T(90,153,4,2024-04-30T17:00:00-07:00,1,2024-05-01,a)",
+			expectedValue: "T(1777703975,1644993587,1260550007,2986432455,1803989619,2400125060,3398926610)",
+		},
+		{
+			name:          "user split points index key with primary table key",
+			originalValue: "Index: T_IDX on T, Index Key: (9091), Primary Table Key: (4567,123,4.2,2024-04-30T17:00:00-07:00,1,2024-05-01,a)",
+			expectedValue: "Index: T_IDX on T, Index Key: (2656406141), Primary Table Key: (3677257499,2791679065,689089138,2986432455,1803989619,2400125060,3398926610)",
+		},
+		{
 			name:          "split stats empty brackets",
 			originalValue: "TableA()",
 			expectedValue: "TableA()",
@@ -424,9 +434,14 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			splitStartMetadata, _ := NewLabelValueMetadata("split_start", "splitStartColumnName", StringValueType)
-			labelValue1 := stringLabelValue{metadata: splitStartMetadata, value: tc.originalValue}
+			splitLimitMetadata, _ := NewLabelValueMetadata("split_limit", "splitLimitColumnName", StringValueType)
+			splitKeyMetadata, _ := NewLabelValueMetadata("split_key", "splitKeyColumnName", StringValueType)
 
-			labelValues := []LabelValue{labelValue1}
+			labelValues := []LabelValue{
+				stringLabelValue{metadata: splitStartMetadata, value: tc.originalValue},
+				stringLabelValue{metadata: splitLimitMetadata, value: tc.originalValue},
+				stringLabelValue{metadata: splitKeyMetadata, value: tc.originalValue},
+			}
 			metricsDataPoint := &MetricsDataPoint{
 				metricName:  "test_metric",
 				timestamp:   time.Now().UTC(),
@@ -437,6 +452,8 @@ func TestMetricsDataPoint_HideSplitStatsKeysPII(t *testing.T) {
 			metricsDataPoint.HideSplitStatsKeysPII()
 
 			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[0].Value(), "Hashing failed for case %s", tc.name)
+			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[1].Value(), "Hashing failed for case %s", tc.name)
+			assert.Equal(t, tc.expectedValue, metricsDataPoint.labelValues[2].Value(), "Hashing failed for case %s", tc.name)
 		})
 	}
 }

@@ -54,6 +54,21 @@ const (
 	//
 	// renovate: datasource=docker depName=otel/weaver
 	defaultWeaverVersion = "v0.28.0"
+
+	// defaultRegistryVersion is the semantic-conventions release that the
+	// live-check validates against when a test does not select a registry
+	// with WithRegistry. The pin keeps registry changes out of unrelated CI
+	// runs: semantic-conventions main can adopt syntax that needs a newer
+	// Weaver than the pinned one on the day that Weaver releases. Renovate
+	// watches the line below and opens an update PR for each new release.
+	//
+	// renovate: datasource=github-releases depName=open-telemetry/semantic-conventions
+	defaultRegistryVersion = "v1.44.0"
+
+	// defaultRegistryTemplate is Weaver's default registry (the
+	// semantic-conventions Git repository, "model" sub-folder), pinned to a
+	// release tag with Weaver's @refspec syntax.
+	defaultRegistryTemplate = "https://github.com/open-telemetry/semantic-conventions.git@%s[model]"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
@@ -69,7 +84,9 @@ func WithVersion(version string) WeaverOption {
 }
 
 // WithRegistry sets the semantic convention registry passed to Weaver's
-// --registry flag. When unset, Weaver uses its default registry.
+// --registry flag. When unset, the package uses the semantic-conventions
+// release pinned in defaultRegistryVersion. Pass an empty string to restore
+// Weaver's own default: the unreleased registry on semantic-conventions main.
 func WithRegistry(registry string) WeaverOption {
 	return func(o *weaverOptions) { o.registry = registry }
 }
@@ -165,7 +182,10 @@ func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []Pol
 func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
 	tb.Helper()
 
-	options := &weaverOptions{version: defaultWeaverVersion}
+	options := &weaverOptions{
+		version:  defaultWeaverVersion,
+		registry: fmt.Sprintf(defaultRegistryTemplate, defaultRegistryVersion),
+	}
 	for _, opt := range opts {
 		opt(options)
 	}
