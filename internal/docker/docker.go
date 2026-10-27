@@ -489,11 +489,11 @@ func isTCPEndpoint(endpoint string) bool {
 func ContainerEnvToMap(env []string) map[string]string {
 	out := make(map[string]string, len(env))
 	for _, v := range env {
-		parts := strings.Split(v, "=")
-		if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
+		key, val, found := strings.Cut(v, "=")
+		if !found || strings.TrimSpace(val) == "" {
 			continue
 		}
-		out[parts[0]] = parts[1]
+		out[key] = val
 	}
 	return out
 }

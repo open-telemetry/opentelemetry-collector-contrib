@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/dockerstatsreceiver
+
+note: Fix `ContainerEnvToMap` truncating env var values that contain `=` (e.g. `JAVA_OPTS=-Xmx=512m`, base64 strings, connection strings). Switch from `strings.SplitN` to `strings.Cut` so only the first `=` is used as the key/value delimiter.
+
+issues: [51948]
+
+subtext:
+
+change_logs: [user]
