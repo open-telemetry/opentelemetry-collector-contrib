@@ -298,6 +298,32 @@ func TestExtension(t *testing.T) {
 	}
 }
 
+func TestExtensionForwardsMultipleResponseHeaders(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Set-Cookie", "session=abc; Path=/")
+		w.Header().Add("Set-Cookie", "csrf=xyz; Path=/")
+		w.Header().Add("X-Example", "first")
+		w.Header().Add("X-Example", "second")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Ingress.NetAddr.Endpoint = "127.0.0.1:0"
+	cfg.Egress.Endpoint = backend.URL
+	hf, err := newHTTPForwarder(cfg, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.NoError(t, hf.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, hf.Shutdown(t.Context())) }()
+
+	response, err := http.Get("http://" + hf.(*httpForwarder).server.Addr + "/")
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, []string{"session=abc; Path=/", "csrf=xyz; Path=/"}, response.Header.Values("Set-Cookie"))
+	assert.Equal(t, []string{"first", "second"}, response.Header.Values("X-Example"))
+}
+
 func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
 	r, err := http.NewRequest(args.method, args.url, io.NopCloser(strings.NewReader(args.body)))
 	require.NoError(t, err)
