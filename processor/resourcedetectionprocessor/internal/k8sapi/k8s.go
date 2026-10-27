@@ -82,6 +82,23 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetK8sNodeName(nodeName)
 	}
 
+	if d.ra.HostID.Enabled {
+		machineID, err := d.provider.NodeMachineID(ctx)
+		if err != nil {
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node machine ID: %w", err)
+			}
+			d.logger.Debug("k8snode metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
+		}
+		// Some kubelets don't report a machine ID; omit host.id rather than emit it empty.
+		if machineID != "" {
+			d.rb.SetHostID(machineID)
+		} else {
+			d.logger.Debug("k8s node reports an empty machine ID, skipping host.id")
+		}
+	}
+
 	if d.ra.K8sClusterUID.Enabled {
 		clusterUID, err := d.provider.ClusterUID(ctx)
 		if err != nil {
