@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: connector/failover
-note: Fix recovery after a new failover immediately follows primary pipeline recovery.
-issues: [48668]
-change_logs: [user]
