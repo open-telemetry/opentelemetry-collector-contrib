@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resou
 go 1.26.0
 
 require (
-	cloud.google.com/go/compute v1.73.0
+	cloud.google.com/go/compute v1.74.0
 	cloud.google.com/go/compute/metadata v0.10.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.38.0
 	github.com/aws/aws-sdk-go-v2 v1.47.4
@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.34.4
 	github.com/linode/go-metadata v0.3.1
-	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/api v1.56.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.164.1
