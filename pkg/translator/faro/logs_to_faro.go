@@ -7,8 +7,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +23,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
 )
 
@@ -383,10 +385,13 @@ func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKInteg
 	}
 
 	for integrationString := range strings.SplitSeq(integrationsString, ",") {
-		integrationNameVersion := strings.Split(integrationString, ":")
+		name, version, found := strings.Cut(integrationString, ":")
+		if !found {
+			continue
+		}
 		sdkIntegrations = append(sdkIntegrations, faroTypes.SDKIntegration{
-			Name:    integrationNameVersion[0],
-			Version: integrationNameVersion[1],
+			Name:    name,
+			Version: version,
 		})
 	}
 
@@ -509,29 +514,32 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 		if !found {
 			continue
 		}
-		brandAsString := strings.Split(suffix, "_")
-		idx, err := strconv.ParseInt(brandAsString[0], 10, 64)
+		idxAsString, field, found := strings.Cut(suffix, "_")
+		if !found {
+			return brands, fmt.Errorf("invalid browser brand key %q: expected format %s<index>_<field>", key, faroBrowserBrandPrefix)
+		}
+		idx, err := strconv.ParseInt(idxAsString, 10, 64)
 		if err != nil {
 			return brands, err
 		}
-		brand, ok := brandsMap[idx]
-		if !ok {
-			brandsMap[idx] = faroTypes.Brand{}
-			brand = brandsMap[idx]
-		}
-		if brandAsString[1] == faroBrand {
+		brand := brandsMap[idx]
+		switch field {
+		case faroBrand:
 			brand.Brand = val
-		}
-		if brandAsString[1] == faroBrandVersion {
+		case faroBrandVersion:
 			brand.Version = val
 		}
 		brandsMap[idx] = brand
 	}
-	brandsMapLen := len(brandsMap)
-	if brandsMapLen != 0 {
-		brandsAsArray := make([]faroTypes.Brand, brandsMapLen)
-		for i, brand := range brandsMap {
-			brandsAsArray[i] = brand
+	if len(brandsMap) != 0 {
+		indexes := make([]int64, 0, len(brandsMap))
+		for idx := range brandsMap {
+			indexes = append(indexes, idx)
+		}
+		slices.Sort(indexes)
+		brandsAsArray := make([]faroTypes.Brand, 0, len(indexes))
+		for _, idx := range indexes {
+			brandsAsArray = append(brandsAsArray, brandsMap[idx])
 		}
 		if err := brands.FromBrandsArray(brandsAsArray); err != nil {
 			return brands, err
@@ -668,6 +676,10 @@ func extractViewFromKeyVal(kv map[string]string) faroTypes.View {
 	return view
 }
 
+// faroLogLevelWarn is the warning level that Faro SDKs send. The faro
+// LogLevel enum only defines "warning".
+const faroLogLevelWarn faroTypes.LogLevel = "warn"
+
 func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 	var log faroTypes.Log
 	timestamp, err := extractTimestampFromKeyVal(kv)
@@ -686,6 +698,8 @@ func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 			log.LogLevel = faroTypes.LogLevelError
 		case string(faroTypes.LogLevelWarning):
 			log.LogLevel = faroTypes.LogLevelWarning
+		case string(faroLogLevelWarn):
+			log.LogLevel = faroLogLevelWarn
 		case string(faroTypes.LogLevelTrace):
 			log.LogLevel = faroTypes.LogLevelTrace
 		case string(faroTypes.LogLevelInfo):
@@ -846,6 +860,9 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 	}
 
 	matches := stacktraceRegexp.FindStringSubmatch(frameStr)
+	if matches == nil {
+		return nil, errors.New("invalid stack trace frame")
+	}
 
 	frame.Function = matches[stacktraceRegexp.SubexpIndex(faroStacktraceFunction)]
 	frame.Module = matches[stacktraceRegexp.SubexpIndex(faroStackTraceModule)]

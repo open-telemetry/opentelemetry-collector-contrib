@@ -5,7 +5,10 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"hash/crc32"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -15,8 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -27,6 +33,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -133,9 +141,9 @@ func TestPartitionProcessing(t *testing.T) {
 				tp := topicPartition{topic: "test", partition: 0}
 				partitionConsumer := &pc{
 					ctx:     t.Context(),
-					mailbox: newPartitionMailbox(t.Context(), 1),
+					mailbox: newPartitionMailbox(t.Context(), 1, 0),
 				}
-				partitionConsumer.addPauseReason(partitionPauseRewind)
+				partitionConsumer.addPauseReason(partitionPauseRewind | partitionPauseBackpressure)
 				partitionConsumer.mailbox.requestRewind(
 					&kgo.Record{Topic: "test", Partition: 0, Offset: 1},
 					true,
@@ -178,7 +186,7 @@ func TestPartitionProcessing(t *testing.T) {
 		// A cancelled partition does not apply a rewind.
 		client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 		ctx, cancel := context.WithCancel(t.Context())
-		partitionConsumer := &pc{ctx: ctx, mailbox: newPartitionMailbox(ctx, 1)}
+		partitionConsumer := &pc{ctx: ctx, mailbox: newPartitionMailbox(ctx, 1, 0)}
 		partitionConsumer.mailbox.requestRewind(&kgo.Record{Topic: "test", Partition: 0, Offset: 1}, true, func() {})
 		// Cancel before the poll loop sees the control. SetOffsets must not run.
 		cancel()
@@ -263,7 +271,7 @@ func TestPartitionProcessing(t *testing.T) {
 		// records are not processed.
 		h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
 			cfg.ConsumerConfig.MaxFetchSize = 1
-			cfg.PartitionProcessing.MaxBufferedBatches = 3
+			cfg.PartitionProcessing.MaxPrefetch.Batches = 3
 			cfg.MessageMarking = MessageMarking{After: true, OnPermanentError: false}
 		})
 		started := make(chan struct{}, 1)
@@ -510,8 +518,9 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	cfg.ConsumerConfig.GroupID = t.Name()
 	// These tests cover independent workers only.
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 1,
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 1},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	if configure != nil {
 		configure(cfg)
@@ -642,8 +651,9 @@ func waitSignal(t *testing.T, ch <-chan struct{}, msg string) {
 func newStaleWorkerConsumer(t *testing.T, kafkaClient *kgo.Client, cfg *Config, topic string) *franzConsumer {
 	t.Helper()
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 2,
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 	cfg.MessageMarking.After = true
@@ -737,18 +747,18 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			name:       "BackOff default marking",
 			testConfig: tCfg{MessageMarking{}, configretry.NewDefaultBackOffConfig(), false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
 			name:       "NoBackoff default marking",
 			testConfig: tCfg{MessageMarking{}, configretry.BackOffConfig{Enabled: false}, false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
@@ -764,27 +774,27 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			name:       "NoBackoff default marking with error",
 			testConfig: tCfg{MessageMarking{}, configretry.BackOffConfig{Enabled: false}, true},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
 			name:       "BackOff after marking",
 			testConfig: tCfg{MessageMarking{After: true}, configretry.NewDefaultBackOffConfig(), false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		{
 			name:       "NoBackoff after marking",
 			testConfig: tCfg{MessageMarking{After: true}, configretry.BackOffConfig{Enabled: false}, false},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           2,
 			},
 		},
 		// With error
@@ -811,18 +821,18 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 			name:       "BackOff after marking with error and OnError=true",
 			testConfig: tCfg{MessageMarking{After: true, OnError: true}, configretry.NewDefaultBackOffConfig(), true},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           0,
 			},
 		},
 		{
 			name:       "NoBackoff after marking with error and OnError=true",
 			testConfig: tCfg{MessageMarking{After: true, OnError: true}, configretry.BackOffConfig{Enabled: false}, true},
 			want: assertions{
-				firstBatchProcessedCount:  2,
-				secondBatchProcessedCount: 4,
-				committedOffset:           4,
+				firstBatchProcessedCount:  1,
+				secondBatchProcessedCount: 2,
+				committedOffset:           0,
 			},
 		},
 	}
@@ -913,6 +923,52 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			testShutdown(t, tc.testConfig, tc.want)
+		})
+	}
+}
+
+// TestConsumerWarnsMaxBufferedBatchesDeprecated proves Start logs the deprecation
+// warning only when the deprecated field is set.
+func TestConsumerWarnsMaxBufferedBatchesDeprecated(t *testing.T) {
+	cases := []struct {
+		name          string
+		prefetch      int
+		deprecated    int
+		deprecatedSet bool
+		wantWarning   int
+	}{
+		{
+			name:          "max_buffered_batches set",
+			deprecated:    2,
+			deprecatedSet: true,
+			prefetch:      2,
+			wantWarning:   1,
+		},
+		{
+			name:     "only max_prefetch set",
+			prefetch: 2,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+			cfg.PartitionProcessing.Independent = true
+			cfg.PartitionProcessing.MaxBufferedBatches = tc.deprecated
+			cfg.PartitionProcessing.maxBufferedBatchesSet = tc.deprecatedSet
+			cfg.PartitionProcessing.MaxPrefetch.Batches = tc.prefetch
+			settings, _, logs := mustNewSettings(t)
+			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+				return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+					return nil
+				}, nil
+			}
+			c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn)
+			require.NoError(t, err)
+			require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+			require.Equal(t, tc.wantWarning, logs.FilterMessageSnippet("max_buffered_batches is deprecated").Len())
 		})
 	}
 }
@@ -1140,8 +1196,9 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 	const topic = "test"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 2,
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 
@@ -1185,6 +1242,150 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 		close(staleDone)
 	}()
 	waitSignal(t, staleDone, "worker did not stop")
+}
+
+// TestLostLeavesRestOfBatchToNextOwner runs the revoke callback in independent
+// mode. lost() cancels the partition context while a batch is in flight, waits
+// for the worker, then commits the marked offsets. Only processed records may be
+// committed, the rest of the batch belongs to the next owner.
+func TestLostLeavesRestOfBatchToNextOwner(t *testing.T) {
+	const topic = "otlp_spans"
+	const records = 20
+
+	traces := testdata.GenerateTraces(1)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.ConsumerConfig.GroupID = t.Name()
+	cfg.PartitionProcessing.Independent = true
+	cfg.ConsumerConfig.AutoCommit = configkafka.AutoCommitConfig{
+		Enable: true, Interval: time.Hour,
+	}
+	// Hold the fetch until every record is available.
+	cfg.ConsumerConfig.MinFetchSize = int32(len(data) * records)
+
+	var consumed atomic.Int64
+	consuming := make(chan struct{}, 1)
+	settings, _, logs := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+			if consumed.Add(1) == 1 {
+				notify(consuming)
+				// Block until the revocation cancels us, like an exporter
+				// waiting on a slow downstream.
+				<-ctx.Done()
+			}
+			return ctx.Err()
+		}, nil
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+	rs := make([]*kgo.Record, 0, records)
+	for range records {
+		rs = append(rs, &kgo.Record{Topic: topic, Value: data})
+	}
+	// One ProduceSync, so every record lands in a single record batch. That is
+	// what keeps the fetch whole: a broker returns whole record batches, so it
+	// cannot hand out part of one. Producing in several calls splits the fetch.
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), rs...).FirstErr())
+
+	waitSignal(t, consuming, "first record was not consumed")
+
+	// The worker must hold the whole batch, as one batch. If the fetch split it
+	// instead, lost() would discard the remainder from the mailbox and the
+	// revoke would have nothing left to stop.
+	require.Equal(t, []int64{records}, queuedRecords(logs),
+		"the whole batch must be fetched at once and in flight when the partition is revoked")
+
+	// The callback franz-go calls on a revocation. It cancels the partition
+	// context, waits for the worker, and commits.
+	c.lost(t.Context(), nil, map[string][]int32{topic: {0}}, false)
+
+	assert.Equal(t, int64(1), consumed.Load(),
+		"the batch loop must stop at the revocation")
+
+	offsets, err := kadm.NewClient(kafkaClient).FetchOffsets(t.Context(), t.Name())
+	require.NoError(t, err)
+	offset, _ := offsets.Lookup(topic, 0)
+	assert.Equal(t, int64(1), offset.At,
+		"committing past the in-flight record drops the rest of the batch")
+}
+
+// queuedRecords reports the record count of every batch the poll loop handed to
+// the partition worker, from the debug line dispatchPartitionBatches logs per
+// batch. The counts stay per batch instead of being summed, so a fetch that was
+// split tells apart from a single batch holding the same records.
+func queuedRecords(logs *observer.ObservedLogs) []int64 {
+	entries := logs.FilterMessage("queued fetched records").All()
+	counts := make([]int64, 0, len(entries))
+	for i := range entries {
+		if count, ok := entries[i].ContextMap()["count"].(int64); ok {
+			counts = append(counts, count)
+		}
+	}
+	return counts
+}
+
+// TestShouldMarkOnError proves a cancelled partition consumer marks nothing,
+// whatever on_error and on_permanent_error allow. The record stays unmarked and
+// is redelivered, and the next try marks it because the context is live again.
+func TestShouldMarkOnError(t *testing.T) {
+	permanent := consumererror.NewPermanent(errors.New("refused"))
+	transient := errors.New("refused")
+
+	cases := []struct {
+		name      string
+		marking   MessageMarking
+		err       error
+		cancelled bool
+		want      bool
+	}{
+		{
+			name:    "permanent error marks while the partition is live",
+			marking: MessageMarking{OnPermanentError: true},
+			err:     permanent,
+			want:    true,
+		},
+		{
+			// The cancellation is checked first, so on_permanent_error does not
+			// apply. A permanent error can hide a cancelled one, so this stays
+			// unmarked and comes back instead.
+			name:      "permanent error does not mark once cancelled",
+			marking:   MessageMarking{OnPermanentError: true},
+			err:       permanent,
+			cancelled: true,
+		},
+		{
+			name:    "transient error marks while the partition is live",
+			marking: MessageMarking{OnError: true},
+			err:     transient,
+			want:    true,
+		},
+		{
+			name:      "transient error does not mark once cancelled",
+			marking:   MessageMarking{OnError: true},
+			err:       transient,
+			cancelled: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancelCause(t.Context())
+			t.Cleanup(func() { cancel(nil) })
+			if tc.cancelled {
+				cancel(errors.New("stopping processing"))
+			}
+			consumer := franzConsumer{config: &Config{MessageMarking: tc.marking}}
+
+			require.Equal(t, tc.want, consumer.shouldMarkOnError(&pc{ctx: ctx}, tc.err))
+		})
+	}
 }
 
 // TestOffsetLagMetricSuppressedOnForcedRebalance verifies real consumer-group callbacks suppress lag while replacing an assignment.
@@ -1284,8 +1485,8 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(2, topic))
 			cfg.PartitionProcessing = PartitionProcessing{
-				Independent:        tc.independent,
-				MaxBufferedBatches: 1,
+				Independent: tc.independent,
+				MaxPrefetch: MaxPrefetchConfig{Batches: 1},
 			}
 			cfg.MessageMarking = MessageMarking{
 				After:            true,
@@ -1811,4 +2012,114 @@ func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
 	// Disconnect should evict both entries.
 	c.OnBrokerDisconnect(meta, nil)
 	require.Empty(t, c.brokerReadOpts)
+}
+
+// TestFetchErrorDoesNotDropOtherPartitions verifies that a fetch error on one
+// partition does not discard records polled for other partitions in the same
+// fetch. franz-go advances the cursor of every partition returned by a poll,
+// so dropped records would be skipped once later offsets are committed.
+func TestFetchErrorDoesNotDropOtherPartitions(t *testing.T) {
+	for _, independent := range []bool{false, true} {
+		t.Run(fmt.Sprintf("independent=%t", independent), func(t *testing.T) {
+			const (
+				topic   = "otlp_spans"
+				records = 20
+			)
+			// A single broker returns both partitions in the same fetch response.
+			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(2, topic), kfake.NumBrokers(1))
+			cfg.ConsumerConfig.GroupID = t.Name()
+			cfg.ConsumerConfig.AutoCommit.Interval = 100 * time.Millisecond
+			cfg.PartitionProcessing.Independent = independent
+
+			producer, err := kgo.NewClient(
+				kgo.SeedBrokers(cfg.ClientConfig.Brokers...),
+				kgo.RecordPartitioner(kgo.ManualPartitioner()),
+				kgo.ProducerBatchCompression(kgo.NoCompression()),
+				kgo.MaxVersions(kversion.V2_3_0()),
+			)
+			require.NoError(t, err)
+			t.Cleanup(producer.Close)
+
+			// Partition 0 fails to decompress on every fetch.
+			produceUndecodableBatch(t, producer, topic, 0)
+
+			var processed atomic.Int64
+			settings, _, logs := mustNewSettings(t)
+			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+				return func(_ context.Context, r *kgo.Record, _ attribute.Set) error {
+					if r.Partition == 1 {
+						processed.Add(1)
+					}
+					return nil
+				}, nil
+			}
+			c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+			require.NoError(t, err)
+			require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+			for range records {
+				require.NoError(t, producer.ProduceSync(t.Context(),
+					&kgo.Record{Topic: topic, Partition: 1, Value: []byte("x")}).FirstErr())
+			}
+
+			require.Eventually(t, func() bool {
+				return logs.FilterMessage("consumer fetch error").
+					FilterField(zap.Int64("partition", 0)).Len() > 0
+			}, 5*time.Second, 10*time.Millisecond, "expected a fetch error on partition 0")
+
+			assert.Eventually(t, func() bool {
+				return processed.Load() == records
+			}, 5*time.Second, 10*time.Millisecond,
+				"records for partition 1 were dropped: processed %d of %d", processed.Load(), records)
+
+			adm := kadm.NewClient(producer)
+			assert.EventuallyWithT(t, func(ct *assert.CollectT) {
+				committed, err := adm.FetchOffsets(t.Context(), cfg.ConsumerConfig.GroupID)
+				require.NoError(ct, err)
+				off, ok := committed.Lookup(topic, 1)
+				require.True(ct, ok)
+				assert.Equal(ct, processed.Load(), off.At)
+			}, 5*time.Second, 50*time.Millisecond)
+		})
+	}
+}
+
+// produceUndecodableBatch writes a gzip-flagged batch whose payload is not
+// gzip. kfake stores it as-is, and franz-go returns a non-retriable
+// decompression error for the partition on every fetch.
+func produceUndecodableBatch(t *testing.T, client *kgo.Client, topic string, partition int32) {
+	t.Helper()
+	now := time.Now().UnixMilli()
+	b := kmsg.RecordBatch{
+		PartitionLeaderEpoch: -1,
+		Magic:                2,
+		Attributes:           int16(kgo.CodecGzip),
+		FirstTimestamp:       now,
+		MaxTimestamp:         now,
+		ProducerID:           -1,
+		ProducerEpoch:        -1,
+		FirstSequence:        -1,
+		NumRecords:           1,
+		Records:              []byte("not gzip"),
+	}
+	raw := b.AppendTo(nil)
+	// Length excludes FirstOffset and Length; CRC covers everything after it.
+	binary.BigEndian.PutUint32(raw[8:], uint32(len(raw)-12))
+	binary.BigEndian.PutUint32(raw[17:], crc32.Checksum(raw[21:], crc32.MakeTable(crc32.Castagnoli)))
+
+	rp := kmsg.NewProduceRequestTopicPartition()
+	rp.Partition = partition
+	rp.Records = raw
+	rt := kmsg.NewProduceRequestTopic()
+	rt.Topic = topic
+	rt.Partitions = append(rt.Partitions, rp)
+	req := kmsg.NewPtrProduceRequest()
+	req.Acks = -1
+	req.TimeoutMillis = 5000
+	req.Topics = append(req.Topics, rt)
+
+	resp, err := req.RequestWith(t.Context(), client)
+	require.NoError(t, err)
+	require.NoError(t, kerr.ErrorForCode(resp.Topics[0].Partitions[0].ErrorCode))
 }

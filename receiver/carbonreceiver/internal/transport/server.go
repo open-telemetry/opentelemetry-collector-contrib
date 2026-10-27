@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/protocol"
 )
 
 var errNilListenAndServeParameters = errors.New(

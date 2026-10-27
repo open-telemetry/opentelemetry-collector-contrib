@@ -15,6 +15,8 @@ $defs:
     description: S3UploaderConfig contains aws s3 uploader related config to controls things like bucket, prefix, batching, connections, retries, etc.
     type: object
     properties:
+      access_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       acl:
         description: ACL is the canned ACL to use when uploading objects.
         type: string
@@ -63,6 +65,8 @@ $defs:
       s3_prefix:
         description: S3Prefix is the key (directory) prefix to write to inside the bucket. Appended to S3BasePrefix if provided.
         type: string
+      secret_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       storage_class:
         type: string
       unique_key_func_name:

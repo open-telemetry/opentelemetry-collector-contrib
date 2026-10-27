@@ -4,139 +4,283 @@
 package openshift // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 
 import (
-	"context"
-	"errors"
+	"encoding/pem"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/zap/zaptest"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor/processortest"
 
-	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
-type providerResponse struct {
-	ocp.InfrastructureAPIResponse
+const infrastructurePath = "/apis/config.openshift.io/v1/infrastructures/cluster/status"
 
-	OpenShiftClusterVersion string
-	K8SClusterVersion       string
+const (
+	awsInfra       = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"AWS","aws":{"region":"US-EAST-1"}}}}`
+	azureInfra     = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"Azure","azure":{"cloudName":"AzurePublicCloud"}}}}`
+	openstackInfra = `{"status":{"infrastructureName":"my-cluster","platformStatus":{"type":"OpenStack","openstack":{"cloudName":"openstack"}}}}`
+)
+
+// setRemoveCloudNameRegionGate forces the state of the removeCloudNameRegion gate
+// for the duration of the test.
+func setRemoveCloudNameRegionGate(t *testing.T, enabled bool) {
+	gate := metadata.ProcessorResourcedetectionOpenshiftRemoveCloudNameRegionFeatureGate
+	originalValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
+	})
 }
 
-type mockProvider struct {
-	res      *providerResponse
-	ocpCVErr error
-	k8sCVErr error
-	infraErr error
+// newInfraServer serves body on the Infrastructure status endpoint with the given status code.
+func newInfraServer(t *testing.T, status int, body string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != infrastructurePath {
+			http.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
 }
 
-func (m *mockProvider) OpenShiftClusterVersion(context.Context) (string, error) {
-	if m.ocpCVErr != nil {
-		return "", m.ocpCVErr
-	}
-	return m.res.OpenShiftClusterVersion, nil
+// testConfig points the detector at srv. A plain HTTP address needs no certificate
+// authority, and an explicit token skips the projected service account token.
+func testConfig(srv *httptest.Server) Config {
+	cfg := CreateDefaultConfig()
+	cfg.Address = srv.URL
+	cfg.Token = "token"
+	return cfg
 }
 
-func (m *mockProvider) K8SClusterVersion(context.Context) (string, error) {
-	if m.k8sCVErr != nil {
-		return "", m.k8sCVErr
-	}
-	return m.res.K8SClusterVersion, nil
-}
-
-func (m *mockProvider) Infrastructure(context.Context) (*ocp.InfrastructureAPIResponse, error) {
-	if m.infraErr != nil {
-		return nil, m.infraErr
-	}
-	return &m.res.InfrastructureAPIResponse, nil
-}
-
-func newTestDetector(t *testing.T, res *providerResponse, ocpCVErr, k8sCVErr, infraErr error) internal.Detector {
-	return &detector{
-		logger: zaptest.NewLogger(t),
-		provider: &mockProvider{
-			res:      res,
-			ocpCVErr: ocpCVErr,
-			k8sCVErr: k8sCVErr,
-			infraErr: infraErr,
-		},
-		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-	}
+func detect(t *testing.T, cfg Config, failOnMissingMetadata bool) (map[string]any, error) {
+	t.Helper()
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, failOnMissingMetadata)
+	require.NoError(t, err)
+	res, _, err := d.Detect(t.Context())
+	return res.Attributes().AsRaw(), err
 }
 
 func TestDetect(t *testing.T) {
-	someErr := errors.New("test")
-	tt := []struct {
-		name              string
-		detector          internal.Detector
-		expectedResource  pcommon.Resource
-		expectedSchemaURL string
-		expectedErr       error
+	setRemoveCloudNameRegionGate(t, true)
+	tests := []struct {
+		name string
+		body string
+		want map[string]any
 	}{
 		{
-			name:              "error getting openshift cluster version",
-			detector:          newTestDetector(t, &providerResponse{}, someErr, nil, nil),
-			expectedErr:       someErr,
-			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/",
+			name: "aws",
+			body: awsInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.provider":   "aws",
+				"cloud.platform":   "aws_openshift",
+				"cloud.region":     "us-east-1",
+			},
 		},
 		{
-			name:              "error getting k8s cluster version",
-			detector:          newTestDetector(t, &providerResponse{}, nil, someErr, nil),
-			expectedErr:       someErr,
-			expectedResource:  pcommon.NewResource(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/",
+			name: "azure reports no region",
+			body: azureInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.provider":   "azure",
+				"cloud.platform":   "azure.openshift",
+			},
 		},
 		{
-			name:             "error getting infrastructure details",
-			detector:         newTestDetector(t, &providerResponse{}, nil, nil, someErr),
-			expectedErr:      someErr,
-			expectedResource: pcommon.NewResource(),
+			name: "openstack reports no cloud attributes",
+			body: openstackInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+			},
 		},
 		{
-			name: "detect all details",
-			detector: newTestDetector(t, &providerResponse{
-				InfrastructureAPIResponse: ocp.InfrastructureAPIResponse{
-					Status: ocp.InfrastructureStatus{
-						InfrastructureName:     "test-d-bm4rt",
-						ControlPlaneTopology:   "HighlyAvailable",
-						InfrastructureTopology: "HighlyAvailable",
-						PlatformStatus: ocp.InfrastructurePlatformStatus{
-							Type: "AWS",
-							Aws: ocp.InfrastructureStatusAWS{
-								Region: "us-east-1",
-							},
-						},
-					},
-				},
-				OpenShiftClusterVersion: "4.1.2",
-				K8SClusterVersion:       "1.23.4",
-			}, nil, nil, nil),
-			expectedErr: nil,
-			expectedResource: func() pcommon.Resource {
-				res := pcommon.NewResource()
-				attrs := res.Attributes()
-				attrs.PutStr("k8s.cluster.name", "test-d-bm4rt")
-				attrs.PutStr("cloud.provider", "aws")
-				attrs.PutStr("cloud.platform", "aws_openshift")
-				attrs.PutStr("cloud.region", "us-east-1")
-				return res
-			}(),
-			expectedSchemaURL: "https://opentelemetry.io/schemas/",
+			name: "partial result keeps what was detected",
+			body: `{"status":{"platformStatus":{"type":"GCP","gcp":{"region":"europe-west1"}}}}`,
+			want: map[string]any{
+				"cloud.provider": "gcp",
+				"cloud.platform": "gcp_openshift",
+				"cloud.region":   "europe-west1",
+			},
 		},
 	}
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			resource, schemaURL, err := tc.detector.Detect(t.Context())
-			if err != nil && errors.Is(err, tc.expectedErr) {
-				return
-			} else if err != nil && !errors.Is(err, tc.expectedErr) {
-				t.Fatal(err)
-			}
-
-			assert.Equal(t, tc.expectedResource, resource)
-			assert.Contains(t, schemaURL, tc.expectedSchemaURL)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := detect(t, testConfig(newInfraServer(t, http.StatusOK, tt.body)), true)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestDetectLegacyCloudNameRegion(t *testing.T) {
+	setRemoveCloudNameRegionGate(t, false)
+	tests := []struct {
+		name string
+		body string
+		want map[string]any
+	}{
+		{
+			name: "azure",
+			body: azureInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.provider":   "azure",
+				"cloud.platform":   "azure.openshift",
+				"cloud.region":     "azurepubliccloud",
+			},
+		},
+		{
+			name: "openstack",
+			body: openstackInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.region":     "openstack",
+			},
+		},
+		{
+			name: "aws keeps the sdk region",
+			body: awsInfra,
+			want: map[string]any{
+				"k8s.cluster.name": "my-cluster",
+				"cloud.provider":   "aws",
+				"cloud.platform":   "aws_openshift",
+				"cloud.region":     "us-east-1",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := detect(t, testConfig(newInfraServer(t, http.StatusOK, tt.body)), true)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	t.Run("trailing slash address", func(t *testing.T) {
+		cfg := testConfig(newInfraServer(t, http.StatusOK, azureInfra))
+		cfg.Address += "/"
+		got, err := detect(t, cfg, true)
+		require.NoError(t, err)
+		assert.Equal(t, "azurepubliccloud", got["cloud.region"])
+	})
+
+	t.Run("disabled attribute", func(t *testing.T) {
+		cfg := testConfig(newInfraServer(t, http.StatusOK, azureInfra))
+		cfg.ResourceAttributes.CloudRegion.Enabled = false
+		got, err := detect(t, cfg, true)
+		require.NoError(t, err)
+		assert.NotContains(t, got, "cloud.region")
+	})
+}
+
+func TestDetectFailures(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+	}{
+		// A plain Kubernetes API server does not serve the OpenShift config API.
+		{name: "not openshift", status: http.StatusNotFound},
+		{name: "forbidden", status: http.StatusForbidden},
+		{name: "server error", status: http.StatusInternalServerError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := newInfraServer(t, tt.status, "")
+
+			got, err := detect(t, testConfig(srv), false)
+			require.NoError(t, err)
+			assert.Empty(t, got)
+
+			got, err = detect(t, testConfig(srv), true)
+			assert.Error(t, err)
+			assert.Empty(t, got)
+		})
+	}
+}
+
+func TestDetectDisabledAttributes(t *testing.T) {
+	cfg := testConfig(newInfraServer(t, http.StatusOK, awsInfra))
+	cfg.ResourceAttributes.CloudRegion.Enabled = false
+	cfg.ResourceAttributes.K8sClusterName.Enabled = false
+
+	got, err := detect(t, cfg, true)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"cloud.provider": "aws",
+		"cloud.platform": "aws_openshift",
+	}, got)
+}
+
+func TestDetectWithTLS(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(awsInfra))
+	}))
+	t.Cleanup(srv.Close)
+
+	cfg := testConfig(srv)
+	cfg.TLSs.CAPem = configopaque.String(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: srv.Certificate().Raw}))
+
+	got, err := detect(t, cfg, true)
+	require.NoError(t, err)
+	assert.Equal(t, "my-cluster", got["k8s.cluster.name"])
+}
+
+func TestDetectWithInsecureSkipVerify(t *testing.T) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(awsInfra))
+	}))
+	t.Cleanup(srv.Close)
+
+	// No CA is configured, so the projected CA must not be required.
+	cfg := testConfig(srv)
+	cfg.TLSs.InsecureSkipVerify = true
+
+	got, err := detect(t, cfg, true)
+	require.NoError(t, err)
+	assert.Equal(t, "my-cluster", got["k8s.cluster.name"])
+}
+
+func TestNewDetectorInsecure(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.TLSs.Insecure = true
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	// A nil TLS config would make the SDK detector read the projected CA.
+	assert.NotNil(t, d.(*detector).tlsCfg)
+}
+
+func TestReadSVCAddressFromENVIPv6(t *testing.T) {
+	t.Setenv("KUBERNETES_SERVICE_HOST", "::1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	got, err := readSVCAddressFromENV()
+	require.NoError(t, err)
+	assert.Equal(t, "https://[::1]:443", got)
+}
+
+func TestNewDetectorInvalidTLS(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.TLSs.CAFile = "/does/not/exist"
+	_, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	assert.Error(t, err)
+}
+
+func TestDetectNotInCluster(t *testing.T) {
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "")
+
+	got, err := detect(t, CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	_, err = detect(t, CreateDefaultConfig(), true)
+	assert.Error(t, err)
 }

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -882,43 +883,45 @@ func TestUnmarshalLogs_ResourceHealth(t *testing.T) {
 	}
 }
 
-func TestUnmarshalLogs_GateValidationError(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
-	}()
-
-	u := &ResourceLogsUnmarshaler{
-		Version: testBuildInfo.Version,
-		Logger:  zap.NewNop(),
+// setFeatureGatesForTest sets the semconv migration feature gates and restores
+// their previous values when the test finishes.
+func setFeatureGatesForTest(t *testing.T, emitV1, dontEmitV0 bool) {
+	t.Helper()
+	for _, g := range []struct {
+		gate    *featuregate.Gate
+		enabled bool
+	}{
+		{metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate, emitV1},
+		{metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate, dontEmitV0},
+	} {
+		previous := g.gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(g.gate.ID(), g.enabled))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(g.gate.ID(), previous))
+		})
 	}
-
-	data, err := os.ReadFile("testdata/cornercases/minimum.json")
-	require.NoError(t, err)
-
-	_, err = u.UnmarshalLogs(data)
-	require.ErrorContains(t, err, "pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
 }
 
-func TestUnmarshalLogs_StableGates(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), true))
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), false))
-	}()
-
+func TestUnmarshalLogs_FeatureGates(t *testing.T) {
 	tests := map[string]struct {
-		logFilename      string
+		emitV1           bool
+		dontEmitV0       bool
 		expectedFilename string
 	}{
-		"app_logs": {
-			logFilename:      "testdata/appservicelog/appservice_applogs.json",
-			expectedFilename: "testdata/appservicelog/appservice_applogs_stable_expected.yaml",
+		"v0 only": {
+			emitV1:           false,
+			dontEmitV0:       false,
+			expectedFilename: "testdata/appservicelog/appservice_applogs_v0_expected.yaml",
 		},
-		"minimum": {
-			logFilename:      "testdata/cornercases/minimum.json",
-			expectedFilename: "testdata/cornercases/minimum_stable_expected.yaml",
+		"v0 and v1": {
+			emitV1:           true,
+			dontEmitV0:       false,
+			expectedFilename: "testdata/appservicelog/appservice_applogs_dup_expected.yaml",
+		},
+		"v1 only (default)": {
+			emitV1:           true,
+			dontEmitV0:       true,
+			expectedFilename: "testdata/appservicelog/appservice_applogs_expected.yaml",
 		},
 	}
 
@@ -929,16 +932,61 @@ func TestUnmarshalLogs_StableGates(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(test.logFilename)
+			setFeatureGatesForTest(t, test.emitV1, test.dontEmitV0)
+
+			data, err := os.ReadFile("testdata/appservicelog/appservice_applogs.json")
 			require.NoError(t, err)
 
 			logs, err := u.UnmarshalLogs(data)
 			require.NoError(t, err)
 
-			// golden.WriteLogs(t, test.expectedFilename, logs)
 			expectedLogs, err := golden.ReadLogs(test.expectedFilename)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestCheckFeatureGates(t *testing.T) {
+	tests := map[string]struct {
+		emitV1      bool
+		dontEmitV0  bool
+		expectedErr error
+		expectWarn  bool
+	}{
+		"v0 only": {
+			emitV1:     false,
+			dontEmitV0: false,
+			expectWarn: true,
+		},
+		"v0 and v1": {
+			emitV1:     true,
+			dontEmitV0: false,
+			expectWarn: true,
+		},
+		"v1 only (default)": {
+			emitV1:     true,
+			dontEmitV0: true,
+		},
+		"invalid": {
+			emitV1:      false,
+			dontEmitV0:  true,
+			expectedErr: errInvalidFeatureGates,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			setFeatureGatesForTest(t, test.emitV1, test.dontEmitV0)
+
+			core, observed := observer.New(zap.WarnLevel)
+			err := CheckFeatureGates(zap.New(core))
+			require.ErrorIs(t, err, test.expectedErr)
+			if test.expectWarn {
+				require.Equal(t, 1, observed.Len())
+			} else {
+				require.Zero(t, observed.Len())
+			}
 		})
 	}
 }

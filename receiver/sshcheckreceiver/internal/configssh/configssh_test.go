@@ -116,6 +116,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, client.User, test.settings.Username)
+			assert.Equal(t, test.settings.Timeout, client.Timeout)
 
 			if test.settings.KeyFile != "" || test.settings.Password != "" {
 				assert.Len(t, client.Auth, 1)

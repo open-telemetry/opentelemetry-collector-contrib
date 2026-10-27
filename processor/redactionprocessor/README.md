@@ -13,8 +13,8 @@ value checks are done.
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fredaction%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fredaction) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fredaction%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fredaction) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_redaction)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_redaction&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@mx-psi](https://www.github.com/mx-psi), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@iblancasa](https://www.github.com/iblancasa) |
-| Emeritus      | [@leonsp-ai](https://www.github.com/leonsp-ai) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@iblancasa](https://www.github.com/iblancasa) |
+| Emeritus      | [@leonsp-ai](https://www.github.com/leonsp-ai), [@dmitryax](https://www.github.com/dmitryax) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -170,7 +170,7 @@ The value is then masked according to the configuration.
 `hash_function` defines the function for hashing values of matched keys or matches in values
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
-are `md5`, `sha1`, `sha3` (SHA-256), `hmac-sha256`, and `hmac-sha512`.
+are `md5`, `sha1`, `sha3` (SHA3-256), `hmac-sha256`, and `hmac-sha512`.
 
 ### HMAC Hash Functions
 
@@ -196,6 +196,17 @@ When `summary` is set to `debug` or `info`, the processor appends diagnostic
 attributes to each span, log record, or metric datapoint describing the actions
 it took. Setting `summary: silent` suppresses all audit attributes.
 
+The processor treats these attributes as its own bookkeeping rather than as user
+data, so they are never redacted, masked or counted by a later redaction
+processor. Across a chain of redaction processors, the redacted and masked
+outcomes add up, because a removed key and an already masked value cannot be
+observed again. The allowed and ignored outcomes describe the record as it
+currently stands, which every processor re-derives in full, so the last one to
+see the data reports them rather than adding to its predecessor. Because `silent`
+suppresses the audit trail, a processor configured with it claims no ownership
+of one it finds: the ordinary `allowed_keys` rules apply, so an egress processor
+can strip an upstream audit trail before the data leaves the collector.
+
 ### Attribute-level audit (spans, logs, metric datapoints)
 
 These attributes are added to the record's attribute map:
@@ -212,8 +223,9 @@ These attributes are added to the record's attribute map:
 
 ### Log body audit
 
-For log records whose body is a map, the processor additionally appends audit
-attributes into the body map itself:
+For log records whose body is a map, the processor additionally reports on the
+body. These attributes are added to the record'''s attribute map, alongside those
+above, not into the body map:
 
 | Attribute | `info` | `debug` | Description |
 |---|:---:|:---:|---|

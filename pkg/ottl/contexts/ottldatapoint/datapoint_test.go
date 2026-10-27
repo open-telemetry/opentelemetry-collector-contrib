@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
@@ -2324,4 +2325,21 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext: func(options ...TransformContextOption) *TransformContext {
+			return NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), pmetric.NewMetric(), pmetric.NewNumberDataPoint(), options...)
+		},
+		WithCache: WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }
