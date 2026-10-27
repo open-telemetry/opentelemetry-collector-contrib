@@ -62,7 +62,20 @@ type transaction struct {
 	buildInfo             component.BuildInfo
 	obsrecv               *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
-	bufBytes []byte
+	bufBytes         []byte
+	mfSlab           []metricFamily
+	mgSlab           []metricGroup
+	exemplarSlab     []exemplar.Exemplar
+	familyAllocCount int
+	groupAllocCount  int
+	lastRKey         resourceKey
+	lastScope        scopeID
+	lastMetricName   string
+	lastMFIsExpHist  bool
+	lastMFIsNHCB     bool
+	lastMF           *metricFamily
+	lastScopeMap     map[metricFamilyKey]*metricFamily
+	hasLastScopeMap  bool
 }
 
 var emptyScopeID scopeID
@@ -95,6 +108,58 @@ func newTransaction(
 		buildInfo:      settings.BuildInfo,
 		obsrecv:        obsrecv,
 		nodeResources:  make(map[resourceKey]pcommon.Resource, 1),
+	}
+}
+
+func (t *transaction) allocMetricFamily(metricName, familyName string, metadata scrape.MetricMetadata) *metricFamily {
+	if len(t.mfSlab) == cap(t.mfSlab) {
+		nextCap := 16
+		if cap(t.mfSlab) > 0 {
+			nextCap = min(cap(t.mfSlab)*2, 1024)
+		}
+		t.mfSlab = make([]metricFamily, 0, nextCap)
+	}
+	idx := len(t.mfSlab)
+	t.mfSlab = t.mfSlab[:idx+1]
+	t.familyAllocCount++
+	mf := &t.mfSlab[idx]
+	mf.tx = t
+	initMetricFamily(mf, metricName, familyName, metadata, t.logger, t.addingNativeHistogram, t.addingNHCB)
+	return mf
+}
+
+func (t *transaction) allocMetricGroup() *metricGroup {
+	if len(t.mgSlab) == cap(t.mgSlab) {
+		nextCap := 16
+		if cap(t.mgSlab) > 0 {
+			nextCap = min(cap(t.mgSlab)*2, 1024)
+		}
+		t.mgSlab = make([]metricGroup, 0, nextCap)
+	}
+	idx := len(t.mgSlab)
+	t.mgSlab = t.mgSlab[:idx+1]
+	t.groupAllocCount++
+	return &t.mgSlab[idx]
+}
+
+func (t *transaction) appendExemplarToGroup(mg *metricGroup, e exemplar.Exemplar) {
+	if t.exemplarSlab == nil {
+		t.exemplarSlab = make([]exemplar.Exemplar, 0, 64)
+	}
+	switch {
+	case mg.exemplarLen == 0:
+		mg.exemplarOff = int32(len(t.exemplarSlab))
+		mg.exemplarLen = 1
+		t.exemplarSlab = append(t.exemplarSlab, e)
+	case int(mg.exemplarOff)+int(mg.exemplarLen) == len(t.exemplarSlab):
+		mg.exemplarLen++
+		t.exemplarSlab = append(t.exemplarSlab, e)
+	default:
+		newOff := int32(len(t.exemplarSlab))
+		t.exemplarSlab = append(t.exemplarSlab, t.exemplarSlab[mg.exemplarOff:int(mg.exemplarOff)+int(mg.exemplarLen)]...)
+		t.exemplarSlab = append(t.exemplarSlab, e)
+		mg.exemplarOff = newOff
+		mg.exemplarLen++
 	}
 }
 
@@ -213,28 +278,55 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key res
 // getOrCreateMetricFamily returns the metric family for the given metric name and scope,
 // and true if an existing family was found.
 func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn string) *metricFamily {
-	if _, ok := t.families[key]; !ok {
-		t.families[key] = make(map[scopeID]map[metricFamilyKey]*metricFamily)
+	if t.lastMF != nil &&
+		t.lastRKey == key &&
+		t.lastScope == scope &&
+		t.lastMFIsExpHist == t.addingNativeHistogram &&
+		t.lastMFIsNHCB == t.addingNHCB &&
+		t.lastMetricName == mn {
+		return t.lastMF
 	}
-	if _, ok := t.families[key][scope]; !ok {
-		t.families[key][scope] = make(map[metricFamilyKey]*metricFamily)
+
+	var scopeMap map[metricFamilyKey]*metricFamily
+	if t.hasLastScopeMap && t.lastRKey == key && t.lastScope == scope {
+		scopeMap = t.lastScopeMap
+	} else {
+		rMap, ok := t.families[key]
+		if !ok {
+			rMap = make(map[scopeID]map[metricFamilyKey]*metricFamily, 1)
+			t.families[key] = rMap
+		}
+		scopeMap, ok = rMap[scope]
+		if !ok {
+			scopeMap = make(map[metricFamilyKey]*metricFamily, 16)
+			rMap[scope] = scopeMap
+		}
+		t.lastRKey = key
+		t.lastScope = scope
+		t.lastScopeMap = scopeMap
+		t.hasLastScopeMap = true
 	}
 
 	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
-
-	curMf, ok := t.families[key][scope][mfKey]
-
+	curMf, ok := scopeMap[mfKey]
 	if !ok {
-		_, fn := metadataForMetric(mn, t.mc)
+		md, fn := metadataForMetric(mn, t.mc)
 		if fn != mn {
 			fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
-			if mf, exists := t.families[key][scope][fnKey]; exists && mf.includesMetric(mn) {
-				return mf
+			if mf, exists := scopeMap[fnKey]; exists && mf.includesMetric(mn) {
+				curMf = mf
 			}
 		}
-		curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
-		t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
+		if curMf == nil {
+			curMf = t.allocMetricFamily(mn, fn, md)
+			scopeMap[metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
+		}
 	}
+
+	t.lastMetricName = mn
+	t.lastMFIsExpHist = t.addingNativeHistogram
+	t.lastMFIsNHCB = t.addingNHCB
+	t.lastMF = curMf
 	return curMf
 }
 

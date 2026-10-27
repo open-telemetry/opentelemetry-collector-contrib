@@ -1606,7 +1606,7 @@ func TestPopulateAttributes(t *testing.T) {
 	}
 }
 
-func TestMetricFamilyMultiGroup(t *testing.T) {
+func TestMetricFamilyMultiGroupAndInterleavedExemplars(t *testing.T) {
 	mp := newMetricFamily("counter", mc, zap.NewNop(), false, false)
 
 	lsA := labels.FromStrings("__name__", "counter", "series", "a")
@@ -1616,12 +1616,12 @@ func TestMetricFamilyMultiGroup(t *testing.T) {
 	refB, _ := getSeriesRefWithoutScopeLabels(nil, lsB, mp.mtype)
 	refC, _ := getSeriesRefWithoutScopeLabels(nil, lsC, mp.mtype)
 
-	// Group A uses inlineGroup without allocating mp.groups.
+	// Group A uses inlineGroup.
 	require.NoError(t, mp.addSeries(refA, "counter_created", lsA, 11, 1.0))
 	require.Len(t, mp.groupOrders, 1)
 	require.Nil(t, mp.groups)
 
-	// Group B transitions to multi-group map + slice.
+	// Group B transitions to multi-group map + slab allocation.
 	require.NoError(t, mp.addSeries(refB, "counter_created", lsB, 11, 2.0))
 	require.Len(t, mp.groupOrders, 2)
 	require.NotNil(t, mp.groups)
@@ -1635,19 +1635,35 @@ func TestMetricFamilyMultiGroup(t *testing.T) {
 	require.NoError(t, mp.addSeries(refB, "counter", lsB, 11, 20.0))
 	require.NoError(t, mp.addSeries(refC, "counter", lsC, 11, 30.0))
 
+	// Interleaved exemplars force non-contiguous exemplar slab reallocation in appendExemplarToGroup
+	// and non-lastGroupKey lookups in getGroup.
 	mp.addExemplar(refA, exemplar.Exemplar{Value: 1, Ts: 11, Labels: labels.FromStrings("ex", "a1")})
 	mp.addExemplar(refB, exemplar.Exemplar{Value: 2, Ts: 11, Labels: labels.FromStrings("ex", "b1")})
 	mp.addExemplar(refA, exemplar.Exemplar{Value: 3, Ts: 11, Labels: labels.FromStrings("ex", "a2")})
+	mp.addExemplar(refC, exemplar.Exemplar{Value: 4, Ts: 11, Labels: labels.FromStrings("ex", "c1")})
+	mp.addExemplar(refB, exemplar.Exemplar{Value: 5, Ts: 11, Labels: labels.FromStrings("ex", "b2")})
 
 	sl := pmetric.NewMetricSlice()
 	mp.appendMetric(sl, false)
 	require.Equal(t, 1, sl.Len())
 	dps := sl.At(0).Sum().DataPoints()
 	require.Equal(t, 3, dps.Len())
+
 	require.Equal(t, 10.0, dps.At(0).DoubleValue())
 	require.Equal(t, 2, dps.At(0).Exemplars().Len())
+	require.Equal(t, 1.0, dps.At(0).Exemplars().At(0).DoubleValue())
+	require.Equal(t, 3.0, dps.At(0).Exemplars().At(1).DoubleValue())
+
 	require.Equal(t, 20.0, dps.At(1).DoubleValue())
-	require.Equal(t, 1, dps.At(1).Exemplars().Len())
+	require.Equal(t, 2, dps.At(1).Exemplars().Len())
+	require.Equal(t, 2.0, dps.At(1).Exemplars().At(0).DoubleValue())
+	require.Equal(t, 5.0, dps.At(1).Exemplars().At(1).DoubleValue())
+
 	require.Equal(t, 30.0, dps.At(2).DoubleValue())
+	require.Equal(t, 1, dps.At(2).Exemplars().Len())
+	require.Equal(t, 4.0, dps.At(2).Exemplars().At(0).DoubleValue())
+
+	nhcbMF := newMetricFamily("histogram", mc, zap.NewNop(), true, true)
+	require.Equal(t, pmetric.MetricTypeHistogram, nhcbMF.mtype)
 }
 

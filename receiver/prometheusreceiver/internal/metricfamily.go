@@ -35,6 +35,7 @@ type metricFamily struct {
 	inlineGroupSlot [1]*metricGroup
 	lastGroupKey    uint64
 	lastGroupIdx    int
+	tx              *transaction
 	logger          *zap.Logger
 }
 
@@ -54,17 +55,25 @@ type metricGroup struct {
 	hValue         *histogram.Histogram
 	fhValue        *histogram.FloatHistogram
 	complexValue   []dataPoint
-	exemplars      pmetric.ExemplarSlice
+	exemplarOff    int32
+	exemplarLen    int32
 	mtype          pmetric.MetricType
 	hasCount       bool
 	hasSum         bool
 	hasValue       bool
-	hasExemplars   bool
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
+	mf := &metricFamily{
+		tx: &transaction{},
+	}
+	initMetricFamily(mf, metricName, familyName, metadata, logger, isNativeHistogram, isNHCB)
+	return mf
+}
+
+func initMetricFamily(mf *metricFamily, metricName, familyName string, metadata scrape.MetricMetadata, logger *zap.Logger, isNativeHistogram, isNHCB bool) {
 	// Native histograms have intrinsic metric type, use it,
 	// regardless of what metadata says.
 	if isNativeHistogram {
@@ -76,14 +85,12 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
-	return &metricFamily{
-		mtype:        mtype,
-		isMonotonic:  isMonotonic,
-		name:         familyName,
-		metadata:     metadata,
-		lastGroupIdx: -1,
-		logger:       logger,
-	}
+	mf.mtype = mtype
+	mf.isMonotonic = isMonotonic
+	mf.name = familyName
+	mf.metadata = metadata
+	mf.lastGroupIdx = -1
+	mf.logger = logger
 }
 
 // includesMetric returns true if the metric is part of the family
@@ -217,9 +224,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice,
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
-	if mg.hasExemplars {
-		mg.setExemplars(point.Exemplars())
-	}
 }
 
 // toExponentialHistogramDataPoints is based on
@@ -294,9 +298,6 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
-	if mg.hasExemplars {
-		mg.setExemplars(point.Exemplars())
-	}
 }
 
 func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon.UInt64Slice) {
@@ -392,13 +393,16 @@ func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) ([]uint64, 
 	return bucketCounts, valid
 }
 
-func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
-	if mg == nil || !mg.hasExemplars {
+func (mf *metricFamily) setExemplars(mg *metricGroup, exemplars pmetric.ExemplarSlice) {
+	if mg == nil || mg.exemplarLen == 0 || mf.tx == nil {
 		return
 	}
-	if mg.exemplars.Len() > 0 {
-		mg.exemplars.MoveAndAppendTo(exemplars)
+	src := mf.tx.exemplarSlab[mg.exemplarOff : int(mg.exemplarOff)+int(mg.exemplarLen)]
+	exemplars.EnsureCapacity(len(src))
+	for _, e := range src {
+		convertExemplar(e, exemplars.AppendEmpty())
 	}
+	mg.exemplarLen = 0
 }
 
 func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
@@ -467,9 +471,6 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 		point.SetDoubleValue(mg.value)
 	}
 	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
-	if mg.hasExemplars {
-		mg.setExemplars(point.Exemplars())
-	}
 }
 
 func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
@@ -535,6 +536,13 @@ func (mf *metricFamily) initMetricGroup(mg *metricGroup, ls labels.Labels, ts in
 	}
 }
 
+func (mf *metricFamily) allocGroup() *metricGroup {
+	if mf.tx != nil {
+		return mf.tx.allocMetricGroup()
+	}
+	return &metricGroup{}
+}
+
 func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
 	if mf.lastGroupIdx >= 0 && mf.lastGroupKey == groupKey {
 		return mf.groupOrders[mf.lastGroupIdx]
@@ -554,7 +562,7 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 		mf.groups[mf.lastGroupKey] = 0
 		newOrders := make([]*metricGroup, 2, 8)
 		newOrders[0] = mf.inlineGroupSlot[0]
-		mg := &metricGroup{}
+		mg := mf.allocGroup()
 		mf.initMetricGroup(mg, ls, ts)
 		newOrders[1] = mg
 		mf.groupOrders = newOrders
@@ -569,7 +577,7 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 		return mf.groupOrders[idx]
 	}
 	idx := len(mf.groupOrders)
-	mg := &metricGroup{}
+	mg := mf.allocGroup()
 	mf.initMetricGroup(mg, ls, ts)
 	mf.groupOrders = append(mf.groupOrders, mg)
 	mf.groups[groupKey] = idx
@@ -732,8 +740,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		hdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := hdpL.Len()
 			mg.toDistributionPoint(hdpL, mf.logger)
+			if mg.exemplarLen > 0 && hdpL.Len() > beforeLen {
+				mf.setExemplars(mg, hdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = hdpL.Len()
 
@@ -741,8 +754,8 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		summary := metric.SetEmptySummary()
 		sdpL := summary.DataPoints()
 		sdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
-			mg.toSummaryPoint(sdpL)
+		for i := range mf.groupOrders {
+			mf.groupOrders[i].toSummaryPoint(sdpL)
 		}
 		pointCount = sdpL.Len()
 
@@ -752,8 +765,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		sdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := sdpL.Len()
 			mg.toNumberDataPoint(sdpL)
+			if mg.exemplarLen > 0 && sdpL.Len() > beforeLen {
+				mf.setExemplars(mg, sdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = sdpL.Len()
 
@@ -762,8 +780,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		hdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := hdpL.Len()
 			mg.toExponentialHistogramDataPoints(hdpL)
+			if mg.exemplarLen > 0 && hdpL.Len() > beforeLen {
+				mf.setExemplars(mg, hdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = hdpL.Len()
 
@@ -771,8 +794,13 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
 		gdpL.EnsureCapacity(len(mf.groupOrders))
-		for _, mg := range mf.groupOrders {
+		for i := range mf.groupOrders {
+			mg := mf.groupOrders[i]
+			beforeLen := gdpL.Len()
 			mg.toNumberDataPoint(gdpL)
+			if mg.exemplarLen > 0 && gdpL.Len() > beforeLen {
+				mf.setExemplars(mg, gdpL.At(beforeLen).Exemplars())
+			}
 		}
 		pointCount = gdpL.Len()
 	}
@@ -789,14 +817,10 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 		return
 	}
 	mg := mf.getGroup(seriesRef)
-	if mg == nil {
+	if mg == nil || mf.tx == nil {
 		return
 	}
-	if !mg.hasExemplars {
-		mg.exemplars = pmetric.NewExemplarSlice()
-		mg.hasExemplars = true
-	}
-	convertExemplar(e, mg.exemplars.AppendEmpty())
+	mf.tx.appendExemplarToGroup(mg, e)
 }
 
 // convertExemplar converts a Prometheus exemplar's labels to an OTel exemplar.
