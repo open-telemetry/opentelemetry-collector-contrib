@@ -126,6 +126,13 @@ type Config struct {
 	// policies emit a real decision (recorded in the decision cache and, for
 	// kept traces, stamped with ot=th) rather than silently dropping spans.
 	Eviction EvictionConfig `mapstructure:"eviction"`
+	// FleetTrackerID optionally names an extension that reports the collector
+	// fleet's live member count. When set, every adaptive_throughput rule's
+	// goal_throughput is treated as a fleet-wide budget: on each member-count
+	// report N, the effective per-instance goal becomes
+	// max(goal_throughput / N, 1). Unset (default), goals apply per instance.
+	// adaptive_percentage rules are unaffected.
+	FleetTrackerID *component.ID `mapstructure:"fleet_tracker"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

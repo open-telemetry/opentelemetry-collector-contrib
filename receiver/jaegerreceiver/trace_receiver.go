@@ -155,9 +155,9 @@ type agentHandler struct {
 	obsrecv      *receiverhelper.ObsReport
 }
 
-// EmitZipkinBatch is unsupported agent's
-func (*agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) (err error) {
-	panic("unsupported receiver")
+// EmitZipkinBatch is unsupported by the Jaeger receiver.
+func (*agentHandler) EmitZipkinBatch(context.Context, []*zipkincore.Span) error {
+	return errors.ErrUnsupported
 }
 
 // EmitBatch implements thrift-gen/agent/Agent and it forwards

@@ -38,7 +38,7 @@
         "/^pkg/semconvtest/semconvtest\\.go$/"
       ],
       "matchStrings": [
-        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*defaultWeaverVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     }
   ],
@@ -299,6 +299,7 @@
   "prConcurrentLimit": 200,
   "prHourlyLimit": 5,
   "postUpdateOptions": [
-    "gomodTidyAll"
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
   ]
 }

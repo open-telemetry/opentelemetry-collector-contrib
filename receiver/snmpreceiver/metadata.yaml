@@ -12,8 +12,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [tamir-michaeli]
-    emeritus: [StefanKurek]
+    active: [ajimenez1503, svencowart]
+    emeritus: [StefanKurek, tamir-michaeli]
 
 tests:
   config:

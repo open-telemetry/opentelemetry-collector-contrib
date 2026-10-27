@@ -236,8 +236,8 @@ func runPerfSchemaSetup(t *testing.T, cfg *Config) {
 // end-to-end against real database containers:
 //
 //   - getDBVersion() correctly identifies MySQL vs MariaDB
-//   - scrapeTopQueryFunc uses the 6-column template on MySQL 8+ (query_sample_text present)
-//     and the 5-column fallback on MariaDB (no query_sample_text column)
+//   - scrapeTopQueryFunc uses the primary template on MySQL 8+ (query_sample_text
+//     present) and the fallback template on MariaDB (no query_sample_text column)
 //   - The shared plan cache is populated by scrapeTopQueryFunc so that
 //     scrapeQuerySampleFunc reuses cached plans without a second EXPLAIN call
 //
@@ -504,7 +504,7 @@ func TestIntegrationLogScraper(t *testing.T) {
 // TestVersionCompatibility verifies that getDBVersion() correctly identifies
 // MySQL and MariaDB flavors, and that getTopQueries() and getQuerySamples() select
 // the right query templates:
-//   - getTopQueries: 6-column (query_sample_text) for MySQL 8+, 5-column fallback otherwise
+//   - getTopQueries: primary template (with query_sample_text) for MySQL 8+, fallback otherwise
 //
 // This test manages containers directly with testcontainers.GenericContainer rather
 // than using scraperinttest.NewIntegrationTest. scraperinttest validates metrics
@@ -517,7 +517,7 @@ func TestVersionCompatibility(t *testing.T) {
 		name              string
 		image             string
 		wantProduct       dbProduct
-		wantSampleTextCol bool // true ↔ 6-column top-query template used
+		wantSampleTextCol bool // true ↔ primary top-query template (with query_sample_text) used
 		wantReplicaStatus bool // true ↔ SHOW REPLICA STATUS used instead of SHOW SLAVE STATUS
 		wantRedoLogStats  bool // true ↔ InnoDB redo-log LSN metrics are supported
 		wantBackupAdmin   bool // true ↔ redo-log metrics require BACKUP_ADMIN
@@ -626,12 +626,12 @@ func TestVersionCompatibility(t *testing.T) {
 			// --- getTopQueries: must succeed without error ---
 			// No workload is running, so the result may be empty, but the query
 			// itself must execute without error — which proves the correct template
-			// (5-column vs 6-column) was chosen for this server version.
+			// (primary vs fallback) was chosen for this server version.
 			queries, err := c.getTopQueries(10, 60, dv.supportsQuerySampleText())
 			require.NoError(t, err, "getTopQueries should not fail (wrong template would cause 'unknown column' error)")
 
 			// For MySQL 8+, any top queries returned must have querySampleText
-			// populated (non-empty string is only possible with the 6-column query).
+			// populated (non-empty string is only possible with the primary query).
 			// For MySQL <8 / MariaDB, querySampleText must always be empty string
 			// because the fallback template omits the column.
 			for _, q := range queries {
@@ -929,12 +929,15 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 				// Exact-value assertions where the value is known.
 				assertStrAttrEqual(t, attrs, "db.system.name", "mysql", idx)
 				assertStrAttrEqual(t, attrs, "mysql.threads.processlist_command", "Query", idx)
+				// GET_LOCK is a genuine blocked wait, so session.status must be "waiting"
+				// here — asserting the exact value (not just non-empty) is what makes the
+				// wait_event.type/.name reassembly check below meaningful instead of skippable.
+				assertStrAttrEqual(t, attrs, "mysql.session.status", "waiting", idx)
 
 				// Non-empty string attributes — value is version/session-dependent.
 				assertStrAttrNonEmpty(t, attrs, "user.name", idx)
 				assertStrAttrNonEmpty(t, attrs, "mysql.threads.processlist_state", idx)
 				assertStrAttrNonEmpty(t, attrs, "mysql.wait_type", idx)
-				assertStrAttrNonEmpty(t, attrs, "mysql.session.status", idx)
 				// digest is empty for in-flight statements that haven't completed
 				// digesting yet (MySQL 5.7, MariaDB) — presence is sufficient.
 				_, hasDigest := attrs.Get("mysql.events_statements_current.digest")
@@ -963,19 +966,15 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 
 				// mysql.wait_event.type and mysql.wait_event.name are derived from
 				// mysql.wait_type by splitting it on its first two '/'-separated
-				// segments. GET_LOCK is a genuine blocked wait (session.status is
-				// "waiting" here), so this record is where that derivation actually
-				// runs — reassembling the two must reproduce the raw value exactly.
-				if status, ok := attrs.Get("mysql.session.status"); ok && status.Str() == "waiting" {
-					waitType, hasWaitType := attrs.Get("mysql.wait_type")
-					waitEventType, hasWaitEventType := attrs.Get("mysql.wait_event.type")
-					waitEventName, hasWaitEventName := attrs.Get("mysql.wait_event.name")
-					assert.True(t, hasWaitType && hasWaitEventType && hasWaitEventName,
-						"record %d (GET_LOCK): mysql.wait_type/mysql.wait_event.type/mysql.wait_event.name missing on a waiting record", idx)
-					if hasWaitType && hasWaitEventType && hasWaitEventName {
-						assert.Equal(t, waitType.Str(), "wait/"+waitEventType.Str()+"/"+waitEventName.Str(),
-							"record %d (GET_LOCK): mysql.wait_event.type/.name must reassemble to mysql.wait_type", idx)
-					}
+				// segments — reassembling the two must reproduce the raw value exactly.
+				waitType, hasWaitType := attrs.Get("mysql.wait_type")
+				waitEventType, hasWaitEventType := attrs.Get("mysql.wait_event.type")
+				waitEventName, hasWaitEventName := attrs.Get("mysql.wait_event.name")
+				assert.True(t, hasWaitType && hasWaitEventType && hasWaitEventName,
+					"record %d (GET_LOCK): mysql.wait_type/mysql.wait_event.type/mysql.wait_event.name missing on a waiting record", idx)
+				if hasWaitType && hasWaitEventType && hasWaitEventName {
+					assert.Equal(t, waitType.Str(), "wait/"+waitEventType.Str()+"/"+waitEventName.Str(),
+						"record %d (GET_LOCK): mysql.wait_event.type/.name must reassemble to mysql.wait_type", idx)
 				}
 
 				// Network attributes — non-negative integers (port may be 0 for Unix socket clients).
