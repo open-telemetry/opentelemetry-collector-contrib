@@ -149,6 +149,7 @@ func TestEventHubEventHandler_NewMessageHandler_MissingConsumerDoesNotPanic(t *t
 				err = handler.newMessageHandler(t.Context(), getEventHubEvent(tt.eventData))
 			})
 			require.NoError(t, err)
+			blobClient.AssertNotCalled(t, "readBlob", mock.Anything, mock.Anything, mock.Anything)
 			blobClient.AssertNotCalled(t, "deleteBlob", mock.Anything, mock.Anything, mock.Anything)
 		})
 	}
