@@ -2,7 +2,7 @@ resourceMetrics:
   - resource: {}
     scopeMetrics:
       - metrics:
-          - description: Measures the duration of TCP connection.
+          - description: Measures the duration of a successful TCP check, including query_response operations.
             name: tcpcheck.duration
             gauge:
               dataPoints:
@@ -14,7 +14,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ms
-          - description: 1 if the TCP client successfully connected, otherwise 0.
+          - description: 1 if the TCP connection and all query_response operations succeeded, otherwise 0.
             name: tcpcheck.status
             gauge:
               dataPoints:

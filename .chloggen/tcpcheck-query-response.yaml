@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/tcp_check
+note: Add optional query_response sequences for application-level TCP checks.
+issues: [51971]
+subtext: Config.Targets now uses TargetConfig instead of confignet.TCPAddrConfig.
+change_logs: [user, api]

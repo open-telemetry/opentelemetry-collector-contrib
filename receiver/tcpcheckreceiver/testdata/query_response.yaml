@@ -1,0 +1,28 @@
+targets:
+  # Case 1: the server sends a greeting immediately, so only expect is needed.
+  - endpoint: mail.example.com:25
+    dialer:
+      timeout: 5s
+    max_read_size: 1024
+    query_response:
+      - expect: "^220"
+  # Case 2: send a request first, then expect its response in a separate step.
+  - endpoint: localhost:6379
+    dialer:
+      timeout: 5s
+    query_response:
+      - send: "PING\r\n"
+      - expect: '^\+PONG\r\n'
+  # Capture a value from the server's message and use it in the reply.
+  - endpoint: irc.example.com:6667
+    dialer:
+      timeout: 5s
+    query_response:
+      - expect: 'PING :([^\r\n]+)\r\n'
+        send: "PONG ${1}\r\n"
+  - endpoint: localhost:1234
+    dialer:
+      timeout: 1s
+    query_response:
+      - send_bytes: AAE=
+      - expect_bytes: AgM=

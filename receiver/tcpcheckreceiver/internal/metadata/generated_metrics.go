@@ -3,14 +3,13 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"time"
 )
 
 const (
@@ -39,6 +38,8 @@ const (
 	AttributeErrorCodeInvalidEndpoint
 	AttributeErrorCodeNetworkUnreachable
 	AttributeErrorCodeUnknownError
+	AttributeErrorCodeExpectMismatch
+	AttributeErrorCodeStepTimeout
 )
 
 // String returns the string representation of the AttributeErrorCode.
@@ -54,6 +55,10 @@ func (av AttributeErrorCode) String() string {
 		return "network_unreachable"
 	case AttributeErrorCodeUnknownError:
 		return "unknown_error"
+	case AttributeErrorCodeExpectMismatch:
+		return "expect_mismatch"
+	case AttributeErrorCodeStepTimeout:
+		return "step_timeout"
 	}
 	return ""
 }
@@ -65,6 +70,8 @@ var MapAttributeErrorCode = map[string]AttributeErrorCode{
 	"invalid_endpoint":    AttributeErrorCodeInvalidEndpoint,
 	"network_unreachable": AttributeErrorCodeNetworkUnreachable,
 	"unknown_error":       AttributeErrorCodeUnknownError,
+	"expect_mismatch":     AttributeErrorCodeExpectMismatch,
+	"step_timeout":        AttributeErrorCodeStepTimeout,
 }
 
 var MetricsInfo = metricsInfo{
@@ -102,7 +109,7 @@ type metricTcpcheckDuration struct {
 // init fills tcpcheck.duration metric with initial data.
 func (m *metricTcpcheckDuration) init() {
 	m.data.SetName("tcpcheck.duration")
-	m.data.SetDescription("Measures the duration of TCP connection.")
+	m.data.SetDescription("Measures the duration of a successful TCP check, including query_response operations.")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -250,7 +257,7 @@ type metricTcpcheckStatus struct {
 // init fills tcpcheck.status metric with initial data.
 func (m *metricTcpcheckStatus) init() {
 	m.data.SetName("tcpcheck.status")
-	m.data.SetDescription("1 if the TCP client successfully connected, otherwise 0.")
+	m.data.SetDescription("1 if the TCP connection and all query_response operations succeeded, otherwise 0.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
