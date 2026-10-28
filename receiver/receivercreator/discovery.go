@@ -133,6 +133,7 @@ func (builder *k8sHintsBuilder) createScraper(
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, port), userConfMap)
 	recTemplate.signals = receiverSignals{metrics: true, logs: false, traces: false, profiles: false}
+	recTemplate.fromHints = true
 
 	return &recTemplate, err
 }
@@ -177,6 +178,7 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, containerName), userConfMap)
 	recTemplate.signals = receiverSignals{metrics: false, logs: true, traces: false, profiles: false}
+	recTemplate.fromHints = true
 
 	return &recTemplate, err
 }
