@@ -169,18 +169,18 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 			case metric.ID == "numLateRecordsDropped":
 				_ = s.mb.RecordFlinkTaskRecordCountDataPoint(now, metric.Value, metadata.AttributeRecordDropped)
 				// record operator metrics
-			case strings.Contains(metric.ID, ".numRecordsIn"):
-				operatorName := strings.Split(metric.ID, ".numRecordsIn")
-				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordIn)
-			case strings.Contains(metric.ID, ".numRecordsOut"):
-				operatorName := strings.Split(metric.ID, ".numRecordsOut")
-				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordOut)
-			case strings.Contains(metric.ID, ".numLateRecordsDropped"):
-				operatorName := strings.Split(metric.ID, ".numLateRecordsDropped")
-				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName[0], metadata.AttributeRecordDropped)
-			case strings.Contains(metric.ID, ".currentOutputWatermark"):
-				operatorName := strings.Split(metric.ID, ".currentOutputWatermark")
-				_ = s.mb.RecordFlinkOperatorWatermarkOutputDataPoint(now, metric.Value, operatorName[0])
+			case strings.HasSuffix(metric.ID, ".numRecordsIn"):
+				operatorName := strings.TrimSuffix(metric.ID, ".numRecordsIn")
+				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName, metadata.AttributeRecordIn)
+			case strings.HasSuffix(metric.ID, ".numRecordsOut"):
+				operatorName := strings.TrimSuffix(metric.ID, ".numRecordsOut")
+				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName, metadata.AttributeRecordOut)
+			case strings.HasSuffix(metric.ID, ".numLateRecordsDropped"):
+				operatorName := strings.TrimSuffix(metric.ID, ".numLateRecordsDropped")
+				_ = s.mb.RecordFlinkOperatorRecordCountDataPoint(now, metric.Value, operatorName, metadata.AttributeRecordDropped)
+			case strings.HasSuffix(metric.ID, ".currentOutputWatermark"):
+				operatorName := strings.TrimSuffix(metric.ID, ".currentOutputWatermark")
+				_ = s.mb.RecordFlinkOperatorWatermarkOutputDataPoint(now, metric.Value, operatorName)
 			}
 		}
 		rb := s.mb.NewResourceBuilder()

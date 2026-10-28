@@ -17,7 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
@@ -128,6 +130,7 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 		}))
 
 		cfg := withDefaultConfig(func(config *Config) {
+			config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 			config.ClientConfig.Endpoint = ts.URL
 			config.TimeoutSettings.Timeout = 0
 		})
@@ -258,6 +261,7 @@ func TestOpenSearchLogExporter(t *testing.T) {
 		}))
 
 		cfg := withDefaultConfig(func(config *Config) {
+			config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 			config.ClientConfig.Endpoint = ts.URL
 			config.TimeoutSettings.Timeout = 0
 		})
@@ -382,6 +386,7 @@ func TestOpenSearchMetricExporter(t *testing.T) {
 		}))
 
 		cfg := withDefaultConfig(func(config *Config) {
+			config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 			config.ClientConfig.Endpoint = ts.URL
 			config.TimeoutSettings.Timeout = 0
 		})
@@ -433,6 +438,7 @@ func TestOpenSearchMetricExporterOTelV1(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"
@@ -497,6 +503,7 @@ func TestOpenSearchTraceExporterOTelV1(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"
@@ -561,6 +568,7 @@ func TestOpenSearchLogExporterOTelV1(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"
@@ -623,6 +631,7 @@ func TestOpenSearchOTelV1_CustomIndex(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"
@@ -662,6 +671,7 @@ func TestOpenSearchOTelV1_ManageIndexTemplate(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"
@@ -694,6 +704,7 @@ func TestOpenSearchOTelV1_ManageIndexTemplate_Disabled(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"
@@ -727,6 +738,7 @@ func TestOpenSearchOTelV1_ManageIndexTemplate_AlreadyExists(t *testing.T) {
 	defer ts.Close()
 
 	cfg := withDefaultConfig(func(config *Config) {
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 0
 		config.MappingsSettings.Mode = "otel-v1"

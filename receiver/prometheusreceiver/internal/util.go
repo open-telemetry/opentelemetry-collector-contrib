@@ -68,21 +68,12 @@ func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
 func getSortedNotUsefulLabelsForSeries(mType pmetric.MetricType, ls labels.Labels) []string {
 	base := getSortedNotUsefulLabels(mType)
 	var exclusions []string
-	var seen map[string]struct{}
 	ls.Range(func(l labels.Label) {
 		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) {
 			if exclusions == nil {
 				exclusions = make([]string, 0, len(base)+ls.Len())
 				exclusions = append(exclusions, base...)
-				seen = make(map[string]struct{}, len(base))
-				for _, name := range base {
-					seen[name] = struct{}{}
-				}
 			}
-			if _, ok := seen[l.Name]; ok {
-				return
-			}
-			seen[l.Name] = struct{}{}
 			exclusions = append(exclusions, l.Name)
 		}
 	})

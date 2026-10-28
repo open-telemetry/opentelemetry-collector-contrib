@@ -13,9 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 )
 
 func hello() (ExprFunc[any], error) {
@@ -135,8 +132,6 @@ func returnsBoolKey() (ExprFunc[any], error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
-
 	tests := []struct {
 		name        string
 		val         value
@@ -872,37 +867,6 @@ func Test_newGetter(t *testing.T) {
 				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
 			},
 		},
-		{
-			name: "lambda",
-			val: value{
-				Lambda: &lambdaExpr{
-					Params: []localIdentifierDecl{"value"},
-					Body: lambdaBody{
-						Value: &value{
-							Literal: &mathExprLiteral{
-								Path: &path{Fields: []field{{Name: "value"}}},
-							},
-						},
-					},
-				},
-			},
-			wantLiteral: true,
-			assertValue: func(t *testing.T, a any) bool {
-				expected := newLambdaExpression[any](
-					makeLocalIdentifiers("value"),
-					&localIdentifierGetter[any]{identifier: &basePath[any]{name: "value", localIdentifier: true, fetched: true, originalText: "value"}},
-					nil,
-				)
-				assert.NotNil(t, expected.activationPool)
-				expected.activationPool = nil
-				if v, ok := a.(*LambdaExpression[any]); ok {
-					assert.NotNil(t, v.activationPool)
-					v.activationPool = nil
-					return assert.Equal(t, expected, v)
-				}
-				return assert.Fail(t, "expected LambdaExpression")
-			},
-		},
 	}
 
 	functions := CreateFactoryMap(
@@ -962,6 +926,31 @@ func Test_newGetter(t *testing.T) {
 	t.Run("empty value", func(t *testing.T) {
 		_, err := p.newParseContext().newGetter(value{})
 		assert.Error(t, err)
+	})
+
+	t.Run("lambda", func(t *testing.T) {
+		lambdaValue := value{
+			Lambda: &lambdaExpr{
+				Params: []localIdentifierDecl{{Identifier: "value"}},
+				Body: lambdaBody{
+					Value: &value{
+						Literal: &mathExprLiteral{
+							Path: &path{Fields: []field{{Name: "value"}}},
+						},
+					},
+				},
+			},
+		}
+		for name, val := range map[string]value{
+			"bare":    lambdaValue,
+			"in list": {List: &list{Values: []value{lambdaValue}}},
+			"in map":  {Map: &mapValue{Values: []mapItem{{Key: new("key"), Value: &lambdaValue}}}},
+		} {
+			t.Run(name, func(t *testing.T) {
+				_, err := p.newParseContext().newGetter(val)
+				assert.EqualError(t, err, "lambda expressions can only be passed to function arguments that accept them")
+			})
+		}
 	})
 }
 
@@ -3681,6 +3670,40 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 	}
 }
 
+type mockedPMapGetSetter[K any] struct {
+	m pcommon.Map
+}
+
+func (g *mockedPMapGetSetter[K]) Get(_ context.Context, _ K) (pcommon.Map, error) {
+	return g.m, nil
+}
+
+func (g *mockedPMapGetSetter[K]) Set(_ context.Context, _ K, val pcommon.Map) error {
+	g.m = val
+	return nil
+}
+
+type mockedPMapProvider[K any] struct {
+	pmap *mockedPMapGetSetter[K]
+}
+
+func (g *mockedPMapProvider[K]) Get(_ context.Context, _ K) (any, error) {
+	return g.pmap.m, nil
+}
+
+func (g *mockedPMapProvider[K]) Set(_ context.Context, _ K, val any) error {
+	g.pmap.m = val.(pcommon.Map)
+	return nil
+}
+
+func (g *mockedPMapProvider[K]) PMapGetter() PMapGetter[K] {
+	return g.pmap
+}
+
+func (g *mockedPMapProvider[K]) PMapGetSetter() PMapGetSetter[K] {
+	return g.pmap
+}
+
 func Test_newStandardPMapGetter(t *testing.T) {
 	type args[K any] struct {
 		getter Getter[K]
@@ -3690,10 +3713,12 @@ func Test_newStandardPMapGetter(t *testing.T) {
 		args            args[K]
 		wantLiteralTrue bool
 		wantErr         bool
+		wantSameGetter  PMapGetter[K]
 	}
 
 	m := pcommon.NewMap()
 	m.PutStr("foo", "bar")
+	customPMap := &mockedPMapGetSetter[any]{m: m}
 
 	tests := []testCase[any]{
 		{
@@ -3702,6 +3727,14 @@ func Test_newStandardPMapGetter(t *testing.T) {
 				getter: &mockedGetter[any]{value: m},
 			},
 			wantLiteralTrue: false,
+		},
+		{
+			name: "getter implements pMapGetterProvider",
+			args: args[any]{
+				getter: &mockedPMapProvider[any]{pmap: customPMap},
+			},
+			wantLiteralTrue: false,
+			wantSameGetter:  customPMap,
 		},
 		{
 			name: "getter implements literalGetter with error",
@@ -3728,12 +3761,64 @@ func Test_newStandardPMapGetter(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			if tt.wantSameGetter != nil {
+				assert.Same(t, tt.wantSameGetter, g)
+			}
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, m, val)
 		})
 	}
+}
+
+func Test_newStandardPMapGetSetter(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutStr("foo", "bar")
+
+	replacement := pcommon.NewMap()
+	replacement.PutStr("baz", "qux")
+
+	t.Run("getSetter does not implement pMapGetSetterProvider", func(t *testing.T) {
+		current := pcommon.NewMap()
+		m.CopyTo(current)
+
+		gs, err := newStandardPMapGetSetter(StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return current, nil
+			},
+			Setter: func(_ context.Context, _, val any) error {
+				current = val.(pcommon.Map)
+				return nil
+			},
+		})
+		require.NoError(t, err)
+		assert.IsType(t, StandardPMapGetSetter[any]{}, gs)
+
+		got, err := gs.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, m, got)
+
+		require.NoError(t, gs.Set(t.Context(), nil, replacement))
+		assert.Equal(t, replacement, current)
+	})
+
+	t.Run("getSetter implements pMapGetSetterProvider", func(t *testing.T) {
+		current := pcommon.NewMap()
+		m.CopyTo(current)
+		customPMap := &mockedPMapGetSetter[any]{m: current}
+
+		gs, err := newStandardPMapGetSetter(&mockedPMapProvider[any]{pmap: customPMap})
+		require.NoError(t, err)
+		assert.Same(t, customPMap, gs)
+
+		got, err := gs.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, m, got)
+
+		require.NoError(t, gs.Set(t.Context(), nil, replacement))
+		assert.Equal(t, replacement, customPMap.m)
+	})
 }
 
 func Test_newStandardPSliceGetter(t *testing.T) {

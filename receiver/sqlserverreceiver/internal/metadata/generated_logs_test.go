@@ -31,6 +31,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
+	rb.SetDbSystemVersion("db.system.version-val")
 	rb.SetHostName("host.name-val")
 	rb.SetServerAddress("server.address-val")
 	rb.SetServerPort(11)
@@ -39,6 +40,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+	rb.SetSqlserverDbEditionStandard()
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 	res := rb.Emit()
 
@@ -137,6 +139,9 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
+			lb.RecordDbServerProcedureDefinitionEvent(ctx, timestamp, "db.system.name-val", "db.namespace-val", "sqlserver.procedure_id-val", "sqlserver.procedure_name-val", "sqlserver.procedure.definition-val")
+
+			allEventsCount++
 			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, "db.namespace-val", "db.system.name-val", "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val")
 
 			allEventsCount++
@@ -149,6 +154,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", "db.namespace-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "db.system.name-val", 35, "sqlserver.procedure_id-val", "sqlserver.procedure_name-val", "sqlserver.query.last_started-val", "sqlserver.query.plan.creation_time-val")
 
 			rb := lb.NewResourceBuilder()
+			rb.SetDbSystemVersion("db.system.version-val")
 			rb.SetHostName("host.name-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
@@ -157,6 +163,7 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetServiceNamespace("service.namespace-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+			rb.SetSqlserverDbEditionStandard()
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
@@ -180,6 +187,28 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
+				case "db.server.procedure_definition":
+					assert.False(t, validatedEvents["db.server.procedure_definition"], "Found a duplicate in the events slice: db.server.procedure_definition")
+					validatedEvents["db.server.procedure_definition"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.system.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.namespace")
+					assert.True(t, ok)
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.procedure_id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.procedure_id-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.procedure_name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.procedure_name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.procedure.definition")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.procedure.definition-val", attrVal.Str())
 				case "db.server.query_plan":
 					assert.False(t, validatedEvents["db.server.query_plan"], "Found a duplicate in the events slice: db.server.query_plan")
 					validatedEvents["db.server.query_plan"] = true

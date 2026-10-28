@@ -20,6 +20,15 @@ const (
 	DynamicTemplateModeECS
 )
 
+type HistogramMapping int
+
+const (
+	HistogramMappingTDigest HistogramMapping = iota
+	HistogramMappingRaw
+	HistogramMappingExponential
+	HistogramMappingAggregateMetricDouble
+)
+
 // DataPoint is an interface that allows specifying behavior for each type of data point
 type DataPoint interface {
 	Timestamp() pcommon.Timestamp
@@ -30,4 +39,8 @@ type DataPoint interface {
 	DocCount() uint64
 	HasMappingHint(elasticsearch.MappingHint) bool
 	Metric() pmetric.Metric
+}
+
+func (hm HistogramMapping) String() string {
+	return [...]string{"TDigest", "Raw", "Exponential", "AggregateMetricDouble"}[hm]
 }

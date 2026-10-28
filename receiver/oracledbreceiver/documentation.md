@@ -1863,6 +1863,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | host.name | The host name of Oracle Server | Any Str | true | - | - |
+| oracle.db.edition | The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE"). | Any Str | false | - | - |
 | oracle.db.hosting_type | The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci". | Any Str | true | - | - |
 | oracle.db.open_mode | The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED"). | Any Str | true | - | - |
 | oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - | - |

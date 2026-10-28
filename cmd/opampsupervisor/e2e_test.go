@@ -47,11 +47,11 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 // getTestModes returns the test modes for the supervisor tests.
@@ -2997,12 +2997,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				},
 			)
 
-			outputPath := filepath.Join(t.TempDir(), "output.txt")
-			backend := testbed.NewOTLPHTTPDataReceiver(4318)
-			mockBackend := testbed.NewMockBackend(outputPath, backend)
-			mockBackend.EnableRecording()
-			defer mockBackend.Stop()
-			require.NoError(t, mockBackend.Start())
+			sink := testutil.StartOTLPSink(t, "127.0.0.1:4318")
 
 			extraConfigData := map[string]string{
 				"url":                  server.addr,
@@ -3126,10 +3121,10 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				gotSpans := []string{}
 				expectedSpans := []string{"GetBootstrapInfo", "onMessage"}
 				require.EventuallyWithT(t, func(collect *assert.CollectT) {
-					require.GreaterOrEqual(collect, len(mockBackend.GetReceivedTraces()), len(expectedSpans))
+					require.GreaterOrEqual(collect, len(sink.Traces.AllTraces()), len(expectedSpans))
 				}, 10*time.Second, 250*time.Millisecond)
 
-				receivedTraces := mockBackend.GetReceivedTraces()
+				receivedTraces := sink.Traces.AllTraces()
 				for i := range receivedTraces {
 					gotSpans = append(gotSpans, receivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 				}
@@ -3403,12 +3398,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		},
 	)
 
-	outputPath := filepath.Join(t.TempDir(), "output.txt")
-	backend := testbed.NewOTLPHTTPDataReceiver(4318)
-	mockBackend := testbed.NewMockBackend(outputPath, backend)
-	mockBackend.EnableRecording()
-	defer mockBackend.Stop()
-	require.NoError(t, mockBackend.Start())
+	sink := testutil.StartOTLPSink(t, "127.0.0.1:4318")
 
 	s, _ := newSupervisor(
 		t,
@@ -3450,10 +3440,10 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	expectedSpans := []string{"GetBootstrapInfo"}
 
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		require.GreaterOrEqual(collect, len(mockBackend.GetReceivedTraces()), len(expectedSpans))
+		require.GreaterOrEqual(collect, len(sink.Traces.AllTraces()), len(expectedSpans))
 	}, 10*time.Second, 250*time.Millisecond)
 
-	receivedTraces := mockBackend.GetReceivedTraces()
+	receivedTraces := sink.Traces.AllTraces()
 	require.Equal(t, 1, receivedTraces[0].ResourceSpans().Len())
 	gotServiceName, ok := receivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get("service.name")
 	require.True(t, ok)
