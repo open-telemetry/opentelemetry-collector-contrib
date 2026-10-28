@@ -18,7 +18,10 @@ issues: [52354]
 subtext: |
   On the first cumulative flush of a new explicit or exponential histogram series the connector now reports
   a zero count, sum and bucket counts. The accumulated values are reported from the next flush on.
-  Series that come back after `metrics_expiration` removed them are new series and start at zero again.
+  Series that come back after `metrics_expiration` or `series_expiration` removed them are new series and start at zero again.
+  Exemplars collected before the first flush are no longer attached to the zero point. They are reported
+  with the next data point, which holds the observations they belong to. This also applies to `calls`.
+  A new series is not removed by `series_expiration` before it has reported its accumulated values once.
   Delta temporality is not affected.
 
 # If your change doesn't affect end users or the exported elements of any package,
