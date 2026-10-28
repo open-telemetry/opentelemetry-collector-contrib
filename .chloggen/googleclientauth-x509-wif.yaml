@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: extension/googleclientauth
+component: extension/google_client_auth
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Migrate credential detection to `cloud.google.com/go/auth` to support X.509 certificate-based Workload Identity Federation (WIF).
