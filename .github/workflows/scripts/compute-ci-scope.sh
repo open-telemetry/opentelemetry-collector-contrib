@@ -58,7 +58,7 @@ if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
   fi
   # Mock CRITICAL_FILES if not provided locally
   if [[ -z "${CRITICAL_FILES:-}" ]]; then
-    CRITICAL_FILES='["Makefile", "Makefile.Common", ".golangci.yml", ".github/workflows/", "internal/tools/", "versions.yaml"]'
+    CRITICAL_FILES='["^Makefile", "^Makefile.Common", "^.golangci.yml", "^.github/workflows/build-and-test.yml", "^.github/workflows/scripts/", "^.github/actions/", "^internal/tools/", "^versions.yaml", "^cmd/otelcontribcol/"]'
   fi
 else
   # In CI, these are mandatory.
