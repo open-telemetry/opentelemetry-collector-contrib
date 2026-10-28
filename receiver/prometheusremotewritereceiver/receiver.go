@@ -857,9 +857,11 @@ func addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDat
 	convertDeltaBuckets(histogram.NegativeSpans, histogram.NegativeDeltas, dp.Negative(), layout.negative)
 
 	dp.SetCount(layout.count)
+	// OTLP requires the sum to be zero when the count is.
 	if layout.count > 0 {
-		// OTLP requires a data point with no count to carry no sum.
 		dp.SetSum(histogram.Sum)
+	} else {
+		dp.SetSum(0)
 	}
 
 	attrs.CopyTo(dp.Attributes())
@@ -1290,9 +1292,11 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 	// The count is the bucket total, not the one that arrived: an observation of NaN raises that
 	// one without landing in a bucket.
 	dp.SetCount(count)
+	// OTLP requires the sum to be zero when the count is.
 	if count > 0 {
-		// OTLP requires a data point with no count to carry no sum.
 		dp.SetSum(histogram.Sum)
+	} else {
+		dp.SetSum(0)
 	}
 
 	dp.ExplicitBounds().FromRaw(histogram.CustomValues)

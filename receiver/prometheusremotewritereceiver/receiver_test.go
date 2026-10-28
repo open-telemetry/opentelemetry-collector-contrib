@@ -1578,7 +1578,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
-			name: "nhcb histogram - all observations outside the buckets leave no count or sum",
+			name: "nhcb histogram - all observations outside the buckets leave a zero count and sum",
 			// A histogram whose only observation was NaN has nothing in any bucket. OTLP requires
 			// the sum to be zero when the count is, so it carries neither.
 			request: &writev2.Request{
@@ -1639,6 +1639,7 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.ExplicitBounds().FromRaw([]float64{1.0})
 				dp.BucketCounts().FromRaw([]uint64{0, 0})
+				dp.SetSum(0)
 
 				return metrics
 			}(),
@@ -4895,8 +4896,9 @@ func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
 						}
 						require.Equal(t, population, dp.Count(),
 							"iteration %d: count is the bucket total", n)
-						if dp.Count() == 0 {
-							require.False(t, dp.HasSum(), "iteration %d: no sum without a count", n)
+						if dp.Count() == 0 && !dp.Flags().NoRecordedValue() {
+							require.True(t, dp.HasSum(), "iteration %d: a zero count still carries a sum", n)
+							require.Zero(t, dp.Sum(), "iteration %d: the sum is zero when the count is", n)
 						}
 					}
 				}
@@ -5152,9 +5154,9 @@ func TestFloatFlavorHistogramsAreDropped(t *testing.T) {
 	}
 }
 
-func TestHistogramWithOnlyOverflowBucketHasNoSum(t *testing.T) {
+func TestHistogramWithOnlyOverflowBucketHasZeroSum(t *testing.T) {
 	// Every observation landed in the +Inf bucket, which cannot be represented, so the data point
-	// holds nothing. OTLP requires the sum to be absent once the count is zero.
+	// holds nothing. OTLP requires the sum to be zero once the count is.
 	prwReceiver := setupMetricsReceiver(t)
 
 	metrics, _, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
@@ -5179,7 +5181,8 @@ func TestHistogramWithOnlyOverflowBucketHasNoSum(t *testing.T) {
 	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 		ExponentialHistogram().DataPoints().At(0)
 	assert.Equal(t, uint64(0), dp.Count())
-	assert.False(t, dp.HasSum(), "OTLP requires no sum once the count is zero")
+	assert.True(t, dp.HasSum(), "a zero count still carries a sum")
+	assert.Zero(t, dp.Sum(), "OTLP requires the sum to be zero when the count is")
 	assert.Empty(t, dp.Positive().BucketCounts().AsRaw())
 }
 
@@ -5245,7 +5248,7 @@ func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
 
 // assertExponentialHistogramInvariants checks the two rules the OTLP data model states for an
 // exponential histogram data point: the count equals zero_count plus the bucket populations, and
-// the sum is absent when the count is zero.
+// the sum is zero when the count is.
 func assertExponentialHistogramInvariants(t *testing.T, md pmetric.Metrics) {
 	t.Helper()
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
@@ -5268,9 +5271,9 @@ func assertExponentialHistogramInvariants(t *testing.T, md pmetric.Metrics) {
 					}
 					assert.Equal(t, population, dp.Count(),
 						"metric %q: count must equal zero_count plus the bucket populations", ms.At(k).Name())
-					if dp.Count() == 0 {
-						assert.False(t, dp.HasSum(),
-							"metric %q: sum must not be set when count is zero", ms.At(k).Name())
+					if dp.Count() == 0 && !dp.Flags().NoRecordedValue() {
+						assert.True(t, dp.HasSum(), "metric %q: a zero count still carries a sum", ms.At(k).Name())
+						assert.Zero(t, dp.Sum(), "metric %q: sum must be zero when count is zero", ms.At(k).Name())
 					}
 				}
 			}
