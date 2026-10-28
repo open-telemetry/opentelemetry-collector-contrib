@@ -5,10 +5,12 @@ package opensearchexporter
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -774,6 +777,7 @@ func TestOpenSearchLogExporter_TransportFailureRetryable(t *testing.T) {
 		config.ClientConfig.Endpoint = ts.URL
 		config.TimeoutSettings.Timeout = 50 * time.Millisecond
 		config.BackOffConfig.Enabled = false
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 	})
 
 	f := NewFactory()
@@ -969,4 +973,94 @@ func TestOpenSearchTraceExporter_RetryPreservesWholeBatch(t *testing.T) {
 	assert.GreaterOrEqual(t, attempts, 2, "the first attempt must fail and be retried")
 	assert.Equal(t, wantSpans, indexed,
 		"every span in the batch must be resent on the retry, not just the first")
+}
+
+// TestOpenSearchLogExporter_DeadlineMidFlushRetriesWholeBatch covers a batch larger than
+// the bulk indexer's flush size whose export deadline expires while the first flush is
+// still in flight. The remaining Add calls fail on the expired context, and the retry
+// must resend the whole batch rather than one record.
+func TestOpenSearchLogExporter_DeadlineMidFlushRetriesWholeBatch(t *testing.T) {
+	const records = 160
+	logs := plog.NewLogs()
+	lrs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	padding := strings.Repeat("x", 64<<10)
+	for i := range records {
+		lrs.AppendEmpty().Body().SetStr(fmt.Sprintf("rec-%03d-%s", i, padding))
+	}
+
+	recordID := regexp.MustCompile(`rec-(\d{3})-`)
+	var mu sync.Mutex
+	var attempts int
+	indexed := map[string]struct{}{}
+	firstDone := make(chan struct{})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		attempts++
+		attempt := attempts
+		mu.Unlock()
+
+		body, readErr := io.ReadAll(r.Body)
+		if !assert.NoError(t, readErr) {
+			return
+		}
+		if attempt == 1 {
+			// Outlive the export deadline, then index the request anyway, like a slow cluster.
+			time.Sleep(400 * time.Millisecond)
+			defer close(firstDone)
+		}
+
+		var items int
+		mu.Lock()
+		for line := range strings.SplitSeq(strings.TrimSpace(string(body)), "\n") {
+			if strings.Contains(line, `"create"`) || strings.Contains(line, `"index"`) {
+				items++
+			} else if m := recordID.FindStringSubmatch(line); m != nil {
+				indexed[m[1]] = struct{}{}
+			}
+		}
+		mu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		var sb strings.Builder
+		sb.WriteString(`{"took":1,"errors":false,"items":[`)
+		for i := range items {
+			if i > 0 {
+				sb.WriteString(",")
+			}
+			sb.WriteString(`{"create":{"_index":"logs","status":201}}`)
+		}
+		sb.WriteString(`]}`)
+		_, _ = w.Write([]byte(sb.String()))
+	}))
+	defer ts.Close()
+
+	cfg := withDefaultConfig(func(config *Config) {
+		config.ClientConfig.Endpoint = ts.URL
+		config.ClientConfig.Timeout = 5 * time.Second
+		config.TimeoutSettings.Timeout = 200 * time.Millisecond
+		config.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+		config.BackOffConfig.Enabled = true
+		config.BackOffConfig.InitialInterval = 10 * time.Millisecond
+		config.BackOffConfig.MaxInterval = 20 * time.Millisecond
+		config.BackOffConfig.MaxElapsedTime = 10 * time.Second
+	})
+
+	f := NewFactory()
+	exporter, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exporter.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, exporter.Shutdown(t.Context())) }()
+
+	require.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
+
+	select {
+	case <-firstDone:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the stalled first bulk request")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, indexed, records, "every record must be indexed after the retry, not just the first flush")
 }

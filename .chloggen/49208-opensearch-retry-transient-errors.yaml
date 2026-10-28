@@ -24,7 +24,8 @@ subtext: |
 
   A transport failure reports every buffered record through the per-item callback, so the
   retryable error is reported without an attached payload. Otherwise exporterhelper would
-  resolve the first one and retry only that record, dropping the rest of the batch.
+  resolve the first one and retry only that record, dropping the rest of the batch. The same
+  applies when the export deadline expires while a large batch is still being flushed.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

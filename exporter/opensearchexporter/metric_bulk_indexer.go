@@ -148,7 +148,8 @@ func (mbi *metricBulkIndexer) processItem(
 		bi.OnFailure = ItemFailureHandler
 		err = mbi.bulkIndexer.Add(ctx, bi)
 		if err != nil {
-			mbi.appendRetryMetricError(err, makeMetric(resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp))
+			// Add only fails once ctx is done; a bare error retries the whole batch, not just this item.
+			mbi.errs = append(mbi.errs, err)
 		}
 	}
 }

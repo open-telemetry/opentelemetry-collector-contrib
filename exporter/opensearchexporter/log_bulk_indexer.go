@@ -102,7 +102,8 @@ func (lbi *logBulkIndexer) processItem(ctx context.Context, indexName string, re
 		bi.OnFailure = ItemFailureHandler
 		err = lbi.bulkIndexer.Add(ctx, bi)
 		if err != nil {
-			lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
+			// Add only fails once ctx is done; a bare error retries the whole batch, not just this item.
+			lbi.errs = append(lbi.errs, err)
 		}
 	}
 }

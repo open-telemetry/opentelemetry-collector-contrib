@@ -104,7 +104,8 @@ func (tbi *traceBulkIndexer) processItem(ctx context.Context, indexName string, 
 		bi.OnFailure = ItemFailureHandler
 		err = tbi.bulkIndexer.Add(ctx, bi)
 		if err != nil {
-			tbi.appendRetryTraceError(err, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))
+			// Add only fails once ctx is done; a bare error retries the whole batch, not just this item.
+			tbi.errs = append(tbi.errs, err)
 		}
 	}
 }
