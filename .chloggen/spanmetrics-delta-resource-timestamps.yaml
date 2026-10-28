@@ -2,4 +2,7 @@ change_type: bug_fix
 component: connector/span_metrics
 note: Fix delta timestamp collisions between resources with matching dimensions, preventing downstream cumulative counters from resetting.
 issues: [52145]
-subtext: Metric names, attributes, and delta values are unchanged.
+subtext: |
+  Metric names, attributes, and delta values are unchanged.
+  When unset, `metric_timestamp_cache_size` now defaults to 10 times `resource_metrics_cache_size`, with a minimum of 1000 (10000 with default settings).
+  Users who explicitly set `metric_timestamp_cache_size` may need to increase it because cache entries now include resource identity.

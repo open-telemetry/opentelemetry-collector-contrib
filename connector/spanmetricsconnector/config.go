@@ -26,7 +26,10 @@ var defaultHistogramBucketsMs = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
-var defaultDeltaTimestampCacheSize = 1000
+const (
+	minDefaultDeltaTimestampCacheSize        = 1000
+	defaultDeltaTimestampCacheSizeMultiplier = 10
+)
 
 // Dimension defines a single dimension entry. Exactly one of Name (with optional Default) or Glob must be set.
 // If Name is set, Default value will be used if dimension is missing form a span attribute.
@@ -60,6 +63,7 @@ type Config struct {
 
 	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
 	// cumulative temporality to avoid memory leaks and correct metric timestamp resets.
+	// For delta temporality, the default timestamp cache size is 10 times this value, with a minimum of 1000.
 	// Optional. See defaultResourceMetricsCacheSize in connector.go for the default value.
 	ResourceMetricsCacheSize int `mapstructure:"resource_metrics_cache_size"`
 
@@ -87,8 +91,9 @@ type Config struct {
 	// Default value (0) means that individual metric series will never expire.
 	SeriesExpiration time.Duration `mapstructure:"series_expiration"`
 
-	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
+	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed.
 	// Each resource-and-dimension combination uses one cache entry.
+	// If unset, defaults to 10 times ResourceMetricsCacheSize, with a minimum of 1000.
 	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
 
 	// Namespace is the namespace of the metrics emitted by the connector.
@@ -217,7 +222,7 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 	if c.TimestampCacheSize != nil {
 		return *c.TimestampCacheSize
 	}
-	return defaultDeltaTimestampCacheSize
+	return max(minDefaultDeltaTimestampCacheSize, c.ResourceMetricsCacheSize*defaultDeltaTimestampCacheSizeMultiplier)
 }
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions, and

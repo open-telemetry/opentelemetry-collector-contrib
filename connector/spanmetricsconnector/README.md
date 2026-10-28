@@ -136,14 +136,14 @@ The following settings can be optionally configured:
 - `dimensions_cache_size`: this setting is deprecated, please use aggregation_cardinality_limit instead.
 - `include_instrumentation_scope`: a list of instrumentation scope names to include from the traces.
 - `resource_metrics_cache_size` (default: `1000`): the size of the cache holding metrics for a service. This is mostly relevant for
-   cumulative temporality to avoid memory leaks and correct metric timestamp resets.
+   cumulative temporality to avoid memory leaks and correct metric timestamp resets. For delta temporality, this also determines the default `metric_timestamp_cache_size`.
 - `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
 - `namespace` (default: `traces.span.metrics`): Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 - `metrics_flush_interval` (default: `60s`): Defines the flush interval of the generated metrics.
 - `metrics_expiration` (default: `0`): Defines the expiration time as `time.Duration`, after which, if no new spans are received, metrics will no longer be exported. Setting to `0` means the metrics will never expire.
 - `series_expiration` (default: `0`): Defines the expiration time as `time.Duration` for individual metric series. When set, stale dimension combinations are removed on a later flush even if the parent metric and resource continue receiving other spans. Setting to `0` disables per-series expiration.
-- `metric_timestamp_cache_size` (default `1000`): Only relevant for delta temporality span metrics. Controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. Each resource-and-dimension combination uses one cache entry. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
+- `metric_timestamp_cache_size` (default: 10 times `resource_metrics_cache_size`, with a minimum of `1000`, or `10000` with default settings): Only relevant for delta temporality span metrics. Controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. Each resource-and-dimension combination uses one cache entry. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 - `exemplars`:  Use to configure how to attach exemplars to metrics.
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
   - `max_per_data_point` (default: `5`): The maximum number of exemplars to attach to a single metric data point.
