@@ -83,6 +83,43 @@ metadata:
           type: "gauge"
         unit: "one"
 #
+# -------------------------------------------- Column Operations Stats -------------------------------------------------------------
+#
+  - name: "minute column operations stats"
+    query: "SELECT INTERVAL_END, TABLE_NAME, COLUMN_NAME, IS_QUERY_CACHE_MEMORY_CAPPED, READ_COUNT, QUERY_COUNT, WRITE_COUNT FROM SPANNER_SYS.COLUMN_OPERATIONS_STATS_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, READ_COUNT + QUERY_COUNT + WRITE_COUNT DESC"
+    metric_name_prefix: "database/spanner/column_operations/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "column_name"
+        column_name: "COLUMN_NAME"
+        value_type: "string"
+      - name: "is_query_cache_memory_capped"
+        column_name: "IS_QUERY_CACHE_MEMORY_CAPPED"
+        value_type: "bool"
+    metrics:
+      - name: "read_count"
+        column_name: "READ_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "query_count"
+        column_name: "QUERY_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "write_count"
+        column_name: "WRITE_COUNT"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Locks Stats -------------------------------------------------------------
 #
   - name: "top minute lock stats"
@@ -121,12 +158,45 @@ metadata:
 # -------------------------------------------- Oldest Active Queries -----------------------------------------------------------
 #
   - name: "oldest active queries"
-    query: "SELECT CLIENT_IP_ADDRESS, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY CLIENT_IP_ADDRESS ORDER BY ACTIVE_QUERIES_COUNT DESC"
+    query: "SELECT START_TIME, TEXT_FINGERPRINT, TEXT, TEXT_TRUNCATED, SESSION_ID, QUERY_ID, CLIENT_IP_ADDRESS, API_CLIENT_HEADER, USER_AGENT_HEADER, SERVER_REGION, PRIORITY, TRANSACTION_TYPE, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY START_TIME, TEXT_FINGERPRINT, TEXT, TEXT_TRUNCATED, SESSION_ID, QUERY_ID, CLIENT_IP_ADDRESS, API_CLIENT_HEADER, USER_AGENT_HEADER, SERVER_REGION, PRIORITY, TRANSACTION_TYPE ORDER BY START_TIME ASC"
     metric_name_prefix: "database/spanner/oldest_active_queries/"
     high_cardinality: true
     labels:
+      - name: "start_time"
+        column_name: "START_TIME"
+        value_type: "timestamp"
+      - name: "query_text_fingerprint"
+        column_name: "TEXT_FINGERPRINT"
+        value_type: "int"
+      - name: "query_text"
+        column_name: "TEXT"
+        value_type: "string"
+      - name: "query_text_truncated"
+        column_name: "TEXT_TRUNCATED"
+        value_type: "bool"
+      - name: "session_id"
+        column_name: "SESSION_ID"
+        value_type: "string"
+      - name: "query_id"
+        column_name: "QUERY_ID"
+        value_type: "string"
       - name: "client_ip_address"
         column_name: "CLIENT_IP_ADDRESS"
+        value_type: "string"
+      - name: "api_client_header"
+        column_name: "API_CLIENT_HEADER"
+        value_type: "string"
+      - name: "user_agent_header"
+        column_name: "USER_AGENT_HEADER"
+        value_type: "string"
+      - name: "server_region"
+        column_name: "SERVER_REGION"
+        value_type: "string"
+      - name: "priority"
+        column_name: "PRIORITY"
+        value_type: "string"
+      - name: "transaction_type"
+        column_name: "TRANSACTION_TYPE"
         value_type: "string"
     metrics:
       - name: "active_queries_count"
@@ -1170,6 +1240,36 @@ metadata:
     metrics:
       - name: "cpu_usage_score"
         column_name: "CPU_USAGE_SCORE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- User Split Points -------------------------------------------------------
+#
+  - name: "user split points"
+    query: "SELECT TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME, COUNT(*) AS USER_SPLIT_POINTS_COUNT FROM SPANNER_SYS.USER_SPLIT_POINTS GROUP BY TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME ORDER BY TABLE_NAME ASC, INDEX_NAME ASC"
+    metric_name_prefix: "database/spanner/user_split_points/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "index_name"
+        column_name: "INDEX_NAME"
+        value_type: "string"
+      - name: "initiator"
+        column_name: "INITIATOR"
+        value_type: "string"
+      - name: "split_key"
+        column_name: "SPLIT_KEY"
+        value_type: "string"
+      - name: "expire_time"
+        column_name: "EXPIRE_TIME"
+        value_type: "timestamp"
+    metrics:
+      - name: "split_points_count"
+        column_name: "USER_SPLIT_POINTS_COUNT"
         value_type: "int"
         data:
           type: "gauge"

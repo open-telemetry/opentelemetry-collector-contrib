@@ -34,3 +34,9 @@ prometheus_simple/readme_example:
     ca_file: "/path/to/ca"
     cert_file: "/path/to/cert"
     key_file: "/path/to/key"
+prometheus_simple/headers_and_proxy:
+  collection_interval: 30s
+  endpoint: "localhost:1234"
+  headers:
+    X-Scope-OrgID: "tenant-a"
+  proxy_url: "http://proxy.local:3128"
