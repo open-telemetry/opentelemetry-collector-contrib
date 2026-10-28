@@ -550,30 +550,54 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
-// buildProcedureSourceQueryPDB builds the DBA_SOURCE IN-clause query and bind args
-// for a PDB connection. Each tuple (OWNER, NAME, TYPE) maps to 3 consecutive bind params.
+// buildProcedureSourceQueryPDB builds the DBA_SOURCE query with separate IN clauses
+// for OWNER, NAME, and TYPE using named bind parameters.
 func buildProcedureSourceQueryPDB(hits []procedureMetricCacheHit) (string, []any) {
-	placeholders := make([]string, len(hits))
+	ownerPH := make([]string, len(hits))
+	namePH := make([]string, len(hits))
+	typePH := make([]string, len(hits))
 	args := make([]any, 0, len(hits)*3)
-	for i := range hits {
-		base := i * 3
-		placeholders[i] = fmt.Sprintf("(:%d,:%d,:%d)", base+1, base+2, base+3)
-		args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType)
+	for i, h := range hits {
+		ownerPH[i] = fmt.Sprintf(":owner%d", i)
+		namePH[i] = fmt.Sprintf(":name%d", i)
+		typePH[i] = fmt.Sprintf(":type%d", i)
+		args = append(args,
+			sql.Named(fmt.Sprintf("owner%d", i), h.schemaName),
+			sql.Named(fmt.Sprintf("name%d", i), h.objectName),
+			sql.Named(fmt.Sprintf("type%d", i), h.procedureType),
+		)
 	}
-	return fmt.Sprintf(oracleProcedureSourceSQL, strings.Join(placeholders, ",")), args
+	return fmt.Sprintf(oracleProcedureSourceSQL,
+		strings.Join(ownerPH, ","),
+		strings.Join(namePH, ","),
+		strings.Join(typePH, ",")), args
 }
 
-// buildProcedureSourceQueryCDB builds the CDB_SOURCE IN-clause query and bind args
-// for a CDB root connection. Each tuple (OWNER, NAME, TYPE, CON_ID) maps to 4 consecutive bind params.
+// buildProcedureSourceQueryCDB builds the CDB_SOURCE query with separate IN clauses
+// for OWNER, NAME, TYPE, and CON_ID using named bind parameters.
 func buildProcedureSourceQueryCDB(hits []procedureMetricCacheHit) (string, []any) {
-	placeholders := make([]string, len(hits))
+	ownerPH := make([]string, len(hits))
+	namePH := make([]string, len(hits))
+	typePH := make([]string, len(hits))
+	conIDPH := make([]string, len(hits))
 	args := make([]any, 0, len(hits)*4)
-	for i := range hits {
-		base := i * 4
-		placeholders[i] = fmt.Sprintf("(:%d,:%d,:%d,:%d)", base+1, base+2, base+3, base+4)
-		args = append(args, hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID)
+	for i, h := range hits {
+		ownerPH[i] = fmt.Sprintf(":owner%d", i)
+		namePH[i] = fmt.Sprintf(":name%d", i)
+		typePH[i] = fmt.Sprintf(":type%d", i)
+		conIDPH[i] = fmt.Sprintf(":conid%d", i)
+		args = append(args,
+			sql.Named(fmt.Sprintf("owner%d", i), h.schemaName),
+			sql.Named(fmt.Sprintf("name%d", i), h.objectName),
+			sql.Named(fmt.Sprintf("type%d", i), h.procedureType),
+			sql.Named(fmt.Sprintf("conid%d", i), h.conID),
+		)
 	}
-	return fmt.Sprintf(oracleProcedureSourceCDBSQL, strings.Join(placeholders, ",")), args
+	return fmt.Sprintf(oracleProcedureSourceCDBSQL,
+		strings.Join(ownerPH, ","),
+		strings.Join(namePH, ","),
+		strings.Join(typePH, ","),
+		strings.Join(conIDPH, ",")), args
 }
 
 // groupSourceRowsByKey concatenates source lines per procedure into a definition map.
