@@ -122,6 +122,11 @@ func newSQLServerScraper(id component.ID,
 			serverPort = defaultSQLServerPort
 		}
 	}
+	cacheEnabled := query == getSQLServerQueryTextAndPlanQuery() && cfg.TopQueryCollection.QueryPlanCache.Enabled
+	obfuscator := newObfuscator(params.Logger, cacheEnabled)
+	if cacheEnabled {
+		obfuscator.initCacheMetrics(params.TelemetrySettings, params.ID)
+	}
 
 	return &sqlServerScraperHelper{
 		id:                        id,
@@ -137,7 +142,7 @@ func newSQLServerScraper(id component.ID,
 		performanceCounterSamples: make(map[performanceCounterKey]performanceCounterSample),
 		lastExecutionTimestamp:    time.Unix(0, 0),
 		now:                       time.Now,
-		obfuscator:                newObfuscator(params.Logger),
+		obfuscator:                obfuscator,
 		serviceInstanceID:         serviceInstanceID,
 		serverAddress:             serverAddress,
 		serverPort:                int64(serverPort),

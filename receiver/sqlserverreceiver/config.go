@@ -59,10 +59,19 @@ type TopQueryCollection struct {
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	LookbackTime        time.Duration `mapstructure:"lookback_time"`
-	MaxQuerySampleCount uint          `mapstructure:"max_query_sample_count"`
-	TopQueryCount       uint          `mapstructure:"top_query_count"`
-	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+	LookbackTime        time.Duration  `mapstructure:"lookback_time"`
+	MaxQuerySampleCount uint           `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint           `mapstructure:"top_query_count"`
+	CollectionInterval  time.Duration  `mapstructure:"collection_interval"`
+	QueryPlanCache      QueryPlanCache `mapstructure:"query_plan_cache"`
+}
+
+// QueryPlanCache controls the receiver's in-memory cache of obfuscated XML plans.
+type QueryPlanCache struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for a sqlserver receiver.

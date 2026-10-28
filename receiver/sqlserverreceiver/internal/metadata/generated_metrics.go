@@ -224,6 +224,36 @@ var MapAttributeMemoryPool = map[string]AttributeMemoryPool{
 	"max_workspace":     AttributeMemoryPoolMaxWorkspace,
 }
 
+// AttributeOutcome specifies the value outcome attribute.
+type AttributeOutcome int
+
+const (
+	_ AttributeOutcome = iota
+	AttributeOutcomeHit
+	AttributeOutcomeMiss
+	AttributeOutcomeBypass
+)
+
+// String returns the string representation of the AttributeOutcome.
+func (av AttributeOutcome) String() string {
+	switch av {
+	case AttributeOutcomeHit:
+		return "hit"
+	case AttributeOutcomeMiss:
+		return "miss"
+	case AttributeOutcomeBypass:
+		return "bypass"
+	}
+	return ""
+}
+
+// MapAttributeOutcome is a helper map of string to AttributeOutcome attribute value.
+var MapAttributeOutcome = map[string]AttributeOutcome{
+	"hit":    AttributeOutcomeHit,
+	"miss":   AttributeOutcomeMiss,
+	"bypass": AttributeOutcomeBypass,
+}
+
 // AttributePageOperations specifies the value page.operations attribute.
 type AttributePageOperations int
 
