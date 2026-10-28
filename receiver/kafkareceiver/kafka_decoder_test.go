@@ -15,14 +15,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,90 +35,202 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-func TestReceiver_StreamingDecoder(t *testing.T) {
-	gate := metadata.ReceiverKafkaPreferStreamingEncodingFeatureGate
-	previous := gate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
-	t.Cleanup(func() { assert.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
-
-	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, defaultLogsTopic))
-	cfg.Logs.Encoding = "streaming"
-	require.NoError(t, kafkaClient.ProduceSync(t.Context(), &kgo.Record{
-		Topic: defaultLogsTopic,
-		Value: []byte("first\nsecond"),
-	}).FirstErr())
-
-	used := make(chan string, 1)
-	ext := &streamingLogsExtension{used: used}
-	received := make(chan plog.Logs, 1)
-	next, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
-		received <- logs
-		return nil
-	})
-	require.NoError(t, err)
-	r, err := NewFactory().CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, next)
-	require.NoError(t, err)
-	require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("streaming"): ext}))
-	t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-
-	select {
-	case path := <-used:
-		require.Equal(t, "streaming", path, "native streaming decoding must take precedence over the legacy unmarshaler")
-	case <-time.After(10 * time.Second):
-		t.Fatal("message was not decoded")
-	}
-	select {
-	case logs := <-received:
-		require.Equal(t, 2, logs.LogRecordCount())
-		require.Equal(t, 2, logs.ResourceLogs().Len())
-		assert.Equal(t, "first", logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
-		assert.Equal(t, "second", logs.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
-	case <-time.After(10 * time.Second):
-		t.Fatal("decoded message was not consumed")
+func TestReceiver_MessageDecoderOnlySelection(t *testing.T) {
+	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
+		t.Run(signal, func(t *testing.T) {
+			r := newDecoderTestReceiver(t, signal, createDefaultConfig().(*Config), make(chan decodedMessage, 1)).(*franzConsumer)
+			t.Cleanup(r.telemetryBuilder.Shutdown)
+			_, err := r.newConsumeFn(extensionsHost{component.MustNewID("context"): &messageContextExtension{}}, nil, r.telemetryBuilder)
+			require.NoError(t, err, "an extension implementing only the new message interface must be supported")
+		})
 	}
 }
 
-// streamingLogsExtension implements both contracts to verify the receiver chooses
-// the streaming contract when preference for streaming is explicitly enabled.
-type streamingLogsExtension struct {
-	component.Component
-	used chan<- string
-}
-
-func (e *streamingLogsExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
-	e.used <- "legacy"
-	return plog.Logs{}, errors.New("unexpected legacy decoding")
-}
-
-func (e *streamingLogsExtension) NewLogsDecoder(reader io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
-	e.used <- "streaming"
-	payload, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, err
+func TestMessageDecoderBuiltinNameSelection(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		extension component.Component
+		wantErr   string
+	}{
+		{
+			name:      "message interface overrides builtin",
+			extension: logsOnlyMessageExtension{LogsMessageDecoderExtension: &messageContextExtension{}},
+		},
+		{
+			name:      "wrong signal is rejected",
+			extension: metricsOnlyMessageExtension{MetricsMessageDecoderExtension: &messageContextExtension{}},
+			wantErr:   `extension "otlp_proto" is not a logs unmarshaler`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			decode, err := newLogsDecoder("otlp_proto", receivertest.NewNopSettings(metadata.Type), extensionsHost{
+				component.MustNewID("otlp_proto"): tc.extension,
+			})
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+				assert.Nil(t, decode)
+				return
+			}
+			require.NoError(t, err)
+			// This payload is deliberately not OTLP protobuf: success must come
+			// from the registered message extension rather than the builtin.
+			data, err := decode(t.Context(), []byte("message payload"))
+			require.NoError(t, err)
+			value, ok := data.ResourceLogs().At(0).Resource().Attributes().Get("decoded.payload")
+			require.True(t, ok)
+			assert.Equal(t, "message payload", value.Str())
+		})
 	}
-	return &streamingLogsDecoder{batches: strings.Split(string(payload), "\n")}, nil
 }
 
-type streamingLogsDecoder struct {
-	batches []string
-	next    int
+// These wrappers expose just one signal even though their test implementation
+// supports all signals, so interface selection cannot accept the wrong signal.
+type logsOnlyMessageExtension struct {
+	encoding.LogsMessageDecoderExtension
 }
 
-func (d *streamingLogsDecoder) DecodeLogs() (plog.Logs, error) {
-	if d.next == len(d.batches) {
-		return plog.Logs{}, io.EOF
+type metricsOnlyMessageExtension struct {
+	encoding.MetricsMessageDecoderExtension
+}
+
+type messageContextKey struct{}
+
+type messageDecodeCall struct {
+	ctx      context.Context
+	payload  []byte
+	metadata client.Metadata
+}
+
+func TestReceiver_MessageDecoderContext(t *testing.T) {
+	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
+		for _, extract := range []bool{false, true} {
+			t.Run(signal+"/header_extraction="+strconv.FormatBool(extract), func(t *testing.T) {
+				_, cfg := mustNewFakeCluster(t)
+				cfg.HeaderExtraction.ExtractHeaders = extract
+				cfg.HeaderExtraction.Headers = []string{"tenant"}
+				calls := make(chan messageDecodeCall, 2)
+				ready := make(chan struct{})
+				ext := &messageContextExtension{calls: calls, ready: ready}
+				received := make(chan decodedMessage, 2)
+				r := newDecoderTestReceiver(t, signal, cfg, received)
+				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
+				t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
+
+				// Hold both calls until their separate metadata configurations exist.
+				errs := make(chan error, 2)
+				for i := range 2 {
+					go func() {
+						id := strconv.Itoa(i)
+						ctx := context.WithValue(t.Context(), messageContextKey{}, id)
+						errs <- r.(*franzConsumer).consumeMessage(ctx, &kgo.Record{
+							Topic: "messages", Partition: int32(i), Offset: int64(i + 10),
+							Value: []byte(id + "-payload\x00\xff"),
+							Headers: []kgo.RecordHeader{
+								{Key: "tenant", Value: []byte("tenant-" + id)},
+								{Key: "tag", Value: []byte("first-" + id)},
+								{Key: "tag", Value: []byte("second-" + id)},
+							},
+						}, attribute.NewSet())
+					}()
+				}
+				for range 2 {
+					call := awaitDecoderValue(t, calls)
+					id := call.ctx.Value(messageContextKey{}).(string)
+					assert.Equal(t, []byte(id+"-payload\x00\xff"), call.payload)
+					assert.Equal(t, []string{"tenant-" + id}, call.metadata.Get("tenant"))
+					assert.Equal(t, []string{"first-" + id, "second-" + id}, call.metadata.Get("tag"))
+				}
+				close(ready)
+				for range 2 {
+					require.NoError(t, awaitDecoderValue(t, errs))
+					message := awaitDecoderValue(t, received)
+					id := message.ctx.Value(messageContextKey{}).(string)
+					require.Len(t, message.resources, 1)
+					assert.Positive(t, message.count)
+					attrs := message.resources[0]
+					assert.Equal(t, "tenant-"+id, attrs["decoded.tenant"])
+					assert.Equal(t, "first-"+id+",second-"+id, attrs["decoded.tags"])
+					assert.Equal(t, "messages", attrs["decoded.topic"])
+					assert.Equal(t, id, attrs["decoded.partition"])
+					assert.Equal(t, "1"+id, attrs["decoded.offset"])
+					assert.Equal(t, id+"-payload\x00\xff", attrs["decoded.payload"])
+					value, present := attrs["kafka.header.tenant"]
+					assert.Equal(t, extract, present)
+					if extract {
+						assert.Equal(t, "tenant-"+id, value)
+					}
+				}
+				assert.Empty(t, received, "each Kafka message must produce one consumer call")
+			})
+		}
 	}
-	logs := plog.NewLogs()
-	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(d.batches[d.next])
-	d.next++
-	return logs, nil
 }
 
-func (d *streamingLogsDecoder) Offset() int64 { return int64(d.next) }
+func TestReceiver_MessageDecoderContextCancellation(t *testing.T) {
+	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
+		t.Run(signal, func(t *testing.T) {
+			_, cfg := mustNewFakeCluster(t)
+			calls := make(chan messageDecodeCall, 1)
+			received := make(chan decodedMessage, 1)
+			r := newDecoderTestReceiver(t, signal, cfg, received)
+			require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): &messageContextExtension{calls: calls}}))
+			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
+			ctx, cancel := context.WithTimeout(context.WithValue(t.Context(), messageContextKey{}, "operation"), time.Minute)
+			cancel()
+			require.NoError(t, r.(*franzConsumer).consumeMessage(ctx, &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet()))
+			call := awaitDecoderValue(t, calls)
+			assert.ErrorIs(t, call.ctx.Err(), context.Canceled)
+			assert.Equal(t, ctx.Done(), call.ctx.Done())
+			assert.Equal(t, "operation", call.ctx.Value(messageContextKey{}))
+			wantDeadline, _ := ctx.Deadline()
+			gotDeadline, ok := call.ctx.Deadline()
+			assert.True(t, ok)
+			assert.Equal(t, wantDeadline, gotDeadline)
+			assert.ErrorIs(t, awaitDecoderValue(t, received).ctx.Err(), context.Canceled)
+		})
+	}
+}
+
+func TestReceiver_MessageDecoderPreferredOverLegacy(t *testing.T) {
+	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
+		t.Run(signal, func(t *testing.T) {
+			_, cfg := mustNewFakeCluster(t)
+			received := make(chan decodedMessage, 1)
+			r := newDecoderTestReceiver(t, signal, cfg, received)
+			ext := &messageAndLegacyExtension{}
+			require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
+			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
+			require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("message payload")}, attribute.NewSet()))
+			result := awaitDecoderValue(t, received)
+			assert.Equal(t, "message payload", result.resources[0]["decoded.payload"])
+			assert.Zero(t, ext.legacyCalls)
+		})
+	}
+}
+
+func TestReceiver_MessageDecoderError(t *testing.T) {
+	for name, decodeErr := range map[string]error{
+		"invalid message": errors.New("invalid encoded message"),
+		"EOF":             io.EOF,
+		"wrapped EOF":     fmt.Errorf("incomplete encoded message: %w", io.EOF),
+	} {
+		for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
+			t.Run(name+"/"+signal, func(t *testing.T) {
+				_, cfg := mustNewFakeCluster(t)
+				received := make(chan decodedMessage, 1)
+				r := newDecoderTestReceiver(t, signal, cfg, received)
+				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): &messageContextExtension{err: decodeErr}}))
+				t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
+				err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet())
+				require.ErrorIs(t, err, decodeErr)
+				assert.True(t, consumererror.IsPermanent(err))
+				assert.Empty(t, received, "a decoder result returned with an error must not be consumed")
+			})
+		}
+	}
+}
 
 func TestReceiver_DualEncodingKeepsLegacyBehavior(t *testing.T) {
-	require.False(t, metadata.ReceiverKafkaPreferStreamingEncodingFeatureGate.IsEnabled(),
-		"streaming preference must remain disabled by default")
 	_, cfg := mustNewFakeCluster(t)
 	cfg.Logs.Encoding = "dual"
 	ext := &legacyPreferredLogsExtension{}
@@ -134,14 +244,12 @@ func TestReceiver_DualEncodingKeepsLegacyBehavior(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("dual"): ext}))
 	t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-	require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
-		Topic: "messages", Value: []byte("legacy payload"),
-	}, attribute.NewSet()))
+	require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("legacy payload")}, attribute.NewSet()))
 	data := awaitDecoderValue(t, received)
 	require.Equal(t, 1, data.LogRecordCount())
 	assert.Equal(t, "legacy payload", data.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
 	assert.Equal(t, 1, ext.legacyCalls)
-	assert.Zero(t, ext.streamingCalls, "a dual extension's streaming path may not support its legacy encodings")
+	assert.Zero(t, ext.streamingCalls)
 }
 
 type legacyPreferredLogsExtension struct {
@@ -162,108 +270,6 @@ func (e *legacyPreferredLogsExtension) NewLogsDecoder(io.Reader, ...encoding.Dec
 	return nil, errors.New("streaming decoder does not support the legacy encoding")
 }
 
-func TestReceiver_StreamingDecoderContext(t *testing.T) {
-	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
-		for _, extract := range []bool{false, true} {
-			t.Run(signal+"/header_extraction="+strconv.FormatBool(extract), func(t *testing.T) {
-				_, cfg := mustNewFakeCluster(t)
-				cfg.HeaderExtraction.ExtractHeaders = extract
-				cfg.HeaderExtraction.Headers = []string{"tenant"}
-				created := make(chan struct{}, 2)
-				ready := make(chan struct{})
-				ext := &messageContextExtension{created: created, ready: ready}
-				received := make(chan decodedMessage, 4)
-				r := newDecoderTestReceiver(t, signal, cfg, received)
-				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
-				t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-
-				// Both decoders must exist before either starts reading headers. This
-				// makes accidental shared message state observable without sleeps.
-				errs := make(chan error, 2)
-				for i := range 2 {
-					go func() {
-						id := strconv.Itoa(i)
-						errs <- r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
-							Topic: "messages", Partition: int32(i), Offset: int64(i + 10),
-							Value: []byte(id + "-first\n" + id + "-second"),
-							Headers: []kgo.RecordHeader{
-								{Key: "tenant", Value: []byte("tenant-" + id)},
-								{Key: "tag", Value: []byte("first-" + id)},
-								{Key: "tag", Value: []byte("second-" + id)},
-							},
-						}, attribute.NewSet())
-					}()
-				}
-				for range 2 {
-					select {
-					case <-created:
-					case <-time.After(10 * time.Second):
-						close(ready)
-						t.Fatal("a decoder was not created for each message")
-					}
-				}
-				close(ready)
-				for range 2 {
-					require.NoError(t, awaitDecoderValue(t, errs))
-					message := awaitDecoderValue(t, received)
-					id := client.FromContext(message.ctx).Metadata.Get("tenant")[0][len("tenant-"):]
-					require.Equal(t, 2, message.count)
-					require.Len(t, message.resources, 2)
-					for j, attrs := range message.resources {
-						assert.Equal(t, "tenant-"+id, attrs["decoded.tenant"])
-						assert.Equal(t, "first-"+id+",second-"+id, attrs["decoded.tags"])
-						assert.Equal(t, "messages", attrs["decoded.topic"])
-						assert.Equal(t, id, attrs["decoded.partition"])
-						assert.Equal(t, "1"+id, attrs["decoded.offset"])
-						assert.Equal(t, []string{id + "-first", id + "-second"}[j], attrs["decoded.payload"])
-						value, present := attrs["kafka.header.tenant"]
-						assert.Equal(t, extract, present)
-						if extract {
-							assert.Equal(t, "tenant-"+id, value)
-						}
-					}
-					if signal == "profiles" {
-						assert.Equal(t, []string{id + "-first", id + "-second"}, message.profileTypes,
-							"each batch's dictionary references must retain their original meaning")
-					}
-				}
-				assert.Empty(t, received, "each Kafka message must produce a single consumer call")
-			})
-		}
-	}
-}
-
-func TestReceiver_StreamingDecoderError(t *testing.T) {
-	for name, decodeErr := range map[string]error{
-		"invalid message": errors.New("invalid encoded message"),
-		"wrapped EOF":     fmt.Errorf("incomplete encoded message: %w", io.EOF),
-	} {
-		for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
-			for _, construction := range []bool{false, true} {
-				t.Run(name+"/"+signal+"/construction="+strconv.FormatBool(construction), func(t *testing.T) {
-					_, cfg := mustNewFakeCluster(t)
-					ext := &messageContextExtension{}
-					if construction {
-						ext.newErr = decodeErr
-					} else {
-						ext.decodeErr = decodeErr
-					}
-					received := make(chan decodedMessage, 2)
-					r := newDecoderTestReceiver(t, signal, cfg, received)
-					require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
-					t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-					err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
-						Topic: "messages", Value: []byte("valid-first-batch"),
-					}, attribute.NewSet())
-					require.ErrorIs(t, err, decodeErr)
-					assert.True(t, consumererror.IsPermanent(err))
-					assert.Empty(t, received, "a message must not be partially consumed if decoding fails")
-				})
-			}
-		}
-	}
-}
-
 func TestReceiver_LegacyUnmarshalerEOF(t *testing.T) {
 	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
 		for name, unmarshalErr := range map[string]error{
@@ -282,7 +288,7 @@ func TestReceiver_LegacyUnmarshalerEOF(t *testing.T) {
 				}, attribute.NewSet())
 				require.ErrorIs(t, err, unmarshalErr)
 				assert.True(t, consumererror.IsPermanent(err))
-				assert.Empty(t, received, "legacy unmarshal errors must not be interpreted as successful stream completion")
+				assert.Empty(t, received, "legacy unmarshal errors must remain decoding errors")
 			})
 		}
 	}
@@ -345,10 +351,9 @@ func (e *legacyMessageExtension) UnmarshalProfiles([]byte) (pprofile.Profiles, e
 }
 
 type decodedMessage struct {
-	ctx          context.Context
-	count        int
-	resources    []map[string]any
-	profileTypes []string
+	ctx       context.Context
+	count     int
+	resources []map[string]any
 }
 
 func awaitDecoderValue[T any](t *testing.T, ch <-chan T) T {
@@ -412,11 +417,6 @@ func newDecoderTestReceiver(t *testing.T, signal string, cfg *Config, received c
 			result := decodedMessage{ctx: ctx, count: data.SampleCount()}
 			for _, resource := range data.ResourceProfiles().All() {
 				result.resources = append(result.resources, resource.Resource().Attributes().AsRaw())
-				for _, scope := range resource.ScopeProfiles().All() {
-					for _, profile := range scope.Profiles().All() {
-						result.profileTypes = append(result.profileTypes, data.Dictionary().StringTable().At(int(profile.SampleType().TypeStrindex())))
-					}
-				}
 			}
 			received <- result
 			return nil
@@ -428,126 +428,82 @@ func newDecoderTestReceiver(t *testing.T, signal string, cfg *Config, received c
 	return r
 }
 
-// messageContextExtension supports only the native streaming contracts. Each
-// factory call captures a different message context and payload in a new decoder.
+// messageContextExtension implements only the additive message interfaces.
+// Options remain local to each call, including when the shared extension is busy.
 type messageContextExtension struct {
 	component.Component
-	created   chan<- struct{}
-	ready     <-chan struct{}
-	newErr    error
-	decodeErr error
+	calls chan<- messageDecodeCall
+	ready <-chan struct{}
+	err   error
 }
 
-func (e *messageContextExtension) newDecoder(reader io.Reader, options ...encoding.DecoderOption) (*messageContextDecoder, error) {
-	if e.newErr != nil {
-		return nil, e.newErr
-	}
-	payload, err := io.ReadAll(reader)
+func (e *messageContextExtension) decode(ctx context.Context, payload []byte, resource pcommon.Resource, options ...encoding.MessageDecodeOption) error {
+	config, err := encoding.NewDecodeConfig(options...)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	d := &messageContextDecoder{
-		ctx: encoding.NewDecoderOptions(options...).Context, batches: strings.Split(string(payload), "\n"),
-		ready: e.ready, decodeErr: e.decodeErr,
+	if e.calls != nil {
+		e.calls <- messageDecodeCall{ctx: ctx, payload: payload, metadata: config.MessageMetadata}
 	}
-	if e.created != nil {
-		e.created <- struct{}{}
-	}
-	return d, nil
-}
-
-func (e *messageContextExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
-	return e.newDecoder(reader, options...)
-}
-
-func (e *messageContextExtension) NewMetricsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.MetricsDecoder, error) {
-	return e.newDecoder(reader, options...)
-}
-
-func (e *messageContextExtension) NewTracesDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.TracesDecoder, error) {
-	return e.newDecoder(reader, options...)
-}
-
-func (e *messageContextExtension) NewProfilesDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.ProfilesDecoder, error) {
-	return e.newDecoder(reader, options...)
-}
-
-type messageContextDecoder struct {
-	ctx       context.Context
-	batches   []string
-	next      int
-	ready     <-chan struct{}
-	decodeErr error
-}
-
-func (d *messageContextDecoder) nextResource(resource pcommon.Resource) error {
-	if d.ready != nil {
+	if e.ready != nil {
 		select {
-		case <-d.ready:
-		case <-d.ctx.Done():
-			return d.ctx.Err()
+		case <-e.ready:
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
-	if d.next == len(d.batches) {
-		if d.decodeErr != nil {
-			return d.decodeErr
-		}
-		return io.EOF
-	}
-	meta := client.FromContext(d.ctx).Metadata
+	meta := config.MessageMetadata
 	attrs := resource.Attributes()
 	attrs.PutStr("decoded.tenant", strings.Join(meta.Get("tenant"), ","))
 	attrs.PutStr("decoded.tags", strings.Join(meta.Get("tag"), ","))
 	attrs.PutStr("decoded.topic", strings.Join(meta.Get("kafka.topic"), ","))
 	attrs.PutStr("decoded.partition", strings.Join(meta.Get("kafka.partition"), ","))
 	attrs.PutStr("decoded.offset", strings.Join(meta.Get("kafka.offset"), ","))
-	attrs.PutStr("decoded.payload", d.batches[d.next])
-	d.next++
-	return nil
+	attrs.PutStr("decoded.payload", string(payload))
+	return e.err
 }
 
-func (d *messageContextDecoder) DecodeLogs() (plog.Logs, error) {
-	data := plog.NewLogs()
-	resource := data.ResourceLogs().AppendEmpty()
-	if err := d.nextResource(resource.Resource()); err != nil {
-		return plog.Logs{}, err
-	}
-	resource.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	return data, nil
+func (e *messageContextExtension) DecodeLogs(ctx context.Context, payload []byte, options ...encoding.LogsDecodeOption) (plog.Logs, error) {
+	data := testdata.GenerateLogs(1)
+	return data, e.decode(ctx, payload, data.ResourceLogs().At(0).Resource(), options...)
 }
 
-func (d *messageContextDecoder) DecodeMetrics() (pmetric.Metrics, error) {
-	data := pmetric.NewMetrics()
-	resource := data.ResourceMetrics().AppendEmpty()
-	if err := d.nextResource(resource.Resource()); err != nil {
-		return pmetric.Metrics{}, err
-	}
-	resource.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-	return data, nil
+func (e *messageContextExtension) DecodeMetrics(ctx context.Context, payload []byte, options ...encoding.MetricsDecodeOption) (pmetric.Metrics, error) {
+	data := testdata.GenerateMetrics(1)
+	return data, e.decode(ctx, payload, data.ResourceMetrics().At(0).Resource(), options...)
 }
 
-func (d *messageContextDecoder) DecodeTraces() (ptrace.Traces, error) {
-	data := ptrace.NewTraces()
-	resource := data.ResourceSpans().AppendEmpty()
-	if err := d.nextResource(resource.Resource()); err != nil {
-		return ptrace.Traces{}, err
-	}
-	resource.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	return data, nil
+func (e *messageContextExtension) DecodeTraces(ctx context.Context, payload []byte, options ...encoding.TracesDecodeOption) (ptrace.Traces, error) {
+	data := testdata.GenerateTraces(1)
+	return data, e.decode(ctx, payload, data.ResourceSpans().At(0).Resource(), options...)
 }
 
-func (d *messageContextDecoder) DecodeProfiles() (pprofile.Profiles, error) {
+func (e *messageContextExtension) DecodeProfiles(ctx context.Context, payload []byte, options ...encoding.ProfilesDecodeOption) (pprofile.Profiles, error) {
 	data := testdata.GenerateProfiles(1)
-	resource := data.ResourceProfiles().At(0)
-	if err := d.nextResource(resource.Resource()); err != nil {
-		return pprofile.Profiles{}, err
-	}
-	// Both batches use the same index for different strings, so the receiver
-	// must merge and remap dictionary references when accumulating the batches.
-	idx := data.Dictionary().StringTable().Len()
-	data.Dictionary().StringTable().Append(d.batches[d.next-1])
-	resource.ScopeProfiles().At(0).Profiles().At(0).SampleType().SetTypeStrindex(int32(idx))
-	return data, nil
+	return data, e.decode(ctx, payload, data.ResourceProfiles().At(0).Resource(), options...)
 }
 
-func (d *messageContextDecoder) Offset() int64 { return int64(d.next) }
+type messageAndLegacyExtension struct {
+	messageContextExtension
+	legacyCalls int
+}
+
+func (e *messageAndLegacyExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
+	e.legacyCalls++
+	return plog.Logs{}, errors.New("unexpected legacy decoding")
+}
+
+func (e *messageAndLegacyExtension) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
+	e.legacyCalls++
+	return pmetric.Metrics{}, errors.New("unexpected legacy decoding")
+}
+
+func (e *messageAndLegacyExtension) UnmarshalTraces([]byte) (ptrace.Traces, error) {
+	e.legacyCalls++
+	return ptrace.Traces{}, errors.New("unexpected legacy decoding")
+}
+
+func (e *messageAndLegacyExtension) UnmarshalProfiles([]byte) (pprofile.Profiles, error) {
+	e.legacyCalls++
+	return pprofile.Profiles{}, errors.New("unexpected legacy decoding")
+}

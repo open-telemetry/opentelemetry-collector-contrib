@@ -4,10 +4,9 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
-	"bytes"
 	"context"
-	"io"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -16,41 +15,16 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 type messageDecoder[T any] func(context.Context, []byte) (T, error)
 
-// Preserve the byte-only path for existing extensions implementing both APIs:
-// their streaming methods can have different framing or compression requirements.
-// The feature gate allows explicitly opting into that migration.
-func loadStreamingDecoder[Factory, Unmarshaler any](host component.Host, name, signal string) (Factory, bool) {
-	factory, err := loadEncodingExtension[Factory](host, name, signal)
-	if err != nil {
-		return factory, false
-	}
-	if metadata.ReceiverKafkaPreferStreamingEncodingFeatureGate.IsEnabled() {
-		return factory, true
-	}
-	_, err = loadEncodingExtension[Unmarshaler](host, name, signal)
-	return factory, err != nil
-}
-
+// newLogsDecoder prefers the explicit message API when an extension implements it.
+// Existing encodings retain their byte-only unmarshaling behavior.
 func newLogsDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[plog.Logs], error) {
-	if factory, ok := loadStreamingDecoder[encoding.LogsDecoderFactory, plog.Unmarshaler](host, name, "logs"); ok {
-		flushBytes := encoding.WithFlushBytes(0)
-		flushItems := encoding.WithFlushItems(0)
+	if decoder, err := loadEncodingExtension[encoding.LogsMessageDecoderExtension](host, name, "logs"); err == nil {
 		return func(ctx context.Context, data []byte) (plog.Logs, error) {
-			decoder, err := factory.NewLogsDecoder(
-				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
-			)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-			return decodeBatches(decoder.DecodeLogs, plog.NewLogs, func(src, dst plog.Logs) error {
-				src.ResourceLogs().MoveAndAppendTo(dst.ResourceLogs())
-				return nil
-			})
+			return decoder.DecodeLogs(ctx, data, encoding.WithMessageMetadata(client.FromContext(ctx).Metadata))
 		}, nil
 	}
 	unmarshaler, err := newLogsUnmarshaler(name, set, host)
@@ -62,21 +36,12 @@ func newLogsDecoder(name string, set receiver.Settings, host component.Host) (me
 	}, nil
 }
 
+// newMetricsDecoder prefers the explicit message API when an extension implements it.
+// Existing encodings retain their byte-only unmarshaling behavior.
 func newMetricsDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[pmetric.Metrics], error) {
-	if factory, ok := loadStreamingDecoder[encoding.MetricsDecoderFactory, pmetric.Unmarshaler](host, name, "metrics"); ok {
-		flushBytes := encoding.WithFlushBytes(0)
-		flushItems := encoding.WithFlushItems(0)
+	if decoder, err := loadEncodingExtension[encoding.MetricsMessageDecoderExtension](host, name, "metrics"); err == nil {
 		return func(ctx context.Context, data []byte) (pmetric.Metrics, error) {
-			decoder, err := factory.NewMetricsDecoder(
-				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
-			)
-			if err != nil {
-				return pmetric.Metrics{}, err
-			}
-			return decodeBatches(decoder.DecodeMetrics, pmetric.NewMetrics, func(src, dst pmetric.Metrics) error {
-				src.ResourceMetrics().MoveAndAppendTo(dst.ResourceMetrics())
-				return nil
-			})
+			return decoder.DecodeMetrics(ctx, data, encoding.WithMessageMetadata(client.FromContext(ctx).Metadata))
 		}, nil
 	}
 	unmarshaler, err := newMetricsUnmarshaler(name, set, host)
@@ -88,21 +53,12 @@ func newMetricsDecoder(name string, set receiver.Settings, host component.Host) 
 	}, nil
 }
 
+// newTracesDecoder prefers the explicit message API when an extension implements it.
+// Existing encodings retain their byte-only unmarshaling behavior.
 func newTracesDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[ptrace.Traces], error) {
-	if factory, ok := loadStreamingDecoder[encoding.TracesDecoderFactory, ptrace.Unmarshaler](host, name, "traces"); ok {
-		flushBytes := encoding.WithFlushBytes(0)
-		flushItems := encoding.WithFlushItems(0)
+	if decoder, err := loadEncodingExtension[encoding.TracesMessageDecoderExtension](host, name, "traces"); err == nil {
 		return func(ctx context.Context, data []byte) (ptrace.Traces, error) {
-			decoder, err := factory.NewTracesDecoder(
-				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
-			)
-			if err != nil {
-				return ptrace.Traces{}, err
-			}
-			return decodeBatches(decoder.DecodeTraces, ptrace.NewTraces, func(src, dst ptrace.Traces) error {
-				src.ResourceSpans().MoveAndAppendTo(dst.ResourceSpans())
-				return nil
-			})
+			return decoder.DecodeTraces(ctx, data, encoding.WithMessageMetadata(client.FromContext(ctx).Metadata))
 		}, nil
 	}
 	unmarshaler, err := newTracesUnmarshaler(name, set, host)
@@ -114,18 +70,12 @@ func newTracesDecoder(name string, set receiver.Settings, host component.Host) (
 	}, nil
 }
 
+// newProfilesDecoder prefers the explicit message API when an extension implements it.
+// Existing encodings retain their byte-only unmarshaling behavior.
 func newProfilesDecoder(name string, set receiver.Settings, host component.Host) (messageDecoder[pprofile.Profiles], error) {
-	if factory, ok := loadStreamingDecoder[encoding.ProfilesDecoderFactory, pprofile.Unmarshaler](host, name, "profiles"); ok {
-		flushBytes := encoding.WithFlushBytes(0)
-		flushItems := encoding.WithFlushItems(0)
+	if decoder, err := loadEncodingExtension[encoding.ProfilesMessageDecoderExtension](host, name, "profiles"); err == nil {
 		return func(ctx context.Context, data []byte) (pprofile.Profiles, error) {
-			decoder, err := factory.NewProfilesDecoder(
-				bytes.NewReader(data), flushBytes, flushItems, encoding.WithContext(ctx),
-			)
-			if err != nil {
-				return pprofile.Profiles{}, err
-			}
-			return decodeBatches(decoder.DecodeProfiles, pprofile.NewProfiles, pprofile.Profiles.MergeTo)
+			return decoder.DecodeProfiles(ctx, data, encoding.WithMessageMetadata(client.FromContext(ctx).Metadata))
 		}, nil
 	}
 	unmarshaler, err := newProfilesUnmarshaler(name, set, host)
@@ -135,32 +85,4 @@ func newProfilesDecoder(name string, set receiver.Settings, host component.Host)
 	return func(_ context.Context, data []byte) (pprofile.Profiles, error) {
 		return unmarshaler.UnmarshalProfiles(data)
 	}, nil
-}
-
-// decodeBatches collects a single Kafka message before forwarding it, so a
-// decoding failure cannot send only part of a message to the next consumer.
-// Keep the first batch intact to avoid copying or reindexing single-batch data.
-func decodeBatches[T any](decode func() (T, error), empty func() T, merge func(T, T) error) (T, error) {
-	data, err := decode()
-	if err == io.EOF { //nolint:errorlint // Wrapped EOF can be a parse error, not stream completion.
-		return empty(), nil
-	}
-	if err != nil {
-		return data, err
-	}
-	for {
-		batch, err := decode()
-		// A wrapped EOF can be a parse error rather than stream completion.
-		if err == io.EOF { //nolint:errorlint // Only the terminal EOF sentinel ends the stream.
-			return data, nil
-		}
-		if err != nil {
-			var zero T
-			return zero, err
-		}
-		if err := merge(batch, data); err != nil {
-			var zero T
-			return zero, err
-		}
-	}
 }

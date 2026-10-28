@@ -1,6 +1,5 @@
 change_type: enhancement
 component: receiver/kafka
-note: Pass each Kafka message's context to streaming encoding decoders for all signals.
+note: Pass message metadata to opt-in message encoding extensions for all signals.
 issues: [51752]
-subtext: The alpha gate `receiver.kafka.PreferStreamingEncoding` selects streaming for extensions implementing both APIs.
 change_logs: [user]

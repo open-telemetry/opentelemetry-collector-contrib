@@ -310,13 +310,3 @@ Number of spans failed to be unmarshaled
 | ---- | ----------- | ------ | ------------------- |
 | topic | The Kafka topic. | Any Str | - |
 | partition | The Kafka topic partition. | Any Int | - |
-
-## Feature Gates
-
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.kafka.PreferStreamingEncoding` | alpha | Prefer streaming decoding for encoding extensions that also implement byte-only unmarshaling. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51752) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
