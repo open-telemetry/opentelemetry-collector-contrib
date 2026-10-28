@@ -229,8 +229,11 @@ func TestResponseReaderPreservesReadAhead(t *testing.T) {
 // startQueryResponseServer serves one check and reports handler errors during cleanup.
 func startQueryResponseServer(t *testing.T, handler func(net.Conn) error) string {
 	t.Helper()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.ListenTCP("tcp", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)})
 	require.NoError(t, err)
+	t.Cleanup(func() { listener.Close() })
+	// Bound Accept if the test fails before connecting to the server.
+	require.NoError(t, listener.SetDeadline(time.Now().Add(5*time.Second)))
 	done := make(chan error, 1)
 	go func() {
 		conn, err := listener.Accept()
@@ -246,7 +249,8 @@ func startQueryResponseServer(t *testing.T, handler func(net.Conn) error) string
 		done <- handler(conn)
 	}()
 	t.Cleanup(func() {
-		listener.Close()
+		// Cleanups run in reverse order: wait for Accept and the handler before
+		// closing the listener, including when a dial-only check finishes first.
 		assert.NoError(t, <-done)
 	})
 	return listener.Addr().String()
