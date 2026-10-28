@@ -2,7 +2,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/loadbalancing
+component: exporter/load_balancing
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Route metrics without `service.name` by a hash of their resource attributes with `routing_key: service`, instead of dropping them."
