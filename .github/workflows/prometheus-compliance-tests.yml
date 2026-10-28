@@ -53,11 +53,10 @@ jobs:
           set -o pipefail
           # Skip known compliance gaps:
           # - samples_sorted: receiver/prometheus deduplicates multiple samples for the same series in one scrape.
-          # - stale_markers: test expects initial sample and staleness marker in a single Remote-Write request.
           # - start_timestamp_*: receiver/prometheus truncates float64 _created timestamps by up to 1ms.
           # - float_histogram: pmetric exponential histograms store bucket counts as uint64.
           # - type_info_and_stateset: OpenTelemetry does not support INFO/STATESET, those are gauges.
-          SKIP_TESTS="TestRemoteWriteSender/otelcol-contrib/(samples_sorted|stale_markers)"
+          SKIP_TESTS="TestRemoteWriteSender/otelcol-contrib/samples_sorted"
           SKIP_TESTS+="|TestRemoteWriteSender/otelcol-contrib/samples/rw2/start_timestamp_for_.*"
           SKIP_TESTS+="|TestRemoteWriteSender/otelcol-contrib/native_histograms/rw2/(float_histogram|start_timestamp_before_timestamp)"
           SKIP_TESTS+="|TestRemoteWriteSender/otelcol-contrib/metadata/rw2/type_info_and_stateset"

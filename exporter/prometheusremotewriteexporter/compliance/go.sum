@@ -26,8 +26,10 @@ github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNw
 github.com/prometheus/client_model v0.6.2/go.mod h1:y3m2F6Gdpfy6Ut/GBsUqTWZqCUvMVzSfMLjcu6wAwpE=
 github.com/prometheus/common v0.67.2 h1:PcBAckGFTIHt2+L3I33uNRTlKTplNzFctXcWhPyAEN8=
 github.com/prometheus/common v0.67.2/go.mod h1:63W3KZb1JOKgcjlIr64WW/LvFGAqKPj0atm+knVGEko=
-github.com/prometheus/compliance/remotewrite v0.0.0-20261028084724-eda111a6bebc h1:jB7C6l72Q61rekW7brQgEIGBP2Ut6xqG7UuotmehLNg=
-github.com/prometheus/compliance/remotewrite v0.0.0-20261028084724-eda111a6bebc/go.mod h1:VEPZGvpSBbzTKc5acnBj9ng4gfo1DZ4qBsCQnoNFiSc=
+github.com/prometheus/compliance/common v0.0.0-20261028105656-38a490589bed h1:qh8JpUjZ9qAwcxILIg0rzzRJ4Dxr6xvHy3FVguXe/AQ=
+github.com/prometheus/compliance/common v0.0.0-20261028105656-38a490589bed/go.mod h1:XOYAiAQ8h4AQ/bey/3qm3/hwqRk2DyXtX+ZyUoXGOLc=
+github.com/prometheus/compliance/remotewrite v0.0.0-20261028105656-38a490589bed h1:F8Eklr8/GusAtQ3TuNEfuI15Jy9tNd6xNSvO8xrPIjg=
+github.com/prometheus/compliance/remotewrite v0.0.0-20261028105656-38a490589bed/go.mod h1:J0ep7RZ+Kss9QXxwA/WQNxzGE4smy+ZaRu0uwhrhmGs=
 github.com/prometheus/prometheus v0.307.4-0.20251119130332-1174b0ce4f1f h1:ERPCnBglv9Z4IjkEBTNbcHmZPlryMldXVWLkk7TeBIY=
 github.com/prometheus/prometheus v0.307.4-0.20251119130332-1174b0ce4f1f/go.mod h1:7hcXiGf9AXIKW2ehWWzxkvRYJTGmc2StUIJ8mprfxjg=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
