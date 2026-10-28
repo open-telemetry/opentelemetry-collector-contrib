@@ -1,7 +1,0 @@
-change_type: breaking
-component: pkg/prometheus
-note: Promote the pkg.translator.prometheus.PermissiveLabelSanitization feature gate to stable and deprecate DropSanitizationGate.
-issues: [50429]
-subtext: |
-  The gate can no longer be disabled and will be removed in v0.166.0.
-change_logs: [api]

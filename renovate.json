@@ -38,7 +38,7 @@
         "/^pkg/semconvtest/semconvtest\\.go$/"
       ],
       "matchStrings": [
-        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*defaultWeaverVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     }
   ],

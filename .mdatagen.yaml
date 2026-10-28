@@ -25,9 +25,6 @@ exclusions:
       - name: connector.servicegraph.legacyLatencyUnitMs
         validation:
           enabled: false
-      - name: connector.servicegraph.virtualNode
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
     feature_gates:
       - name: connector.spanmetrics.excludeResourceMetrics
@@ -659,10 +656,6 @@ exclusions:
       enabled: false
     shutdown_test:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
-    # TODO: Update the exporter to pass the tests
-    lifecycle_test:
-      enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
     lifecycle_test:
       enabled: false
@@ -747,9 +740,8 @@ exclusions:
       enabled: false
     goleak:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
     feature_gates:
-      - name: receiver.kafkametricsreceiver.UseFranzGo
+      - name: receiver.k8sobjects.useInformerObserver
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver

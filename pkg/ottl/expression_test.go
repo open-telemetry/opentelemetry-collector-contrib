@@ -3831,6 +3831,40 @@ func Test_newStandardByteSliceLikeGetterGetter(t *testing.T) {
 	}
 }
 
+type mockedPMapGetSetter[K any] struct {
+	m pcommon.Map
+}
+
+func (g *mockedPMapGetSetter[K]) Get(_ context.Context, _ K) (pcommon.Map, error) {
+	return g.m, nil
+}
+
+func (g *mockedPMapGetSetter[K]) Set(_ context.Context, _ K, val pcommon.Map) error {
+	g.m = val
+	return nil
+}
+
+type mockedPMapProvider[K any] struct {
+	pmap *mockedPMapGetSetter[K]
+}
+
+func (g *mockedPMapProvider[K]) Get(_ context.Context, _ K) (any, error) {
+	return g.pmap.m, nil
+}
+
+func (g *mockedPMapProvider[K]) Set(_ context.Context, _ K, val any) error {
+	g.pmap.m = val.(pcommon.Map)
+	return nil
+}
+
+func (g *mockedPMapProvider[K]) PMapGetter() PMapGetter[K] {
+	return g.pmap
+}
+
+func (g *mockedPMapProvider[K]) PMapGetSetter() PMapGetSetter[K] {
+	return g.pmap
+}
+
 func Test_newStandardPMapGetter(t *testing.T) {
 	type args[K any] struct {
 		getter Getter[K]
@@ -3840,10 +3874,12 @@ func Test_newStandardPMapGetter(t *testing.T) {
 		args            args[K]
 		wantLiteralTrue bool
 		wantErr         bool
+		wantSameGetter  PMapGetter[K]
 	}
 
 	m := pcommon.NewMap()
 	m.PutStr("foo", "bar")
+	customPMap := &mockedPMapGetSetter[any]{m: m}
 
 	tests := []testCase[any]{
 		{
@@ -3852,6 +3888,14 @@ func Test_newStandardPMapGetter(t *testing.T) {
 				getter: &mockedGetter[any]{value: m},
 			},
 			wantLiteralTrue: false,
+		},
+		{
+			name: "getter implements pMapGetterProvider",
+			args: args[any]{
+				getter: &mockedPMapProvider[any]{pmap: customPMap},
+			},
+			wantLiteralTrue: false,
+			wantSameGetter:  customPMap,
 		},
 		{
 			name: "getter implements literalGetter with error",
@@ -3878,12 +3922,64 @@ func Test_newStandardPMapGetter(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantLiteralTrue, isLiteralGetter(g))
+			if tt.wantSameGetter != nil {
+				assert.Same(t, tt.wantSameGetter, g)
+			}
 
 			val, err := g.Get(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, m, val)
 		})
 	}
+}
+
+func Test_newStandardPMapGetSetter(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutStr("foo", "bar")
+
+	replacement := pcommon.NewMap()
+	replacement.PutStr("baz", "qux")
+
+	t.Run("getSetter does not implement pMapGetSetterProvider", func(t *testing.T) {
+		current := pcommon.NewMap()
+		m.CopyTo(current)
+
+		gs, err := newStandardPMapGetSetter(StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return current, nil
+			},
+			Setter: func(_ context.Context, _, val any) error {
+				current = val.(pcommon.Map)
+				return nil
+			},
+		})
+		require.NoError(t, err)
+		assert.IsType(t, StandardPMapGetSetter[any]{}, gs)
+
+		got, err := gs.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, m, got)
+
+		require.NoError(t, gs.Set(t.Context(), nil, replacement))
+		assert.Equal(t, replacement, current)
+	})
+
+	t.Run("getSetter implements pMapGetSetterProvider", func(t *testing.T) {
+		current := pcommon.NewMap()
+		m.CopyTo(current)
+		customPMap := &mockedPMapGetSetter[any]{m: current}
+
+		gs, err := newStandardPMapGetSetter(&mockedPMapProvider[any]{pmap: customPMap})
+		require.NoError(t, err)
+		assert.Same(t, customPMap, gs)
+
+		got, err := gs.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, m, got)
+
+		require.NoError(t, gs.Set(t.Context(), nil, replacement))
+		assert.Equal(t, replacement, customPMap.m)
+	})
 }
 
 func Test_newStandardPSliceGetter(t *testing.T) {

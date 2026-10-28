@@ -13,6 +13,7 @@ resourceMetrics:
                     - "0"
                     - "0"
                   count: "36"
+                  sum: 0
                   explicitBounds:
                     - 0
                     - 50

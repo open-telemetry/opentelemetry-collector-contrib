@@ -704,6 +704,14 @@ type PMapGetSetter[K any] interface {
 	Set(ctx context.Context, tCtx K, val pcommon.Map) error
 }
 
+type pMapGetSetterProvider[K any] interface {
+	PMapGetSetter() PMapGetSetter[K]
+}
+
+type pMapGetterProvider[K any] interface {
+	PMapGetter() PMapGetter[K]
+}
+
 // StandardPMapGetSetter is a basic implementation of PMapGetSetter
 type StandardPMapGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (pcommon.Map, error)
@@ -720,6 +728,9 @@ func (path StandardPMapGetSetter[K]) Set(ctx context.Context, tCtx K, val pcommo
 
 // newStandardPMapGetSetter creates a new StandardPMapGetSetter from a GetSetter[K]
 func newStandardPMapGetSetter[K any](getSetter GetSetter[K]) (PMapGetSetter[K], error) {
+	if p, ok := getSetter.(pMapGetSetterProvider[K]); ok && !isLiteralGetter(getSetter) {
+		return p.PMapGetSetter(), nil
+	}
 	g, err := newStandardPMapGetter(getSetter)
 	if err != nil {
 		return nil, err
@@ -739,6 +750,9 @@ type PMapGetter[K any] interface {
 // newStandardPMapGetter creates a new StandardPMapGetter from a Getter[K],
 // also checking if the Getter is a literalGetter.
 func newStandardPMapGetter[K any](getter Getter[K]) (PMapGetter[K], error) {
+	if p, ok := getter.(pMapGetterProvider[K]); ok && !isLiteralGetter(getter) {
+		return p.PMapGetter(), nil
+	}
 	g := StandardPMapGetter[K]{
 		Getter: getter.Get,
 	}

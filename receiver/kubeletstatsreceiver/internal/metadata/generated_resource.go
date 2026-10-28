@@ -21,45 +21,10 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetAwsVolumeID sets provided value as "aws.volume.id" attribute.
-func (rb *ResourceBuilder) SetAwsVolumeID(val string) {
-	if rb.config.AwsVolumeID.Enabled {
-		rb.res.Attributes().PutStr("aws.volume.id", val)
-	}
-}
-
 // SetContainerID sets provided value as "container.id" attribute.
 func (rb *ResourceBuilder) SetContainerID(val string) {
 	if rb.config.ContainerID.Enabled {
 		rb.res.Attributes().PutStr("container.id", val)
-	}
-}
-
-// SetFsType sets provided value as "fs.type" attribute.
-func (rb *ResourceBuilder) SetFsType(val string) {
-	if rb.config.FsType.Enabled {
-		rb.res.Attributes().PutStr("fs.type", val)
-	}
-}
-
-// SetGcePdName sets provided value as "gce.pd.name" attribute.
-func (rb *ResourceBuilder) SetGcePdName(val string) {
-	if rb.config.GcePdName.Enabled {
-		rb.res.Attributes().PutStr("gce.pd.name", val)
-	}
-}
-
-// SetGlusterfsEndpointsName sets provided value as "glusterfs.endpoints.name" attribute.
-func (rb *ResourceBuilder) SetGlusterfsEndpointsName(val string) {
-	if rb.config.GlusterfsEndpointsName.Enabled {
-		rb.res.Attributes().PutStr("glusterfs.endpoints.name", val)
-	}
-}
-
-// SetGlusterfsPath sets provided value as "glusterfs.path" attribute.
-func (rb *ResourceBuilder) SetGlusterfsPath(val string) {
-	if rb.config.GlusterfsPath.Enabled {
-		rb.res.Attributes().PutStr("glusterfs.path", val)
 	}
 }
 
@@ -123,13 +88,6 @@ func (rb *ResourceBuilder) SetK8sVolumeName(val string) {
 func (rb *ResourceBuilder) SetK8sVolumeType(val string) {
 	if rb.config.K8sVolumeType.Enabled {
 		rb.res.Attributes().PutStr("k8s.volume.type", val)
-	}
-}
-
-// SetPartition sets provided value as "partition" attribute.
-func (rb *ResourceBuilder) SetPartition(val string) {
-	if rb.config.Partition.Enabled {
-		rb.res.Attributes().PutStr("partition", val)
 	}
 }
 
