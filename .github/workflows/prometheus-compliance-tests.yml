@@ -47,30 +47,19 @@ jobs:
         working-directory: opentelemetry-collector-contrib
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
-      - name: Checkout compliance repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: prometheus/compliance
-          path: compliance
-          ref: adfa690dd4df11f9c1bc1b130db5843fdca219f1 # Pin to commit using Go 1.23.0
-          persist-credentials: false
-      - name: Copy binary to compliance directory
-        # The required name of the downloaded artifact is `otelcol_0.42.0_linux_amd64`, so we place the collector contrib artifact under the same name in the bin folder to run.
-        # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
-        run: mkdir compliance/remotewrite/sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remotewrite/sender/bin/otelcol_0.123.1_linux_amd64
-      - name: clean up mod file
-        # go mod tidy reads sum.golang.org directly, which the GOPROXY fallback doesn't cover.
-        run: |
-          for i in 1 2 3; do
-            go mod tidy && break
-            [ "$i" -lt 3 ] || exit 1
-            sleep $((i*10))
-          done
-        working-directory: compliance/remotewrite/sender
       - name: Run compliance tests
+        working-directory: opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/compliance
         run: |
-          set -o pipefail && \
-          # Skipping Staleness test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved
-          go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" -skip "TestRemoteWrite/otelcollector/Staleness" ./ |& tee ./test-report.txt
-        working-directory: compliance/remotewrite/sender
+          set -o pipefail
+          # Skip known compliance gaps:
+          # - samples_sorted: receiver/prometheus deduplicates multiple samples for the same series in one scrape.
+          # - stale_markers: test expects initial sample and staleness marker in a single Remote-Write request.
+          # - start_timestamp_*: receiver/prometheus truncates float64 _created timestamps by up to 1ms.
+          # - float_histogram: pmetric exponential histograms store bucket counts as uint64.
+          # - type_info_and_stateset: exporter/prometheusremotewrite does not emit INFO/STATESET metadata types yet.
+          SKIP_TESTS="TestRemoteWriteSender/otelcol-contrib/(samples_sorted|stale_markers)"
+          SKIP_TESTS+="|TestRemoteWriteSender/otelcol-contrib/samples/rw2/start_timestamp_for_.*"
+          SKIP_TESTS+="|TestRemoteWriteSender/otelcol-contrib/native_histograms/rw2/(float_histogram|start_timestamp_before_timestamp)"
+          SKIP_TESTS+="|TestRemoteWriteSender/otelcol-contrib/metadata/rw2/type_info_and_stateset"
+          go test -v -count=1 -skip "${SKIP_TESTS}" ./ |& tee ./test-report.txt
       - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh
