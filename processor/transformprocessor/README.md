@@ -273,6 +273,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+- [convert_summary_to_histogram](#convert_summary_to_histogram)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
@@ -476,6 +477,33 @@ Examples:
 - `convert_summary_sum_val_to_sum("delta", true, ".sum")`
 
 - `convert_summary_sum_val_to_sum("cumulative", false, ".sum")`
+
+### convert_summary_to_histogram
+
+`convert_summary_to_histogram(aggregation_temporality)`
+
+The `convert_summary_to_histogram` function converts a Summary metric, in place, to a Histogram metric with a single bucket.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the aggregation temporality of the resulting Histogram. Summaries carry no temporality, so choose the one that matches how the source reports them (cumulative for Prometheus summaries).
+
+Each data point keeps its `attributes`, `start_time_unix_nano`, `time_unix_nano` and `flags`. The `count` and `sum` are carried over as they are, so a source that records negative values yields a `sum` that is not monotonic. The OTLP Histogram specification says `sum` should not be set in that case, and this function cannot detect it. The bucket counts are `[count]` with no explicit bounds, so the single bucket spans (-Inf, +Inf). The metric `name`, `description` and `unit` are unchanged. Metrics that are not Summaries are left as they are.
+
+**NOTE:** The quantile values of the Summary are discarded, because they cannot be represented in a Histogram. To keep them, run `convert_summary_quantile_val_to_gauge` in a statement before this one, because once the Summary is converted there are no quantiles left to read. The Histogram's `min` and `max` are not set.
+
+**NOTE:** To keep the Summary as well, copy it first with `copy_metric` and use a `where` clause so that only the copy is converted. Without the `where` clause both the original and the copy are converted.
+
+**NOTE:** The [cumulativetodelta processor](../cumulativetodeltaprocessor/README.md) does not convert Summaries. For a cumulative source that needs delta output, use `"cumulative"` here and place the `cumulativetodelta` processor after the transform processor.
+
+Examples:
+
+- `convert_summary_to_histogram("cumulative")`
+
+- `convert_summary_to_histogram("cumulative") where metric.type == METRIC_DATA_TYPE_SUMMARY and metric.name == "rpc_duration_seconds"`
+
+- Keep the Summary and add a Histogram next to it:
+
+  - `copy_metric(name="rpc_duration_seconds_histogram") where metric.name == "rpc_duration_seconds"`
+  - `convert_summary_to_histogram("cumulative") where metric.name == "rpc_duration_seconds_histogram"`
 
 ### copy_metric
 
