@@ -88,6 +88,10 @@ The `ottl.functions.enableLambda` [feature gate](https://github.com/open-telemet
 
 The `pkg.ottl.functions.enableDynamicSliceArguments` feature gate controls whether slice arguments of stable OTTL functions, such as the `values` of [Concat](ottlfuncs/README.md#concat), may be a path or converter that resolves to a slice at runtime. This gate is `beta` and enabled by default; when disabled, these arguments only accept list literals.
 
+### `pkg.ottl.enableDynamicMapKeys`
+
+The `pkg.ottl.enableDynamicMapKeys` feature gate controls whether the keys of [map literals](LANGUAGE.md#maps) may be a path or converter that resolves to a string at runtime. This gate is `alpha` and disabled by default; when disabled, map literal keys must be string literals.
+
 ## Benchmarks
 
 OTTL's performance under a realistic end-to-end pipeline is measured continuously through the
