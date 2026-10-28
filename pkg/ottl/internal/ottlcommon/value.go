@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata"
 )
 
 func GetValue(val pcommon.Value) any {
@@ -166,11 +167,13 @@ func CopyAnySliceTo(src []any, dest pcommon.Slice) error {
 }
 
 func copyAnyMapTo(src map[string]any, dest pcommon.Map) error {
-	dest.EnsureCapacity(len(src))
+	var builder xpdata.MapBuilder
+	builder.EnsureCapacity(len(src))
 	for k, el := range src {
-		if err := CopyValueTo(el, dest.PutEmpty(k)); err != nil {
+		if err := CopyValueTo(el, builder.AppendEmpty(k)); err != nil {
 			return err
 		}
 	}
+	builder.UnsafeIntoMap(dest)
 	return nil
 }

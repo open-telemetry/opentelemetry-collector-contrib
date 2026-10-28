@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -433,6 +434,46 @@ func TestCopyValueTo_containerErrors(t *testing.T) {
 	}
 }
 
+func TestCopyValueTo_failingElementLeavesDestEmpty(t *testing.T) {
+	dest := pcommon.NewValueEmpty()
+	err := CopyValueTo(map[string]any{"m": newTestMap(t), "bad": make(chan int)}, dest)
+	require.Error(t, err)
+	assert.Equal(t, pcommon.ValueTypeMap, dest.Type())
+	assert.Equal(t, 0, dest.Map().Len())
+}
+
+func setProtoPoolingForTest(t *testing.T, enabled bool) {
+	t.Helper()
+	const id = "pdata.useProtoPooling"
+	var prev bool
+	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+		if g.ID() == id {
+			prev = g.IsEnabled()
+		}
+	})
+	require.NoError(t, featuregate.GlobalRegistry().Set(id, enabled))
+	t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(id, prev)) })
+}
+
+func TestCopyValueTo_protoPooling(t *testing.T) {
+	setProtoPoolingForTest(t, true)
+	want := map[string]any{
+		"m": newTestMap(t).AsRaw(),
+		"a": []any{map[string]any{"b": newTestSlice(t).AsRaw()}, "raw"},
+	}
+	// dest is reused so that each CopyValueTo releases the previous contents to the pools,
+	// and the next one may get them back.
+	dest := pcommon.NewValueEmpty()
+	for range 3 {
+		src := map[string]any{
+			"m": newTestMap(t),
+			"a": []any{map[string]any{"b": newTestSlice(t)}, "raw"},
+		}
+		require.NoError(t, CopyValueTo(src, dest))
+		assert.Equal(t, want, dest.Map().AsRaw())
+	}
+}
+
 func TestCopyValueTo_noAliasing(t *testing.T) {
 	newSrc := func() (map[string]any, pcommon.Map, pcommon.Slice, pcommon.Value) {
 		m := pcommon.NewMap()
@@ -472,34 +513,48 @@ func TestCopyValueTo_noAliasing(t *testing.T) {
 	})
 }
 
+// benchmarkMap returns a map with n entries. If withPdata is true, one of them is a pcommon.Value.
 func benchmarkMap(n int, withPdata bool) map[string]any {
 	m := make(map[string]any, n)
 	for i := range n {
 		m["key"+strconv.Itoa(i)] = "value"
 	}
-	if withPdata {
-		m["pdata"] = pcommon.NewValueStr("value")
+	if withPdata && n > 0 {
+		m["key0"] = pcommon.NewValueStr("value")
+	}
+	return m
+}
+
+// benchmarkNestedMap returns a map nested depth levels deep. Each level has 3 entries plus the
+// next level, and the innermost level contains a pcommon.Value.
+func benchmarkNestedMap(depth int) map[string]any {
+	m := benchmarkMap(3, true)
+	for range depth - 1 {
+		parent := benchmarkMap(3, false)
+		parent["child"] = m
+		m = parent
 	}
 	return m
 }
 
 func BenchmarkCopyValueTo(b *testing.B) {
 	for _, bc := range []struct {
-		name      string
-		size      int
-		withPdata bool
+		name string
+		src  map[string]any
 	}{
-		{"raw_map_10", 10, false},
-		{"raw_map_1000", 1000, false},
-		{"pdata_map_10", 10, true},
-		{"pdata_map_1000", 1000, true},
+		{"pdata_map_1", benchmarkMap(1, true)},
+		{"pdata_map_3", benchmarkMap(3, true)},
+		{"pdata_map_10", benchmarkMap(10, true)},
+		{"pdata_map_1000", benchmarkMap(1000, true)},
+		{"pdata_nested_2", benchmarkNestedMap(2)},
+		{"pdata_nested_4", benchmarkNestedMap(4)},
+		{"pdata_nested_8", benchmarkNestedMap(8)},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
-			src := benchmarkMap(bc.size, bc.withPdata)
+			dest := pcommon.NewValueEmpty()
 			b.ReportAllocs()
 			for b.Loop() {
-				dest := pcommon.NewValueEmpty()
-				if err := CopyValueTo(src, dest); err != nil {
+				if err := CopyValueTo(bc.src, dest); err != nil {
 					b.Fatal(err)
 				}
 			}
