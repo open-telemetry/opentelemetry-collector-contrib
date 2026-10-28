@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -40,6 +41,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -1655,6 +1658,28 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	assert.Error(t, err, "Permanent error: unsupported value: +Inf")
 }
 
+func Test_pushLogData_LogsPermanentErrorsWhenPostFails(t *testing.T) {
+	core, observed := observer.New(zapcore.WarnLevel)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c.logger = zap.New(core)
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
+	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	logs := plog.NewLogs()
+	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	logRecords.AppendEmpty().Body().SetDouble(math.Inf(1))
+	logRecords.AppendEmpty().Body().SetStr("valid log")
+
+	err := c.pushLogDataInBatches(t.Context(), logs, nil)
+	require.ErrorContains(t, err, "503")
+	assert.False(t, consumererror.IsPermanent(err), "the 503 must remain retryable")
+	entries := observed.FilterMessage("Log records were dropped while sending a batch").All()
+	require.Len(t, entries, 1)
+	assert.Contains(t, entries[0].ContextMap()["error"], "unsupported value: +Inf")
+}
+
 func Test_pushLogData_PostError(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &defaultHecWorker{url: &url.URL{Host: "in va lid"}, logger: zap.NewNop()}
@@ -2039,6 +2064,194 @@ func TestProfileDataUnsupportedProfilesAreDroppedAndCounted(t *testing.T) {
 	got, err := getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
 	require.NoError(t, err)
 	assert.Equal(t, []int64{2}, got)
+}
+
+func TestProfileDataTransientSendErrorRemainsRetryableWithUnsupportedProfiles(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("off_cpu")
+	dict.StringTable().Append("count")
+
+	profileScope := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	for _, sampleTypeIndex := range []int32{1, 4} {
+		profile := profileScope.Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(sampleTypeIndex)
+		profile.SampleType().SetUnitStrindex(2)
+		profile.Samples().AppendEmpty().Values().Append(1)
+	}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, err, "503")
+	assert.False(t, consumererror.IsPermanent(err), "a transient HEC failure must remain retryable")
+	assert.NotContains(t, err.Error(), "unsupported profile sample type", "the unsupported profile must not make the send failure permanent")
+}
+
+func TestProfileDataUnsupportedProfileCountIsNotRepeatedOnRetry(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: meterProvider})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		telemetryBuilder.Shutdown()
+		require.NoError(t, meterProvider.Shutdown(t.Context()))
+	})
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+	c.telemetryBuilder = telemetryBuilder
+	httpClient, _ := newTestClientWithPresetResponses(
+		[]int{http.StatusServiceUnavailable, http.StatusOK}, []string{"NOK", "OK"}, func(_ []byte) {},
+	)
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("off_cpu")
+	dict.StringTable().Append("count")
+	profileScope := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	for _, sampleTypeIndex := range []int32{1, 4} {
+		profile := profileScope.Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(sampleTypeIndex)
+		profile.SampleType().SetUnitStrindex(2)
+		profile.Samples().AppendEmpty().Values().Append(1)
+	}
+
+	firstErr := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, firstErr, "503")
+	retryErr, ok := errors.AsType[xconsumererror.Profiles](firstErr)
+	require.True(t, ok)
+	assert.Equal(t, 1, retryErr.Data().SampleCount(), "only the supported profile should be retried")
+	got, err := getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{1}, got)
+
+	require.NoError(t, c.pushProfilesData(t.Context(), retryErr.Data()))
+	got, err = getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{1}, got, "retrying supported profiles must not recount the dropped profile")
+}
+
+func TestProfileDataRetryPreservesResourceAttributes(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 0, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var observedHosts []string
+	httpClient, _ := newTestClientWithPresetResponses([]int{http.StatusServiceUnavailable, http.StatusOK}, []string{"NOK", "OK"}, func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var hecEvent translator.Event
+			require.NoError(t, json.Unmarshal(line, &hecEvent))
+			observedHosts = append(observedHosts, hecEvent.Host)
+		}
+	})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("")
+	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("host.name", "profile-host")
+	profile := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	profile.SampleType().SetTypeStrindex(1)
+	profile.SampleType().SetUnitStrindex(2)
+	profile.Samples().AppendEmpty().Values().Append(1)
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, err, "503")
+	require.False(t, consumererror.IsPermanent(err), "the failed send must be retryable")
+
+	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
+	assert.Equal(t, []string{"profile-host", "profile-host"}, observedHosts)
+	value, found := rp.Resource().Attributes().Get("host.name")
+	require.True(t, found)
+	assert.Equal(t, "profile-host", value.Str())
+}
+
+func TestProfileDataPartialSuccessRetriesOnlyUnsentProfiles(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 700, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var requests [][]string
+	httpClient, _ := newTestClientWithPresetResponses(
+		[]int{http.StatusOK, http.StatusServiceUnavailable, http.StatusOK},
+		[]string{"OK", "NOK", "OK"},
+		func(body []byte) {
+			var hosts []string
+			for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+				if len(line) == 0 {
+					continue
+				}
+				var hecEvent translator.Event
+				require.NoError(t, json.Unmarshal(line, &hecEvent))
+				hosts = append(hosts, hecEvent.Host)
+			}
+			requests = append(requests, hosts)
+		},
+	)
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("")
+	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
+	for i, host := range []string{"host-a", "host-b", "host-c"} {
+		rp := profiles.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("host.name", host)
+		profile := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(1)
+		profile.SampleType().SetUnitStrindex(2)
+		profile.Samples().AppendEmpty().Values().Append(int64(i + 1))
+	}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, err, "503")
+	profilesErr, ok := errors.AsType[xconsumererror.Profiles](err)
+	require.True(t, ok, "retryable profile send errors must carry the unsent profile subset")
+	require.NoError(t, c.pushProfilesData(t.Context(), profilesErr.Data()))
+
+	require.GreaterOrEqual(t, len(requests), 3)
+	require.NotEmpty(t, requests[0])
+	require.NotEmpty(t, requests[1])
+	retriedHosts := map[string]int{}
+	for _, request := range requests[2:] {
+		for _, host := range request {
+			retriedHosts[host]++
+		}
+	}
+	for _, host := range requests[0] {
+		assert.Zero(t, retriedHosts[host], "profiles from the successful first request must not be resent")
+	}
+	for _, host := range requests[1] {
+		assert.Equal(t, 1, retriedHosts[host], "profiles from the failed request must be retried once")
+	}
 }
 
 // TestProfileDataMultiValueSamples verifies the OTel profiles data model: a Sample with
