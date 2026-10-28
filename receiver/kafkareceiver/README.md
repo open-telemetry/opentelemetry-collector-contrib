@@ -188,32 +188,9 @@ Additionally, all Kafka message headers are included in the request metadata.
 
 This metadata can then be used throughout the pipeline, for example to set attributes using the [attributes processor](../../processor/attributesprocessor/README.md).
 
-Encoding extensions can opt into message metadata during decoding by implementing
-`LogsMessageDecoderExtension`, `MetricsMessageDecoderExtension`,
-`TracesMessageDecoderExtension`, or `ProfilesMessageDecoderExtension` from the
-`extension/encoding` package. The receiver calls the corresponding `Decode*` method
-once per attempt to process a Kafka message, passing the original payload, the
-operation context, and an explicit `encoding.WithMessageMetadata` option. Existing
-backoff can decode the same message again after a retryable downstream error.
-
-Inside the decoding method, construct a fresh configuration with
-`encoding.NewDecodeConfig(options...)`. Read headers and Kafka record metadata
-through `config.MessageMetadata.Get(key)`. Metadata is immutable and preserves
-repeated header values. The operation context remains available for cancellation,
-deadlines, and tracing. Metadata access during decoding works independently of
-`header_extraction`, which controls adding headers as resource attributes after
-decoding.
-
-Kafka prefers the message decoding method when an extension implements it. All
-other encodings continue through their existing byte-only unmarshal methods,
-preserving their payload and decompression behavior. Existing streaming interfaces
-remain unchanged. An extension implementing both byte-only and streaming APIs
-continues using its byte-only API until it also implements the message interface.
-No feature gate is required.
-
-A message decoder returns one complete signal payload. On a decoding error, the
-receiver forwards no decoded data. The same message metadata remains in the
-context propagated to downstream consumers.
+Encoding extensions can implement the [message decoder interfaces](../../extension/encoding/message.go)
+to receive Kafka headers and record metadata through `encoding.WithMessageMetadata`, independently of `header_extraction`.
+The receiver prefers these interfaces when implemented and otherwise uses the existing byte-only unmarshaler.
 
 ### Trace context propagation
 
