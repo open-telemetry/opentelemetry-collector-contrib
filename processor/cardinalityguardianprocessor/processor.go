@@ -54,12 +54,22 @@ type trackerKey struct {
 	attrKey    string
 }
 
-// refreshBackoff is the least number of inserts between two estimate refreshes
-// of a tracker whose growth has already been measured within reach of its
-// limit (see tracker.insert). Without it a label sitting at its limit would
-// re-estimate on every repeated insert. Detection lags by at most this many
-// inserts, the same lag as a fixed refresh every 64 inserts.
-const refreshBackoff = 64
+// maxRefreshBackoff caps refreshBackoff for large limits.
+const maxRefreshBackoff = 64
+
+// refreshBackoff is how many inserts a tracker near its limit waits
+// between estimates. New values in that wait pass unchecked, so it
+// scales with the limit: limit/8, at least 1, at most 64.
+func refreshBackoff(limit uint64) uint64 {
+	switch b := limit / 8; {
+	case b == 0:
+		return 1
+	case b > maxRefreshBackoff:
+		return maxRefreshBackoff
+	default:
+		return b
+	}
+}
 
 // maxSparseSketchEntries is the largest number of distinct values guaranteed
 // to leave a precision-14 HLL++ sketch sparse. The sparse buffer converts to
@@ -88,10 +98,8 @@ type tracker struct {
 	insertCount  uint64
 	sinceRefresh uint64
 	// needBaseline is set by rotate so the next insert snapshots |window| as
-	// the new baseline before adding to it. refreshed records whether insert
-	// has refreshed cachedWindow this epoch.
+	// the new baseline before adding to it.
 	needBaseline bool
-	refreshed    bool
 	// idleEpochs counts consecutive zero-insert rotations; eviction at staleSweepEpochs.
 	idleEpochs int
 }
@@ -101,13 +109,10 @@ type tracker struct {
 // would escape to the heap: the library's `hash` indirection blocks escape
 // analysis.
 //
-// The cached window estimate is refreshed only when a refresh could change
-// the answer. The window gains at most one distinct value per insert, so
-// while cachedDelta+sinceRefresh ≤ limit the answer is "no", and once
-// cachedDelta > limit it stays "yes" for the rest of the epoch: growth within
-// an epoch cannot shrink. In between — a label within reach of its limit —
-// insert refreshes before deciding, at most once per refreshBackoff inserts
-// after the first refresh of the epoch.
+// It estimates only when the answer could change: the window grows by
+// at most one per insert, and growth past the limit stays past it for
+// the epoch. Near the limit it estimates at most once per
+// refreshBackoff(limit) inserts.
 func (t *tracker) insert(hashVal, limit uint64) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -128,12 +133,11 @@ func (t *tracker) insert(hashVal, limit uint64) bool {
 	if delta+t.sinceRefresh <= limit {
 		return false
 	}
-	if t.refreshed && t.sinceRefresh < refreshBackoff {
+	if t.sinceRefresh < refreshBackoff(limit) {
 		return false
 	}
 	t.cachedWindow = t.window.Estimate()
 	t.sinceRefresh = 0
-	t.refreshed = true
 	return t.delta() > limit
 }
 
@@ -175,7 +179,6 @@ func (t *tracker) rotate() (idle bool) {
 	// No growth to report until the next insert takes the new baseline.
 	t.cachedPrevEpoch = t.cachedWindow
 	t.needBaseline = true
-	t.refreshed = false
 	t.insertCount, t.sinceRefresh = 0, 0
 	return idle
 }
