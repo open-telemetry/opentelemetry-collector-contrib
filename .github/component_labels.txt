@@ -32,7 +32,6 @@ exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
 exporter/awsxrayexporter exporter/awsxray
 exporter/azureblobexporter exporter/azureblob
-exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/azuremonitorexporter exporter/azuremonitor
 exporter/bmchelixexporter exporter/bmchelix
 exporter/cassandraexporter exporter/cassandra
@@ -52,7 +51,6 @@ exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
-exporter/logicmonitorexporter exporter/logicmonitor
 exporter/logzioexporter exporter/logzio
 exporter/natsexporter exporter/nats
 exporter/opensearchexporter exporter/opensearch
@@ -94,6 +92,7 @@ extension/encoding/skywalkingencodingextension extension/encoding/skywalkingenco
 extension/encoding/textencodingextension extension/encoding/textencoding
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
 extension/filetelemetrypolicyextension extension/filetelemetrypolicy
+extension/fleettracker/redisfleettrackerextension extension/fleettracker/redisfleettracker
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
 extension/healthcheckextension extension/healthcheck
@@ -140,6 +139,7 @@ internal/k8sleaderelectortest internal/k8sleaderelectortest
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
 internal/metadataproviders internal/metadataproviders
+internal/natsclient internal/natsclient
 internal/otelarrow internal/otelarrow
 internal/pdatautil internal/pdatautil
 internal/rabbitmq internal/rabbitmq
@@ -237,6 +237,7 @@ processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
+processor/verifyprocessor processor/verify
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/activedirectoryinvreceiver receiver/activedirectoryinv
 receiver/aerospikereceiver receiver/aerospike
@@ -272,9 +273,9 @@ receiver/faroreceiver receiver/faro
 receiver/filelogreceiver receiver/filelog
 receiver/filestatsreceiver receiver/filestats
 receiver/flinkmetricsreceiver receiver/flinkmetrics
-receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
+receiver/gnmireceiver receiver/gnmi
 receiver/googlecloudmonitoringreceiver receiver/googlecloudmonitoring
 receiver/googlecloudpubsubpushreceiver receiver/googlecloudpubsubpush
 receiver/googlecloudpubsubreceiver receiver/googlecloudpubsub
@@ -313,6 +314,7 @@ receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
 receiver/mysqlreceiver receiver/mysql
 receiver/namedpipereceiver receiver/namedpipe
+receiver/natsreceiver receiver/nats
 receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
 receiver/nsxtreceiver receiver/nsxt
@@ -333,9 +335,7 @@ receiver/rabbitmqreceiver receiver/rabbitmq
 receiver/receivercreator receiver/receivercreator
 receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
-receiver/riakreceiver receiver/riak
 receiver/saphanareceiver receiver/saphana
-receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
@@ -365,8 +365,13 @@ receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
 testbed testbed
+testbed/integrationtests/elasticsearch testbed/integrationtests/elasticsearch
 testbed/mockdatasenders/mockdatadogagentexporter testbed/mockdatasenders/mockdatadogagentexporter
 reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/azuredataexplorerexporter exporter/azuredataexplorer
+exporter/logicmonitorexporter exporter/logicmonitor
+receiver/fluentforwardreceiver receiver/fluentforward
+receiver/riakreceiver receiver/riak

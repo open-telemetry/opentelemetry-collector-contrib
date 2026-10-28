@@ -455,7 +455,7 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 			))
 			return iterState{
 				record: i + 1,
-				done:   i+1 != len(events),
+				done:   i+1 == len(events),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
