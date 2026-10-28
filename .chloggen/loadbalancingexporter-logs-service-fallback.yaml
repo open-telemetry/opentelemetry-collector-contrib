@@ -8,7 +8,7 @@ component: exporter/loadbalancing
 note: Route logs without `service.name` by a hash of their resource attributes with `routing_key: service`, instead of sending all of them to one backend.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [52483]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 subtext:
