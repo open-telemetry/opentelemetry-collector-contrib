@@ -8,7 +8,7 @@ status:
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta]
     emeritus: [anuraaga, kentquirk, bogdandrutu]
-    seeking_new: true
+    seeking_new: false
 
 feature_gates:
   - id: "ottl.functions.enableLambda"
