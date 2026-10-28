@@ -1005,8 +1005,8 @@ func populationsFit(deltas []int64) bool {
 }
 
 // validateNHCB checks that the spans and deltas of a custom bucket histogram describe exactly the
-// buckets its bounds separate. Count is left out on purpose: it is rebuilt from the buckets, so
-// the count that arrived does not have to agree.
+// buckets its bounds separate, with populations a data point can hold. Count is left out on
+// purpose: it is rebuilt from the buckets, so the count that arrived does not have to agree.
 func validateNHCB(histogram *writev2.Histogram) error {
 	if len(histogram.NegativeSpans) > 0 || len(histogram.NegativeDeltas) > 0 {
 		return errors.New("custom buckets have no negative range")
