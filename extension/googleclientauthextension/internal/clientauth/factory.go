@@ -77,8 +77,7 @@ func (ca *clientAuthenticator) newTokenSource(creds *auth.Credentials) (oauth2.T
 	if ca.config.TokenType == idToken {
 		var err error
 		creds, err = ca.newIDTokenCredentials(&idtoken.Options{
-			Audience:        ca.config.Audience,
-			CredentialsJSON: creds.JSON(),
+			Audience: ca.config.Audience,
 		})
 		if err != nil {
 			return nil, err

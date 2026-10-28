@@ -118,7 +118,6 @@ func TestStart_idtoken(t *testing.T) {
 		},
 		newIDTokenCredentials: func(opts *idtoken.Options) (*auth.Credentials, error) {
 			assert.Equal(t, "my-audience", opts.Audience)
-			assert.NotEmpty(t, opts.CredentialsJSON)
 
 			return auth.NewCredentials(&auth.CredentialsOptions{
 				TokenProvider: &mockTokenProvider{token: "dummy token"},
@@ -149,7 +148,6 @@ func Test_newTokenSource_idtokenWithoutCredsJSON(t *testing.T) {
 		},
 		newIDTokenCredentials: func(opts *idtoken.Options) (*auth.Credentials, error) {
 			assert.Equal(t, "my-audience", opts.Audience)
-			assert.Empty(t, opts.CredentialsJSON)
 
 			return auth.NewCredentials(&auth.CredentialsOptions{
 				TokenProvider: &mockTokenProvider{token: "dummy token"},
