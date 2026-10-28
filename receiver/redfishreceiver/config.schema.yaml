@@ -23,6 +23,8 @@ $defs:
           $ref: resource
       timeout:
         type: string
+      tls:
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config
       username:
         type: string
 type: object

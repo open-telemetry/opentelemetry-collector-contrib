@@ -32,6 +32,7 @@ type clientOptions struct {
 	RedfishVersion string
 	ClientTimeout  time.Duration
 	Insecure       bool
+	TLSConfig      *tls.Config
 }
 
 func WithRedfishVersion(version string) ClientOption {
@@ -44,6 +45,11 @@ func WithClientTimeout(timeout time.Duration) ClientOption {
 
 func WithInsecure(insecure bool) ClientOption {
 	return func(o *clientOptions) { o.Insecure = insecure }
+}
+
+// WithTLSConfig sets the TLS configuration (e.g. CA and client certificates for mTLS).
+func WithTLSConfig(tlsConfig *tls.Config) ClientOption {
+	return func(o *clientOptions) { o.TLSConfig = tlsConfig }
 }
 
 // NewRedfishClient is a function to create new redfish clients
@@ -67,10 +73,18 @@ func NewClient(computerSystemID, addr, user string, pwd configopaque.String, opt
 		opt(clientOpts)
 	}
 
+	tlsConfig := clientOpts.TLSConfig
+	if tlsConfig == nil {
+		tlsConfig = &tls.Config{}
+	}
+	if clientOpts.Insecure {
+		tlsConfig.InsecureSkipVerify = true
+	}
+
 	return &Client{
 		client: http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: clientOpts.Insecure},
+				TLSClientConfig: tlsConfig,
 				Proxy:           http.ProxyFromEnvironment,
 			},
 			Timeout: clientOpts.ClientTimeout,
@@ -85,7 +99,9 @@ func NewClient(computerSystemID, addr, user string, pwd configopaque.String, opt
 }
 
 func (c *Client) setHeaders(req *http.Request) {
-	req.SetBasicAuth(c.userName, string(c.password))
+	if c.userName != "" {
+		req.SetBasicAuth(c.userName, string(c.password))
+	}
 	req.Header.Set("OData-Version", "4.0")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
