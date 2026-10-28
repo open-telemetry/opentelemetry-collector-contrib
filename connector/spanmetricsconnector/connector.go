@@ -157,7 +157,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 	var lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
 	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k deltaMetricKey, _ pcommon.Timestamp) {
-			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k.metric)), zap.Binary("resource", k.resource[:]))
+			logger.Debug("Evicting cached delta timestamp", zap.String("key", string(k.metric)), zap.Binary("resource", k.resource[:]))
 		})
 		if err != nil {
 			return nil, err
