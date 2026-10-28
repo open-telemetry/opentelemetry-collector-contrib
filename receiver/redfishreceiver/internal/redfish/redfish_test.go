@@ -68,7 +68,7 @@ func Test_HPE(t *testing.T) {
 	require.Equal(t, int64(50), *thermal.Fans[0].Reading)
 
 	require.NotNil(t, thermal.Temperatures[0].ReadingCelsius)
-	require.Equal(t, int64(70), *thermal.Temperatures[0].ReadingCelsius)
+	require.Equal(t, float64(70), *thermal.Temperatures[0].ReadingCelsius)
 }
 
 // Test_Dell is a function to test all Dell redfish endpoints
@@ -96,7 +96,7 @@ func Test_Dell(t *testing.T) {
 
 	require.Nil(t, thermal.Temperatures[0].ReadingCelsius)
 	require.NotNil(t, thermal.Temperatures[1].ReadingCelsius)
-	require.Equal(t, int64(28), *thermal.Temperatures[1].ReadingCelsius)
+	require.Equal(t, 28.5, *thermal.Temperatures[1].ReadingCelsius)
 }
 
 // Test_BasicAuth is a function to test that basic auth is only sent when a username is set

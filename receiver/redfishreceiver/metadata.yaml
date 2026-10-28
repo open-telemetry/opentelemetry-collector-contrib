@@ -182,7 +182,7 @@ metrics:
     enabled: true
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: "Cel"
     attributes: [chassis.id, temperature.name]
   temperature.status.health:
