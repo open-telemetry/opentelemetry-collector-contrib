@@ -2121,12 +2121,12 @@ func Test_NewFunctionCall(t *testing.T) {
 										Map: &mapValue{
 											Values: []mapItem{
 												{
-													Key: new("one"),
+													Key: &mapKey{String: new("one")},
 													Value: &value{
 														Map: &mapValue{
 															Values: []mapItem{
 																{
-																	Key: new("two"),
+																	Key: &mapKey{String: new("two")},
 																	Value: &value{
 																		Literal: &mathExprLiteral{
 																			Int: new(int64(2)),
