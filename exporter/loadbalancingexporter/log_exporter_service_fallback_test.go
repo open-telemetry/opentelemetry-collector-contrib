@@ -92,7 +92,7 @@ func newServiceRoutingLogsExporter(t *testing.T, routingKey string, endpoints []
 	p.loadBalancer = lb
 
 	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(t.Context())) })
 	return p
 }
 
