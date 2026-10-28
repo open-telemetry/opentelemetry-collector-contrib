@@ -229,6 +229,17 @@ func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
+	// Size the connection pool to match the number of queue consumers, unless set in the DSN or connection params.
+	if queueCfg := cfg.QueueSettings.Get(); queueCfg != nil && queueCfg.NumConsumers > 0 {
+		if opt.MaxOpenConns <= 0 {
+			opt.MaxOpenConns = queueCfg.NumConsumers
+		}
+		// Idle connections beyond MaxOpenConns can never be used.
+		if opt.MaxIdleConns <= 0 {
+			opt.MaxIdleConns = min(queueCfg.NumConsumers, opt.MaxOpenConns)
+		}
+	}
+
 	// Load TLS config if any TLS-related field is set (not just cert/key).
 	if cfg.TLS.CertFile != "" ||
 		cfg.TLS.KeyFile != "" ||

@@ -10,14 +10,14 @@ services:
           cpus: "0.50"
           memory: 1512M
   opentelemetry-collector-contrib:
-    image: otel/opentelemetry-collector-contrib:0.163.1@sha256:1175b03003053962012f5a231f5567f66a3e8fdb960c7835c0e48f7aa1555806
+    image: otel/opentelemetry-collector-contrib:0.163.2@sha256:7f22d2a6748110ffb6a59bc0df448bccbf501cdb667d610ede4c61d3863d5849
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yml
     depends_on:
       - couchbase
   prometheus:
-    image: prom/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    image: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
     volumes:
       - ./prometheus-config.yaml:/etc/prometheus/prometheus.yml
     ports:

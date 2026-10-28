@@ -353,7 +353,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
       - receiver/snmp
@@ -383,6 +382,7 @@ body:
       - receiver/zookeeper
       - scraper/zookeeperscraper
       - testbed
+      - testbed/integrationtests/elasticsearch
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End components list
   - type: textarea

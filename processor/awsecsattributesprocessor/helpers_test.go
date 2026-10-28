@@ -1,0 +1,225 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package awsecsattributesprocessor
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/moby/moby/client"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsecsattributesprocessor/internal/metadata"
+)
+
+// testContainerID is a full-length (64 hex char) Docker container ID.
+const testContainerID = "9e160da5ce00c77637967534f4390f39d9d78137e72666dc3cc52eabf211bdae"
+
+// payload is a sample ECS container metadata document.
+const payload = `{
+	"ContainerARN": "arn:aws:ecs:eu-west-1:035955823396:container/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33/cc1c133f-bd1f-4006-8dae-4cd8a3f54f19",
+	"CreatedAt": "2023-06-22T12:41:18.335883278Z",
+	"DesiredStatus": "RUNNING",
+	"DockerId": "196a0e6abfce1e33ee24b65e97875f089878dd7d1d7e9f15155d6094c8b908f5",
+	"DockerName": "ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800",
+	"Image": "gcr.io/cadvisor/cadvisor:latest",
+	"ImageID": "sha256:68c29634fe49724f94ed34f18224336f776392f7a5a4014969ac5798a2ec96dc",
+	"KnownStatus": "RUNNING",
+	"Labels": {
+	  "com.custom.app": "go-test-app",
+	  "com.amazonaws.ecs.cluster": "cds-305",
+	  "com.amazonaws.ecs.container-name": "cadvisor",
+	  "com.amazonaws.ecs.task-arn": "arn:aws:ecs:eu-west-1:035955823396:task/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33",
+	  "com.amazonaws.ecs.task-definition-family": "cadvisor-task-definition",
+	  "com.amazonaws.ecs.task-definition-version": "7"
+	},
+	"Limits": {
+	  "CPU": 10,
+	  "Memory": 300
+	},
+	"Name": "cadvisor",
+	"Networks": [
+	  {
+		"IPv4Addresses": [
+		  "172.17.0.2"
+		],
+		"NetworkMode": "bridge"
+	  }
+	],
+	"Ports": [
+	  {
+		"ContainerPort": 8080,
+		"HostIp": "0.0.0.0",
+		"HostPort": 32911,
+		"Protocol": "tcp"
+	  },
+	  {
+		"ContainerPort": 8080,
+		"HostIp": "::",
+		"HostPort": 32911,
+		"Protocol": "tcp"
+	  }
+	],
+	"StartedAt": "2023-06-22T12:41:18.713571182Z",
+	"Type": "NORMAL",
+	"Volumes": [
+	  {
+		"Destination": "/var",
+		"Source": "/var"
+	  },
+	  {
+		"Destination": "/etc",
+		"Source": "/etc"
+	  }
+	]
+  }
+`
+
+// expectedFlattenedMetadata is the result of Flat() applied to payload.
+var expectedFlattenedMetadata = map[string]any{
+	"aws.ecs.container.arn":                      "arn:aws:ecs:eu-west-1:035955823396:container/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33/cc1c133f-bd1f-4006-8dae-4cd8a3f54f19",
+	"aws.ecs.task.arn":                           "arn:aws:ecs:eu-west-1:035955823396:task/cds-305/ec7ff82b7a3a44a5bbbe9bcf11daee33",
+	"aws.ecs.task.family":                        "cadvisor-task-definition",
+	"aws.ecs.task.revision":                      "7",
+	"container.id":                               "196a0e6abfce1e33ee24b65e97875f089878dd7d1d7e9f15155d6094c8b908f5",
+	"container.name":                             "cadvisor",
+	"container.image.name":                       "gcr.io/cadvisor/cadvisor:latest",
+	"container.image.id":                         "sha256:68c29634fe49724f94ed34f18224336f776392f7a5a4014969ac5798a2ec96dc",
+	"aws.ecs.cluster":                            "cds-305",
+	"aws.ecs.container.name":                     "cadvisor",
+	"aws.ecs.task.known_status":                  "RUNNING",
+	"aws.ecs.container.type":                     "NORMAL",
+	"aws.ecs.container.created_at":               "2023-06-22T12:41:18.335883278Z",
+	"aws.ecs.task.desired_status":                "RUNNING",
+	"aws.ecs.container.docker_name":              "ecs-cadvisor-task-definition-7-cadvisor-bae592b5e4c1a3bb3800",
+	"aws.ecs.container.cpu_limit":                10,
+	"aws.ecs.container.memory_limit":             300,
+	"aws.ecs.container.started_at":               "2023-06-22T12:41:18.713571182Z",
+	"aws.ecs.container.network.0.ipv4_address.0": "172.17.0.2",
+	"aws.ecs.container.network.0.mode":           "bridge",
+	"aws.ecs.container.port.0.container_port":    8080,
+	"aws.ecs.container.port.0.host_ip":           "0.0.0.0",
+	"aws.ecs.container.port.0.host_port":         32911,
+	"aws.ecs.container.port.0.protocol":          "tcp",
+	"aws.ecs.container.port.1.container_port":    8080,
+	"aws.ecs.container.port.1.host_ip":           "::",
+	"aws.ecs.container.port.1.host_port":         32911,
+	"aws.ecs.container.port.1.protocol":          "tcp",
+	"aws.ecs.container.volume.0.destination":     "/var",
+	"aws.ecs.container.volume.0.source":          "/var",
+	"aws.ecs.container.volume.1.destination":     "/etc",
+	"aws.ecs.container.volume.1.source":          "/etc",
+	"container.label.com.custom.app":             "go-test-app",
+}
+
+// expectedAttributeStrings renders expectedFlattenedMetadata the way
+// buildAttributes stores it: values stringified, nil/empty dropped.
+func expectedAttributeStrings() map[string]string {
+	out := make(map[string]string, len(expectedFlattenedMetadata))
+	for k, v := range expectedFlattenedMetadata {
+		if v == nil {
+			continue
+		}
+		s := fmt.Sprintf("%v", v)
+		if s == "" {
+			continue
+		}
+		out[k] = s
+	}
+	return out
+}
+
+// expectedAWSKeyCount counts the enriched attributes namespaced under aws.*.
+func expectedAWSKeyCount() int {
+	n := 0
+	for k := range expectedFlattenedMetadata {
+		if strings.HasPrefix(k, "aws.") {
+			n++
+		}
+	}
+	return n
+}
+
+// attrsToStringMap collects a pcommon.Map into a plain map for comparison.
+func attrsToStringMap(m pcommon.Map) map[string]string {
+	out := make(map[string]string, m.Len())
+	for k, v := range m.All() {
+		out[k] = v.AsString()
+	}
+	return out
+}
+
+// newMetadataServer returns an httptest server that serves the metadata payload,
+// registered for cleanup on the test.
+func newMetadataServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// payload is a constant, valid JSON document; errors are not expected and
+		// must not call require from within the handler goroutine.
+		var m map[string]any
+		_ = json.Unmarshal([]byte(payload), &m)
+		_ = json.NewEncoder(w).Encode(m)
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// staticEndpoints returns an endpointsFn that always reports a single container
+// served from url.
+func staticEndpoints(url string) endpointsFn {
+	return func(context.Context, *zap.Logger) (map[string][]string, []containerMetadata, error) {
+		return map[string][]string{testContainerID: {url}}, nil, nil
+	}
+}
+
+// errBoom is a generic non-recoverable error for tests.
+var errBoom = errors.New("boom")
+
+// recoverableDockerClient is a newDockerClient replacement that simulates an
+// unreachable daemon, so Start takes the no-Docker path without a real socket.
+func recoverableDockerClient() (*client.Client, error) {
+	return nil, errors.New("dial unix /var/run/docker.sock: connect: connection refused")
+}
+
+// nonRecoverableDockerClient simulates a misconfigured Docker client, which Start
+// must treat as a fatal error.
+func nonRecoverableDockerClient() (*client.Client, error) {
+	return nil, errors.New("unable to parse docker host")
+}
+
+// zaptestLogger returns a test-scoped zap logger.
+func zaptestLogger(t *testing.T) *zap.Logger {
+	t.Helper()
+	return zaptest.NewLogger(t)
+}
+
+// newTestSettings returns processor.Settings carrying a test-scoped logger, used
+// to construct the signal processors through processorhelper in tests.
+func newTestSettings(t *testing.T) processor.Settings {
+	set := processortest.NewNopSettings(metadata.Type)
+	set.Logger = zaptestLogger(t)
+	return set
+}
+
+// newTestCore builds an ecsCore wired to the metadata server and a stubbed Docker
+// client, with an initialized config.
+func newTestCore(t *testing.T, cfg *Config, endpoints endpointsFn) *ecsCore {
+	t.Helper()
+	require.NoError(t, cfg.Validate())
+	c, err := newCore(zaptestLogger(t), cfg, endpoints)
+	require.NoError(t, err)
+	c.newDockerClient = recoverableDockerClient
+	return c
+}
