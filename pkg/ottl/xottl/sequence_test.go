@@ -78,7 +78,7 @@ func TestWithStatementSequenceFailureCounter(t *testing.T) {
 		{name: "silent with failure", statements: []string{"fail()"}, errorMode: ottl.SilentError, expected: 1},
 		{name: "ignore with several failures counts once", statements: []string{"fail()", "pass()", "fail()"}, errorMode: ottl.IgnoreError, expected: 1},
 		{name: "ignore without failure", statements: []string{"pass()"}, errorMode: ottl.IgnoreError, expected: 0},
-		{name: "propagate is not counted", statements: []string{"fail()"}, errorMode: ottl.PropagateError, expected: 0},
+		{name: "propagate with failure", statements: []string{"fail()"}, errorMode: ottl.PropagateError, expected: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestWithConditionSequenceFailureCounter(t *testing.T) {
 		{name: "failure then AND completes", conditions: []string{"Fail()", "Match()"}, errorMode: ottl.IgnoreError, logicOp: ottl.And, expected: 1},
 		{name: "failure then early AND false", conditions: []string{"Fail()", "NoMatch()"}, errorMode: ottl.IgnoreError, logicOp: ottl.And, expected: 1},
 		{name: "no failure", conditions: []string{"Match()"}, errorMode: ottl.IgnoreError, logicOp: ottl.Or, expected: 0},
-		{name: "propagate is not counted", conditions: []string{"Fail()"}, errorMode: ottl.PropagateError, logicOp: ottl.Or, expected: 0},
+		{name: "propagate with failure", conditions: []string{"Fail()"}, errorMode: ottl.PropagateError, logicOp: ottl.Or, expected: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

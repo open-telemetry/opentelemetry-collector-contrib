@@ -495,7 +495,7 @@ func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenc
 	}
 }
 
-// SetFailureCounter sets the counter incremented by Execute each time at least one statement error is ignored.
+// SetFailureCounter sets the counter incremented by Execute each time at least one statement fails.
 // It can only be called from within OTTL; use xottl.WithStatementSequenceFailureCounter instead.
 func (s *StatementSequence[K]) SetFailureCounter(counter failurecounter.Counter) {
 	s.failureCounter = counter.Int64Counter
@@ -520,27 +520,31 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
-// When ignoring errors and a failure counter is set (see xottl.WithStatementSequenceFailureCounter), the counter is incremented once per call that had at least one error.
+// When a failure counter is set (see xottl.WithStatementSequenceFailureCounter), the counter is incremented once per call that had at least one error.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	}
 	var failed bool
+	if s.failureCounter != nil {
+		defer func() {
+			if failed {
+				s.failureCounter.Add(ctx, 1)
+			}
+		}()
+	}
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
+			failed = true
 			if s.errorMode == PropagateError {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
-			failed = true
 			if s.errorMode == IgnoreError {
 				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 			}
 		}
-	}
-	if failed && s.failureCounter != nil {
-		s.failureCounter.Add(ctx, 1)
 	}
 	return nil
 }
@@ -575,7 +579,7 @@ func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K
 	}
 }
 
-// SetFailureCounter sets the counter incremented by Eval each time at least one condition error is ignored.
+// SetFailureCounter sets the counter incremented by Eval each time at least one condition fails.
 // It can only be called from within OTTL; use xottl.WithConditionSequenceFailureCounter instead.
 func (c *ConditionSequence[K]) SetFailureCounter(counter failurecounter.Counter) {
 	c.failureCounter = counter.Int64Counter
@@ -605,7 +609,7 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
 // When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
-// When ignoring errors and a failure counter is set (see xottl.WithConditionSequenceFailureCounter), the counter is incremented once per call that had at least one error.
+// When a failure counter is set (see xottl.WithConditionSequenceFailureCounter), the counter is incremented once per call that had at least one error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	var failed bool
@@ -622,11 +626,11 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 			c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), newTransformContextField(tCtx))
 		}
 		if err != nil {
+			failed = true
 			if c.errorMode == PropagateError {
 				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
 				return false, err
 			}
-			failed = true
 			if c.errorMode == IgnoreError {
 				c.telemetrySettings.Logger.Warn("failed to eval condition", zap.Error(err), zap.String("condition", condition.origText))
 			}
