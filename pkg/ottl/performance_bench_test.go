@@ -670,6 +670,46 @@ func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
 	return ottllog.NewTransformContext(rl, sl, lr)
 }
 
+func BenchmarkLiterals(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create log parser: %v", err)
+	}
+
+	scenarios := []struct {
+		name      string
+		statement string
+	}{
+		{"map", `set(log.attributes["literal"], {"tags": log.attributes["tags"], "env": resource.attributes["deployment.environment"], "k": "v"})`},
+		{"nested_map", `set(log.attributes["literal"], {"a": {"b": {"tags": log.attributes["tags"], "k": "v"}, "k": "v"}, "k": "v"})`},
+		{"list", `set(log.attributes["literal"], [log.attributes["tags"], resource.attributes["deployment.environment"], "v"])`},
+		{"list_of_maps", `set(log.attributes["literal"], [{"tags": log.attributes["tags"]}, {"env": resource.attributes["deployment.environment"]}, "v"])`},
+	}
+
+	for _, scenario := range scenarios {
+		parsed, err := parser.ParseStatements([]string{scenario.statement})
+		if err != nil {
+			b.Fatalf("failed to parse statement: %v", err)
+		}
+		sequence := ottllog.NewStatementSequence(parsed, settings)
+
+		b.Run(scenario.name, func(b *testing.B) {
+			ctx := b.Context()
+			tCtx := newBenchmarkLogContext(0)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if err := sequence.Execute(ctx, tCtx); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+			tCtx.Close()
+		})
+	}
+}
+
 func BenchmarkStringifyAll(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())

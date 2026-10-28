@@ -296,30 +296,8 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch typedVal := val.(type) {
-		case pcommon.Map:
-			target := result.PutEmpty(k).SetEmptyMap()
-			typedVal.CopyTo(target)
-		case []any:
-			target := result.PutEmpty(k).SetEmptySlice()
-			target.EnsureCapacity(len(typedVal))
-			for _, el := range typedVal {
-				switch typedEl := el.(type) {
-				case pcommon.Map:
-					m := target.AppendEmpty().SetEmptyMap()
-					typedEl.CopyTo(m)
-				default:
-					err := target.AppendEmpty().FromRaw(el)
-					if err != nil {
-						return nil, err
-					}
-				}
-			}
-		default:
-			err := result.PutEmpty(k).FromRaw(val)
-			if err != nil {
-				return nil, err
-			}
+		if err := ottlcommon.CopyValueTo(val, result.PutEmpty(k)); err != nil {
+			return nil, err
 		}
 	}
 	return result, nil
@@ -408,8 +386,7 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %v", v.Type()))
 	case []any:
 		s := pcommon.NewSlice()
-		err = s.FromRaw(v)
-		if err != nil {
+		if err := ottlcommon.CopyAnySliceTo(v, s); err != nil {
 			return pcommon.Slice{}, err
 		}
 		return s, nil
