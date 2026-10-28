@@ -760,7 +760,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		if histogramType == "nhcb" {
 			dps := histMetric.Histogram().DataPoints()
 			before := dps.Len()
-			prw.addNHCBDatapoint(dps, histogram, attrs, ls, stats)
+			prw.addNHCBDatapoint(dps, histogram, attrs, stats)
 			if appended = dps.Len() > before; appended {
 				exemplarSlice = dps.At(dps.Len() - 1).Exemplars()
 			}
@@ -988,6 +988,22 @@ func nhcbBucketCount(histogram *writev2.Histogram) int {
 	return len(histogram.CustomValues) + 1
 }
 
+// populationsFit reports whether the bucket populations a run of cumulative deltas describes sum
+// to a count a uint64 can hold. Every population is non-negative by the time this runs.
+func populationsFit(deltas []int64) bool {
+	var bucket int64
+	var total uint64
+	for _, delta := range deltas {
+		bucket += delta
+		sum := total + uint64(bucket)
+		if sum < total {
+			return false
+		}
+		total = sum
+	}
+	return true
+}
+
 // validateNHCB checks that the spans and deltas of a custom bucket histogram describe exactly the
 // buckets its bounds separate. Count is left out on purpose: it is rebuilt from the buckets, so
 // the count that arrived does not have to agree.
@@ -1000,6 +1016,9 @@ func validateNHCB(histogram *writev2.Histogram) error {
 	}
 	if hasNegativeCounts(histogram.PositiveDeltas) {
 		return errors.New("histogram has negative counts")
+	}
+	if !populationsFit(histogram.PositiveDeltas) {
+		return errors.New("bucket populations are too large to represent")
 	}
 
 	var described, dense int64
@@ -1255,7 +1274,7 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
 	// A stale marker records that the series stopped, so it carries no distribution and the
 	// spans and deltas that would describe one are left unread.
 	if value.IsStaleNaN(histogram.Sum) {
@@ -1270,20 +1289,9 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 		return
 	}
 
-	bucketCounts, ok := convertNHCBBuckets(histogram)
-	if !ok {
-		prw.settings.Logger.Error("Dropping Native Histogram whose deltas take a bucket population below zero",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
-	}
-
-	// Counted first, so a population that cannot be represented is never half published.
-	count, ok := addPopulations(bucketCounts...)
-	if !ok {
-		prw.settings.Logger.Error("Dropping Native Histogram whose bucket population is too large to represent",
-			zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
-		return
-	}
+	// validateNHCB has checked that every population is non-negative and that their total fits.
+	bucketCounts := convertNHCBBuckets(histogram)
+	count, _ := addPopulations(bucketCounts...)
 
 	dp := datapoints.AppendEmpty()
 	dp.SetStartTimestamp(pcommon.Timestamp(histogram.StartTimestamp * int64(time.Millisecond)))
@@ -1308,12 +1316,12 @@ func (prw *prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Hi
 
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts. validateNHCB has
 // already ruled out the shapes the checks below catch, which stand in case it misses one.
-func convertNHCBBuckets(histogram *writev2.Histogram) ([]uint64, bool) {
+func convertNHCBBuckets(histogram *writev2.Histogram) []uint64 {
 	bucketCounts := make([]uint64, nhcbBucketCount(histogram))
 
 	// NHCB uses the positive bucket list and spans for all buckets
 	if len(histogram.PositiveSpans) == 0 {
-		return bucketCounts, true
+		return bucketCounts
 	}
 
 	// Values are deltas between buckets. Float flavored histograms are dropped earlier.
@@ -1330,9 +1338,6 @@ func convertNHCBBuckets(histogram *writev2.Histogram) ([]uint64, bool) {
 			bucketCount += histogram.PositiveDeltas[deltaIdx]
 			deltaIdx++
 
-			if bucketCount < 0 {
-				return nil, false
-			}
 			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
 				bucketCounts[bucketIdx] = uint64(bucketCount)
 			}
@@ -1340,5 +1345,5 @@ func convertNHCBBuckets(histogram *writev2.Histogram) ([]uint64, bool) {
 		}
 	}
 
-	return bucketCounts, true
+	return bucketCounts
 }

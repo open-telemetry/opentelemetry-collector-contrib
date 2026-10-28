@@ -581,7 +581,7 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
 	// Five buckets of 2^62 sum past what a uint64 count can hold, so there is no data point that
 	// both keeps the buckets and carries a count OTLP accepts. The declared count is the value
-	// the sum wraps to, so nothing earlier refuses it first.
+	// the sum wraps to, so only the population check can refuse it.
 	prwReceiver := setupMetricsReceiver(t)
 
 	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
@@ -610,12 +610,9 @@ func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, stats.Histograms)
 
-	// The populations are only summed once the spans have been walked, so the metric container
-	// is already there and comes out empty. Every late rejection has that shape, tracked in
-	// #50340.
-	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
-		Histogram().DataPoints()
-	assert.Equal(t, 0, dps.Len(), "a population that cannot be represented is not published")
+	// The populations are summed while the histogram is validated, before the series is given a
+	// resource, so the rejection leaves nothing behind.
+	assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "a population that cannot be represented is not published")
 }
 
 func TestMalformedNHCBIsNotTruncated(t *testing.T) {
