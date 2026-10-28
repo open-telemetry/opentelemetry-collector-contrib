@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -187,6 +188,58 @@ func TestReceiver_MessageDecoderContextCancellation(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, wantDeadline, gotDeadline)
 			assert.ErrorIs(t, awaitDecoderValue(t, received).ctx.Err(), context.Canceled)
+		})
+	}
+}
+
+func TestReceiver_MessageDecoderSelectsFormatFromHeader(t *testing.T) {
+	_, cfg := mustNewFakeCluster(t)
+	cfg.Metrics.Encoding = "header"
+	cfg.HeaderExtraction.ExtractHeaders = false
+	next := new(consumertest.MetricsSink)
+	r, err := NewFactory().CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, next)
+	require.NoError(t, err)
+	ext := &headerMetricsMessageExtension{}
+	require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("header"): ext}))
+	t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
+
+	// One shared extension selects the actual codec separately for each message.
+	for i, tc := range []struct {
+		format     string
+		marshaler  pmetric.Marshaler
+		metricName string
+		value      int64
+	}{
+		{format: "json", marshaler: &pmetric.JSONMarshaler{}, metricName: "json.metric", value: 42},
+		{format: "proto", marshaler: &pmetric.ProtoMarshaler{}, metricName: "protobuf.metric", value: 99},
+	} {
+		t.Run(tc.format, func(t *testing.T) {
+			input := pmetric.NewMetrics()
+			metric := input.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName(tc.metricName)
+			metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(tc.value)
+			payload, err := tc.marshaler.MarshalMetrics(input)
+			require.NoError(t, err)
+			require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
+				Topic: "messages", Value: payload,
+				Headers: []kgo.RecordHeader{{Key: "format", Value: []byte(tc.format)}},
+			}, attribute.NewSet()))
+
+			allMetrics := next.AllMetrics()
+			require.Len(t, allMetrics, i+1)
+			decoded := allMetrics[i]
+			require.Equal(t, 1, decoded.ResourceMetrics().Len())
+			resourceMetrics := decoded.ResourceMetrics().At(0)
+			require.Equal(t, 1, resourceMetrics.ScopeMetrics().Len())
+			metrics := resourceMetrics.ScopeMetrics().At(0).Metrics()
+			require.Equal(t, 1, metrics.Len())
+			actual := metrics.At(0)
+			assert.Equal(t, tc.metricName, actual.Name())
+			require.Equal(t, pmetric.MetricTypeGauge, actual.Type())
+			require.Equal(t, 1, actual.Gauge().DataPoints().Len())
+			point := actual.Gauge().DataPoints().At(0)
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, point.ValueType())
+			assert.Equal(t, tc.value, point.IntValue())
 		})
 	}
 }
@@ -481,6 +534,29 @@ func (e *messageContextExtension) DecodeTraces(ctx context.Context, payload []by
 func (e *messageContextExtension) DecodeProfiles(ctx context.Context, payload []byte, options ...encoding.ProfilesDecodeOption) (pprofile.Profiles, error) {
 	data := testdata.GenerateProfiles(1)
 	return data, e.decode(ctx, payload, data.ResourceProfiles().At(0).Resource(), options...)
+}
+
+type headerMetricsMessageExtension struct {
+	component.Component
+}
+
+func (*headerMetricsMessageExtension) DecodeMetrics(_ context.Context, payload []byte, options ...encoding.MetricsDecodeOption) (pmetric.Metrics, error) {
+	config, err := encoding.NewDecodeConfig(options...)
+	if err != nil {
+		return pmetric.Metrics{}, err
+	}
+	formats := config.MessageMetadata.Get("format")
+	if len(formats) != 1 {
+		return pmetric.Metrics{}, errors.New("expected one format header")
+	}
+	switch formats[0] {
+	case "json":
+		return (&pmetric.JSONUnmarshaler{}).UnmarshalMetrics(payload)
+	case "proto":
+		return (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics(payload)
+	default:
+		return pmetric.Metrics{}, fmt.Errorf("unsupported metrics format %q", formats[0])
+	}
 }
 
 type messageAndLegacyExtension struct {
