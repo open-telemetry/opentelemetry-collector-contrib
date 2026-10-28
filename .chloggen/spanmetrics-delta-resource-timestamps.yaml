@@ -2,3 +2,4 @@ change_type: bug_fix
 component: connector/span_metrics
 note: Fix delta timestamp collisions between resources with matching dimensions, preventing downstream cumulative counters from resetting.
 issues: [52145]
+subtext: Metric names, attributes, and delta values are unchanged.
