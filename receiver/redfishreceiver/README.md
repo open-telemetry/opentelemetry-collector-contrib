@@ -37,9 +37,10 @@ The following settings are optional:
 
 Each server has the following properties:
 - `base_url` (required): base url to monitor in the form [https][://][host]:[port].
-- `username` (required): Redfish username.
-- `password` (required): Redfish password.
-- `insecure` (optional, default: `false`): Sets the protocol security.
+- `username` (optional): Redfish username. When set, HTTP basic auth is used.
+- `password` (optional): Redfish password.
+- `insecure` (optional, default: `false`): Skips server certificate verification.
+- `tls` (optional): TLS settings, e.g. `ca_file`, `cert_file` and `key_file` for mTLS, or `server_name_override` when the server certificate does not match the host in `base_url`. If the client certificate and key are in a single PEM file, set both `cert_file` and `key_file` to it. See [configtls](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for all options.
 - `timeout` (optional, default: `60s`): Sets the Redfish client timeout.
 - `redfish` (optional): Redfish configuration.
 - `computer_system_id` (required): Redfish computer system id to monitor.
@@ -56,15 +57,29 @@ The redfish resource options include the below:
 
 ### Example Configuration
 
+The example below monitors two servers: the first one uses basic auth, the second one uses client certificate authentication (mTLS).
+
 ```yaml
 receivers:
   redfish:
     collection_interval: 60s
     servers:
+    # basic auth
     - base_url: https://16.1.15.1
       username: "${BMC_USER}"
       password: "${BMC_PASSWORD}"
       insecure: true
+      computer_system_id: "1"
+      resources:
+      - ComputerSystem
+      - Fans
+    # mTLS
+    - base_url: https://16.1.15.2
+      tls:
+        ca_file: /etc/otel/certs/ca.crt
+        cert_file: /etc/otel/certs/client.pem
+        key_file: /etc/otel/certs/client.pem
+        server_name_override: bmc.example.com
       computer_system_id: "1"
       redfish:
         version: v1

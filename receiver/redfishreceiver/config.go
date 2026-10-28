@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/metadata"
@@ -20,14 +21,15 @@ type redfishConfig struct {
 }
 
 type Server struct {
-	BaseURL          string              `mapstructure:"base_url"`
-	User             string              `mapstructure:"username"`
-	Pwd              configopaque.String `mapstructure:"password"`
-	Insecure         bool                `mapstructure:"insecure"`
-	Timeout          string              `mapstructure:"timeout"`
-	Redfish          redfishConfig       `mapstructure:"redfish"`
-	ComputerSystemID string              `mapstructure:"computer_system_id"`
-	Resources        []Resource          `mapstructure:"resources"`
+	BaseURL          string                 `mapstructure:"base_url"`
+	User             string                 `mapstructure:"username"`
+	Pwd              configopaque.String    `mapstructure:"password"`
+	Insecure         bool                   `mapstructure:"insecure"`
+	TLS              configtls.ClientConfig `mapstructure:"tls"`
+	Timeout          string                 `mapstructure:"timeout"`
+	Redfish          redfishConfig          `mapstructure:"redfish"`
+	ComputerSystemID string                 `mapstructure:"computer_system_id"`
+	Resources        []Resource             `mapstructure:"resources"`
 }
 
 type Config struct {
@@ -46,6 +48,10 @@ func (cfg *Config) Validate() error {
 
 	for i := range cfg.Servers {
 		if _, err := url.ParseRequestURI(cfg.Servers[i].BaseURL); err != nil {
+			return err
+		}
+
+		if err := cfg.Servers[i].TLS.Validate(); err != nil {
 			return err
 		}
 

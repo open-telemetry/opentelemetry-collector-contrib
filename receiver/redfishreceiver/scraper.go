@@ -45,7 +45,7 @@ func newScraper(conf *Config, settings receiver.Settings) *redfishScraper {
 }
 
 // start is a method to initialize our redfishScraper scraperClients
-func (s *redfishScraper) start(_ context.Context, _ component.Host) error {
+func (s *redfishScraper) start(ctx context.Context, _ component.Host) error {
 	s.logger.Info("starting redfish scraper")
 
 	// create redfish clients
@@ -54,6 +54,14 @@ func (s *redfishScraper) start(_ context.Context, _ component.Host) error {
 
 		opts := make([]redfish.ClientOption, 0)
 		opts = append(opts, redfish.WithInsecure(server.Insecure))
+
+		tlsConfig, tlsErr := server.TLS.LoadTLSConfig(ctx)
+		if tlsErr != nil {
+			return tlsErr
+		}
+		if tlsConfig != nil {
+			opts = append(opts, redfish.WithTLSConfig(tlsConfig))
+		}
 
 		if server.Redfish.Version != "" {
 			opts = append(opts, redfish.WithRedfishVersion(server.Redfish.Version))
