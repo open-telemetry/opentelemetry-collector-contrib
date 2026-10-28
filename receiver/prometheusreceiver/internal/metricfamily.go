@@ -59,6 +59,7 @@ type metricGroup struct {
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
+//nolint:unparam
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	return newMetricFamilyWithMetadata(metricName, familyName, metadata, logger, isNativeHistogram, isNHCB)

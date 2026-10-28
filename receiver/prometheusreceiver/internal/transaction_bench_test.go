@@ -295,8 +295,6 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 }
 
 // generateLabelSets creates label sets for benchmarking with the specified cardinality.
-//
-//nolint:unparam
 func generateLabelSets(seriesCount, cardinality int) []labels.Labels {
 	result := make([]labels.Labels, seriesCount)
 
