@@ -158,8 +158,16 @@ func (f *SubscriptionFilterUnmarshaler) decodeOne(
 	resourceLogsByKey map[resourceGroupKey]plog.LogRecordSlice,
 ) error {
 	if len(f.routes) == 0 {
+		// Capture the envelope as raw bytes and Unmarshal it rather than
+		// decoding the struct straight from the stream: go-json's stream
+		// decoder is very slow on escaped strings, such as JSON messages
+		// (e.g. CloudTrail) embedded in logEvents[].message.
+		var raw gojson.RawMessage
+		if err := decoder.Decode(&raw); err != nil {
+			return fmt.Errorf("failed to decode decompressed reader: %w", err)
+		}
 		var cwLog cloudwatchLogsData
-		if err := decoder.Decode(&cwLog); err != nil {
+		if err := gojson.Unmarshal(raw, &cwLog); err != nil {
 			return fmt.Errorf("failed to decode decompressed reader: %w", err)
 		}
 		if cwLog.MessageType == ctrlMessageType {
