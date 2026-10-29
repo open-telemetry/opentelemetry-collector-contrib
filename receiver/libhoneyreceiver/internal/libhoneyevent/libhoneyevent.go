@@ -155,14 +155,14 @@ func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 				case "link":
 					return "span_link"
 				}
-				logger.Debug("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
+				logger.Debug("invalid annotation type", zap.Any("meta.annotation_type", atype))
 				return "span"
 			}
 			return "span"
 		case "log":
 			return "log"
 		default:
-			logger.Debug("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
+			logger.Debug("invalid meta.signal_type", zap.Any("meta.signal_type", sig))
 			return "log"
 		}
 	}
@@ -172,29 +172,29 @@ func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 
 // GetService returns the service name from the event or the dataset name if no service name is found.
 func (l *LibhoneyEvent) GetService(fields FieldMapConfig, seen *ServiceHistory, dataset string) (string, error) {
-	if serviceName, ok := l.Data[fields.Resources.ServiceName]; ok {
-		seen.NameCount[serviceName.(string)]++
-		return serviceName.(string), nil
+	if serviceName, ok := l.Data[fields.Resources.ServiceName].(string); ok {
+		seen.NameCount[serviceName]++
+		return serviceName, nil
 	}
 	return dataset, errors.New("no service.name found in event")
 }
 
 // GetScope returns the scope key for the event. If the scope has not been seen before, it creates a new one.
 func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serviceName string) (string, error) {
-	if scopeLibraryName, ok := l.Data[fields.Scopes.LibraryName]; ok {
-		scopeKey := serviceName + scopeLibraryName.(string)
+	if scopeLibraryName, ok := l.Data[fields.Scopes.LibraryName].(string); ok {
+		scopeKey := serviceName + scopeLibraryName
 		if _, ok := seen.Scope[scopeKey]; ok {
 			// if we've seen it, we don't expect it to be different right away so we'll just return it.
 			return scopeKey, nil
 		}
 		// otherwise, we need to make a new found scope
 		scopeLibraryVersion := "unset"
-		if scopeLibVer, ok := l.Data[fields.Scopes.LibraryVersion]; ok {
-			scopeLibraryVersion = scopeLibVer.(string)
+		if scopeLibVer, ok := l.Data[fields.Scopes.LibraryVersion].(string); ok {
+			scopeLibraryVersion = scopeLibVer
 		}
 		newScope := SimpleScope{
 			ServiceName:    serviceName,
-			LibraryName:    scopeLibraryName.(string),
+			LibraryName:    scopeLibraryName,
 			LibraryVersion: scopeLibraryVersion,
 			ScopeSpans:     ptrace.NewSpanSlice(),
 			ScopeLogs:      plog.NewLogRecordSlice(),
@@ -300,8 +300,8 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		newLog.SetSeverityNumber(plog.SeverityNumber(logSevInt))
 	}
 
-	if logSevText, ok := l.Data["severity_text"]; ok {
-		newLog.SetSeverityText(logSevText.(string))
+	if logSevText, ok := l.Data["severity_text"].(string); ok {
+		newLog.SetSeverityText(logSevText)
 	}
 
 	if logFlags, ok := l.Data["flags"]; ok {
@@ -316,8 +316,12 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 	}
 
 	// undoing this is gonna be complicated: https://github.com/honeycombio/husky/blob/91c0498333cd9f5eed1fdb8544ca486db7dea565/otlp/logs.go#L61
-	if logBody, ok := l.Data["body"]; ok {
-		newLog.Body().SetStr(logBody.(string))
+	if logBody, ok := l.Data["body"]; ok && logBody != nil {
+		if bodyStr, isStr := logBody.(string); isStr {
+			newLog.Body().SetStr(bodyStr)
+		} else if err := newLog.Body().FromRaw(logBody); err != nil {
+			newLog.Body().SetStr(fmt.Sprint(logBody))
+		}
 	}
 
 	newLog.Attributes().PutInt("SampleRate", int64(l.Samplerate))
@@ -335,9 +339,12 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 			newLog.Attributes().PutStr(k, v)
 		case int:
 			newLog.Attributes().PutInt(k, int64(v))
-		case int64, int16, int32:
-			intv := v.(int64)
-			newLog.Attributes().PutInt(k, intv)
+		case int64:
+			newLog.Attributes().PutInt(k, v)
+		case int32:
+			newLog.Attributes().PutInt(k, int64(v))
+		case int16:
+			newLog.Attributes().PutInt(k, int64(v))
 		case uint64:
 			newLog.Attributes().PutInt(k, int64(v))
 		case float64:
@@ -353,8 +360,12 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 
 // GetParentID returns the parent id from the event or an error if it's not found
 func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
-	if pid, ok := l.Data[fieldName]; ok && pid != nil {
-		pid := strings.ReplaceAll(pid.(string), "-", "")
+	if pidVal, ok := l.Data[fieldName]; ok && pidVal != nil {
+		pidStr, isStr := pidVal.(string)
+		if !isStr {
+			return trc.SpanID{}, errors.New("parent id is not a string")
+		}
+		pid := strings.ReplaceAll(pidStr, "-", "")
 		pidByteArray, err := hex.DecodeString(pid)
 		if err == nil && len(pidByteArray) >= 8 {
 			// Extract 8 bytes for SpanID
@@ -397,22 +408,24 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
 		parentID, err := l.GetParentID(cfg.Attributes.ParentID)
 		if err != nil {
-			parentID = spanIDFrom(pid.(string))
+			if pidStr, isStr := pid.(string); isStr {
+				parentID = spanIDFrom(pidStr)
+			}
 		}
 		newSpan.SetParentSpanID(pcommon.SpanID(parentID))
 	}
 
 	durationMs := 0.0
 	for _, df := range cfg.Attributes.DurationFields {
-		if duration, okay := l.Data[df]; okay {
-			durationMs = duration.(float64)
+		if duration, okay := numberToFloat64(l.Data[df]); okay {
+			durationMs = duration
 			break
 		}
 	}
 	endTimestamp := timeNs + int64(durationMs*1000000)
 
-	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
-		tid := strings.ReplaceAll(tid.(string), "-", "")
+	if tidStr, ok := l.Data[cfg.Attributes.TraceID].(string); ok {
+		tid := strings.ReplaceAll(tidStr, "-", "")
 		tidByteArray, err := hex.DecodeString(tid)
 		if err == nil && len(tidByteArray) == 16 {
 			// Convert slice to [16]byte array
@@ -426,8 +439,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		newSpan.SetTraceID(pcommon.TraceID(generateAnID(16)))
 	}
 
-	if sid, ok := l.Data[cfg.Attributes.SpanID]; ok {
-		sid := strings.ReplaceAll(sid.(string), "-", "")
+	if sidStr, ok := l.Data[cfg.Attributes.SpanID].(string); ok {
+		sid := strings.ReplaceAll(sidStr, "-", "")
 		sidByteArray, err := hex.DecodeString(sid)
 		if err == nil && len(sidByteArray) == 8 {
 			// Convert slice to [8]byte array
@@ -444,11 +457,11 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	newSpan.SetStartTimestamp(pcommon.Timestamp(timeNs))
 	newSpan.SetEndTimestamp(pcommon.Timestamp(endTimestamp))
 
-	if spanName, ok := l.Data[cfg.Attributes.Name]; ok {
-		newSpan.SetName(spanName.(string))
+	if spanName, ok := l.Data[cfg.Attributes.Name].(string); ok {
+		newSpan.SetName(spanName)
 	}
-	if spanStatusMessage, ok := l.Data["status_message"]; ok {
-		newSpan.Status().SetMessage(spanStatusMessage.(string))
+	if spanStatusMessage, ok := l.Data["status_message"].(string); ok {
+		newSpan.Status().SetMessage(spanStatusMessage)
 	}
 	newSpan.Status().SetCode(ptrace.StatusCodeUnset)
 
@@ -456,8 +469,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		newSpan.Status().SetCode(ptrace.StatusCodeError)
 	}
 
-	if spanKind, ok := l.Data[cfg.Attributes.SpanKind]; ok {
-		switch spanKind.(string) {
+	if spanKind, ok := l.Data[cfg.Attributes.SpanKind].(string); ok {
+		switch spanKind {
 		case "server":
 			newSpan.SetKind(ptrace.SpanKindServer)
 		case "client":
@@ -484,9 +497,12 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			newSpan.Attributes().PutStr(k, v)
 		case int:
 			newSpan.Attributes().PutInt(k, int64(v))
-		case int64, int16, int32:
-			intv := v.(int64)
-			newSpan.Attributes().PutInt(k, intv)
+		case int64:
+			newSpan.Attributes().PutInt(k, v)
+		case int32:
+			newSpan.Attributes().PutInt(k, int64(v))
+		case int16:
+			newSpan.Attributes().PutInt(k, int64(v))
 		case uint64:
 			newSpan.Attributes().PutInt(k, int64(v))
 		case float64:
@@ -498,4 +514,23 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		}
 	}
 	return nil
+}
+
+// numberToFloat64 converts a decoded numeric value to float64. JSON numbers are
+// decoded as float64, while msgpack integers are decoded as int64 or uint64.
+func numberToFloat64(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	default:
+		return 0, false
+	}
 }

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 const (
@@ -26,8 +26,8 @@ const (
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	return xhash.Hash64(
 		xhash.WithMap(dp.Attributes()),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
 	)
 }
 

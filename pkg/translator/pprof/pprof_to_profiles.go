@@ -17,7 +17,7 @@ import (
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 var (
@@ -123,10 +123,10 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 
 	// Add envelope messages
 	rp := dst.ResourceProfiles().AppendEmpty()
-	rp.SetSchemaUrl(semconv.SchemaURL)
+	rp.SetSchemaUrl(conventions.SchemaURL)
 
 	sp := rp.ScopeProfiles().AppendEmpty()
-	sp.SetSchemaUrl(semconv.SchemaURL)
+	sp.SetSchemaUrl(conventions.SchemaURL)
 	// Use a dedicated pprofile.Profile for each sample type.
 	// By convention, pprof uses the last sample type as default, while OTel Profiles
 	// uses the first profile as default. Therefore, swap first and last.
@@ -203,11 +203,11 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 		// is no 1 to 1 mapping here.
 
 		// pprof.Profile.drop_frames
-		dropFramesIdx := lts.getIdxForAttribute(string(semconv.PprofProfileDropFramesKey), src.DropFrames)
+		dropFramesIdx := lts.getIdxForAttribute(string(conventions.PprofProfileDropFramesKey), src.DropFrames)
 		p.AttributeIndices().Append(dropFramesIdx)
 
 		// pprof.Profile.keep_frames
-		keepFramesIdx := lts.getIdxForAttribute(string(semconv.PprofProfileKeepFramesKey), src.KeepFrames)
+		keepFramesIdx := lts.getIdxForAttribute(string(conventions.PprofProfileKeepFramesKey), src.KeepFrames)
 		p.AttributeIndices().Append(keepFramesIdx)
 
 		// pprof.Profile.time_nanos
@@ -228,7 +228,7 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 			// Append a index to the attribute key, so that
 			// later src.Comments can be reconstructed correctly.
 			p.AttributeIndices().Append(lts.getIdxForAttribute(
-				string(semconv.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c,
+				string(conventions.PprofProfileCommentKey)+fmt.Sprintf(".%d", ci), c,
 			))
 		}
 
@@ -236,7 +236,7 @@ func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
 
 		// pprof.Profile.doc_url
-		docURLIdx := lts.getIdxForAttribute(string(semconv.PprofProfileDocURLKey), src.DocURL)
+		docURLIdx := lts.getIdxForAttribute(string(conventions.PprofProfileDocURLKey), src.DocURL)
 		p.AttributeIndices().Append(docURLIdx)
 	}
 
@@ -377,28 +377,28 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	// pprof.Mapping.build_id
 	// Assume all build_ids are GNU build IDs
 	buildIDIdx := lts.getIdxForAttribute(
-		string(semconv.ProcessExecutableBuildIDGNUKey), m.BuildID,
+		string(conventions.ProcessExecutableBuildIDGNUKey), m.BuildID,
 	)
 	ids = append(ids, buildIDIdx)
 
 	// pprof.Mapping.has_*
 	if m.HasFunctions {
-		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasFunctionsKey), true)
+		idx := lts.getIdxForAttribute(string(conventions.PprofMappingHasFunctionsKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasFilenames {
-		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasFilenamesKey), true)
+		idx := lts.getIdxForAttribute(string(conventions.PprofMappingHasFilenamesKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasLineNumbers {
-		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasLineNumbersKey), true)
+		idx := lts.getIdxForAttribute(string(conventions.PprofMappingHasLineNumbersKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasInlineFrames {
-		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasInlineFramesKey), true)
+		idx := lts.getIdxForAttribute(string(conventions.PprofMappingHasInlineFramesKey), true)
 		ids = append(ids, idx)
 	}
 
@@ -431,7 +431,7 @@ func (lts *lookupTables) getIdxForLocation(l *profile.Location) int32 {
 	var attrIdxs []int32
 	// pprof.Location.is_folded
 	if l.IsFolded {
-		idx := lts.getIdxForAttribute(string(semconv.PprofLocationIsFoldedKey), true)
+		idx := lts.getIdxForAttribute(string(conventions.PprofLocationIsFoldedKey), true)
 		attrIdxs = append(attrIdxs, idx)
 	}
 
