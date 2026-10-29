@@ -65,6 +65,39 @@ func TestOnErrorReturnsSelf(t *testing.T) {
 	assert.Same(t, r, r.OnError(errors.New("anything")))
 }
 
+type fakeRetryableErr struct {
+	records []*kgo.Record
+}
+
+func (*fakeRetryableErr) Error() string                     { return "fake retryable error" }
+func (e *fakeRetryableErr) RetryableRecords() []*kgo.Record { return e.records }
+
+func TestOnError_FiltersRetryableRecords(t *testing.T) {
+	recA := rec(nil, []byte("acknowledged"))
+	recB := rec(nil, []byte("permanent_fail"))
+	recC := rec(nil, []byte("retryable"))
+	r := New([]*kgo.Record{recA, recB, recC})
+
+	err := &fakeRetryableErr{records: []*kgo.Record{recC}}
+	ret := r.OnError(err)
+
+	require.NotSame(t, r, ret)
+	kr, ok := ret.(*Request)
+	require.True(t, ok)
+	require.Len(t, kr.Records(), 1)
+	assert.Same(t, recC, kr.Records()[0])
+	assert.Equal(t, len("retryable"), kr.BytesSize())
+}
+
+func TestOnError_EmptyRetryableReturnsSelf(t *testing.T) {
+	recA := rec(nil, []byte("acknowledged"))
+	r := New([]*kgo.Record{recA})
+
+	err := &fakeRetryableErr{records: nil}
+	ret := r.OnError(err)
+	assert.Same(t, r, ret)
+}
+
 func TestMergeSplit_NoSplit(t *testing.T) {
 	r := New([]*kgo.Record{rec(nil, []byte("hello"))})
 	got, err := r.MergeSplit(t.Context(), 0, exporterhelper.RequestSizerTypeBytes, nil)

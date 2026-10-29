@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/kafka
+note: Fix retry semantics for mixed batch produce outcomes and clear expired record contexts on retry.
+issues: [52286]
+subtext:
+change_logs: [user]
