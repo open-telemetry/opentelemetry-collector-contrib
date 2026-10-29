@@ -12,8 +12,11 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -268,4 +271,22 @@ func TestStart_X509ExternalAccount(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "my-project", ca.config.Project)
 	assert.Equal(t, "my-quota-project", ca.config.QuotaProject)
+}
+
+func TestStart_WithProjectIDLookupError(t *testing.T) {
+	// Metadata server that reports GCE but fails project ID lookups.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Metadata-Flavor", "Google")
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("GCE_METADATA_HOST", strings.TrimPrefix(srv.URL, "http://"))
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("APPDATA", t.TempDir())
+
+	ext, err := CreateExtension(t.Context(), extension.Settings{}, CreateDefaultConfig())
+	require.NoError(t, err)
+	err = ext.Start(t.Context(), nil)
+	assert.ErrorContains(t, err, "failed to get project from application default credentials")
 }

@@ -61,13 +61,17 @@ func (ca *clientAuthenticator) Start(ctx context.Context, _ component.Host) erro
 		config.Project = os.Getenv(envProjectID)
 	}
 	if config.Project == "" {
-		config.Project, _ = creds.ProjectID(ctx)
+		if config.Project, err = creds.ProjectID(ctx); err != nil {
+			return fmt.Errorf("failed to get project from application default credentials: %w", err)
+		}
 	}
 	if config.Project == "" {
 		return errors.New("no project set in config or found with application default credentials")
 	}
 	if config.QuotaProject == "" {
-		config.QuotaProject, _ = creds.QuotaProjectID(ctx)
+		if config.QuotaProject, err = creds.QuotaProjectID(ctx); err != nil {
+			return fmt.Errorf("failed to get quota project from application default credentials: %w", err)
+		}
 	}
 	source, err := ca.newTokenSource(creds)
 	if err != nil {
