@@ -1359,6 +1359,7 @@ query sample
 | sqlserver.transaction_id | Unique ID of the active transaction. | Any Int | - |
 | sqlserver.transaction_isolation_level | Transaction isolation level used in the session. Represented as numeric constant. | Any Int | - |
 | sqlserver.wait_resource | The resource for which the session is waiting. | Any Str | - |
+| sqlserver.wait.start_time | Timestamp of when the current wait started (ISO 8601 format). Empty if not waiting. | Any Str | - |
 | sqlserver.wait_time | Duration in seconds the request has been waiting. | Any Double | - |
 | sqlserver.wait_type | Type of wait encountered by the request. Empty if none. | Any Str | - |
 | sqlserver.writes | Number of writes performed by the query. | Any Int | - |

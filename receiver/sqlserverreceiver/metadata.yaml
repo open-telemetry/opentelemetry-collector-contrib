@@ -430,6 +430,10 @@ attributes:
     description: SQL Server type of the locked or waited-on resource, if available.
     type: string
     requirement_level: recommended
+  sqlserver.wait.start_time:
+    description: Timestamp of when the current wait started (ISO 8601 format). Empty if not waiting.
+    type: string
+    requirement_level: recommended
   sqlserver.wait_resource:
     description: The resource for which the session is waiting.
     type: string
@@ -561,6 +565,7 @@ events:
       - sqlserver.transaction_id
       - sqlserver.transaction_isolation_level
       - sqlserver.wait_resource
+      - sqlserver.wait.start_time
       - sqlserver.wait_time
       - sqlserver.wait_type
       - sqlserver.writes

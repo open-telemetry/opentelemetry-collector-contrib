@@ -13,6 +13,7 @@ SELECT TOP(@top)
   ISNULL(o.TEXT, '') AS statement_text,
   CAST(0 AS SMALLINT) AS blocking_session_id,
   '' AS blocking_start_time,
+  '' AS wait_start_time,
   '' AS wait_type,
   CAST(0 AS INT) AS wait_time,
   '' AS wait_resource,
