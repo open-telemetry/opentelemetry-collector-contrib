@@ -16,12 +16,9 @@ issues: [46871]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Shutdown was setting e.writer = nil before the writer had fully shut down.
-  Moved mutex locking into export() and added a w.file == nil guard so calls
-  after shutdown return io.ErrClosedPipe instead of panicking. Added a
-  WaitGroup to fileWriter so shutdown waits for the flush goroutine to exit
-  before closing the file. Snapshot stopTicker under the lock to prevent
-  double-close if shutdown is called more than once.
+  Calls to export telemetry after or during shutdown now return io.ErrClosedPipe
+  instead of panicking, and repeated calls to Shutdown are idempotent.
+  Shutdown also now waits for any active background flush to complete before closing the file.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
