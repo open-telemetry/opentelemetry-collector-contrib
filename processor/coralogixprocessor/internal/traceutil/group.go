@@ -6,7 +6,7 @@ package traceutil // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // GroupSpansByTraceID collects spans from a traces payload by trace ID.

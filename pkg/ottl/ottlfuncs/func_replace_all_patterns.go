@@ -86,6 +86,16 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 				}
 			}
 		case modeKey:
+			hasMatch := false
+			for key := range val.All() {
+				if cp.MatchString(key) {
+					hasMatch = true
+					break
+				}
+			}
+			if !hasMatch {
+				break
+			}
 			// Because we are changing the keys we cannot do in-place update, but we can move values to the
 			// updated map and then move back the updated map to the initial map to avoid a copy in the target.Set,
 			// because the pcommon.Map.CopyTo will not do a copy if it is the same object in this case val.

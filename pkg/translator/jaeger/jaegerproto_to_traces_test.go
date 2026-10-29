@@ -307,7 +307,7 @@ func TestProtoToTraces(t *testing.T) {
 				span.SetKind(ptrace.SpanKindClient)
 				span.SetKind(ptrace.SpanKindServer)
 				span.Status().SetCode(ptrace.StatusCodeUnset)
-				span.Attributes().PutStr("http.status_code", "404")
+				span.Attributes().PutStr("http.response.status_code", "404")
 				return traces
 			}(),
 		},
@@ -890,7 +890,7 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(ptrace.StatusCodeUnset)
-	span.Attributes().PutInt("http.status_code", 404)
+	span.Attributes().PutInt("http.response.status_code", 404)
 	return td
 }
 
@@ -907,7 +907,7 @@ func generateProtoChildSpan() *model.Span {
 		Duration:      testSpanEndTime.Sub(testSpanStartTime),
 		Tags: []model.KeyValue{
 			{
-				Key:    "http.status_code",
+				Key:    "http.response.status_code",
 				VType:  model.ValueType_INT64,
 				VInt64: 404,
 			},
@@ -1124,8 +1124,8 @@ func TestJTagsToInternalAttributesHTTPConventionsMigration(t *testing.T) {
 			err = featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", tc.dontEmitV0)
 			assert.NoError(t, err)
 			t.Cleanup(func() {
-				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", false))
-				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", true))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", true))
 			})
 
 			tags := []model.KeyValue{{Key: "http.status_code", VType: model.ValueType_STRING, VStr: "500"}}

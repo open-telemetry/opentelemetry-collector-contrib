@@ -26,6 +26,7 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/discovery/file"
 	"github.com/prometheus/prometheus/discovery/http"
+	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -647,6 +648,97 @@ scrape_configs:
 				require.NotNil(t, dst.ScrapeConfigs[0].HTTPClientConfig.BasicAuth, "basic auth should be configured")
 				password := string(dst.ScrapeConfigs[0].HTTPClientConfig.BasicAuth.Password)
 				assert.Equal(t, "password\n", password, "password should preserve trailing newline")
+			},
+		},
+		{
+			name: "proxy url with user and password",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-proxy-userinfo"
+    proxy_url: "http://user:pass@proxy.example.com:3128"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				proxyURL := dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL
+				require.NotNil(t, proxyURL.URL, "proxy_url should be configured")
+				assert.Equal(t, "http://user:pass@proxy.example.com:3128", proxyURL.String(), "proxy_url should round-trip byte for byte")
+				assert.NotContains(t, (*promconfig.Config)(dst).String(), "user:pass@", "config String() should still redact proxy_url")
+			},
+		},
+		{
+			name: "no proxy url stays unset",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-no-proxy"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				assert.Nil(t, dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL.URL, "proxy_url should stay unset")
+			},
+		},
+		{
+			name: "kubernetes api server url with user and password",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-k8s-api-server"
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: "https://user:pass@k8s.example.com:6443"
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				require.Len(t, dst.ScrapeConfigs[0].ServiceDiscoveryConfigs, 1)
+				sdConfig, ok := dst.ScrapeConfigs[0].ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
+				require.True(t, ok)
+				assert.Equal(t, "https://user:pass@k8s.example.com:6443", sdConfig.APIServer.String(), "api_server should round-trip byte for byte")
+			},
+		},
+		{
+			name: "remote write url with user and password",
+			configYAML: `
+remote_write:
+  - url: "http://user:pass@remote.example.com/api/v1/write"
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.RemoteWriteConfigs, 1)
+				require.NotNil(t, dst.RemoteWriteConfigs[0].URL)
+				assert.Equal(t, "http://user:pass@remote.example.com/api/v1/write", dst.RemoteWriteConfigs[0].URL.String(), "remote_write url should round-trip byte for byte")
+			},
+		},
+		{
+			name: "proxy url without userinfo",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-proxy-plain"
+    proxy_url: "http://proxy.example.com:3128"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				proxyURL := dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL
+				require.NotNil(t, proxyURL.URL, "proxy_url should be configured")
+				assert.Equal(t, "http://proxy.example.com:3128", proxyURL.String(), "proxy_url should round-trip byte for byte")
+			},
+		},
+		{
+			name: "proxy url with percent-encoded password",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-proxy-encoded"
+    proxy_url: "http://user:p%40ss%3Aw%25rd@proxy.example.com:3128"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				proxyURL := dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL
+				require.NotNil(t, proxyURL.URL, "proxy_url should be configured")
+				assert.Equal(t, "http://user:p%40ss%3Aw%25rd@proxy.example.com:3128", proxyURL.String(), "proxy_url should round-trip byte for byte")
 			},
 		},
 	}

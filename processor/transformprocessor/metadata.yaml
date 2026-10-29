@@ -11,7 +11,7 @@ status:
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
     emeritus: [anuraaga, kentquirk]
-    seeking_new: true
+    seeking_new: false
 
 feature_gates:
   - id: "transform.flatten.logs"
