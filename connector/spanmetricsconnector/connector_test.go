@@ -538,13 +538,13 @@ func initSpan(span span, s ptrace.Span) {
 	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
 }
 
-func setSpanAttributeValue(traces ptrace.Traces, key, value string) {
+func setStringAttrValue(traces ptrace.Traces, value string) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		scopeSpans := traces.ResourceSpans().At(i).ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				spans.At(k).Attributes().PutStr(key, value)
+				spans.At(k).Attributes().PutStr(stringAttrName, value)
 			}
 		}
 	}
@@ -1426,10 +1426,10 @@ func TestSeriesExpiration(t *testing.T) {
 	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	tracesA := buildSampleTrace()
-	setSpanAttributeValue(tracesA, stringAttrName, "A")
+	setStringAttrValue(tracesA, "A")
 
 	tracesB := buildSampleTrace()
-	setSpanAttributeValue(tracesB, stringAttrName, "B")
+	setStringAttrValue(tracesB, "B")
 
 	require.NoError(t, p.ConsumeTraces(ctx, tracesA))
 	exported := p.buildMetrics()
@@ -1467,7 +1467,7 @@ func TestSeriesRestartAtZeroAfterExpiration(t *testing.T) {
 
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			traces := buildSampleTrace()
-			setSpanAttributeValue(traces, stringAttrName, "A")
+			setStringAttrValue(traces, "A")
 
 			flush := func() pmetric.Metrics {
 				exported := p.buildMetrics()
@@ -1515,7 +1515,7 @@ func TestResourceIsNotExpiredBeforeReportingItsData(t *testing.T) {
 
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			traces := buildSampleTrace()
-			setSpanAttributeValue(traces, stringAttrName, "A")
+			setStringAttrValue(traces, "A")
 
 			flush := func() pmetric.Metrics {
 				exported := p.buildMetrics()
@@ -1555,7 +1555,7 @@ func TestSeriesIsNotExpiredBeforeReportingItsData(t *testing.T) {
 
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			traces := buildSampleTrace()
-			setSpanAttributeValue(traces, stringAttrName, "A")
+			setStringAttrValue(traces, "A")
 
 			flush := func() pmetric.Metrics {
 				exported := p.buildMetrics()
