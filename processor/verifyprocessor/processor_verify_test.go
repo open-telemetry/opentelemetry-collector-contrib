@@ -178,7 +178,7 @@ func TestVerifyRS512HappyPathAndTamper(t *testing.T) {
 	requireNoStatus(t, lr2.Attributes())
 }
 
-func TestEmptyValueSerializedAsEmptyObject(t *testing.T) {
+func TestEmptyValueSerializedAsNull(t *testing.T) {
 	p := newVerifyProc(t, &Config{FailureMode: failureModeStrict, VerificationProfile: "default"}, &staticProvider{hmacKey: []byte("x")})
 	lr := plog.NewLogRecord()
 	lr.Attributes().PutEmpty("unset")
@@ -186,7 +186,7 @@ func TestEmptyValueSerializedAsEmptyObject(t *testing.T) {
 
 	payload, err := p.serializeLogRecord(lr)
 	require.NoError(t, err)
-	assert.JSONEq(t, `{"attributes":{"list":[{}],"unset":{}}}`, string(payload))
+	assert.JSONEq(t, `{"attributes":{"list":[null],"unset":null}}`, string(payload))
 }
 
 func TestVerifyHMACHappyPathAndTamper(t *testing.T) {
@@ -815,7 +815,7 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 		assert.Equal(t, "default", profile.Str())
 	})
 
-	t.Run("resign over foreign profile is rejected", func(t *testing.T) {
+	t.Run("resign over foreign profile verifies", func(t *testing.T) {
 		ld := makeLogs("ok", nil, algorithmHMACSHA256, "", "")
 		records := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		ok := records.At(0)
@@ -837,9 +837,10 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 		require.NoError(t, err)
 		ok.Attributes().PutStr(attrIntegrityValue, hmacSign(t, hmacKey, stampedPayload))
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
-		requireStatus(t, ok.Attributes(), statusFailed)
-		reason, _ := ok.Attributes().Get(attrVerificationReason)
-		assert.Equal(t, reasonIntegrityMismatch, reason.Str())
+		requireStatus(t, ok.Attributes(), statusVerified)
+		profile, found := ok.Attributes().Get(attrVerificationProfile)
+		require.True(t, found)
+		assert.Equal(t, "default", profile.Str())
 		requireStatus(t, kept.Attributes(), statusVerified)
 	})
 

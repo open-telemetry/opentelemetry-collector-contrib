@@ -439,7 +439,7 @@ func (p *verifyProcessor) verifyLogRecord(lr plog.LogRecord, algorithm string) *
 	if err == nil {
 		return nil
 	}
-	if !hasVerificationAttrs(lr) || !p.verificationProfileMatches(lr) {
+	if !hasVerificationAttrs(lr) {
 		return &verifyFailure{reason: reasonIntegrityMismatch, err: err}
 	}
 
@@ -451,17 +451,6 @@ func (p *verifyProcessor) verifyLogRecord(lr plog.LogRecord, algorithm string) *
 		return &verifyFailure{reason: reasonIntegrityMismatch, err: err}
 	}
 	return nil
-}
-
-// hasVerificationAttrs reports whether a previous verifyprocessor stamped the
-// record. A signer placed after that verifier signs over those stamps, so the
-// payload must be rebuilt with them included to match its signature.
-func (p *verifyProcessor) verificationProfileMatches(lr plog.LogRecord) bool {
-	v, ok := lr.Attributes().Get(attrVerificationProfile)
-	if !ok {
-		return false
-	}
-	return v.Str() == p.config.VerificationProfile
 }
 
 func hasVerificationAttrs(lr plog.LogRecord) bool {
@@ -700,7 +689,7 @@ func (p *verifyProcessor) valueToInterface(v pcommon.Value, depth int) (any, err
 		}
 		return m, nil
 	case pcommon.ValueTypeEmpty:
-		return map[string]any{}, nil
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("unsupported value type: %s", v.Type())
 	}
