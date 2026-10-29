@@ -6,7 +6,6 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bytes"
 	"errors"
-	"slices"
 	"strconv"
 	"time"
 
@@ -89,11 +88,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	azureResourceLogs := make(map[string][]azureLogRecord)
 	for i := range azureLogs.Records {
 		azureLog := azureLogs.Records[i]
-		azureResourceLogs[azureLog.ResourceID] = append(azureResourceLogs[azureLog.ResourceID], azureLog)
-		keyExists := slices.Contains(resourceIDs, azureLog.ResourceID)
+		logs, keyExists := azureResourceLogs[azureLog.ResourceID]
 		if !keyExists {
 			resourceIDs = append(resourceIDs, azureLog.ResourceID)
 		}
+		azureResourceLogs[azureLog.ResourceID] = append(logs, azureLog)
 	}
 
 	for _, resourceID := range resourceIDs {
