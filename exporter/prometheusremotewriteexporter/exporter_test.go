@@ -1668,3 +1668,75 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		require.NoError(b, err)
 	}
 }
+
+func TestIsPayloadRejection(t *testing.T) {
+	for _, tt := range []struct {
+		status int
+		want   bool
+	}{
+		{status: http.StatusBadRequest, want: true},
+		{status: http.StatusConflict, want: true},
+		{status: http.StatusRequestEntityTooLarge, want: true},
+		{status: http.StatusUnprocessableEntity, want: true},
+		{status: http.StatusUnauthorized, want: false},
+		{status: http.StatusForbidden, want: false},
+		{status: http.StatusNotFound, want: false},
+		{status: http.StatusRequestTimeout, want: false},
+		{status: http.StatusUnsupportedMediaType, want: false},
+		{status: http.StatusTooManyRequests, want: false},
+	} {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			assert.Equal(t, tt.want, isPayloadRejection(tt.status))
+		})
+	}
+}
+
+func TestWriteRequestSampleCount(t *testing.T) {
+	series := func(samples, histograms int) prompb.TimeSeries {
+		ts := prompb.TimeSeries{Labels: []prompb.Label{{Name: "__name__", Value: "m"}}}
+		for i := range samples {
+			ts.Samples = append(ts.Samples, prompb.Sample{Value: 1, Timestamp: int64(i)})
+		}
+		for i := range histograms {
+			ts.Histograms = append(ts.Histograms, prompb.Histogram{Timestamp: int64(i)})
+		}
+		return ts
+	}
+
+	tests := []struct {
+		name string
+		req  *prompb.WriteRequest
+		want int
+	}{
+		{name: "request with no series", req: &prompb.WriteRequest{}, want: 0},
+		{
+			name: "samples only",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(3, 0)}},
+			want: 3,
+		},
+		{
+			name: "native histograms are samples too",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(0, 2)}},
+			want: 2,
+		},
+		{
+			name: "mixed across several series",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(2, 1), series(1, 4)}},
+			want: 8,
+		},
+		{
+			name: "exemplars are not counted",
+			req: &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{{
+				Samples:   []prompb.Sample{{Value: 1}},
+				Exemplars: []prompb.Exemplar{{Value: 1}, {Value: 2}},
+			}}},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, writeRequestSampleCount(tt.req))
+		})
+	}
+}

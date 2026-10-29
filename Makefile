@@ -320,7 +320,7 @@ extension/storage/dbstorage extension/storage/filestorage extension/storage/redi
 extension/tailstorage/pebbletailstorageextension/integrationtest: extension/tailstorage/pebbletailstorageextension
 internal/aws/xray/testdata/sampleapp internal/aws/xray/testdata/sampleserver: internal/aws/xray
 internal/datadog/e2e: internal/datadog
-pkg/ottl/contexts/xprofile pkg/ottl/xottl: pkg/ottl
+pkg/ottl/contexts/xprofile pkg/ottl/contexts/xspanlink pkg/ottl/xottl: pkg/ottl
 testbed/mockdatasenders/mockdatadogagentexporter: testbed
 
 # Trigger each module's delegation target
