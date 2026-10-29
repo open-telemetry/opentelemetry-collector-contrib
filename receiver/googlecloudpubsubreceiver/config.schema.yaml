@@ -39,7 +39,7 @@ properties:
   flow_control:
     $ref: flow_control_config
   ignore_encoding_error:
-    description: 'Ignore errors when the configured encoder fails to decode a Pub/Sub message. This asks for the behavior of on_decode_error set to "ignore", which is also the default, so setting it changes nothing on its own. Setting it at all logs a deprecation warning, and setting it together with on_decode_error fails validation. A pointer so that an explicit value in the configuration can be told apart from the option being absent. Deprecated: use on_decode_error set to "ignore" instead. Deprecated in v0.164.0; removed no earlier than v0.177.0, six months later, following the collector''s component stability policy. See the Error handling section of the README for the migration.'
+    description: 'Ignore errors when the configured encoder fails to decode a Pub/Sub message. true asks for the behavior of on_decode_error set to "ignore", which is also the default; false asks for "propagate", the behavior from before on_decode_error existed. Either value logs a deprecation warning, and setting it together with on_decode_error fails validation. A pointer so that an explicit value in the configuration can be told apart from the option being absent. Deprecated: use on_decode_error set to "ignore" instead. Deprecated in v0.164.0; removed no earlier than v0.177.0, six months later, following the collector''s component stability policy. See the Error handling section of the README for the migration.'
     x-pointer: true
     type: boolean
   insecure:

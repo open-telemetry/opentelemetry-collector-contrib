@@ -30,6 +30,10 @@ import (
 // or leaving it to expire.
 var ErrNack = errors.New("nack pubsub message")
 
+// ackIDBatchSize is the most ack IDs sent in one Acknowledge or ModifyAckDeadline
+// RPC, the same limit the Pub/Sub client libraries apply.
+const ackIDBatchSize = 1000
+
 type StreamHandler struct {
 	stream      pubsubpb.Subscriber_StreamingPullClient
 	pushMessage func(ctx context.Context, message *pubsubpb.ReceivedMessage) error
@@ -214,11 +218,10 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 
 func (handler *StreamHandler) CancelNow() {
 	handler.isRunning.Swap(false)
-	// Flush what is pending before tearing down the stream, and again after the
-	// stream goroutines finished, for messages processed during shutdown. Without
-	// this, the last batch of acknowledgements rides a stream whose context is
-	// already cancelled and is lost, redelivering already processed messages.
-	handler.finalFlush()
+	// Canceling makes the stream goroutines exit without sending anything on a
+	// stream whose context is going away. Once they are done nothing touches the
+	// pending lists anymore, so a single flush over the unary RPCs covers every
+	// message processed so far, including those handled during the shutdown.
 	if handler.cancel != nil {
 		handler.cancel()
 		handler.Wait()
@@ -227,7 +230,8 @@ func (handler *StreamHandler) CancelNow() {
 }
 
 // finalFlush acknowledges pending acks/nacks over the unary RPCs with a detached
-// context, as the stream (and its context) is going away at shutdown.
+// context, as the stream (and its context) is going away at shutdown. The IDs
+// are sent in batches no larger than the client libraries use.
 func (handler *StreamHandler) finalFlush() {
 	handler.mutex.Lock()
 	acks := handler.acks
@@ -241,25 +245,38 @@ func (handler *StreamHandler) finalFlush() {
 	// detached context: the handler contexts are canceled (or canceling) at this point
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if len(acks) > 0 {
+	for _, batch := range splitAckIDs(acks, ackIDBatchSize) {
 		if err := handler.client.Acknowledge(ctx, &pubsubpb.AcknowledgeRequest{
 			Subscription: handler.subscription,
-			AckIds:       acks,
+			AckIds:       batch,
 		}); err != nil {
 			handler.settings.Logger.Warn("failed to acknowledge messages on shutdown, they will be redelivered",
-				zap.Int("count", len(acks)), zap.Error(err))
+				zap.Int("count", len(batch)), zap.Error(err))
 		}
 	}
-	if len(nacks) > 0 {
+	for _, batch := range splitAckIDs(nacks, ackIDBatchSize) {
 		if err := handler.client.ModifyAckDeadline(ctx, &pubsubpb.ModifyAckDeadlineRequest{
 			Subscription:       handler.subscription,
-			AckIds:             nacks,
+			AckIds:             batch,
 			AckDeadlineSeconds: 0,
 		}); err != nil {
 			handler.settings.Logger.Warn("failed to nack messages on shutdown, they will be redelivered after the ack deadline",
-				zap.Int("count", len(nacks)), zap.Error(err))
+				zap.Int("count", len(batch)), zap.Error(err))
 		}
 	}
+}
+
+// splitAckIDs cuts ids into consecutive batches of at most size elements.
+func splitAckIDs(ids []string, size int) [][]string {
+	var batches [][]string
+	for len(ids) > size {
+		batches = append(batches, ids[:size])
+		ids = ids[size:]
+	}
+	if len(ids) > 0 {
+		batches = append(batches, ids)
+	}
+	return batches
 }
 
 func (handler *StreamHandler) Wait() {
@@ -289,18 +306,21 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 
 // requestStream waits for triggers to acknowledge messages that have been processed by the collector. If
 // a stream got restarted, the messages that still needed to be acknowledged are acknowledged at the start
-// of the new stream, so we don't need to start with an acknowledgeMessages.
+// of the new stream, so we don't need to start with an acknowledgeMessages. When the context is cancelled
+// nothing is sent: the stream is going away, and whatever is pending is picked up by the next stream or,
+// at shutdown, by the final flush.
 func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.CancelFunc) {
 	timer := time.NewTimer(handler.flowControlConfig.TriggerAckBatchDuration)
+loop:
 	for {
 		select {
 		case <-ctx.Done():
 			handler.settings.Logger.Debug("requestStream <-ctx.Done()")
+			break loop
 		case <-timer.C:
 		case <-handler.ackFlush:
 			handler.settings.Logger.Debug("requestStream size-triggered acknowledge flush")
 		}
-		// whatever happens, we need to acknowledge the messages
 		if err := handler.acknowledgeMessages(); err != nil {
 			if errors.Is(err, io.EOF) {
 				handler.settings.Logger.Warn("EOF reached")

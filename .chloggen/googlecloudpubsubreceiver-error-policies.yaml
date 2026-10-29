@@ -16,17 +16,11 @@ issues: [50637]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `on_decode_error` sets what happens to a message the configured encoding fails to decode: `ignore`
-  (the new default: acknowledge, drop and count the message; replaces the now deprecated
-  `ignore_encoding_error`), `propagate` (the previous default: the message expires its ack deadline and
-  is redelivered forever), or `nack` (negatively acknowledge, so the subscription retry policy or
-  dead-letter policy applies). The default changing from `propagate` to `ignore` is a behavior change:
-  undecodable messages are now dropped and counted instead of redelivering indefinitely. The policy also
-  covers messages that cannot be delivered at all - an unknown encoding, or a signal with no consumer
-  attached - which previously redelivered forever or were acknowledged and dropped unaccounted. `on_pipeline_error` does the
-  same for messages the downstream pipeline rejects: `ack` (default, the previous behavior) or `nack`.
-  `flow_control.trigger_ack_batch_size` flushes pending acknowledgements once their count reaches the
-  configured size, instead of only on the `trigger_ack_batch_duration` timer.
+  `on_decode_error` sets what happens to a message the configured encoding cannot decode: `ignore` (new
+  default: acknowledge, drop and count it), `propagate` (previous default: leave it to redeliver) or `nack`.
+  `on_pipeline_error` does the same for messages the pipeline rejects: `ack` (default, previous behavior) or
+  `nack`. `flow_control.trigger_ack_batch_size` flushes acknowledgements once that many are pending, not only
+  on the timer.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

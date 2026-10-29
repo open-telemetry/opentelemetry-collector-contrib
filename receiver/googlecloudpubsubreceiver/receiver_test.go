@@ -565,14 +565,15 @@ func TestDecodeErrorPolicies(t *testing.T) {
 	tests := []struct {
 		name                string
 		onDecodeError       string
-		ignoreEncodingError bool
+		ignoreEncodingError *bool
 		wantErr             error
 	}{
 		{name: "default ignores (ack and drop)", wantErr: nil},
 		{name: "propagate", onDecodeError: "propagate", wantErr: assert.AnError},
 		{name: "ignore", onDecodeError: "ignore", wantErr: nil},
 		{name: "nack", onDecodeError: "nack", wantErr: internal.ErrNack},
-		{name: "legacy ignore_encoding_error maps to ignore", ignoreEncodingError: true, wantErr: nil},
+		{name: "legacy ignore_encoding_error true maps to ignore", ignoreEncodingError: new(true), wantErr: nil},
+		{name: "legacy ignore_encoding_error false keeps propagating", ignoreEncodingError: new(false), wantErr: assert.AnError},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -583,9 +584,7 @@ func TestDecodeErrorPolicies(t *testing.T) {
 			recv.logsConsumer = consumertest.NewNop()
 			recv.logsUnmarshaler = &plog.ProtoUnmarshaler{}
 			recv.config.OnDecodeError = tt.onDecodeError
-			if tt.ignoreEncodingError {
-				recv.config.IgnoreEncodingError = &tt.ignoreEncodingError
-			}
+			recv.config.IgnoreEncodingError = tt.ignoreEncodingError
 
 			err := recv.handleLog(t.Context(), invalidMessage("msg-policy-001"), uncompressed)
 			switch {

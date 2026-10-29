@@ -139,13 +139,14 @@ func TestConfigValidationErrorPolicies(t *testing.T) {
 	c.OnDecodeError = "drop"
 	assert.ErrorContains(t, c.validate(), "on_decode_error")
 
-	// the deprecated ignore_encoding_error maps to ignore on its own, and cannot be
-	// combined with on_decode_error at all, whatever either is set to
-	for _, flag := range []bool{true, false} {
+	// the deprecated ignore_encoding_error maps to ignore when true and to the
+	// previous propagate behavior when false, and cannot be combined with
+	// on_decode_error at all, whatever either is set to
+	for flag, want := range map[bool]string{true: "ignore", false: "propagate"} {
 		c = newConfig()
 		c.IgnoreEncodingError = &flag
 		assert.NoError(t, c.validate())
-		assert.Equal(t, "ignore", c.decodeErrorPolicy())
+		assert.Equal(t, want, c.decodeErrorPolicy())
 		for _, policy := range []string{"ignore", "propagate", "nack"} {
 			c.OnDecodeError = policy
 			assert.ErrorContains(t, c.validate(), "ignore_encoding_error cannot be set together with on_decode_error")
@@ -172,6 +173,8 @@ func TestDecodeErrorPolicyDefaults(t *testing.T) {
 	ignore := true
 	c.IgnoreEncodingError = &ignore
 	assert.Equal(t, "ignore", c.decodeErrorPolicy())
+	ignore = false
+	assert.Equal(t, "propagate", c.decodeErrorPolicy())
 	c.OnDecodeError = "nack"
 	assert.Equal(t, "nack", c.decodeErrorPolicy())
 }

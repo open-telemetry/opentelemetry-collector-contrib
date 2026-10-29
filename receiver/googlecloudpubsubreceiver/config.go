@@ -47,11 +47,11 @@ type Config struct {
 	Compression string `mapstructure:"compression"`
 
 	// Ignore errors when the configured encoder fails to decode a Pub/Sub message.
-	// This asks for the behavior of on_decode_error set to "ignore", which is also the
-	// default, so setting it changes nothing on its own. Setting it at all logs a
-	// deprecation warning, and setting it together with on_decode_error fails
-	// validation. A pointer so that an explicit value in the configuration can be
-	// told apart from the option being absent.
+	// true asks for the behavior of on_decode_error set to "ignore", which is also the
+	// default; false asks for "propagate", the behavior from before on_decode_error
+	// existed. Either value logs a deprecation warning, and setting it together with
+	// on_decode_error fails validation. A pointer so that an explicit value in the
+	// configuration can be told apart from the option being absent.
 	//
 	// Deprecated: use on_decode_error set to "ignore" instead. Deprecated in v0.164.0;
 	// removed no earlier than v0.177.0, six months later, following the collector's
@@ -114,12 +114,15 @@ func (fcc *FlowControlConfig) getInternalConfig() *internal.FlowControlConfig {
 }
 
 // decodeErrorPolicy resolves the effective on_decode_error policy. The
-// deprecated ignore_encoding_error flag asks for "ignore", which is also the
-// default, so an unset on_decode_error resolves to "ignore" either way; setting
+// deprecated ignore_encoding_error flag maps to "ignore" when true and to
+// "propagate", the behavior it used to select, when explicitly false; setting
 // the flag together with on_decode_error fails validation.
 func (config *Config) decodeErrorPolicy() string {
 	if config.OnDecodeError != "" {
 		return config.OnDecodeError
+	}
+	if config.IgnoreEncodingError != nil && !*config.IgnoreEncodingError {
+		return onErrorPropagate
 	}
 	return onErrorIgnore
 }

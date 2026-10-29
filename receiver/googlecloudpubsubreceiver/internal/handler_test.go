@@ -252,6 +252,67 @@ func TestCancelNowFlushesPendingViaUnaryRPC(t *testing.T) {
 	}
 }
 
+func TestFinalFlushSplitsAckBatches(t *testing.T) {
+	client, handler := createFakeHandler(t, nil)
+	for i := range 2*ackIDBatchSize + 5 {
+		handler.ack(fmt.Sprintf("ack-%d", i))
+	}
+	for i := range ackIDBatchSize + 1 {
+		handler.nack(fmt.Sprintf("nack-%d", i))
+	}
+	handler.finalFlush()
+
+	// 2005 acks -> 1000, 1000, 5; every batch at or under the client limit
+	var ackSizes []int
+	for len(client.ackRequests) > 0 {
+		request := <-client.ackRequests
+		assert.Equal(t, "projects/my-project/subscriptions/otlp", request.Subscription)
+		ackSizes = append(ackSizes, len(request.AckIds))
+	}
+	assert.Equal(t, []int{ackIDBatchSize, ackIDBatchSize, 5}, ackSizes)
+
+	// 1001 nacks -> 1000, 1
+	var nackSizes []int
+	for len(client.nackRequests) > 0 {
+		request := <-client.nackRequests
+		assert.Equal(t, int32(0), request.AckDeadlineSeconds)
+		nackSizes = append(nackSizes, len(request.AckIds))
+	}
+	assert.Equal(t, []int{ackIDBatchSize, 1}, nackSizes)
+}
+
+func TestSplitAckIDs(t *testing.T) {
+	assert.Nil(t, splitAckIDs(nil, 3))
+	assert.Equal(t, [][]string{{"a", "b"}}, splitAckIDs([]string{"a", "b"}, 3))
+	assert.Equal(t, [][]string{{"a", "b", "c"}}, splitAckIDs([]string{"a", "b", "c"}, 3))
+	assert.Equal(t, [][]string{{"a", "b", "c"}, {"d"}}, splitAckIDs([]string{"a", "b", "c", "d"}, 3))
+}
+
+// TestCancelNowSendsNothingOnTheStream verifies the shutdown sequence: once
+// cancelled, the request goroutine sends nothing on the stream, and the pending
+// acknowledgements go out exactly once over the unary RPC after the goroutines
+// have exited.
+func TestCancelNowSendsNothingOnTheStream(t *testing.T) {
+	config := NewDefaultFlowControlConfig()
+	config.TriggerAckBatchDuration = time.Hour
+	client, handler := createFakeHandler(t, config)
+
+	handler.RecoverableStream(t.Context())
+	handler.ack("ack-1")
+	handler.CancelNow()
+
+	assert.Empty(t, client.stream.requests, "no acknowledgements may be sent on the cancelled stream")
+	require.Len(t, client.ackRequests, 1)
+	request := <-client.ackRequests
+	assert.Equal(t, []string{"ack-1"}, request.AckIds)
+	assert.Empty(t, client.nackRequests)
+	// nothing is left pending after the flush
+	handler.mutex.Lock()
+	defer handler.mutex.Unlock()
+	assert.Empty(t, handler.acks)
+	assert.Empty(t, handler.nacks)
+}
+
 func TestExponentialBackoff(t *testing.T) {
 	tests := []struct {
 		retry int

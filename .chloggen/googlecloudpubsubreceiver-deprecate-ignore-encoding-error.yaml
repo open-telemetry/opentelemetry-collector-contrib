@@ -16,9 +16,9 @@ issues: [50637]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `ignore_encoding_error` keeps behaving as `on_decode_error: ignore`, now logs a deprecation warning when
-  set, and can no longer be combined with `on_decode_error`. Following the component stability policy it
-  is removed no earlier than v0.177.0, six months after this release.
+  `ignore_encoding_error: true` keeps behaving as `on_decode_error: ignore` and `false` as
+  `on_decode_error: propagate`. Either value now logs a deprecation warning, and the option can no longer
+  be combined with `on_decode_error`. It is removed no earlier than v0.177.0, six months after this release.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
