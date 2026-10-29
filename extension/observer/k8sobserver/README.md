@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]  |
 | Distributions | [contrib], [k8s] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fk8sobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fk8sobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fk8sobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fk8sobserver) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fobserver%2Fk8sobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fobserver%2Fk8sobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fobserver%2Fk8sobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fobserver%2Fk8sobserver) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_k8sobserver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_k8sobserver&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@ChrsMark](https://www.github.com/ChrsMark) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
@@ -16,6 +16,8 @@
 
 The `k8s_observer` is a [Receiver Creator](../../../receiver/receivercreator/README.md)-compatible "watch observer" that will detect and report
 Kubernetes pod, port, container, service, ingress and node endpoints via the Kubernetes API.
+
+IPv6 port endpoints are formatted as `[address]:port`.
 
 ## Example Config
 
@@ -42,7 +44,7 @@ receivers:
         config:
           auth_type: serviceAccount
           collection_interval: 10s
-          endpoint: "`endpoint`:`kubelet_endpoint_port`"
+          endpoint: "`joinHostPort(endpoint, kubelet_endpoint_port)`"
           extra_metadata_labels:
             - container.id
           metric_groups:
@@ -194,7 +196,7 @@ data:
             config:
               auth_type: serviceAccount
               collection_interval: 10s
-              endpoint: "`endpoint`:`kubelet_endpoint_port`"
+              endpoint: "`joinHostPort(endpoint, kubelet_endpoint_port)`"
               extra_metadata_labels:
                 - container.id
               metric_groups:

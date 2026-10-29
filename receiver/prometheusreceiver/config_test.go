@@ -4,8 +4,15 @@
 package prometheusreceiver
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,12 +26,13 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/discovery/file"
 	"github.com/prometheus/prometheus/discovery/http"
+	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -74,7 +82,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -91,7 +99,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -108,7 +116,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r2 := cfg.(*Config)
 	assert.Len(t, r2.PrometheusConfig.ScrapeConfigs, 1)
@@ -159,7 +167,7 @@ func TestLoadScrapeOptionsConfig(t *testing.T) {
 			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, tt.name).String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			require.NoError(t, xconfmap.Validate(cfg))
+			require.NoError(t, confmap.Validate(cfg))
 
 			r := cfg.(*Config)
 			tt.validate(t, r)
@@ -177,7 +185,7 @@ func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
@@ -200,25 +208,25 @@ func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.ErrorContains(t, xconfmap.Validate(cfg), "no Prometheus scrape_configs or target_allocator set")
+	require.ErrorContains(t, confmap.Validate(cfg), "no Prometheus scrape_configs or target_allocator set")
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withConfigAndTA").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyTA").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 // As one of the config parameters is consuming prometheus
@@ -266,7 +274,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 	require.Error(t, err)
 
 	wantErrMsg := `unsupported features:
@@ -291,7 +299,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		xconfmap.Validate(cfg),
+		confmap.Validate(cfg),
 		`error checking authorization credentials file "/nonexistentauthcredentialsfile"`)
 }
 
@@ -306,7 +314,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		xconfmap.Validate(cfg),
+		confmap.Validate(cfg),
 		`error checking client cert file "/nonexistentcertfile"`)
 }
 
@@ -321,7 +329,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		xconfmap.Validate(cfg),
+		confmap.Validate(cfg),
 		`error checking client key file "/nonexistentkeyfile"`)
 }
 
@@ -376,7 +384,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -389,7 +397,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestTargetAllocatorInvalidHTTPScrape(t *testing.T) {
@@ -413,7 +421,7 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
@@ -425,7 +433,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabled").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -436,7 +444,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r1.PrometheusConfig)
@@ -446,7 +454,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r2 := cfg.(*Config)
 	assert.False(t, r2.APIServer.Enabled)
@@ -461,7 +469,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r4 := cfg.(*Config)
 	require.True(t, r4.APIServer.Enabled, "api_server with enabled: true should be enabled")
@@ -471,7 +479,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	r5 := cfg.(*Config)
 	assert.False(t, r5.APIServer.Enabled, "api_server with enabled: false should not be enabled")
@@ -481,6 +489,8 @@ func TestReloadPromConfigSecretHandling(t *testing.T) {
 	// This test verifies that the Reload() method preserves secrets instead of
 	// corrupting them to "<secret>" placeholders. This is critical for authentication
 	// to work properly when using configurations with basic auth or bearer tokens.
+
+	certPEM, keyPEM := generateSelfSignedPEM(t)
 
 	tests := []struct {
 		name       string
@@ -602,6 +612,135 @@ scrape_configs:
 				assert.Equal(t, "%password", password, "password should preserve original value with leading %")
 			},
 		},
+		{
+			name: "inline multi-line tls cert and key",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-inline-tls"
+    tls_config:
+      cert: |
+` + indentLines(certPEM, "        ") + `
+      key: |
+` + indentLines(keyPEM, "        ") + `
+    static_configs:
+      - targets: ["localhost:8443"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				tlsConfig := dst.ScrapeConfigs[0].HTTPClientConfig.TLSConfig
+				assert.Equal(t, certPEM, tlsConfig.Cert, "cert should round-trip byte for byte")
+				assert.Equal(t, keyPEM, string(tlsConfig.Key), "key should round-trip byte for byte")
+			},
+		},
+		{
+			name: "basic auth password ending with newline",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-trailing-newline"
+    basic_auth:
+      username: "user"
+      password: "password\n"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				require.NotNil(t, dst.ScrapeConfigs[0].HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(dst.ScrapeConfigs[0].HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "password\n", password, "password should preserve trailing newline")
+			},
+		},
+		{
+			name: "proxy url with user and password",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-proxy-userinfo"
+    proxy_url: "http://user:pass@proxy.example.com:3128"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				proxyURL := dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL
+				require.NotNil(t, proxyURL.URL, "proxy_url should be configured")
+				assert.Equal(t, "http://user:pass@proxy.example.com:3128", proxyURL.String(), "proxy_url should round-trip byte for byte")
+				assert.NotContains(t, (*promconfig.Config)(dst).String(), "user:pass@", "config String() should still redact proxy_url")
+			},
+		},
+		{
+			name: "no proxy url stays unset",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-no-proxy"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				assert.Nil(t, dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL.URL, "proxy_url should stay unset")
+			},
+		},
+		{
+			name: "kubernetes api server url with user and password",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-k8s-api-server"
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: "https://user:pass@k8s.example.com:6443"
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				require.Len(t, dst.ScrapeConfigs[0].ServiceDiscoveryConfigs, 1)
+				sdConfig, ok := dst.ScrapeConfigs[0].ServiceDiscoveryConfigs[0].(*kubernetes.SDConfig)
+				require.True(t, ok)
+				assert.Equal(t, "https://user:pass@k8s.example.com:6443", sdConfig.APIServer.String(), "api_server should round-trip byte for byte")
+			},
+		},
+		{
+			name: "remote write url with user and password",
+			configYAML: `
+remote_write:
+  - url: "http://user:pass@remote.example.com/api/v1/write"
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.RemoteWriteConfigs, 1)
+				require.NotNil(t, dst.RemoteWriteConfigs[0].URL)
+				assert.Equal(t, "http://user:pass@remote.example.com/api/v1/write", dst.RemoteWriteConfigs[0].URL.String(), "remote_write url should round-trip byte for byte")
+			},
+		},
+		{
+			name: "proxy url without userinfo",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-proxy-plain"
+    proxy_url: "http://proxy.example.com:3128"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				proxyURL := dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL
+				require.NotNil(t, proxyURL.URL, "proxy_url should be configured")
+				assert.Equal(t, "http://proxy.example.com:3128", proxyURL.String(), "proxy_url should round-trip byte for byte")
+			},
+		},
+		{
+			name: "proxy url with percent-encoded password",
+			configYAML: `
+scrape_configs:
+  - job_name: "test-proxy-encoded"
+    proxy_url: "http://user:p%40ss%3Aw%25rd@proxy.example.com:3128"
+    static_configs:
+      - targets: ["localhost:8080"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				proxyURL := dst.ScrapeConfigs[0].HTTPClientConfig.ProxyURL
+				require.NotNil(t, proxyURL.URL, "proxy_url should be configured")
+				assert.Equal(t, "http://user:p%40ss%3Aw%25rd@proxy.example.com:3128", proxyURL.String(), "proxy_url should round-trip byte for byte")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -620,6 +759,35 @@ scrape_configs:
 			tt.checkFn(t, dst)
 		})
 	}
+}
+
+// generateSelfSignedPEM returns a PEM-encoded self-signed certificate and its private key.
+func generateSelfSignedPEM(t *testing.T) (certPEM, keyPEM string) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "localhost"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+	keyDER, err := x509.MarshalECPrivateKey(key)
+	require.NoError(t, err)
+	certPEM = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+	keyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER}))
+	return certPEM, keyPEM
+}
+
+// indentLines prefixes every line of s with prefix, dropping the trailing newline.
+func indentLines(s, prefix string) string {
+	lines := strings.Split(strings.TrimSuffix(s, "\n"), "\n")
+	for i, l := range lines {
+		lines[i] = prefix + l
+	}
+	return strings.Join(lines, "\n")
 }
 
 func TestReloadPromConfigStaticConfigsWithLabels(t *testing.T) {

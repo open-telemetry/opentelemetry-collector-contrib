@@ -155,3 +155,28 @@ telemetrygen metrics --otlp-insecure --duration inf --rate 0.1
 To send metrics in secure connection, see [examples/secure-tracing](../../examples/secure-tracing/)
 
 Check `telemetrygen metrics --help` for all the options.
+
+## Attributes
+
+Custom attributes can be added at two different levels, using two different flags:
+
+| Flag | Sets | Applied to |
+| ---- | ---- | ---------- |
+| `--otlp-attributes` | Resource attributes | The OTLP resource, once per run. They describe the entity producing the telemetry and are shared by every span, metric data point and log record. |
+| `--telemetry-attributes` | Span, metric data point and log record attributes | Each generated telemetry item individually. |
+
+Because `service.name` is a resource attribute, `--otlp-attributes service.name="my-service"` overrides the `--service` flag.
+
+Both flags accept the same value formats: `key="value"`, `key=true`, `key=false`, `key=<integer>`, and `key=["value1", "value2", ...]` for slices. All items of a slice must have the same type. Both flags may be repeated to set multiple attributes.
+
+String values must keep their double quotes when they reach `telemetrygen`, so escape them (or wrap the whole argument in single quotes) to prevent the shell from removing them:
+
+```console
+telemetrygen traces --otlp-insecure --traces 1 \
+  --otlp-attributes service.name=\"my-service\" \
+  --otlp-attributes host.name=\"host-1\" \
+  --telemetry-attributes http.request.method=\"GET\" \
+  --telemetry-attributes http.response.status_code=200
+```
+
+This generates a resource carrying `service.name` and `host.name`, and spans that each carry `http.request.method` and `http.response.status_code`.

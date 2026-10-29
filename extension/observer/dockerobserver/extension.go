@@ -5,7 +5,10 @@ package dockerobserver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -60,7 +63,7 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 	d.cancel = cancel
 
 	// Create new Docker client
-	dConfig := docker.NewConfig(d.config.Endpoint, d.config.Timeout, d.config.ExcludedImages, d.config.DockerAPIVersion)
+	dConfig := docker.NewConfig(d.config.Config.Endpoint, d.config.Config.Timeout, d.config.Config.ExcludedImages, d.config.Config.DockerAPIVersion)
 
 	var err error
 	d.dClient, err = docker.NewDockerClient(dConfig, d.logger)
@@ -102,7 +105,11 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.StopListAndWatch()
 	d.cancel()
-	return d.wg.Wait()
+	err := d.wg.Wait()
+	if d.dClient != nil {
+		return errors.Join(err, d.dClient.Close())
+	}
+	return err
 }
 
 func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
@@ -177,11 +184,8 @@ func (d *dockerObserver) containerHost(c *ctypes.InspectResponse) string {
 	if d.config.UseHostnameIfPresent && c.Config.Hostname != "" {
 		return c.Config.Hostname
 	}
-	for _, n := range c.NetworkSettings.Networks {
-		if n.IPAddress.IsValid() {
-			return n.IPAddress.String()
-		}
-		break
+	if host := containerNetworkAddress(c.NetworkSettings.Networks); host != "" {
+		return host
 	}
 	if d.config.UseHostBindings {
 		return "127.0.0.1"
@@ -232,13 +236,7 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 	} else {
 		// Use the IP Address of the first network we iterate over.
 		// This can be made configurable if so desired.
-		for _, n := range c.NetworkSettings.Networks {
-			if n.IPAddress.IsValid() {
-				details.Host = n.IPAddress.String()
-			}
-			break
-		}
-
+		details.Host = containerNetworkAddress(c.NetworkSettings.Networks)
 		// If we still haven't gotten a host at this point and we are using
 		// host bindings, just make it localhost.
 		if details.Host == "" && d.config.UseHostBindings {
@@ -251,8 +249,12 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 		details.Host = mappedIP
 		details.Port = mappedPort
 		details.AlternatePort = port
-		if details.Host == "0.0.0.0" {
+		ip, err := netip.ParseAddr(details.Host)
+		switch {
+		case err == nil && ip.IsUnspecified() && ip.Is4():
 			details.Host = "127.0.0.1"
+		case err == nil && ip.IsUnspecified() && ip.Is6():
+			details.Host = "::1"
 		}
 	} else {
 		details.Port = port
@@ -261,7 +263,7 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 
 	endpoint = observer.Endpoint{
 		ID:      id,
-		Target:  fmt.Sprintf("%s:%d", details.Host, details.Port),
+		Target:  net.JoinHostPort(details.Host, strconv.Itoa(int(details.Port))),
 		Details: details,
 	}
 
@@ -296,4 +298,42 @@ func portProtoToTransport(proto string) observer.Transport {
 		return observer.ProtocolUDP
 	}
 	return observer.ProtocolUnknown
+}
+
+// containerNetworkAddress returns the most appropriate IP address from a container's networks.
+// It deterministically selects the network with the highest GwPriority (tie-breaking alphabetically) to prevent IP flapping.
+func containerNetworkAddress(networks map[string]*network.EndpointSettings) string {
+	var bestName string
+	var bestSettings *network.EndpointSettings
+
+	for name, settings := range networks {
+		if settings == nil || (!settings.IPAddress.IsValid() && !settings.GlobalIPv6Address.IsValid()) {
+			continue
+		}
+		if bestSettings == nil {
+			bestName = name
+			bestSettings = settings
+			continue
+		}
+		// Highest GwPriority wins
+		if settings.GwPriority > bestSettings.GwPriority {
+			bestName = name
+			bestSettings = settings
+		} else if settings.GwPriority == bestSettings.GwPriority && name < bestName {
+			// Tie-breaker: alphabetical by network name
+			bestName = name
+			bestSettings = settings
+		}
+	}
+
+	if bestSettings == nil {
+		return ""
+	}
+	if bestSettings.IPAddress.IsValid() {
+		return bestSettings.IPAddress.String()
+	}
+	if bestSettings.GlobalIPv6Address.IsValid() {
+		return bestSettings.GlobalIPv6Address.String()
+	}
+	return ""
 }

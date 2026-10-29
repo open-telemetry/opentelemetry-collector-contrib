@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// github.com/DataDog/datadog-agent/comp/core/config is not suppported on AIX
+// github.com/DataDog/datadog-agent/comp/core/config is not supported on AIX
 //go:build !aix
 
 package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
@@ -12,7 +12,8 @@ import (
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
-	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	defaultforwarderdef "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/def"
+	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	logsconfig "github.com/DataDog/datadog-agent/comp/logs/agent/config"
 	pkgconfigcreate "github.com/DataDog/datadog-agent/pkg/config/create"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
@@ -45,14 +46,14 @@ type SerializerWithForwarder interface {
 // forwarderWithLifecycle extends the defaultforwarder.Forwarder interface
 // with lifecycle management methods
 type forwarderWithLifecycle interface {
-	defaultforwarder.Forwarder
+	defaultforwarderdef.Forwarder
 	Start() error
 	State() uint32
 	Stop()
 }
 
 // Compile-time check to ensure DefaultForwarder implements ForwarderWithLifecycle
-var _ forwarderWithLifecycle = (*defaultforwarder.DefaultForwarder)(nil)
+var _ forwarderWithLifecycle = (*defaultforwarderimpl.DefaultForwarder)(nil)
 
 // Compile-time check to ensure datadogSerializer implements SerializerWithForwarder
 var _ SerializerWithForwarder = (*datadogSerializer)(nil)
@@ -163,8 +164,12 @@ func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
 // WithAPIConfig configures API-related settings
 func WithAPIConfig(cfg *datadogconfig.Config) ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
-		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
-		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
+		// Use SourceAgentRuntime because nodetreemodel's BuildSchema rebuilds the SourceEnvVar layer
+		// from actual DD_* env vars, which would erase a manually-set SourceFile value (e.g. DD_API_KEY
+		// or DD_SITE set in the process environment would otherwise silently win over the already-resolved
+		// value coming from the collector's own configuration).
+		pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceAgentRuntime)
+		pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceAgentRuntime)
 	}
 }
 
@@ -248,7 +253,6 @@ func WithPayloadsConfig() ConfigOption {
 	return func(pkgconfig pkgconfigmodel.Config) {
 		pkgconfig.Set("enable_payloads.events", true, pkgconfigmodel.SourceDefault)
 		pkgconfig.Set("enable_payloads.json_to_v1_intake", true, pkgconfigmodel.SourceDefault)
-		pkgconfig.Set("enable_sketch_stream_payload_serialization", true, pkgconfigmodel.SourceDefault)
 	}
 }
 
@@ -304,7 +308,7 @@ func newForwarderComponent(cfg coreconfig.Component, log corelog.Component) forw
 	keysPerDomain := map[string][]pkgconfigutils.APIKeys{
 		"https://api." + cfg.GetString("site"): {pkgconfigutils.NewAPIKeys("api_key", cfg.GetString("api_key"))},
 	}
-	forwarderOptions, _ := defaultforwarder.NewOptions(cfg, log, keysPerDomain)
+	forwarderOptions, _ := defaultforwarderimpl.NewOptions(cfg, log, keysPerDomain)
 	forwarderOptions.DisableAPIKeyChecking = true
-	return defaultforwarder.NewDefaultForwarder(cfg, log, forwarderOptions)
+	return defaultforwarderimpl.NewDefaultForwarder(cfg, log, forwarderOptions)
 }

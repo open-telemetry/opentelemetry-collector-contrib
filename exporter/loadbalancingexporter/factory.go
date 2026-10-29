@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
-		QueueSettings: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
@@ -82,7 +82,7 @@ func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config
 	if cfg.QueueSettings.HasValue() {
 		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
 	}
-	if cfg.Enabled {
+	if cfg.BackOffConfig.Enabled {
 		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
 	}
 

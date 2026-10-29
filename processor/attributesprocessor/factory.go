@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/coredistro"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
@@ -28,7 +29,8 @@ func NewFactory() processor.Factory {
 		createDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+	)
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -42,6 +44,7 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	oCfg := cfg.(*Config)
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
@@ -57,7 +60,8 @@ func createTracesProcessor(
 		cfg,
 		nextConsumer,
 		newSpanAttributesProcessor(set.Logger, attrProc, skipExpr).processTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func createLogsProcessor(
@@ -66,6 +70,7 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	oCfg := cfg.(*Config)
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
@@ -83,7 +88,8 @@ func createLogsProcessor(
 		cfg,
 		nextConsumer,
 		newLogAttributesProcessor(set.Logger, attrProc, skipExpr).processLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }
 
 func createMetricsProcessor(
@@ -92,17 +98,18 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
+	coredistro.WarnRemoval(set.TelemetrySettings, set.BuildInfo, "v0.167.0", coredistro.TransformCoda)
 	oCfg := cfg.(*Config)
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
 		return nil, err
 	}
 
-	includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Include)
+	includeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.MatchConfig.Include)
 	if err != nil {
 		return nil, err
 	}
-	excludeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Exclude)
+	excludeMatchProperties, err := filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.MatchConfig.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -121,5 +128,6 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		newMetricAttributesProcessor(set.Logger, attrProc, skipExpr).processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }

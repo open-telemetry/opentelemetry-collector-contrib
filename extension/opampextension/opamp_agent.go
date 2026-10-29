@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -32,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -41,6 +42,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
+
+// rawConfigMapKey is the key under which the raw (unexpanded) configuration is
+// reported in the OpAMP effective config map when reports_raw_config is enabled.
+// The fully expanded effective configuration continues to be reported under the
+// "" (empty) key for backward compatibility.
+const rawConfigMapKey = "raw"
 
 type statusAggregator interface {
 	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
@@ -65,6 +72,12 @@ type opampAgent struct {
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
+	// rawConfig holds the unexpanded configuration reported alongside the
+	// effective config when reportsRawConfig is enabled. It is nil when raw
+	// config reporting is disabled or unavailable.
+	rawConfig *confmap.Conf
+	// reportsRawConfig mirrors Config.ReportsRawConfig.
+	reportsRawConfig bool
 
 	// lifetimeCtx is canceled on Stop of the component
 	lifetimeCtx       context.Context
@@ -92,7 +105,7 @@ type opampAgent struct {
 var (
 	_ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
-	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
 
@@ -151,6 +164,16 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			OnMessage: o.onMessage,
 			OnCommand: o.onCommand,
 		},
+	}
+
+	// When configured with a local IPC socket (Unix domain socket or Windows
+	// named pipe), dial it instead of TCP. Both OpAMP transports honor
+	// DialContext. The OpAMPServerURL endpoint then only supplies the URL
+	// scheme, request path, and Host header; its host:port is ignored.
+	if socket := o.cfg.Server.GetSocket(); socket != nil {
+		settings.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return socket.Dial(ctx)
+		}
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -231,12 +254,21 @@ func (o *opampAgent) Dependencies() []component.ID {
 	return []component.ID{authID}
 }
 
-func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
-	if o.capabilities.ReportsEffectiveConfig {
-		o.updateEffectiveConfig(conf)
-		return o.opampClient.UpdateEffectiveConfig(ctx)
+// NotifyConfigSnapshot implements the extensioncapabilities.ConfigSnapshotWatcher
+// interface. It records the Collector's effective configuration and, when
+// reports_raw_config is enabled, the raw (unexpanded) configuration, then pushes
+// the effective config update to the OpAMP server.
+func (o *opampAgent) NotifyConfigSnapshot(ctx context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
+	if !o.capabilities.ReportsEffectiveConfig {
+		return nil
 	}
-	return nil
+
+	var rawConfig *confmap.Conf
+	if o.reportsRawConfig {
+		rawConfig = configSnapshot.Unexpanded()
+	}
+	o.updateEffectiveConfig(configSnapshot.Effective(), rawConfig)
+	return o.opampClient.UpdateEffectiveConfig(ctx)
 }
 
 func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
@@ -275,11 +307,12 @@ func (o *opampAgent) ComponentStatusChanged(
 	o.componentStatusCh <- &eventSourcePair{source: source, event: event}
 }
 
-func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
+func (o *opampAgent) updateEffectiveConfig(effective, raw *confmap.Conf) {
 	o.eclk.Lock()
 	defer o.eclk.Unlock()
 
-	o.effectiveConfig = conf
+	o.effectiveConfig = effective
+	o.rawConfig = raw
 }
 
 func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
@@ -333,6 +366,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		serviceInstanceID:        serviceInstanceID,
 		instanceUID:              uid,
 		capabilities:             cfg.Capabilities,
+		reportsRawConfig:         cfg.ReportsRawConfig,
 		opampClient:              opampClient,
 		resourceAttrs:            resourceAttrs,
 		statusSubscriptionWg:     &sync.WaitGroup{},
@@ -437,21 +471,37 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 		return nil
 	}
 
-	m := o.effectiveConfig.ToStringMap()
-	conf, err := yaml.Marshal(m)
+	conf, err := yaml.Marshal(o.effectiveConfig.ToStringMap())
 	if err != nil {
-		o.logger.Error("cannot unmarshal effectiveConfig", zap.Any("conf", o.effectiveConfig), zap.Error(err))
+		o.logger.Error("cannot marshal effective config", zap.Any("conf", o.effectiveConfig), zap.Error(err))
 		return nil
+	}
+
+	configMap := map[string]*protobufs.AgentConfigObject{
+		"": {
+			Body:        conf,
+			ContentType: "text/yaml",
+		},
+	}
+
+	// When enabled, additionally report the raw (unexpanded) config under a
+	// distinct key. A failure to marshal the raw config must not drop the
+	// effective config reported under the "" key.
+	if o.reportsRawConfig && o.rawConfig != nil {
+		rawConf, err := yaml.Marshal(o.rawConfig.ToStringMap())
+		if err != nil {
+			o.logger.Error("cannot marshal raw config", zap.Any("conf", o.rawConfig), zap.Error(err))
+		} else {
+			configMap[rawConfigMapKey] = &protobufs.AgentConfigObject{
+				Body:        rawConf,
+				ContentType: "text/yaml",
+			}
+		}
 	}
 
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
-			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {
-					Body:        conf,
-					ContentType: "text/yaml",
-				},
-			},
+			ConfigMap: configMap,
 		},
 	}
 }
@@ -502,18 +552,20 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 }
 
 func getOSDescription(logger *zap.Logger) string {
-	info, err := host.Info()
+	// Use PlatformInformation instead of host.Info so Windows containers without
+	// MachineGuid can still report os.description.
+	platform, _, version, err := host.PlatformInformation()
 	if err != nil {
-		logger.Error("failed getting host info", zap.Error(err))
+		logger.Error("failed getting platform information", zap.Error(err))
 		return runtime.GOOS
 	}
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS " + info.PlatformVersion
+		return "macOS " + version
 	case "linux":
-		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+		return cases.Title(language.English).String(platform) + " " + version
 	case "windows":
-		return info.Platform + " " + info.PlatformVersion
+		return platform + " " + version
 	default:
 		return runtime.GOOS
 	}
@@ -665,6 +717,14 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		unsubscribeFunc()
 		o.statusSubscriptionWg.Done()
 	}()
+
+	var (
+		lastStatus componentstatus.Status
+		lastErr    string
+		lastAttrs  pcommon.Map
+	)
+	lastAttrs = pcommon.NewMap()
+
 	for {
 		select {
 		case <-o.lifetimeCtx.Done():
@@ -677,6 +737,20 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 			if statusUpdate == nil || statusUpdate.Status() == componentstatus.StatusNone {
 				continue
 			}
+
+			currentStatus := statusUpdate.Status()
+			currentErr := ""
+			if statusUpdate.Err() != nil {
+				currentErr = statusUpdate.Err().Error()
+			}
+
+			if currentStatus == lastStatus && currentErr == lastErr && statusUpdate.Attributes().Equal(lastAttrs) {
+				continue
+			}
+
+			lastStatus = currentStatus
+			lastErr = currentErr
+			statusUpdate.Attributes().CopyTo(lastAttrs)
 
 			componentHealth := convertComponentHealth(statusUpdate)
 
@@ -701,6 +775,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 
 	if statusUpdate.Err() != nil {
 		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
 	}
 
 	if len(statusUpdate.ComponentStatusMap) > 0 {

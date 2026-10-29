@@ -49,16 +49,8 @@ import (
 
 func TestNew(t *testing.T) {
 	successClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	successClientConfig.MaxIdleConns = 0
-	successClientConfig.IdleConnTimeout = 0
-	successClientConfig.ForceAttemptHTTP2 = false
 	successClientConfig.Timeout = 1 * time.Second
 	hostMetadataClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hostMetadataClientConfig.MaxIdleConns = 0
-	hostMetadataClientConfig.IdleConnTimeout = 0
-	hostMetadataClientConfig.ForceAttemptHTTP2 = false
 	hostMetadataClientConfig.Timeout = 1 * time.Second
 	tests := []struct {
 		name           string
@@ -198,10 +190,6 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = 1 * time.Second
 			clientConfig.Headers = configopaque.MapList{
 				{Name: "test_header_", Value: "test"},
@@ -570,7 +558,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			}
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
@@ -692,7 +680,7 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			}
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
@@ -792,7 +780,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg.APIURL = server.URL
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
@@ -832,10 +820,6 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, exp)
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 1 * time.Second
 	cfg := &Config{
 		AccessToken:  "someToken",
@@ -946,10 +930,6 @@ func TestConsumeEventData(t *testing.T) {
 			assert.NoError(t, err)
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = 1 * time.Second
 			clientConfig.Headers = configopaque.MapList{
 				{Name: "test_header_", Value: "test"},
@@ -1052,7 +1032,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.APIURL = server.URL
 			cfg.ClientConfig.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
-			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.AccessTokenPassthroughConfig.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))
@@ -1411,7 +1391,8 @@ func TestConsumeMetadata(t *testing.T) {
 					MaxBuffered:             10,
 					NonAlphanumericDimChars: cfg.NonAlphanumericDimensionChars,
 					ExcludeProperties:       tt.excludeProperties,
-				})
+				},
+			)
 			dimClient.Start()
 
 			se := &signalfxExporter{
@@ -1764,7 +1745,8 @@ func TestTLSAPIConnection(t *testing.T) {
 					MaxBuffered:             10,
 					APITLSConfig:            apiTLSCfg,
 					NonAlphanumericDimChars: "",
-				})
+				},
+			)
 			dimClient.Start()
 			defer func() { dimClient.Shutdown() }()
 
@@ -2063,10 +2045,6 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0
-			clientConfig.IdleConnTimeout = 0
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = 1 * time.Second
 			clientConfig.Headers = configopaque.MapList{
 				{Name: "test_header_", Value: "test"},

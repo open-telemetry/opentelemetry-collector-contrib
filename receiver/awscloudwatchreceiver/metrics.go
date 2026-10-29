@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
@@ -72,7 +72,7 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 		cfg:                cfg,
 		period:             cfg.Metrics.Period,
 		delay:              cfg.Metrics.Delay,
-		collectionInterval: cfg.Metrics.CollectionInterval,
+		collectionInterval: cfg.Metrics.ControllerConfig.CollectionInterval,
 		metrics:            cfg.Metrics.Queries,
 		discovery:          discovery,
 	}
@@ -390,6 +390,7 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 	s.setResourceAttributes(rm.Resource())
 	sm := rm.ScopeMetrics().AppendEmpty()
 	sm.Scope().SetName(metadata.ScopeName)
+	sm.Scope().SetVersion(s.settings.BuildInfo.Version)
 
 	periodNano := pcommon.Timestamp(s.period.Nanoseconds())
 

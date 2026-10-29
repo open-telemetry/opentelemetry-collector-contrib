@@ -30,9 +30,9 @@ type Config struct {
 	// Markers is the list of markers to create
 	Markers []Marker `mapstructure:"markers"`
 
-	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"`
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 }
 
 type Marker struct {

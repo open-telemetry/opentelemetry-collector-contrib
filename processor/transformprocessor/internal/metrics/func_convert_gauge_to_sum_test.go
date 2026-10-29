@@ -115,7 +115,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			ctx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer ctx.Close()
 
 			exprFunc, _ := convertGaugeToSum(tt.stringAggTemp, tt.monotonic)
@@ -146,5 +146,29 @@ func Test_convertGaugeToSum_validation(t *testing.T) {
 			_, err := convertGaugeToSum(tt.stringAggTemp, true)
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
+	}
+}
+
+func BenchmarkConvertGaugeToSum(b *testing.B) {
+	template := pmetric.NewMetric()
+	dp1 := template.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp1.SetIntValue(10)
+	dp2 := template.Gauge().DataPoints().AppendEmpty()
+	dp2.SetDoubleValue(14.5)
+
+	exprFunc, err := convertGaugeToSum("cumulative", false)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	metric := pmetric.NewMetric()
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

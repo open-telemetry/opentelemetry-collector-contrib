@@ -19,11 +19,11 @@ func TestValidatePlatformEnabledMetrics_Linux_LeavesContextSwitchesEnabled(t *te
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
-	cfg.Metrics.ProcessContextSwitches.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled = true
 
 	validatePlatformEnabledMetrics(cfg, zap.NewNop())
 
-	assert.True(t, cfg.Metrics.ProcessContextSwitches.Enabled, "process.context_switches should remain enabled on Linux")
+	assert.True(t, cfg.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled, "process.context_switches should remain enabled on Linux")
 }
 
 func TestValidatePlatformEnabledMetrics_Linux_DisablesHandles(t *testing.T) {
@@ -33,11 +33,11 @@ func TestValidatePlatformEnabledMetrics_Linux_DisablesHandles(t *testing.T) {
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
-	cfg.Metrics.ProcessHandles.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled = true
 
 	validatePlatformEnabledMetrics(cfg, logger)
 
-	assert.False(t, cfg.Metrics.ProcessHandles.Enabled, "process.handles should be disabled on Linux")
+	assert.False(t, cfg.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled, "process.handles should be disabled on Linux")
 	assert.Equal(t, 1, logs.Len(), "expected one warning log entry")
 	assert.Contains(t, logs.All()[0].Message, "process.handles")
 }

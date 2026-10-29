@@ -392,7 +392,8 @@ func (receiver *pubsubReceiver) createMultiplexingReceiverHandler(ctx context.Co
 				return errors.New("unknown encoding")
 			}
 			return nil
-		})
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -431,7 +432,8 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 		receiver.config.ClientID,
 		receiver.config.Subscription,
 		receiver.config.FlowControlConfig.getInternalConfig(),
-		handlerFn)
+		handlerFn,
+	)
 	if err != nil {
 		return err
 	}

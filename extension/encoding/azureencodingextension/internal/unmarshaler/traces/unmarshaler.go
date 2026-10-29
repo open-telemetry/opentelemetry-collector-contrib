@@ -13,7 +13,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
@@ -90,7 +90,7 @@ func (r ResourceTracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, e
 	case unmarshaler.FormatUnknown:
 		return ptrace.NewTraces(), nil
 	default:
-		return ptrace.NewTraces(), fmt.Errorf("unrecognized batch format: %q", batchFormat)
+		return ptrace.NewTraces(), fmt.Errorf("unrecognized batch format: %d", batchFormat)
 	}
 
 	t := ptrace.NewTraces()

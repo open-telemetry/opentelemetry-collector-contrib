@@ -16,7 +16,7 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// The URL of the podman server.  Default is "unix:///run/podman/podman.sock"
 	Endpoint string `mapstructure:"endpoint"`
@@ -26,14 +26,14 @@ type Config struct {
 	SSHPassphrase configopaque.String `mapstructure:"ssh_passphrase"`
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("config.Endpoint must be specified")
 	}
-	if config.CollectionInterval == 0 {
+	if config.ControllerConfig.CollectionInterval == 0 {
 		return errors.New("config.CollectionInterval must be specified")
 	}
 	return nil

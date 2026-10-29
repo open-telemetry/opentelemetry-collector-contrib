@@ -5,17 +5,12 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   fossa:
-    runs-on: ubuntu-latest
-    if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - uses: fossas/fossa-action@29693cc50323968e039056be419b32989fc5880c # v2.0.0
-        with:
-          api-key: ${{secrets.FOSSA_API_KEY}}
-          team: OpenTelemetry
+    permissions:
+      contents: read # for actions/checkout
+    uses: open-telemetry/shared-workflows/.github/workflows/fossa.yml@f09a36e1fa2576787fe05cbc1313ef6066918c78 # v0.23.0
+    secrets:
+      FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}

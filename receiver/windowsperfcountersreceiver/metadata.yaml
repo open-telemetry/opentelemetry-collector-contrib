@@ -1,5 +1,6 @@
 display_name: Windows Performance Counters Receiver
-type: windowsperfcounters
+type: windows_perf_counters
+deprecated_type: windowsperfcounters
 
 description: |
   This receiver, for Windows only, captures the configured system, application, or
@@ -12,7 +13,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, alxbl, pjanotti]
+    active: [dashpole, pjanotti]
+    emeritus: [alxbl]
     seeking_new: true
   unsupported_platforms: [darwin, linux]
 

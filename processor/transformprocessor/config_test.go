@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -179,9 +179,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
 			errors: []error{
-				errors.New("unexpected token \"where\""),
-				errors.New("unexpected token \"attributes\""),
-				errors.New("unexpected token \"none\""),
+				errors.New("1:18: statement has invalid syntax near `where attr`"),
+				errors.New("1:18: statement has invalid syntax near `attributes`"),
+				errors.New("1:18: statement has invalid syntax near `none"),
 			},
 		},
 		{
@@ -336,6 +336,35 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "shared_cache"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["copy"], resource.attributes["name"])`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				ProfileStatements: []common.ContextStatements{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
@@ -350,7 +379,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
+				err = confmap.Validate(cfg)
 				assert.Error(t, err)
 
 				if len(tt.errors) > 0 {
@@ -359,7 +388,7 @@ func TestLoadConfig(t *testing.T) {
 					}
 				}
 			} else {
-				require.NoError(t, xconfmap.Validate(cfg))
+				require.NoError(t, confmap.Validate(cfg))
 				assert.EqualExportedValues(t, tt.expected, cfg)
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
@@ -427,4 +456,56 @@ func Test_EmptyStatementListItem(t *testing.T) {
 			require.ErrorContains(t, conf.Unmarshal(cfg), "invalid "+fieldName+" item: empty statement list items are not supported")
 		})
 	}
+}
+
+func setFlattenLogsFeatureGate(t *testing.T, enabled bool) {
+	original := metadata.TransformFlattenLogsFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), original))
+	})
+}
+
+func Test_LoadConfig_FlattenLog(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	assert.True(t, cfg.(*Config).Flatten.Log)
+}
+
+func Test_LoadConfig_FlattenData(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+
+	assert.True(t, cfg.(*Config).FlattenData)
+	assert.False(t, cfg.(*Config).Flatten.Log)
+}
+
+func Test_FlattenDataAndFlattenLogCannotBothBeSet(t *testing.T) {
+	setFlattenLogsFeatureGate(t, true)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "flatten_data_and_flatten_log").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	assert.ErrorIs(t, confmap.Validate(cfg), errFlattenDataAndFlattenLog)
 }

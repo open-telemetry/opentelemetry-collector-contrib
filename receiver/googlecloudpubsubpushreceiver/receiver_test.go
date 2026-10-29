@@ -60,10 +60,10 @@ func TestLoadEncodingExtension(t *testing.T) {
 	_, err = loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, &zeroID, "test")
 	require.ErrorContains(t, err, "encoding must be set")
 
-	_, err = loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, componentIDPtr(component.MustNewID("test_fail")), "test")
+	_, err = loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, new(component.MustNewID("test_fail")), "test")
 	require.ErrorContains(t, err, `extension "test_fail" is not a test unmarshaler`)
 
-	res, err := loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, componentIDPtr(component.MustNewID("test_succeed")), "test")
+	res, err := loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, new(component.MustNewID("test_succeed")), "test")
 	require.NoError(t, err)
 	require.Equal(t, encodingExt, res)
 }
@@ -190,7 +190,7 @@ func TestStartShutdown(t *testing.T) {
 		"invalid_encoding": {
 			pubSubReceiver: &pubSubPushReceiver{
 				cfg: &Config{
-					Encoding: componentIDPtr(component.MustNewID("fails")),
+					Encoding: new(component.MustNewID("fails")),
 				},
 				nextLogs: consumertest.NewNop(),
 			},
@@ -199,7 +199,7 @@ func TestStartShutdown(t *testing.T) {
 		"valid": {
 			pubSubReceiver: &pubSubPushReceiver{
 				cfg: &Config{
-					Encoding:     componentIDPtr(component.MustNewID("test")),
+					Encoding:     new(component.MustNewID("test")),
 					ServerConfig: confighttp.NewDefaultServerConfig(),
 				},
 				settings: receivertest.NewNopSettings(metadata.Type),

@@ -351,7 +351,8 @@ func testClientBase() *mockAccessLogsClient {
 				},
 			},
 		},
-		nil)
+		nil,
+	)
 	return ac
 }
 
@@ -371,7 +372,8 @@ func simpleAccessLogClient() accessLogClient {
 				Username:    "test",
 			},
 		},
-		nil)
+		nil,
+	)
 	return ac
 }
 
@@ -401,7 +403,8 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				Username:    "test",
 			},
 		},
-		nil).Once()
+		nil,
+	).Once()
 
 	ac.On("GetAccessLogs", mock.Anything, testProjectID, testClusterName, mock.Anything).Return(
 		[]*mongodbatlas.AccessLogs{
@@ -416,7 +419,8 @@ func repeatedRequestAccessLogClient() accessLogClient {
 				Username:    "test",
 			},
 		},
-		nil).Once()
+		nil,
+	).Once()
 	return ac
 }
 
@@ -446,7 +450,8 @@ func maxSizeButOldDataAccessLogsClient() accessLogClient {
 				Username:    "test",
 			},
 		},
-		nil).Once()
+		nil,
+	).Once()
 	return ac
 }
 

@@ -1,8 +1,9 @@
 display_name: Microsoft SQL Server Receiver
-type: sqlserver
+type: sql_server
+deprecated_type: sqlserver
 
 description: |
-  The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
+  The `sql_server` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
   Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
   are only available when running on Windows.
 
@@ -20,20 +21,24 @@ status:
     seeking_new: true
 
 resource_attributes:
+  db.system.version:
+    description: The database version of the instance. Examples include "15.0.4261.1".
+    enabled: false
+    type: string
   host.name:
     description: The host name of SQL Server
     enabled: true
     type: string
   server.address:
-    description: Name of the database host.
-    enabled: false
+    description: The address of the monitored SQL Server instance. A loopback target (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it.
+    enabled: true
     type: string
   server.port:
-    description: Server port number.
-    enabled: false
+    description: The port of the monitored SQL Server instance, defaulting to 1433 when not configured.
+    enabled: true
     type: int
   service.instance.id:
-    description: A unique identifier of the SQL Server instance in the format host:port. This resource attribute is only available when the receiver is configured to directly connect to SQL Server.
+    description: A unique identifier of the SQL Server instance. When using direct connection settings, the format is host:port. When using a datasource, the format is host\instance for a named instance and host:port otherwise; the port defaults to 1433 when omitted. In Windows Performance Counter mode, the format remains host:1433; host is computer_name for remote monitoring, or the local collector host when monitoring locally.
     enabled: true
     type: string
   service.name:
@@ -52,6 +57,11 @@ resource_attributes:
     description: The name of the SQL Server database.
     enabled: true
     type: string
+  sqlserver.db.edition:
+    description: The edition of the SQL Server instance (e.g. "standard", "enterprise", "express").
+    enabled: false
+    type: string
+    enum: [standard, enterprise, express, azure_sql_database, managed_instance, unknown]
   sqlserver.instance.name:
     description: The name of the SQL Server instance being monitored.
     enabled: false
@@ -97,6 +107,11 @@ attributes:
   ## query sample
   direction:
     description: The direction of flow of bytes or operations.
+    type: string
+    requirement_level: recommended
+    enum: [read, write]
+  disk.io.direction:
+    description: The direction of disk I/O operations.
     type: string
     requirement_level: recommended
     enum: [read, write]
@@ -150,14 +165,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [waiting]
-  server.address:
-    description: The network address of the server hosting the database.
-    type: string
-    requirement_level: recommended
-  server.port:
-    description: The port number on which the server is listening.
-    type: int
-    requirement_level: recommended
   sqlserver.access.scan.type:
     description: The type of access method scan being performed.
     type: string
@@ -218,6 +225,10 @@ attributes:
     type: string
     requirement_level: required
     enum: [allocated, deallocated]
+  sqlserver.file.path.prefix:
+    description: The path prefix identifying the storage location of SQL Server database files.
+    type: string
+    requirement_level: recommended
   sqlserver.index.id:
     description: The identifier of the index.
     type: int
@@ -273,6 +284,26 @@ attributes:
     requirement_level: recommended
     enum: [guided, misguided]
   # Stored Procedures
+  sqlserver.procedure.definition:
+    description: The SQL source text of the stored procedure as returned by sys.dm_exec_sql_text. Empty string when the procedure is encrypted (WITH ENCRYPTION) or its plan has been evicted from cache.
+    type: string
+    requirement_level: recommended
+  sqlserver.procedure.last_execution_time:
+    description: ISO 8601 timestamp of the last execution of the procedure.
+    type: string
+    requirement_level: recommended
+  sqlserver.procedure.max_duration:
+    description: Longest elapsed time for a single execution of the procedure, in seconds. Covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
+    type: double
+    requirement_level: recommended
+  sqlserver.procedure.min_duration:
+    description: Shortest elapsed time for a single execution of the procedure, in seconds. Covers the whole period the plan has been cached, so unlike the other durations it is not a delta.
+    type: double
+    requirement_level: recommended
+  sqlserver.procedure.tempdb.spilled_pages:
+    description: Pages spilled to tempdb by the procedure over the collection interval, reported as a delta.
+    type: int
+    requirement_level: recommended
   sqlserver.procedure_execution_count:
     description: Number of times that the procedure has been executed since it was last compiled, reported in delta value.
     type: int
@@ -330,7 +361,7 @@ attributes:
     type: string
     requirement_level: recommended
   sqlserver.session.duration:
-    description: Total elapsed time in seconds the session has been actively executing requests.
+    description: Total elapsed time in seconds since the session was established (login time).
     type: double
     requirement_level: recommended
   sqlserver.session.start_time:
@@ -344,6 +375,15 @@ attributes:
   sqlserver.session_status:
     description: Status of the session (e.g., running, sleeping).
     type: string
+    requirement_level: recommended
+  sqlserver.tempdb.allocation.page_type:
+    description: The type of tempdb page latch wait. `other` covers page latch waits on ordinary (non-allocation-map) pages.
+    type: string
+    requirement_level: recommended
+    enum: [gam, sgam, pfs, other]
+  sqlserver.tempdb.file.id:
+    description: Numeric identifier of the tempdb file.
+    type: int
     requirement_level: recommended
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
@@ -406,6 +446,11 @@ attributes:
     description: Number of writes performed by the query.
     type: int
     requirement_level: recommended
+  system.memory.state:
+    description: The state of the physical memory on the host.
+    type: string
+    requirement_level: recommended
+    enum: [used, free]
   table.state:
     description: The state of the table.
     type: string
@@ -427,10 +472,10 @@ attributes:
     requirement_level: recommended
     enum: [running, limit_reached]
   tempdb.state:
-    description: The status of the tempdb space usage.
+    description: The tempdb space usage category. The values are mutually exclusive and partition total tempdb space.
     type: string
     requirement_level: recommended
-    enum: [free, used]
+    enum: [free, user_objects, internal_objects, version_store, mixed_extents]
   transition.direction:
     description: The direction of a superlatch transition.
     type: string
@@ -457,6 +502,26 @@ attributes:
   # attributes for events
   ## common
 events:
+  db.server.procedure_definition:
+    enabled: false
+    description: The SQL source text of stored procedures observed in db.server.top_procedure. Correlates with db.server.top_procedure via sqlserver.procedure_id and db.namespace.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - sqlserver.procedure_id
+      - sqlserver.procedure_name
+      - sqlserver.procedure.definition
+
+  db.server.query_plan:
+    enabled: false
+    description: query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
+    attributes:
+      - db.namespace
+      - db.system.name
+      - sqlserver.query_hash
+      - sqlserver.query_plan
+      - sqlserver.query_plan_hash
+
   db.server.query_sample:
     enabled: false
     description: query sample
@@ -503,6 +568,26 @@ events:
       - sqlserver.procedure_id
       - sqlserver.procedure_name
 
+  db.server.top_procedure:
+    enabled: false
+    description: Aggregated performance metrics for the top stored procedures by elapsed time, computed as deltas over the collection interval. Correlates with db.server.top_query and db.server.query_sample via sqlserver.procedure_id.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - sqlserver.procedure_id
+      - sqlserver.procedure_name
+      - sqlserver.schema.name
+      - sqlserver.procedure_execution_count
+      - sqlserver.total_worker_time
+      - sqlserver.total_elapsed_time
+      - sqlserver.total_logical_reads
+      - sqlserver.total_logical_writes
+      - sqlserver.total_physical_reads
+      - sqlserver.procedure.tempdb.spilled_pages
+      - sqlserver.procedure.max_duration
+      - sqlserver.procedure.min_duration
+      - sqlserver.procedure.last_execution_time
+
   db.server.top_query:
     enabled: false
     description: top query
@@ -520,8 +605,6 @@ events:
       - sqlserver.total_rows
       - sqlserver.total_elapsed_time
       - sqlserver.total_grant_kb
-      - server.address
-      - server.port
       - db.system.name
       - sqlserver.procedure_execution_count
       - sqlserver.procedure_id
@@ -631,6 +714,15 @@ metrics:
     gauge:
       value_type: int
       input_type: string
+  sqlserver.cpu.utilization:
+    enabled: false
+    description: System-wide CPU utilization on the host that SQL Server is running on, expressed as a fraction between 0 and 1.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.cursor.count:
     enabled: false
     description: Number of cursors by state.
@@ -738,7 +830,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.space:
     enabled: false
-    description: Total free space in temporary DB.
+    description: TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
     stability: development
     unit: kBy
     sum:
@@ -746,6 +838,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [tempdb.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.version_store.size:
     enabled: false
     description: TempDB version store size.
@@ -762,6 +855,28 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.disk.io:
+    enabled: false
+    description: Cumulative bytes transferred to or from files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
+    stability: development
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [disk.io.direction, sqlserver.file.path.prefix]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
+  sqlserver.disk.operations:
+    enabled: false
+    description: Cumulative I/O operation count on files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).
+    stability: development
+    unit: "{operation}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [disk.io.direction, sqlserver.file.path.prefix]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. Only covers I/O for SQL Server database files, not total host disk I/O.
   sqlserver.error.rate:
     enabled: false
     description: Number of errors raised per second.
@@ -788,6 +903,24 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.host.memory.limit:
+    enabled: false
+    description: Total physical memory available to SQL Server on the host.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.host.memory.usage:
+    enabled: false
+    description: Physical memory usage available to SQL Server on the host, broken down by state.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [system.memory.state]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.fragmentation:
     enabled: false
     description: Average fragmentation percentage of the index.
@@ -960,7 +1093,7 @@ metrics:
     unit: ms
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait_time.total:
     enabled: false
     description: Total wait time in seconds for locks since the last server restart.
@@ -1061,7 +1194,7 @@ metrics:
     stability: development
     unit: "{stalls}/s"
     gauge:
-      value_type: int
+      value_type: double
     attributes: []
   sqlserver.page.buffer_cache.hit_ratio:
     enabled: true
@@ -1094,7 +1227,7 @@ metrics:
     unit: "{writes}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.life_expectancy:
     enabled: true
     description: Time a page will stay in the buffer pool.
@@ -1119,7 +1252,7 @@ metrics:
     gauge:
       value_type: double
     attributes: [page.operations]
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.page.read_ahead.rate:
     enabled: false
     description: Rate of pages read from disk by the read-ahead manager.
@@ -1254,6 +1387,26 @@ metrics:
       value_type: double
     attributes: [task.result]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.allocation.waiters.count:
+    enabled: false
+    description: Number of tasks currently waiting on a tempdb page latch, broken down by page type.
+    stability: development
+    unit: "{waiters}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.tempdb.allocation.page_type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.tempdb.file.size:
+    enabled: false
+    description: Size of each tempdb data or log file.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [file_type, sqlserver.tempdb.file.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false
     description: Time consumed in transaction delays.
@@ -1279,7 +1432,7 @@ metrics:
     unit: "{transactions}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.write.rate:
     enabled: true
     description: Number of transactions that wrote to the database and committed.
@@ -1321,7 +1474,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
-    extended_documentation: This metric is only available when running on Windows.
+    extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction_log.shrink.count:
     enabled: true
     description: Total number of transaction log shrinks for a database.
@@ -1374,15 +1527,6 @@ metrics:
       value_type: double
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-feature_gates:
-  - id: receiver.sqlserver.RemoveServerResourceAttribute
-    stage: alpha
-    description: >-
-      When enabled, the server.address and server.port resource attributes are removed from metrics.
-    from_version: v0.129.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141      
-    skip_strict_validation: true
 
 tests:
   config:

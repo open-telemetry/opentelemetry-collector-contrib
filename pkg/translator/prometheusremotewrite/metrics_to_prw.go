@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
@@ -27,6 +25,10 @@ type Settings struct {
 	AddMetricSuffixes   bool
 	TranslationStrategy string
 	SendMetadata        bool
+	// ConvertExplicitHistogramsToNHCB converts explicit-bucket histograms to NHCB (schema -53) instead of classic series.
+	ConvertExplicitHistogramsToNHCB bool
+	// KeepClassicHistograms also emits the classic series alongside NHCB; no effect unless ConvertExplicitHistogramsToNHCB is set.
+	KeepClassicHistograms bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
@@ -81,7 +83,7 @@ func newPrometheusConverter(settings Settings) *prometheusConverter {
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{PreserveMultipleUnderscores: true, UTF8Allowed: utf8Allowed},
 		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
@@ -170,7 +172,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 				}
 			}
 		}
-		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
+		errs = multierr.Append(errs, c.addResourceTargetInfo(resource, settings, mostRecentTimestamp))
 	}
 
 	return errs

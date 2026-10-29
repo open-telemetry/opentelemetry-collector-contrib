@@ -10,6 +10,7 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,6 +26,9 @@ const (
 // S3UploaderConfig contains aws s3 uploader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
 type S3UploaderConfig struct {
+	AccessKey configopaque.String `mapstructure:"access_key"`
+	SecretKey configopaque.String `mapstructure:"secret_key"`
+
 	Region string `mapstructure:"region"`
 	// S3Bucket is the bucket name to be uploaded to.
 	S3Bucket string `mapstructure:"s3_bucket"`
@@ -93,7 +97,7 @@ type ResourceAttrsToS3 struct {
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -151,6 +155,12 @@ func (c *Config) Validate() error {
 
 	if c.S3Uploader.UniqueKeyFuncName != "" && !validUniqueKeyFuncs[c.S3Uploader.UniqueKeyFuncName] {
 		errs = multierr.Append(errs, errors.New("invalid UniqueKeyFuncName"))
+	}
+
+	if (c.S3Uploader.AccessKey == "") != (c.S3Uploader.SecretKey == "") {
+		errs = multierr.Append(errs, errors.New("both access_key and secret_key must either be set together or left empty"))
+	} else if c.S3Uploader.AccessKey != "" && c.S3Uploader.RoleArn != "" {
+		errs = multierr.Append(errs, errors.New("cannot use both static credentials (access_key/secret_key) and role_arn"))
 	}
 	return errs
 }

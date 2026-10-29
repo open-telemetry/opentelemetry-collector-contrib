@@ -648,6 +648,54 @@ func TestWithMetadataInjectionLogs(t *testing.T) {
 		}
 		assert.ElementsMatch(t, []string{"a", "b"}, vals)
 	})
+
+	// Regression test: WithMetadataInjection() must merge into any existing
+	// client.Info on the context rather than replacing it wholesale. A real
+	// consumer of this option (e.g. splunkhecexporter) relies on the
+	// receiver's incoming request metadata (Authorization, etc.) surviving
+	// downstream past this injection step; before this fix, injecting a
+	// resource attribute into the context silently discarded all pre-existing
+	// context metadata.
+	t.Run("existing context metadata survives injection", func(t *testing.T) {
+		inBatch := plog.NewLogs()
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "val1")
+
+		inCtx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"authorization": {"Bearer some-real-token"},
+				"x-scope-orgid": {"tenant-a"},
+			}),
+		})
+
+		sink := &ctxLogsSink{}
+		bpr := NewBatchPerResourceLogs("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeLogs(inCtx, inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		outMeta := client.FromContext(sink.contexts[0]).Metadata
+		assert.Equal(t, []string{"val1"}, outMeta.Get("attr_key"), "injected key must be present")
+		assert.Equal(t, []string{"Bearer some-real-token"}, outMeta.Get("authorization"),
+			"pre-existing Authorization metadata must survive injection, not be wiped out")
+		assert.Equal(t, []string{"tenant-a"}, outMeta.Get("x-scope-orgid"),
+			"pre-existing X-Scope-OrgID metadata must survive injection, not be wiped out")
+	})
+
+	t.Run("no matching attrKeys leaves existing context metadata untouched", func(t *testing.T) {
+		inBatch := plog.NewLogs()
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "unrelated_key", "val1")
+
+		inCtx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"authorization": {"Bearer some-real-token"}}),
+		})
+
+		sink := &ctxLogsSink{}
+		bpr := NewBatchPerResourceLogs("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeLogs(inCtx, inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Equal(t, []string{"Bearer some-real-token"},
+			client.FromContext(sink.contexts[0]).Metadata.Get("authorization"))
+	})
 }
 
 // TestBatchProfilesDictionaryPreserved verifies that when ConsumeProfiles splits a batch

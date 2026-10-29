@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -136,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "wif"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "conn-string"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				Auth: Authentication{
 					Type:             "connection_string",
@@ -275,10 +275,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.EqualError(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

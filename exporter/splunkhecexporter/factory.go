@@ -62,7 +62,8 @@ func NewFactory() exporter.Factory {
 		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -71,9 +72,9 @@ func createDefaultConfig() component.Config {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
-	clientConfig.IdleConnTimeout = defaultIdleConnTimeout
-	clientConfig.MaxIdleConnsPerHost = defaultMaxConns
-	clientConfig.MaxIdleConns = defaultMaxConns
+	clientConfig.Keepalive.Get().IdleConnTimeout = defaultIdleConnTimeout
+	clientConfig.Keepalive.Get().MaxIdleConnsPerHost = defaultMaxConns
+	clientConfig.Keepalive.Get().MaxIdleConns = defaultMaxConns
 	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
 	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 

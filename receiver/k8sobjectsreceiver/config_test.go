@@ -136,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
+			assert.Equal(t, tt.expected.APIConfig.AuthType, cfg.APIConfig.AuthType)
 
 			err = cfg.Validate()
 			if tt.expected == nil {
@@ -156,6 +156,7 @@ func TestValidate(t *testing.T) {
 		expectedErr        string
 		expectedInterval   time.Duration
 		expectZeroInterval bool
+		useInformer        bool
 	}{
 		{
 			desc: "invalid mode",
@@ -350,10 +351,26 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: "initial_delay must be less than interval",
 		},
+		{
+			desc: "negative cache_sync_timeout is invalid when informer observer is enabled",
+			cfg: &Config{
+				APIConfig:        k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ErrorMode:        PropagateError,
+				CacheSyncTimeout: -1 * time.Second,
+				Objects: []*K8sObjectsConfig{
+					{Name: "pods", Mode: k8sinventory.PullMode},
+				},
+			},
+			useInformer: true,
+			expectedErr: "cache_sync_timeout must be positive",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
+			if tt.useInformer {
+				enableInformerObserver(t)
+			}
 			err := tt.cfg.Validate()
 			if tt.expectedErr != "" {
 				assert.EqualError(t, err, tt.expectedErr)
@@ -577,14 +594,14 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedQPS, tt.cfg.KubeAPIQPS)
-			assert.Equal(t, tt.expectedBurst, tt.cfg.KubeAPIBurst)
+			assert.Equal(t, tt.expectedQPS, tt.cfg.APIConfig.KubeAPIQPS)
+			assert.Equal(t, tt.expectedBurst, tt.cfg.APIConfig.KubeAPIBurst)
 		})
 	}
 }
 
 func TestCreateDefaultConfigAPIRateLimit(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, k8sconfig.DefaultKubeAPIQPS, cfg.KubeAPIQPS)
-	assert.Equal(t, k8sconfig.DefaultKubeAPIBurst, cfg.KubeAPIBurst)
+	assert.Equal(t, k8sconfig.DefaultKubeAPIQPS, cfg.APIConfig.KubeAPIQPS)
+	assert.Equal(t, k8sconfig.DefaultKubeAPIBurst, cfg.APIConfig.KubeAPIBurst)
 }

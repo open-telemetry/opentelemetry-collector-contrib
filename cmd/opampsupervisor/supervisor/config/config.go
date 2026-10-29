@@ -24,11 +24,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -96,11 +98,25 @@ type Capabilities struct {
 	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
 	ReportsOwnTraces               bool `mapstructure:"reports_own_traces"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
-	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
-	ReportsPackageStatuses         bool `mapstructure:"reports_package_statuses"`
+
+	// Deprecated: ReportsRemoteConfig has no effect and setting it to true fails validation.
+	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig OpAMP
+	// capabilities. This field will be removed in v0.165.0.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
+	ReportsRemoteConfig bool `mapstructure:"reports_remote_config"`
+}
+
+func (c Capabilities) Validate() error {
+	if c.ReportsRemoteConfig {
+		return errors.New("reports_remote_config is deprecated and has no effect; " +
+			"remote config status is reported whenever accepts_remote_config is enabled. " +
+			"Remove reports_remote_config from the supervisor config; it will be removed in v0.165.0. " +
+			"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763")
+	}
+	return nil
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -126,12 +142,11 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
 	}
 
+	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig
+	// OpAMP capabilities; accepting remote config without reporting its status is not useful.
 	if c.AcceptsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-	}
-
-	if c.ReportsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 	}
 
 	if c.AcceptsRestartCommand {
@@ -149,14 +164,13 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
 	}
 
-	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
-	// They are included here for completeness.
+	// AcceptsPackages is not yet fully implemented. It is included here for completeness.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	// AcceptsPackages enables both the AcceptsPackages and ReportsPackageStatuses
+	// OpAMP capabilities; accepting packages without reporting their statuses is not useful.
 	if c.AcceptsPackages {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
-	}
-	if c.ReportsPackageStatuses {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
 	}
 
 	return supportedCapabilities
@@ -219,6 +233,7 @@ type Agent struct {
 	Description                 AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	StopGracePeriod             time.Duration     `mapstructure:"stop_grace_period"`
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
@@ -275,6 +290,10 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	if a.StopGracePeriod <= 0 {
+		return errors.New("agent::stop_grace_period must be positive")
+	}
+
 	for _, file := range a.ConfigFiles {
 		if !strings.HasPrefix(file, "$") {
 			continue
@@ -286,6 +305,12 @@ func (a Agent) Validate() error {
 
 	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
+	// TODO: remove once the supervisor downloads and verifies packages.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if a.Package.Verifier.Type != VerifierTypeNone {
+		return errors.New("agent::package::verifier is not yet supported")
 	}
 
 	if err := a.validateFallbackConfigs(); err != nil {
@@ -369,9 +394,14 @@ type Telemetry struct {
 	Metrics Metrics                        `mapstructure:"metrics"`
 	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
 
-	Resource otelconftelemetry.ResourceConfig `mapstructure:"resource"`
+	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+type ResourceConfig struct {
+	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
+	DetectionDevelopment             configoptional.Optional[xotelconf.ExperimentalResourceDetection] `mapstructure:"detection/development,omitempty"`
 }
 
 type HealthCheck struct {
@@ -434,12 +464,12 @@ func DefaultSupervisor() Supervisor {
 		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
 	}
 
+	defaultAgentBinary := "otelcol-contrib"
+	if runtime.GOOS == "windows" {
+		defaultAgentBinary += ".exe"
+	}
+
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 	}
@@ -457,7 +487,6 @@ func DefaultSupervisor() Supervisor {
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
 			AcceptsPackages:                false,
-			ReportsPackageStatuses:         false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
@@ -466,11 +495,13 @@ func DefaultSupervisor() Supervisor {
 			OrphanDetectionInterval:     5 * time.Second,
 			ConfigApplyTimeout:          5 * time.Second,
 			BootstrapTimeout:            3 * time.Second,
+			StopGracePeriod:             10 * time.Second,
 			PassthroughLogs:             false,
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,
 			Package: AgentPackage{
-				Verifier: Verifier{Type: VerifierTypeNone},
+				AgentBinary: defaultAgentBinary,
+				Verifier:    Verifier{Type: VerifierTypeNone},
 			},
 		},
 		Telemetry: Telemetry{

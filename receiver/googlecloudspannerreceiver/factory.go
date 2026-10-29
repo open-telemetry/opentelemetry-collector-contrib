@@ -22,6 +22,8 @@ const (
 	defaultTopMetricsQueryMaxRows            = 100
 	defaultBackfillEnabled                   = false
 	defaultHideTopnLockstatsRowrangestartkey = false
+	defaultHideSplitStatsKeys                = false
+	defaultHideClientIPAddress               = false
 	defaultTruncateText                      = false
 )
 
@@ -30,7 +32,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -39,6 +42,8 @@ func createDefaultConfig() component.Config {
 		TopMetricsQueryMaxRows:            defaultTopMetricsQueryMaxRows,
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
+		HideSplitStatsKeys:                defaultHideSplitStatsKeys,
+		HideClientIPAddress:               defaultHideClientIPAddress,
 		TruncateText:                      defaultTruncateText,
 	}
 }

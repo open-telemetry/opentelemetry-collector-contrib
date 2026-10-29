@@ -230,18 +230,6 @@ func TestDecode5_0NotGzip(t *testing.T) {
 	require.Nil(t, entries)
 }
 
-func strp(s string) *string {
-	return &s
-}
-
-func intp(i int) *int {
-	return &i
-}
-
-func boolp(b bool) *bool {
-	return &b
-}
-
 func TestDecodeAudit4_2(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join("testdata", "logs", "sample-payloads", "4.2_audit.log"))
 	require.NoError(t, err)
@@ -260,8 +248,8 @@ func TestDecodeAudit4_2(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T01:38:20.034+0000"},
-			Local:     model.Address{IP: strp("127.0.0.1"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("127.0.0.1"), Port: intp(50722)},
+			Local:     model.Address{IP: new("127.0.0.1"), Port: new(27017)},
+			Remote:    model.Address{IP: new("127.0.0.1"), Port: new(50722)},
 			Users: []model.AuditUser{
 				{
 					Database: "admin",
@@ -305,8 +293,8 @@ func TestDecodeAudit4_2(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T02:37:38.714+0000"},
-			Local:     model.Address{IP: strp("192.168.248.5"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("192.168.248.6"), Port: intp(43714)},
+			Local:     model.Address{IP: new("192.168.248.5"), Port: new(27017)},
+			Remote:    model.Address{IP: new("192.168.248.6"), Port: new(43714)},
 			Users: []model.AuditUser{
 				{
 					Database: "admin",
@@ -350,8 +338,8 @@ func TestDecodeAudit4_2(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T02:38:20.030+0000"},
-			Local:     model.Address{IP: strp("127.0.0.1"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("127.0.0.1"), Port: intp(52216)},
+			Local:     model.Address{IP: new("127.0.0.1"), Port: new(27017)},
+			Remote:    model.Address{IP: new("127.0.0.1"), Port: new(52216)},
 			Users: []model.AuditUser{
 				{
 					Database: "admin",
@@ -413,8 +401,8 @@ func TestDecodeAudit4_2InvalidLog(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T01:38:20.034+0000"},
-			Local:     model.Address{IP: strp("127.0.0.1"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("127.0.0.1"), Port: intp(50722)},
+			Local:     model.Address{IP: new("127.0.0.1"), Port: new(27017)},
+			Remote:    model.Address{IP: new("127.0.0.1"), Port: new(50722)},
 			Users: []model.AuditUser{
 				{
 					Database: "admin",
@@ -458,8 +446,8 @@ func TestDecodeAudit4_2InvalidLog(t *testing.T) {
 		{
 			Type:      "authenticate",
 			Timestamp: model.LogTimestamp{Date: "2022-09-16T02:38:20.030+0000"},
-			Local:     model.Address{IP: strp("127.0.0.1"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("127.0.0.1"), Port: intp(52216)},
+			Local:     model.Address{IP: new("127.0.0.1"), Port: new(27017)},
+			Remote:    model.Address{IP: new("127.0.0.1"), Port: new(52216)},
 			Users: []model.AuditUser{
 				{
 					Database: "admin",
@@ -522,8 +510,8 @@ func TestDecodeAudit5_0(t *testing.T) {
 			Type:      "clientMetadata",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.043+00:00"},
 			ID:        &model.ID{Binary: "KXMtAMh9TOOSl9aQBW1Zkg==", Type: "04"},
-			Local:     model.Address{IP: strp("192.168.248.2"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("192.168.248.2"), Port: intp(34736)},
+			Local:     model.Address{IP: new("192.168.248.2"), Port: new(27017)},
+			Remote:    model.Address{IP: new("192.168.248.2"), Port: new(34736)},
 			Users:     []model.AuditUser{},
 			Roles:     []model.AuditRole{},
 			Result:    0,
@@ -553,8 +541,8 @@ func TestDecodeAudit5_0(t *testing.T) {
 			Type:      "clientMetadata",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.055+00:00"},
 			ID:        &model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
-			Local:     model.Address{IP: strp("192.168.248.2"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("192.168.248.2"), Port: intp(34740)},
+			Local:     model.Address{IP: new("192.168.248.2"), Port: new(27017)},
+			Remote:    model.Address{IP: new("192.168.248.2"), Port: new(34740)},
 			Users:     []model.AuditUser{},
 			Roles:     []model.AuditRole{},
 			Result:    0,
@@ -584,8 +572,8 @@ func TestDecodeAudit5_0(t *testing.T) {
 			Type:      "logout",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.071+00:00"},
 			ID:        &model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
-			Local:     model.Address{IP: strp("192.168.248.2"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("192.168.248.2"), Port: intp(34740)},
+			Local:     model.Address{IP: new("192.168.248.2"), Port: new(27017)},
+			Remote:    model.Address{IP: new("192.168.248.2"), Port: new(34740)},
 			Users:     []model.AuditUser{},
 			Roles:     []model.AuditRole{},
 			Result:    0,
@@ -623,8 +611,8 @@ func TestDecodeAudit5_0InvalidLog(t *testing.T) {
 			Type:      "clientMetadata",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.043+00:00"},
 			ID:        &model.ID{Binary: "KXMtAMh9TOOSl9aQBW1Zkg==", Type: "04"},
-			Local:     model.Address{IP: strp("192.168.248.2"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("192.168.248.2"), Port: intp(34736)},
+			Local:     model.Address{IP: new("192.168.248.2"), Port: new(27017)},
+			Remote:    model.Address{IP: new("192.168.248.2"), Port: new(34736)},
 			Users:     []model.AuditUser{},
 			Roles:     []model.AuditRole{},
 			Result:    0,
@@ -654,8 +642,8 @@ func TestDecodeAudit5_0InvalidLog(t *testing.T) {
 			Type:      "logout",
 			Timestamp: model.LogTimestamp{Date: "2022-09-15T23:56:28.071+00:00"},
 			ID:        &model.ID{Binary: "pWSwWRZvR9CgNsvcDYhiwg==", Type: "04"},
-			Local:     model.Address{IP: strp("192.168.248.2"), Port: intp(27017)},
-			Remote:    model.Address{IP: strp("192.168.248.2"), Port: intp(34740)},
+			Local:     model.Address{IP: new("192.168.248.2"), Port: new(27017)},
+			Remote:    model.Address{IP: new("192.168.248.2"), Port: new(34740)},
 			Users:     []model.AuditUser{},
 			Roles:     []model.AuditRole{},
 			Result:    0,

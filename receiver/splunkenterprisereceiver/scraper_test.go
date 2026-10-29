@@ -188,24 +188,12 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	metricsCfg.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
 	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
 	idxEndpoint := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	idxEndpoint.MaxIdleConns = 0
-	idxEndpoint.IdleConnTimeout = 0
-	idxEndpoint.ForceAttemptHTTP2 = false
 	idxEndpoint.Endpoint = endpoint
 	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	shEndpoint := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	shEndpoint.MaxIdleConns = 0
-	shEndpoint.IdleConnTimeout = 0
-	shEndpoint.ForceAttemptHTTP2 = false
 	shEndpoint.Endpoint = endpoint
 	shEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cmEndpoint := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	cmEndpoint.MaxIdleConns = 0
-	cmEndpoint.IdleConnTimeout = 0
-	cmEndpoint.ForceAttemptHTTP2 = false
 	cmEndpoint.Endpoint = endpoint
 	cmEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	return &Config{
@@ -286,10 +274,6 @@ func TestScrapeCustomSearchesUnconfiguredEndpoint(t *testing.T) {
 
 	// Only the indexer endpoint is configured; search_head and cluster_master are not.
 	idxEndpoint := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	idxEndpoint.MaxIdleConns = 0
-	idxEndpoint.IdleConnTimeout = 0
-	idxEndpoint.ForceAttemptHTTP2 = false
 	idxEndpoint.Endpoint = ts.URL
 	idxEndpoint.Auth = configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")})
 	cfg := &Config{
@@ -647,6 +631,82 @@ func TestFormatDurationForSplunk(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			result := formatDurationForSplunk(test.duration)
 			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+// capturedTTLRequest is what the mock control endpoint observed, handed back over a channel so
+// the test goroutine owns it exclusively rather than sharing it with the handler.
+type capturedTTLRequest struct {
+	method string
+	path   string
+	body   []byte
+	err    error
+}
+
+// TestSetSearchJobTTLByID verifies that the control request sends the configured timeout
+// as a whole number of seconds, as required by Splunk's setttl action.
+func TestSetSearchJobTTLByID(t *testing.T) {
+	const sid = "test-search-id"
+
+	tests := []struct {
+		desc     string
+		timeout  time.Duration
+		expected string
+	}{
+		{desc: "default timeout", timeout: 60 * time.Second, expected: "60"},
+		{desc: "sub minute timeout", timeout: 11 * time.Second, expected: "11"},
+		{desc: "multi minute timeout", timeout: 2 * time.Minute, expected: "120"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			// Buffered so the handler never blocks, and so a second unexpected request would be
+			// visible as a surplus entry rather than deadlocking the test.
+			captured := make(chan capturedTTLRequest, 1)
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				captured <- capturedTTLRequest{method: r.Method, path: r.URL.Path, body: body, err: err}
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer ts.Close()
+
+			cfg := createConfig(ts, false)
+			cfg.ControllerConfig.Timeout = test.timeout
+
+			host := &mockHost{
+				extensions: map[component.ID]component.Component{
+					component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
+				},
+			}
+
+			scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+			client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			scraper.splunkClient = client
+
+			require.NoError(t, scraper.setSearchJobTTLByID(sid))
+
+			var got capturedTTLRequest
+			require.Eventually(t, func() bool {
+				select {
+				case got = <-captured:
+					return true
+				default:
+					return false
+				}
+			}, time.Second, 10*time.Millisecond, "control endpoint was never called")
+			require.Empty(t, captured, "expected exactly one request to the control endpoint")
+
+			require.NoError(t, got.err)
+			// createAPIRequest builds a GET, which this call has to flip to POST.
+			require.Equal(t, http.MethodPost, got.method)
+			require.Equal(t, "/services/search/jobs/"+sid+"/control", got.path)
+
+			form, err := url.ParseQuery(string(got.body))
+			require.NoError(t, err)
+			require.Equal(t, "setttl", form.Get("action"))
+			require.Equal(t, test.expected, form.Get("ttl"))
 		})
 	}
 }

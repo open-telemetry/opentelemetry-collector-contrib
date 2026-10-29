@@ -62,6 +62,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime, resources{}, 0)
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime, a.allNetworkInterfaces[NodeMetricGroup])
+	addRlimitMetrics(a.mbs.NodeMetricsBuilder, s.Rlimit, currentTime)
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
@@ -120,7 +121,8 @@ func (a *metricDataAccumulator) containerStats(sPod *stats.PodStats, s *stats.Co
 			"failed to fetch container metrics",
 			zap.String("pod", sPod.PodRef.Name),
 			zap.String("container", s.Name),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		return
 	}
 
@@ -152,7 +154,8 @@ func (a *metricDataAccumulator) volumeStats(sPod *stats.PodStats, s *stats.Volum
 			"Failed to gather additional volume metadata. Skipping metric collection.",
 			zap.String("pod", sPod.PodRef.Name),
 			zap.String("volume", s.Name),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		return
 	}
 

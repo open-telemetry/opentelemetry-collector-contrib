@@ -4,6 +4,7 @@
 package drainprocessor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -14,8 +15,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor/internal/metadatatest"
 )
 
 func newTestProcessor(t *testing.T, cfg *Config) *drainProcessor {
@@ -247,15 +252,24 @@ func TestWarmupMinClustersSuppress(t *testing.T) {
 	assert.True(t, ok, "record should be annotated once threshold is reached")
 }
 
-// paramsAttr returns the configured params attribute as a slice of strings,
-// or nil if absent.
-func paramsAttr(t *testing.T, ld plog.Logs, key string) []string {
+// namedParam returns the string value at "<prefix>.<name>", failing the test
+// if the attribute is missing.
+func namedParam(t *testing.T, ld plog.Logs, prefix, name string) string {
 	t.Helper()
+	key := prefix + "." + name
 	v, ok := getFirstRecord(ld).Attributes().Get(key)
+	require.True(t, ok, "expected named parameter attribute %q", key)
+	return v.Str()
+}
+
+// wildcardsAttr returns the wildcards slice attribute values, or nil if absent.
+func wildcardsAttr(t *testing.T, ld plog.Logs) []string {
+	t.Helper()
+	v, ok := getFirstRecord(ld).Attributes().Get("log.record.template.wildcards")
 	if !ok {
 		return nil
 	}
-	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "params attribute must be a slice")
+	require.Equal(t, pcommon.ValueTypeSlice, v.Type(), "wildcards attribute must be a slice")
 	out := make([]string, 0, v.Slice().Len())
 	for i := 0; i < v.Slice().Len(); i++ {
 		out = append(out, v.Slice().At(i).Str())
@@ -263,21 +277,40 @@ func paramsAttr(t *testing.T, ld plog.Logs, key string) []string {
 	return out
 }
 
-// TestExtractParametersDisabledByDefault verifies that with default config no
-// params attribute is written.
-func TestExtractParametersDisabledByDefault(t *testing.T) {
-	p := newTestProcessor(t, createDefaultConfig().(*Config))
-	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
-	require.NoError(t, err)
-	_, ok := getFirstRecord(out).Attributes().Get("log.record.template.params")
-	assert.False(t, ok, "params attribute must not be set when extract_parameters is false")
+// ipRule is a mask rule reused across tests.
+func ipRule() MaskingRule {
+	return MaskingRule{Name: "ip", Pattern: `(\d{1,3}\.){3}\d{1,3}`}
 }
 
-// TestExtractParametersFromAbstractedTemplate verifies that once a template has
-// abstracted (contains <*>), the variable body tokens are emitted positionally.
-func TestExtractParametersFromAbstractedTemplate(t *testing.T) {
+// TestNoMasksNoWildcardsNoParams verifies that with the default config
+// (no masking rules, wildcards off) no parameter or wildcards attributes
+// are written even when a template abstracts.
+func TestNoMasksNoWildcardsNoParams(t *testing.T) {
+	p := newTestProcessor(t, createDefaultConfig().(*Config))
+	for _, line := range []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 172.16.0.1 on port 80"))
+	require.NoError(t, err)
+	attrs := getFirstRecord(out).Attributes()
+	attrs.Range(func(k string, _ pcommon.Value) bool {
+		assert.NotContains(t, k, "log.record.template.parameter", "no parameter attribute expected")
+		return true
+	})
+	_, hasWild := attrs.Get("log.record.template.wildcards")
+	assert.False(t, hasWild, "no wildcards attribute expected when EmitWildcards is false")
+}
+
+// TestMaskedTemplateEmitsDynamicParameters verifies that with a masking rule
+// configured, the template surfaces the mask token and a dynamic attribute
+// is written per matched mask name.
+func TestMaskedTemplateEmitsDynamicParameters(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ExtractParameters = true
+	cfg.MaskingRules = []MaskingRule{ipRule()}
 	p := newTestProcessor(t, cfg)
 
 	lines := []string{
@@ -293,33 +326,38 @@ func TestExtractParametersFromAbstractedTemplate(t *testing.T) {
 	}
 
 	tmpl := templateAttr(t, lastOut)
-	require.Contains(t, tmpl, "<*>")
-	params := paramsAttr(t, lastOut, "log.record.template.params")
-	assert.Equal(t, []string{"172.16.0.1", "80"}, params, "params should be the body tokens at <*> positions in order")
+	assert.Contains(t, tmpl, "<ip>", "template should carry the mask token in place of matched values")
+	assert.Contains(t, tmpl, "<*>", "port position should be a Drain wildcard")
+
+	assert.Equal(t, "172.16.0.1", namedParam(t, lastOut, "log.record.template.parameter", "ip"))
+	// Wildcards attribute is off by default, so the port position is not surfaced.
+	assert.Nil(t, wildcardsAttr(t, lastOut))
 }
 
-// TestExtractParametersLiteralTemplate verifies that when the template has no
-// <*> positions, the params attribute is not written.
-func TestExtractParametersLiteralTemplate(t *testing.T) {
+// TestParametersLiteralTemplate verifies that with masking rules configured
+// but a fully-literal template (no variable positions), no parameter
+// attribute is written.
+func TestParametersLiteralTemplate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ExtractParameters = true
+	cfg.MaskingRules = []MaskingRule{ipRule()}
 	p := newTestProcessor(t, cfg)
 
-	// A single line gets a fully-literal template (no abstraction yet).
+	// Single line with no IP: no mask match, no <*> abstraction.
 	out, err := p.processLogs(t.Context(), makeLogRecord("disk write error on device sda"))
 	require.NoError(t, err)
 	tmpl := templateAttr(t, out)
-	assert.NotContains(t, tmpl, "<*>", "single line should yield a literal template")
-	_, ok := getFirstRecord(out).Attributes().Get("log.record.template.params")
-	assert.False(t, ok, "literal-only template should not set params attribute")
+	assert.NotContains(t, tmpl, "<*>")
+	assert.NotContains(t, tmpl, "<ip>")
+	_, hasIP := getFirstRecord(out).Attributes().Get("log.record.template.parameter.ip")
+	assert.False(t, hasIP, "no mask token in template so no parameter attribute expected")
 }
 
-// TestExtractParametersCustomAttributeName verifies that params_attribute
-// overrides the default attribute key.
-func TestExtractParametersCustomAttributeName(t *testing.T) {
+// TestCustomParameterKeyPrefix verifies that ParameterKeyPrefix controls the
+// attribute key namespace for extracted parameters.
+func TestCustomParameterKeyPrefix(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ExtractParameters = true
-	cfg.ParamsAttribute = "my.params"
+	cfg.MaskingRules = []MaskingRule{ipRule()}
+	cfg.ParameterKeyPrefix = "my.p"
 	p := newTestProcessor(t, cfg)
 
 	for _, line := range []string{
@@ -332,17 +370,17 @@ func TestExtractParametersCustomAttributeName(t *testing.T) {
 	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 172.16.0.1 on port 80"))
 	require.NoError(t, err)
 
-	_, ok := getFirstRecord(out).Attributes().Get("my.params")
-	assert.True(t, ok, "custom params_attribute key must be used")
-	_, ok = getFirstRecord(out).Attributes().Get("log.record.template.params")
-	assert.False(t, ok, "default key must not be used when custom is configured")
+	assert.Equal(t, "172.16.0.1", namedParam(t, out, "my.p", "ip"))
+	_, defaultKey := getFirstRecord(out).Attributes().Get("log.record.template.parameter.ip")
+	assert.False(t, defaultKey, "default key must not be used when custom prefix is configured")
 }
 
-// TestExtractParametersSuppressedDuringWarmup verifies that params are not
-// written while warmup is in effect, mirroring template suppression.
-func TestExtractParametersSuppressedDuringWarmup(t *testing.T) {
+// TestParametersSuppressedDuringWarmup verifies that neither named parameters
+// nor wildcards are written while warmup is in effect.
+func TestParametersSuppressedDuringWarmup(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ExtractParameters = true
+	cfg.MaskingRules = []MaskingRule{ipRule()}
+	cfg.EmitWildcards = true
 	cfg.WarmupMinClusters = 5
 	p := newTestProcessor(t, cfg)
 
@@ -350,46 +388,46 @@ func TestExtractParametersSuppressedDuringWarmup(t *testing.T) {
 	require.NoError(t, err)
 	_, hasTmpl := getFirstRecord(out).Attributes().Get("log.record.template")
 	require.False(t, hasTmpl, "template suppressed during warmup")
-	_, hasParams := getFirstRecord(out).Attributes().Get("log.record.template.params")
-	assert.False(t, hasParams, "params must not be written while warmup gate is active")
+	_, hasIP := getFirstRecord(out).Attributes().Get("log.record.template.parameter.ip")
+	assert.False(t, hasIP, "named parameter must not be written during warmup")
+	assert.Nil(t, wildcardsAttr(t, out), "wildcards must not be written during warmup")
 }
 
-// TestExtractParametersWithExtraDelimiters verifies that body tokenisation
-// honors ExtraDelimiters, keeping the tokeniser in sync with drain.
-func TestExtractParametersWithExtraDelimiters(t *testing.T) {
+// TestParametersWithExtraDelimiters verifies that body tokenisation honors
+// ExtraDelimiters when extracting parameter values.
+func TestParametersWithExtraDelimiters(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ExtractParameters = true
+	cfg.MaskingRules = []MaskingRule{ipRule()}
+	cfg.EmitWildcards = true
 	cfg.ExtraDelimiters = []string{":"}
 	p := newTestProcessor(t, cfg)
 
 	// With ":" as a delimiter, "host:NAME" tokenises as ["host", "NAME"], so
-	// the second token varies across records and abstracts to <*>. The first
-	// three tokens are identical to keep drain's prefix tree routing them to
-	// the same leaf node.
+	// the host name lands in its own token position and abstracts to <*>.
 	for _, line := range []string{
-		"connected to host:alpha on port 443",
-		"connected to host:beta on port 443",
-		"connected to host:gamma on port 443",
+		"connected to host:alpha from 10.0.0.1",
+		"connected to host:beta from 192.168.1.1",
+		"connected to host:gamma from 172.16.0.1",
 	} {
 		_, err := p.processLogs(t.Context(), makeLogRecord(line))
 		require.NoError(t, err)
 	}
-	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host:delta on port 443"))
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host:delta from 8.8.8.8"))
 	require.NoError(t, err)
 
 	tmpl := templateAttr(t, out)
-	require.Contains(t, tmpl, "<*>", "expected abstraction with extra delimiters configured")
-	params := paramsAttr(t, out, "log.record.template.params")
-	// The varying token is the host name; with ":" as a delimiter it lands in
-	// its own token position.
-	assert.Equal(t, []string{"delta"}, params)
+	require.Contains(t, tmpl, "<*>")
+	require.Contains(t, tmpl, "<ip>")
+
+	assert.Equal(t, "8.8.8.8", namedParam(t, out, "log.record.template.parameter", "ip"))
+	assert.Equal(t, []string{"delta"}, wildcardsAttr(t, out))
 }
 
-// TestExtractParametersFromBodyField verifies extraction works when BodyField
-// pulls the message out of a structured map body.
-func TestExtractParametersFromBodyField(t *testing.T) {
+// TestParametersFromBodyField verifies extraction works when BodyField pulls
+// the message out of a structured map body.
+func TestParametersFromBodyField(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ExtractParameters = true
+	cfg.MaskingRules = []MaskingRule{ipRule()}
 	cfg.BodyField = "message"
 	p := newTestProcessor(t, cfg)
 
@@ -403,8 +441,176 @@ func TestExtractParametersFromBodyField(t *testing.T) {
 	out, err := p.processLogs(t.Context(), makeMapBodyLogRecord("message", "connected to host 172.16.0.1 on port 80"))
 	require.NoError(t, err)
 
-	params := paramsAttr(t, out, "log.record.template.params")
-	assert.Equal(t, []string{"172.16.0.1", "80"}, params)
+	assert.Equal(t, "172.16.0.1", namedParam(t, out, "log.record.template.parameter", "ip"))
+}
+
+// TestMaskingRulesApplyInOrder verifies that earlier rules run first and
+// their replacements are visible to later rules.
+func TestMaskingRulesApplyInOrder(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaskingRules = []MaskingRule{
+		{Name: "ip", Pattern: `(\d{1,3}\.){3}\d{1,3}`},
+		{Name: "num", Pattern: `\d+`},
+	}
+	p := newTestProcessor(t, cfg)
+
+	for _, line := range []string{
+		"req 1 from 10.0.0.1",
+		"req 2 from 192.168.1.1",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("req 3 from 8.8.8.8"))
+	require.NoError(t, err)
+
+	tmpl := templateAttr(t, out)
+	assert.Contains(t, tmpl, "<ip>", "ip should be masked whole, not eaten by num rule")
+	assert.Contains(t, tmpl, "<num>", "num rule should still fire on other integers")
+
+	assert.Equal(t, "3", namedParam(t, out, "log.record.template.parameter", "num"))
+	assert.Equal(t, "8.8.8.8", namedParam(t, out, "log.record.template.parameter", "ip"))
+}
+
+// TestParametersAlignmentMismatchSkips verifies that when a mask pattern
+// spans whitespace, alignment breaks and no parameter or wildcards
+// attributes are written. The template attribute is still emitted.
+func TestParametersAlignmentMismatchSkips(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaskingRules = []MaskingRule{{Name: "id", Pattern: `id: \d+`}}
+	cfg.EmitWildcards = true
+	p := newTestProcessor(t, cfg)
+
+	for _, line := range []string{
+		"request id: 111 done",
+		"request id: 222 done",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("request id: 333 done"))
+	require.NoError(t, err)
+
+	tmpl := templateAttr(t, out)
+	assert.Contains(t, tmpl, "<id>", "template should still surface the mask token")
+	_, hasID := getFirstRecord(out).Attributes().Get("log.record.template.parameter.id")
+	assert.False(t, hasID, "named parameter must not be written on token-count mismatch")
+	assert.Nil(t, wildcardsAttr(t, out), "wildcards must not be written on token-count mismatch")
+}
+
+// TestSeedLogsGoThroughMasking verifies that SeedLogs are masked identically
+// to live records.
+func TestSeedLogsGoThroughMasking(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaskingRules = []MaskingRule{ipRule()}
+	cfg.SeedLogs = []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+		"connected to host 172.16.0.1 on port 80",
+	}
+	p := newTestProcessor(t, cfg)
+
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 8.8.8.8 on port 22"))
+	require.NoError(t, err)
+
+	tmpl := templateAttr(t, out)
+	assert.Contains(t, tmpl, "<ip>", "seed logs should have been masked before training")
+	assert.Contains(t, tmpl, "<*>", "port position should be abstracted")
+
+	assert.Equal(t, "8.8.8.8", namedParam(t, out, "log.record.template.parameter", "ip"))
+}
+
+// TestEmitWildcardsWithoutMasks verifies the discovery workflow: with no
+// masking rules but EmitWildcards on, the wildcards slice surfaces all
+// variable positions in template order.
+func TestEmitWildcardsWithoutMasks(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.EmitWildcards = true
+	p := newTestProcessor(t, cfg)
+
+	for _, line := range []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 172.16.0.1 on port 80"))
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"172.16.0.1", "80"}, wildcardsAttr(t, out))
+}
+
+// TestCustomWildcardsAttribute verifies WildcardsAttribute overrides the
+// default key.
+func TestCustomWildcardsAttribute(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.EmitWildcards = true
+	cfg.WildcardsAttribute = "my.wildcards"
+	p := newTestProcessor(t, cfg)
+
+	for _, line := range []string{
+		"connected to host 10.0.0.1 on port 443",
+		"connected to host 192.168.1.1 on port 8080",
+	} {
+		_, err := p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 172.16.0.1 on port 80"))
+	require.NoError(t, err)
+
+	_, ok := getFirstRecord(out).Attributes().Get("my.wildcards")
+	assert.True(t, ok, "custom wildcards_attribute key must be used")
+	_, defaultKey := getFirstRecord(out).Attributes().Get("log.record.template.wildcards")
+	assert.False(t, defaultKey, "default key must not be used when custom is configured")
+}
+
+// TestDuplicateMaskFirstMatchWins verifies that when a mask name matches
+// more than one position, only the first-matched value is written and
+// the masks-duplicates counter is incremented once per record for that
+// mask, tagged with the mask name.
+func TestDuplicateMaskFirstMatchWins(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaskingRules = []MaskingRule{ipRule()}
+
+	set := metadatatest.NewSettings(tel)
+	p, err := newDrainProcessor(set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, p.Shutdown(context.Background())) }) //nolint:usetesting
+
+	// Body has three IPs. Same prefix on every line so drain routes them all
+	// to the same leaf and abstracts consistently. Three occurrences per
+	// record (two collisions) prove the counter is per record per mask name,
+	// not per collision.
+	for _, line := range []string{
+		"traffic from 10.0.0.1 to 10.0.0.2 via 10.0.0.3",
+		"traffic from 192.168.1.1 to 192.168.1.2 via 192.168.1.3",
+	} {
+		_, err = p.processLogs(t.Context(), makeLogRecord(line))
+		require.NoError(t, err)
+	}
+	out, err := p.processLogs(t.Context(), makeLogRecord("traffic from 8.8.8.8 to 9.9.9.9 via 7.7.7.7"))
+	require.NoError(t, err)
+
+	tmpl := templateAttr(t, out)
+	require.Contains(t, tmpl, "<ip>")
+
+	// Only the first-position value survives.
+	assert.Equal(t, "8.8.8.8", namedParam(t, out, "log.record.template.parameter", "ip"))
+
+	// Each record has three <ip> tokens after masking (two collisions), but
+	// the duplicate counter increments once per record per mask name.
+	// Expected count: 3 (one per record), tagged mask="ip".
+	metadatatest.AssertEqualProcessorDrainMasksDuplicates(t, tel,
+		[]metricdata.DataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("mask", "ip")),
+			Value:      3,
+		}},
+		metricdatatest.IgnoreTimestamp())
 }
 
 // TestWarmupMinClustersZeroDisabled verifies that warmup_min_clusters=0

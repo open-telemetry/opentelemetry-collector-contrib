@@ -13,19 +13,33 @@ status:
 tests:
   config:
 
+attributes:
+  mask:
+    description: The mask name that matched more than one position in a single template.
+    type: string
+
 telemetry:
   metrics:
     processor_drain_clusters_active:
       enabled: true
       description: Current number of active clusters in the Drain parse tree.
-      unit: "{clusters}"
+      unit: "{cluster}"
       gauge:
         value_type: int
       stability: development
     processor_drain_log_records_annotated:
       enabled: true
       description: Number of log records successfully annotated with a template.
-      unit: "{records}"
+      unit: "{record}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_drain_masks_duplicates:
+      enabled: true
+      description: Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name; the losing values are discarded and first-match wins.
+      unit: "{record}"
+      attributes: [mask]
       sum:
         value_type: int
         monotonic: true

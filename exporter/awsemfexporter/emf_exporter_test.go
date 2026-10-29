@@ -62,8 +62,8 @@ func TestConsumeMetrics(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = 0
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -102,8 +102,8 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 			defer cancel()
 			factory := NewFactory()
 			expCfg := factory.CreateDefaultConfig().(*Config)
-			expCfg.Region = "us-west-2"
-			expCfg.MaxRetries = 0
+			expCfg.AWSSessionSettings.Region = "us-west-2"
+			expCfg.AWSSessionSettings.MaxRetries = 0
 			expCfg.OutputDestination = "stdout"
 			exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 			assert.NoError(t, err)
@@ -141,8 +141,8 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 			defer cancel()
 			factory := NewFactory()
 			expCfg := factory.CreateDefaultConfig().(*Config)
-			expCfg.Region = "us-west-2"
-			expCfg.MaxRetries = 0
+			expCfg.AWSSessionSettings.Region = "us-west-2"
+			expCfg.AWSSessionSettings.MaxRetries = 0
 			expCfg.OutputDestination = "stdout"
 			exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 			assert.NoError(t, err)
@@ -159,8 +159,8 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
@@ -179,8 +179,8 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = defaultRetryCount
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
@@ -206,8 +206,8 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = defaultRetryCount
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
@@ -237,8 +237,8 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = defaultRetryCount
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
@@ -268,8 +268,8 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = defaultRetryCount
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
@@ -299,8 +299,8 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
@@ -344,8 +344,8 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = defaultRetryCount
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	mds := []*MetricDeclaration{
@@ -447,8 +447,8 @@ func TestGetPusherConcurrent(t *testing.T) {
 	ctx := t.Context()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
+	expCfg.AWSSessionSettings.Region = "us-west-2"
+	expCfg.AWSSessionSettings.MaxRetries = 0
 	exp, err := newEmfExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 

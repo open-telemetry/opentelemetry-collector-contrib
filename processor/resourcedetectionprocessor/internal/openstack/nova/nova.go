@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_openstack_nova
+
 package nova // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 
 import (
@@ -10,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	novaprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openstack/nova"
@@ -18,13 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova/internal/metadata"
 )
 
-const (
-	// TypeStr is the detector type id.
-	TypeStr = "nova"
-
-	// LabelPrefix is the attribute prefix for Nova metadata keys (user/tenant-provided).
-	LabelPrefix = "openstack.nova.meta."
-)
+// LabelPrefix is the attribute prefix for Nova metadata keys (user/tenant-provided).
+const LabelPrefix = "openstack.nova.meta."
 
 var _ internal.Detector = (*Detector)(nil)
 
@@ -38,7 +35,7 @@ type Detector struct {
 }
 
 // NewDetector creates a Nova detector.
-func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	rs, err := compileRegexes(cfg.Labels)
@@ -51,7 +48,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		metadataProvider:      novaprovider.NewProvider(),
 		labelRegexes:          rs,
-		failOnMissingMetadata: cfg.FailOnMissingMetadata,
+		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 

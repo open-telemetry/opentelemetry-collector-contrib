@@ -80,6 +80,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNfsClientNetCountDataPoint(ts, 1, AttributeNetworkTransportUDP)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsClientNetCountDataPoint(ts, 3, AttributeNetworkTransportTCP)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsClientNetCountDataPoint(ts+1, 3, AttributeNetworkTransportTCP)
+				assert.Equal(t, 2, mb.metricNfsClientNetCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -89,12 +92,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNfsClientOperationCountDataPoint(ts, 1, 15, "nfs.operation.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsClientOperationCountDataPoint(ts, 3, 16, "nfs.operation.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsClientOperationCountDataPoint(ts+1, 3, 16, "nfs.operation.name-val-2")
+				assert.Equal(t, 2, mb.metricNfsClientOperationCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsClientProcedureCountDataPoint(ts, 1, 15, "onc_rpc.procedure.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsClientProcedureCountDataPoint(ts, 3, 16, "onc_rpc.procedure.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsClientProcedureCountDataPoint(ts+1, 3, 16, "onc_rpc.procedure.name-val-2")
+				assert.Equal(t, 2, mb.metricNfsClientProcedureCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -113,12 +122,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNfsServerIoDataPoint(ts, 1, AttributeNetworkIoDirectionTransmit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerIoDataPoint(ts, 3, AttributeNetworkIoDirectionReceive)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsServerIoDataPoint(ts+1, 3, AttributeNetworkIoDirectionReceive)
+				assert.Equal(t, 2, mb.metricNfsServerIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerNetCountDataPoint(ts, 1, AttributeNetworkTransportUDP)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerNetCountDataPoint(ts, 3, AttributeNetworkTransportTCP)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsServerNetCountDataPoint(ts+1, 3, AttributeNetworkTransportTCP)
+				assert.Equal(t, 2, mb.metricNfsServerNetCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -128,24 +143,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNfsServerOperationCountDataPoint(ts, 1, 15, "nfs.operation.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerOperationCountDataPoint(ts, 3, 16, "nfs.operation.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsServerOperationCountDataPoint(ts+1, 3, 16, "nfs.operation.name-val-2")
+				assert.Equal(t, 2, mb.metricNfsServerOperationCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerProcedureCountDataPoint(ts, 1, 15, "onc_rpc.procedure.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerProcedureCountDataPoint(ts, 3, 16, "onc_rpc.procedure.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsServerProcedureCountDataPoint(ts+1, 3, 16, "onc_rpc.procedure.name-val-2")
+				assert.Equal(t, 2, mb.metricNfsServerProcedureCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerRepcacheRequestsDataPoint(ts, 1, AttributeNfsServerRepcacheStatusHit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerRepcacheRequestsDataPoint(ts, 3, AttributeNfsServerRepcacheStatusMiss)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsServerRepcacheRequestsDataPoint(ts+1, 3, AttributeNfsServerRepcacheStatusMiss)
+				assert.Equal(t, 2, mb.metricNfsServerRepcacheRequests.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNfsServerRPCCountDataPoint(ts, 1, AttributeErrorTypeFormat)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNfsServerRPCCountDataPoint(ts, 3, AttributeErrorTypeAuth)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNfsServerRPCCountDataPoint(ts+1, 3, AttributeErrorTypeAuth)
+				assert.Equal(t, 2, mb.metricNfsServerRPCCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -212,7 +239,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.client.net.count"], "Found a duplicate in the metrics slice: nfs.client.net.count")
 						validatedMetrics["nfs.client.net.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFS client TCP segments and UDP datagrams handled.", mi.Description())
 						assert.Equal(t, "{record}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -273,7 +302,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.client.operation.count"], "Found a duplicate in the metrics slice: nfs.client.operation.count")
 						validatedMetrics["nfs.client.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFSv4+ client operations", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -322,7 +353,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.client.procedure.count"], "Found a duplicate in the metrics slice: nfs.client.procedure.count")
 						validatedMetrics["nfs.client.procedure.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFS client procedures", mi.Description())
 						assert.Equal(t, "{procedure}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -424,7 +457,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.server.io"], "Found a duplicate in the metrics slice: nfs.server.io")
 						validatedMetrics["nfs.server.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFS server bytes returned to receive and transmit (read and write) requests.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -468,7 +503,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.server.net.count"], "Found a duplicate in the metrics slice: nfs.server.net.count")
 						validatedMetrics["nfs.server.net.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFS server TCP segments and UDP datagrams handled.", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -529,7 +566,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.server.operation.count"], "Found a duplicate in the metrics slice: nfs.server.operation.count")
 						validatedMetrics["nfs.server.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFSv4+ server operations", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -578,7 +617,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.server.procedure.count"], "Found a duplicate in the metrics slice: nfs.server.procedure.count")
 						validatedMetrics["nfs.server.procedure.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFS server procedures", mi.Description())
 						assert.Equal(t, "{procedure}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -624,7 +665,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.server.repcache.requests"], "Found a duplicate in the metrics slice: nfs.server.repcache.requests")
 						validatedMetrics["nfs.server.repcache.requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the kernel NFS server reply cache request count by cache hit status.", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -668,7 +711,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["nfs.server.rpc.count"], "Found a duplicate in the metrics slice: nfs.server.rpc.count")
 						validatedMetrics["nfs.server.rpc.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reports the count of kernel NFS server RPCs handled.", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

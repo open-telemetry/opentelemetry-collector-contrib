@@ -101,18 +101,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordIisNetworkFileCountDataPoint(ts, 3, AttributeDirectionReceived)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordIisNetworkFileCountDataPoint(ts+1, 3, AttributeDirectionReceived)
+				assert.Equal(t, 2, mb.metricIisNetworkFileCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirectionSent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordIisNetworkIoDataPoint(ts, 3, AttributeDirectionReceived)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordIisNetworkIoDataPoint(ts+1, 3, AttributeDirectionReceived)
+				assert.Equal(t, 2, mb.metricIisNetworkIo.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequestDelete)
 			if tt.name == "reaggregate_set" {
 				mb.RecordIisRequestCountDataPoint(ts, 3, AttributeRequestGet)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordIisRequestCountDataPoint(ts+1, 3, AttributeRequestGet)
+				assert.Equal(t, 2, mb.metricIisRequestCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -268,7 +277,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["iis.network.file.count"], "Found a duplicate in the metrics slice: iis.network.file.count")
 						validatedMetrics["iis.network.file.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of transmitted files.", mi.Description())
 						assert.Equal(t, "{files}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -312,7 +323,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
 						validatedMetrics["iis.network.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total amount of bytes sent and received.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -356,7 +369,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
 						validatedMetrics["iis.request.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of requests of a given type.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

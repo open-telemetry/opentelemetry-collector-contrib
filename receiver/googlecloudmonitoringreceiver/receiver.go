@@ -94,7 +94,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	defer mr.mutex.RUnlock()
 	for metricType, metricDesc := range mr.metricDescriptors {
 		// Set interval and delay times, using defaults if not provided
-		gInterval = mr.config.CollectionInterval
+		gInterval = mr.config.ControllerConfig.CollectionInterval
 		if gInterval <= 0 {
 			gInterval = defaultCollectionInterval
 		}
@@ -256,6 +256,10 @@ func getFilterQuery(metric MetricConfig) string {
 
 // ConvertGCPTimeSeriesToMetrics converts GCP Monitoring TimeSeries to pmetric.Metrics
 func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metrics, metricDesc *metric.MetricDescriptor, timeSeries *monitoringpb.TimeSeries) {
+	if timeSeries != nil {
+		internal.SortPointsChronologically(timeSeries.Points)
+	}
+
 	// Map to track existing ResourceMetrics by resource attributes
 	resourceMetricsMap := make(map[string]pmetric.ResourceMetrics)
 

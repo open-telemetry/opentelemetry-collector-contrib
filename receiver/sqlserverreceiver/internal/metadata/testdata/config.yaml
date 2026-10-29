@@ -28,6 +28,8 @@ all_set:
       enabled: true
     sqlserver.cpu.count:
       enabled: true
+    sqlserver.cpu.utilization:
+      enabled: true
     sqlserver.cursor.count:
       enabled: true
       attributes: ["cursor.state"]
@@ -62,12 +64,23 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.disk.io:
+      enabled: true
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
+    sqlserver.disk.operations:
+      enabled: true
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.limit:
+      enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: true
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -191,6 +204,12 @@ all_set:
     sqlserver.task.rate:
       enabled: true
       attributes: ["task.result"]
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: true
+      attributes: ["sqlserver.tempdb.allocation.page_type"]
+    sqlserver.tempdb.file.size:
+      enabled: true
+      attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -222,11 +241,19 @@ all_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
+    db.server.procedure_definition:
+      enabled: true
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     host.name:
       enabled: true
     server.address:
@@ -242,6 +269,8 @@ all_set:
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
+      enabled: true
+    sqlserver.db.edition:
       enabled: true
     sqlserver.instance.name:
       enabled: true
@@ -274,6 +303,8 @@ reaggregate_set:
       enabled: true
     sqlserver.cpu.count:
       enabled: true
+    sqlserver.cpu.utilization:
+      enabled: true
     sqlserver.cursor.count:
       enabled: true
       attributes: []
@@ -308,12 +339,23 @@ reaggregate_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.disk.io:
+      enabled: true
+      attributes: []
+    sqlserver.disk.operations:
+      enabled: true
+      attributes: []
     sqlserver.error.rate:
       enabled: true
     sqlserver.extent.operation.rate:
       enabled: true
     sqlserver.ghost_record.skipped.rate:
       enabled: true
+    sqlserver.host.memory.limit:
+      enabled: true
+    sqlserver.host.memory.usage:
+      enabled: true
+      attributes: []
     sqlserver.index.fragmentation:
       enabled: true
       attributes: []
@@ -437,6 +479,12 @@ reaggregate_set:
     sqlserver.task.rate:
       enabled: true
       attributes: []
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: true
+      attributes: []
+    sqlserver.tempdb.file.size:
+      enabled: true
+      attributes: []
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -468,11 +516,19 @@ reaggregate_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
+    db.server.procedure_definition:
+      enabled: true
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
+    db.system.version:
+      enabled: true
     host.name:
       enabled: true
     server.address:
@@ -488,6 +544,8 @@ reaggregate_set:
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
+      enabled: true
+    sqlserver.db.edition:
       enabled: true
     sqlserver.instance.name:
       enabled: true
@@ -519,6 +577,8 @@ none_set:
     sqlserver.connection.reset.rate:
       enabled: false
     sqlserver.cpu.count:
+      enabled: false
+    sqlserver.cpu.utilization:
       enabled: false
     sqlserver.cursor.count:
       enabled: false
@@ -554,12 +614,23 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.disk.io:
+      enabled: false
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
+    sqlserver.disk.operations:
+      enabled: false
+      attributes: ["disk.io.direction","sqlserver.file.path.prefix"]
     sqlserver.error.rate:
       enabled: false
     sqlserver.extent.operation.rate:
       enabled: false
     sqlserver.ghost_record.skipped.rate:
       enabled: false
+    sqlserver.host.memory.limit:
+      enabled: false
+    sqlserver.host.memory.usage:
+      enabled: false
+      attributes: ["system.memory.state"]
     sqlserver.index.fragmentation:
       enabled: false
       attributes: ["db.namespace","sqlserver.index.id","sqlserver.object.name","sqlserver.schema.name"]
@@ -683,6 +754,12 @@ none_set:
     sqlserver.task.rate:
       enabled: false
       attributes: ["task.result"]
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: false
+      attributes: ["sqlserver.tempdb.allocation.page_type"]
+    sqlserver.tempdb.file.size:
+      enabled: false
+      attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
@@ -714,11 +791,19 @@ none_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: false
   events:
+    db.server.procedure_definition:
+      enabled: false
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
+      enabled: false
+    db.server.top_procedure:
       enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:
+    db.system.version:
+      enabled: false
     host.name:
       enabled: false
     server.address:
@@ -735,10 +820,15 @@ none_set:
       enabled: false
     sqlserver.database.name:
       enabled: false
+    sqlserver.db.edition:
+      enabled: false
     sqlserver.instance.name:
       enabled: false
 override_set:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      override_value: "override-db.system.version"
     host.name:
       enabled: true
       override_value: "override-host.name"
@@ -763,11 +853,20 @@ override_set:
     sqlserver.database.name:
       enabled: true
       override_value: "override-sqlserver.database.name"
+    sqlserver.db.edition:
+      enabled: true
+      override_value: "standard"
     sqlserver.instance.name:
       enabled: true
       override_value: "override-sqlserver.instance.name"
 filter_set_include:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     host.name:
       enabled: true
       metrics_include:
@@ -811,6 +910,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     sqlserver.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    sqlserver.db.edition:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -824,6 +929,12 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.system.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.system.version-val"
+      events_exclude:
+        - strict: "db.system.version-val"
     host.name:
       enabled: true
       metrics_exclude:
@@ -872,6 +983,12 @@ filter_set_exclude:
         - strict: "sqlserver.database.name-val"
       events_exclude:
         - strict: "sqlserver.database.name-val"
+    sqlserver.db.edition:
+      enabled: true
+      metrics_exclude:
+        - strict: "standard"
+      events_exclude:
+        - strict: "standard"
     sqlserver.instance.name:
       enabled: true
       metrics_exclude:

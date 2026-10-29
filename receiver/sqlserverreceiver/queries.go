@@ -10,9 +10,6 @@ import (
 	"strings"
 )
 
-// Direct access to queries is not recommended: The receiver allows filtering based on
-// instance name, which means the query will change based on configuration.
-// Please use getSQLServerDatabaseIOQuery
 const sqlServerDatabaseIOQuery = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
@@ -67,19 +64,14 @@ SELECT
 	+ @Columns + N'
 FROM sys.dm_io_virtual_file_stats(NULL, NULL) AS vfs'
 + @JoinClause + N'
-%s'
+'
 + @Tables;
 
 EXEC sp_executesql @SqlStatement
 `
 
-func getSQLServerDatabaseIOQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = ''%s''", instanceName)
-		return fmt.Sprintf(sqlServerDatabaseIOQuery, whereClause)
-	}
-
-	return fmt.Sprintf(sqlServerDatabaseIOQuery, "")
+func getSQLServerDatabaseIOQuery() string {
+	return sqlServerDatabaseIOQuery
 }
 
 const sqlServerPerformanceCountersQuery string = `
@@ -173,7 +165,6 @@ SELECT DISTINCT
 			,'Logical Connections'
 			,'Temp Tables Creation Rate'
 			,'Temp Tables For Destruction'
-			,'Free Space in tempdb (KB)'
 			,'Version Store Size (KB)'
 			,'Memory Grants Pending'
 			,'Memory Grants Outstanding'
@@ -281,6 +272,8 @@ SELECT DISTINCT
 				,'Latch Waits/sec'
 				,'Lock Requests/sec'
 				,'Lock Wait Time (ms)'
+				,'Average Wait Time (ms)'
+				,'Average Wait Time Base'
 			)
 		)
 )
@@ -324,7 +317,11 @@ SELECT
 	,pc.[object_name] AS [object]
 	,pc.[counter_name] AS [counter]
 	,CASE pc.[instance_name] WHEN '_Total' THEN 'Total' ELSE ISNULL(pc.[instance_name],'') END AS [instance]
+	-- [instance] renames the _Total aggregate to Total, which a real database could also
+	-- be called, so carry the unmodified name for telling the two apart.
+	,ISNULL(pc.[instance_name],'') AS [instance_raw]
 	,CAST(CASE WHEN pc.[cntr_type] = 537003264 AND pc1.[cntr_value] > 0 THEN (pc.[cntr_value] * 1.0) / (pc1.[cntr_value] * 1.0) * 100 ELSE pc.[cntr_value] END AS float(10)) AS [value]
+	,pc.[cntr_value] AS [raw_value]
 	,CAST(pc.[cntr_type] AS varchar(25)) AS [counter_type]
 FROM @PCounters AS pc
 LEFT OUTER JOIN @PCounters AS pc1
@@ -337,20 +334,17 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc.[instance_name] = pc1.[instance_name]
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
-	pc.[counter_name] NOT LIKE '% base'
-{filter_instance_name}
+	(
+		pc.[counter_name] NOT LIKE '% base'
+		-- Average Wait Time (ms) only becomes an average once divided by this base
+		-- counter, so it has to survive the filter that drops the other bases.
+		OR pc.[counter_name] = 'Average Wait Time Base'
+	)
 OPTION(RECOMPILE)
 `
 
-func getSQLServerPerformanceCounterQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerPerformanceCountersQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerPerformanceCountersQuery)
+func getSQLServerPerformanceCounterQuery() string {
+	return sqlServerPerformanceCountersQuery
 }
 
 const sqlServerProperties = `
@@ -446,18 +440,20 @@ SELECT
 			,SUM(CASE WHEN [state] IN (6,10) THEN 1 ELSE 0 END) AS [db_offline]
 		FROM sys.databases
 	) AS dbs
-%s'
+'
 
 EXEC sp_executesql @SqlStatement
 `
 
-func getSQLServerPropertiesQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = ''%s''", instanceName)
-		return fmt.Sprintf(sqlServerProperties, whereClause)
-	}
+func getSQLServerPropertiesQuery() string {
+	return sqlServerProperties
+}
 
-	return fmt.Sprintf(sqlServerProperties, "")
+//go:embed templates/topProcedureQuery.tmpl
+var sqlServerTopProcedureQueryTemplate string
+
+func getSQLServerTopProcedureQuery() string {
+	return sqlServerTopProcedureQueryTemplate
 }
 
 //go:embed templates/dbQueryAndTextQuery.tmpl
@@ -1057,8 +1053,7 @@ ws.wait_type NOT IN (
 	N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 	N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 AND waiting_tasks_count > 0
-AND wait_time_ms > 100
-{filter_instance_name};
+AND wait_time_ms > 100;
 
 ELSE
 	SELECT
@@ -1109,8 +1104,7 @@ ELSE
 		N'XE_DISPATCHER_WAIT', N'XE_LIVE_TARGET_TVF', N'XE_TIMER_EVENT',
 		N'SOS_WORK_DISPATCHER','RESERVED_MEMORY_ALLOCATION_EXT')
 	AND waiting_tasks_count > 0
-	AND wait_time_ms > 100
-{filter_instance_name};
+	AND wait_time_ms > 100;
 `
 
 // sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts.
@@ -1134,31 +1128,16 @@ SELECT
 FROM sys.dm_os_schedulers s
 CROSS JOIN sys.dm_os_sys_info si
 WHERE s.status = 'VISIBLE ONLINE'
-{filter_instance_name}
 GROUP BY si.max_workers_count
 OPTION(RECOMPILE)
 `
 
-func getSQLServerWorkerThreadsQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerWorkerThreadsQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerWorkerThreadsQuery)
+func getSQLServerWorkerThreadsQuery() string {
+	return sqlServerWorkerThreadsQuery
 }
 
-func getSQLServerWaitStatsQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\tAND @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerWaitStatsQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerWaitStatsQuery)
+func getSQLServerWaitStatsQuery() string {
+	return sqlServerWaitStatsQuery
 }
 
 const sqlServerAvailabilityGroupQuery = `
@@ -1191,21 +1170,14 @@ INNER JOIN sys.availability_replicas AS ar WITH (NOLOCK)
 	ON sec.[replica_id] = ar.[replica_id]
 INNER JOIN sys.availability_groups AS ag WITH (NOLOCK)
 	ON ar.[group_id] = ag.[group_id]
-WHERE sec.[is_primary_replica] = 0{filter_instance_name}
+WHERE sec.[is_primary_replica] = 0
 ORDER BY ag.[name], ar.[replica_server_name], DB_NAME(sec.[database_id]);'
 
 EXEC sp_executesql @SqlStatement;
 `
 
-func getSQLServerAvailabilityGroupQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("\n\tAND @@SERVERNAME = ''%s''", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerAvailabilityGroupQuery)
-	}
-
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerAvailabilityGroupQuery)
+func getSQLServerAvailabilityGroupQuery() string {
+	return sqlServerAvailabilityGroupQuery
 }
 
 // sqlServerIndexPhysicalStatsQuery collects per-index physical stats (fragmentation, page count,
@@ -1314,19 +1286,203 @@ BEGIN
 		END
 	END CATCH
 
-	SELECT * FROM #IndexPhysStats
-	{filter_instance_name};
+	SELECT * FROM #IndexPhysStats;
 	DROP TABLE #IndexPhysStats;
 END
 `
 
-func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
-	if instanceName != "" {
-		whereClause := fmt.Sprintf("WHERE @@SERVERNAME = '%s'", instanceName)
-		r := strings.NewReplacer("{filter_instance_name}", whereClause)
-		return r.Replace(sqlServerIndexPhysicalStatsQuery)
-	}
+func getSQLServerIndexPhysicalStatsQuery() string {
+	return sqlServerIndexPhysicalStatsQuery
+}
 
-	r := strings.NewReplacer("{filter_instance_name}", "")
-	return r.Replace(sqlServerIndexPhysicalStatsQuery)
+// sqlServerCPUMemoryQuery collects host-level CPU utilization and physical memory from
+// sys.dm_os_ring_buffers and sys.dm_os_sys_memory as observed by SQL Server.
+const sqlServerCPUMemoryQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	 'sqlserver_cpu_memory' AS [measurement]
+	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,(100 - y.SystemIdle) / 100.0 AS [cpu_utilization]
+	,m.total_physical_memory_kb * 1024 AS [memory_limit_bytes]
+	,(m.total_physical_memory_kb - m.available_physical_memory_kb) * 1024 AS [memory_used_bytes]
+	,m.available_physical_memory_kb * 1024 AS [memory_free_bytes]
+FROM (
+	SELECT TOP 1
+		CAST(record AS XML).value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]','int') AS SystemIdle
+	FROM sys.dm_os_ring_buffers
+	WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR'
+	ORDER BY timestamp DESC
+) y
+CROSS JOIN sys.dm_os_sys_memory m
+OPTION(RECOMPILE)
+`
+
+func getSQLServerCPUMemoryQuery() string {
+	return sqlServerCPUMemoryQuery
+}
+
+// sqlServerDiskIOQuery collects per-drive read/write IOPS and throughput for SQL Server database files.
+const sqlServerDiskIOQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+	,@JoinClause AS nvarchar(max) = ''
+
+IF @EngineEdition = 5
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.database_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = DB_ID() AND vfs.[file_id] = mf.[file_id]'
+END
+ELSE
+BEGIN
+	SET @JoinClause = N'
+INNER JOIN sys.master_files AS mf WITH (NOLOCK)
+	ON vfs.[database_id] = mf.[database_id] AND vfs.[file_id] = mf.[file_id]'
+END
+
+SET @SqlStatement = N'
+SELECT
+	 ''sqlserver_disk_io'' AS [measurement]
+	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
+	,CASE
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
+		ELSE ''/''
+	END AS [disk_drive]
+	,SUM(vfs.num_of_reads) AS [read_ops]
+	,SUM(vfs.num_of_writes) AS [write_ops]
+	,SUM(vfs.num_of_bytes_read) AS [read_bytes]
+	,SUM(vfs.num_of_bytes_written) AS [write_bytes]
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs'
++ @JoinClause + N'
+GROUP BY CASE
+		WHEN mf.physical_name LIKE ''[A-Z]:\%'' THEN LEFT(mf.physical_name, 3)
+		WHEN mf.physical_name LIKE ''\\_%\_%\%'' THEN LEFT(mf.physical_name,
+			CHARINDEX(''\'', mf.physical_name,
+				CHARINDEX(''\'', mf.physical_name, 3) + 1) - 1)
+		ELSE ''/''
+	END
+OPTION(RECOMPILE)'
+
+EXEC sp_executesql @SqlStatement
+`
+
+func getSQLServerDiskIOQuery() string {
+	return sqlServerDiskIOQuery
+}
+
+// sqlServerTempDBQuery returns a single row of tempdb space usage from
+// tempdb.sys.dm_db_file_space_usage, broken down into a mutually exclusive partition:
+// user_objects/internal_objects/version_store/free/mixed_extents.
+const sqlServerTempDBQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.* metrics.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+;
+SELECT
+	'sqlserver_tempdb' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(SUM(user_object_reserved_page_count)     AS BIGINT) * 8 AS kb_user_objects,
+	CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects,
+	CAST(SUM(version_store_reserved_page_count)   AS BIGINT) * 8 AS kb_version_store,
+	CAST(SUM(unallocated_extent_page_count)       AS BIGINT) * 8 AS kb_free,
+	CAST(SUM(mixed_extent_page_count)             AS BIGINT) * 8 AS kb_mixed_extents
+FROM tempdb.sys.dm_db_file_space_usage WITH (NOLOCK)
+`
+
+func getSQLServerTempDBQuery() string {
+	return sqlServerTempDBQuery
+}
+
+// sqlServerTempDBContentionQuery returns tempdb page latch waiters by page type (GAM/SGAM/PFS/
+// other), classified from the page number in resource_description. Uses sys.dm_os_waiting_tasks
+// (point-in-time) rather than sys.dm_os_wait_stats (cumulative, keyed by wait_type not resource).
+const sqlServerTempDBContentionQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.allocation.* metrics.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+;
+WITH
+tempdb_pagelatch_waits AS (
+	SELECT
+		TRY_CAST(PARSENAME(REPLACE(wt.resource_description, ':', '.'), 1) AS BIGINT) AS page_id
+	FROM sys.dm_os_waiting_tasks AS wt WITH (NOLOCK)
+	WHERE wt.wait_type LIKE 'PAGELATCH_%'
+	  AND wt.resource_description LIKE '2:%'
+),
+valid_pages AS (
+	SELECT page_id FROM tempdb_pagelatch_waits WHERE page_id IS NOT NULL
+),
+classified AS (
+	SELECT
+		CASE
+			WHEN page_id = 1 OR page_id % 8088 = 0 THEN 'pfs'
+			WHEN page_id = 2 OR page_id % 511232 = 0 THEN 'gam'
+			WHEN page_id = 3 OR page_id % 511232 = 1 THEN 'sgam'
+			ELSE 'other'
+		END AS page_type
+	FROM valid_pages
+)
+SELECT
+	'sqlserver_tempdb_contention' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'gam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS gam_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'sgam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS sgam_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'pfs' THEN 1 ELSE 0 END), 0) AS BIGINT) AS pfs_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'other' THEN 1 ELSE 0 END), 0) AS BIGINT) AS other_waiters
+FROM classified
+`
+
+func getSQLServerTempDBContentionQuery() string {
+	return sqlServerTempDBContentionQuery
+}
+
+// sqlServerTempDBFileQuery returns one row per tempdb data/log file. Reads from
+// tempdb.sys.database_files, not sys.master_files: for tempdb specifically, sys.master_files.size
+// reflects the configured startup size, not the current size after autogrowth, since tempdb is
+// recreated from scratch on every server restart.
+const sqlServerTempDBFileQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.file.size.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_tempdb_file' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(file_id AS BIGINT) AS [file_id],
+	CASE type WHEN 0 THEN 'data' WHEN 1 THEN 'log' ELSE 'other' END AS [file_type],
+	CAST(size AS BIGINT) * 8 * 1024 AS [size_bytes]
+FROM tempdb.sys.database_files WITH (NOLOCK)
+WHERE type IN (0, 1)
+`
+
+func getSQLServerTempDBFileQuery() string {
+	return sqlServerTempDBFileQuery
 }

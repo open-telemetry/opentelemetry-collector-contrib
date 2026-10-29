@@ -4,6 +4,7 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -365,7 +366,27 @@ type Config struct {
 	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
 	// A 0 value disables dropping large traces early.
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
+	// NumShards controls the number of parallel goroutine loops processing
+	// traces. Each shard runs an independent event loop with its own trace
+	// storage and decision batcher. Traces are routed to shards by a hash of
+	// the trace ID, ensuring all spans for a given trace are processed by
+	// the same shard. Higher values reduce contention between trace
+	// ingestion and sampling decision evaluation under high load. NumTraces,
+	// ExpectedNewTracesPerSec, decision cache sizes, and per-second rate
+	// limits in policies (rate_limiting, bytes_limiting, and composite
+	// max_total_spans_per_second) are divided evenly across shards so
+	// aggregate behavior matches the configured values. Limiter burst
+	// capacities are not divided so single large traces stay admissible
+	// regardless of the shard count. Must not exceed 256,
+	// and values greater than 1 are not supported with tail_storage.
+	// Defaults to 1 (single event loop, original behavior).
+	NumShards uint32 `mapstructure:"num_shards"`
 }
+
+// maxNumShards bounds num_shards to catch configuration mistakes: each shard
+// materializes a full event loop with its own goroutine, storage and batcher,
+// so values beyond CPU-count scale only add overhead.
+const maxNumShards = 256
 
 func (cfg *Config) Validate() error {
 	switch cfg.SamplingStrategy {
@@ -378,6 +399,17 @@ func (cfg *Config) Validate() error {
 			samplingStrategyTraceComplete,
 			samplingStrategySpanIngest,
 		)
+	}
+
+	if cfg.NumShards > maxNumShards {
+		return fmt.Errorf("num_shards (%d) must not exceed %d", cfg.NumShards, maxNumShards)
+	}
+
+	// The TailStorage contract makes the caller responsible for serializing
+	// access, which multiple shard event loops cannot guarantee for a shared
+	// extension instance. Sharding support belongs in the storage layer.
+	if cfg.NumShards > 1 && cfg.TailStorageID != nil {
+		return errors.New("num_shards greater than 1 is not supported with tail_storage")
 	}
 
 	if cfg.TailStorageID != nil && !tailstorageextension.IsFeatureGateEnabled() {

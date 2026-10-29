@@ -13,7 +13,3 @@ status:
   distributions: [contrib]
   codeowners:
     active: [pjanotti,pankaj101A, jagan2221]
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

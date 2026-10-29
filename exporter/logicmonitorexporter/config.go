@@ -23,8 +23,8 @@ type Config struct {
 	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 
 	QueueSettings               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig   `mapstructure:"retry_on_failure"`
-	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+	BackOffConfig               configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ResourceToTelemetrySettings resourcetotelemetry.Settings                             `mapstructure:"resource_to_telemetry_conversion"`
 
 	// ApiToken of Logicmonitor Platform
 	APIToken APIToken `mapstructure:"api_token"`

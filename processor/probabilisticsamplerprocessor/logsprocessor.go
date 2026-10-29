@@ -205,7 +205,8 @@ func newLogsProcessor(ctx context.Context, set processor.Settings, nextConsumer 
 		cfg,
 		nextConsumer,
 		lsp.processLogs,
-		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 func (lsp *logsProcessor) processLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, error) {

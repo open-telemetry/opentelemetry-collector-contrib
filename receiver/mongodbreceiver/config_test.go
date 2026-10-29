@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -117,7 +116,7 @@ func TestValidate(t *testing.T) {
 			QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: 0},
 			TopQueryCollection:    defaultTopQueryCollection(),
 		}
-		err := xconfmap.Validate(cfg)
+		err := confmap.Validate(cfg)
 		require.ErrorContains(t, err, "query_sample_collection.max_rows_per_query must be greater than 0")
 	})
 	for _, tc := range testCases {
@@ -140,7 +139,7 @@ func TestValidate(t *testing.T) {
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 				TopQueryCollection:    defaultTopQueryCollection(),
 			}
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
@@ -195,7 +194,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				QuerySampleCollection: QuerySampleCollection{MaxRowsPerQuery: defaultMaxRowsPerQuery},
 				TopQueryCollection:    defaultTopQueryCollection(),
 			}
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -341,6 +340,28 @@ func TestOptionsTLS(t *testing.T) {
 	}
 	opts := cfg.ClientOptions(false)
 	require.NotNil(t, opts.TLSConfig)
+
+	// Secondaries belong to the same deployment, so they need the same transport security.
+	secondaryOpts := cfg.ClientOptions(true)
+	require.NotNil(t, secondaryOpts.TLSConfig)
+}
+
+func TestOptionsSecondaryOperationTimeout(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		Timeout: createDefaultConfig().(*Config).Timeout,
+	}
+
+	// A secondary that connects but stops responding must not hold a collection open.
+	opts := cfg.ClientOptions(true)
+	require.NotNil(t, opts.Timeout)
+	require.Equal(t, cfg.Timeout, *opts.Timeout)
+	require.NotNil(t, opts.ConnectTimeout)
+	require.Equal(t, cfg.Timeout, *opts.ConnectTimeout)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -362,7 +383,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
-	expected.CollectionInterval = time.Minute
+	expected.ControllerConfig.CollectionInterval = time.Minute
 	expected.AuthMechanism = "SCRAM-SHA-256"
 	expected.AuthSource = "admin"
 	expected.AuthMechanismProperties = map[string]string{
@@ -393,7 +414,7 @@ func TestLoadConfigSRV(t *testing.T) {
 	expected.Scheme = "mongodb+srv"
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
-	expected.CollectionInterval = time.Minute
+	expected.ControllerConfig.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
 }
@@ -506,7 +527,7 @@ func TestValidateTopQueryCollection(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := baseCfg()
 			tc.mutate(&cfg.TopQueryCollection)
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 			if tc.errSubstr == "" {
 				require.NoError(t, err)
 			} else {
@@ -538,7 +559,7 @@ func TestValidateTopQueryCollection_PartialUserConfig(t *testing.T) {
 	require.Equal(t, defaultQueryPlanCacheTTL, cfg.TopQueryCollection.QueryPlanCacheTTL)
 	require.Equal(t, defaultTopQueryCollectionInterval, cfg.TopQueryCollection.CollectionInterval)
 
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 // decodeInto merges a raw config map into an already-populated Config the

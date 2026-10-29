@@ -5,11 +5,12 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/alecthomas/participle/v2/lexer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
 
 // parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
@@ -23,7 +24,7 @@ type parsedStatement struct {
 func (p *parsedStatement) checkForCustomError() error {
 	validator := &grammarCustomErrorsVisitor{}
 	if p.Converter != nil {
-		validator.add(fmt.Errorf("editor names must start with a lowercase letter but got '%v'", p.Converter.Function))
+		validator.add(ottlerror.Errorf(p.Converter.Pos, "editor names must start with a lowercase letter but got '%v'", p.Converter.Function))
 	}
 
 	p.Editor.accept(validator)
@@ -34,6 +35,7 @@ func (p *parsedStatement) checkForCustomError() error {
 	return validator.join()
 }
 
+// constExpr represents a constant expression that resolves to either a boolean or a converter.
 type constExpr struct {
 	Boolean   *boolean   `parser:"( @Boolean"`
 	Converter *converter `parser:"| @@ )"`
@@ -43,6 +45,7 @@ type constExpr struct {
 // either an equality or inequality, explicit true or false, or
 // a parenthesized subexpression.
 type booleanValue struct {
+	Pos        lexer.Position
 	Negation   *string            `parser:"@OpNot?"`
 	Comparison *comparison        `parser:"( @@"`
 	ConstExpr  *constExpr         `parser:"| @@"`
@@ -193,6 +196,7 @@ func (c *comparison) accept(v grammarVisitor) {
 
 // editor represents the function call of a statement.
 type editor struct {
+	Pos       lexer.Position
 	Function  string     `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
 	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 	// If keys are matched return an error
@@ -201,13 +205,14 @@ type editor struct {
 
 func (i *editor) accept(v grammarVisitor) {
 	v.visitEditor(i)
-	for _, arg := range i.Arguments {
-		arg.accept(v)
+	for j := range i.Arguments {
+		i.Arguments[j].accept(v)
 	}
 }
 
 // converter represents a converter function call.
 type converter struct {
+	Pos       lexer.Position
 	Function  string     `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 	Keys      []key      `parser:"( @@ )*"`
@@ -216,23 +221,27 @@ type converter struct {
 func (c *converter) accept(v grammarVisitor) {
 	v.visitConverter(c)
 	if c.Arguments != nil {
-		for _, a := range c.Arguments {
-			a.accept(v)
+		for j := range c.Arguments {
+			c.Arguments[j].accept(v)
 		}
 	}
 	if c.Keys != nil {
-		for _, k := range c.Keys {
-			k.accept(v)
+		for j := range c.Keys {
+			c.Keys[j].accept(v)
 		}
 	}
 }
 
+// lambdaExpr represents a lambda function definition with its parameters and body.
 type lambdaExpr struct {
-	Params []localIdentifierDecl `parser:"'(' ( (@Lowercase | @Underscore) ( ',' (@Lowercase | @Underscore ) )* )? ')'"`
+	Pos    lexer.Position
+	Params []localIdentifierDecl `parser:"'(' ( (@@) ( ',' (@@ ) )* )? ')'"`
 	Body   lambdaBody            `parser:"LambdaArrow @@"`
 }
 
+// lambdaBody represents the body of a lambda expression, which is either a value or a boolean expression.
 type lambdaBody struct {
+	Pos   lexer.Position
 	Value *value             `parser:"( @@ (?! OpOr | OpAnd | OpComparison)"`
 	Expr  *booleanExpression `parser:"| @@ )"`
 }
@@ -247,19 +256,22 @@ func (lb *lambdaBody) accept(vis grammarVisitor) {
 	}
 }
 
-type localIdentifierDecl string
-
-var _ LocalIdentifierDecl = (*localIdentifierDecl)(nil)
+type localIdentifierDecl struct {
+	Pos        lexer.Position
+	Identifier string `parser:"@Lowercase | @Underscore"`
+}
 
 func (n *localIdentifierDecl) Name() string {
-	return string(*n)
+	return n.Identifier
 }
 
 func (n *localIdentifierDecl) IsBlank() bool {
 	return n.Name() == "_"
 }
 
+// argument represents a single argument passed to an editor or converter function call.
 type argument struct {
+	Pos          lexer.Position
 	Name         string  `parser:"(@(Lowercase(Uppercase | Lowercase)*) Equal)?"`
 	Value        value   `parser:"( @@"`
 	FunctionName *string `parser:"| @(Uppercase(Uppercase | Lowercase)*) )"`
@@ -272,6 +284,7 @@ func (a *argument) accept(v grammarVisitor) {
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
 // mathExpression, function call, or literal.
 type value struct {
+	Pos            lexer.Position
 	IsNil          *isNil           `parser:"( @Nil"`
 	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
 	Lambda         *lambdaExpr      `parser:"| @@"`
@@ -352,6 +365,7 @@ func (p *path) accept(v grammarVisitor) {
 
 // field is an item within a path.
 type field struct {
+	Pos  lexer.Position
 	Name string `parser:"@Lowercase"`
 	Keys []key  `parser:"( @@ )*"`
 }
@@ -362,7 +376,9 @@ func (f *field) accept(v grammarVisitor) {
 	}
 }
 
+// key represents an index into a path or converter.
 type key struct {
+	Pos            lexer.Position
 	String         *string          `parser:"'[' (@String "`
 	Int            *int64           `parser:"| @Int"`
 	MathExpression *mathExpression  `parser:"| @@"`
@@ -378,25 +394,52 @@ func (k *key) accept(v grammarVisitor) {
 	}
 }
 
+// list represents a literal list of values.
 type list struct {
-	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+	Values []value `parser:"'[' (@@ (',' @@)*)? ']'"`
 }
 
+// mapValue represents a literal map of key/value pairs.
 type mapValue struct {
 	Values []mapItem `parser:"'{' (@@ ','?)* '}'"`
 }
 
 func (m *mapValue) accept(v grammarVisitor) {
 	for _, i := range m.Values {
+		if i.Key != nil {
+			i.Key.accept(v)
+		}
 		if i.Value != nil {
 			i.Value.accept(v)
 		}
 	}
 }
 
+// mapItem is a single key/value entry within a mapValue.
 type mapItem struct {
-	Key   *string `parser:"@String ':'"`
+	Key   *mapKey `parser:"@@ ':'"`
 	Value *value  `parser:"@@"`
+}
+
+// mapKey is the key of a mapItem. It must resolve to a string.
+type mapKey struct {
+	String *string `parser:"( @String"`
+	// Editor is matched only to report a better error.
+	Editor    *editor    `parser:"| @@"`
+	Converter *converter `parser:"| @@"`
+	Path      *path      `parser:"| @@ )"`
+}
+
+func (k *mapKey) accept(v grammarVisitor) {
+	if k.Editor != nil {
+		v.visitMathExprLiteral(&mathExprLiteral{Editor: k.Editor})
+	}
+	if k.Converter != nil {
+		k.Converter.accept(v)
+	}
+	if k.Path != nil {
+		k.Path.accept(v)
+	}
 }
 
 // byteSlice type for capturing byte slices
@@ -406,7 +449,7 @@ func (b *byteSlice) Capture(values []string) error {
 	rawStr := values[0][2:]
 	newBytes, err := hex.DecodeString(rawStr)
 	if err != nil {
-		return err
+		return fmt.Errorf("byte literals must have an even number of hexadecimal digits, but got %s: %w", values[0], err)
 	}
 	*b = newBytes
 	return nil
@@ -428,6 +471,7 @@ func (n *isNil) Capture(_ []string) error {
 	return nil
 }
 
+// mathExprLiteral represents a leaf value within a math expression.
 type mathExprLiteral struct {
 	// If editor is matched then error
 	Editor    *editor    `parser:"( @@"`
@@ -450,7 +494,9 @@ func (m *mathExprLiteral) accept(v grammarVisitor) {
 	}
 }
 
+// mathValue represents a value within a math expression, optionally negated or parenthesized.
 type mathValue struct {
+	Pos           lexer.Position
 	UnaryOp       *mathOp          `parser:"@OpAddSub?"`
 	Literal       *mathExprLiteral `parser:"( @@"`
 	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
@@ -465,6 +511,7 @@ func (m *mathValue) accept(v grammarVisitor) {
 	}
 }
 
+// opMultDivValue represents the right side of a multiplication or division expression.
 type opMultDivValue struct {
 	Operator mathOp     `parser:"@OpMultDiv"`
 	Value    *mathValue `parser:"@@"`
@@ -476,6 +523,7 @@ func (m *opMultDivValue) accept(v grammarVisitor) {
 	}
 }
 
+// addSubTerm represents an arbitrary number of math values joined by multiplication or division.
 type addSubTerm struct {
 	Left  *mathValue        `parser:"@@"`
 	Right []*opMultDivValue `parser:"@@*"`
@@ -492,6 +540,7 @@ func (m *addSubTerm) accept(v grammarVisitor) {
 	}
 }
 
+// opAddSubTerm represents the right side of an addition or subtraction expression.
 type opAddSubTerm struct {
 	Operator mathOp      `parser:"@OpAddSub"`
 	Term     *addSubTerm `parser:"@@"`
@@ -503,6 +552,7 @@ func (r *opAddSubTerm) accept(v grammarVisitor) {
 	}
 }
 
+// mathExpression represents a numeric computation expressed as an arbitrary number of terms separated by addition or subtraction.
 type mathExpression struct {
 	Left  *addSubTerm     `parser:"@@"`
 	Right []*opAddSubTerm `parser:"@@*"`
@@ -664,13 +714,17 @@ func (*grammarCustomErrorsVisitor) visitConverter(*converter) {}
 
 func (g *grammarCustomErrorsVisitor) visitEditor(v *editor) {
 	if v.Keys != nil {
-		g.add(fmt.Errorf("only paths and converters may be indexed, not editors, but got %s%s", v.Function, buildOriginalKeysText(v.Keys)))
+		pos := v.Pos
+		if len(v.Keys) > 0 {
+			pos = v.Keys[0].Pos
+		}
+		g.add(ottlerror.Errorf(pos, "only paths and converters may be indexed, not editors, but got %s%s", v.Function, buildOriginalKeysText(v.Keys)))
 	}
 }
 
 func (g *grammarCustomErrorsVisitor) visitMathExprLiteral(v *mathExprLiteral) {
 	if v.Editor != nil {
-		g.add(fmt.Errorf("converter names must start with an uppercase letter but got '%v'", v.Editor.Function))
+		g.add(ottlerror.Errorf(v.Editor.Pos, "converter names must start with an uppercase letter but got '%v'", v.Editor.Function))
 	}
 }
 
@@ -681,6 +735,6 @@ func (g *grammarCustomErrorsVisitor) visitLambdaBody(v *lambdaBody) {
 	// It might be changed in the future if lambdas become available for general use
 	// within the language.
 	if v.Value != nil && v.Value.Lambda != nil {
-		g.add(errors.New("lambda body cannot result into another lambda expression"))
+		g.add(ottlerror.New(v.Pos, "lambda body cannot result into another lambda expression"))
 	}
 }

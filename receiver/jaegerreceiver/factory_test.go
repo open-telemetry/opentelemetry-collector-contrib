@@ -18,9 +18,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/coredistro"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
@@ -41,7 +45,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -82,7 +86,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -99,7 +103,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).GRPC = configoptional.Some(configgrpc.ServerConfig{
+	cfg.(*Config).Protocols.GRPC = configoptional.Some(configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -122,11 +126,6 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	thriftHTTPServerConfig.WriteTimeout = 0
-	thriftHTTPServerConfig.ReadHeaderTimeout = 0
-	thriftHTTPServerConfig.IdleTimeout = 0
-	thriftHTTPServerConfig.KeepAlivesEnabled = false
 	thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  "0.0.0.0:14268",
 		Transport: confignet.TransportTypeTCP,
@@ -137,7 +136,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 			KeyFile:  "./testdata/server.key",
 		},
 	})
-	cfg.(*Config).ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
+	cfg.(*Config).Protocols.ThriftHTTP = configoptional.Some(thriftHTTPServerConfig)
 
 	set := receivertest.NewNopSettings(metadata.Type)
 
@@ -166,7 +165,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
+	cfg.(*Config).Protocols.ThriftBinaryUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6832",
 	})
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -180,7 +179,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).ThriftCompactUDP = configoptional.Some(ProtocolUDP{
+	cfg.(*Config).Protocols.ThriftCompactUDP = configoptional.Some(ProtocolUDP{
 		Endpoint: "0.0.0.0:6831",
 	})
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -188,4 +187,15 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 
 	assert.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, "0.0.0.0:6831", r.(*jReceiver).config.ThriftCompactUDP.Get().Endpoint, "thrift port should be default")
+}
+
+func TestCoreDistroRemovalWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.BuildInfo = component.BuildInfo{Command: "otelcol", Description: "OpenTelemetry Collector"}
+	set.Logger = zap.New(core)
+
+	_, err := NewFactory().CreateTraces(t.Context(), set, createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, 1, logs.FilterMessageSnippet(coredistro.RemovalWarning).Len())
 }

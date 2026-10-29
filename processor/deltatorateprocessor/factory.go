@@ -24,7 +24,8 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
-		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType))
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -50,5 +51,6 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }

@@ -44,8 +44,8 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		var dataSource string
 		var err error
 
-		if sqlCfg.DataSource != "" {
-			dataSource = sqlCfg.DataSource
+		if sqlCfg.Config.DataSource != "" {
+			dataSource = sqlCfg.Config.DataSource
 		} else {
 			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Config)
 			if err != nil {
@@ -53,9 +53,9 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			}
 		}
 		var opts []scraperhelper.ControllerOption
-		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Driver, dataSource, sqlCfg.MaxOpenConn)
+		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Config.Driver, dataSource, sqlCfg.MaxOpenConn)
 
-		for i, query := range sqlCfg.Queries {
+		for i, query := range sqlCfg.Config.Queries {
 			if len(query.Metrics) == 0 {
 				continue
 			}
@@ -63,7 +63,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(metadata.ScopeName)
-			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.Logger, sqlCfg.Telemetry, pool.DB, clientProviderFunc, scope)
+			mp := sqlquery.NewScraper(id, query, sqlCfg.Config.ControllerConfig, settings.Logger, sqlCfg.Config.Telemetry, pool.DB, clientProviderFunc, scope)
 
 			wrapped := &statusReportingScraper{
 				delegate: mp,
@@ -73,7 +73,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		}
 
 		return scraperhelper.NewMetricsController(
-			&sqlCfg.ControllerConfig,
+			&sqlCfg.Config.ControllerConfig,
 			settings,
 			consumer,
 			opts...,

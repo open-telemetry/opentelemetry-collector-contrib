@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -79,7 +79,6 @@ func createDefaultConfig() component.Config {
 				string(conventions.K8SNodeNameKey): "`name`",
 				string(conventions.K8SNodeUIDKey):  "`uid`",
 			},
-			observer.KafkaTopicType: map[string]string{},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}

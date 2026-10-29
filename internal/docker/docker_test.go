@@ -7,11 +7,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -230,6 +232,67 @@ func TestStatsStreamUpdatesLatestStats(t *testing.T) {
 	stats, _ := cli.LatestContainerStats(containerID, 0)
 	require.NotNil(t, stats)
 	assert.Equal(t, uint64(100), stats.CPUStats.CPUUsage.TotalUsage)
+}
+
+// TestPersistContainerDoesNotRestartStream verifies that re-persisting an
+// already-monitored container leaves its existing stats stream intact.
+// Containers with healthchecks are re-inspected and re-persisted on every
+// scrape, which previously tore down and reopened the stream each interval.
+func TestPersistContainerDoesNotRestartStream(t *testing.T) {
+	const containerID = "testContainer"
+	var streamOpens atomic.Int32
+	observed, logs := observer.New(zapcore.WarnLevel)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/stats") {
+			return
+		}
+		streamOpens.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		flusher := w.(http.Flusher)
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case <-time.After(10 * time.Millisecond):
+				_, _ = w.Write([]byte(`{"cpu_stats":{"cpu_usage":{"total_usage":100}},"memory_stats":{}}`))
+				flusher.Flush()
+			}
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(
+		&Config{Endpoint: srv.URL, Timeout: 5 * time.Second, StreamStats: true},
+		zap.New(observed),
+	)
+	require.NoError(t, err)
+	defer cli.Close() // ensure cleanup even if test fails
+
+	container := &ctypes.InspectResponse{
+		ID:     containerID,
+		State:  &ctypes.State{Running: true, Health: &ctypes.Health{Status: "healthy"}},
+		Config: &ctypes.Config{},
+	}
+
+	cli.persistContainer(container)
+	require.Eventually(t, func() bool {
+		_, ok := cli.LatestContainerStats(containerID, 0)
+		return ok
+	}, 5*time.Second, 10*time.Millisecond, "timed out waiting for first stats frame")
+
+	// Simulate several scrape cycles re-persisting the same healthy container.
+	for range 3 {
+		cli.persistContainer(container)
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	assert.Equal(t, int32(1), streamOpens.Load(), "stats stream should be opened exactly once")
+	require.NoError(t, cli.Close())
+	// Ensure no warnings about stream errors were logged during the test.
+	for _, l := range logs.All() {
+		assert.NotContains(t, l.Message, "Error reading stats stream")
+	}
 }
 
 // TestStatsStreamHandlesInvalidJSON verifies that the stream goroutine logs a warning
@@ -483,4 +546,38 @@ func TestTLSClientConfigInvalidCert(t *testing.T) {
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "could not load docker client TLS config")
+}
+
+// TestClientCloseClosesUnderlyingClient verifies that Client.Close closes idle transport connections.
+func TestClientCloseClosesUnderlyingClient(t *testing.T) {
+	var activeConns atomic.Int32
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			activeConns.Add(1)
+		case http.StateClosed:
+			activeConns.Add(-1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	err = cli.LoadContainerList(t.Context())
+	require.NoError(t, err)
+	assert.Positive(t, activeConns.Load())
+
+	err = cli.Close()
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, int32(0), activeConns.Load(), "Underlying client transport should be closed")
 }

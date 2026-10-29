@@ -13,6 +13,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -46,6 +47,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadatatest"
 )
 
 var writeV2RequestFixture = &writev2.Request{
@@ -190,6 +192,391 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	}
 }
 
+// exemplarSymbols is the symbol table the histogram exemplar tests share. The histogram and its
+// exemplar always sit in the same TimeSeries, which is what the protocol asks for today.
+var exemplarSymbols = []string{
+	"",
+	"__name__", "test_hist", // 1, 2
+	"job", "service-x/test", // 3, 4
+	"instance", "107cn001", // 5, 6
+	"region", "us-east", // 7, 8
+	"us-west",                                      // 9
+	"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+}
+
+func exemplarHistogram(deltas []int64) []writev2.Histogram {
+	return []writev2.Histogram{{
+		Schema:         0,
+		Count:          &writev2.Histogram_CountInt{CountInt: 3},
+		Sum:            6,
+		Timestamp:      1,
+		PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+		PositiveDeltas: deltas,
+	}}
+}
+
+func nhcbExemplarHistogram() []writev2.Histogram {
+	return []writev2.Histogram{{
+		Schema:         -53,
+		Count:          &writev2.Histogram_CountInt{CountInt: 3},
+		Sum:            6,
+		Timestamp:      1,
+		CustomValues:   []float64{1.0},
+		PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+		PositiveDeltas: []int64{1, 1},
+	}}
+}
+
+func theExemplar() []writev2.Exemplar {
+	return []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1.5, Timestamp: 1}}
+}
+
+func TestExemplarsStayWithTheirSeries(t *testing.T) {
+	// The key is the whole label set, so anything that tells two series apart keeps their
+	// exemplars apart too. Each case sends one exemplar, on the second series.
+	symbols := []string{
+		"",                       // 0
+		"__name__", "test_total", // 1, 2
+		"job", "service-a", "service-b", // 3, 4, 5
+		"instance", "host-a", "host-b", // 6, 7, 8
+		"otel_scope_name", "scope", // 9, 10
+		"otel_scope_schema_url", "https://example.com/a", "https://example.com/b", // 11, 12, 13
+		"otel_scope_attr_tier", "one", "two", // 14, 15, 16
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 17, 18
+	}
+	theExemplar := []writev2.Exemplar{{LabelsRefs: []uint32{17, 18}, Value: 1.5, Timestamp: 1}}
+
+	for _, tc := range []struct {
+		name       string
+		first      []uint32
+		second     []uint32
+		metricType writev2.Metadata_MetricType
+	}{
+		{
+			name:   "different job",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10},
+			second: []uint32{1, 2, 3, 5, 6, 7, 9, 10},
+		},
+		{
+			name:   "different instance",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10},
+			second: []uint32{1, 2, 3, 4, 6, 8, 9, 10},
+		},
+		{
+			name:   "different scope schema URL",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10, 11, 12},
+			second: []uint32{1, 2, 3, 4, 6, 7, 9, 10, 11, 13},
+		},
+		{
+			name:   "different scope attribute",
+			first:  []uint32{1, 2, 3, 4, 6, 7, 9, 10, 14, 15},
+			second: []uint32{1, 2, 3, 4, 6, 7, 9, 10, 14, 16},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			series := func(refs []uint32, exemplars []writev2.Exemplar, ts int64) writev2.TimeSeries {
+				return writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+					LabelsRefs: refs,
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: ts}},
+					Exemplars:  exemplars,
+				}
+			}
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    symbols,
+				Timeseries: []writev2.TimeSeries{series(tc.first, nil, 1), series(tc.second, theExemplar, 2)},
+			})
+			require.NoError(t, err)
+
+			dataPoints, carrying := 0, 0
+			rms := metrics.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				sms := rms.At(i).ScopeMetrics()
+				for j := 0; j < sms.Len(); j++ {
+					ms := sms.At(j).Metrics()
+					for k := 0; k < ms.Len(); k++ {
+						dps := ms.At(k).Sum().DataPoints()
+						for d := 0; d < dps.Len(); d++ {
+							dataPoints++
+							if dps.At(d).Exemplars().Len() > 0 {
+								carrying++
+							}
+						}
+					}
+				}
+			}
+			require.Equal(t, 2, dataPoints, "the two series stay apart")
+			assert.Equal(t, 1, carrying, "only the series that sent the exemplar carries it")
+			assert.Equal(t, 1, stats.Exemplars)
+		})
+	}
+}
+
+func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
+	// The key is the label set, so two metric identities built from the same labels look the
+	// same to the exemplar map. Whichever conversion attaches the exemplars consumes them, so
+	// the other cannot publish a second copy of what the sender wrote once.
+	symbols := []string{
+		"",
+		"__name__", "test_metric", // 1, 2
+		"job", "service-x/test", // 3, 4
+		"instance", "107cn001", // 5, 6
+		"seconds", "milliseconds", // 7, 8
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+	}
+	labelRefs := []uint32{1, 2, 3, 4, 5, 6}
+	theExemplar := []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 1.5, Timestamp: 1}}
+
+	counter := func(unitRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: unitRef},
+			LabelsRefs: labelRefs,
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			Exemplars:  exemplars,
+		}
+	}
+	info := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+			LabelsRefs: labelRefs,
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 2}},
+			Exemplars:  exemplars,
+		}
+	}
+	histogram := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: labelRefs,
+			Histograms: []writev2.Histogram{{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountInt{CountInt: 1},
+				Sum:            1,
+				Timestamp:      1,
+				CustomValues:   []float64{1},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+				PositiveDeltas: []int64{1},
+			}},
+			Exemplars: exemplars,
+		}
+	}
+
+	for _, tc := range []struct {
+		name   string
+		series []writev2.TimeSeries
+	}{
+		{"two units", []writev2.TimeSeries{counter(7, theExemplar), counter(8, nil)}},
+		{"counter then info", []writev2.TimeSeries{counter(7, theExemplar), info(nil)}},
+		{"info then counter", []writev2.TimeSeries{info(theExemplar), counter(7, nil)}},
+		{"counter then histogram", []writev2.TimeSeries{counter(7, theExemplar), histogram(nil)}},
+		{"histogram then counter", []writev2.TimeSeries{histogram(theExemplar), counter(7, nil)}},
+		{"the same counter twice", []writev2.TimeSeries{counter(7, theExemplar), counter(7, nil)}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    symbols,
+				Timeseries: tc.series,
+			})
+			require.NoError(t, err)
+
+			attached := 0
+			rms := metrics.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				sms := rms.At(i).ScopeMetrics()
+				for j := 0; j < sms.Len(); j++ {
+					ms := sms.At(j).Metrics()
+					for k := 0; k < ms.Len(); k++ {
+						switch m := ms.At(k); m.Type() {
+						case pmetric.MetricTypeSum:
+							dps := m.Sum().DataPoints()
+							for d := 0; d < dps.Len(); d++ {
+								attached += dps.At(d).Exemplars().Len()
+							}
+						case pmetric.MetricTypeHistogram:
+							dps := m.Histogram().DataPoints()
+							for d := 0; d < dps.Len(); d++ {
+								attached += dps.At(d).Exemplars().Len()
+							}
+						}
+					}
+				}
+			}
+			assert.Equal(t, 1, attached, "the one exemplar the sender wrote is published once")
+			assert.Equal(t, 1, stats.Exemplars)
+		})
+	}
+}
+
+func TestHistogramExemplarsAttachToLabelledSeries(t *testing.T) {
+	// A histogram carrying an ordinary label must still find its own exemplars.
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Histograms: exemplarHistogram([]int64{1, 1}),
+				Exemplars:  theExemplar(),
+			},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Exemplars)
+
+	dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints().At(0)
+	assert.Equal(t, 1, dp.Exemplars().Len(), "the exemplar belongs to this data point")
+}
+
+func TestHistogramExemplarsAttachToTheirOwnDataPoint(t *testing.T) {
+	// One metric holds the data points of every series with its identity, so a histogram has to
+	// take the one it just produced. With a single data point the first and the last are the
+	// same, which is why this uses two series and puts the exemplar on the second.
+	for _, tc := range []struct {
+		name       string
+		histograms []writev2.Histogram
+		byRegion   func(pmetric.Metric) map[string]int
+	}{
+		{
+			name:       "exponential",
+			histograms: exemplarHistogram([]int64{1, 1}),
+			byRegion: func(m pmetric.Metric) map[string]int {
+				dps := m.ExponentialHistogram().DataPoints()
+				counts := map[string]int{}
+				for i := range dps.Len() {
+					region, _ := dps.At(i).Attributes().Get("region")
+					counts[region.Str()] = dps.At(i).Exemplars().Len()
+				}
+				return counts
+			},
+		},
+		{
+			name:       "custom buckets",
+			histograms: nhcbExemplarHistogram(),
+			byRegion: func(m pmetric.Metric) map[string]int {
+				dps := m.Histogram().DataPoints()
+				counts := map[string]int{}
+				for i := range dps.Len() {
+					region, _ := dps.At(i).Attributes().Get("region")
+					counts[region.Str()] = dps.At(i).Exemplars().Len()
+				}
+				return counts
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			series := func(regionRef uint32, exemplars []writev2.Exemplar) writev2.TimeSeries {
+				return writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
+					Histograms: tc.histograms,
+					Exemplars:  exemplars,
+				}
+			}
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    exemplarSymbols,
+				Timeseries: []writev2.TimeSeries{series(8, nil), series(9, theExemplar())},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 1, stats.Exemplars)
+
+			counts := tc.byRegion(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
+			assert.Equal(t, 1, counts["us-west"], "the exemplar belongs to the series that sent it")
+			assert.Equal(t, 0, counts["us-east"])
+		})
+	}
+}
+
+func TestHistogramExemplarsAreAttachedOnce(t *testing.T) {
+	// One key can end up with several data points, either because the request repeats a series or
+	// because one of them carries several histograms. The exemplars belong to the series once.
+	series := func(histograms []writev2.Histogram, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+			Histograms: histograms,
+			Exemplars:  exemplars,
+		}
+	}
+	first := exemplarHistogram([]int64{1, 1})
+	later := first[0]
+	later.Timestamp = 2
+
+	for _, tc := range []struct {
+		name       string
+		timeseries []writev2.TimeSeries
+	}{
+		{
+			name:       "series sent twice",
+			timeseries: []writev2.TimeSeries{series(first, theExemplar()), series(first, nil)},
+		},
+		{
+			name:       "two histograms in one series",
+			timeseries: []writev2.TimeSeries{series([]writev2.Histogram{first[0], later}, theExemplar())},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+
+			metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+				Symbols:    exemplarSymbols,
+				Timeseries: tc.timeseries,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, 1, stats.Exemplars)
+
+			dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+				ExponentialHistogram().DataPoints()
+			require.Equal(t, 2, dps.Len(), "the request produces two data points")
+
+			attached := 0
+			for i := 0; i < dps.Len(); i++ {
+				attached += dps.At(i).Exemplars().Len()
+			}
+			assert.Equal(t, 1, attached, "the exemplars must not be copied onto both data points")
+		})
+	}
+}
+
+func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) {
+	// A refused histogram has no data point, so its exemplars must not land on an earlier one.
+	prwReceiver := setupMetricsReceiver(t)
+
+	series := func(regionRef uint32, deltas []int64, exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
+			Histograms: exemplarHistogram(deltas),
+			Exemplars:  exemplars,
+		}
+	}
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{
+			series(8, []int64{1, 1}, nil),
+			// The second bucket resolves to a negative count, so the converter drops it.
+			series(9, []int64{1, -5}, theExemplar()),
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Exemplars, "counted when the request is parsed, before the histogram is refused")
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 1, dps.Len(), "only the first histogram produced a data point")
+	assert.Equal(t, 0, dps.At(0).Exemplars().Len(), "a dropped histogram must not reach an earlier data point")
+}
+
 func TestTranslateV2(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
 	ctx, cancel := context.WithCancel(t.Context())
@@ -261,6 +648,34 @@ func TestTranslateV2(t *testing.T) {
 					{
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
 						LabelsRefs: []uint32{1, 2},
+					},
+				},
+			},
+			expectError: "help ref 3 is out of bounds of symbolsTable",
+		},
+		{
+			name: "UnitRef bigger than symbols length on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 3 is out of bounds of symbolsTable",
+		},
+		{
+			name: "HelpRef bigger than symbols length on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 					},
 				},
 			},
@@ -819,29 +1234,8 @@ func TestTranslateV2(t *testing.T) {
 				Histograms: 0,
 				Exemplars:  0,
 			},
-			expectedMetrics: func() pmetric.Metrics {
-				metrics := pmetric.NewMetrics()
-				rm := metrics.ResourceMetrics().AppendEmpty()
-				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
-				attrs.PutStr("service.instance.id", "107cn001")
-
-				sm := rm.ScopeMetrics().AppendEmpty()
-				sm.Scope().SetName("scope1")
-				sm.Scope().SetVersion("v1")
-
-				m := sm.Metrics().AppendEmpty()
-				m.SetName("test_metric")
-				m.SetUnit("")
-				m.SetDescription("")
-				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
-
-				hist := m.SetEmptyExponentialHistogram()
-				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				return metrics
-			}(),
+			// Rejected before the resource, scope and metric are built, so nothing is emitted.
+			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
 			name: "exponential histogram - float",
@@ -973,28 +1367,8 @@ func TestTranslateV2(t *testing.T) {
 				Histograms: 0,
 				Exemplars:  0,
 			},
-			expectedMetrics: func() pmetric.Metrics {
-				metrics := pmetric.NewMetrics()
-				rm := metrics.ResourceMetrics().AppendEmpty()
-				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
-				attrs.PutStr("service.instance.id", "107cn001")
-
-				sm := rm.ScopeMetrics().AppendEmpty()
-				sm.Scope().SetName("scope1")
-				sm.Scope().SetVersion("v1")
-
-				m := sm.Metrics().AppendEmpty()
-				m.SetName("test_metric")
-				m.SetUnit("")
-				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
-
-				hist := m.SetEmptyExponentialHistogram()
-				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-
-				return metrics
-			}(),
+			// Rejected before the resource, scope and metric are built, so nothing is emitted.
+			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
 			name: "reset hint gauge should be dropped",
@@ -1072,9 +1446,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			// The sample is dropped by design, so the receiver accepts it and counts it as written.
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    0,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -1106,9 +1481,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			// The sample is dropped by design, so the receiver accepts it and counts it as written.
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    0,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -1751,11 +2127,79 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 		},
 		{
+			name: "exponential histogram - stale NaN sum ignores its spans",
+			// The remaining fields of a stale marker are ignored, so spans that would otherwise
+			// be rejected must neither drop the marker nor be walked. These span lengths do not
+			// match the deltas, which is exactly the shape that must not reach the converter.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Sum:            math.Float64frombits(value.StaleNaN),
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+				return metrics
+			}(),
+		},
+		{
 			name: "exponential histogram - overflow buckets dropped",
-			// This test case verifies that the bucket with index 1026 is dropped because the limit is 1025 at scale 0 (1024 + 1 for +Inf bucket).
-			// Bucket 1025 is valid (+Inf bucket).
-			// The original count was 50. Bucket 1025 has count 10. Bucket 1026 has count 30 (10 + 20).
-			// Bucket 1026 overflows (> 1025) and is dropped.
+			// Bucket 1024 is the last one mapping to a finite OTLP bucket at scale 0, so it is kept.
+			// Bucket 1025 is the Prometheus overflow bucket: it covers values past the IEEE float
+			// range, and the compatibility specification requires it to be dropped and left out of
+			// the count.
+			// The original count was 50. Bucket 1024 has count 10, bucket 1025 has count 30 (10 + 20).
 			// The total count is updated to 50 - 30 = 20.
 			request: &writev2.Request{
 				Symbols: []string{
@@ -1780,7 +2224,7 @@ func TestTranslateV2(t *testing.T) {
 								Timestamp:      1,
 								StartTimestamp: 1,
 								Schema:         0,
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 1025, Length: 2}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1024, Length: 2}},
 								PositiveDeltas: []int64{10, 20},
 							},
 						},
@@ -1822,11 +2266,453 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetSum(100)
 				dp.SetCount(20)
 
-				dp.Positive().SetOffset(1024)
+				dp.Positive().SetOffset(1023)
 				dp.Positive().BucketCounts().FromRaw([]uint64{10})
 
 				return metrics
 			}(),
+		},
+		{
+			name: "exponential histogram - float overflow buckets dropped",
+			// The float twin of the case above. It walks a different converter, so the integer
+			// case does not cover it: bucket 1024 is kept, bucket 1025 is the overflow bucket and
+			// is dropped along with its 30 observations, leaving a count of 50 - 30.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountFloat{CountFloat: 50},
+								Sum:            100,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1024, Length: 2}},
+								PositiveCounts: []float64{10, 30},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetSum(100)
+				dp.SetCount(20)
+
+				dp.Positive().SetOffset(1023)
+				dp.Positive().BucketCounts().FromRaw([]uint64{10})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - malformed negative spans drop the histogram",
+			// Both ranges are validated. The positive one is well formed here, so this is the
+			// only shape that reaches the negative range's error path.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 3},
+								Sum:            6,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{1, 1},
+								// Three buckets promised, two values sent.
+								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								NegativeDeltas: []int64{1, 0},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
+			name: "exponential histogram - trailing empty span is not materialized",
+			// A trailing span of length 0 carries an offset but no bucket, so it must not
+			// widen the dense representation.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 4},
+								Sum:            6,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}, {Offset: 100_000_000, Length: 0}},
+								PositiveDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetSum(6)
+				dp.SetCount(4)
+
+				dp.Positive().SetOffset(-1)
+				dp.Positive().BucketCounts().FromRaw([]uint64{1, 3})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - leading empty span keeps its offset",
+			// A span of length 0 produces no bucket, but its offset still shifts the spans
+			// after it, so the single bucket lands on index -10 + 3 = -7.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 5},
+								Sum:            10,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: -10, Length: 0}, {Offset: 3, Length: 1}},
+								PositiveDeltas: []int64{5},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+
+				hist := m.SetEmptyExponentialHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetScale(0)
+				dp.SetSum(10)
+				dp.SetCount(5)
+
+				dp.Positive().SetOffset(-8)
+				dp.Positive().BucketCounts().FromRaw([]uint64{5})
+
+				return metrics
+			}(),
+		},
+		{
+			name: "exponential histogram - bucket past the overflow bucket is dropped",
+			// Only index 1025 is the +Inf overflow bucket at scale 0. Bucket 100000001 is past it,
+			// which the specification forbids, so the whole histogram is treated as malformed.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 50},
+								Sum:            100,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 100_000_000, Length: 1}},
+								PositiveDeltas: []int64{10, 20},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
+			name: "exponential histogram - spans expanding past the bucket limit are dropped",
+			// Buckets 0 and 16384 are both within the schema 8 limit, but expanding them into a
+			// dense range needs 16385 buckets, one more than maxExponentialHistogramBuckets.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 2},
+								Sum:            2,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         8,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 16383, Length: 1}},
+								PositiveDeltas: []int64{1, 0},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
+			name: "exponential histogram - float spans expanding past the bucket limit are dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountFloat{CountFloat: 2},
+								Sum:            2,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         8,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 16383, Length: 1}},
+								PositiveCounts: []float64{1, 1},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
+			name: "exponential histogram - negative offset after the first span is dropped",
+			// Prometheus only allows the first span of a list to move backwards.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 2},
+								Sum:            2,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: -1, Length: 1}},
+								PositiveDeltas: []int64{1, 0},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
+		},
+		{
+			name: "exponential histogram - spans longer than the bucket values are dropped",
+			// The span promises three buckets and the histogram carries two deltas, so the
+			// third bucket has no value to read.
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						Histograms: []writev2.Histogram{
+							{
+								Count:          &writev2.Histogram_CountInt{CountInt: 3},
+								Sum:            3,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								Schema:         0,
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+								PositiveDeltas: []int64{1, 2},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+					},
+				},
+			},
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+			},
+			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
 			name: "multiple histogram metrics with exemplars",
@@ -2644,9 +3530,9 @@ func TestTranslateV2(t *testing.T) {
 					"instance", "host1", // 3, 4
 					"__name__", "http_requests_total", // 5, 6
 					"status", "200", "500", // 7, 8, 9
-					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
+					"trace_id", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", // 10, 11
 					"span_id", "aaaaaaaaaaaaaaaa", // 12, 13
-					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14
+					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", // 14, oversized on purpose
 					"bbbbbbbbbbbbbbbb", // 15
 				},
 				Timeseries: []writev2.TimeSeries{
@@ -2710,7 +3596,7 @@ func TestTranslateV2(t *testing.T) {
 				ex200 := dp200.Exemplars().AppendEmpty()
 				ex200.SetDoubleValue(100)
 				ex200.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"[:32])
+				traceA, _ := hex.DecodeString("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 				var tidA [16]byte
 				copy(tidA[:], traceA)
 				ex200.SetTraceID(pcommon.TraceID(tidA))
@@ -2727,10 +3613,10 @@ func TestTranslateV2(t *testing.T) {
 				ex500 := dp500.Exemplars().AppendEmpty()
 				ex500.SetDoubleValue(5)
 				ex500.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				traceB, _ := hex.DecodeString("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"[:32])
-				var tidB [16]byte
-				copy(tidB[:], traceB)
-				ex500.SetTraceID(pcommon.TraceID(tidB))
+				// trace-B is 48 characters, which is not a valid trace ID: it must be
+				// kept as a filtered attribute instead of being truncated into the
+				// exemplar. The span ID alongside it is valid and is still converted.
+				ex500.FilteredAttributes().PutStr("trace_id", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 				spanB, _ := hex.DecodeString("bbbbbbbbbbbbbbbb")
 				var sidB [8]byte
 				copy(sidB[:], spanB)
@@ -3048,6 +3934,371 @@ func TestTranslateV2(t *testing.T) {
 			assert.Equal(t, buildMetaDataMapByID(tc.expectedMetrics), buildMetaDataMapByID(metrics))
 		})
 	}
+}
+
+func TestRefusedTargetInfoIsNotCountedAsWritten(t *testing.T) {
+	// target_info produces no metric but still reports its samples as written, so a series the
+	// receiver refuses has to stop being counted as well as stop being read.
+	prwReceiver := setupMetricsReceiver(t)
+
+	request := func(unitRef uint32) *writev2.Request {
+		return &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "target_info", // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "test_instance", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: unitRef},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+			},
+		}
+	}
+
+	_, stats, err := prwReceiver.translateV2(t.Context(), request(1))
+	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Samples, "a reference in range leaves target_info reporting its sample")
+
+	prwReceiver.rmCache.Purge()
+	_, stats, err = prwReceiver.translateV2(t.Context(), request(7))
+	assert.ErrorContains(t, err, "unit ref 7 is out of bounds of symbolsTable")
+	assert.Equal(t, 0, stats.Samples, "a refused series reports nothing written")
+}
+
+func TestValidateBucketSpanLayout(t *testing.T) {
+	// The last bucket that maps to a finite OTLP bucket: 1024*2^schema.
+	const (
+		schema0Limit = 1024
+		schema8Limit = 262144
+	)
+
+	for _, tc := range []struct {
+		name          string
+		spans         []writev2.BucketSpan
+		valueCount    int
+		overflowLimit int32
+		expected      bucketSpanLayout
+		expectError   string
+	}{
+		{
+			name:          "no spans",
+			overflowLimit: schema0Limit,
+		},
+		{
+			name:          "single span",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 3}},
+			valueCount:    3,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 2, numBuckets: 3},
+		},
+		{
+			name:          "negative offset on the first span",
+			spans:         []writev2.BucketSpan{{Offset: -10, Length: 2}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: -10, lastIndex: -9, numBuckets: 2},
+		},
+		{
+			name:          "leading empty span shifts the first bucket",
+			spans:         []writev2.BucketSpan{{Offset: -10, Length: 0}, {Offset: 3, Length: 1}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: -7, lastIndex: -7, numBuckets: 1},
+		},
+		{
+			name:          "intermediate empty span shifts the buckets after it",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 5, Length: 0}, {Offset: 3, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 9, numBuckets: 10},
+		},
+		{
+			name:          "trailing empty span adds no buckets",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 100_000_000, Length: 0}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 0, numBuckets: 1},
+		},
+		{
+			name:          "only empty spans",
+			spans:         []writev2.BucketSpan{{Offset: 100_000_000, Length: 0}},
+			overflowLimit: schema0Limit,
+		},
+		{
+			name:          "span straddling the last finite bucket",
+			spans:         []writev2.BucketSpan{{Offset: 1023, Length: 3}},
+			valueCount:    3,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1023, lastIndex: 1024, numBuckets: 2},
+		},
+		{
+			name:          "the overflow bucket alone is not retained",
+			spans:         []writev2.BucketSpan{{Offset: 1025, Length: 1}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+		},
+		{
+			name:          "bucket past the overflow bucket is rejected",
+			spans:         []writev2.BucketSpan{{Offset: 2000, Length: 1}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+			expectError:   "bucket index 2000 is past the overflow bucket at 1025",
+		},
+		{
+			name:          "bucket one past the overflow bucket is rejected",
+			spans:         []writev2.BucketSpan{{Offset: 1026, Length: 1}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+			expectError:   "bucket index 1026 is past the overflow bucket at 1025",
+		},
+		{
+			name:          "distant bucket is past the overflow bucket",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 100_000_000, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expectError:   "is past the overflow bucket",
+		},
+		{
+			name:          "exactly the bucket limit",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 16382, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema8Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 16383, numBuckets: maxExponentialHistogramBuckets},
+		},
+		{
+			// One range on its own is not held to the limit any more, only the two together are.
+			name:          "one bucket past the limit",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 16383, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema8Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 16384, numBuckets: 16385},
+		},
+		{
+			name:          "negative offset after the first span",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: -1, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expectError:   "span number 2 has negative offset -1",
+		},
+		{
+			name:          "spans longer than the bucket values",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 3}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expectError:   "spans define more buckets than the 2 bucket values provided",
+		},
+		{
+			name:          "spans shorter than the bucket values",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expectError:   "spans define 1 bucket values, 2 provided",
+		},
+		{
+			name:          "first bucket index has no OTLP offset",
+			spans:         []writev2.BucketSpan{{Offset: math.MinInt32, Length: 1}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+			expectError:   "cannot be expressed as an OTLP offset",
+		},
+		{
+			name:          "trailing empty spans past the end of int32",
+			spans:         []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 2_000_000_000, Length: 0}, {Offset: 2_000_000_000, Length: 0}},
+			valueCount:    1,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 0, numBuckets: 1},
+		},
+		{
+			name:          "bucket index past the end of int32",
+			spans:         []writev2.BucketSpan{{Offset: 2_000_000_000, Length: 1}, {Offset: 2_000_000_000, Length: 1}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expectError:   "bucket index 2000000000 is past the overflow bucket",
+		},
+		{
+			// The bucket directly above the finite range is the +Inf bucket. It is consumed and
+			// dropped, and a span may straddle the boundary into it.
+			name:          "span reaching the overflow bucket is accepted",
+			spans:         []writev2.BucketSpan{{Offset: 1024, Length: 2}},
+			valueCount:    2,
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			layout, err := validateBucketSpanLayout(tc.spans, tc.valueCount, tc.overflowLimit)
+			if tc.expectError != "" {
+				assert.ErrorContains(t, err, tc.expectError)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, layout)
+		})
+	}
+}
+
+func TestSpanRangeWiderThanInt32(t *testing.T) {
+	// Both indexes come from untrusted int32 offsets, so the distance between them can be wider
+	// than a 32-bit int holds. The limit has to be applied to the int64 before anything narrows it.
+	spans := []writev2.BucketSpan{
+		{Offset: math.MinInt32 + 1, Length: 1},
+		{Offset: math.MaxInt32, Length: 1},
+		{Offset: 1023, Length: 1},
+	}
+	layout, err := validateBucketSpanLayout(spans, 3, exponentialHistogramFiniteLimit(0))
+	require.NoError(t, err)
+
+	// Comparing against an int64 also pins the field's type: narrowing it to an int makes this
+	// assertion fail rather than quietly truncating on the builds where an int is 32 bits.
+	assert.Greater(t, layout.numBuckets, int64(math.MaxInt32), "the range does not fit an int32")
+
+	_, err = validateExponentialHistogram(&writev2.Histogram{
+		Schema:         0,
+		Count:          &writev2.Histogram_CountInt{CountInt: 1},
+		PositiveSpans:  spans,
+		PositiveDeltas: []int64{1, 0, 0},
+	})
+	assert.ErrorContains(t, err, "more than the maximum of")
+}
+
+func TestValidateExponentialHistogramSharesTheBucketBudget(t *testing.T) {
+	// Each range on its own expands to 8192 buckets, so only the sum can exceed the limit.
+	halfTheLimit := []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 8190, Length: 1}}
+	oneMore := []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 8191, Length: 1}}
+
+	fits := &writev2.Histogram{
+		Schema:         8,
+		PositiveSpans:  halfTheLimit,
+		PositiveDeltas: []int64{1, 0},
+		NegativeSpans:  halfTheLimit,
+		NegativeDeltas: []int64{1, 0},
+	}
+	layout, err := validateExponentialHistogram(fits)
+	require.NoError(t, err)
+	assert.Equal(t, int64(maxExponentialHistogramBuckets), layout.positive.numBuckets+layout.negative.numBuckets)
+
+	exceeds := &writev2.Histogram{
+		Schema:         8,
+		PositiveSpans:  halfTheLimit,
+		PositiveDeltas: []int64{1, 0},
+		NegativeSpans:  oneMore,
+		NegativeDeltas: []int64{1, 0},
+	}
+	_, err = validateExponentialHistogram(exceeds)
+	assert.ErrorContains(t, err, "spans expand to 16385 buckets")
+}
+
+func TestHistogramBucketBudgetReserve(t *testing.T) {
+	budget := histogramBucketBudget{remaining: 10}
+
+	fits := exponentialHistogramLayout{
+		positive: bucketSpanLayout{numBuckets: 4},
+		negative: bucketSpanLayout{numBuckets: 4},
+	}
+	require.True(t, budget.reserve(fits))
+	assert.Equal(t, int64(2), budget.remaining)
+	assert.False(t, budget.exhausted)
+
+	// Positive and negative are charged together, so 3 does not fit in the remaining 2.
+	tooBig := exponentialHistogramLayout{
+		positive: bucketSpanLayout{numBuckets: 2},
+		negative: bucketSpanLayout{numBuckets: 1},
+	}
+	assert.False(t, budget.reserve(tooBig))
+	assert.Equal(t, int64(2), budget.remaining, "a rejected reservation must not consume budget")
+	assert.True(t, budget.exhausted)
+
+	// A later, smaller histogram can still be admitted.
+	assert.True(t, budget.reserve(exponentialHistogramLayout{positive: bucketSpanLayout{numBuckets: 2}}))
+	assert.Equal(t, int64(0), budget.remaining)
+}
+
+func TestRequestBucketBudgetLimitsHistogramExpansion(t *testing.T) {
+	// Each histogram expands to exactly the per-data-point limit from two spans and two deltas,
+	// so the request budget admits maxExponentialHistogramBucketsPerRequest/maxExponentialHistogramBuckets
+	// of them and rejects the rest. Without a request budget a body of these is unbounded.
+	const perRequest = maxExponentialHistogramBucketsPerRequest / maxExponentialHistogramBuckets
+
+	histograms := make([]writev2.Histogram, 0, perRequest+1)
+	for i := range perRequest + 1 {
+		histograms = append(histograms, writev2.Histogram{
+			Count:          &writev2.Histogram_CountInt{CountInt: 2},
+			Sum:            1,
+			Timestamp:      int64(i + 1),
+			StartTimestamp: 1,
+			Schema:         8,
+			PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}, {Offset: 16382, Length: 1}},
+			PositiveDeltas: []int64{1, 0},
+		})
+	}
+
+	prwReceiver := setupMetricsReceiver(t)
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{"", "__name__", "test_metric", "job", "service-x/test", "instance", "107cn001"},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Histograms: histograms,
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints()
+	assert.Equal(t, perRequest, dps.Len(), "the histogram past the request budget must not be translated")
+	assert.Equal(t, perRequest, stats.Histograms, "rejected histograms must not be reported as written")
+	assert.Equal(t, maxExponentialHistogramBuckets, dps.At(0).Positive().BucketCounts().Len())
+}
+
+func TestConvertDeltaBucketsWhenEveryBucketOverflows(t *testing.T) {
+	// A histogram holding nothing but the +Inf overflow bucket. It is consumed and dropped, so
+	// the layout retains nothing at all.
+	spans := []writev2.BucketSpan{{Offset: 1025, Length: 1}}
+	deltas := []int64{10}
+
+	layout, err := validateBucketSpanLayout(spans, len(deltas), exponentialHistogramFiniteLimit(0))
+	require.NoError(t, err)
+	require.False(t, layout.hasBuckets)
+
+	dp := pmetric.NewExponentialHistogramDataPoint()
+	dropped := convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
+
+	assert.Equal(t, uint64(10), dropped)
+	assert.Empty(t, dp.Positive().BucketCounts().AsRaw())
+	assert.Equal(t, int32(0), dp.Positive().Offset())
+}
+
+func TestExponentialHistogramSpanExpansionIsBounded(t *testing.T) {
+	// The trailing span carries a large offset but no bucket, so the conversion has to stay
+	// proportional to the two buckets that are emitted rather than to the offset.
+	spans := []writev2.BucketSpan{{Offset: 0, Length: 2}, {Offset: 100_000_000, Length: 0}}
+	deltas := []int64{1, 2}
+
+	layout, err := validateBucketSpanLayout(spans, len(deltas), exponentialHistogramFiniteLimit(0))
+	require.NoError(t, err)
+	require.Equal(t, int64(2), layout.numBuckets)
+
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+
+	dp := pmetric.NewExponentialHistogramDataPoint()
+	dropped := convertDeltaBuckets(spans, deltas, dp.Positive(), layout)
+
+	runtime.ReadMemStats(&after)
+
+	assert.Zero(t, dropped)
+	assert.Equal(t, int32(-1), dp.Positive().Offset())
+	assert.Equal(t, []uint64{1, 3}, dp.Positive().BucketCounts().AsRaw())
+	// Reserving one bucket per unit of offset would allocate 800MB here, so the budget only has
+	// to be far below that to catch it.
+	assert.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(8<<20))
 }
 
 type nonMutatingConsumer struct{}
@@ -3378,6 +4629,223 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
 }
 
+// TestResourceCacheEvictionsAreCounted asserts that every entry evicted from the
+// resource metrics cache is reported in the receiver's internal telemetry.
+func TestResourceCacheEvictionsAreCounted(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+	settings := metadatatest.NewSettings(tel)
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	// Purge before the telemetry shutdown above so the evictions it triggers are still recorded.
+	defer writeReceiver.rmCache.Purge()
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	writeReceiver.obsrecv = obsrecv
+
+	// Shrink the still empty cache so that every new job/instance pair evicts the previous one.
+	require.Zero(t, writeReceiver.rmCache.Resize(1))
+
+	ts := httptest.NewServer(http.HandlerFunc(writeReceiver.handlePRW))
+	defer ts.Close()
+
+	const pairs = 3
+	for i := range pairs {
+		req := &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "normal_metric", // 1, 2
+				"job", fmt.Sprintf("service_%d", i), // 3, 4
+				"instance", fmt.Sprintf("host_%d", i), // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+			},
+		}
+		pBuf := proto.NewBuffer(nil)
+		require.NoError(t, pBuf.Marshal(req))
+
+		resp, err := http.Post(
+			ts.URL,
+			fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
+			bytes.NewBuffer(pBuf.Bytes()),
+		)
+		require.NoError(t, err)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+	}
+
+	// The first pair fills the single slot; each of the following pairs evicts one entry.
+	metadatatest.AssertEqualReceiverPrometheusremotewriteResourceCacheEvictions(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: pairs - 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// setupMetricsReceiverWithConfig creates a receiver from the given config, so tests can
+// exercise settings such as resource_cache_size the way a user would set them.
+func setupMetricsReceiverWithConfig(t *testing.T, cfg *Config, nextConsumer consumer.Metrics) *prometheusRemoteWriteReceiver {
+	t.Helper()
+
+	require.NoError(t, cfg.Validate())
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	writeReceiver.obsrecv = obsrecv
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	return writeReceiver
+}
+
+// TestResourceCacheSizeKeepsTargetInfoAcrossRequests is the regression guard for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52195:
+// a Prometheus server with more job/instance pairs than the resource cache can hold
+// evicts entries on every request, so metrics sent after target_info lose the
+// target_info resource attributes and end up in a separate resource.
+// With resource_cache_size at or above the number of pairs every metric keeps them.
+func TestResourceCacheSizeKeepsTargetInfoAcrossRequests(t *testing.T) {
+	const pairs = 3
+
+	// Symbols shared by both requests: the job/instance pairs, the metric names and the
+	// extra target_info label that must survive as a resource attribute.
+	symbols := []string{""}
+	symbolRef := func(s string) uint32 {
+		for i, existing := range symbols {
+			if existing == s {
+				return uint32(i)
+			}
+		}
+		symbols = append(symbols, s)
+		return uint32(len(symbols) - 1)
+	}
+	nameRef := symbolRef("__name__")
+	jobRef := symbolRef("job")
+	instanceRef := symbolRef("instance")
+	regionRef := symbolRef("region")
+	regionValueRef := symbolRef("us-central1")
+	targetInfoRef := symbolRef("target_info")
+	normalMetricRef := symbolRef("normal_metric")
+
+	targetInfoRequest := &writev2.Request{}
+	metricsRequest := &writev2.Request{}
+	for i := range pairs {
+		jobValueRef := symbolRef(fmt.Sprintf("service_%d", i))
+		instanceValueRef := symbolRef(fmt.Sprintf("host_%d", i))
+		targetInfoRequest.Timeseries = append(targetInfoRequest.Timeseries, writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{nameRef, targetInfoRef, jobRef, jobValueRef, instanceRef, instanceValueRef, regionRef, regionValueRef},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		})
+		metricsRequest.Timeseries = append(metricsRequest.Timeseries, writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{nameRef, normalMetricRef, jobRef, jobValueRef, instanceRef, instanceValueRef},
+			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+		})
+	}
+	targetInfoRequest.Symbols = symbols
+	metricsRequest.Symbols = symbols
+
+	tests := []struct {
+		name              string
+		resourceCacheSize int
+		// allEnriched is whether every resource of the second request still carries the
+		// "region" attribute learned from target_info in the first request.
+		allEnriched bool
+	}{
+		{
+			name:              "cache smaller than the number of job/instance pairs",
+			resourceCacheSize: pairs - 1,
+			// The pairs evicted after the first request are cache misses in the second one:
+			// each miss stores a bare job/instance resource and evicts another entry.
+			allEnriched: false,
+		},
+		{
+			name:              "cache holds every job/instance pair",
+			resourceCacheSize: pairs,
+			allEnriched:       true,
+		},
+		{
+			name:              "cache larger than the number of job/instance pairs",
+			resourceCacheSize: pairs * 10,
+			allEnriched:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ResourceCacheSize = tt.resourceCacheSize
+			mockConsumer := new(mockConsumer)
+			prwReceiver := setupMetricsReceiverWithConfig(t, cfg, mockConsumer)
+
+			ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+			defer ts.Close()
+
+			for _, req := range []*writev2.Request{targetInfoRequest, metricsRequest} {
+				pBuf := proto.NewBuffer(nil)
+				require.NoError(t, pBuf.Marshal(req))
+
+				resp, err := http.Post(
+					ts.URL,
+					fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
+					bytes.NewBuffer(pBuf.Bytes()),
+				)
+				require.NoError(t, err)
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				require.NoError(t, resp.Body.Close())
+				require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+			}
+
+			// The first request only carries target_info, which is stored in the cache and
+			// never forwarded as a metric; only the second request reaches the consumer.
+			require.Len(t, mockConsumer.metrics, 1)
+			rms := mockConsumer.metrics[0].ResourceMetrics()
+			// Within one request the receiver never splits a job/instance pair.
+			require.Equal(t, pairs, rms.Len())
+
+			enriched := 0
+			for i := 0; i < rms.Len(); i++ {
+				attrs := rms.At(i).Resource().Attributes()
+				_, hasServiceName := attrs.Get("service.name")
+				assert.True(t, hasServiceName, "resource %d lost its job label", i)
+				if region, ok := attrs.Get("region"); ok {
+					assert.Equal(t, "us-central1", region.Str())
+					enriched++
+				}
+			}
+			if tt.allEnriched {
+				assert.Equal(t, pairs, enriched, "every resource should carry the target_info attributes")
+			} else {
+				assert.Less(t, enriched, pairs, "some resources should have lost the target_info attributes")
+			}
+		})
+	}
+}
+
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 	result := make(map[string]map[string]any)
 	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
@@ -3506,29 +4974,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 // setupMetricsReceiverWithConsumer creates a receiver with a custom consumer for testing.
 func setupMetricsReceiverWithConsumer(t *testing.T, nextConsumer consumer.Metrics) *prometheusRemoteWriteReceiver {
 	t.Helper()
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
-	require.NoError(t, err)
-	require.NotNil(t, prwReceiver, "metrics receiver creation failed")
-
-	receiverID := component.MustNewID("test")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             receiverID,
-		Transport:              "http",
-		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
-	})
-	require.NoError(t, err)
-
-	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
-	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
-	t.Cleanup(func() {
-		writeReceiver.rmCache.Purge()
-	})
-
-	return writeReceiver
+	return setupMetricsReceiverWithConfig(t, createDefaultConfig().(*Config), nextConsumer)
 }
 
 func TestHandlePRWConsumerResponse(t *testing.T) {
@@ -3692,7 +5138,8 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 					{
 						Attributes: otelattr.NewSet(
 							otelattr.String("receiver", receiverID.String()),
-							otelattr.String("transport", "http")),
+							otelattr.String("transport", "http"),
+						),
 						Value: 3, // 3 data points, not 1 (resource count)
 					},
 				},
@@ -3774,4 +5221,215 @@ func TestInvalidSchemaLogging(t *testing.T) {
 	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
 	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
 	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
+}
+
+// droppedSeriesRequest builds a request carrying a classic histogram family, a summary family and
+// a counter. With typed metadata the first two families are dropped by design; without it every
+// series is translated to an untyped gauge. The two shapes share the samples and exemplars so
+// that the written stats can be compared against the same sent counts.
+func droppedSeriesRequest(typed bool) *writev2.Request {
+	symbols := []string{
+		"",
+		"__name__",              // 1
+		"test_histogram_bucket", // 2
+		"test_histogram_sum",    // 3
+		"test_histogram_count",  // 4
+		"test_summary",          // 5
+		"test_summary_sum",      // 6
+		"test_summary_count",    // 7
+		"test_counter_total",    // 8
+		"job", "test_job",       // 9, 10
+		"instance", "test_instance", // 11, 12
+		"le", "1", "+Inf", // 13, 14, 15
+		"quantile", "0.5", "0.99", // 16, 17, 18
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 19, 20
+	}
+	metricType := func(typed bool, t writev2.Metadata_MetricType) writev2.Metadata {
+		if !typed {
+			return writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED}
+		}
+		return writev2.Metadata{Type: t}
+	}
+	sample := []writev2.Sample{{Value: 1, Timestamp: 1}}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{19, 20}, Value: 1.5, Timestamp: 1}}
+	histogram := metricType(typed, writev2.Metadata_METRIC_TYPE_HISTOGRAM)
+	summary := metricType(typed, writev2.Metadata_METRIC_TYPE_SUMMARY)
+	counter := metricType(typed, writev2.Metadata_METRIC_TYPE_COUNTER)
+	return &writev2.Request{
+		Symbols: symbols,
+		Timeseries: []writev2.TimeSeries{
+			{Metadata: histogram, LabelsRefs: []uint32{1, 2, 11, 12, 9, 10, 13, 14}, Samples: sample},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 2, 11, 12, 9, 10, 13, 15}, Samples: sample, Exemplars: exemplar},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 3, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 4, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 17}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 6, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 7, 11, 12, 9, 10}, Samples: sample},
+			{
+				Metadata:   counter,
+				LabelsRefs: []uint32{1, 8, 11, 12, 9, 10},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}, {Value: 2, Timestamp: 2}},
+				Exemplars:  exemplar,
+			},
+		},
+	}
+}
+
+// sentStats counts what a sender puts in a request. Prometheus subtracts the Written response
+// headers from these counts and reports any positive difference as failed samples.
+func sentStats(req *writev2.Request) remote.WriteResponseStats {
+	stats := remote.WriteResponseStats{Confirmed: true}
+	for i := range req.Timeseries {
+		ts := &req.Timeseries[i]
+		stats.Samples += len(ts.Samples)
+		stats.Histograms += len(ts.Histograms)
+		stats.Exemplars += len(ts.Exemplars)
+	}
+	return stats
+}
+
+func TestDroppedSeriesAreCountedAsWritten(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		// typed sends the metadata a Prometheus started with --enable-feature=metadata-wal-records sends.
+		typed               bool
+		expectedMetricNames map[string]pmetric.MetricType
+		expectedDataPoints  int
+	}{
+		{
+			name:  "with metadata the classic histogram and summary series are dropped but still counted",
+			typed: true,
+			expectedMetricNames: map[string]pmetric.MetricType{
+				"test_counter_total": pmetric.MetricTypeSum,
+			},
+			expectedDataPoints: 2,
+		},
+		{
+			// Nothing changes without metadata: every series is an untyped gauge and was already
+			// counted before this regression test existed.
+			name:  "without metadata every series is written as an untyped gauge",
+			typed: false,
+			expectedMetricNames: map[string]pmetric.MetricType{
+				"test_histogram_bucket": pmetric.MetricTypeGauge,
+				"test_histogram_sum":    pmetric.MetricTypeGauge,
+				"test_histogram_count":  pmetric.MetricTypeGauge,
+				"test_summary":          pmetric.MetricTypeGauge,
+				"test_summary_sum":      pmetric.MetricTypeGauge,
+				"test_summary_count":    pmetric.MetricTypeGauge,
+				"test_counter_total":    pmetric.MetricTypeGauge,
+			},
+			expectedDataPoints: 10,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := droppedSeriesRequest(tc.typed)
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+			pBuf := proto.NewBuffer(nil)
+			require.NoError(t, pBuf.Marshal(request))
+			// handlePRW is called without the confighttp middleware, so the body is not compressed.
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+			req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, req)
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			// The headers are what the sender compares against what it sent: any difference is
+			// reported as failed samples and logged as a partial write.
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, sentStats(request), written)
+
+			require.Len(t, sink.AllMetrics(), 1)
+			metrics := sink.AllMetrics()[0]
+			assert.Equal(t, tc.expectedDataPoints, metrics.DataPointCount())
+			gotMetricNames := make(map[string]pmetric.MetricType)
+			for _, rm := range metrics.ResourceMetrics().All() {
+				for _, sm := range rm.ScopeMetrics().All() {
+					for _, m := range sm.Metrics().All() {
+						gotMetricNames[m.Name()] = m.Type()
+					}
+				}
+			}
+			assert.Equal(t, tc.expectedMetricNames, gotMetricNames)
+		})
+	}
+}
+
+func TestDroppedSeriesAreCountedInTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	defer writeReceiver.rmCache.Purge()
+
+	// Nothing is dropped without metadata. With it, each request drops four classic histogram
+	// series and four summary series.
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(false))
+	require.NoError(t, err)
+	for range 2 {
+		_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+		require.NoError(t, err)
+	}
+
+	metadatatest.AssertEqualReceiverPrometheusremotewriteDroppedSeries(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{Attributes: otelattr.NewSet(otelattr.String("metric_type", "classic_histogram")), Value: 8},
+			{Attributes: otelattr.NewSet(otelattr.String("metric_type", "summary")), Value: 8},
+		},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	defer writeReceiver.rmCache.Purge()
+
+	// Nothing is dropped without metadata, so nothing is logged.
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(false))
+	require.NoError(t, err)
+	require.Empty(t, obs.All())
+
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+	require.NoError(t, err)
+
+	// One Debug entry per dropped series, and nothing at Info or above.
+	assert.Empty(t, obs.FilterLevelExact(zapcore.InfoLevel).All())
+	assert.Empty(t, obs.FilterLevelExact(zapcore.WarnLevel).All())
+	assert.Empty(t, obs.FilterLevelExact(zapcore.ErrorLevel).All())
+	var got []map[string]any
+	for _, entry := range obs.FilterLevelExact(zapcore.DebugLevel).All() {
+		got = append(got, entry.ContextMap())
+	}
+	series := func(name, extra string) string {
+		return `{__name__="` + name + `", instance="test_instance", job="test_job"` + extra + `}`
+	}
+	assert.Equal(t, []map[string]any{
+		{"series": series("test_histogram_bucket", `, le="1"`), "metric_type": "classic_histogram"},
+		{"series": series("test_histogram_bucket", `, le="+Inf"`), "metric_type": "classic_histogram"},
+		{"series": series("test_histogram_sum", ""), "metric_type": "classic_histogram"},
+		{"series": series("test_histogram_count", ""), "metric_type": "classic_histogram"},
+		{"series": series("test_summary", `, quantile="0.5"`), "metric_type": "summary"},
+		{"series": series("test_summary", `, quantile="0.99"`), "metric_type": "summary"},
+		{"series": series("test_summary_sum", ""), "metric_type": "summary"},
+		{"series": series("test_summary_count", ""), "metric_type": "summary"},
+	}, got)
+
+	// At Info, the default level, the Debug entries are not even built.
+	infoCore, infoObs := observer.New(zapcore.InfoLevel)
+	writeReceiver.settings.Logger = zap.New(infoCore)
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+	require.NoError(t, err)
+	assert.Empty(t, infoObs.All())
 }

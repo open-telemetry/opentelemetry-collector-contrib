@@ -32,30 +32,32 @@ processors:
     # Drain parse tree parameters
     tree_depth: 4              # default: 4 (minimum: 3; `depth` in the Drain paper)
     merge_threshold: 0.4       # default: 0.4, range [0.0, 1.0] (`st` in the Drain paper)
-    max_node_children: 100     # default: 100 (`maxChild` in the Drain paper)
-    max_clusters: 0            # default: 0 (unlimited, LRU eviction when > 0)
+    max_node_children: 100     # default: 100, must be > 0 (`maxChild` in the Drain paper)
+    max_clusters: 0            # default: 0 (unlimited, must be >= 0; LRU eviction when > 0)
     extra_delimiters: []       # default: [] (extra token delimiters beyond whitespace)
 
     # Body extraction
     body_field: ""             # default: "" (use full body string)
 
     # Output attribute name
-    template_attribute: "log.record.template"    # default
+    template_attribute: "log.record.template"    # default (must not be empty)
 
     # Parameter extraction (optional)
-    extract_parameters: false                          # default: false
-    params_attribute: "log.record.template.params"     # default
+    masking_rules: []                                              # default: []
+    parameter_key_prefix: "log.record.template.parameter"          # default (required if masking_rules is set)
+    emit_wildcards: false                                          # default: false
+    wildcards_attribute: "log.record.template.wildcards"           # default (required if emit_wildcards is true)
 
     # Seeding (optional)
     seed_templates: []
     seed_logs: []
 
     # Warmup suppression (optional)
-    warmup_min_clusters: 0     # default: 0 (disabled; annotates from the first record)
+    warmup_min_clusters: 0     # default: 0 (disabled; must be >= 0; annotates from the first record)
 
     # Snapshot persistence (optional)
     storage: ""                # default: "" (disabled; ID of a storage extension)
-    save_interval: 0s          # default: 0s (save on shutdown only; e.g. "5m" for periodic saves)
+    save_interval: 0s          # default: 0s (save on shutdown only; must be >= 0; requires storage to be set; e.g. "5m" for periodic saves)
 ```
 
 ### Parameters
@@ -64,18 +66,20 @@ processors:
 |-------|------|---------|-------------|
 | `tree_depth` | int | `4` | Max depth of the Drain parse tree (`depth` in the Drain paper). Higher values produce more specific templates. Minimum: 3. |
 | `merge_threshold` | float | `0.4` | Minimum fraction of tokens that must match an existing cluster template for a log line to be merged into it rather than forming a new cluster (`st` in the Drain paper). Range: [0.0, 1.0]. |
-| `max_node_children` | int | `100` | Maximum children per internal parse tree node (`maxChild` in the Drain paper). Bounds memory on high-cardinality token positions. |
-| `max_clusters` | int | `0` | Maximum clusters tracked. When exceeded, the least-recently-used cluster is evicted. `0` means unlimited. |
+| `max_node_children` | int | `100` | Maximum children per internal parse tree node (`maxChild` in the Drain paper). Bounds memory on high-cardinality token positions. Must be > 0. |
+| `max_clusters` | int | `0` | Maximum clusters tracked. When exceeded, the least-recently-used cluster is evicted. `0` means unlimited. Must be >= 0. |
 | `extra_delimiters` | []string | `[]` | Additional token delimiters beyond whitespace (e.g. `[",", ":"]`). |
 | `body_field` | string | `""` | If set, and the log body is a structured map, the value of this top-level key is used as the text to template instead of the full body. |
-| `template_attribute` | string | `"log.record.template"` | Attribute key written with the derived template string. |
-| `extract_parameters` | bool | `false` | When `true`, the body tokens occupying `<*>` positions of the matched template are written as a string slice attribute (see [Parameter extraction](#parameter-extraction)). |
-| `params_attribute` | string | `"log.record.template.params"` | Attribute key for the extracted parameter slice. Only consulted when `extract_parameters` is `true`. |
+| `template_attribute` | string | `"log.record.template"` | Attribute key written with the derived template string. Must not be empty. |
+| `masking_rules` | []object | `[]` | Ordered list of `{name, pattern}` rules applied to a working copy of the log body before it is fed to the Drain tree (see [Parameter extraction](#parameter-extraction)). Templates surface named mask tokens (e.g. `<ip>`); each matched position writes a dynamic attribute at `<parameter_key_prefix>.<name>`. |
+| `parameter_key_prefix` | string | `"log.record.template.parameter"` | Attribute-key prefix for extracted named parameters. Each masked position writes to `<parameter_key_prefix>.<mask name>` with the raw body value. Must not be empty when `masking_rules` is configured. Only consulted when `masking_rules` is non-empty. |
+| `emit_wildcards` | bool | `false` | When `true`, writes a positional string slice attribute containing body tokens at each Drain `<*>` position, in template order. Independent of `masking_rules`. |
+| `wildcards_attribute` | string | `"log.record.template.wildcards"` | Attribute key for the wildcards slice. Must not be empty when `emit_wildcards` is `true`. Only consulted when `emit_wildcards` is `true`. |
 | `seed_templates` | []string | `[]` | Template strings to pre-load at startup (see [Seeding](#seeding)). |
 | `seed_logs` | []string | `[]` | Raw example log lines to train on at startup (see [Seeding](#seeding)). |
-| `warmup_min_clusters` | int | `0` | Number of distinct clusters that must be observed before annotation is enabled. `0` disables warmup suppression (see [Warmup suppression](#warmup-suppression)). |
+| `warmup_min_clusters` | int | `0` | Number of distinct clusters that must be observed before annotation is enabled. `0` disables warmup suppression (see [Warmup suppression](#warmup-suppression)). Must be >= 0. |
 | `storage` | string | `""` | ID of a [storage extension](../../extension/storage/) to use for persisting the Drain tree across restarts (see [Snapshot persistence](#snapshot-persistence)). |
-| `save_interval` | duration | `0s` | Interval between periodic snapshot saves. `0s` saves on shutdown only. Requires `storage` to be set. |
+| `save_interval` | duration | `0s` | Interval between periodic snapshot saves. `0s` saves on shutdown only. Must be >= 0. Requires `storage` to be set when > 0. |
 
 ## Seeding
 
@@ -143,6 +147,7 @@ The processor emits the following internal telemetry metrics:
 |--------|------|-------------|
 | `otelcol_processor_drain_clusters_active` | gauge | Current number of active clusters in the Drain parse tree. Useful for tracking tree growth and stability over time. |
 | `otelcol_processor_drain_log_records_annotated` | counter | Number of log records successfully annotated with a template. |
+| `otelcol_processor_drain_masks_duplicates` | counter | Number of records where a mask name matched more than one position in the matched template. Incremented once per record per duplicated mask name and tagged with a `mask` attribute naming the offending rule. See [Duplicate mask names](#duplicate-mask-names). |
 
 ## Output attributes
 
@@ -150,36 +155,72 @@ The processor sets the following attributes on each log record:
 
 | Attribute | Type | Example | Description |
 |-----------|------|---------|-------------|
-| `log.record.template` | string | `"user <*> logged in from <*>"` | The Drain-derived template string. Stable within an instance once the tree has warmed up. Use this for filtering rules. |
-| `log.record.template.params` | []string | `["alice", "10.0.0.1"]` | Optional. Body tokens at `<*>` positions in the template, in order. Only set when `extract_parameters` is `true` and the matched template has at least one `<*>` position. |
+| `log.record.template` | string | `"user <*> logged in from <ip>"` | The Drain-derived template string. Stable within an instance once the tree has warmed up. Use this for filtering rules. |
+| `log.record.template.parameter.<name>` | string | `log.record.template.parameter.ip = "10.0.0.1"` | Optional. One attribute per mask name that matched in the template; the value is the raw body token at that position. The `log.record.template.parameter` prefix is configurable via `parameter_key_prefix`. Written only when `masking_rules` is non-empty. |
+| `log.record.template.wildcards` | []string | `["alice", "42"]` | Optional. Positional body tokens at Drain's `<*>` positions in template order. Written only when `emit_wildcards` is `true`. |
 
-The attribute names are configurable via `template_attribute` and `params_attribute`.
+The attribute names are configurable via `template_attribute`, `parameter_key_prefix`, and `wildcards_attribute`.
 
-> **Semantic conventions**: `log.record.template` aligns with the proposed OTel attribute in [open-telemetry/semantic-conventions#1283](https://github.com/open-telemetry/semantic-conventions/issues/1283) and [#2064](https://github.com/open-telemetry/semantic-conventions/issues/2064). These names may be updated if a convention is formally adopted.
+> **Semantic conventions**: `log.record.template` aligns with the proposed OTel attribute in [open-telemetry/semantic-conventions#1283](https://github.com/open-telemetry/semantic-conventions/issues/1283) and [#2064](https://github.com/open-telemetry/semantic-conventions/issues/2064). The `log.record.template.parameter.<key>` shape matches the pattern used by `http.request.header.<key>` and `db.query.parameter.<key>`. These names may be updated if a convention is formally adopted.
 
 ## Parameter extraction
 
-With `extract_parameters: true` the processor writes the body tokens at each `<*>` position of the matched template as a string slice attribute. The values appear in template order, one entry per `<*>`.
+Configure `masking_rules` to name variable positions and stabilise the tree on high-cardinality values. Each rule declares a regex whose matches in a working copy of the body are replaced with the literal mask token `<name>` before Drain sees the line. The original body is never mutated.
 
 ```yaml
 processors:
   drain:
-    extract_parameters: true
+    masking_rules:
+      - name: ip
+        pattern: '(\d{1,3}\.){3}\d{1,3}'
+    emit_wildcards: true
 ```
 
-Given the body `"user alice logged in from 10.0.0.1"` and the matched template `"user <*> logged in from <*>"`, the resulting attributes are:
+Given the body `"user alice logged in from 10.0.0.1 in 42 ms"` and the rule above, Drain sees `"user alice logged in from <ip> in 42 ms"` and produces a template such as `"user <*> logged in from <ip> in <*> ms"`. The resulting attributes are:
 
 ```
-log.record.template          = "user <*> logged in from <*>"
-log.record.template.params   = ["alice", "10.0.0.1"]
+log.record.template                       = "user <*> logged in from <ip> in <*> ms"
+log.record.template.parameter.ip          = "10.0.0.1"
+log.record.template.wildcards             = ["alice", "42"]
 ```
 
-Notes:
+### How it works
 
-- Extraction is positional and unnamed. No regex configuration is required.
+1. The rules run in declaration order. Each rule's `pattern` is a Go regular expression (RE2 syntax). Matches are substituted with `<name>` on the output of the previous rule, so earlier rules effectively win on overlapping input text. Capture groups are permitted but ignored; the whole match is replaced.
+2. Drain trains on the masked line. Mask tokens appear as literal tokens in the template alongside Drain's own `<*>` wildcards.
+3. Each mask-matched position writes a dynamic attribute at `<parameter_key_prefix>.<mask name>` with the raw body value.
+4. When `emit_wildcards: true`, Drain's own `<*>` positions are written as a positional string slice at `wildcards_attribute`, in template order.
+
+### Discovery workflow
+
+Enable `emit_wildcards: true` without any `masking_rules` to see the raw variable values in each template:
+
+```yaml
+processors:
+  drain:
+    emit_wildcards: true
+```
+
+Records get `log.record.template.wildcards` populated with the raw tokens at every `<*>` position. Once you see which values look like well-known types (IPs, UUIDs, numbers), add matching `masking_rules` to promote them to named attributes.
+
+### Duplicate mask names
+
+When a mask rule matches multiple positions in the same template (e.g. `"connection from <ip> to <ip>"`), only one value can be written under `<parameter_key_prefix>.<name>`. First-match wins: the earliest position's value is written and later positions for the same mask name are dropped.
+
+Each dropped position increments the `otelcol_processor_drain_masks_duplicates` counter (once per record per duplicated mask name), tagged with the offending mask name via the `mask` attribute. Watch this metric to spot rules that need splitting into distinct names, e.g. `src_ip` and `dst_ip` instead of a single `ip`.
+
+### Constraints
+
+- Mask names must be non-empty, must not contain `<`, `>`, or whitespace, and must not equal `*` (reserved for Drain's wildcard).
+- Mask patterns must be non-empty and must be valid regular expressions (RE2 syntax).
+- `parameter_key_prefix` must not be empty when `masking_rules` are configured.
+- A mask pattern that spans whitespace collapses multiple raw tokens into a single masked token. When this happens the raw body and the template can no longer be aligned position-by-position; both parameter attributes and the wildcards slice are skipped for that record. The template attribute is still written. Prefer patterns that match within a single whitespace-delimited token.
 - Body tokenisation matches the parse tree's: whitespace plus any `extra_delimiters`.
-- The parameter slice is only written when the template contains at least one `<*>`. Fully literal templates (single-record clusters before abstraction) emit no slice.
-- During warmup suppression neither `log.record.template` nor `log.record.template.params` is written.
+- During warmup suppression no `log.record.template*` attribute is written.
+
+### Interaction with seed data
+
+Entries in `seed_logs` go through the same masking pass as live records, so the tree learns the same shape from seeds and live traffic. Entries in `seed_templates` are trained verbatim; the user is declaring template shape, so any mask tokens they include appear as-is.
 
 ## Example pipeline
 

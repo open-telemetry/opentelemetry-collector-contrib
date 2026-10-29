@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"sync/atomic"
@@ -54,6 +55,62 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 			return next(req)
 		}
 	}
+}
+
+// connSetupTimeoutError is a context.DeadlineExceeded from before GotConn.
+// Unwrap preserves the transport error.
+//
+// These are safe to retry without risking duplicates because no request body has been sent.
+type connSetupTimeoutError struct {
+	err error
+}
+
+func (e *connSetupTimeoutError) Error() string { return e.err.Error() }
+func (e *connSetupTimeoutError) Unwrap() error { return e.err }
+
+// timeoutInterceptor enforces the per-attempt timeout on a child context.
+// Canceling that context must not cancel req, or elastictransport's retry backoff stops.
+// A context.DeadlineExceeded before GotConn, with the caller's context still active, is wrapped for retry.
+func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
+	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
+		return func(req *http.Request) (*http.Response, error) {
+			var gotConn atomic.Bool
+			// ctx is not reused across retries.
+			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout.
+			ctx := httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+				GotConn: func(httptrace.GotConnInfo) { gotConn.Store(true) },
+			})
+			var cancel context.CancelFunc
+			if perRequestTimeout > 0 {
+				ctx, cancel = context.WithTimeout(ctx, perRequestTimeout)
+			}
+			res, err := next(req.WithContext(ctx))
+			if err != nil {
+				if cancel != nil {
+					cancel()
+				}
+				if errors.Is(err, context.DeadlineExceeded) && !gotConn.Load() && req.Context().Err() == nil {
+					err = &connSetupTimeoutError{err: err}
+				}
+				return res, err
+			}
+			if cancel != nil {
+				// Cancel the context once the body is read/discarded.
+				res.Body = &cancelOnCloseBody{ReadCloser: res.Body, cancel: cancel}
+			}
+			return res, nil
+		}
+	}
+}
+
+type cancelOnCloseBody struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (b *cancelOnCloseBody) Close() error {
+	defer b.cancel()
+	return b.ReadCloser.Close()
 }
 
 // clientLogger implements the estransport.Logger interface
@@ -102,11 +159,13 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 		if resp.StatusCode == http.StatusOK {
 			// Success
 			componentstatus.ReportStatus(
-				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
+				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK),
+			)
 		} else if httpRecoverableErrorStatus(resp.StatusCode) {
 			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
 			componentstatus.ReportStatus(
-				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err),
+			)
 		}
 
 	case clientErr != nil:
@@ -117,7 +176,8 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 		zl.Debug("Request failed.", fields...)
 		err := fmt.Errorf("Elasticsearch request failed: %w", clientErr)
 		componentstatus.ReportStatus(
-			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err),
+		)
 	}
 
 	return nil
@@ -201,8 +261,8 @@ func newElasticsearchClient(
 
 	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
-		logRequestBody:  config.LogRequestBody,
-		logResponseBody: config.LogResponseBody,
+		logRequestBody:  config.TelemetrySettings.LogRequestBody,
+		logResponseBody: config.TelemetrySettings.LogResponseBody,
 		componentHost:   host,
 	}
 
@@ -242,11 +302,9 @@ func newElasticsearchClient(
 
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
-		RetryOnError: func(_ *http.Request, err error) bool {
-			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
-		},
-		MaxRetries:   maxRetries,
-		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnError:  retryOnError,
+		MaxRetries:    maxRetries,
+		RetryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
 
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
@@ -261,6 +319,7 @@ func newElasticsearchClient(
 			elastictransportversion.Version,
 		),
 		Interceptors: []elastictransport.InterceptorFunc{
+			timeoutInterceptor(httpClient.Timeout),
 			countRetriesInterceptor(),
 		},
 	}
@@ -292,6 +351,18 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 		urls = append(urls, u)
 	}
 	return urls, nil
+}
+
+// retryOnError retries connSetupTimeoutError. Other context.DeadlineExceeded
+// errors and context.Canceled are not retried.
+func retryOnError(_ *http.Request, err error) bool {
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	if _, ok := errors.AsType[*connSetupTimeoutError](err); ok {
+		return true
+	}
+	return !errors.Is(err, context.DeadlineExceeded)
 }
 
 // createElasticsearchBackoffFunc creates an exponential backoff with equal jitter.

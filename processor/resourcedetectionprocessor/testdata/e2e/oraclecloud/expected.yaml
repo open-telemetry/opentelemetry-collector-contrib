@@ -13,6 +13,9 @@ resourceMetrics:
         - key: cloud.region
           value:
             stringValue: us-phoenix-1
+        - key: cloud.resource_id
+          value:
+            stringValue: ocid1.instance.oc1.phx.exampleuniqueID
         - key: host.id
           value:
             stringValue: ocid1.instance.oc1.phx.exampleuniqueID

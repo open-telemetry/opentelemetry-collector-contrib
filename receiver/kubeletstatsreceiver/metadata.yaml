@@ -14,42 +14,13 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth, ChrsMark]
 
+sem_conv_version: 1.43.0
+
 resource_attributes:
-  aws.volume.id:
-    description: "[DEPRECATED] The id of the AWS Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   container.id:
     description: "Container id used to identify container"
     enabled: true
     type: string
-  fs.type:
-    description: "[DEPRECATED] The filesystem type of the Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  gce.pd.name:
-    description: "[DEPRECATED] The name of the persistent disk in GCE"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  glusterfs.endpoints.name:
-    description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  glusterfs.path:
-    description: "[DEPRECATED] Glusterfs volume path"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-
   k8s.container.name:
     description: "Container name used by container runtime"
     enabled: true
@@ -86,12 +57,6 @@ resource_attributes:
     description: "The type of the Volume"
     enabled: true
     type: string
-  partition:
-    description: "[DEPRECATED] The partition in the Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
@@ -112,7 +77,9 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability: development
+    stability: beta
+    semantic_convention:
+      ref: system/container-metrics.md#metric-containercputime
     sum:
       value_type: double
       monotonic: true
@@ -212,10 +179,12 @@ metrics:
     enabled: false
     description: "Container cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.container.cpu_limit_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"
@@ -246,10 +215,12 @@ metrics:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `container.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.container.memory_limit_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"
@@ -299,6 +270,26 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+  k8s.node.filesystem.inode.count:
+    enabled: false
+    description: "Total number of inodes in the node's root filesystem."
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  k8s.node.filesystem.inode.free:
+    enabled: false
+    description: "Number of free inodes in the node's root filesystem."
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
     attributes: []
   k8s.node.filesystem.usage:
     enabled: true
@@ -376,6 +367,33 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.node.pid.limit:
+    enabled: false
+    description: >-
+      Total number of processes/threads allowed by the operating system on the node.
+      Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit
+      (the lower of kernel.pid_max and kernel.threads-max).
+    unit: "{thread}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  k8s.node.pid.usage:
+    enabled: false
+    description: >-
+      Total number of existing processes and threads on the node.
+      Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count
+      of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count
+      in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+    unit: "{thread}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
   k8s.node.system_container.cpu.time:
     enabled: false
     description: "Total cumulative CPU time (sum of all cores) spent by the system container since its creation"
@@ -424,10 +442,12 @@ metrics:
     enabled: false
     description: "Pod cpu utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.cpu.usage / k8s.node.allocatable_cpu` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.pod.cpu.time:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
@@ -506,10 +526,12 @@ metrics:
     enabled: false
     description: "Pod memory utilization as a ratio of the node's capacity"
     unit: "1"
-    stability: development
+    stability: deprecated
     gauge:
       value_type: double
     attributes: []
+    warnings:
+      if_enabled: "This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use."
   k8s.pod.memory.page_faults:
     enabled: true
     description: "Pod memory page_faults"
@@ -641,7 +663,7 @@ metrics:
 
 feature_gates:
   - id: receiver.kubeletstats.cpuUsageScrapeBased
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage
       (and the cpu utilization metrics derived from them) are calculated by the
@@ -650,12 +672,9 @@ feature_gates:
       UsageNanoCores value.
     from_version: v0.156.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477
-    skip_strict_validation: true
 
 tests:
   config:
     ca_file: "testdata/testcert.crt"
     key_file: "testdata/testkey.key"
     cert_file: "testdata/testcert.crt"
-  goleak:
-    skip: true

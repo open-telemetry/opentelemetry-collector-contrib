@@ -9,5 +9,5 @@ import (
 
 // Config relating to CPU Metric Scraper.
 type Config struct {
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -95,7 +95,8 @@ func addHandlerFunc[T any](
 			tb.HTTPServerRequestActiveCount.Add(handlerCtx, -1)
 			elapsed := time.Since(start)
 			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code))),
+				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code)),
+			),
 			)
 		}()
 
@@ -307,7 +308,8 @@ func handlePubSubPushRequest[T any](
 			metricAttr = attribute.NewSet(attribute.String(bucketNameAttr, bucketName))
 		}
 		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
-			metricAttr),
+			metricAttr,
+		),
 		)
 	}
 	unmarshalled, err := unmarshal(unmarshalData)

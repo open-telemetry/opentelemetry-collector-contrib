@@ -5,6 +5,7 @@ package prometheusexporter
 
 import (
 	"log"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -725,6 +726,48 @@ func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 		require.Equal(t, ts2.Unix(), dp.Timestamp().AsTime().Unix())
 	})
 
+	for _, tt := range []struct {
+		name             string
+		prevScale, scale int32
+	}{
+		{name: "DownscalePreviousUnalignedBuckets", prevScale: 20, scale: 18},
+		{name: "DownscaleCurrentUnalignedBuckets", prevScale: 18, scale: 20},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			startTs := time.Now().Add(-3 * time.Second)
+			ts1 := startTs.Add(time.Second)
+			ts2 := ts1.Add(time.Second)
+			counts := []uint64{3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+			rm := pmetric.NewResourceMetrics()
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			appendDeltaNative(startTs, ts1, tt.prevScale, -6, slices.Clone(counts), -6, slices.Clone(counts), 0, 116, 0, false, 0, false, 0, ilm.Metrics())
+			m2 := appendDeltaNative(ts1, ts2, tt.scale, -6, slices.Clone(counts), -6, slices.Clone(counts), 0, 116, 0, false, 0, false, 0, ilm.Metrics())
+
+			a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+			require.Equal(t, 2, a.Accumulate(rm))
+			sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), m2, m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+			got, ok := a.registeredMetrics.Load(sig)
+			require.True(t, ok)
+			dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+			require.Equal(t, int32(18), dp.Scale())
+			// The higher-scale buckets downscale to offset -2 with counts [4, 14, 30, 10].
+			want := []uint64{3, 1, 2, 3, 8, 19, 36, 17, 8, 9, 10}
+			require.Equal(t, int32(-6), dp.Positive().Offset())
+			require.Equal(t, want, dp.Positive().BucketCounts().AsRaw())
+			require.Equal(t, int32(-6), dp.Negative().Offset())
+			require.Equal(t, want, dp.Negative().BucketCounts().AsRaw())
+			require.Equal(t, uint64(232), dp.Count())
+			population := dp.ZeroCount()
+			for _, buckets := range [][]uint64{dp.Positive().BucketCounts().AsRaw(), dp.Negative().BucketCounts().AsRaw()} {
+				for _, count := range buckets {
+					population += count
+				}
+			}
+			require.Equal(t, dp.Count(), population)
+		})
+	}
+
 	t.Run("CumulativeKeepLatest", func(t *testing.T) {
 		rm := pmetric.NewResourceMetrics()
 		ilm := rm.ScopeMetrics().AppendEmpty()
@@ -807,6 +850,60 @@ func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 		require.Equal(t, uint64(3), dp.Positive().BucketCounts().At(0))
 		require.Equal(t, ts3.Unix(), dp.Timestamp().AsTime().Unix())
 	})
+}
+
+func TestDownscaleBucketSide(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name        string
+		offset      int32
+		counts      []uint64
+		targetScale int32
+		wantOffset  int32
+		wantCounts  []uint64
+	}{
+		{
+			name: "negative unaligned offset", offset: -1, counts: []uint64{100, 7, 3, 2000}, targetScale: 18,
+			wantOffset: -1, wantCounts: []uint64{100, 2010},
+		},
+		{
+			name: "positive unaligned offset", offset: 1, counts: []uint64{100, 7, 3, 2000}, targetScale: 18,
+			wantOffset: 0, wantCounts: []uint64{110, 2000},
+		},
+		{
+			name: "negative aligned offset", offset: -4, counts: []uint64{100, 7, 3, 2000, 5}, targetScale: 18,
+			wantOffset: -1, wantCounts: []uint64{2110, 5},
+		},
+		{
+			name: "positive aligned offset", offset: 4, counts: []uint64{100, 7, 3, 2000, 5}, targetScale: 18,
+			wantOffset: 1, wantCounts: []uint64{2110, 5},
+		},
+		{
+			name: "single unaligned bucket", offset: -1, counts: []uint64{100}, targetScale: 18,
+			wantOffset: -1, wantCounts: []uint64{100},
+		},
+		{
+			name: "empty buckets", offset: -1, targetScale: 18,
+			wantOffset: -1,
+		},
+		{
+			name: "same scale", offset: -1, counts: []uint64{100, 7, 3, 2000}, targetScale: 20,
+			wantOffset: -1, wantCounts: []uint64{100, 7, 3, 2000},
+		},
+		{
+			name: "higher target scale", offset: -1, counts: []uint64{100, 7, 3, 2000}, targetScale: 21,
+			wantOffset: -1, wantCounts: []uint64{100, 7, 3, 2000},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			original := slices.Clone(tt.counts)
+			offset, counts := downscaleBucketSide(tt.offset, tt.counts, 20, tt.targetScale)
+			require.Equal(t, tt.wantOffset, offset)
+			require.Equal(t, tt.wantCounts, counts)
+			require.Equal(t, original, tt.counts, "downscaling must not mutate input buckets")
+		})
+	}
 }
 
 func TestAccumulateExponentialHistogramZeroThresholds(t *testing.T) {
@@ -1135,4 +1232,174 @@ func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
 	require.Equal(t, "test_refused_metric", fieldMap["metric_name"])
 	require.Equal(t, "non-monotonic sum with delta aggregation temporality is not supported", fieldMap["reason"])
 	require.Equal(t, int64(2), fieldMap["data_points_refused"])
+}
+
+// A scrape that drops several series of one metric sends a staleness marker
+// for each of them in the same batch. Every marker has to remove its own
+// series, and the live points of the same metric have to be stored whatever
+// their position relative to the markers.
+func TestAccumulateStalenessMarkersAmongSeveralPoints(t *testing.T) {
+	stale := pmetric.DefaultDataPointFlags.WithNoRecordedValue(true)
+	tests := []struct {
+		name   string
+		metric func(pmetric.MetricSlice) pmetric.Metric
+		point  func(m pmetric.Metric, series string, ts time.Time, isStale bool)
+	}{
+		{
+			name: "Gauge",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptyGauge()
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "Sum",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "Summary",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptySummary()
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Summary().DataPoints().AppendEmpty()
+				dp.SetCount(1)
+				dp.SetSum(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "Histogram",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.Histogram().DataPoints().AppendEmpty()
+				dp.BucketCounts().FromRaw([]uint64{1, 0})
+				dp.ExplicitBounds().FromRaw([]float64{1})
+				dp.SetCount(1)
+				dp.SetSum(1)
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+		{
+			name: "ExponentialHistogram",
+			metric: func(ms pmetric.MetricSlice) pmetric.Metric {
+				m := ms.AppendEmpty()
+				m.SetName("test_metric")
+				m.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return m
+			},
+			point: func(m pmetric.Metric, series string, ts time.Time, isStale bool) {
+				dp := m.ExponentialHistogram().DataPoints().AppendEmpty()
+				dp.SetScale(0)
+				dp.SetCount(1)
+				dp.SetSum(1)
+				dp.Positive().BucketCounts().FromRaw([]uint64{1})
+				dp.Attributes().PutStr("series", series)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+				if isStale {
+					dp.SetFlags(stale)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts1 := time.Now().Add(-2 * time.Second)
+			ts2 := time.Now().Add(-1 * time.Second)
+			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+
+			first := pmetric.NewResourceMetrics()
+			m := tt.metric(first.ScopeMetrics().AppendEmpty().Metrics())
+			for _, series := range []string{"a", "b", "c"} {
+				tt.point(m, series, ts1, false)
+			}
+			require.Equal(t, 3, a.Accumulate(first))
+
+			// a and b disappeared from the target, c is still there. The two
+			// markers come first, which is where a loop that stops at the first
+			// marker loses both the second marker and the live point.
+			second := pmetric.NewResourceMetrics()
+			m = tt.metric(second.ScopeMetrics().AppendEmpty().Metrics())
+			tt.point(m, "a", ts2, true)
+			tt.point(m, "b", ts2, true)
+			tt.point(m, "c", ts2, false)
+			require.Equal(t, 1, a.Accumulate(second))
+
+			kept := map[string]time.Time{}
+			a.registeredMetrics.Range(func(_, value any) bool {
+				labels, ts := firstPoint(value.(*accumulatedValue).value)
+				series, _ := labels.Get("series")
+				kept[series.Str()] = ts
+				return true
+			})
+			require.Len(t, kept, 1, "only the live series is kept: %v", kept)
+			require.Equal(t, ts2.UnixNano(), kept["c"].UnixNano())
+		})
+	}
+}
+
+// The attributes and timestamp of an accumulated metric, which holds a single
+// data point whatever its type.
+func firstPoint(m pmetric.Metric) (pcommon.Map, time.Time) {
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		dp := m.Gauge().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeSum:
+		dp := m.Sum().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeSummary:
+		dp := m.Summary().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeHistogram:
+		dp := m.Histogram().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	case pmetric.MetricTypeExponentialHistogram:
+		dp := m.ExponentialHistogram().DataPoints().At(0)
+		return dp.Attributes(), dp.Timestamp().AsTime()
+	}
+	panic("unexpected metric type " + m.Type().String())
 }

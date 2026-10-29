@@ -19,7 +19,7 @@ components:
     - connector/datadog
     - connector/exceptions
     - connector/failover
-    - connector/grafanacloud
+    - connector/grafana_cloud
     - connector/metrics_as_logs
     - connector/otlp_json
     - connector/round_robin
@@ -37,8 +37,8 @@ components:
     - exporter/awss3
     - exporter/awsxray
     - exporter/azure_blob
+    - exporter/azure_monitor
     - exporter/azuredataexplorer
-    - exporter/azuremonitor
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
@@ -59,7 +59,7 @@ components:
     - exporter/load_balancing
     - exporter/logicmonitor
     - exporter/logzio
-    - exporter/mezmo
+    - exporter/nats
     - exporter/opensearch
     - exporter/otelarrow
     - exporter/prometheus
@@ -79,6 +79,7 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_iam_db_auth
     - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awsproxy
@@ -95,8 +96,9 @@ components:
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/file_telemetry_policy
+    - extension/google_client_auth
     - extension/google_cloud_logentry_encoding
-    - extension/googleclientauth
     - extension/headers_setter
     - extension/health_check
     - extension/healthcheckv2
@@ -107,7 +109,6 @@ components:
     - extension/json_log_encoding
     - extension/k8s_leader_elector
     - extension/k8s_observer
-    - extension/kafkatopics_observer
     - extension/mcp
     - extension/oauth2client
     - extension/observer
@@ -117,8 +118,10 @@ components:
     - extension/otlp_encoding
     - extension/pebble_tail_storage
     - extension/pprof
+    - extension/redis_fleet_tracker
     - extension/redis_storage
     - extension/remotetap
+    - extension/sd_notify
     - extension/sigv4auth
     - extension/skywalking_encoding
     - extension/solarwindsapmsettings
@@ -142,6 +145,7 @@ components:
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
+    - internal/natsclient
     - internal/pdatautil
     - internal/rabbitmq
     - internal/sharedcomponent
@@ -159,21 +163,24 @@ components:
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
+    - pkg/jaeger
     - pkg/kafka/configkafka
     - pkg/otelarrow
     - pkg/ottl
+    - pkg/ottl/contexts/xprofile
+    - pkg/ottl/xottl
     - pkg/pdatatest
-    - pkg/pdatautil
     - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/semconvtest
     - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
+    - pkg/tcp_input
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
     - pkg/translator/prometheusremotewrite
@@ -183,6 +190,7 @@ components:
     - pkg/xk8stest
     - pkg/xstreamencoding
     - pkg/zipkin
+    - processor/adaptive_tail_sampling
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -191,11 +199,10 @@ components:
     - processor/cardinality_guardian
     - processor/coralogix
     - processor/cumulative_to_delta
+    - processor/delta_to_cumulative
     - processor/delta_to_rate
-    - processor/deltatocumulative
     - processor/digitaloceandetector
     - processor/drain
-    - processor/dynamic_sampling
     - processor/dynatracedetector
     - processor/filter
     - processor/gen_ai_normalizer
@@ -216,22 +223,27 @@ components:
     - processor/metricsgeneration
     - processor/novadetector
     - processor/oracleclouddetector
+    - processor/partitioning
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
     - processor/resource
     - processor/resource_detection
+    - processor/rolling_span_latency
     - processor/scalewaydetector
     - processor/schema
+    - processor/signing
     - processor/span
     - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
+    - processor/telemetry_policy
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
+    - processor/verify
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager
@@ -244,10 +256,10 @@ components:
     - receiver/apache_spark
     - receiver/aws_cloudwatch
     - receiver/aws_lambda
+    - receiver/aws_s3
     - receiver/awscontainerinsightreceiver
     - receiver/awsecscontainermetrics
     - receiver/awsfirehose
-    - receiver/awss3
     - receiver/awsxray
     - receiver/azure_blob
     - receiver/azure_event_hub
@@ -261,6 +273,7 @@ components:
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
+    - receiver/dns_check
     - receiver/docker_stats
     - receiver/elasticsearch
     - receiver/envoy_als
@@ -272,6 +285,7 @@ components:
     - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
+    - receiver/gnmi
     - receiver/google_cloud_spanner
     - receiver/googlecloudmonitoring
     - receiver/googlecloudpubsub
@@ -280,7 +294,7 @@ components:
     - receiver/host_metrics
     - receiver/http_check
     - receiver/huaweicloudcesreceiver
-    - receiver/icmpcheckreceiver
+    - receiver/icmp_check
     - receiver/iis
     - receiver/influxdb
     - receiver/jaeger
@@ -299,6 +313,7 @@ components:
     - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/named_pipe
+    - receiver/nats
     - receiver/netflow
     - receiver/nginx
     - receiver/nsxt
@@ -322,15 +337,14 @@ components:
     - receiver/redis
     - receiver/riak
     - receiver/saphana
-    - receiver/signalfx
     - receiver/skywalking
     - receiver/snmp
     - receiver/snowflake
     - receiver/solace
     - receiver/splunk_enterprise
     - receiver/splunk_hec
-    - receiver/sqlquery
-    - receiver/sqlserver
+    - receiver/sql_query
+    - receiver/sql_server
     - receiver/ssh_check
     - receiver/statsd
     - receiver/stef
@@ -342,11 +356,10 @@ components:
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
-    - receiver/wavefront
     - receiver/webhook_event
     - receiver/windows_event_log
+    - receiver/windows_perf_counters
     - receiver/windows_service
-    - receiver/windowsperfcounters
     - receiver/yang_grpc
     - receiver/zipkin
     - receiver/zookeeper
@@ -365,4 +378,5 @@ components:
     - scraper/system
     - scraper/zookeeper
     - testbed
+    - testbed/integrationtests/elasticsearch
     - testbed/mockdatasenders/mockdatadogagentexporter

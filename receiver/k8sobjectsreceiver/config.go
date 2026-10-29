@@ -19,12 +19,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 const (
-	defaultPullInterval    time.Duration     = time.Hour
-	defaultMode            k8sinventory.Mode = k8sinventory.PullMode
-	defaultResourceVersion                   = "1"
+	defaultPullInterval     time.Duration     = time.Hour
+	defaultMode             k8sinventory.Mode = k8sinventory.PullMode
+	defaultCacheSyncTimeout                   = 10 * time.Second
 )
 
 var modeMap = map[k8sinventory.Mode]bool{
@@ -57,13 +58,14 @@ type K8sObjectsConfig struct {
 }
 
 type Config struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
 
 	Interval            time.Duration       `mapstructure:"interval"`
 	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
 	Storage             *component.ID       `mapstructure:"storage"`
 	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
 	IncludeInitialState bool                `mapstructure:"include_initial_state"`
+	CacheSyncTimeout    time.Duration       `mapstructure:"cache_sync_timeout"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
@@ -85,6 +87,14 @@ func (c *Config) Validate() error {
 
 	if c.Interval < 0 {
 		return errors.New("interval must not be negative")
+	}
+
+	if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
+		if c.CacheSyncTimeout == 0 {
+			c.CacheSyncTimeout = defaultCacheSyncTimeout
+		} else if c.CacheSyncTimeout < 0 {
+			return errors.New("cache_sync_timeout must be positive")
+		}
 	}
 
 	for _, object := range c.Objects {

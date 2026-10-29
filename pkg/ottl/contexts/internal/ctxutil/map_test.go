@@ -5,6 +5,7 @@ package ctxutil_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_GetMapValue_Invalid(t *testing.T) {
@@ -35,7 +35,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			name: "first key not a string",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 			},
@@ -45,11 +45,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			name: "index map with int",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("map"),
+					S: new("map"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 			},
@@ -59,11 +59,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			name: "index slice with string",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("slice"),
+					S: new("slice"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("invalid"),
+					S: new("invalid"),
 					G: getSetter,
 				},
 			},
@@ -73,11 +73,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("slice"),
+					S: new("slice"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -87,11 +87,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			name: "index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("slice"),
+					S: new("slice"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -101,11 +101,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			name: "invalid type",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -133,10 +133,10 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 	m.PutEmptyMap("map1").PutEmptyMap("map2")
 	keys := []ottl.Key[any]{
 		&pathtest.Key[any]{
-			S: ottltest.Strp("map1"),
+			S: new("map1"),
 		},
 		&pathtest.Key[any]{
-			S: ottltest.Strp("unknown key"),
+			S: new("unknown key"),
 		},
 	}
 	result, err := ctxutil.GetMapValue[any](t.Context(), nil, m, keys)
@@ -167,7 +167,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			name: "first key not a string",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 			},
@@ -177,11 +177,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			name: "index map with int",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("map"),
+					S: new("map"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 			},
@@ -191,11 +191,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			name: "index slice with string",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("slice"),
+					S: new("slice"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("map"),
+					S: new("map"),
 					G: getSetter,
 				},
 			},
@@ -205,11 +205,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			name: "slice index too large",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("slice"),
+					S: new("slice"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					I: ottltest.Intp(1),
+					I: new(int64(1)),
 					G: getSetter,
 				},
 			},
@@ -219,11 +219,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			name: "slice index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("slice"),
+					S: new("slice"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					I: ottltest.Intp(-1),
+					I: new(int64(-1)),
 					G: getSetter,
 				},
 			},
@@ -233,11 +233,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			name: "slice index too small",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 					G: getSetter,
 				},
 			},
@@ -265,13 +265,13 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 	m.PutEmptyMap("map1").PutStr("test", "test")
 	keys := []ottl.Key[any]{
 		&pathtest.Key[any]{
-			S: ottltest.Strp("map1"),
+			S: new("map1"),
 		},
 		&pathtest.Key[any]{
-			S: ottltest.Strp("map2"),
+			S: new("map2"),
 		},
 		&pathtest.Key[any]{
-			S: ottltest.Strp("foo"),
+			S: new("foo"),
 		},
 	}
 	err := ctxutil.SetMapValue[any](t.Context(), nil, m, keys, "bar")
@@ -289,13 +289,13 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 	m := pcommon.NewMap()
 	keys := []ottl.Key[any]{
 		&pathtest.Key[any]{
-			S: ottltest.Strp("map1"),
+			S: new("map1"),
 		},
 		&pathtest.Key[any]{
-			S: ottltest.Strp("map2"),
+			S: new("map2"),
 		},
 		&pathtest.Key[any]{
-			S: ottltest.Strp("foo"),
+			S: new("foo"),
 		},
 	}
 	err := ctxutil.SetMapValue[any](t.Context(), nil, m, keys, "bar")
@@ -316,7 +316,7 @@ func Test_SetMapValue_NilClearsValue(t *testing.T) {
 	m := pcommon.NewMap()
 	keys := []ottl.Key[any]{
 		&pathtest.Key[any]{
-			S: ottltest.Strp("test"),
+			S: new("test"),
 		},
 	}
 	err := ctxutil.SetMapValue[any](t.Context(), nil, m, keys, nil)
@@ -445,7 +445,7 @@ func Test_GetMapKeyName(t *testing.T) {
 			name: "first key not a string",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					I: ottltest.Intp(0),
+					I: new(int64(0)),
 					G: getSetter,
 				},
 			},
@@ -462,7 +462,7 @@ func Test_GetMapKeyName(t *testing.T) {
 			name: "valid",
 			keys: []ottl.Key[any]{
 				&pathtest.Key[any]{
-					S: ottltest.Strp("string"),
+					S: new("string"),
 				},
 			},
 			key: "string",
@@ -479,4 +479,88 @@ func Test_GetMapKeyName(t *testing.T) {
 			assert.Equal(t, tt.key, *resolvedKey)
 		})
 	}
+}
+
+func Test_MapGetSetter(t *testing.T) {
+	t.Run("Get and Set", func(t *testing.T) {
+		target := pcommon.NewMap()
+		target.PutStr("k1", "v1")
+
+		gs := ctxutil.MapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return target, nil
+			},
+		}
+
+		got, err := gs.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, target, got)
+
+		require.NoError(t, gs.Set(t.Context(), nil, map[string]any{"k2": "v2"}))
+		expected := pcommon.NewMap()
+		expected.PutStr("k2", "v2")
+		assert.Equal(t, expected, target)
+
+		newMap := pcommon.NewMap()
+		newMap.PutStr("k3", "v3")
+		require.NoError(t, gs.Set(t.Context(), nil, newMap))
+		assert.Equal(t, newMap, target)
+
+		require.NoError(t, gs.Set(t.Context(), nil, nil))
+		assert.Equal(t, 0, target.Len())
+
+		err = gs.Set(t.Context(), nil, "invalid")
+		assert.EqualError(t, err, "unsupported type provided for setting a pcommon.Map: string")
+	})
+
+	t.Run("PMapGetter and PMapGetSetter", func(t *testing.T) {
+		target := pcommon.NewMap()
+		target.PutStr("k1", "v1")
+
+		gs := ctxutil.MapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return target, nil
+			},
+		}
+
+		pmapGetter := gs.PMapGetter()
+		got, err := pmapGetter.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, target, got)
+
+		pmapGetSetter := gs.PMapGetSetter()
+		got, err = pmapGetSetter.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, target, got)
+
+		replacement := pcommon.NewMap()
+		replacement.PutStr("k2", "v2")
+		require.NoError(t, pmapGetSetter.Set(t.Context(), nil, replacement))
+		assert.Equal(t, replacement, target)
+	})
+
+	t.Run("Getter error", func(t *testing.T) {
+		getterErr := errors.New("getter error")
+		gs := ctxutil.MapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.Map{}, getterErr
+			},
+		}
+
+		got, err := gs.Get(t.Context(), nil)
+		assert.ErrorIs(t, err, getterErr)
+		assert.Nil(t, got)
+
+		err = gs.Set(t.Context(), nil, pcommon.NewMap())
+		assert.ErrorIs(t, err, getterErr)
+
+		_, err = gs.PMapGetter().Get(t.Context(), nil)
+		assert.ErrorIs(t, err, getterErr)
+
+		_, err = gs.PMapGetSetter().Get(t.Context(), nil)
+		assert.ErrorIs(t, err, getterErr)
+
+		err = gs.PMapGetSetter().Set(t.Context(), nil, pcommon.NewMap())
+		assert.ErrorIs(t, err, getterErr)
+	})
 }
