@@ -43,23 +43,26 @@ type ProfilesMessageDecoderExtension interface {
 	DecodeProfiles(ctx context.Context, payload []byte, opts ...ProfilesDecodeOption) (pprofile.Profiles, error)
 }
 
-// MessageDecodeOption configures message decoding.
+// MessageDecodeOption configures decoding of complete messages through
+// [LogsMessageDecoderExtension], [MetricsMessageDecoderExtension],
+// [TracesMessageDecoderExtension], and [ProfilesMessageDecoderExtension].
+// Message decoders apply these options with [NewDecodeConfig].
+// For streaming decoder factories, use [DecoderOption] instead.
 // Only options defined by this package can implement this interface.
-// Decoders use NewDecodeConfig to apply options.
 type MessageDecodeOption interface {
 	apply(*DecodeConfig) error
 }
 
-// LogsDecodeOption configures log message decoding.
+// LogsDecodeOption configures [LogsMessageDecoderExtension.DecodeLogs].
 type LogsDecodeOption = MessageDecodeOption
 
-// MetricsDecodeOption configures metric message decoding.
+// MetricsDecodeOption configures [MetricsMessageDecoderExtension.DecodeMetrics].
 type MetricsDecodeOption = MessageDecodeOption
 
-// TracesDecodeOption configures trace message decoding.
+// TracesDecodeOption configures [TracesMessageDecoderExtension.DecodeTraces].
 type TracesDecodeOption = MessageDecodeOption
 
-// ProfilesDecodeOption configures profile message decoding.
+// ProfilesDecodeOption configures [ProfilesMessageDecoderExtension.DecodeProfiles].
 type ProfilesDecodeOption = MessageDecodeOption
 
 // DecodeConfig holds the configuration for one message decoding call.
@@ -70,7 +73,7 @@ type DecodeConfig struct {
 	MessageMetadata client.Metadata
 }
 
-// NewDecodeConfig applies options to a new message decoding configuration.
+// NewDecodeConfig applies [MessageDecodeOption] values to a new message decoding configuration.
 // It returns an error for a nil option or an option validation error.
 func NewDecodeConfig(opts ...MessageDecodeOption) (DecodeConfig, error) {
 	config := DecodeConfig{}

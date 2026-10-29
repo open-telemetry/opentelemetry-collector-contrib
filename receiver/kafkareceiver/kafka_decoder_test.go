@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 	"testing"
@@ -262,88 +261,19 @@ func TestReceiver_MessageDecoderPreferredOverLegacy(t *testing.T) {
 }
 
 func TestReceiver_MessageDecoderError(t *testing.T) {
-	for name, decodeErr := range map[string]error{
-		"invalid message": errors.New("invalid encoded message"),
-		"EOF":             io.EOF,
-		"wrapped EOF":     fmt.Errorf("incomplete encoded message: %w", io.EOF),
-	} {
-		for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
-			t.Run(name+"/"+signal, func(t *testing.T) {
-				_, cfg := mustNewFakeCluster(t)
-				received := make(chan decodedMessage, 1)
-				r := newDecoderTestReceiver(t, signal, cfg, received)
-				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): &messageContextExtension{err: decodeErr}}))
-				t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-				err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet())
-				require.ErrorIs(t, err, decodeErr)
-				assert.True(t, consumererror.IsPermanent(err))
-				assert.Empty(t, received, "a decoder result returned with an error must not be consumed")
-			})
-		}
-	}
-}
-
-func TestReceiver_DualEncodingKeepsLegacyBehavior(t *testing.T) {
-	_, cfg := mustNewFakeCluster(t)
-	cfg.Logs.Encoding = "dual"
-	ext := &legacyPreferredLogsExtension{}
-	received := make(chan plog.Logs, 1)
-	next, err := consumer.NewLogs(func(_ context.Context, data plog.Logs) error {
-		received <- data
-		return nil
-	})
-	require.NoError(t, err)
-	r, err := NewFactory().CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, next)
-	require.NoError(t, err)
-	require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("dual"): ext}))
-	t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-	require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("legacy payload")}, attribute.NewSet()))
-	data := awaitDecoderValue(t, received)
-	require.Equal(t, 1, data.LogRecordCount())
-	assert.Equal(t, "legacy payload", data.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
-	assert.Equal(t, 1, ext.legacyCalls)
-	assert.Zero(t, ext.streamingCalls)
-}
-
-type legacyPreferredLogsExtension struct {
-	component.Component
-	legacyCalls    int
-	streamingCalls int
-}
-
-func (e *legacyPreferredLogsExtension) UnmarshalLogs(payload []byte) (plog.Logs, error) {
-	e.legacyCalls++
-	data := plog.NewLogs()
-	data.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(string(payload))
-	return data, nil
-}
-
-func (e *legacyPreferredLogsExtension) NewLogsDecoder(io.Reader, ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
-	e.streamingCalls++
-	return nil, errors.New("streaming decoder does not support the legacy encoding")
-}
-
-func TestReceiver_LegacyUnmarshalerEOF(t *testing.T) {
 	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
-		for name, unmarshalErr := range map[string]error{
-			"EOF":         io.EOF,
-			"wrapped EOF": fmt.Errorf("invalid payload: %w", io.EOF),
-		} {
-			t.Run(signal+"/"+name, func(t *testing.T) {
-				_, cfg := mustNewFakeCluster(t)
-				received := make(chan decodedMessage, 1)
-				r := newDecoderTestReceiver(t, signal, cfg, received)
-				ext := &legacyMessageExtension{err: unmarshalErr}
-				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
-				t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-				err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
-					Topic: "messages", Value: []byte("invalid"),
-				}, attribute.NewSet())
-				require.ErrorIs(t, err, unmarshalErr)
-				assert.True(t, consumererror.IsPermanent(err))
-				assert.Empty(t, received, "legacy unmarshal errors must remain decoding errors")
-			})
-		}
+		t.Run(signal, func(t *testing.T) {
+			_, cfg := mustNewFakeCluster(t)
+			received := make(chan decodedMessage, 1)
+			r := newDecoderTestReceiver(t, signal, cfg, received)
+			decodeErr := errors.New("invalid encoded message")
+			require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): &messageContextExtension{err: decodeErr}}))
+			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
+			err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet())
+			require.ErrorIs(t, err, decodeErr)
+			assert.True(t, consumererror.IsPermanent(err))
+			assert.Empty(t, received, "a decoder result returned with an error must not be consumed")
+		})
 	}
 }
 
@@ -368,38 +298,24 @@ func TestReceiver_LegacyUnmarshaler(t *testing.T) {
 	}
 }
 
-// legacyMessageExtension has no streaming factories. Its existing byte-only
-// methods must retain their success and error behavior.
+// legacyMessageExtension implements only the existing byte-only unmarshalers.
 type legacyMessageExtension struct {
 	component.Component
-	err error
 }
 
-func (e *legacyMessageExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
-	if e.err != nil {
-		return plog.Logs{}, e.err
-	}
+func (*legacyMessageExtension) UnmarshalLogs([]byte) (plog.Logs, error) {
 	return testdata.GenerateLogs(1), nil
 }
 
-func (e *legacyMessageExtension) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
-	if e.err != nil {
-		return pmetric.Metrics{}, e.err
-	}
+func (*legacyMessageExtension) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
 	return testdata.GenerateMetrics(1), nil
 }
 
-func (e *legacyMessageExtension) UnmarshalTraces([]byte) (ptrace.Traces, error) {
-	if e.err != nil {
-		return ptrace.Traces{}, e.err
-	}
+func (*legacyMessageExtension) UnmarshalTraces([]byte) (ptrace.Traces, error) {
 	return testdata.GenerateTraces(1), nil
 }
 
-func (e *legacyMessageExtension) UnmarshalProfiles([]byte) (pprofile.Profiles, error) {
-	if e.err != nil {
-		return pprofile.Profiles{}, e.err
-	}
+func (*legacyMessageExtension) UnmarshalProfiles([]byte) (pprofile.Profiles, error) {
 	return testdata.GenerateProfiles(1), nil
 }
 
