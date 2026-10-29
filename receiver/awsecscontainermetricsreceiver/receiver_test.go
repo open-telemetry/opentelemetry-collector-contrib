@@ -8,9 +8,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
@@ -53,10 +55,11 @@ func TestReceiver(t *testing.T) {
 
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	sink := new(consumertest.MetricsSink)
 	metricsReceiver, err := newAWSECSContainermetrics(
 		zap.NewNop(),
 		cfg,
-		new(consumertest.MetricsSink),
+		sink,
 		&fakeRestClient{},
 	)
 
@@ -68,6 +71,32 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 
 	err = r.collectDataFromEndpoint(ctx)
 	require.NoError(t, err)
+
+	allMetrics := sink.AllMetrics()
+	require.NotEmpty(t, allMetrics)
+	sumCount := 0
+	for _, md := range allMetrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				metrics := sms.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					metric := metrics.At(k)
+					if metric.Type() == pmetric.MetricTypeSum {
+						sumCount++
+						assert.True(t, metric.Sum().IsMonotonic(), "expected sum metric %s to be monotonic", metric.Name())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+						require.Greater(t, metric.Sum().DataPoints().Len(), 0)
+						dp := metric.Sum().DataPoints().At(0)
+						assert.NotZero(t, dp.StartTimestamp(), "expected start timestamp on metric %s to be non-zero", metric.Name())
+						assert.LessOrEqual(t, dp.StartTimestamp(), dp.Timestamp())
+					}
+				}
+			}
+		}
+	}
+	assert.Greater(t, sumCount, 0)
 }
 
 func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {

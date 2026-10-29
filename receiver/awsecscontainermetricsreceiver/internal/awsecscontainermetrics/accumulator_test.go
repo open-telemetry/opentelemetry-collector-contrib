@@ -5,8 +5,12 @@ package awsecscontainermetrics
 
 import (
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -250,4 +254,124 @@ func TestCalculateDuration(t *testing.T) {
 	result, err = calculateDuration(startTime, endTime)
 	require.Error(t, err)
 	require.EqualValues(t, 0, result)
+}
+
+func TestGetContainerStartTime(t *testing.T) {
+	// StartedAt present and valid
+	cm := &ecsutil.ContainerMetadata{
+		StartedAt: "2020-07-30T22:12:31.138830877Z",
+		CreatedAt: "2020-07-30T22:12:29.837074927Z",
+	}
+	expectedTime, err := time.Parse(time.RFC3339Nano, cm.StartedAt)
+	require.NoError(t, err)
+	assert.Equal(t, pcommon.NewTimestampFromTime(expectedTime), getContainerStartTime(cm))
+
+	// StartedAt empty, fall back to CreatedAt
+	cm = &ecsutil.ContainerMetadata{
+		CreatedAt: "2020-07-30T22:12:29.837074927Z",
+	}
+	expectedCreated, err := time.Parse(time.RFC3339Nano, cm.CreatedAt)
+	require.NoError(t, err)
+	assert.Equal(t, pcommon.NewTimestampFromTime(expectedCreated), getContainerStartTime(cm))
+
+	// StartedAt invalid, fall back to CreatedAt
+	cm = &ecsutil.ContainerMetadata{
+		StartedAt: "invalid-time",
+		CreatedAt: "2020-07-30T22:12:29.837074927Z",
+	}
+	assert.Equal(t, pcommon.NewTimestampFromTime(expectedCreated), getContainerStartTime(cm))
+
+	// Neither present
+	cm = &ecsutil.ContainerMetadata{}
+	assert.Equal(t, pcommon.Timestamp(0), getContainerStartTime(cm))
+}
+
+func TestGetTaskStartTime(t *testing.T) {
+	// Multiple containers: earliest StartedAt selected
+	metadata := ecsutil.TaskMetadata{
+		PullStartedAt: "2020-07-30T22:12:25.705983342Z",
+		Containers: []ecsutil.ContainerMetadata{
+			{StartedAt: "2020-07-30T22:12:31.138830877Z"},
+			{StartedAt: "2020-07-30T22:12:30.956687010Z"},
+			{StartedAt: "2020-07-30T22:12:31.153459485Z"},
+		},
+	}
+	expectedEarliest, err := time.Parse(time.RFC3339Nano, "2020-07-30T22:12:30.956687010Z")
+	require.NoError(t, err)
+	assert.Equal(t, pcommon.NewTimestampFromTime(expectedEarliest), getTaskStartTime(metadata))
+
+	// No containers have StartedAt, fall back to PullStartedAt
+	metadata = ecsutil.TaskMetadata{
+		PullStartedAt: "2020-07-30T22:12:25.705983342Z",
+		Containers: []ecsutil.ContainerMetadata{
+			{ContainerName: "c1"},
+			{ContainerName: "c2"},
+		},
+	}
+	expectedPull, err := time.Parse(time.RFC3339Nano, "2020-07-30T22:12:25.705983342Z")
+	require.NoError(t, err)
+	assert.Equal(t, pcommon.NewTimestampFromTime(expectedPull), getTaskStartTime(metadata))
+
+	// No StartedAt and no PullStartedAt, fall back to earliest CreatedAt
+	metadata = ecsutil.TaskMetadata{
+		Containers: []ecsutil.ContainerMetadata{
+			{CreatedAt: "2020-07-30T22:12:29.837074927Z"},
+			{CreatedAt: "2020-07-30T22:12:28.123456789Z"},
+		},
+	}
+	expectedCreated, err := time.Parse(time.RFC3339Nano, "2020-07-30T22:12:28.123456789Z")
+	require.NoError(t, err)
+	assert.Equal(t, pcommon.NewTimestampFromTime(expectedCreated), getTaskStartTime(metadata))
+
+	// Empty metadata
+	assert.Equal(t, pcommon.Timestamp(0), getTaskStartTime(ecsutil.TaskMetadata{}))
+}
+
+func TestGetMetricsDataCumulativeSumsWithStartTimestampAndMonotonic(t *testing.T) {
+	taskMeta := ecsutil.TaskMetadata{
+		Cluster:  "cluster-1",
+		TaskARN:  "arn:aws:some-value/001",
+		Family:   "task-def-family-1",
+		Revision: "task-def-version",
+		Containers: []ecsutil.ContainerMetadata{
+			{
+				ContainerName: "container-1",
+				DockerID:      "001",
+				DockerName:    "docker-container-1",
+				StartedAt:     "2020-07-30T22:12:31.138830877Z",
+				Limits:        ecsutil.Limits{CPU: &f, Memory: &v},
+			},
+		},
+		Limits: ecsutil.Limits{CPU: &f, Memory: &v},
+	}
+
+	testAcc := &metricDataAccumulator{}
+	testAcc.getMetricsData(cstats, taskMeta, logger)
+	require.NotEmpty(t, testAcc.mds)
+
+	expectedStartTime, err := time.Parse(time.RFC3339Nano, "2020-07-30T22:12:31.138830877Z")
+	require.NoError(t, err)
+	expectedTs := pcommon.NewTimestampFromTime(expectedStartTime)
+
+	sumCount := 0
+	for _, md := range testAcc.mds {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				metrics := sms.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					m := metrics.At(k)
+					if m.Type() == pmetric.MetricTypeSum {
+						sumCount++
+						assert.True(t, m.Sum().IsMonotonic(), "metric %s should be monotonic", m.Name())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
+						require.Equal(t, 1, m.Sum().DataPoints().Len())
+						assert.Equal(t, expectedTs, m.Sum().DataPoints().At(0).StartTimestamp())
+					}
+				}
+			}
+		}
+	}
+	assert.Greater(t, sumCount, 0)
 }
