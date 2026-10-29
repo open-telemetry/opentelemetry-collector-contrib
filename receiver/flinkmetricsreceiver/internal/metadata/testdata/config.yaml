@@ -62,6 +62,8 @@ all_set:
     flink.task.record.count:
       enabled: true
   resource_attributes:
+    flink.job.id:
+      enabled: true
     flink.job.name:
       enabled: true
     flink.resource.type:
@@ -137,6 +139,8 @@ reaggregate_set:
     flink.task.record.count:
       enabled: true
   resource_attributes:
+    flink.job.id:
+      enabled: true
     flink.job.name:
       enabled: true
     flink.resource.type:
@@ -212,6 +216,8 @@ none_set:
     flink.task.record.count:
       enabled: false
   resource_attributes:
+    flink.job.id:
+      enabled: false
     flink.job.name:
       enabled: false
     flink.resource.type:
@@ -226,6 +232,10 @@ none_set:
       enabled: false
 filter_set_include:
   resource_attributes:
+    flink.job.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     flink.job.name:
       enabled: true
       metrics_include:
@@ -252,6 +262,10 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    flink.job.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "flink.job.id-val"
     flink.job.name:
       enabled: true
       metrics_exclude:

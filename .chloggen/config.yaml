@@ -168,6 +168,7 @@ components:
     - pkg/otelarrow
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
+    - pkg/ottl/contexts/xspanlink
     - pkg/ottl/xottl
     - pkg/pdatatest
     - pkg/prometheus
@@ -378,4 +379,5 @@ components:
     - scraper/system
     - scraper/zookeeper
     - testbed
+    - testbed/integrationtests/elasticsearch
     - testbed/mockdatasenders/mockdatadogagentexporter
