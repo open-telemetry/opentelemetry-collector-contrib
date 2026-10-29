@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/statuserr"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -42,14 +43,18 @@ func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelp
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
 	numSpans := td.SpanCount()
-	if numSpans == 0 {
+	sizeBytes := uint64(r.sizer.TracesSize(td))
+
+	// Early return for truly empty requests (no data at all).
+	// We check size rather than span count to ensure requests with
+	// metadata but no spans still go through admission control.
+	if sizeBytes == 0 {
 		return ptraceotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
 	var err error
-	sizeBytes := uint64(r.sizer.TracesSize(req.Traces()))
 	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeTraces(ctx, td)
 		releaser() // immediate release
@@ -59,7 +64,14 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
-	return ptraceotlp.NewExportResponse(), err
+	// Use appropriate status codes for permanent/non-permanent errors.
+	// If we return the error straightaway, then the grpc implementation will
+	// set status code to Unknown, which is not retryable.
+	// See: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345
+	if err != nil {
+		return ptraceotlp.NewExportResponse(), statuserr.GetStatusFromError(err)
+	}
+	return ptraceotlp.NewExportResponse(), nil
 }
 
 func (r *Receiver) Consumer() consumer.Traces {

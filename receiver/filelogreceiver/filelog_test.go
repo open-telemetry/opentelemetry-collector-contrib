@@ -19,8 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -55,11 +55,11 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.MustNewID("filelog").String())
+	sub, err := cm.Sub(component.MustNewID("file_log").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
@@ -86,8 +86,9 @@ func TestReadStaticFile(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
-
-	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.BuildInfo.Version = "v0.1.0"
+	rcvr, err := f.CreateLogs(t.Context(), set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -110,7 +111,7 @@ func TestReadStaticFile(t *testing.T) {
 	queueEntry("Something bad happened!", entry.Error)
 	queueEntry("Some details...", entry.Debug)
 
-	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries))
+	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries, metadata.ScopeName, set.BuildInfo.Version))
 
 	dir, err := os.Getwd()
 	require.NoError(t, err)
@@ -315,7 +316,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 	}
 }
 
-// TestConsumeContract tests the contract between the filelog receiver and the next consumer with enabled retry.
+// TestConsumeContract tests the contract between the File Log receiver and the next consumer with enabled retry.
 func TestConsumeContract(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePattern := "test-*.log"
@@ -354,7 +355,7 @@ type fileLogGenerator struct {
 	tmpDir      string
 	filePattern string
 	tmpFile     *os.File
-	sequenceNum int64
+	sequenceNum atomic.Int64
 }
 
 func (g *fileLogGenerator) Start() {
@@ -369,7 +370,7 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	seq := atomic.AddInt64(&g.sequenceNum, 1)
+	seq := g.sequenceNum.Add(1)
 	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(seq, 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
@@ -416,7 +417,7 @@ func TestMultilineWithUTF16Encoding(t *testing.T) {
 	require.NoError(t, utf16Writer.Close())
 	require.NoError(t, testFile.Close())
 
-	// Configure filelog receiver with UTF-16LE encoding and multiline
+	// Configure file_log receiver with UTF-16LE encoding and multiline
 	cfg := &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() file.Config {

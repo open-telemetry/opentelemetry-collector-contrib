@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -95,7 +95,8 @@ func addHandlerFunc[T any](
 			tb.HTTPServerRequestActiveCount.Add(handlerCtx, -1)
 			elapsed := time.Since(start)
 			tb.HTTPServerRequestDuration.Record(handlerCtx, elapsed.Seconds(), metric.WithAttributeSet(
-				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code))),
+				attribute.NewSet(attribute.Int(string(conventions.HTTPResponseStatusCodeKey), code)),
+			),
 			)
 		}()
 
@@ -155,18 +156,18 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 		logsUnmarshaler.UnmarshalLogs,
 		p.nextLogs.ConsumeLogs,
 		p.storageClient,
-		p.cfg.IncludeMetadata,
+		p.cfg.ServerConfig.IncludeMetadata,
 		p.settings.Logger,
 	)
 
-	server, err := p.cfg.ToServer(ctx, host.GetExtensions(), p.settings.TelemetrySettings, mux)
+	server, err := p.cfg.ServerConfig.ToServer(ctx, host.GetExtensions(), p.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}
 	p.server = server
 
-	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.NetAddr.Endpoint))
-	lis, err := p.cfg.ToListener(ctx)
+	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.ServerConfig.NetAddr.Endpoint))
+	lis, err := p.cfg.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -307,7 +308,8 @@ func handlePubSubPushRequest[T any](
 			metricAttr = attribute.NewSet(attribute.String(bucketNameAttr, bucketName))
 		}
 		tb.GcpPubsubInputUncompressedSize.Record(ctx, float64(incomingSize), metric.WithAttributeSet(
-			metricAttr),
+			metricAttr,
+		),
 		)
 	}
 	unmarshalled, err := unmarshal(unmarshalData)
@@ -341,8 +343,12 @@ func handlePubSubPushRequest[T any](
 	return nil
 }
 
-func loadEncodingExtension[T any](host component.Host, encoding component.ID, signal string) (T, error) {
+func loadEncodingExtension[T any](host component.Host, encodingID *component.ID, signal string) (T, error) {
 	var zero T
+	if encodingID == nil || *encodingID == (component.ID{}) {
+		return zero, errors.New("encoding must be set")
+	}
+	encoding := *encodingID
 	ext, ok := host.GetExtensions()[encoding]
 	if !ok {
 		return zero, fmt.Errorf("extension %q not found", encoding.String())

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
 )
@@ -51,6 +51,10 @@ func TestLoadConfig(t *testing.T) {
 			id:                    component.NewIDWithName(metadata.Type, "invalid_ratio_type"),
 			unmarshalErrorMessage: "decoding failed due to the following error(s):\n\n'gomemlimit.ratio' expected type 'float64', got unconvertible type 'string'",
 		},
+		{
+			id:                   component.NewIDWithName(metadata.Type, "invalid_refresh_interval"),
+			validateErrorMessage: "refresh_interval: requires non negative value",
+		},
 	}
 
 	for _, tt := range tests {
@@ -71,11 +75,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.validateErrorMessage != "" {
-				assert.EqualError(t, xconfmap.Validate(cfg), tt.validateErrorMessage)
+				assert.EqualError(t, confmap.Validate(cfg), tt.validateErrorMessage)
 				return
 			}
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

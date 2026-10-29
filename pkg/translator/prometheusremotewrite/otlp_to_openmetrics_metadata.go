@@ -45,7 +45,7 @@ func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMeta
 	return prompb.MetricMetadata_UNKNOWN
 }
 
-func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace string) ([]*prompb.MetricMetadata, error) {
+func OtelMetricsToMetadata(md pmetric.Metrics, settings Settings) ([]*prompb.MetricMetadata, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	metadataLength := 0
@@ -56,8 +56,9 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool, namespace
 		}
 	}
 
-	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: addMetricSuffixes, Namespace: namespace}
-	unitNamer := otlptranslator.UnitNamer{}
+	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed}
+	unitNamer := otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed}
 	metadata := make([]*prompb.MetricMetadata, 0, metadataLength)
 	var errs error
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {

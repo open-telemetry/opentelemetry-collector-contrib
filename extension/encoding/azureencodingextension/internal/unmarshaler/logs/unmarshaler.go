@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
@@ -113,7 +113,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	case unmarshaler.FormatUnknown:
 		return plog.NewLogs(), nil
 	default:
-		return plog.NewLogs(), fmt.Errorf("unrecognized batch format: %q", batchFormat)
+		return plog.NewLogs(), fmt.Errorf("unrecognized batch format: %d", batchFormat)
 	}
 
 	l := plog.NewLogs()

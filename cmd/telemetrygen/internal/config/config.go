@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
@@ -146,6 +146,7 @@ type Config struct {
 	TotalDuration         types.DurationWithInf
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
+	Timeout               time.Duration
 
 	// OTLP config
 	CustomEndpoint      string
@@ -264,6 +265,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.Float64Var(&c.Rate, "rate", c.Rate, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
 	fs.Var(&c.TotalDuration, "duration", "For how long to run the test. Use 'inf' for infinite duration.")
 	fs.DurationVar(&c.ReportingInterval, "interval", c.ReportingInterval, "Reporting interval")
+	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "Maximum time to wait for the signals to reach destination.")
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", c.CustomEndpoint, "Destination endpoint for exporting logs, metrics and traces")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", c.Insecure, "Whether to enable client transport security for the exporter's grpc or http connection")
@@ -278,11 +280,13 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 		`Flag may be repeated to set multiple headers (e.g --otlp-header key1=\"value1\" --otlp-header key2=\"value2\")`)
 
 	// custom resource attributes
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes, describing the entity that produces the telemetry. They are set once on the OTLP resource and are shared by every span, metric data point and log record emitted by this run, e.g. --otlp-attributes service.name=\"my-service\" overrides --service. "+
+		"The value is expected in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --otlp-attributes key3=true --otlp-attributes key4=123 --otlp-attributes key5=[1,2,3])`)
 
-	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom attributes describing an individual telemetry item. They are set on every generated span, metric data point and log record rather than on the resource, e.g. --telemetry-attributes http.response.status_code=200. "+
+		"The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>, or key=[\"value1\", \"value2\", ...]. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123 --telemetry-attributes key5=[1,2,3])`)
 
@@ -313,6 +317,7 @@ func (c *Config) SetDefaults() {
 	c.Rate = 0
 	c.TotalDuration = types.DurationWithInf(0)
 	c.ReportingInterval = 1 * time.Second
+	c.Timeout = 10 * time.Second
 	c.CustomEndpoint = ""
 	c.Insecure = false
 	c.InsecureSkipVerify = false

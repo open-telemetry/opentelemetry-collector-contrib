@@ -122,7 +122,8 @@ func TestLabelLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelLimit2},
 			},
-			validateFunc: verifyFailedScrape,
+			validateFunc:    verifyFailedScrape,
+			validateScrapes: true,
 		},
 	}
 
@@ -261,7 +262,8 @@ func TestLabelNameLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelNameLimit},
 			},
-			validateFunc: verifyFailedScrape,
+			validateFunc:    verifyFailedScrape,
+			validateScrapes: true,
 		},
 	}
 
@@ -297,7 +299,8 @@ func TestLabelValueLimitConfig(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetLabelValueLimit},
 			},
-			validateFunc: verifyFailedScrape,
+			validateFunc:    verifyFailedScrape,
+			validateScrapes: true,
 		},
 	}
 
@@ -706,7 +709,8 @@ func TestRelabelJobInstance(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: targetRelabelJobInstance},
 			},
-			validateFunc: verifyRelabelJobInstance,
+			validateFunc:    verifyRelabelJobInstance,
+			validateScrapes: true,
 		},
 	}
 
@@ -821,60 +825,153 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 	})
 }
 
-const targetInstrumentationScopes = `
+const targetScopeAttributesFromMetricLabels = `
 # HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
 # TYPE jvm_memory_bytes_used gauge
-jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0"} 100
-jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 100
-jvm_memory_bytes_used{area="heap"} 100
-# TYPE otel_scope_info gauge
-otel_scope_info{animal="bear", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 1
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0", otel_scope_animal="bear"} 100
+jvm_memory_bytes_used{area="nonheap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0", otel_scope_animal="fox"} 101
 `
 
-func TestScopeInfoScopeAttributes(t *testing.T) {
+const targetScopeInfoAndMetricLabels = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.metric.labels", otel_scope_version="v1.5.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0", otel_scope_animal="bear"} 100
+jvm_memory_bytes_used{area="nonheap", otel_scope_name="scope.with.metric.labels", otel_scope_version="v1.5.0", otel_scope_schema_url="https://opentelemetry.io/schemas/1.21.0", otel_scope_animal="fox"} 101
+jvm_memory_bytes_used{area="oldstyle", otel_scope_name="scope.with.info", otel_scope_version="v2.0.0"} 102
+# TYPE otel_scope_info gauge
+otel_scope_info{animal="rabbit", otel_scope_name="scope.with.info", otel_scope_version="v2.0.0"} 1
+`
+
+func TestScopeAttributeLabels(t *testing.T) {
 	targets := []*testData{
 		{
 			name: "target1",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: targetInstrumentationScopes},
+				{code: 200, data: targetScopeAttributesFromMetricLabels},
 			},
-			validateFunc: verifyMultipleScopes,
+			validateFunc: verifyScopeAttributeLabels,
 		},
 	}
 
 	testComponent(t, targets, nil)
 }
 
-func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+func TestScopeInfoMetricIgnored(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetScopeInfoAndMetricLabels},
+			},
+			validateFunc: verifyScopeInfoMetricIgnored,
+		},
+	}
+
+	testComponent(t, targets, nil)
+}
+
+func verifyScopeAttributeLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	sms := rms[0].ScopeMetrics()
-	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present")
-	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
-		return a.Scope().Name() < b.Scope().Name()
-	})
+	filtered := make([]pmetric.ScopeMetrics, 0, sms.Len())
+	for i := 0; i < sms.Len(); i++ {
+		sm := sms.At(i)
+		if sm.Scope().Name() == "scope.with.attributes" {
+			filtered = append(filtered, sm)
+		}
+	}
+	require.Len(t, filtered, 2, "Two scope metrics should be present for scope.with.attributes")
+	animals := map[string]pmetric.ScopeMetrics{}
+	for _, sm := range filtered {
+		require.Equal(t, "scope.with.attributes", sm.Scope().Name())
+		require.Equal(t, "v1.5.0", sm.Scope().Version())
+		require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sm.SchemaUrl())
+		require.Equal(t, 1, sm.Scope().Attributes().Len())
 
-	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
-	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
-	require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sms.At(0).SchemaUrl())
-	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
-	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
-	require.Empty(t, sms.At(1).SchemaUrl())
-	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
-	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
-	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
-	require.Empty(t, sms.At(2).SchemaUrl())
-	require.Equal(t, 1, sms.At(2).Scope().Attributes().Len())
-	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
+		animalValue, found := sm.Scope().Attributes().Get("animal")
+		require.True(t, found)
+		animals[animalValue.Str()] = sm
+
+		require.Equal(t, 1, sm.Metrics().Len())
+		dp := sm.Metrics().At(0).Gauge().DataPoints().At(0)
+		require.Equal(t, 1, dp.Attributes().Len())
+		_, found = dp.Attributes().Get("area")
+		require.True(t, found)
+		_, found = dp.Attributes().Get("otel_scope_animal")
+		require.False(t, found)
+	}
+
+	require.Contains(t, animals, "bear")
+	require.Contains(t, animals, "fox")
+}
+
+func verifyScopeInfoMetricIgnored(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	metricLabelScopes := make([]pmetric.ScopeMetrics, 0, sms.Len())
+	var scopeInfoScope pmetric.ScopeMetrics
+	for i := 0; i < sms.Len(); i++ {
+		sm := sms.At(i)
+		switch sm.Scope().Name() {
+		case "scope.with.metric.labels":
+			metricLabelScopes = append(metricLabelScopes, sm)
+		case "scope.with.info":
+			scopeInfoScope = sm
+		}
+	}
+
+	require.Len(t, metricLabelScopes, 2, "Two scope metrics should be present for scope.with.metric.labels")
+	animals := map[string]pmetric.ScopeMetrics{}
+	for _, sm := range metricLabelScopes {
+		require.Equal(t, "scope.with.metric.labels", sm.Scope().Name())
+		require.Equal(t, "v1.5.0", sm.Scope().Version())
+		require.Equal(t, "https://opentelemetry.io/schemas/1.21.0", sm.SchemaUrl())
+		require.Equal(t, 1, sm.Scope().Attributes().Len())
+
+		animalValue, found := sm.Scope().Attributes().Get("animal")
+		require.True(t, found)
+		animals[animalValue.Str()] = sm
+
+		require.Equal(t, 1, sm.Metrics().Len())
+		dp := sm.Metrics().At(0).Gauge().DataPoints().At(0)
+		require.Equal(t, 1, dp.Attributes().Len())
+		_, found = dp.Attributes().Get("area")
+		require.True(t, found)
+		_, found = dp.Attributes().Get("otel_scope_animal")
+		require.False(t, found)
+	}
+
+	require.Contains(t, animals, "bear")
+	require.Contains(t, animals, "fox")
+
+	require.Equal(t, "scope.with.info", scopeInfoScope.Scope().Name())
+	require.Equal(t, "v2.0.0", scopeInfoScope.Scope().Version())
+	require.Equal(t, 0, scopeInfoScope.Scope().Attributes().Len())
+	require.Equal(t, 2, scopeInfoScope.Metrics().Len())
+
+	scopeMetricsByName := make(map[string]pmetric.Metric, scopeInfoScope.Metrics().Len())
+	for i := 0; i < scopeInfoScope.Metrics().Len(); i++ {
+		metric := scopeInfoScope.Metrics().At(i)
+		scopeMetricsByName[metric.Name()] = metric
+	}
+
+	oldStyleMetric, found := scopeMetricsByName["jvm_memory_bytes_used"]
 	require.True(t, found)
-	require.Equal(t, "bear", scopeAttrVal.Str())
-
-	// Check that otel_scope_name, otel_scope_version, and otel_scope_schema_url are dropped from metric data point attributes
-	require.Equal(t, 1, sms.At(0).Metrics().Len())
-	metric := sms.At(0).Metrics().At(0)
-	dp := metric.Gauge().DataPoints().At(0)
-	require.Equal(t, 1, dp.Attributes().Len(), "Should only have 'area' attribute")
+	dp := oldStyleMetric.Gauge().DataPoints().At(0)
+	require.Equal(t, 1, dp.Attributes().Len())
 	_, found = dp.Attributes().Get("area")
-	require.True(t, found, "Should only have 'area' attribute")
+	require.True(t, found)
+
+	// otel_scope_info is not used for scope attribute extraction and passes through as a regular metric
+	scopeInfoMetric, found := scopeMetricsByName["otel_scope_info"]
+	require.True(t, found)
+	dp = scopeInfoMetric.Gauge().DataPoints().At(0)
+	require.Equal(t, 1, dp.Attributes().Len())
+	animal, found := dp.Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, "rabbit", animal.Str())
 }

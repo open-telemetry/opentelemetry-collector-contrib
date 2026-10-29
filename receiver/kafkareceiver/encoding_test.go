@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -188,6 +190,18 @@ func TestNewLogsUnmarshalerTextEncoding(t *testing.T) {
 	u, err := newLogsUnmarshaler("text_invalid", settings, componenttest.NewNopHost())
 	require.EqualError(t, err, `invalid text encoding: unsupported encoding 'invalid'`)
 	assert.Nil(t, u)
+}
+
+func TestAzureResourceLogsDeprecationWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	_, err := newLogsUnmarshaler("azure_resource_logs", settings, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "azure_resource_logs")
 }
 
 func TestNewMetricsUnmarshaler(t *testing.T) {

@@ -112,15 +112,6 @@ func (tc *streamTestCase) connectTestStream(h testChannel) func(context.Context,
 	}
 }
 
-// get returns the stream via the prioritizer it is registered with.
-func (tc *streamTestCase) mustGet() streamWriter {
-	stream := tc.prioritizer.nextWriter()
-	if stream == nil {
-		panic("unexpected nil stream")
-	}
-	return stream
-}
-
 func (tc *streamTestCase) mustSendAndWait() error {
 	ctx := context.Background()
 	ch := make(chan error, 1)
@@ -129,7 +120,13 @@ func (tc *streamTestCase) mustSendAndWait() error {
 		records:     twoTraces,
 		errCh:       ch,
 	}
-	return tc.mustGet().sendAndWait(ctx, ch, wri)
+
+	stream := tc.prioritizer.nextWriter()
+	if stream == nil {
+		return ErrStreamRestarting
+	}
+
+	return stream.sendAndWait(ctx, ch, wri)
 }
 
 // TestStreamNoMaxLifetime verifies that configuring

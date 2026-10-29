@@ -159,6 +159,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 		metrics   pmetric.Metrics
 		want      []*prompb.MetricMetadata
 		namespace string
+		strategy  string
 	}{
 		{
 			name:    "all types§",
@@ -273,10 +274,46 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 			},
 			namespace: "ns",
 		},
+		{
+			name: "metadata_utf8_unit",
+			metrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				initMetric(m, "test_gauge", pmetric.MetricTypeGauge, "custom unit", "gauge description")
+				return md
+			}(),
+			want: []*prompb.MetricMetadata{
+				{
+					Type:             prompb.MetricMetadata_GAUGE,
+					MetricFamilyName: "test_gauge",
+					Unit:             "custom unit",
+					Help:             "gauge description",
+				},
+			},
+			strategy: "NoTranslation",
+		},
+		{
+			name: "metadata_non_utf8_unit",
+			metrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				initMetric(m, "test_gauge", pmetric.MetricTypeGauge, "custom unit", "gauge description")
+				return md
+			}(),
+			want: []*prompb.MetricMetadata{
+				{
+					Type:             prompb.MetricMetadata_GAUGE,
+					MetricFamilyName: "test_gauge_custom_unit",
+					Unit:             "custom_unit",
+					Help:             "gauge description",
+				},
+			},
+			strategy: "UnderscoreEscapingWithSuffixes",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData, err := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			metaData, err := OtelMetricsToMetadata(tt.metrics, Settings{Namespace: tt.namespace, AddMetricSuffixes: false, TranslationStrategy: tt.strategy})
 			require.NoError(t, err)
 
 			for i := range metaData {

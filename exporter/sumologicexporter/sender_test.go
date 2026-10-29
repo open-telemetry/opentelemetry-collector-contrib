@@ -61,20 +61,20 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	t.Cleanup(func() { testServer.Close() })
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = testServer.URL
+	cfg.ClientConfig.Endpoint = testServer.URL
 	switch compression {
 	case configcompression.TypeGzip:
-		cfg.Compression = configcompression.TypeGzip
+		cfg.ClientConfig.Compression = configcompression.TypeGzip
 	case configcompression.TypeZstd:
-		cfg.Compression = configcompression.TypeZstd
+		cfg.ClientConfig.Compression = configcompression.TypeZstd
 	case NoCompression:
-		cfg.Compression = NoCompression
+		cfg.ClientConfig.Compression = NoCompression
 	case configcompression.TypeDeflate:
-		cfg.Compression = configcompression.TypeDeflate
+		cfg.ClientConfig.Compression = configcompression.TypeDeflate
 	default:
-		cfg.Compression = configcompression.TypeGzip
+		cfg.ClientConfig.Compression = configcompression.TypeGzip
 	}
-	cfg.Auth = configoptional.None[configauth.Config]()
+	cfg.ClientConfig.Auth = configoptional.None[configauth.Config]()
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
 	client, err := httpSettings.ToClient(t.Context(), host.GetExtensions(), componenttest.NewNopTelemetrySettings())
@@ -927,7 +927,8 @@ func TestLogsHandlesReceiverResponses(t *testing.T) {
 					"_sourceName":     "test_source_name",
 					"_sourceHost":     "test_source_host",
 					"_sourceCategory": "test_source_category",
-				}),
+				},
+			),
 		)
 		assert.NoError(t, writer.Flush())
 		assert.NoError(t, err)

@@ -16,12 +16,14 @@ $defs:
 description: Config defines configuration for the Splunk HEC receiver.
 type: object
 properties:
+  ack:
+    $ref: ack
   health_path:
     description: HealthPath for health API, default is '/services/collector/health'
     type: string
   hec_metadata_to_otel_attrs:
     description: HecToOtelAttrs creates a mapping from HEC metadata to attributes.
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk.hec_to_otel_attrs
+    $ref: /pkg/translator/splunk.hec_to_otel_attrs
   raw_path:
     description: RawPath for raw data collection, default is '/services/collector/raw'
     type: string
@@ -30,5 +32,4 @@ properties:
     $ref: splitting_strategy
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk.access_token_passthrough_config
-  - $ref: ack
+  - $ref: /internal/splunk.access_token_passthrough_config

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -21,23 +22,23 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
+	legacyServerConfig := confighttp.NewDefaultServerConfig()
+	legacyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+	}
 	assert.Equal(t, &Config{
 		LegacyConfig: healthcheck.HTTPLegacyConfig{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-				},
-			},
-			Path: "/",
+			ServerConfig: legacyServerConfig,
+			Path:         "/",
 		},
 		HTTPConfig: &healthcheck.HTTPConfig{
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: "tcp",
-					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
-				},
-			},
+			ServerConfig: httpServerConfig,
 			Status: healthcheck.PathConfig{
 				Enabled: true,
 				Path:    "/status",
@@ -53,6 +54,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultGRPCPort),
 					Transport: "tcp",
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		},
 	}, cfg)
@@ -63,14 +65,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Shutdown(ctx))
 }
 
 func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Shutdown(ctx))
 }

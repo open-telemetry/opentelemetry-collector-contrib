@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -109,7 +110,8 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 
-	require.NoError(t, tcDockerClient.ContainerRename(t.Context(), container.GetContainerID(), "nginx-updated"))
+	_, err = tcDockerClient.ContainerRename(t.Context(), container.GetContainerID(), client.ContainerRenameOptions{NewName: "nginx-updated"})
+	require.NoError(t, err)
 
 	require.Eventually(t, func() bool { return mn.ChangeCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Equal(t, 1, mn.AddCount())
@@ -189,7 +191,7 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 	require.NotNil(t, container)
 
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.ExcludedImages = []string{"*nginx*"}
+	config.Config.ExcludedImages = []string{"*nginx*"}
 
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserverWithConfig(t, mn, config)
@@ -197,6 +199,71 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 	time.Sleep(2 * time.Second) // wait for endpoints to sync
 	require.Equal(t, 1, mn.AddCount())
 	require.Equal(t, 0, mn.ChangeCount())
+}
+
+func TestObserverMultipleNetworksIntegration(t *testing.T) {
+	ctx := t.Context()
+
+	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+
+	netA := fmt.Sprintf("test-multi-a-%d", time.Now().UnixNano())
+	netB := fmt.Sprintf("test-multi-b-%d", time.Now().UnixNano())
+
+	_, err = tcDockerClient.NetworkCreate(ctx, netA, client.NetworkCreateOptions{})
+	require.NoError(t, err)
+	defer func() {
+		_, _ = tcDockerClient.NetworkRemove(ctx, netA, client.NetworkRemoveOptions{})
+	}()
+
+	_, err = tcDockerClient.NetworkCreate(ctx, netB, client.NetworkCreateOptions{})
+	require.NoError(t, err)
+	defer func() {
+		_, _ = tcDockerClient.NetworkRemove(ctx, netB, client.NetworkRemoveOptions{})
+	}()
+
+	req := testcontainers.ContainerRequest{
+		Image:        "docker.io/library/nginx:1.17",
+		ExposedPorts: []string{"80/tcp"},
+		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Networks:     []string{netB, netA},
+		SkipReaper:   true,
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	defer func() {
+		_ = container.Terminate(ctx)
+	}()
+	require.NotNil(t, container)
+
+	inspect, err := tcDockerClient.ContainerInspect(ctx, container.GetContainerID(), client.ContainerInspectOptions{})
+	require.NoError(t, err)
+	require.NotNil(t, inspect.Container.NetworkSettings)
+	netASettings := inspect.Container.NetworkSettings.Networks[netA]
+	require.NotNil(t, netASettings)
+	require.True(t, netASettings.IPAddress.IsValid())
+	expectedIP := netASettings.IPAddress.String()
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.CacheSyncInterval = 1 * time.Second
+	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
+	obvs := startObserverWithConfig(t, mn, config)
+	defer stopObserver(t, obvs)
+
+	require.Eventually(t, func() bool { return mn.AddCount() == 1 }, 3*time.Second, 10*time.Millisecond)
+	endpoints := mn.EndpointsMap()
+
+	found := false
+	for _, e := range endpoints {
+		if e.Details.Env()["container_id"] == container.GetContainerID() {
+			found = true
+			require.Equal(t, expectedIP, e.Details.Env()["host"])
+		}
+	}
+	require.True(t, found, "Container endpoint not found")
 }
 
 func startObserver(t *testing.T, listener observer.Notify) *dockerObserver {

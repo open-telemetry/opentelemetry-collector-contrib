@@ -1,0 +1,22 @@
+[
+  {
+    "database_name": "testdb",
+    "schema_name": "dbo",
+    "object_name": "TestTable",
+    "index_id": "1",
+    "avg_fragmentation_in_percent": "12.5",
+    "page_count": "100",
+    "avg_page_space_used_in_percent": "75.0",
+    "record_count": "5000"
+  },
+  {
+    "database_name": "testdb",
+    "schema_name": "dbo",
+    "object_name": "TestTable",
+    "index_id": "2",
+    "avg_fragmentation_in_percent": "3.2",
+    "page_count": "20",
+    "avg_page_space_used_in_percent": "88.5",
+    "record_count": "5000"
+  }
+]

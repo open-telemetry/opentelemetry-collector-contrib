@@ -62,17 +62,18 @@ func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 }
 
 // Process will write an entry to the output file.
-func (o *Output) Process(_ context.Context, entry *entry.Entry) error {
+func (o *Output) Process(_ context.Context, e *entry.Entry) error {
 	o.mux.Lock()
 	defer o.mux.Unlock()
+	defer entry.Put(e)
 
 	if o.tmpl != nil {
-		err := o.tmpl.Execute(o.file, entry)
+		err := o.tmpl.Execute(o.file, e)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := o.encoder.Encode(entry)
+		err := o.encoder.Encode(e)
 		if err != nil {
 			return err
 		}

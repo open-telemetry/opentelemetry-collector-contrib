@@ -46,7 +46,7 @@ func newScraper(cfg *Config, settings receiver.Settings) *ntpScraper {
 		logger:   settings.Logger,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		version:  cfg.Version,
-		timeout:  cfg.Timeout,
+		timeout:  cfg.ControllerConfig.Timeout,
 		endpoint: cfg.Endpoint,
 	}
 }

@@ -6,6 +6,7 @@ package filelogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -14,14 +15,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
 
-// NewFactory creates a factory for filelog receiver
+// NewFactory creates a factory for file_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// ReceiverType implements adapter.LogReceiverTypeWithScope
 // to create a file tailing receiver
 type ReceiverType struct{}
+
+var _ adapter.LogReceiverTypeWithScope = (*ReceiverType)(nil)
+
+// ScopeName sets the scope name that will be used on all logs coming from the receiver.
+func (ReceiverType) ScopeName() string { return metadata.ScopeName }
 
 // Type is the receiver type
 func (ReceiverType) Type() component.Type {
@@ -48,7 +56,7 @@ func (ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
-// FileLogConfig defines configuration for the filelog receiver
+// FileLogConfig defines configuration for the file_log receiver
 type FileLogConfig struct {
 	InputConfig        file.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`

@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.replicaset.uid
           value:
             stringValue: test-replicaset-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.replicaset.name
+          idKeys:
+            - k8s.replicaset.uid
+          type: k8s.replicaset
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -25,8 +31,6 @@ resourceMetrics:
                 - asInt: "2"
             name: k8s.replicaset.available
             unit: "{pod}"
-
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
-

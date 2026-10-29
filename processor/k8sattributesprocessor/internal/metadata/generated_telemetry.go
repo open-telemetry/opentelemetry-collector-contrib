@@ -26,6 +26,9 @@ type TelemetryBuilder struct {
 	mu                           sync.Mutex
 	registrations                []metric.Registration
 	K8sPodAssociation            metric.Int64Counter
+	K8sWatcherCronjobAdded       metric.Int64Counter
+	K8sWatcherCronjobDeleted     metric.Int64Counter
+	K8sWatcherCronjobUpdated     metric.Int64Counter
 	K8sWatcherDaemonsetAdded     metric.Int64Counter
 	K8sWatcherDaemonsetDeleted   metric.Int64Counter
 	K8sWatcherDaemonsetUpdated   metric.Int64Counter
@@ -112,6 +115,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol.k8s.pod.association",
 		metric.WithDescription("Number of pod associations' evaluations [Development]"),
 		metric.WithUnit("{resources}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.K8sWatcherCronjobAdded, err = builder.meter.Int64Counter(
+		"otelcol.k8s.watcher.cronjob.added",
+		metric.WithDescription("Number of cronjob add events received [Development]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.K8sWatcherCronjobDeleted, err = builder.meter.Int64Counter(
+		"otelcol.k8s.watcher.cronjob.deleted",
+		metric.WithDescription("Number of cronjob delete events received [Development]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.K8sWatcherCronjobUpdated, err = builder.meter.Int64Counter(
+		"otelcol.k8s.watcher.cronjob.updated",
+		metric.WithDescription("Number of cronjob update events received [Development]"),
+		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	builder.K8sWatcherDaemonsetAdded, err = builder.meter.Int64Counter(

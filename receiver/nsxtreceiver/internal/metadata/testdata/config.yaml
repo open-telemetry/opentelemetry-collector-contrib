@@ -3,8 +3,10 @@ all_set:
   metrics:
     nsxt.node.cpu.utilization:
       enabled: true
+      attributes: ["class"]
     nsxt.node.filesystem.usage:
       enabled: true
+      attributes: ["state"]
     nsxt.node.filesystem.utilization:
       enabled: true
     nsxt.node.memory.cache.usage:
@@ -13,8 +15,39 @@ all_set:
       enabled: true
     nsxt.node.network.io:
       enabled: true
+      attributes: ["direction"]
     nsxt.node.network.packet.count:
       enabled: true
+      attributes: ["direction","type"]
+  resource_attributes:
+    device.id:
+      enabled: true
+    nsxt.node.id:
+      enabled: true
+    nsxt.node.name:
+      enabled: true
+    nsxt.node.type:
+      enabled: true
+reaggregate_set:
+  metrics:
+    nsxt.node.cpu.utilization:
+      enabled: true
+      attributes: []
+    nsxt.node.filesystem.usage:
+      enabled: true
+      attributes: []
+    nsxt.node.filesystem.utilization:
+      enabled: true
+    nsxt.node.memory.cache.usage:
+      enabled: true
+    nsxt.node.memory.usage:
+      enabled: true
+    nsxt.node.network.io:
+      enabled: true
+      attributes: []
+    nsxt.node.network.packet.count:
+      enabled: true
+      attributes: []
   resource_attributes:
     device.id:
       enabled: true
@@ -28,8 +61,10 @@ none_set:
   metrics:
     nsxt.node.cpu.utilization:
       enabled: false
+      attributes: ["class"]
     nsxt.node.filesystem.usage:
       enabled: false
+      attributes: ["state"]
     nsxt.node.filesystem.utilization:
       enabled: false
     nsxt.node.memory.cache.usage:
@@ -38,8 +73,10 @@ none_set:
       enabled: false
     nsxt.node.network.io:
       enabled: false
+      attributes: ["direction"]
     nsxt.node.network.packet.count:
       enabled: false
+      attributes: ["direction","type"]
   resource_attributes:
     device.id:
       enabled: false

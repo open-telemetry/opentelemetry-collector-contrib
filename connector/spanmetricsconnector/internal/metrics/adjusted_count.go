@@ -122,7 +122,7 @@ var defaultSeedSource = func() uint64 {
 }
 
 var (
-	seedCounter uint64
+	seedCounter atomic.Uint64
 	seedSource  = defaultSeedSource
 )
 
@@ -131,7 +131,7 @@ var (
 var prngPool = sync.Pool{
 	New: func() any {
 		// Use a non-zero seed (crucial for xorshift) that is unique per RNG.
-		s := seedSource() ^ atomic.AddUint64(&seedCounter, 1)
+		s := seedSource() ^ seedCounter.Add(1)
 		if s == 0 {
 			s = 1
 		}

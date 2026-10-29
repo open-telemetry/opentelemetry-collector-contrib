@@ -47,7 +47,7 @@ func TestScrape(t *testing.T) {
 
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -71,7 +71,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -89,7 +89,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -104,12 +104,12 @@ func TestStartClientAlreadySet(t *testing.T) {
 	mockClient := mockServer(t)
 	defer mockClient.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = mockClient.URL
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: mockClient.URL,
-			},
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			ClientConfig:         clientConfig,
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -118,12 +118,12 @@ func TestStartClientAlreadySet(t *testing.T) {
 }
 
 func TestStartBadUrl(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "\x00"
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: "\x00",
-			},
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			ClientConfig:         clientConfig,
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -133,17 +133,31 @@ func TestStartBadUrl(t *testing.T) {
 }
 
 func TestScraperRecordNoStat(_ *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost"
 	scraper := newScraper(
 		&Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: "http://localhost",
-			},
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			ClientConfig:         clientConfig,
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
+}
+
+func TestScraperRecordInterfaceNoStat(_ *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost"
+	scraper := newScraper(
+		&Config{
+			ClientConfig:         clientConfig,
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		},
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	scraper.host = componenttest.NewNopHost()
+	scraper.recordNodeInterface(pcommon.NewTimestampFromTime(time.Now()), dm.NodeProperties{}, interfaceInformation{stats: nil})
 }
 
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {

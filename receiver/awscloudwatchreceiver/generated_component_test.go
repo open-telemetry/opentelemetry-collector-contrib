@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var typ = component.MustNewType("awscloudwatch")
+var typ = component.MustNewType("aws_cloudwatch")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
@@ -37,6 +37,13 @@ func TestComponentLifecycle(t *testing.T) {
 			name: "logs",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+
+		{
+			name: "metrics",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}

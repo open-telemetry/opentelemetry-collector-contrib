@@ -5,6 +5,7 @@ package faro // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"testing"
 	"time"
@@ -185,6 +186,53 @@ func Test_extractBrowserBrandsFromKeyVal(t *testing.T) {
 				return brands
 			}(t),
 		},
+		{
+			name: "brand key without field suffix",
+			kv: map[string]string{
+				"browser_brand_0": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brand key without index",
+			kv: map[string]string{
+				"browser_brand_brand": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brands as array with non-contiguous indexes",
+			kv: map[string]string{
+				"browser_brand_3_brand":   "brand1",
+				"browser_brand_3_version": "0.1.0",
+				"browser_brand_7_brand":   "brand2",
+				"browser_brand_7_version": "0.2.0",
+			},
+			wantErr: assert.NoError,
+			wantBrands: func(t *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				err := brands.FromBrandsArray(faroTypes.BrandsArray{
+					{
+						Brand:   "brand1",
+						Version: "0.1.0",
+					},
+					{
+						Brand:   "brand2",
+						Version: "0.2.0",
+					},
+				})
+				require.NoError(t, err)
+				return brands
+			}(t),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -236,6 +284,28 @@ func Test_extractK6FromKeyVal(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "k6_testRunId is populated when present",
+			kv: map[string]string{
+				"k6_isK6Browser": "true",
+				"k6_testRunId":   "run-abc",
+			},
+			want: faroTypes.K6{
+				IsK6Browser: true,
+				TestRunID:   "run-abc",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "k6_testRunId alone is populated",
+			kv: map[string]string{
+				"k6_testRunId": "run-only",
+			},
+			want: faroTypes.K6{
+				TestRunID: "run-only",
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -244,6 +314,221 @@ func Test_extractK6FromKeyVal(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "extractK6FromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_k6ToKeyVal(t *testing.T) {
+	testcases := []struct {
+		name string
+		k6   faroTypes.K6
+		want map[string]string
+	}{
+		{
+			name: "zero value emits no keys",
+			k6:   faroTypes.K6{},
+			want: map[string]string{},
+		},
+		{
+			name: "IsK6Browser=true alone emits only k6_isK6Browser",
+			k6:   faroTypes.K6{IsK6Browser: true},
+			want: map[string]string{
+				"k6_isK6Browser": "true",
+			},
+		},
+		{
+			name: "TestRunID alone emits only k6_testRunId",
+			k6:   faroTypes.K6{TestRunID: "run-xyz"},
+			want: map[string]string{
+				"k6_testRunId": "run-xyz",
+			},
+		},
+		{
+			name: "both fields set emits both keys",
+			k6:   faroTypes.K6{IsK6Browser: true, TestRunID: "run-xyz"},
+			want: map[string]string{
+				"k6_isK6Browser": "true",
+				"k6_testRunId":   "run-xyz",
+			},
+		},
+		{
+			name: "empty TestRunID with IsK6Browser=true omits k6_testRunId",
+			k6:   faroTypes.K6{IsK6Browser: true, TestRunID: ""},
+			want: map[string]string{
+				"k6_isK6Browser": "true",
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			kv := k6ToKeyVal(tt.k6)
+			got := make(map[string]string, kv.Len())
+			for el := kv.Oldest(); el != nil; el = el.Next() {
+				got[el.Key] = el.Value.(string)
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_extractDeviceFromKeyVal(t *testing.T) {
+	testcases := []struct {
+		name    string
+		kv      map[string]string
+		want    faroTypes.Device
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name:    "empty kv yields zero-value Device",
+			kv:      map[string]string{},
+			want:    faroTypes.Device{},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "all fields populated",
+			kv: map[string]string{
+				"device_manufacturer":     "Apple",
+				"device_model_identifier": "iPhone14,5",
+				"device_model_name":       "iPhone 13",
+				"device_brand":            "iPhone",
+				"device_is_physical":      "true",
+				"device_type":             "mobile",
+			},
+			want: faroTypes.Device{
+				Manufacturer:    "Apple",
+				ModelIdentifier: "iPhone14,5",
+				ModelName:       "iPhone 13",
+				Brand:           "iPhone",
+				IsPhysical:      true,
+				Type:            "mobile",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "device_is_physical cannot be parsed as boolean",
+			kv: map[string]string{
+				"device_is_physical": "nope",
+			},
+			want:    faroTypes.Device{},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractDeviceFromKeyVal(tt.kv)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractDeviceFromKeyVal(%v)", tt.kv)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "extractDeviceFromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_extractOSFromKeyVal(t *testing.T) {
+	testcases := []struct {
+		name string
+		kv   map[string]string
+		want faroTypes.OS
+	}{
+		{
+			name: "empty kv yields zero-value OS",
+			kv:   map[string]string{},
+			want: faroTypes.OS{},
+		},
+		{
+			name: "all fields populated",
+			kv: map[string]string{
+				"os_name":     "iOS",
+				"os_version":  "18.1",
+				"os_build_id": "22G91",
+				"os_detail":   "iOS 18.1 (22G91)",
+			},
+			want: faroTypes.OS{
+				Name:    "iOS",
+				Version: "18.1",
+				BuildID: "22G91",
+				Detail:  "iOS 18.1 (22G91)",
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, extractOSFromKeyVal(tt.kv))
+		})
+	}
+}
+
+func Test_extractAppFromKeyVal_InstallationID(t *testing.T) {
+	testcases := []struct {
+		name string
+		kv   map[string]string
+		want string
+	}{
+		{
+			name: "installation_id absent",
+			kv:   map[string]string{},
+			want: "",
+		},
+		{
+			name: "installation_id present",
+			kv:   map[string]string{"app_installation_id": "install-abc-123"},
+			want: "install-abc-123",
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			app := extractAppFromKeyVal(tt.kv, pcommon.NewResource())
+			assert.Equal(t, tt.want, app.InstallationID)
+		})
+	}
+}
+
+func Test_extractExceptionFromKeyVal_Fatal(t *testing.T) {
+	baseKV := func(extra map[string]string) map[string]string {
+		kv := map[string]string{
+			"type":  "NullPointerException",
+			"value": "something bad",
+		}
+		maps.Copy(kv, extra)
+		return kv
+	}
+	testcases := []struct {
+		name      string
+		kv        map[string]string
+		wantFatal bool
+		wantErr   assert.ErrorAssertionFunc
+	}{
+		{
+			name:      "fatal absent defaults to false",
+			kv:        baseKV(nil),
+			wantFatal: false,
+			wantErr:   assert.NoError,
+		},
+		{
+			name:      "fatal=true parses as true",
+			kv:        baseKV(map[string]string{"fatal": "true"}),
+			wantFatal: true,
+			wantErr:   assert.NoError,
+		},
+		{
+			name:      "fatal=false parses as false",
+			kv:        baseKV(map[string]string{"fatal": "false"}),
+			wantFatal: false,
+			wantErr:   assert.NoError,
+		},
+		{
+			name:    "fatal cannot be parsed as boolean",
+			kv:      baseKV(map[string]string{"fatal": "nope"}),
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			exception, err := extractExceptionFromKeyVal(tt.kv)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractExceptionFromKeyVal(%v)", tt.kv)) {
+				return
+			}
+			assert.Equal(t, tt.wantFatal, exception.Fatal)
 		})
 	}
 }
@@ -260,6 +545,31 @@ func Test_parseFrameFromString(t *testing.T) {
 			frameStr: "",
 			frame:    nil,
 			wantErr:  assert.NoError,
+		},
+		{
+			name:     "Unparseable frame",
+			frameStr: "invalid",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Whitespace frame",
+			frameStr: " ",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Native frame",
+			frameStr: "foo (native)",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Missing closing parenthesis",
+			frameStr: "foo (file.js:1:2",
+			wantErr:  assert.Error,
+		},
+		{
+			name:     "Non-numeric line",
+			frameStr: "foo (file.js:line:2)",
+			wantErr:  assert.Error,
 		},
 		{
 			name:     "All the frame fields are present in the frame string",
@@ -342,6 +652,34 @@ func Test_parseFrameFromString(t *testing.T) {
 	}
 }
 
+func Test_parseStacktraceFromString(t *testing.T) {
+	validFrame := "foo (file.js:1:2)"
+	for _, tt := range []struct {
+		name       string
+		stacktrace string
+		wantErr    bool
+		wantFrames int
+	}{
+		{name: "empty"},
+		{name: "exception header only", stacktrace: "Error: failure"},
+		{name: "valid frame", stacktrace: "Error: failure\n  at " + validFrame, wantFrames: 1},
+		{name: "unparseable frame", stacktrace: "Error: failure\n  at invalid", wantErr: true},
+		{name: "unparseable frame after valid frame", stacktrace: "Error: failure\n  at " + validFrame + "\n  at invalid", wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			stacktrace, err := parseStacktraceFromString(tt.stacktrace, "Error", "failure")
+			if tt.wantErr {
+				require.EqualError(t, err, "invalid stack trace frame")
+				assert.Nil(t, stacktrace)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, stacktrace)
+			assert.Len(t, stacktrace.Frames, tt.wantFrames)
+		})
+	}
+}
+
 func Test_translateLogToFaroPayload(t *testing.T) {
 	testcases := []struct {
 		name        string
@@ -411,6 +749,36 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 					},
 				},
 				Meta: getTestMeta(),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Log record body has kind=log and level=warn",
+			lr: func() plog.LogRecord {
+				record := plog.NewLogRecord()
+				record.Body().SetStr("kind=log level=warn")
+				return record
+			}(),
+			rl: pcommon.NewResource(),
+			wantPayload: faroTypes.Payload{
+				Logs: []faroTypes.Log{
+					{LogLevel: faroLogLevelWarn},
+				},
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Log record body has kind=log and level=warning",
+			lr: func() plog.LogRecord {
+				record := plog.NewLogRecord()
+				record.Body().SetStr("kind=log level=warning")
+				return record
+			}(),
+			rl: pcommon.NewResource(),
+			wantPayload: faroTypes.Payload{
+				Logs: []faroTypes.Log{
+					{LogLevel: faroTypes.LogLevelWarning},
+				},
 			},
 			wantErr: assert.NoError,
 		},
@@ -589,13 +957,70 @@ func Test_parseIntegrationsFromString(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:               "Integration without a version separator is skipped",
+			integrationsString: "foo",
+			want:               []faroTypes.SDKIntegration{},
+		},
+		{
+			name:               "Malformed integration among valid ones is skipped",
+			integrationsString: "foo:1.2,bar,example:3.4.5",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2",
+				},
+				{
+					Name:    "example",
+					Version: "3.4.5",
+				},
+			},
+		},
+		{
+			name:               "Trailing comma is ignored",
+			integrationsString: "foo:1.2,",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2",
+				},
+			},
+		},
+		{
+			name:               "Version containing a colon is kept intact",
+			integrationsString: "foo:1.2:beta",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2:beta",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseIntegrationsFromString(tt.integrationsString)
+			var got []faroTypes.SDKIntegration
+			require.NotPanics(t, func() {
+				got = parseIntegrationsFromString(tt.integrationsString)
+			})
 			assert.Equalf(t, tt.want, got, "parseIntegrationsFromString(%v)", tt.integrationsString)
 		})
 	}
+}
+
+func TestTranslateFromLogsMalformedSDKIntegrations(t *testing.T) {
+	logs := plog.NewLogs()
+	lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Body().SetStr("kind=log message=hello sdk_integrations=foo:1.2,bar,")
+
+	var payloads []faroTypes.Payload
+	var err error
+	require.NotPanics(t, func() {
+		payloads, err = TranslateFromLogs(t.Context(), logs)
+	})
+	require.NoError(t, err)
+	require.Len(t, payloads, 1)
+	assert.Equal(t, []faroTypes.SDKIntegration{{Name: "foo", Version: "1.2"}}, payloads[0].Meta.SDK.Integrations)
 }
 
 func Test_mergePayloads(t *testing.T) {

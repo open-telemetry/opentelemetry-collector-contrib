@@ -116,31 +116,16 @@ elasticsearch/sendingqueue_enabled:
       sizer: items
       min_size: 1000
       max_size: 5000
-elasticsearch/backward_compat_for_deprecated_cfgs/new_config_takes_priority:
+elasticsearch/suppress_conflict_errors:
   endpoint: https://elastic.example.com:9200
-  # Should be ignored and left as-is
-  num_workers: 11
-  flush:
-    interval: 11s
-    bytes: 1001
-  # Should take precedence
-  sending_queue:
-    enabled: true
-    sizer: requests
-    num_consumers: 111
-    batch:
-      flush_timeout: 111s
-      max_size: 1_000_001
-      sizer: bytes
-elasticsearch/backward_compat_for_deprecated_cfgs/fallback_to_old_cfg:
+  suppress_conflict_errors: true
+elasticsearch/retry_on_document_status:
   endpoint: https://elastic.example.com:9200
-  # Should be used to set sending_queue config
-  num_workers: 11
-  flush:
-    interval: 11s
-    bytes: 1_000_001
-  sending_queue:
-    enabled: true
-    sizer: requests
-    batch:
-      sizer: bytes
+  retry:
+    retry_on_status: [429, 500]
+    retry_on_document_status: [400, 409]
+elasticsearch/retry_on_document_status_empty:
+  endpoint: https://elastic.example.com:9200
+  retry:
+    retry_on_status: [429, 500]
+    retry_on_document_status: []

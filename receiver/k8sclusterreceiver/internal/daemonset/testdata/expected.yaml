@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.daemonset.uid
           value:
             stringValue: test-daemonset-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.daemonset.name
+          idKeys:
+            - k8s.daemonset.uid
+          type: k8s.daemonset
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

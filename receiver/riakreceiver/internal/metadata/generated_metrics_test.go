@@ -67,10 +67,10 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["RiakNodeOperationCount"] = mb.metricRiakNodeOperationCount.config.AggregationStrategy
-			aggMap["RiakNodeOperationTimeMean"] = mb.metricRiakNodeOperationTimeMean.config.AggregationStrategy
-			aggMap["RiakVnodeIndexOperationCount"] = mb.metricRiakVnodeIndexOperationCount.config.AggregationStrategy
-			aggMap["RiakVnodeOperationCount"] = mb.metricRiakVnodeOperationCount.config.AggregationStrategy
+			aggMap["riak.node.operation.count"] = mb.metricRiakNodeOperationCount.config.AggregationStrategy
+			aggMap["riak.node.operation.time.mean"] = mb.metricRiakNodeOperationTimeMean.config.AggregationStrategy
+			aggMap["riak.vnode.index.operation.count"] = mb.metricRiakVnodeIndexOperationCount.config.AggregationStrategy
+			aggMap["riak.vnode.operation.count"] = mb.metricRiakVnodeOperationCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -79,41 +79,47 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakNodeOperationCountDataPoint(ts, 3, AttributeRequestGet)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRiakNodeOperationCountDataPoint(ts+1, 3, AttributeRequestGet)
+				assert.Equal(t, 2, mb.metricRiakNodeOperationCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 3, AttributeRequestGet)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRiakNodeOperationTimeMeanDataPoint(ts+1, 3, AttributeRequestGet)
+				assert.Equal(t, 2, mb.metricRiakNodeOperationTimeMean.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakNodeReadRepairCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 3, AttributeOperationWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRiakVnodeIndexOperationCountDataPoint(ts+1, 3, AttributeOperationWrite)
+				assert.Equal(t, 2, mb.metricRiakVnodeIndexOperationCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 			if tt.name == "reaggregate_set" {
 				mb.RecordRiakVnodeOperationCountDataPoint(ts, 3, AttributeRequestGet)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordRiakVnodeOperationCountDataPoint(ts+1, 3, AttributeRequestGet)
+				assert.Equal(t, 2, mb.metricRiakVnodeOperationCount.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -181,14 +187,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "put", attrVal.Str())
+						assert.Equal(t, "put", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.node.operation.count"], "Found a duplicate in the metrics slice: riak.node.operation.count")
 						validatedMetrics["riak.node.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations performed by the node.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -223,14 +231,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "put", attrVal.Str())
+						assert.Equal(t, "put", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
 						validatedMetrics["riak.node.operation.time.mean"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The mean time between request and response for operations performed by the node over the last minute.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -279,14 +289,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.vnode.index.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.index.operation.count")
 						validatedMetrics["riak.vnode.index.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of index operations performed by vnodes on the node.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -323,14 +335,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "put", attrVal.Str())
+						assert.Equal(t, "put", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
 						validatedMetrics["riak.vnode.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations performed by vnodes on the node.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

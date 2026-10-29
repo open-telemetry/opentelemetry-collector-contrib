@@ -16,6 +16,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetDeploymentEnvironment("deployment.environment-val")
+			rb.SetDeploymentEnvironmentName("deployment.environment.name-val")
+			rb.SetDeploymentID("deployment.id-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceVersion("service.version-val")
 
@@ -24,40 +26,49 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("deployment.environment")
+			deploymentEnvironmentAttrVal, ok := res.Attributes().Get("deployment.environment")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "deployment.environment-val", val.Str())
+				assert.Equal(t, "deployment.environment-val", deploymentEnvironmentAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.instance.id")
+			deploymentEnvironmentNameAttrVal, ok := res.Attributes().Get("deployment.environment.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "deployment.environment.name-val", deploymentEnvironmentNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.version")
+			deploymentIDAttrVal, ok := res.Attributes().Get("deployment.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.version-val", val.Str())
+				assert.Equal(t, "deployment.id-val", deploymentIDAttrVal.Str())
+			}
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
+			}
+			serviceVersionAttrVal, ok := res.Attributes().Get("service.version")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.version-val", serviceVersionAttrVal.Str())
 			}
 		})
 	}

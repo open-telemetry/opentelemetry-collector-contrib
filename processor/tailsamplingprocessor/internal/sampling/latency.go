@@ -5,6 +5,7 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -48,10 +49,21 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samp
 			maxTime = span.EndTimestamp()
 		}
 
-		duration := maxTime.AsTime().Sub(minTime.AsTime())
+		// Timestamps are already nanoseconds since epoch. Subtracting them
+		// and dividing by a millisecond is the same truncation as
+		// time.Duration.Milliseconds, without converting each value to time.Time.
+		ms := int64(maxTime-minTime) / int64(time.Millisecond)
 		if l.upperThresholdMs == 0 {
-			return duration.Milliseconds() >= l.thresholdMs
+			return ms > l.thresholdMs
 		}
-		return (l.thresholdMs < duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
+		return l.thresholdMs < ms && ms <= l.upperThresholdMs
 	}), nil
+}
+
+// IsStateful determines if an evaluator can be used for ingest time decisions.
+// In the case of a latency evaluator that is only possible if no upper
+// threshold is set as a trace can always get longer in duration and become
+// NotSampled.
+func (l *latency) IsStateful() bool {
+	return l.upperThresholdMs > 0
 }

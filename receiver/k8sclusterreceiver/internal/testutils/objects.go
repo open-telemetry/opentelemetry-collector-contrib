@@ -444,11 +444,12 @@ func NewStatefulset(id string) *appsv1.StatefulSet {
 			Replicas: &desired,
 		},
 		Status: appsv1.StatefulSetStatus{
-			ReadyReplicas:   7,
-			CurrentReplicas: 5,
-			UpdatedReplicas: 3,
-			CurrentRevision: "current_revision",
-			UpdateRevision:  "update_revision",
+			ReadyReplicas:     7,
+			CurrentReplicas:   5,
+			UpdatedReplicas:   3,
+			AvailableReplicas: 6,
+			CurrentRevision:   "current_revision",
+			UpdateRevision:    "update_revision",
 		},
 	}
 }
@@ -470,6 +471,66 @@ func NewCronJob(id string) *batchv1.CronJob {
 		},
 		Status: batchv1.CronJobStatus{
 			Active: []corev1.ObjectReference{{}, {}},
+		},
+	}
+}
+
+func NewPersistentVolume(id string) *corev1.PersistentVolume {
+	return &corev1.PersistentVolume{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "test-pv-" + id,
+			UID:  types.UID("test-pv-" + id + "-uid"),
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity: corev1.ResourceList{
+				corev1.ResourceStorage: *resource.NewQuantity(10*1024*1024*1024, resource.BinarySI),
+			},
+			StorageClassName:              "standard",
+			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimRetain,
+			AccessModes:                   []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			ClaimRef: &corev1.ObjectReference{
+				Name:      "test-pvc-" + id,
+				Namespace: "test-namespace",
+				UID:       types.UID("test-pvc-" + id + "-uid"),
+			},
+		},
+		Status: corev1.PersistentVolumeStatus{
+			Phase: corev1.VolumeBound,
+		},
+	}
+}
+
+func NewPersistentVolumeClaim(id string) *corev1.PersistentVolumeClaim {
+	storageClassName := "standard"
+	return &corev1.PersistentVolumeClaim{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-pvc-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pvc-" + id + "-uid"),
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+		Spec: corev1.PersistentVolumeClaimSpec{
+			StorageClassName: &storageClassName,
+			VolumeName:       "test-pv-" + id,
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: *resource.NewQuantity(5*1024*1024*1024, resource.BinarySI),
+				},
+			},
+		},
+		Status: corev1.PersistentVolumeClaimStatus{
+			Phase: corev1.ClaimBound,
+			Capacity: corev1.ResourceList{
+				corev1.ResourceStorage: *resource.NewQuantity(10*1024*1024*1024, resource.BinarySI),
+			},
 		},
 	}
 }

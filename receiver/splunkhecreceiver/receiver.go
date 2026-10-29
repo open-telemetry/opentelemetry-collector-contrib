@@ -33,8 +33,6 @@ import (
 )
 
 const (
-	defaultServerTimeout = 20 * time.Second
-
 	ackResponse                       = `{"acks": %s}`
 	responseOK                        = `{"text": "Success", "code": 0}`
 	responseOKWithAckID               = `{"text": "Success", "code": 0, "ackId": %d}`
@@ -101,12 +99,12 @@ var (
 
 // newReceiver creates the Splunk HEC receiver with the given configuration.
 func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
-	if config.NetAddr.Endpoint == "" {
+	if config.ServerConfig.NetAddr.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
 
 	transport := "http"
-	if config.TLS.HasValue() {
+	if config.ServerConfig.TLS.HasValue() {
 		transport = "https"
 	}
 
@@ -139,10 +137,10 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	// set up the ack API handler if the ack extension is present
-	if r.config.Extension != nil {
-		ext, found := host.GetExtensions()[*r.config.Extension]
+	if r.config.Ack.Extension != nil {
+		ext, found := host.GetExtensions()[*r.config.Ack.Extension]
 		if !found {
-			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Extension)
+			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Ack.Extension)
 		}
 		r.ackExt = ext.(ackextension.AckExtension)
 		mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
@@ -155,20 +153,15 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 	// set up the listener
-	ln, err := r.config.ToListener(ctx)
+	ln, err := r.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.NetAddr.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
-	r.server, err = r.config.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
-
-	// TODO: Evaluate what properties should be configurable, for now
-	//		set some hard-coded values.
-	r.server.ReadHeaderTimeout = defaultServerTimeout
-	r.server.WriteTimeout = defaultServerTimeout
 
 	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
@@ -311,11 +304,12 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
 	}
 
-	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
+	ld, slLen, err := splunkHecRawToLogData(r.progressReader(resp, bodyReader), query, resourceCustomizer, r.config, timestamp)
 	if err != nil {
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 		return
 	}
+	r.extendWriteDeadline(resp)
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
@@ -369,6 +363,52 @@ func (*splunkReceiver) validateChannelHeader(channelID string) error {
 	return nil
 }
 
+// setWriteDeadline pushes the write deadline out by timeout. Failure means the
+// ResponseController could not Unwrap to a deadline-capable connection (a middleware
+// drops Unwrap); logged at debug rather than swallowed so the broken chain stays diagnosable.
+func setWriteDeadline(logger *zap.Logger, rc *http.ResponseController, timeout time.Duration) {
+	if err := rc.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
+		logger.Debug("failed to extend write deadline; a slow or large request may be reset at WriteTimeout despite progress", zap.Error(err))
+	}
+}
+
+// progressDeadlineReader resets the write deadline on every read so an actively
+// transferring body is not cut off by the server's WriteTimeout, which HTTP/2 arms
+// once at handler start and never extends. Effectively a body-read idle timeout.
+type progressDeadlineReader struct {
+	reader  io.Reader
+	rc      *http.ResponseController
+	logger  *zap.Logger
+	timeout time.Duration
+}
+
+func (p *progressDeadlineReader) Read(b []byte) (int, error) {
+	setWriteDeadline(p.logger, p.rc, p.timeout)
+	return p.reader.Read(b)
+}
+
+// progressReader wraps body so the write deadline is extended as it is read. Returns
+// body unchanged when WriteTimeout is 0. Primes the deadline once so the read starts
+// with a full window.
+func (r *splunkReceiver) progressReader(resp http.ResponseWriter, body io.Reader) io.Reader {
+	timeout := r.config.ServerConfig.WriteTimeout
+	if timeout <= 0 {
+		return body
+	}
+	rc := http.NewResponseController(resp)
+	setWriteDeadline(r.settings.Logger, rc, timeout)
+	return &progressDeadlineReader{reader: body, rc: rc, logger: r.settings.Logger, timeout: timeout}
+}
+
+// extendWriteDeadline resets the write deadline to a full window once before handing
+// data to the pipeline, so consume starts fresh rather than with whatever the body read
+// left. Not extended during consume, so a consumer blocking past WriteTimeout is still reset.
+func (r *splunkReceiver) extendWriteDeadline(resp http.ResponseWriter) {
+	if timeout := r.config.ServerConfig.WriteTimeout; timeout > 0 {
+		setWriteDeadline(r.settings.Logger, http.NewResponseController(resp), timeout)
+	}
+}
+
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
@@ -408,7 +448,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	dec := json.NewDecoder(bodyReader)
+	dec := json.NewDecoder(r.progressReader(resp, bodyReader))
 
 	var unfiltered []*translator.Event
 	var firstEvent any
@@ -510,6 +550,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			r.failRequest(resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 			return
 		}
+		r.extendWriteDeadline(resp)
 		ctx = r.obsrecv.StartLogsOp(ctx)
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
@@ -520,6 +561,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 	if r.metricsConsumer != nil && len(metricEvents) > 0 {
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
+		r.extendWriteDeadline(resp)
 		ctx = r.obsrecv.StartMetricsOp(ctx)
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
@@ -541,7 +583,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
-	if r.config.AccessTokenPassthrough {
+	if r.config.AccessTokenPassthroughConfig.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]

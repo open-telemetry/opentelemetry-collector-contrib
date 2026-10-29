@@ -116,13 +116,17 @@ func SortTemporal(regexKey string, ascending bool, layout, location string) (Opt
 	if location == "" {
 		location = "UTC"
 	}
+	parser, err := timeutils.NewStrptimeParser(layout)
+	if err != nil {
+		return nil, err
+	}
 	loc, err := timeutils.GetLocation(&location, &layout)
 	if err != nil {
 		return nil, fmt.Errorf("load location %s: %w", loc, err)
 	}
 	return newRegexSortOption(regexKey,
 		func(s string) (any, error) {
-			return timeutils.ParseStrptime(layout, s, loc)
+			return parser.Parse(s, loc)
 		},
 		func(a, b any) bool {
 			if ascending {

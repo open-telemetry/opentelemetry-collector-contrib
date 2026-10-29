@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: test-namespace
+      entityRefs:
+        - descriptionKeys:
+            - k8s.deployment.name
+          idKeys:
+            - k8s.deployment.uid
+          type: k8s.deployment
     schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:

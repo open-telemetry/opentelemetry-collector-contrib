@@ -24,18 +24,18 @@ import (
 )
 
 func TestMissingClientConfigManagerHTTP(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, nil)
+	serverConfig := confighttp.NewDefaultServerConfig()
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, nil)
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
 func TestStartAndStopHTTP(t *testing.T) {
 	// prepare
-	srvSettings := confighttp.ServerConfig{
-		NetAddr: confignet.AddrConfig{
-			Transport: "tcp",
-			Endpoint:  "127.0.0.1:0",
-		},
+	srvSettings := confighttp.NewDefaultServerConfig()
+	srvSettings.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "127.0.0.1:0",
 	}
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, &mocks.MockCfgMgr{})
 	require.NoError(t, err)
@@ -59,7 +59,8 @@ func TestEndpointsAreWired(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mocks.MockCfgMgr{
+			serverConfig := confighttp.NewDefaultServerConfig()
+			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, &mocks.MockCfgMgr{
 				GetSamplingStrategyFunc: func(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
 					return &api_v2.SamplingStrategyResponse{
 						ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
@@ -93,7 +94,8 @@ func TestEndpointsAreWired(t *testing.T) {
 
 func TestServiceNameIsRequired(t *testing.T) {
 	// prepare
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mocks.MockCfgMgr{})
+	serverConfig := confighttp.NewDefaultServerConfig()
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, &mocks.MockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -111,7 +113,8 @@ func TestServiceNameIsRequired(t *testing.T) {
 }
 
 func TestErrorFromClientConfigManager(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mocks.MockCfgMgr{})
+	serverConfig := confighttp.NewDefaultServerConfig()
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), serverConfig, &mocks.MockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 

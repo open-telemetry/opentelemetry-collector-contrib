@@ -175,7 +175,7 @@ func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
 		cfg:                cfg,
 		settings:           settings.TelemetrySettings,
-		mb:                 metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mb:                 metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings),
 		getConnectionState: getConnectionState,
 	}
 }

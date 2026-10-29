@@ -103,7 +103,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
 			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
@@ -126,7 +126,7 @@ func TestScrape_Errors(t *testing.T) {
 				defaultPageFaultsPerSec int64 = 300
 				defaultPageMajPerSec    int64 = 200
 			)
-			scraper.perfCounterFactory = func(_, _, counter string) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(_, _, counter string, _ ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				perfCounterMock := &testmocks.PerfCounterWatcherMock{}
 				switch counter {
 				case pageReadsPerSec:
@@ -208,7 +208,7 @@ func TestScrape_Errors(t *testing.T) {
 
 func TestPagingScrapeWithRealData(t *testing.T) {
 	config := Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 
@@ -232,7 +232,7 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		newPerfCounterFactory func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+		newPerfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 		expectedSkipScrape    bool
 	}{
 		{
@@ -241,7 +241,7 @@ func TestStart_Error(t *testing.T) {
 		},
 		{
 			name: "new_perf_counter_watcher_fails",
-			newPerfCounterFactory: func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+			newPerfCounterFactory: func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				return nil, errors.New("err1")
 			},
 			expectedSkipScrape: true,
@@ -250,7 +250,7 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsBuilderConfig()
+			metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
 			scraper := newPagingScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})

@@ -23,12 +23,14 @@ func TestStatefulsetMetrics(t *testing.T) {
 	ss := testutils.NewStatefulset("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sStatefulsetPodAvailable.Enabled = true
+	mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, ss, ts)
 	m := mb.Emit()
 
 	require.Equal(t, 1, m.ResourceMetrics().Len())
-	require.Equal(t, 4, m.MetricCount())
+	require.Equal(t, 5, m.MetricCount())
 
 	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
@@ -46,9 +48,14 @@ func TestStatefulsetMetrics(t *testing.T) {
 	assert.Equal(t, "k8s.statefulset.desired_pods", m2.Name())
 
 	m3 := rm.ScopeMetrics().At(0).Metrics().At(2)
-	assert.Equal(t, "k8s.statefulset.ready_pods", m3.Name())
+	assert.Equal(t, "k8s.statefulset.pod.available", m3.Name())
+	assert.Equal(t, int64(6), m3.Sum().DataPoints().At(0).IntValue())
+
 	m4 := rm.ScopeMetrics().At(0).Metrics().At(3)
-	assert.Equal(t, "k8s.statefulset.updated_pods", m4.Name())
+	assert.Equal(t, "k8s.statefulset.ready_pods", m4.Name())
+
+	m5 := rm.ScopeMetrics().At(0).Metrics().At(4)
+	assert.Equal(t, "k8s.statefulset.updated_pods", m5.Name())
 }
 
 func TestStatefulsetMetadata(t *testing.T) {
@@ -68,8 +75,8 @@ func TestStatefulsetMetadata(t *testing.T) {
 				"k8s.workload.kind":              "StatefulSet",
 				"k8s.namespace.name":             "test-namespace",
 				"statefulset.creation_timestamp": "0001-01-01T00:00:00Z",
-				"foo":                            "bar",
-				"foo1":                           "",
+				"k8s.statefulset.label.foo":      "bar",
+				"k8s.statefulset.label.foo1":     "",
 				"current_revision":               "current_revision",
 				"update_revision":                "update_revision",
 			},

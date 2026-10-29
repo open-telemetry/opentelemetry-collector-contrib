@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata"
@@ -22,13 +23,14 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/gohai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 )
 
@@ -38,8 +40,8 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 	hm := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
 
 	if src, ok := attributes.SourceFromAttrs(attrs, hostFromAttributesHandler); ok && src.Kind == source.HostnameKind {
-		hm.InternalHostname = src.Identifier
-		hm.Meta.Hostname = src.Identifier
+		hm.InternalHostname = src.SourceIdentifier.Primary
+		hm.Meta.Hostname = src.SourceIdentifier.Primary
 	}
 
 	// AWS EC2 resource metadata
@@ -62,9 +64,22 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
-			hm.InternalHostname = src.Identifier
-			hm.Meta.Hostname = src.Identifier
+		var src source.Source
+		var aliases []string
+		var err error
+		if sap, ok := p.(provider.SourceAliasesProvider); ok {
+			src, aliases, err = sap.SourceWithAliases(context.TODO())
+		} else {
+			src, err = p.Source(context.TODO())
+		}
+		if err == nil && src.Kind == source.HostnameKind {
+			hm.InternalHostname = src.SourceIdentifier.Primary
+			hm.Meta.Hostname = src.SourceIdentifier.Primary
+		}
+		for _, alias := range aliases {
+			if !slices.Contains(hm.Meta.HostAliases, alias) {
+				hm.Meta.HostAliases = append(hm.Meta.HostAliases, alias)
+			}
 		}
 	}
 

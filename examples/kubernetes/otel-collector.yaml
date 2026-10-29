@@ -6,7 +6,7 @@ metadata:
 data:
   config.yaml: |-
     receivers:
-      filelog:
+      file_log:
         include:
           - /var/log/pods/*/*/*.log
         exclude:
@@ -118,7 +118,7 @@ data:
     service:
       pipelines:
         logs:
-          receivers: [filelog]
+          receivers: [file_log]
           processors: [k8sattributes]
           exporters: [debug]
 

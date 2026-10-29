@@ -17,7 +17,7 @@ import (
 )
 
 func TestDefaultConfigFailure(t *testing.T) {
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -77,6 +79,8 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	case attrRoutingStr:
 		traceExporter.routingKey = attrRouting
 		traceExporter.routingAttrs = cfg.(*Config).RoutingAttributes
+	case randomnessRoutingStr:
+		traceExporter.routingKey = randomnessRouting
 	case traceIDRoutingStr, "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
@@ -100,19 +104,40 @@ func (e *traceExporterImp) Shutdown(ctx context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// traceID and randomness routing compute their key per span, so they can route spans
+	// directly into per-backend traces in a single pass, avoiding the SplitTraces +
+	// mergeTraces round-trip.
+	switch e.routingKey {
+	case traceIDRouting:
+		return e.consumeTracesPerSpan(ctx, td, spanTraceIDIdentifier)
+	case randomnessRouting:
+		return e.consumeTracesPerSpan(ctx, td, func(span ptrace.Span) []byte {
+			return e.randomnessIdentifier(ctx, span)
+		})
+	}
+
 	batches := batchpersignal.SplitTraces(td)
 
 	exporterSegregatedTraces := make(exporterTraces)
-	endpoints := make(map[*wrappedExporter]string)
 	for _, batch := range batches {
 		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey, e.routingAttrs)
 		if err != nil {
+			// Release the consumeWG counts already added for backends collected so far;
+			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+			for exp := range exporterSegregatedTraces {
+				exp.consumeWG.Done()
+			}
 			return err
 		}
 
 		for rid := range routingID {
-			exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
+			exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
 			if err != nil {
+				// Release the consumeWG counts already added for backends collected so far;
+				// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
+				for exp := range exporterSegregatedTraces {
+					exp.consumeWG.Done()
+				}
 				return err
 			}
 
@@ -122,29 +147,167 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 				exporterSegregatedTraces[exp] = ptrace.NewTraces()
 			}
 			exporterSegregatedTraces[exp] = mergeTraces(exporterSegregatedTraces[exp], batch)
-
-			endpoints[exp] = endpoint
 		}
 	}
 
 	var errs error
-
 	for exp, td := range exporterSegregatedTraces {
-		start := time.Now()
-		err := exp.ConsumeTraces(ctx, td)
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		duration := time.Since(start)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export traces", zap.Error(err))
+		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, td))
+	}
+	return errs
+}
+
+// spanTraceIDIdentifier is the identifierFor function for traceID routing.
+func spanTraceIDIdentifier(span ptrace.Span) []byte {
+	tid := span.TraceID()
+	return tid[:]
+}
+
+// randomnessIdentifier is the identifierFor function for randomness routing: the explicit
+// randomness value (the 14-hex-digit tracestate ot=rv) when the span carries one, otherwise
+// randomness derived from the trace ID, mirroring the W3C/OTel sampling specification. Traces
+// sharing an rv route to the same backend; traces without one keep per-trace locality.
+func (e *traceExporterImp) randomnessIdentifier(ctx context.Context, span ptrace.Span) []byte {
+	if raw := span.TraceState().AsRaw(); raw != "" {
+		w3c, err := sampling.NewW3CTraceState(raw)
+		if rnd, ok := w3c.OTelValue().RValueRandomness(); ok {
+			// A value-level error inside a syntactically valid ot section (e.g.
+			// th:notathreshold beside a valid rv) keeps the members that did
+			// parse, so a recovered rv still routes the trace. A syntax error
+			// anywhere in the ot section (an invalid value char such as th:0!,
+			// or bad structure) or a W3C header-level error discards the rv and
+			// falls through to trace ID randomness below.
+			return []byte(rnd.RValue())
+		}
+		if err != nil && rawTraceStateHasRValue(raw) {
+			// The parse failed and discarded an rv the raw header carried, so the
+			// trace fell back to trace ID randomness. This covers W3C header-level
+			// errors (an uppercase vendor key, or a header over the 1024-byte size
+			// limit) and ot-section syntax errors (such as th:0!). A parse failure
+			// with no rv is not counted; the trace would have routed by trace ID
+			// regardless.
+			e.telemetry.LoadbalancerRandomnessTracestateUnparseable.Add(ctx, 1)
+		}
+	}
+	rnd := sampling.TraceIDToRandomness(span.TraceID())
+	return []byte(rnd.RValue())
+}
+
+// rawTraceStateHasRValue reports whether a tracestate header appears to carry an explicit
+// randomness value in its ot member. It is a best-effort scan for headers that failed W3C
+// validation and so can't be parsed properly.
+func rawTraceStateHasRValue(raw string) bool {
+	for member := range strings.SplitSeq(raw, ",") {
+		value, ok := strings.CutPrefix(strings.TrimSpace(member), "ot=")
+		if !ok {
+			continue
+		}
+		// The ot member is a ';'-separated list of "subkey:value" pairs. Match the
+		// rv subkey exactly; a substring test would also match unknown subkeys that
+		// merely end in "rv" (e.g. "srv"), counting traces that never carried an rv.
+		for pair := range strings.SplitSeq(value, ";") {
+			if subkey, _, found := strings.Cut(pair, ":"); found && subkey == "rv" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// consumeTracesPerSpan routes each span to the backend for its identifier, accumulating spans
+// directly into one ptrace.Traces per backend. It copies each span once and allocates a
+// single ptrace.Traces per backend, versus one per trace on the SplitTraces path.
+// identifierFor must yield the same value for every span of a trace; the backend is resolved
+// once per trace ID and reused for the trace's remaining spans in the batch. That caching also
+// bounds the identifier cost: randomness routing pays a tracestate validation and parse once
+// per trace per batch, where traceID routing slices the trace ID bytes.
+func (e *traceExporterImp) consumeTracesPerSpan(ctx context.Context, td ptrace.Traces, identifierFor func(ptrace.Span) []byte) error {
+	// dest holds a backend's in-progress traces and the source resource/scope indices of the
+	// ScopeSpans being appended to, so a contiguous run of the same source scope reuses it.
+	type dest struct {
+		traces ptrace.Traces
+		curSS  ptrace.ScopeSpans
+		rsIdx  int
+		ssIdx  int
+		active bool
+	}
+	dests := make(map[*wrappedExporter]*dest, e.loadBalancer.NumBackends())
+	// Resolving a backend hashes the trace ID under a lock; cache it so spans that share a
+	// trace ID resolve only once per batch.
+	expByTID := make(map[pcommon.TraceID]*wrappedExporter)
+
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		sss := rs.ScopeSpans()
+		for j := 0; j < sss.Len(); j++ {
+			ss := sss.At(j)
+			spans := ss.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				tid := span.TraceID()
+
+				exp, ok := expByTID[tid]
+				if !ok {
+					var err error
+					exp, _, err = e.loadBalancer.exporterAndEndpoint(identifierFor(span))
+					if err != nil {
+						// Release the consumeWG counts already added for backends collected so
+						// far; otherwise Shutdown's consumeWG.Wait() would hang on the skipped
+						// Done() calls.
+						for exp := range dests {
+							exp.consumeWG.Done()
+						}
+						return err
+					}
+					expByTID[tid] = exp
+				}
+
+				d, ok := dests[exp]
+				if !ok {
+					exp.consumeWG.Add(1)
+					d = &dest{traces: ptrace.NewTraces()}
+					dests[exp] = d
+				}
+
+				// Start a new ResourceSpans/ScopeSpans when the source resource/scope changes.
+				if !d.active || d.rsIdx != i || d.ssIdx != j {
+					destRS := d.traces.ResourceSpans().AppendEmpty()
+					rs.Resource().CopyTo(destRS.Resource())
+					destRS.SetSchemaUrl(rs.SchemaUrl())
+					d.curSS = destRS.ScopeSpans().AppendEmpty()
+					ss.Scope().CopyTo(d.curSS.Scope())
+					d.curSS.SetSchemaUrl(ss.SchemaUrl())
+					d.rsIdx, d.ssIdx, d.active = i, j, true
+				}
+
+				span.CopyTo(d.curSS.Spans().AppendEmpty())
+			}
 		}
 	}
 
+	var errs error
+	for exp, d := range dests {
+		errs = multierr.Append(errs, e.exportToBackend(ctx, exp, d.traces))
+	}
 	return errs
+}
+
+// exportToBackend sends td to one backend, records per-backend telemetry, and signals the
+// exporter's consume wait group.
+func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, td ptrace.Traces) error {
+	start := time.Now()
+	err := exp.ConsumeTraces(ctx, td)
+	exp.consumeWG.Done()
+	duration := time.Since(start)
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+	if err == nil {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	} else {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export traces", zap.Error(err))
+	}
+	return err
 }
 
 // routingIdentifiersFromTraces reads the traces and determines an identifier that can be used to define a position on the
@@ -200,7 +363,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			// resource spans
 			rAttr, ok := rs.At(i).Resource().Attributes().Get(a)
 			if ok {
-				rKey.WriteString(rAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, rAttr))
 				continue
 			}
 
@@ -208,7 +371,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			ils := rs.At(0).ScopeSpans()
 			iAttr, ok := ils.At(0).Scope().Attributes().Get(a)
 			if ok {
-				rKey.WriteString(iAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, iAttr))
 				continue
 			}
 
@@ -216,22 +379,22 @@ func routingIdentifiersFromTraces(td ptrace.Traces, rType routingKey, attrs []st
 			spans := ils.At(0).Spans()
 
 			if a == pseudoAttrSpanKind {
-				rKey.WriteString(spans.At(0).Kind().String())
-
+				rKey.WriteString(buildAttributeRoutingKeyStrValue(a, spans.At(0).Kind().String()))
 				continue
 			}
 
 			if a == pseudoAttrSpanName {
-				rKey.WriteString(spans.At(0).Name())
-
+				rKey.WriteString(buildAttributeRoutingKeyStrValue(a, spans.At(0).Name()))
 				continue
 			}
 
 			sAttr, ok := spans.At(0).Attributes().Get(a)
 			if ok {
-				rKey.WriteString(sAttr.Str())
+				rKey.WriteString(buildAttributeRoutingKeyValue(a, sAttr))
 				continue
 			}
+
+			rKey.WriteString(buildAttributeRoutingKey(a))
 		}
 
 		// No matter what, there will be a key here (even if that key is "").

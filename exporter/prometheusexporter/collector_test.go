@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -35,6 +34,8 @@ type mockAccumulator struct {
 func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 	return 0
 }
+
+func (*mockAccumulator) cleanupExpired() {}
 
 func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
@@ -111,7 +112,7 @@ func TestConvertMetric(t *testing.T) {
 			mapVals: map[string]metricFamily{
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
-						Name: proto.String("testgauge"),
+						Name: new("testgauge"),
 						Type: io_prometheus_client.MetricType_COUNTER.Enum(),
 					},
 				},
@@ -125,9 +126,9 @@ func TestConvertMetric(t *testing.T) {
 			mapVals: map[string]metricFamily{
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
-						Name: proto.String("testgauge"),
+						Name: new("testgauge"),
 						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
-						Help: proto.String("test help value"),
+						Help: new("test help value"),
 					},
 				},
 			},
@@ -251,6 +252,28 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
 }
 
+func TestConvertDoubleHistogramEmptyBucketCounts(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDescription("this is test metric")
+	metric.SetUnit("T")
+
+	histogramDataPoint := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{5, 25, 90})
+
+	pMap := pcommon.NewMap()
+
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		metrics:            []pmetric.Metric{metric},
+		resourceAttributes: pMap,
+	}
+
+	// Should not panic
+	_, err := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.NoError(t, err)
+}
+
 func TestConvertMonotonicSumExemplar(t *testing.T) {
 	// initialize empty metric
 	metric := pmetric.NewMetric()
@@ -285,6 +308,48 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 	promCounter := outMetric.GetCounter()
 	require.Equal(t, 1.0, promCounter.GetValue())
 	exemplarsEqual(t, exemplar, promCounter.GetExemplar())
+}
+
+func TestConvertExponentialHistogramExemplar(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDescription("this is test metric")
+	metric.SetUnit("T")
+
+	expHist := metric.SetEmptyExponentialHistogram()
+	expHist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	expDP := expHist.DataPoints().AppendEmpty()
+	expDP.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+	expDP.SetCount(7)
+	expDP.SetSum(1)
+	expDP.SetScale(0)
+	expDP.SetZeroThreshold(1)
+	expDP.SetZeroCount(1)
+	expDP.Positive().SetOffset(-1)
+	expDP.Positive().BucketCounts().FromRaw([]uint64{2, 4})
+	expDP.Attributes().PutStr("foo", "bar")
+
+	ex := expDP.Exemplars().AppendEmpty()
+	setTestExemplarWithDoubleValue(ex, 3.0)
+
+	pMap := pcommon.NewMap()
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		metrics:            []pmetric.Metric{metric},
+		resourceAttributes: pMap,
+	}
+
+	pbMetric, err := c.convertExponentialHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.NoError(t, err)
+
+	m := io_prometheus_client.Metric{}
+	require.NoError(t, pbMetric.Write(&m))
+
+	h := m.GetHistogram()
+	require.NotNil(t, h)
+	require.Len(t, h.GetExemplars(), 1)
+	exemplarsEqual(t, ex, h.GetExemplars()[0])
 }
 
 // errorCheckCore keeps track of logged errors
@@ -425,6 +490,40 @@ func TestWithoutScopeInfoFlag(t *testing.T) {
 	}
 
 	require.Empty(t, loggerCore.errorMessages, "collector unexpectedly returned an error")
+}
+
+func TestScopeAttributeConflictsDropped(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(42)
+	dp.Attributes().PutStr("somelabel", "1")
+
+	scopeAttributes := pcommon.NewMap()
+	scopeAttributes.PutStr("name", "should-be-dropped")
+	scopeAttributes.PutStr("version", "should-be-dropped")
+	scopeAttributes.PutStr("schema_url", "should-be-dropped")
+	scopeAttributes.PutStr("custom", "should-be-kept")
+
+	c := newCollector(&Config{}, zap.NewNop())
+	m, err := c.convertMetric(metric, pcommon.NewMap(), "test.scope", "1.0.0", "https://opentelemetry.io/schemas/1.7.0", scopeAttributes)
+	require.NoError(t, err)
+
+	pbMetric := io_prometheus_client.Metric{}
+	require.NoError(t, m.Write(&pbMetric))
+
+	labels := make(map[string]string, len(pbMetric.Label))
+	for _, l := range pbMetric.Label {
+		labels[l.GetName()] = l.GetValue()
+	}
+
+	require.Equal(t, map[string]string{
+		"somelabel":             "1",
+		"otel_scope_name":       "test.scope",
+		"otel_scope_version":    "1.0.0",
+		"otel_scope_schema_url": "https://opentelemetry.io/schemas/1.7.0",
+		"otel_scope_custom":     "should-be-kept",
+	}, labels)
 }
 
 func TestCollectMetrics(t *testing.T) {
@@ -639,7 +738,11 @@ func TestCollectMetrics(t *testing.T) {
 						continue
 					}
 
-					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
+					expectedName := "test_space_test_metric"
+					if tt.metricType == prometheus.CounterValue {
+						expectedName += "_total"
+					}
+					require.Contains(t, m.Desc().String(), `fqName: "`+expectedName+`"`)
 					require.Contains(t, m.Desc().String(), `variableLabels: {label_1,label_2,otel_scope_name,otel_scope_version,otel_scope_schema_url,job,instance}`)
 
 					pbMetric := io_prometheus_client.Metric{}
@@ -651,7 +754,7 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						// Prometheus gauges don't have created timestamp.
 						if tt.metricType == prometheus.CounterValue {
 							require.Equal(t, timestamppb.New(ts), pbMetric.Counter.CreatedTimestamp)
@@ -766,7 +869,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)
@@ -900,7 +1003,7 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 
 					// Assert timestamp behavior
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						// withStartTime is tied to sendTimestamp in this test
 						require.Equal(t, timestamppb.New(ts), pbMetric.Histogram.CreatedTimestamp)
 					} else {
@@ -938,6 +1041,57 @@ func TestConvertExponentialHistogramInvalidScale(t *testing.T) {
 	_, err := c.convertExponentialHistogram(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "scale must be >= -4")
+}
+
+func TestCollectExponentialHistogramSum(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		hasSum bool
+		sum    float64
+	}{
+		{name: "absent sum"},
+		{name: "zero sum", hasSum: true},
+		{name: "nonzero sum", hasSum: true, sum: -0.5},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rm := pmetric.NewResourceMetrics()
+			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName("test_native_hist")
+			h := metric.SetEmptyExponentialHistogram()
+			h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			dp := h.DataPoints().AppendEmpty()
+			dp.SetCount(2)
+			dp.Positive().BucketCounts().FromRaw([]uint64{1})
+			dp.Negative().BucketCounts().FromRaw([]uint64{1})
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			if tt.hasSum {
+				dp.SetSum(tt.sum)
+			}
+			// Another series must still be exported when the first one is dropped.
+			valid := h.DataPoints().AppendEmpty()
+			dp.CopyTo(valid)
+			valid.Attributes().PutStr("series", "valid")
+			valid.SetSum(0.5)
+
+			c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+			c.accumulator.Accumulate(rm)
+			registry := prometheus.NewRegistry()
+			registry.MustRegister(c)
+			families, err := registry.Gather()
+			require.NoError(t, err)
+			require.Len(t, families, 1)
+			wantSums := []float64{0.5}
+			if tt.hasSum {
+				wantSums = append(wantSums, tt.sum)
+			}
+			var sums []float64
+			for _, m := range families[0].GetMetric() {
+				require.NotNil(t, m.GetHistogram().Schema)
+				sums = append(sums, m.GetHistogram().GetSampleSum())
+			}
+			require.ElementsMatch(t, wantSums, sums)
+		})
+	}
 }
 
 func TestAccumulateSummary(t *testing.T) {
@@ -1029,7 +1183,7 @@ func TestAccumulateSummary(t *testing.T) {
 					}
 
 					if sendTimestamp {
-						require.Equal(t, ts.UnixNano()/1e6, *(pbMetric.TimestampMs))
+						require.Equal(t, ts.UnixNano()/1e6, *pbMetric.TimestampMs)
 						require.Equal(t, timestamppb.New(ts), pbMetric.Summary.CreatedTimestamp)
 					} else {
 						require.Nil(t, pbMetric.TimestampMs)

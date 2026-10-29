@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -110,6 +111,7 @@ func TestMetricsExporterStart(t *testing.T) {
 			"ok",
 			func() *metricExporterImp {
 				p, _ := newMetricsExporter(ts, serviceBasedRoutingConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,
@@ -213,6 +215,37 @@ func compareMetricsMaps(t *testing.T, expected, actual map[string]pmetric.Metric
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 		))
 	}
+}
+
+func expectedMetricsByEndpoint(t *testing.T, md pmetric.Metrics, routingKey string, routingAttrs []string, ring *hashRing, endpoints ...string) map[string]pmetric.Metrics {
+	expected := make(map[string]pmetric.Metrics, len(endpoints))
+	for _, endpoint := range endpoints {
+		expected[endpoint] = pmetric.NewMetrics()
+	}
+
+	var batches map[string]pmetric.Metrics
+	switch routingKey {
+	case svcRoutingStr:
+		var errs []error
+		batches, errs = splitMetricsByResourceServiceName(md)
+		require.Empty(t, errs)
+	case resourceRoutingStr:
+		batches = splitMetricsByResourceID(md)
+	case metricNameRoutingStr:
+		batches = splitMetricsByMetricName(md)
+	case streamIDRoutingStr:
+		batches = splitMetricsByStreamID(md)
+	case attrRoutingStr:
+		batches = splitMetricsByAttributes(md, routingAttrs)
+	default:
+		t.Fatalf("unexpected routing key %q", routingKey)
+	}
+
+	for routingID, batch := range batches {
+		endpoint := ring.endpointFor([]byte(routingID))
+		metrics.Merge(expected[endpoint], batch)
+	}
+	return expected
 }
 
 func TestSplitMetricsByResourceServiceName(t *testing.T) {
@@ -326,6 +359,86 @@ func TestSplitMetrics(t *testing.T) {
 			compareMetricsMaps(t, expectedOutput, output)
 		})
 	}
+}
+
+func TestSplitMetricsByAttributes_StableEncodingAvoidsConcatenationCollisions(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(aValue, bValue string) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("a", aValue)
+		rm.Resource().Attributes().PutStr("b", bValue)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric("foo", "bar")
+	buildResourceMetric("foob", "ar")
+
+	out := splitMetricsByAttributes(md, []string{"a", "b"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "a=foo|b=bar|")
+	assert.Contains(t, out, "a=foob|b=ar|")
+}
+
+func TestSplitMetricsByAttributes_StableEncodingIncludesMissingAttributes(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource_key", "res1")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test.metric")
+
+	sum := metric.SetEmptySum()
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	sum.SetIsMonotonic(false)
+
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntValue(1)
+	dp.Attributes().PutStr("aaa", "dp1")
+
+	out := splitMetricsByAttributes(md, []string{"resource_key", "missing", "aaa"})
+	require.Len(t, out, 1)
+	assert.Contains(t, out, "resource_key=res1|missing=|aaa=dp1|")
+}
+
+func TestSplitMetricsByAttributes_NonStringValues(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(shard int64) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutInt("shard", shard)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric(1)
+	buildResourceMetric(2)
+
+	out := splitMetricsByAttributes(md, []string{"shard"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "shard=1|")
+	assert.Contains(t, out, "shard=2|")
 }
 
 func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
@@ -610,7 +723,16 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			err = p.ConsumeMetrics(t.Context(), input)
 			require.NoError(t, err)
 
-			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
+			expectedOutput := expectedMetricsByEndpoint(
+				t,
+				input,
+				tc.routingKey,
+				tc.routingAttributes,
+				lb.ring,
+				"endpoint-1",
+				"endpoint-2",
+				"endpoint-3",
+			)
 
 			actualOutput := map[string]pmetric.Metrics{}
 
@@ -796,7 +918,18 @@ func TestBatchWithTwoMetrics(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllMetrics(), 2)
+	merged := pmetric.NewMetrics()
+	for _, output := range sink.AllMetrics() {
+		metrics.Merge(merged, output)
+	}
+	require.NoError(t, pmetrictest.CompareMetrics(
+		td,
+		merged,
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
 }
 
 func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
@@ -857,7 +990,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
 		},
 	}
-	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) { //nolint:unparam // result 1 is expected to always be nil
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
@@ -874,13 +1007,13 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
 	defaultExporters := map[string]*wrappedExporter{
-		"127.0.0.1:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		"127.0.0.1:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error { //nolint:unparam // result 0 is expected to always be nil
 			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		}), "127.0.0.1"),
-		"127.0.0.2:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
+		"127.0.0.2:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error { //nolint:unparam // result 0 is expected to always be nil
 			counter2.Add(1)
 			return nil
 		}), "127.0.0.2"),
@@ -1070,6 +1203,23 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 						}
 					}
 				}
+			}
+		})
+	}
+}
+
+// BenchmarkConsumeMetricsManyResources models fleets where each pod reports as
+// its own resource (e.g. kubeletstats through a per-stream routing key): many
+// distinct resources, few metrics each. The per-exporter accumulated batch then
+// contains hundreds of ResourceMetrics, which makes repeated re-hashing of the
+// accumulated data the dominant cost.
+func BenchmarkConsumeMetricsManyResources(b *testing.B) {
+	for _, routingKey := range []string{resourceRoutingStr, streamIDRoutingStr} {
+		b.Run(routingKey, func(b *testing.B) {
+			for _, rmCount := range []int{100, 500, 1000} {
+				b.Run(fmt.Sprintf("%dRM", rmCount), func(b *testing.B) {
+					benchConsumeMetrics(b, routingKey, 5, rmCount, 1, 2, 2)
+				})
 			}
 		})
 	}

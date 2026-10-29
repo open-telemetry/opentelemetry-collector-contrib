@@ -65,12 +65,12 @@ func TestK8sEventToLogData(t *testing.T) {
 	attrs := lr.LogRecords().At(0).Attributes()
 	assert.Equal(t, 1, ld.ResourceLogs().Len())
 	assert.Equal(t, 7, resourceAttrs.Len())
-	assert.Equal(t, 7, attrs.Len())
+	assert.Equal(t, 9, attrs.Len())
 
 	// Count attribute will not be present in the LogData
 	k8sEvent.Count = 0
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent, "latest")
-	assert.Equal(t, 6, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+	assert.Equal(t, 8, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }
 
 func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
@@ -93,6 +93,21 @@ func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
 	attr, ok = attrs.Get("k8s.object.resource_version")
 	assert.True(t, ok)
 	assert.Equal(t, "7387066320", attr.AsString())
+}
+
+func TestExposingReportingControllerAndInstance(t *testing.T) {
+	k8sEvent := getEvent("Normal")
+	ld := k8sEventToLogData(zap.NewNop(), k8sEvent, "latest")
+	rl := ld.ResourceLogs().At(0)
+	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
+
+	value, ok := logEntry.Attributes().Get("k8s.event.reporting_controller")
+	assert.True(t, ok)
+	assert.Equal(t, "some-controller", value.Str())
+
+	value, ok = logEntry.Attributes().Get("k8s.event.reporting_instance")
+	assert.True(t, ok)
+	assert.Equal(t, "some-instance", value.Str())
 }
 
 func TestUnknownSeverity(t *testing.T) {

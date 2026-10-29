@@ -6,7 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawss3%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawss3) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawss3%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawss3) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_awss3)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_awss3&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@pdelewski](https://www.github.com/pdelewski), [@Erog38](https://www.github.com/Erog38) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@Erog38](https://www.github.com/Erog38) |
+| Emeritus      | [@pdelewski](https://www.github.com/pdelewski) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -28,6 +29,8 @@ The following exporter configuration parameters are supported.
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `s3_partition_timezone`   | timezone used to format partition                                                                                                                                                                                          | Local                                       |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
+| `access_key`              | AWS access key ID for static credentials. Must be set together with `secret_key` and cannot be combined with `role_arn`. See [Static credentials](#static-credentials).                                                     |                                             |
+| `secret_key`              | AWS secret access key for static credentials. Must be set together with `access_key` and cannot be combined with `role_arn`. See [Static credentials](#static-credentials).                                                |                                             |
 | `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
 | `marshaler`               | marshaler used to produce output data                                                                                                                                                                                      | `otlp_json`                                 |
 | `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                                                                                                          |                                             |
@@ -45,6 +48,7 @@ The following exporter configuration parameters are supported.
 | `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set. Setting max attempts to 0 will allow the SDK to retry all retryable errors until the request succeeds, or a non-retryable error is returned. | 3                                           |
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
 | `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`.                                                                               |                                             |
+| `retry_on_failure`    | see [Retry on Failure](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#retry-on-failure) for the full set of available options.                                                                               |                                             |
 
 ### Marshaler
 
@@ -253,6 +257,25 @@ This exporter follows default credential resolution for the
 
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the
 credential configuration.
+
+### Static credentials
+
+Static credentials can be set with `access_key` and `secret_key`. When set, they take precedence over the default
+credential resolution. Both must be set together and cannot be combined with `role_arn`. Prefer referencing
+environment variables over writing secrets inline:
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: "us-east-1"
+      s3_bucket: "my-bucket"
+      access_key: ${env:AWS_ACCESS_KEY_ID}
+      secret_key: ${env:AWS_SECRET_ACCESS_KEY}
+```
+
+Avoid combining static credentials with `disable_ssl: true`: requests are still signed, but the exported data is sent
+over plain HTTP.
 
 ### OpenTelemetry Collector Helm Chart for Kubernetes
 For example, when using OpenTelemetry Collector Helm Chart you could use `extraEnvs` in the values.yaml.

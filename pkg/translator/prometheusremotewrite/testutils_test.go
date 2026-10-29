@@ -141,7 +141,7 @@ func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
 		Labels: []prompb.Label{},
 	}
-	for i := 0; i < len(lbs); i += 2 {
+	for i := 0; i+1 < len(lbs); i += 2 {
 		pbLbs.Labels = append(pbLbs.Labels, getLabel(lbs[i], lbs[i+1]))
 	}
 	return pbLbs.Labels
@@ -329,4 +329,40 @@ func getBucketBoundsData(values []float64, timeSeries *prompb.TimeSeries) []buck
 	}
 
 	return b
+}
+
+// testHistTimestamp is the fixed timestamp shared by the explicit-histogram (NHCB) fixtures.
+const testHistTimestamp pcommon.Timestamp = 1_700_000_000_000_000_000
+
+// newTestExplicitHistogram builds a single cumulative explicit-bucket histogram
+// metric with bounds [1,2,3] and per-bucket counts [1,2,3,4] (cumulative
+// 1,3,6,10), Count=10, Sum=42.5.
+func newTestExplicitHistogram() pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_hist")
+	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	pt := metric.Histogram().DataPoints().AppendEmpty()
+	pt.SetTimestamp(testHistTimestamp)
+	pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+	pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+	pt.SetCount(10)
+	pt.SetSum(42.5)
+	return metric
+}
+
+// nhcbBucket is a decoded cumulative bucket (upper bound + cumulative count) used
+// to assert NHCB conversion output without hand-encoding the wire representation.
+type nhcbBucket struct {
+	upper float64
+	cum   uint64
+}
+
+// nhcbCumulativeBuckets decodes an RW1 NHCB histogram into its cumulative buckets.
+func nhcbCumulativeBuckets(h prompb.Histogram) []nhcbBucket {
+	var got []nhcbBucket
+	for it := h.ToIntHistogram().CumulativeBucketIterator(); it.Next(); {
+		b := it.At()
+		got = append(got, nhcbBucket{b.Upper, b.Count})
+	}
+	return got
 }

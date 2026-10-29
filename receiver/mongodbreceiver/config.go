@@ -22,12 +22,16 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ClientConfig     configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	MetricsBuilderConfig  metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig     metadata.LogsBuilderConfig    `mapstructure:",squash"`
+	QuerySampleCollection QuerySampleCollection         `mapstructure:"query_sample_collection"`
+	TopQueryCollection    TopQueryCollection            `mapstructure:"top_query_collection,omitempty"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Scheme                  string                    `mapstructure:"scheme"`
 	Username                string                    `mapstructure:"username"`
 	Password                configopaque.String       `mapstructure:"password"`
 	AuthMechanism           string                    `mapstructure:"auth_mechanism,omitempty"`
@@ -36,6 +40,23 @@ type Config struct {
 	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
 	Timeout                 time.Duration             `mapstructure:"timeout"`
 	DirectConnection        bool                      `mapstructure:"direct_connection"`
+}
+
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// TopQueryCollection holds configuration for the db.server.top_query log event collection.
+type TopQueryCollection struct {
+	CollectionInterval     time.Duration `mapstructure:"collection_interval"`
+	MaxQuerySampleCount    int64         `mapstructure:"max_query_sample_count"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	TopQueryCount          int64         `mapstructure:"top_query_count"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
 }
 
 func (c *Config) Validate() error {
@@ -50,17 +71,65 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Scheme != "" && c.Scheme != "mongodb" && c.Scheme != "mongodb+srv" {
+		err = multierr.Append(err, fmt.Errorf("invalid scheme %q, must be \"mongodb\" or \"mongodb+srv\"", c.Scheme))
+	}
+
+	if c.Scheme == "mongodb+srv" && len(c.Hosts) != 1 {
+		err = multierr.Append(err, errors.New("mongodb+srv scheme requires exactly one host"))
+	}
+
 	if c.Username != "" && c.Password == "" {
 		err = multierr.Append(err, errors.New("username provided without password"))
 	} else if c.Username == "" && c.Password != "" {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
+	if c.QuerySampleCollection.MaxRowsPerQuery == 0 {
+		err = multierr.Append(err, errors.New("query_sample_collection.max_rows_per_query must be greater than 0"))
+	}
+
+	if _, tlsErr := c.ClientConfig.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
+	if c.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
+		if c.TopQueryCollection.TopQueryCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.top_query_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxQuerySampleCount <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_query_sample_count must be greater than 0"))
+		}
+		if c.TopQueryCollection.MaxExplainEachInterval < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.max_explain_each_interval must not be negative"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheSize < 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_size must not be negative"))
+		}
+		if c.TopQueryCollection.CollectionInterval <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.collection_interval must be greater than 0"))
+		}
+		if c.TopQueryCollection.QueryPlanCacheTTL <= 0 {
+			err = multierr.Append(err, errors.New("top_query_collection.query_plan_cache_ttl must be greater than 0"))
+		}
+	}
+
 	return err
+}
+
+// secondaryDiscoverySkipReason reports why replica set secondary discovery should be skipped for
+// this configuration, or an empty string when it should proceed.
+func (c *Config) secondaryDiscoverySkipReason() string {
+	if c.DirectConnection {
+		return "direct_connection is enabled"
+	}
+	// The driver enables TLS implicitly for the mongodb+srv scheme when it applies the URI, but
+	// secondary connections are built from a host list rather than a URI and would not pick that
+	// up, so they would reach the same deployment in plaintext.
+	if c.Scheme == "mongodb+srv" {
+		return "the mongodb+srv scheme applies TLS that secondary connections cannot inherit"
+	}
+	return ""
 }
 
 func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
@@ -73,6 +142,11 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 
 		if c.Timeout > 0 {
 			clientOptions.SetConnectTimeout(c.Timeout)
+			// A secondary that connects but stops responding would otherwise stall a scrape
+			// indefinitely, because the scrape context carries no deadline unless one is
+			// configured. The driver honors an operation's own deadline over this value, so
+			// a configured scrape timeout still wins.
+			clientOptions.SetTimeout(c.Timeout)
 		}
 
 		// Set up authentication if username/password are provided or if an auth mechanism is specified
@@ -82,17 +156,27 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			clientOptions.SetAuth(credential)
 		}
 
+		// Secondaries are members of the same deployment as the primary, so they need the
+		// same transport security.
+		if tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background()); err == nil && tlsConfig != nil {
+			clientOptions.SetTLSConfig(tlsConfig)
+		}
+
 		return clientOptions
 	}
 	clientOptions := options.Client()
-	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "mongodb"
+	}
+	connString := scheme + "://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)
 
 	if c.Timeout > 0 {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfig(context.Background())
+	tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}

@@ -8,6 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestAPIVersion(t *testing.T) {
@@ -77,4 +80,50 @@ func TestAPIVersion(t *testing.T) {
 			require.Equal(t, test.expectedRep, version)
 		})
 	}
+}
+
+func TestDefaultConfigHasNoTLS(t *testing.T) {
+	cfg := NewDefaultConfig()
+	assert.False(t, cfg.TLS.HasValue(), "default config should have nil TLS for backward compatibility")
+}
+
+func TestNewConfigHasNoTLS(t *testing.T) {
+	cfg := NewConfig("unix:///var/run/docker.sock", 0, nil, "")
+	assert.False(t, cfg.TLS.HasValue(), "NewConfig should have nil TLS by default")
+}
+
+func TestUnmarshalNoTLSKeepsNil(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"endpoint": "unix:///var/run/docker.sock",
+	})
+	cfg := &Config{}
+	require.NoError(t, cfg.Unmarshal(conf))
+	assert.False(t, cfg.TLS.HasValue(), "omitting tls block should leave TLS nil")
+}
+
+func TestUnmarshalWithTLSBlock(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"endpoint": "https://example.com/",
+		"tls": map[string]any{
+			"insecure_skip_verify": true,
+		},
+	})
+	cfg := &Config{}
+	require.NoError(t, cfg.Unmarshal(conf))
+	assert.True(t, cfg.TLS.HasValue())
+	assert.True(t, cfg.TLS.Get().InsecureSkipVerify)
+}
+
+func TestValidateInvalidTLSCertPath(t *testing.T) {
+	cfg := &Config{
+		Endpoint: "https://example.com/",
+		TLS: configoptional.Some(configtls.ClientConfig{
+			Config: configtls.Config{
+				CAFile: "/nonexistent/ca.pem",
+			},
+		}),
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid tls configuration")
 }

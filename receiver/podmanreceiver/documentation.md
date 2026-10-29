@@ -20,7 +20,7 @@ Number of bytes transferred from the disk by the container
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### container.blockio.io_service_bytes_recursive.write
 
@@ -30,7 +30,7 @@ Number of bytes transferred to the disk by the container
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operations} | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Development |
 
 ### container.cpu.percent
 
@@ -50,9 +50,9 @@ Total CPU time consumed per CPU-core.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| core | The CPU core number when utilising per-CPU metrics. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| core | The CPU core number when utilising per-CPU metrics. | Any Str | Recommended | - |
 
 ### container.cpu.usage.system
 
@@ -112,9 +112,9 @@ Bytes sent by the container.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| container.id | The ID of the container. | Any Str | true |
-| container.image.name | The name of the image in use by the container. | Any Str | true |
-| container.name | The name of the container. | Any Str | true |
-| container.runtime | The runtime of the container. For this receiver, it will always be 'podman'. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| container.id | The ID of the container. | Any Str | true | - | - |
+| container.image.name | The name of the image in use by the container. | Any Str | true | - | - |
+| container.name | The name of the container. | Any Str | true | - | - |
+| container.runtime | The runtime of the container. For this receiver, it will always be 'podman'. | Any Str | true | - | - |

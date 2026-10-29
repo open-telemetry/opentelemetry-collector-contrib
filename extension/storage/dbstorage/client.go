@@ -13,7 +13,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib" // Postgres driver
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
-	_ "modernc.org/sqlite" // SQLite driver
 )
 
 type dbStorageClient struct {

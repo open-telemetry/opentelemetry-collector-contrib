@@ -1,9 +1,11 @@
-googlecloudspanner:
+google_cloud_spanner:
   collection_interval: 120s
   top_metrics_query_max_rows: 10
   backfill_enabled: true
   cardinality_total_limit: 200000
   hide_topn_lockstats_rowrangestartkey: true
+  hide_split_stats_keys: true
+  hide_client_ip_address: true
   truncate_text: true
   projects:
     - project_id: "spanner project 1"

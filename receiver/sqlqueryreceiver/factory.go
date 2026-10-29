@@ -7,16 +7,18 @@ import (
 	"database/sql"
 
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiverFunc(sql.Open, sqlquery.NewDbClient), metadata.LogsStability),
-		receiver.WithMetrics(createMetricsReceiverFunc(sql.Open, sqlquery.NewDbClient), metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiverFunc(sql.Open, sqlquery.NewDbClient), metadata.LogsStability),
+		xreceiver.WithMetrics(createMetricsReceiverFunc(sql.Open, sqlquery.NewDbClient), metadata.MetricsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }

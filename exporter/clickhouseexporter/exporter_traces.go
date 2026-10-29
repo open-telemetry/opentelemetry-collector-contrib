@@ -41,13 +41,13 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClientFromOptions(opt)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
 	if err != nil {
 		return err
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); err != nil {
+		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); err != nil {
 			return err
 		}
 
@@ -159,7 +159,14 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 }
 
 func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []column.IterableOrderedMap) {
-	for i := 0; i < events.Len(); i++ {
+	n := events.Len()
+	if n == 0 {
+		return nil, nil, nil
+	}
+	times = make([]time.Time, 0, n)
+	names = make([]string, 0, n)
+	attrs = make([]column.IterableOrderedMap, 0, n)
+	for i := range n {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
@@ -170,7 +177,15 @@ func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []str
 }
 
 func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []string, attrs []column.IterableOrderedMap) {
-	for i := 0; i < links.Len(); i++ {
+	n := links.Len()
+	if n == 0 {
+		return nil, nil, nil, nil
+	}
+	traceIDs = make([]string, 0, n)
+	spanIDs = make([]string, 0, n)
+	states = make([]string, 0, n)
+	attrs = make([]column.IterableOrderedMap, 0, n)
+	for i := range n {
 		link := links.At(i)
 		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
 		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))
@@ -188,7 +203,7 @@ func renderInsertTracesSQL(cfg *Config) string {
 func renderCreateTracesTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
 	return fmt.Sprintf(sqltemplates.TracesCreateTable,
-		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.database(), cfg.TracesTableName, cfg.tableClusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
 	)
@@ -197,7 +212,7 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Start)")
 	return fmt.Sprintf(sqltemplates.TracesCreateTsTable,
-		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.database(), cfg.TracesTableName, cfg.tableClusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
 	)
@@ -206,7 +221,7 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
 	database := cfg.database()
 	return fmt.Sprintf(sqltemplates.TracesCreateTsView,
-		database, cfg.TracesTableName, cfg.clusterString(),
+		database, cfg.TracesTableName, cfg.tableClusterString(),
 		database, cfg.TracesTableName,
 		database, cfg.TracesTableName,
 	)

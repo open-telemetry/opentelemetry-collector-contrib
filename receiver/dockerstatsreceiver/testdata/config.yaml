@@ -1,4 +1,8 @@
 docker_stats:
+docker_stats/tls:
+  endpoint: https://example.com/
+  tls:
+    insecure_skip_verify: true
 docker_stats/allsettings:
   endpoint: http://example.com/
   collection_interval: 2s
@@ -17,4 +21,6 @@ docker_stats/allsettings:
     container.cpu.usage.system:
       enabled: false
     container.memory.total_rss:
+      enabled: true
+    container.state.health.status:
       enabled: true

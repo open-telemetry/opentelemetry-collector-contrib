@@ -1,0 +1,301 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package k8sapi
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/internal/metadata"
+)
+
+var _ k8snode.Provider = (*mockMetadata)(nil)
+
+type mockMetadata struct {
+	mock.Mock
+}
+
+func (m *mockMetadata) NodeUID(_ context.Context) (string, error) {
+	args := m.MethodCalled("NodeUID")
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockMetadata) NodeName(_ context.Context) (string, error) {
+	args := m.MethodCalled("NodeName")
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockMetadata) NodeMachineID(_ context.Context) (string, error) {
+	args := m.MethodCalled("NodeMachineID")
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockMetadata) ClusterUID(_ context.Context) (string, error) {
+	args := m.MethodCalled("ClusterUID")
+	return args.String(0), args.Error(1)
+}
+
+func TestDetect(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+	md.On("NodeName").Return("mainNode", nil)
+	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
+	cfg := CreateDefaultConfig()
+	// set k8s cluster env variables and auth type to create a dummy API client
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	k8sDetector.(*detector).provider = md
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	md.AssertExpectations(t)
+
+	expected := map[string]any{
+		"k8s.node.name":   "mainNode",
+		"k8s.node.uid":    "4b15c589-1a33-42cc-927a-b78ba9947095",
+		"k8s.cluster.uid": "a7b3c1d2-e4f5-6789-abcd-ef0123456789",
+	}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectHostIDDisabledByDefault(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+	md.On("NodeName").Return("mainNode", nil)
+	md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
+	cfg := CreateDefaultConfig()
+	d := &detector{
+		provider: md,
+		logger:   zap.NewNop(),
+		ra:       &cfg.ResourceAttributes,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	md.AssertNotCalled(t, "NodeMachineID")
+	_, ok := res.Attributes().Get("host.id")
+	assert.False(t, ok, "host.id must not be detected unless enabled")
+}
+
+func TestDetectHostID(t *testing.T) {
+	tt := []struct {
+		name      string
+		machineID string
+		expected  map[string]any
+	}{
+		{
+			name:      "machine ID reported",
+			machineID: "fdbf79e8af94cb7f9e8df36789187052",
+			expected: map[string]any{
+				"k8s.node.name":   "mainNode",
+				"k8s.node.uid":    "4b15c589-1a33-42cc-927a-b78ba9947095",
+				"k8s.cluster.uid": "a7b3c1d2-e4f5-6789-abcd-ef0123456789",
+				"host.id":         "fdbf79e8af94cb7f9e8df36789187052",
+			},
+		},
+		{
+			name:      "empty machine ID omits host.id",
+			machineID: "",
+			expected: map[string]any{
+				"k8s.node.name":   "mainNode",
+				"k8s.node.uid":    "4b15c589-1a33-42cc-927a-b78ba9947095",
+				"k8s.cluster.uid": "a7b3c1d2-e4f5-6789-abcd-ef0123456789",
+			},
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			md := &mockMetadata{}
+			md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+			md.On("NodeName").Return("mainNode", nil)
+			md.On("NodeMachineID").Return(tc.machineID, nil)
+			md.On("ClusterUID").Return("a7b3c1d2-e4f5-6789-abcd-ef0123456789", nil)
+			cfg := CreateDefaultConfig()
+			cfg.ResourceAttributes.HostID.Enabled = true
+			d := &detector{
+				provider: md,
+				logger:   zap.NewNop(),
+				ra:       &cfg.ResourceAttributes,
+				rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+			}
+
+			res, _, err := d.Detect(t.Context())
+			require.NoError(t, err)
+			md.AssertExpectations(t)
+			assert.Equal(t, tc.expected, res.Attributes().AsRaw())
+		})
+	}
+}
+
+func TestDetectClusterUIDSkipsOnForbidden(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+	md.On("NodeName").Return("mainNode", nil)
+	forbiddenErr := k8serrors.NewForbidden(schema.GroupResource{Resource: "namespaces"}, "kube-system", errors.New("forbidden"))
+	md.On("ClusterUID").Return("", forbiddenErr)
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	k8sDetector.(*detector).provider = md
+	k8sDetector.(*detector).logger = zap.New(core)
+	res, _, err := k8sDetector.Detect(t.Context())
+	require.NoError(t, err)
+	md.AssertExpectations(t)
+
+	_, hasClusterUID := res.Attributes().Get("k8s.cluster.uid")
+	assert.False(t, hasClusterUID, "k8s.cluster.uid should not be set when RBAC permission is missing")
+	require.Equal(t, 1, logs.Len(), "expected exactly one warning log")
+}
+
+func TestDetectClusterUIDErrorsOnTransientFailure(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", nil)
+	md.On("NodeName").Return("mainNode", nil)
+	md.On("ClusterUID").Return("", errors.New("connection refused"))
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	k8sDetector.(*detector).provider = md
+	_, _, err = k8sDetector.Detect(t.Context())
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed getting k8s cluster UID")
+	md.AssertExpectations(t)
+}
+
+func TestDetectDisabledResourceAttributes(t *testing.T) {
+	md := &mockMetadata{}
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.K8sNodeUID.Enabled = false
+	cfg.ResourceAttributes.K8sNodeName.Enabled = false
+	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
+	// set k8s cluster env variables and auth type to create a dummy API client
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	k8sDetector.(*detector).provider = md
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+	md.AssertExpectations(t)
+
+	expected := map[string]any{}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestDetectNodeErrors(t *testing.T) {
+	someErr := errors.New("node not found")
+	tt := []struct {
+		name                  string
+		uidErr                error
+		nameErr               error
+		machineIDErr          error
+		failOnMissingMetadata bool
+		wantErr               string
+	}{
+		{name: "node uid error ignored", uidErr: someErr},
+		{name: "node uid error returned", uidErr: someErr, failOnMissingMetadata: true, wantErr: "failed getting k8s node UID"},
+		{name: "node name error ignored", nameErr: someErr},
+		{name: "node name error returned", nameErr: someErr, failOnMissingMetadata: true, wantErr: "failed getting k8s node name"},
+		{name: "node machine ID error ignored", machineIDErr: someErr},
+		{name: "node machine ID error returned", machineIDErr: someErr, failOnMissingMetadata: true, wantErr: "failed getting k8s node machine ID"},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			md := &mockMetadata{}
+			md.On("NodeUID").Return("4b15c589-1a33-42cc-927a-b78ba9947095", tc.uidErr)
+			md.On("NodeName").Return("mainNode", tc.nameErr).Maybe()
+			md.On("NodeMachineID").Return("fdbf79e8af94cb7f9e8df36789187052", tc.machineIDErr).Maybe()
+			cfg := CreateDefaultConfig()
+			cfg.ResourceAttributes.HostID.Enabled = true
+			d := &detector{
+				provider:              md,
+				logger:                zap.NewNop(),
+				ra:                    &cfg.ResourceAttributes,
+				rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+				failOnMissingMetadata: tc.failOnMissingMetadata,
+			}
+
+			res, schemaURL, err := d.Detect(t.Context())
+			if tc.wantErr != "" {
+				require.ErrorIs(t, err, someErr)
+				assert.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Empty(t, schemaURL)
+			assert.Equal(t, 0, res.Attributes().Len())
+			md.AssertExpectations(t)
+		})
+	}
+}
+
+func TestNewDetectorErrors(t *testing.T) {
+	t.Run("missing node name env var", func(t *testing.T) {
+		t.Setenv("K8S_NODE_NAME", "")
+		d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+		require.ErrorContains(t, err, "node name can't be found")
+		assert.Nil(t, d)
+	})
+
+	t.Run("service account auth outside a cluster", func(t *testing.T) {
+		t.Setenv("K8S_NODE_NAME", "mainNode")
+		t.Setenv("KUBERNETES_SERVICE_HOST", "")
+		t.Setenv("KUBERNETES_SERVICE_PORT", "")
+		d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+		require.ErrorContains(t, err, "failed creating k8snode detector")
+		assert.Nil(t, d)
+	})
+}
+
+func TestNewDeprecatedDetector(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	set := processortest.NewNopSettings(processortest.NopType)
+	set.Logger = zap.New(core)
+	d, err := NewDeprecatedDetector(set, cfg, false)
+	require.NoError(t, err)
+	assert.NotNil(t, d)
+	require.Equal(t, 1, logs.FilterMessageSnippet("k8snode detector name is deprecated").Len())
+}

@@ -1,4 +1,0 @@
-change_type: 'deprecation'
-component: exporter/azure_blob
-note: Introduce new snake case compliant name `azure_blob`
-issues: [46722]

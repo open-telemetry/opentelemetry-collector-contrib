@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -115,7 +116,7 @@ func Test_limit(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := limit(target, tt.limit, tt.keep)
+			exprFunc, err := limit(target, tt.limit, tt.keep, zap.NewNop())
 			require.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioMap)
@@ -155,7 +156,7 @@ func Test_limit_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := limit(tt.target, tt.limit, tt.keep)
+			_, err := limit(tt.target, tt.limit, tt.keep, zap.NewNop())
 			assert.Error(t, err)
 		})
 	}
@@ -172,7 +173,7 @@ func Test_limit_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := limit[any](target, 1, []string{})
+	exprFunc, err := limit[any](target, 1, []string{}, zap.NewNop())
 	require.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -188,8 +189,78 @@ func Test_limit_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := limit[any](target, 1, []string{})
+	exprFunc, err := limit[any](target, 1, []string{}, zap.NewNop())
 	require.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
+}
+
+func Test_LimitFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewLimitFactory[any]()
+		assert.Equal(t, "limit", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewLimitFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &limitArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "PriorityKeys"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewLimitFactory[any]()
+		args := factory.CreateDefaultArguments()
+		limitArgs, ok := args.(*limitArguments[any])
+		require.True(t, ok)
+		limitArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+		}
+		limitArgs.Limit = 10
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createLimitFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "LimitFactory args must be of type *limitArguments[K]")
+	})
+}
+
+func BenchmarkLimit(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("test", "hello world")
+	input.PutInt("test2", 3)
+	input.PutBool("test3", true)
+
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			v, ok := m.(pcommon.Map)
+			if !ok {
+				return errors.New("expected pcommon.Map")
+			}
+			v.CopyTo(tCtx)
+			return nil
+		},
+	}
+	exprFunc, err := limit(target, int64(2), []string{"test3"}, zap.NewNop())
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter/internal/resourcemapping"
@@ -23,14 +22,6 @@ import (
 
 const (
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
-)
-
-var customMonitoredResourcesGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.googlecloud.CustomMonitoredResources",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the googlecloudexporter"+
-		" will map the OTLP metrics to the monitored resource type defined by the resource label `gcp.resource_type`."+
-		" The MR labels are defined by resource labels with the prefix `gcp.<monitored_resource_type>."),
 )
 
 // NewFactory creates a factory for the googlecloud exporter
@@ -59,8 +50,8 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
-	if customMonitoredResourcesGate.IsEnabled() {
-		eCfg.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
+	if metadata.ExporterGooglecloudCustomMonitoredResourcesFeatureGate.IsEnabled() {
+		eCfg.Config.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
 	}
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
@@ -114,8 +105,8 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	if customMonitoredResourcesGate.IsEnabled() {
-		eCfg.MetricConfig.MapMonitoredResource = resourcemapping.CustomMetricMonitoredResourceMapping
+	if metadata.ExporterGooglecloudCustomMonitoredResourcesFeatureGate.IsEnabled() {
+		eCfg.Config.MetricConfig.MapMonitoredResource = resourcemapping.CustomMetricMonitoredResourceMapping
 	}
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {

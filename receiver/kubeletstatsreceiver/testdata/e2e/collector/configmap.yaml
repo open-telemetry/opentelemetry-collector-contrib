@@ -15,7 +15,7 @@ data:
         endpoint: 0.0.0.0:13133
     processors:
     receivers:
-      kubeletstats:
+      kubelet_stats:
         auth_type: "serviceAccount"
         endpoint: "https://${env:K8S_NODE_NAME}:10250"
         metric_groups:
@@ -31,4 +31,4 @@ data:
           exporters:
           - otlp_grpc
           receivers:
-          - kubeletstats
+          - kubelet_stats

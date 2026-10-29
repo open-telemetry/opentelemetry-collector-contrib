@@ -23,10 +23,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 )
 
@@ -36,7 +36,7 @@ type Config struct {
 	// Valid values are `ignore` and `propagate`.
 	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
-	// The default value is `propagate`.
+	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	// Deprecated: use TraceConditions instead.
@@ -478,11 +478,11 @@ func (cfg *Config) validateExplicitContextConfig() error {
 		errs = multierr.Append(errs, err)
 	}
 
-	if cfg.Logs.LogConditions != nil && cfg.Logs.Include != nil {
+	if cfg.Logs.Include != nil {
 		errs = multierr.Append(errs, cfg.Logs.Include.validate())
 	}
 
-	if cfg.Logs.LogConditions != nil && cfg.Logs.Exclude != nil {
+	if cfg.Logs.Exclude != nil {
 		errs = multierr.Append(errs, cfg.Logs.Exclude.validate())
 	}
 

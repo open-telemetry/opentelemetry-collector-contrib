@@ -1,4 +1,4 @@
-res1:
+resource_key=res1|:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:

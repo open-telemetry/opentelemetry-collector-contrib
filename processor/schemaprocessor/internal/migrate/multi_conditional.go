@@ -20,7 +20,7 @@ type MultiConditionalAttributeSet struct {
 
 type MultiConditionalAttributeSetSlice []*MultiConditionalAttributeSet
 
-func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]string, matches map[string][]Match) MultiConditionalAttributeSet {
+func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]string, copyAttributes bool, matches map[string][]Match) MultiConditionalAttributeSet {
 	keysToPossibleValues := make(map[string]set)
 	for k, values := range matches {
 		on := make(map[string]struct{})
@@ -31,7 +31,7 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]strin
 	}
 	return MultiConditionalAttributeSet{
 		keysToPossibleValues: keysToPossibleValues,
-		attrs:                NewAttributeChangeSet(mappings),
+		attrs:                NewAttributeChangeSet(mappings, copyAttributes),
 	}
 }
 
@@ -59,7 +59,7 @@ func (ca *MultiConditionalAttributeSet) check(keyToCheckVals map[string]string) 
 	for k, inVal := range keyToCheckVals {
 		// We must already have a key matching the input key!  If not, return an error
 		// indicates a programming error, should be impossible if using the class correctly
-		valToMatch, ok := (ca.keysToPossibleValues)[k]
+		valToMatch, ok := ca.keysToPossibleValues[k]
 		if !ok {
 			return false, errors.New("passed in a key that doesn't exist in MultiConditionalAttributeSet")
 		}

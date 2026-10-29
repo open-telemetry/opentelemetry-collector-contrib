@@ -5,6 +5,7 @@ package alibabacloudlogserviceexporter // import "github.com/open-telemetry/open
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
 
@@ -47,6 +48,28 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
 	}
 
+	producerConfig := newProducerConfig(config)
+
+	producer, err := producer.NewProducer(producerConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Log Service producer: %w", err)
+	}
+
+	c := &logServiceClientImpl{
+		project:        config.Project,
+		logstore:       config.Logstore,
+		clientInstance: producer,
+		logger:         logger,
+	}
+	c.clientInstance.Start()
+	// do not return error if get hostname or ip address fail
+	c.topic, _ = os.Hostname()
+	c.source, _ = getIPAddress()
+	logger.Info("Create LogService client success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
+	return c, nil
+}
+
+func newProducerConfig(config *Config) *producer.ProducerConfig {
 	producerConfig := producer.GetDefaultProducerConfig()
 	producerConfig.Endpoint = config.Endpoint
 	producerConfig.AccessKeyID = config.AccessKeyID
@@ -57,20 +80,15 @@ func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, 
 		producerConfig.CredentialsProvider = provider
 
 		producerConfig.StsTokenShutDown = make(chan struct{})
+	} else if config.SecurityToken != "" {
+		producerConfig.CredentialsProvider = sls.NewStaticCredentialsProvider(
+			config.AccessKeyID,
+			string(config.AccessKeySecret),
+			string(config.SecurityToken),
+		)
 	}
 
-	c := &logServiceClientImpl{
-		project:        config.Project,
-		logstore:       config.Logstore,
-		clientInstance: producer.InitProducer(producerConfig),
-		logger:         logger,
-	}
-	c.clientInstance.Start()
-	// do not return error if get hostname or ip address fail
-	c.topic, _ = os.Hostname()
-	c.source, _ = getIPAddress()
-	logger.Info("Create LogService client success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
-	return c, nil
+	return producerConfig
 }
 
 // sendLogs send message to LogService

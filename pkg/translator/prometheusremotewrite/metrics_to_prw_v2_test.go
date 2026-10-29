@@ -257,3 +257,155 @@ func TestScopeAttributesV2(t *testing.T) {
 
 	require.Len(t, tsMap, 2)
 }
+
+func getMetricNameV2(t *testing.T, ts *writev2.TimeSeries, symbols []string) string {
+	nameIdx := -1
+	for i, s := range symbols {
+		if s == "__name__" {
+			nameIdx = i
+			break
+		}
+	}
+	require.Greater(t, nameIdx, -1, "__name__ not found in symbols")
+	require.Zero(t, len(ts.LabelsRefs)%2, "TimeSeries LabelsRefs must contain key/value pairs")
+
+	for i := 0; i < len(ts.LabelsRefs); i += 2 {
+		if ts.LabelsRefs[i] == uint32(nameIdx) {
+			valIdx := ts.LabelsRefs[i+1]
+			require.Less(t, int(valIdx), len(symbols), "value index out of range")
+			return symbols[valIdx]
+		}
+	}
+	require.Fail(t, "__name__ label not found in TimeSeries")
+	return ""
+}
+
+func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
+	tests := []struct {
+		name         string
+		strategy     string
+		metricFunc   func() pmetric.Metric
+		expectedName string
+		expectedUnit string
+	}{
+		{
+			name:     "NoTranslation",
+			strategy: "NoTranslation",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.metric-name/with_special@chars")
+				m.SetEmptyGauge()
+				m.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test.metric-name/with_special@chars",
+			expectedUnit: "",
+		},
+		{
+			name:     "UnderscoreEscapingWithSuffixes",
+			strategy: "UnderscoreEscapingWithSuffixes",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.counter")
+				m.SetUnit("By")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test_counter_bytes_total",
+			expectedUnit: "bytes",
+		},
+		{
+			name:     "UnderscoreEscapingWithoutSuffixes",
+			strategy: "UnderscoreEscapingWithoutSuffixes",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.counter")
+				m.SetUnit("By")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test_counter",
+			expectedUnit: "bytes",
+		},
+		{
+			name:     "NoUTF8EscapingWithSuffixes",
+			strategy: "NoUTF8EscapingWithSuffixes",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.counter")
+				m.SetUnit("By")
+				m.SetEmptySum().SetIsMonotonic(true)
+				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test.counter_bytes_total",
+			expectedUnit: "bytes",
+		},
+		{
+			name:     "NoTranslation_WithUTF8Unit",
+			strategy: "NoTranslation",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.metric")
+				m.SetUnit("custom unit")
+				m.SetEmptyGauge()
+				m.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test.metric",
+			expectedUnit: "custom unit",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+			metric := tt.metricFunc()
+			var attrs pcommon.Map
+			if metric.Type() == pmetric.MetricTypeGauge {
+				attrs = metric.Gauge().DataPoints().At(0).Attributes()
+			} else {
+				attrs = metric.Sum().DataPoints().At(0).Attributes()
+			}
+			attrs.PutStr("_foo", "leading")
+			attrs.PutStr("a__b", "consecutive")
+			attrs.PutStr("__custom__", "reserved")
+			metric.CopyTo(metrics.AppendEmpty())
+
+			tsMap, symbolsTable, err := FromMetricsV2(md, Settings{TranslationStrategy: tt.strategy})
+			require.NoError(t, err)
+			require.Len(t, tsMap, 1)
+
+			var tsFound *writev2.TimeSeries
+			for _, ts := range tsMap {
+				tsFound = ts
+				break
+			}
+			require.NotNil(t, tsFound)
+
+			symbols := symbolsTable.Symbols()
+			labels := make(map[string]string)
+			for i := 0; i < len(tsFound.LabelsRefs); i += 2 {
+				labels[symbols[tsFound.LabelsRefs[i]]] = symbols[tsFound.LabelsRefs[i+1]]
+			}
+			require.Equal(t, "leading", labels["_foo"])
+			require.Equal(t, "consecutive", labels["a__b"])
+			require.Equal(t, "reserved", labels["__custom__"])
+			actualName := getMetricNameV2(t, tsFound, symbols)
+			require.Equal(t, tt.expectedName, actualName)
+
+			unitRef := tsFound.Metadata.UnitRef
+			actualUnit := ""
+			if int(unitRef) < len(symbols) {
+				actualUnit = symbols[unitRef]
+			}
+			require.Equal(t, tt.expectedUnit, actualUnit)
+		})
+	}
+}

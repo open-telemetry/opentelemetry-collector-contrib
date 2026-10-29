@@ -6,24 +6,27 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/antchfx/xmlquery"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ConvertTextToElementsXMLArguments[K any] struct {
+type convertTextToElementsXMLArguments[K any] struct {
 	Target      ottl.StringGetter[K]
 	XPath       ottl.Optional[string]
 	ElementName ottl.Optional[string]
 }
 
+// NewConvertTextToElementsXMLFactory returns a factory for the ConvertTextToElementsXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#converttexttoelementsxml
 func NewConvertTextToElementsXMLFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ConvertTextToElementsXML", &ConvertTextToElementsXMLArguments[K]{}, createConvertTextToElementsXMLFunction[K])
+	return ottl.NewFactory("ConvertTextToElementsXML", &convertTextToElementsXMLArguments[K]{}, createConvertTextToElementsXMLFunction[K])
 }
 
 func createConvertTextToElementsXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ConvertTextToElementsXMLArguments[K])
+	args, ok := oArgs.(*convertTextToElementsXMLArguments[K])
 
 	if !ok {
 		return nil, errors.New("ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
@@ -54,22 +57,28 @@ func convertTextToElementsXML[K any](target ottl.StringGetter[K], xPath, element
 			return nil, err
 		}
 		for _, n := range xmlquery.Find(doc, xPath) {
-			convertTextToElementsForNode(n, elementName)
+			if err := convertTextToElementsForNode(n, elementName, 0); err != nil {
+				return nil, err
+			}
 		}
 		return doc.OutputXML(false), nil
 	}
 }
 
-func convertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
+func convertTextToElementsForNode(parent *xmlquery.Node, elementName string, depth int) error {
+	if depth > maxXMLElementDepth {
+		return fmt.Errorf("exceeded maximum XML nesting depth of %d", maxXMLElementDepth)
+	}
+
 	switch parent.Type {
 	case xmlquery.ElementNode: // ok
 	case xmlquery.DocumentNode: // ok
 	default:
-		return
+		return nil
 	}
 
 	if parent.FirstChild == nil {
-		return
+		return nil
 	}
 
 	// Convert any child nodes and count text and element nodes.
@@ -77,7 +86,9 @@ func convertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
 	for child := parent.FirstChild; child != nil; child = child.NextSibling {
 		switch child.Type {
 		case xmlquery.ElementNode:
-			convertTextToElementsForNode(child, elementName)
+			if err := convertTextToElementsForNode(child, elementName, depth+1); err != nil {
+				return err
+			}
 			elementCount++
 		case xmlquery.TextNode:
 			valueCount++
@@ -86,7 +97,7 @@ func convertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
 
 	// If there are no values to wrap, or if there is exactly one value OR one element, this node is all set.
 	if valueCount == 0 || elementCount+valueCount <= 1 {
-		return
+		return nil
 	}
 
 	// At this point, we either have multiple values, or a mix of values and elements.
@@ -105,4 +116,6 @@ func convertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
 		child.FirstChild = newTextNode
 		child.LastChild = newTextNode
 	}
+
+	return nil
 }

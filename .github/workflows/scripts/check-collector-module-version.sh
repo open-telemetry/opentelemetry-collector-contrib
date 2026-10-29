@@ -52,11 +52,11 @@ check_collector_versions_correct() {
 MAIN_MOD_FILE="./cmd/otelcontribcol/go.mod"
 
 
-BETA_MODULE="go.opentelemetry.io/collector"
+BETA_MODULE="go.opentelemetry.io/collector/otelcol"
 # Note space at end of string. This is so it filters for the exact string
 # only and does not return string which contains this string as a substring.
 BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE " "$MAIN_MOD_FILE")
-check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
+check_collector_versions_correct "go.opentelemetry.io/collector" "$BETA_MOD_VERSION"
 for mod in "${beta_modules[@]}"; do
    check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
 done

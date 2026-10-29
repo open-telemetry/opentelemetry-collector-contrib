@@ -11,6 +11,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "leap.status"
+            default:
+              - "leap.status"
       ntp.skew:
         description: "NtpSkewMetricConfig provides config for the ntp.skew metric."
         type: object
@@ -32,6 +48,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "leap.status"
+            default:
+              - "leap.status"
       ntp.time.last_offset:
         description: "NtpTimeLastOffsetMetricConfig provides config for the ntp.time.last_offset metric."
         type: object
@@ -39,6 +71,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "leap.status"
+            default:
+              - "leap.status"
       ntp.time.rms_offset:
         description: "NtpTimeRmsOffsetMetricConfig provides config for the ntp.time.rms_offset metric."
         type: object
@@ -46,6 +94,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "leap.status"
+            default:
+              - "leap.status"
       ntp.time.root_delay:
         description: "NtpTimeRootDelayMetricConfig provides config for the ntp.time.root_delay metric."
         type: object
@@ -53,6 +117,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "leap.status"
+            default:
+              - "leap.status"
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for chrony metrics builder.
     type: object

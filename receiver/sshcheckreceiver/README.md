@@ -7,6 +7,7 @@ This receiver creates stats by connecting to an SSH server which may be an SFTP 
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
+| Warnings      | [Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsshcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsshcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsshcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsshcheck) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sshcheck)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sshcheck&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ishaish103](https://www.github.com/ishaish103) |
@@ -21,6 +22,9 @@ This receiver creates stats by connecting to an SSH server which may be an SFTP 
 If `ignore_host_key` is not set then host key validation requires the agent either have a known_hosts file at a path specified by setting `known_hosts` or at default paths indicated by ssh man pages: $HOME/.ssh/known_hosts or /etc/ssh/known_hosts.
 
 ## Configuration
+
+> **Note:** This receiver was renamed from `sshcheck` to `ssh_check` to match the snake_case naming convention.
+> The deprecated component type `sshcheck` is still accepted as an alias and will log a deprecation warning.
 
 The following settings are required:
 - `endpoint`
@@ -41,7 +45,7 @@ The following settings are optional:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: localhost:2222
     username: otelu
     password: $OTELP
@@ -52,7 +56,7 @@ receivers:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: sftp.example.com:22
     username: monitoring
     key_file: /path/to/private_key
@@ -63,7 +67,7 @@ receivers:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: sftp.example.com:22
     username: monitoring
     key_file: /path/to/private_key
@@ -75,7 +79,7 @@ receivers:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: production-server.example.com:22
     username: monitoring
     key_file: /etc/otel/ssh_monitoring_key
@@ -95,7 +99,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [sshcheck]
+      receivers: [ssh_check]
       processors: [batch]
       exporters: [otlp_grpc]
 ```
@@ -110,7 +114,7 @@ The `timeout` option controls how long the receiver waits for an SSH connection 
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: slow-server.example.com:22
     username: user
     password: pass
@@ -124,14 +128,14 @@ SFTP checks can be enabled in two ways:
 1. **Using the `check_sftp` option** (enables SFTP status and duration metrics):
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     check_sftp: true
 ```
 
 2. **By enabling SFTP metrics individually**:
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     metrics:
       sshcheck.sftp_duration:
         enabled: true
@@ -147,7 +151,7 @@ Individual metrics can be enabled or disabled using the `metrics` configuration 
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: localhost:2222
     username: user
     password: pass
@@ -176,7 +180,7 @@ The `known_hosts` option specifies the path to the SSH known_hosts file for host
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: server.example.com:22
     username: user
     key_file: /path/to/key
@@ -189,13 +193,13 @@ The `ignore_host_key` option disables host key validation. **This should only be
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     ignore_host_key: true  # ⚠️ Only for testing!
 ```
 
 For production use, always configure proper host key validation using `known_hosts` or ensure the host key is in the default known_hosts locations.
 
-## Limitations and Warnings
+## Warnings
 
 ### Security
 
@@ -232,6 +236,5 @@ The receiver adds the following resource attribute:
 ### Detailed Metric Documentation
 
 Complete details about the metrics produced by this receiver, including attributes, types, and units, can be found in [documentation.md](./documentation.md) and [metadata.yaml](./metadata.yaml).
-
 
 

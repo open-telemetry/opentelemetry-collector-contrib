@@ -28,7 +28,7 @@ $defs:
         x-customType: int64
       zstd:
         description: Zstd settings apply to OTel-Arrow use of gRPC specifically.
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd.decoder_config
+        $ref: /internal/otelarrow/compression/zstd.decoder_config
   protocols:
     description: Protocols is the configuration for the supported protocols.
     type: object
@@ -43,5 +43,6 @@ properties:
   admission:
     description: Admission is the configuration for controlling amount of request memory entering the receiver.
     $ref: admission_config
-allOf:
-  - $ref: protocols
+  protocols:
+    description: Protocols is the configuration for gRPC and Arrow.
+    $ref: protocols

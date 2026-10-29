@@ -69,7 +69,8 @@ func TestMetricsGrouping(t *testing.T) {
 					t.Context(),
 					processortest.NewNopSettings(metadata.Type),
 					&Config{},
-					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
+					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities),
+				)
 				require.NoError(t, err)
 
 				caps := mtp.Capabilities()

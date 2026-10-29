@@ -10,31 +10,48 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 )
 
 type Histogram struct {
 	pmetric.HistogramDataPoint
 	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
+	metric           pmetric.Metric
+	histogramMapping HistogramMapping
 }
 
-func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint) Histogram {
+func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint, hm HistogramMapping) Histogram {
 	return Histogram{
 		HistogramDataPoint: dp,
 		MappingHintGetter:  elasticsearch.NewMappingHintGetter(dp.Attributes()),
 		metric:             metric,
+		histogramMapping:   hm,
 	}
 }
 
 func (dp Histogram) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+	bucketCounts := dp.BucketCounts()
+	explicitBounds := dp.ExplicitBounds()
+	if bucketCounts.Len() > 0 && bucketCounts.Len() != explicitBounds.Len()+1 {
+		return pcommon.Value{}, fmt.Errorf("invalid histogram data point %q", dp.Metric().Name())
+	}
+
+	switch dp.resolvedMapping() {
+	case HistogramMappingAggregateMetricDouble:
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
 		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
+	case HistogramMappingExponential:
+		return exphistogram.ExplicitToNativeExponentialHistogram(
+			dp.HistogramDataPoint,
+			dp.Metric().Histogram().AggregationTemporality(),
+		), nil
+	default:
+		raw := dp.HasMappingHint(elasticsearch.HintHistogramRaw)
+		return histogramToValue(dp.HistogramDataPoint, dp.metric, raw)
 	}
-	return histogramToValue(dp.HistogramDataPoint, dp.metric)
 }
 
 func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) string {
@@ -45,10 +62,14 @@ func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) 
 		return "histogram_metrics"
 	}
 
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+	switch dp.resolvedMapping() {
+	case HistogramMappingAggregateMetricDouble:
 		return "summary"
+	case HistogramMappingExponential:
+		return "exponential_histogram"
+	default:
+		return "histogram"
 	}
-	return "histogram"
 }
 
 func (dp Histogram) DocCount() uint64 {
@@ -59,7 +80,17 @@ func (dp Histogram) Metric() pmetric.Metric {
 	return dp.metric
 }
 
-func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pcommon.Value, error) {
+func (dp Histogram) resolvedMapping() HistogramMapping {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+		return HistogramMappingAggregateMetricDouble
+	}
+	if dp.HasMappingHint(elasticsearch.HintHistogramRaw) {
+		return HistogramMappingRaw
+	}
+	return dp.histogramMapping
+}
+
+func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric, raw bool) (pcommon.Value, error) {
 	bucketCounts := dp.BucketCounts()
 	explicitBounds := dp.ExplicitBounds()
 	if bucketCounts.Len() > 0 && bucketCounts.Len() != explicitBounds.Len()+1 {
@@ -89,24 +120,23 @@ func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pco
 		if count == 0 {
 			continue
 		}
+		if raw && i == explicitBounds.Len() {
+			// In raw mode, the overflow bucket would have the same value
+			// as the last real bucket. Merge the overflow count into the
+			// last real bucket to avoid duplicate values, which violates
+			// ES histogram's strictly increasing values requirement.
+			lastIdx := counts.Len() - 1
+			if lastIdx >= 0 && count > 0 {
+				counts.At(lastIdx).SetInt(counts.At(lastIdx).Int() + safeUint64ToInt64(count))
+			}
+			break
+		}
 
 		var value float64
-		switch i {
-		// (-infinity, explicit_bounds[i]]
-		case 0:
-			value = explicitBounds.At(i)
-			if value > 0 {
-				value /= 2
-			}
-
-		// (explicit_bounds[i], +infinity)
-		case bucketCounts.Len() - 1:
-			value = explicitBounds.At(i - 1)
-
-		// [explicit_bounds[i-1], explicit_bounds[i])
-		default:
-			// Use the midpoint between the boundaries.
-			value = explicitBounds.At(i-1) + (explicitBounds.At(i)-explicitBounds.At(i-1))/2.0
+		if raw {
+			value = rawBucketValue(explicitBounds, i)
+		} else {
+			value = midpointBucketValue(explicitBounds, i)
 		}
 
 		counts.AppendEmpty().SetInt(safeUint64ToInt64(count))
@@ -114,4 +144,32 @@ func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric) (pco
 	}
 
 	return vm, nil
+}
+
+// midpointBucketValue returns the midpoint centroid for bucket at index i.
+// Caller must ensure len(bucketCounts) == len(explicitBounds) + 1.
+func midpointBucketValue(explicitBounds pcommon.Float64Slice, i int) float64 {
+	switch {
+	// (-infinity, explicit_bounds[i]]
+	case i == 0:
+		v := explicitBounds.At(i)
+		if v > 0 {
+			v /= 2
+		}
+		return v
+
+	// (explicit_bounds[i-1], +infinity)
+	case i >= explicitBounds.Len():
+		return explicitBounds.At(i - 1)
+
+	// [explicit_bounds[i-1], explicit_bounds[i])
+	default:
+		return explicitBounds.At(i-1) + (explicitBounds.At(i)-explicitBounds.At(i-1))/2.0
+	}
+}
+
+// rawBucketValue returns the explicit bound for bucket at index i without
+// any midpoint approximation.
+func rawBucketValue(explicitBounds pcommon.Float64Slice, i int) float64 {
+	return explicitBounds.At(i)
 }

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -22,24 +23,22 @@ const (
 
 // NewFactory creates kafkametrics receiver factory.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {
-	config := &Config{
+	return &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		ClientConfig:         configkafka.NewDefaultClientConfig(),
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
-	if config.ClusterAlias != "" {
-		config.ResourceAttributes.KafkaClusterAlias.Enabled = true
-	}
-	return config
 }
 
 func createMetricsReceiver(
@@ -49,6 +48,9 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
+	if c.ClusterAlias != "" {
+		c.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	}
 	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
 	if err != nil {
 		return nil, err

@@ -10,6 +10,7 @@ rules:
       - ""
     resources:
       - events
+      - persistentvolumeclaims
       - pods
       - pods/status
       - replicationcontrollers

@@ -22,17 +22,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
-func TestCancelStream(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	srv := pstest.NewServer()
-	defer srv.Close()
+func createHandler(ctx context.Context, t *testing.T) (cleanupFn func(), srv *pstest.Server, handler *StreamHandler) {
+	srv = pstest.NewServer()
 
 	var copts []option.ClientOption
 	var dialOpts []grpc.DialOption
 	conn, err := grpc.NewClient(srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 	assert.NoError(t, err)
-	defer func() { assert.NoError(t, conn.Close()) }()
+
+	cleanupFn = func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, conn.Close())
+	}
+
 	copts = append(copts, option.WithGRPCConn(conn))
 	_, err = srv.GServer.CreateTopic(ctx, &pubsubpb.Topic{
 		Name: "projects/my-project/topics/otlp",
@@ -50,13 +52,20 @@ func TestCancelStream(t *testing.T) {
 
 	client, err := pubsub.NewSubscriptionAdminClient(ctx, copts...)
 	assert.NoError(t, err)
-
-	handler, err := NewHandler(ctx, settings, telemetryBuilder, client, "client-id", "projects/my-project/subscriptions/otlp",
-		func(context.Context, *pubsubpb.ReceivedMessage) error {
+	handler, err = NewHandler(ctx, settings, telemetryBuilder, client, "client-id", "projects/my-project/subscriptions/otlp",
+		nil, func(context.Context, *pubsubpb.ReceivedMessage) error {
 			return nil
 		})
-	handler.ackBatchWait = 10 * time.Millisecond
 	assert.NoError(t, err)
+	return cleanupFn, srv, handler
+}
+
+func TestCancelStream(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	cleanupFn, srv, handler := createHandler(ctx, t)
+	defer cleanupFn()
+
 	srv.Publish("projects/my-project/topics/otlp", []byte{}, map[string]string{
 		"ce-type":      "org.opentelemetry.otlp.traces.v1",
 		"content-type": "application/protobuf",

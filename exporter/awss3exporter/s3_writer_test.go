@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.uber.org/zap"
 )
 
 func TestNewUploadManager(t *testing.T) {
@@ -30,6 +31,26 @@ func TestNewUploadManager(t *testing.T) {
 					FilePrefix:          "ingested-data-",
 					Endpoint:            "localhost",
 					RoleArn:             "arn:aws:iam::123456789012:my-awesome-user",
+					S3ForcePathStyle:    true,
+					DisableSSL:          true,
+					Compression:         configcompression.TypeGzip,
+				},
+			},
+			errVal: "",
+		},
+		{
+			name: "valid configuration with static credentials",
+			conf: &Config{
+				S3Uploader: S3UploaderConfig{
+					Region:              "local",
+					S3Bucket:            "my-awesome-bucket",
+					S3Prefix:            "opentelemetry",
+					S3PartitionFormat:   "year=%Y/month=%m/day=%d/hour=%H",
+					S3PartitionTimezone: "Europe/London",
+					FilePrefix:          "ingested-data-",
+					Endpoint:            "localhost",
+					AccessKey:           "access",
+					SecretKey:           "secret",
 					S3ForcePathStyle:    true,
 					DisableSSL:          true,
 					Compression:         configcompression.TypeGzip,
@@ -63,6 +84,7 @@ func TestNewUploadManager(t *testing.T) {
 			sm, err := newUploadManager(
 				t.Context(),
 				tc.conf,
+				zap.NewNop(),
 				"metrics",
 				"otlp",
 				false,

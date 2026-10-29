@@ -13,6 +13,9 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetRabbitmqClusterName("rabbitmq.cluster.name-val")
+			rb.SetRabbitmqExchangeName("rabbitmq.exchange.name-val")
+			rb.SetRabbitmqExchangeType("rabbitmq.exchange.type-val")
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
 			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
 			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
@@ -22,30 +25,44 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("rabbitmq.node.name")
-			assert.True(t, ok)
+			rabbitmqClusterNameAttrVal, ok := res.Attributes().Get("rabbitmq.cluster.name")
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "rabbitmq.node.name-val", val.Str())
+				assert.Equal(t, "rabbitmq.cluster.name-val", rabbitmqClusterNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("rabbitmq.queue.name")
+			rabbitmqExchangeNameAttrVal, ok := res.Attributes().Get("rabbitmq.exchange.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "rabbitmq.queue.name-val", val.Str())
+				assert.Equal(t, "rabbitmq.exchange.name-val", rabbitmqExchangeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("rabbitmq.vhost.name")
+			rabbitmqExchangeTypeAttrVal, ok := res.Attributes().Get("rabbitmq.exchange.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "rabbitmq.vhost.name-val", val.Str())
+				assert.Equal(t, "rabbitmq.exchange.type-val", rabbitmqExchangeTypeAttrVal.Str())
+			}
+			rabbitmqNodeNameAttrVal, ok := res.Attributes().Get("rabbitmq.node.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.node.name-val", rabbitmqNodeNameAttrVal.Str())
+			}
+			rabbitmqQueueNameAttrVal, ok := res.Attributes().Get("rabbitmq.queue.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.queue.name-val", rabbitmqQueueNameAttrVal.Str())
+			}
+			rabbitmqVhostNameAttrVal, ok := res.Attributes().Get("rabbitmq.vhost.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.vhost.name-val", rabbitmqVhostNameAttrVal.Str())
 			}
 		})
 	}

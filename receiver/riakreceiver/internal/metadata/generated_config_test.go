@@ -20,7 +20,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
@@ -104,12 +104,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}
 }
 
+func TestRiakNodeOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RiakNodeOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RiakNodeOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric riak.node.operation.count doesn't have an attribute invalid, valid attributes: [request]")
+
+	cfg = DefaultMetricsConfig().RiakNodeOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRiakNodeOperationTimeMeanMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RiakNodeOperationTimeMean
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RiakNodeOperationTimeMeanMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric riak.node.operation.time.mean doesn't have an attribute invalid, valid attributes: [request]")
+
+	cfg = DefaultMetricsConfig().RiakNodeOperationTimeMean
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRiakVnodeIndexOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RiakVnodeIndexOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RiakVnodeIndexOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric riak.vnode.index.operation.count doesn't have an attribute invalid, valid attributes: [operation]")
+
+	cfg = DefaultMetricsConfig().RiakVnodeIndexOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRiakVnodeOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RiakVnodeOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RiakVnodeOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric riak.vnode.operation.count doesn't have an attribute invalid, valid attributes: [request]")
+
+	cfg = DefaultMetricsConfig().RiakVnodeOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

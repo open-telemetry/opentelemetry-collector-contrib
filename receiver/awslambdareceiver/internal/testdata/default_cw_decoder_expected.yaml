@@ -9,10 +9,14 @@ resourceLogs:
             stringValue: "111222333444"
         - key: aws.log.group.names
           value:
-            stringValue: /test/log-group
+            arrayValue:
+              values:
+                - stringValue: /test/log-group
         - key: aws.log.stream.names
           value:
-            stringValue: test-stream
+            arrayValue:
+              values:
+                - stringValue: test-stream
     scopeLogs:
       - logRecords:
           - body:

@@ -4,14 +4,17 @@ display_name: ClickHouse Exporter
 status:
   class: exporter
   stability:
+    development: [profiles]
     alpha: [metrics]
     beta: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [hanjm, Frapschen, SpencerTorres]
-    emeritus: [dmitryax]
+    active: [Frapschen, SpencerTorres]
+    emeritus: [dmitryax, hanjm]
+
+sending_queue:
+  support: default
 
 tests:
   config:
     endpoint: clickhouse://localhost:9000
-  skip_lifecycle: true

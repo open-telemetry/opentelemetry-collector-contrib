@@ -15,7 +15,7 @@ import (
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	ltype "google.golang.org/genproto/googleapis/logging/type"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/apploadbalancerlog"
@@ -53,6 +53,9 @@ const (
 	gcpSplitTotalField = "gcp.split.total"
 
 	gcpErrorGroupField = "gcp.error_group"
+
+	gcpTraceField  = "gcp.trace"
+	gcpSpanIDField = "gcp.span_id"
 
 	gcpAppHubPrefix                       = "gcp.apphub"
 	gcpAppHubDestinationPrefix            = "gcp.apphub_destination"
@@ -222,31 +225,41 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 
 	if req.RequestURL != "" {
 		attributes.PutStr(string(conventions.URLFullKey), req.RequestURL)
-		u, err := url.Parse(req.RequestURL)
-		if err != nil {
-			return fmt.Errorf("failed to parse request url %q: %w", req.RequestURL, err)
+		// requestUrl is client-controlled and may not parse.
+		if u, err := url.Parse(req.RequestURL); err == nil {
+			shared.PutStr(string(conventions.URLPathKey), u.Path, attributes)
+			shared.PutStr(string(conventions.URLQueryKey), u.RawQuery, attributes)
+			shared.PutStr(string(conventions.URLDomainKey), u.Host, attributes)
 		}
-		shared.PutStr(string(conventions.URLPathKey), u.Path, attributes)
-		shared.PutStr(string(conventions.URLQueryKey), u.RawQuery, attributes)
-		shared.PutStr(string(conventions.URLDomainKey), u.Host, attributes)
 	}
 
 	if req.Protocol != "" {
-		if strings.Count(req.Protocol, "/") != 1 {
-			return fmt.Errorf(
-				`invalid protocol %q: expected exactly one "/" (format "<name>/<version>", e.g. "HTTP/1.1")`,
-				req.Protocol,
-			)
+		name, version, hasSlash := strings.Cut(req.Protocol, "/")
+		if !hasSlash {
+			// Short ALPN token (RFC 7301). Map the well-known HTTP variants to
+			// "http" + numeric version so telemetry stays consistent with the
+			// "HTTP/1.1" form; unknown tokens fall back to the raw value as the
+			// protocol name with no version.
+			switch strings.ToLower(req.Protocol) {
+			case "h2", "h2c":
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+				attributes.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
+			case "h3":
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+				attributes.PutStr(string(conventions.NetworkProtocolVersionKey), "3")
+			default:
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(req.Protocol))
+			}
+		} else {
+			if name == "" || version == "" {
+				return fmt.Errorf("invalid protocol %q: name or version is missing", req.Protocol)
+			}
+			if strings.Contains(version, "/") {
+				return fmt.Errorf("invalid protocol %q: expected at most one \"/\"", req.Protocol)
+			}
+			attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
+			attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
 		}
-		name, version, found := strings.Cut(req.Protocol, "/")
-		if !found || name == "" || version == "" {
-			return fmt.Errorf(
-				`invalid protocol %q: name or version is missing (expected format "<name>/<version>", e.g. "HTTP/1.1")`,
-				req.Protocol,
-			)
-		}
-		attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
-		attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	}
 
 	shared.PutInt(string(conventions.HTTPResponseStatusCodeKey), req.Status, attributes)
@@ -341,15 +354,19 @@ func handleAppHubField(attributes pcommon.Map, appHub *appHub, prefix string) {
 	}
 }
 
-// getTraceID will parse the given trace and return the decoding id
+// getTraceID will parse the given trace and return the decoded id
 func getTraceID(trace string) ([16]byte, error) {
-	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095
-	_, trace, found := strings.Cut(trace, "/traces/")
-	if !found || trace == "" {
-		return [16]byte{}, fmt.Errorf(`expected trace format to be "projects/<id>/traces/<id>" but got %q`, trace)
+	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095,
+	// or a bare 4ebc71f1def9274798cac4e8960d0095 as sent by some Google services.
+	id := trace
+	if _, after, found := strings.Cut(trace, "/traces/"); found {
+		id = after
+	}
+	if id == "" {
+		return [16]byte{}, fmt.Errorf(`expected trace format to be "projects/<id>/traces/<id>" or "<id>" but got %q`, trace)
 	}
 
-	decoded, err := hex.DecodeString(trace)
+	decoded, err := hex.DecodeString(id)
 	if err != nil {
 		return [16]byte{}, fmt.Errorf("failed to decode trace id to hexadecimal string: %w", err)
 	}
@@ -359,10 +376,8 @@ func getTraceID(trace string) ([16]byte, error) {
 	return [16]byte(decoded), nil
 }
 
-// getTraceID will return the decoded span id
+// getSpanID will return the decoded span id
 func getSpanID(spanIDStr string) ([8]byte, error) {
-	// TODO cloud Run sends invalid span id's, make sure we're not crashing,
-	// see https://issuetracker.google.com/issues/338634230?pli=1
 	decoded, err := hex.DecodeString(spanIDStr)
 	if err != nil {
 		return [8]byte{}, fmt.Errorf("failed to decode span id to hexadecimal string: %w", err)
@@ -601,20 +616,22 @@ func handleLogEntryFields(resourceAttributes pcommon.Map, scopeLogs plog.ScopeLo
 		logRecord.SetSeverityNumber(getSeverityNumber(log.Severity))
 	}
 
+	// Unparseable IDs (e.g. Cloud Run, see https://issuetracker.google.com/issues/338634230)
+	// must not drop the entry, so keep the raw value as an attribute instead.
 	if log.Trace != "" {
-		traceIDBytes, err := getTraceID(log.Trace)
-		if err != nil {
-			return err
+		if traceID, err := getTraceID(log.Trace); err != nil {
+			logRecord.Attributes().PutStr(gcpTraceField, log.Trace)
+		} else {
+			logRecord.SetTraceID(traceID)
 		}
-		logRecord.SetTraceID(traceIDBytes)
 	}
 
 	if log.SpanID != "" {
-		spanIDBytes, err := getSpanID(log.SpanID)
-		if err != nil {
-			return err
+		if spanID, err := getSpanID(log.SpanID); err != nil {
+			logRecord.Attributes().PutStr(gcpSpanIDField, log.SpanID)
+		} else {
+			logRecord.SetSpanID(spanID)
 		}
-		logRecord.SetSpanID(spanIDBytes)
 	}
 
 	if log.TraceSampled != nil {

@@ -74,7 +74,7 @@ func TestTransform(t *testing.T) {
 
 func TestRecordMetrics(t *testing.T) {
 	settings := receiver.Settings{}
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceEndpointCount.Enabled = true
 	mbc.ResourceAttributes.K8sServicePublishNotReadyAddresses.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
@@ -171,7 +171,7 @@ func TestRecordMetrics(t *testing.T) {
 
 func TestRecordMetrics_PublishNotReadyAddresses(t *testing.T) {
 	settings := receiver.Settings{}
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceEndpointCount.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 
@@ -219,7 +219,7 @@ func TestRecordMetrics_PublishNotReadyAddresses(t *testing.T) {
 
 func TestRecordMetrics_LoadBalancer(t *testing.T) {
 	settings := receiver.Settings{}
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceLoadBalancerIngressCount.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 
@@ -272,7 +272,7 @@ func TestRecordMetrics_LoadBalancer(t *testing.T) {
 
 func TestRecordMetrics_LoadBalancerNotReady(t *testing.T) {
 	settings := receiver.Settings{}
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sServiceLoadBalancerIngressCount.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 

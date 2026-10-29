@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/antchfx/xmlquery"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -13,16 +14,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ParseSimplifiedXMLArguments[K any] struct {
+type parseSimplifiedXMLArguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
+// NewParseSimplifiedXMLFactory returns a factory for the ParseSimplifiedXML OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#parsesimplifiedxml
 func NewParseSimplifiedXMLFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ParseSimplifiedXML", &ParseSimplifiedXMLArguments[K]{}, createParseSimplifiedXMLFunction[K])
+	return ottl.NewFactory("ParseSimplifiedXML", &parseSimplifiedXMLArguments[K]{}, createParseSimplifiedXMLFunction[K])
 }
 
 func createParseSimplifiedXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ParseSimplifiedXMLArguments[K])
+	args, ok := oArgs.(*parseSimplifiedXMLArguments[K])
 
 	if !ok {
 		return nil, errors.New("ParseSimplifiedXML args must be of type *ParseSimplifiedXMLAguments[K]")
@@ -43,12 +46,18 @@ func parseSimplifiedXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		}
 
 		docMap := pcommon.NewMap()
-		parseElement(doc, &docMap)
+		if err := parseElement(doc, &docMap, 0); err != nil {
+			return nil, err
+		}
 		return docMap, nil
 	}
 }
 
-func parseElement(parent *xmlquery.Node, parentMap *pcommon.Map) {
+func parseElement(parent *xmlquery.Node, parentMap *pcommon.Map, depth int) error {
+	if depth > maxXMLElementDepth {
+		return fmt.Errorf("exceeded maximum XML nesting depth of %d", maxXMLElementDepth)
+	}
+
 	// Count the number of each element tag so we know whether it will be a member of a slice or not
 	childTags := make(map[string]int)
 	for child := parent.FirstChild; child != nil; child = child.NextSibling {
@@ -58,7 +67,7 @@ func parseElement(parent *xmlquery.Node, parentMap *pcommon.Map) {
 		childTags[child.Data]++
 	}
 	if len(childTags) == 0 {
-		return
+		return nil
 	}
 
 	// Convert the children, now knowing whether they will be a member of a slice or not
@@ -88,7 +97,9 @@ func parseElement(parent *xmlquery.Node, parentMap *pcommon.Map) {
 
 			// Parse the child to make sure there's something to add
 			childMap := pcommon.NewMap()
-			parseElement(child, &childMap)
+			if err := parseElement(child, &childMap, depth+1); err != nil {
+				return err
+			}
 			if childMap.Len() == 0 {
 				continue
 			}
@@ -106,13 +117,17 @@ func parseElement(parent *xmlquery.Node, parentMap *pcommon.Map) {
 
 		// Child will be a map
 		childMap := pcommon.NewMap()
-		parseElement(child, &childMap)
+		if err := parseElement(child, &childMap, depth+1); err != nil {
+			return err
+		}
 		if childMap.Len() == 0 {
 			continue
 		}
 
 		childMap.CopyTo(parentMap.PutEmptyMap(child.Data))
 	}
+
+	return nil
 }
 
 func leafValueFromElement(node *xmlquery.Node) string {

@@ -8,6 +8,8 @@ import (
 	"io"
 	"sync"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
 // exportFunc defines how to export encoded telemetry data.
@@ -21,9 +23,11 @@ type fileWriter struct {
 	exporter exportFunc
 
 	flushInterval time.Duration
-	flushTicker   *time.Ticker
 	stopTicker    chan struct{}
 	wg            sync.WaitGroup
+	// Protected by mutex
+	refs    int  // number of active references to this writer
+	evicted bool // true if the writer has been evicted from the LRU
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -69,19 +73,19 @@ func (w *fileWriter) startFlusher() {
 	// Create the stop channel and capture it locally so the goroutine
 	// always selects on the original channel value, even after shutdown
 	// nils out w.stopTicker.
-	stopCh := make(chan struct{})
-	w.stopTicker = stopCh
+	stop := make(chan struct{})
+	w.stopTicker = stop
 	// Start the ticker.
-	w.flushTicker = time.NewTicker(w.flushInterval)
+	ticker := time.NewTicker(w.flushInterval)
 	w.wg.Go(func() {
 		for {
 			select {
-			case <-w.flushTicker.C:
+			case <-ticker.C:
 				w.mutex.Lock()
 				ff.flush()
 				w.mutex.Unlock()
-			case <-stopCh:
-				w.flushTicker.Stop()
+			case <-stop:
+				ticker.Stop()
 				return
 			}
 		}
@@ -93,6 +97,38 @@ func (w *fileWriter) start() {
 	if w.flushInterval > 0 {
 		w.startFlusher()
 	}
+}
+
+// acquire increments the reference count for this writer.
+func (w *fileWriter) acquire() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.refs++
+}
+
+// release decrements the reference count. If the writer was evicted and this
+// was the last reference, it shuts down the writer.
+func (w *fileWriter) release() error {
+	w.mutex.Lock()
+	w.refs--
+	handOff := w.refs == 0 && w.evicted
+	w.mutex.Unlock()
+	if !handOff {
+		return nil
+	}
+	return w.shutdown()
+}
+
+// evict marks the writer as evicted and shuts it down if there are no more references.
+func (w *fileWriter) evict() error {
+	w.mutex.Lock()
+	w.evicted = true
+	idle := w.refs == 0
+	w.mutex.Unlock()
+	if !idle {
+		return nil
+	}
+	return w.shutdown()
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
@@ -123,6 +159,18 @@ func (w *fileWriter) shutdown() error {
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
+	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && cfg.Compression != "" {
+		// Native compression: the compression stream handles framing, so
+		// JSON can use newline-delimited output (human-readable after decompression).
+		// Proto still needs length-prefix for message boundary detection.
+		// When a custom encoding extension is set, the actual wire format may be
+		// binary regardless of FormatType, so length-prefix framing is required.
+		if cfg.FormatType == formatTypeJSON && cfg.Encoding == nil {
+			return exportMessageAsLine
+		}
+		return exportMessageAsBuffer
+	}
+	// Legacy behavior
 	if cfg.FormatType == formatTypeProto {
 		return exportMessageAsBuffer
 	}

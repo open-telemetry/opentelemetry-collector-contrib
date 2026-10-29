@@ -9,78 +9,46 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
-// Deprecated: [v0.142.0] use DefaultLogFunctionsNew.
-func DefaultLogFunctions() []ottl.Factory[ottllog.TransformContext] {
-	return slices.Collect(maps.Values(ottlfuncs.StandardConverters[ottllog.TransformContext]()))
-}
-
-func DefaultLogFunctionsNew() []ottl.Factory[*ottllog.TransformContext] {
+func DefaultLogFunctions() []ottl.Factory[*ottllog.TransformContext] {
 	return slices.Collect(maps.Values(defaultLogFunctionsMap()))
 }
 
-// Deprecated: [v0.142.0] use DefaultMetricFunctionsNew.
-func DefaultMetricFunctions() []ottl.Factory[ottlmetric.TransformContext] {
-	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()))
-}
-
-func DefaultMetricFunctionsNew() []ottl.Factory[*ottlmetric.TransformContext] {
+func DefaultMetricFunctions() []ottl.Factory[*ottlmetric.TransformContext] {
 	return slices.Collect(maps.Values(defaultMetricFunctionsMap()))
 }
 
-// Deprecated: [v0.142.0] use DefaultDataPointFunctionsNew.
-func DefaultDataPointFunctions() []ottl.Factory[ottldatapoint.TransformContext] {
-	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()))
-}
-
-func DefaultDataPointFunctionsNew() []ottl.Factory[*ottldatapoint.TransformContext] {
+func DefaultDataPointFunctions() []ottl.Factory[*ottldatapoint.TransformContext] {
 	return slices.Collect(maps.Values(defaultDataPointFunctionsMap()))
 }
 
-// Deprecated: [v0.142.0] use DefaultSpanFunctionsNew.
-func DefaultSpanFunctions() []ottl.Factory[ottlspan.TransformContext] {
-	functions := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
-
-	spanFunctions := ottl.CreateFactoryMap(
-		ottlfuncs.NewIsRootSpanFactory(),
-		traces.NewSetSemconvSpanNameFactoryLegacy(),
-	)
-
-	maps.Copy(functions, spanFunctions)
-
-	return slices.Collect(maps.Values(functions))
+func DefaultExemplarFunctions() []ottl.Factory[*ottlexemplar.TransformContext] {
+	return slices.Collect(maps.Values(defaultExemplarFunctionsMap()))
 }
 
-func DefaultSpanFunctionsNew() []ottl.Factory[*ottlspan.TransformContext] {
+func DefaultSpanFunctions() []ottl.Factory[*ottlspan.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanFunctionsMap()))
 }
 
-// Deprecated: [v0.142.0] use DefaultSpanEventFunctionsNew.
-func DefaultSpanEventFunctions() []ottl.Factory[ottlspanevent.TransformContext] {
-	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()))
-}
-
-func DefaultSpanEventFunctionsNew() []ottl.Factory[*ottlspanevent.TransformContext] {
+func DefaultSpanEventFunctions() []ottl.Factory[*ottlspanevent.TransformContext] {
 	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
 }
 
-// Deprecated: [v0.145.0] use DefaultProfileFunctionsNew.
-func DefaultProfileFunctions() []ottl.Factory[ottlprofile.TransformContext] {
-	return slices.Collect(maps.Values(ottlfuncs.StandardFuncs[ottlprofile.TransformContext]()))
-}
-
-func DefaultProfileFunctionsNew() []ottl.Factory[*ottlprofile.TransformContext] {
+// DefaultProfileFunctions returns the default OTTL functions available in the profile context.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func DefaultProfileFunctions() []ottl.Factory[*ottlprofile.TransformContext] {
 	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
 }
 
@@ -94,6 +62,10 @@ func defaultMetricFunctionsMap() map[string]ottl.Factory[*ottlmetric.TransformCo
 
 func defaultDataPointFunctionsMap() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
 	return metrics.DataPointFunctions()
+}
+
+func defaultExemplarFunctionsMap() map[string]ottl.Factory[*ottlexemplar.TransformContext] {
+	return metrics.ExemplarFunctions()
 }
 
 func defaultSpanFunctionsMap() map[string]ottl.Factory[*ottlspan.TransformContext] {

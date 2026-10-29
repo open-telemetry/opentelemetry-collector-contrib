@@ -58,7 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemProcessesCount"] = mb.metricSystemProcessesCount.config.AggregationStrategy
+			aggMap["system.processes.count"] = mb.metricSystemProcessesCount.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -67,14 +67,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatusBlocked)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemProcessesCountDataPoint(ts, 3, AttributeStatusDaemon)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemProcessesCountDataPoint(ts+1, 3, AttributeStatusDaemon)
+				assert.Equal(t, 2, mb.metricSystemProcessesCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
@@ -125,14 +126,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status")
+						statusAttrVal, ok := dp.Attributes().Get("status")
 						assert.True(t, ok)
-						assert.Equal(t, "blocked", attrVal.Str())
+						assert.Equal(t, "blocked", statusAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.processes.count"], "Found a duplicate in the metrics slice: system.processes.count")
 						validatedMetrics["system.processes.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of processes in each state.", mi.Description())
 						assert.Equal(t, "{processes}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -159,7 +162,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.processes.created"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of created processes.", mi.Description())
+					assert.Equal(t, "Total number of created processes. Supported on Linux and OpenBSD.", mi.Description())
 					assert.Equal(t, "{processes}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

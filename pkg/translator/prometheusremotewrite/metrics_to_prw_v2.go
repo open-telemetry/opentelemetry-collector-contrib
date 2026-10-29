@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
@@ -54,13 +52,15 @@ type metadata struct {
 }
 
 func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
+	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+
 	return &prometheusConverterV2{
 		unique:      map[uint64]*writev2.TimeSeries{},
 		conflicts:   map[uint64][]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
-		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
-		unitNamer:   otlptranslator.UnitNamer{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{PreserveMultipleUnderscores: true, UTF8Allowed: utf8Allowed},
+		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 
@@ -132,7 +132,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, scope, settings, promName, m))
+						dataPoints, resource, scope, settings, promName, m,
+					))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -164,9 +165,10 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {
 	ts := c.getOrCreateTimeSeries(lbls, metadata)
 	ts.Samples = append(ts.Samples, *sample)
+	return ts
 }
 
 // isSameMetricV2 checks if two time series are the same metric

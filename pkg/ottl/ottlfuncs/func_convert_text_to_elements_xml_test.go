@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -80,7 +81,7 @@ func Test_ConvertTextToElementsXML(t *testing.T) {
 	factory := NewConvertTextToElementsXMLFactory[any]()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &ConvertTextToElementsXMLArguments[any]{
+			args := &convertTextToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.document, nil
@@ -110,19 +111,90 @@ func TestCreateConvertTextToElementsXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ConvertTextToElementsXMLArguments[any]{
+		fCtx, &convertTextToElementsXMLArguments[any]{
 			XPath: ottl.NewTestingOptional("!"),
-		})
+		},
+	)
 	assert.Error(t, err)
 	assert.Nil(t, exprFunc)
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ConvertTextToElementsXMLArguments[any]{
+		fCtx, &convertTextToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
-		})
+		},
+	)
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 	_, err = exprFunc(t.Context(), nil)
 	assert.Error(t, err)
+}
+
+func TestConvertTextToElementsXMLMaxDepth(t *testing.T) {
+	exprFunc := convertTextToElementsXML(
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				const depth = maxXMLElementDepth + 2
+				return strings.Repeat("<a>", depth) + strings.Repeat("</a>", depth), nil
+			},
+		},
+		"/",
+		"value",
+	)
+
+	_, err := exprFunc(t.Context(), nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "exceeded maximum XML nesting depth")
+}
+
+func Test_ConvertTextToElementsXMLFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewConvertTextToElementsXMLFactory[any]()
+		assert.Equal(t, "ConvertTextToElementsXML", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewConvertTextToElementsXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &convertTextToElementsXMLArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "XPath", "ElementName"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewConvertTextToElementsXMLFactory[any]()
+		args := factory.CreateDefaultArguments()
+		convertArgs, ok := args.(*convertTextToElementsXMLArguments[any])
+		require.True(t, ok)
+		convertArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return `<a>hello<b/>world</a>`, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createConvertTextToElementsXMLFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
+	})
+}
+
+func BenchmarkConvertTextToElementsXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a>foo<b/>bar<c/>1<d>not</d>2<e><f/><f/></e></a>`, nil
+		},
+	}
+	exprFunc := convertTextToElementsXML[any](target, "/", "value")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

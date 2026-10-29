@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"strings"
 
-	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 const (
@@ -36,6 +36,7 @@ const (
 
 	// The following attributes are EXCLUSIVE to GitLab but not listed under Vendor Extensions within Semantic Conventions yet
 	// They are highly experimental and subject to change
+	AttributeGitLabProjectID        = "gitlab.project.id"
 	AttributeGitLabProjectNamespace = "gitlab.project.namespace"
 
 	AttributeGitLabPipelineRunActorUsername = "gitlab.pipeline.run.actor.username"

@@ -5,6 +5,16 @@ all_set:
       enabled: true
     tcpcheck.error:
       enabled: true
+      attributes: ["tcpcheck.endpoint","error.code"]
+    tcpcheck.status:
+      enabled: true
+reaggregate_set:
+  metrics:
+    tcpcheck.duration:
+      enabled: true
+    tcpcheck.error:
+      enabled: true
+      attributes: ["tcpcheck.endpoint"]
     tcpcheck.status:
       enabled: true
 none_set:
@@ -13,5 +23,6 @@ none_set:
       enabled: false
     tcpcheck.error:
       enabled: false
+      attributes: ["tcpcheck.endpoint","error.code"]
     tcpcheck.status:
       enabled: false

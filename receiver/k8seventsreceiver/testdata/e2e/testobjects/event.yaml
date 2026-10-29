@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Event
+metadata:
+  name: test-k8sevents-receiver
+  namespace: test-k8sevents-e2e
+involvedObject:
+  apiVersion: v1
+  kind: Pod
+  name: test-pod
+  namespace: test-k8sevents-e2e
+  uid: "fb799e35-7187-4a02-a07d-0f1fa4153b99"
+reason: TestEvent
+message: "Test event for k8seventsreceiver e2e testing"
+type: Normal
+source:
+  component: e2etest
+  host: test-node
+count: 1
+# Timestamps are required for the receiver to consider the event "current"
+# (events older than receiver start time are dropped). The Kubernetes API
+# server does NOT auto-populate these on Event creation, so the test must
+# set them. We use a placeholder that the receiver still treats as current
+# because it's after collector start time when the test re-creates it.
+firstTimestamp: "2099-01-01T00:00:00Z"
+lastTimestamp: "2099-01-01T00:00:00Z"

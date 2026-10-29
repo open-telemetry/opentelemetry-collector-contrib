@@ -14,6 +14,46 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	clientConfigMissingEndpoint := confighttp.NewDefaultClientConfig()
+
+	clientConfigInvalidEndpoint := confighttp.NewDefaultClientConfig()
+	clientConfigInvalidEndpoint.Endpoint = "invalid://endpoint:  12efg"
+
+	clientConfigMultiValid := confighttp.NewDefaultClientConfig()
+	clientConfigMultiValid.Endpoint = "https://localhost:80"
+
+	clientConfigMultiInvalid := confighttp.NewDefaultClientConfig()
+	clientConfigMultiInvalid.Endpoint = "invalid://endpoint:  12efg"
+
+	clientConfigMissingScheme := confighttp.NewDefaultClientConfig()
+	clientConfigMissingScheme.Endpoint = "www.opentelemetry.io/docs"
+
+	clientConfigValid1 := confighttp.NewDefaultClientConfig()
+	clientConfigValid1.Endpoint = "https://opentelemetry.io"
+
+	clientConfigValid2 := confighttp.NewDefaultClientConfig()
+	clientConfigValid2.Endpoint = "https://opentelemetry.io:80/docs"
+
+	clientConfigMissingBoth := confighttp.NewDefaultClientConfig()
+
+	clientConfigInvalidSingle := confighttp.NewDefaultClientConfig()
+	clientConfigInvalidSingle.Endpoint = "invalid://endpoint:  12efg"
+
+	clientConfigMissingSchemeSingle := confighttp.NewDefaultClientConfig()
+	clientConfigMissingSchemeSingle.Endpoint = "www.opentelemetry.io/docs"
+
+	clientConfigValidSingle := confighttp.NewDefaultClientConfig()
+	clientConfigValidSingle.Endpoint = "https://opentelemetry.io"
+
+	clientConfigAutoContentTypeEnabled := confighttp.NewDefaultClientConfig()
+	clientConfigAutoContentTypeEnabled.Endpoint = "https://opentelemetry.io"
+
+	clientConfigAutoContentTypeDisabled := confighttp.NewDefaultClientConfig()
+	clientConfigAutoContentTypeDisabled.Endpoint = "https://opentelemetry.io"
+
+	clientConfigAutoContentTypeDefault := confighttp.NewDefaultClientConfig()
+	clientConfigAutoContentTypeDefault.Endpoint = "https://opentelemetry.io"
+
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -24,7 +64,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{},
+						ClientConfig: clientConfigMissingEndpoint,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -38,9 +78,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "invalid://endpoint:  12efg",
-						},
+						ClientConfig: clientConfigInvalidEndpoint,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -54,14 +92,10 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://localhost:80",
-						},
+						ClientConfig: clientConfigMultiValid,
 					},
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "invalid://endpoint:  12efg",
-						},
+						ClientConfig: clientConfigMultiInvalid,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -75,9 +109,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "www.opentelemetry.io/docs",
-						},
+						ClientConfig: clientConfigMissingScheme,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -91,14 +123,10 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://opentelemetry.io",
-						},
+						ClientConfig: clientConfigValid1,
 					},
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://opentelemetry.io:80/docs",
-						},
+						ClientConfig: clientConfigValid2,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -110,7 +138,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{},
+						ClientConfig: clientConfigMissingBoth,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -124,9 +152,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "invalid://endpoint:  12efg",
-						},
+						ClientConfig: clientConfigInvalidSingle,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -157,9 +183,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "www.opentelemetry.io/docs",
-						},
+						ClientConfig: clientConfigMissingSchemeSingle,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -173,9 +197,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://opentelemetry.io",
-						},
+						ClientConfig: clientConfigValidSingle,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -202,9 +224,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://opentelemetry.io",
-						},
+						ClientConfig:    clientConfigAutoContentTypeEnabled,
 						Body:            `{"key": "value"}`,
 						AutoContentType: true,
 					},
@@ -218,9 +238,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://opentelemetry.io",
-						},
+						ClientConfig:    clientConfigAutoContentTypeDisabled,
 						Body:            `{"key": "value"}`,
 						AutoContentType: false,
 					},
@@ -234,10 +252,8 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: "https://opentelemetry.io",
-						},
-						Body: `{"key": "value"}`,
+						ClientConfig: clientConfigAutoContentTypeDefault,
+						Body:         `{"key": "value"}`,
 						// AutoContentType not set (zero value = false)
 					},
 				},

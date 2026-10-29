@@ -29,11 +29,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("ssh.endpoint")
+			sshEndpointAttrVal, ok := res.Attributes().Get("ssh.endpoint")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "ssh.endpoint-val", val.Str())
+				assert.Equal(t, "ssh.endpoint-val", sshEndpointAttrVal.Str())
 			}
 		})
 	}

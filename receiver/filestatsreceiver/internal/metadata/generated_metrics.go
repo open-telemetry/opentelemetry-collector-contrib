@@ -3,24 +3,44 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 var MetricsInfo = metricsInfo{
 	FileAtime: metricInfo{
 		Name: "file.atime",
 	},
 	FileCount: metricInfo{
-		Name: "file.count",
+		Name:       "file.count",
+		Attributes: []string{"file.include"},
 	},
 	FileCtime: metricInfo{
-		Name: "file.ctime",
+		Name:       "file.ctime",
+		Attributes: []string{"file.permissions"},
 	},
 	FileMtime: metricInfo{
 		Name: "file.mtime",
@@ -39,13 +59,14 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricFileAtime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric        // data buffer for generated metric.
+	config   FileAtimeMetricConfig // metric config provided by user.
+	capacity int                   // max observed number of data points added to the metric.
 }
 
 // init fills file.atime metric with initial data.
@@ -84,7 +105,7 @@ func (m *metricFileAtime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFileAtime(cfg MetricConfig) metricFileAtime {
+func newMetricFileAtime(cfg FileAtimeMetricConfig) metricFileAtime {
 	m := metricFileAtime{config: cfg}
 
 	if cfg.Enabled {
@@ -95,9 +116,11 @@ func newMetricFileAtime(cfg MetricConfig) metricFileAtime {
 }
 
 type metricFileCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric        // data buffer for generated metric.
+	config        FileCountMetricConfig // metric config provided by user.
+	capacity      int                   // max observed number of data points added to the metric.
+	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills file.count metric with initial data.
@@ -106,16 +129,50 @@ func (m *metricFileCount) init() {
 	m.data.SetDescription("The number of files matched")
 	m.data.SetUnit("{file}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricFileCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricFileCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fileIncludeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, FileCountMetricAttributeKeyFileInclude) {
+		dp.Attributes().PutStr("file.include", fileIncludeAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -128,13 +185,18 @@ func (m *metricFileCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFileCount(cfg MetricConfig) metricFileCount {
+func newMetricFileCount(cfg FileCountMetricConfig) metricFileCount {
 	m := metricFileCount{config: cfg}
 
 	if cfg.Enabled {
@@ -145,9 +207,11 @@ func newMetricFileCount(cfg MetricConfig) metricFileCount {
 }
 
 type metricFileCtime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric        // data buffer for generated metric.
+	config        FileCtimeMetricConfig // metric config provided by user.
+	capacity      int                   // max observed number of data points added to the metric.
+	aggDataPoints []int64               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills file.ctime metric with initial data.
@@ -159,17 +223,49 @@ func (m *metricFileCtime) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricFileCtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, filePermissionsAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, FileCtimeMetricAttributeKeyFilePermissions) {
+		dp.Attributes().PutStr("file.permissions", filePermissionsAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("file.permissions", filePermissionsAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -182,13 +278,18 @@ func (m *metricFileCtime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileCtime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFileCtime(cfg MetricConfig) metricFileCtime {
+func newMetricFileCtime(cfg FileCtimeMetricConfig) metricFileCtime {
 	m := metricFileCtime{config: cfg}
 
 	if cfg.Enabled {
@@ -199,9 +300,9 @@ func newMetricFileCtime(cfg MetricConfig) metricFileCtime {
 }
 
 type metricFileMtime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric        // data buffer for generated metric.
+	config   FileMtimeMetricConfig // metric config provided by user.
+	capacity int                   // max observed number of data points added to the metric.
 }
 
 // init fills file.mtime metric with initial data.
@@ -240,7 +341,7 @@ func (m *metricFileMtime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFileMtime(cfg MetricConfig) metricFileMtime {
+func newMetricFileMtime(cfg FileMtimeMetricConfig) metricFileMtime {
 	m := metricFileMtime{config: cfg}
 
 	if cfg.Enabled {
@@ -251,9 +352,9 @@ func newMetricFileMtime(cfg MetricConfig) metricFileMtime {
 }
 
 type metricFileSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric       // data buffer for generated metric.
+	config   FileSizeMetricConfig // metric config provided by user.
+	capacity int                  // max observed number of data points added to the metric.
 }
 
 // init fills file.size metric with initial data.
@@ -290,7 +391,7 @@ func (m *metricFileSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFileSize(cfg MetricConfig) metricFileSize {
+func newMetricFileSize(cfg FileSizeMetricConfig) metricFileSize {
 	m := metricFileSize{config: cfg}
 
 	if cfg.Enabled {
@@ -471,8 +572,8 @@ func (mb *MetricsBuilder) RecordFileAtimeDataPoint(ts pcommon.Timestamp, val int
 }
 
 // RecordFileCountDataPoint adds a data point to file.count metric.
-func (mb *MetricsBuilder) RecordFileCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricFileCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordFileCountDataPoint(ts pcommon.Timestamp, val int64, fileIncludeAttributeValue string) {
+	mb.metricFileCount.recordDataPoint(mb.startTime, ts, val, fileIncludeAttributeValue)
 }
 
 // RecordFileCtimeDataPoint adds a data point to file.ctime metric.

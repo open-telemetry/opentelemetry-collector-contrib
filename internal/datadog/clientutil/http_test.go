@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -25,7 +26,8 @@ var buildInfo = component.BuildInfo{
 }
 
 func TestNewHTTPClient(t *testing.T) {
-	hcsEmpty := confighttp.ClientConfig{}
+	hcsEmpty := confighttp.NewDefaultClientConfig()
+	hcsEmpty.Keepalive = configoptional.None[confighttp.KeepaliveClientConfig]()
 	client1 := NewHTTPClient(hcsEmpty)
 	defaultTransport := &http.Transport{
 		MaxIdleConns:          100,
@@ -33,6 +35,7 @@ func TestNewHTTPClient(t *testing.T) {
 		IdleConnTimeout:       45 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: false},
 	}
@@ -40,7 +43,8 @@ func TestNewHTTPClient(t *testing.T) {
 		defaultTransport,
 		client1.Transport.(*http.Transport),
 		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{}),
-		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext")); diff != "" {
+		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext"),
+	); diff != "" {
 		t.Errorf("Mismatched transports -want +got %s", diff)
 	}
 	assert.Equal(t, time.Duration(0), client1.Timeout)
@@ -49,24 +53,24 @@ func TestNewHTTPClient(t *testing.T) {
 	maxIdleConn := 300
 	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
-	hcs := confighttp.ClientConfig{
-		ReadBufferSize:      100,
-		WriteBufferSize:     200,
-		Timeout:             10 * time.Second,
+	hcs := confighttp.NewDefaultClientConfig()
+	hcs.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
 		IdleConnTimeout:     idleConnTimeout,
 		MaxIdleConns:        maxIdleConn,
 		MaxIdleConnsPerHost: maxIdleConnPerHost,
-		MaxConnsPerHost:     maxConnPerHost,
-		DisableKeepAlives:   true,
-		TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
-		ProxyURL:            "proxy",
+	})
+	hcs.ReadBufferSize = 100
+	hcs.WriteBufferSize = 200
+	hcs.Timeout = 10 * time.Second
+	hcs.MaxConnsPerHost = maxConnPerHost
+	hcs.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
+	hcs.ProxyURL = "proxy"
 
-		// The rest are ignored
-		Endpoint:             "endpoint",
-		Compression:          configcompression.TypeSnappy,
-		HTTP2ReadIdleTimeout: 15 * time.Second,
-		HTTP2PingTimeout:     20 * time.Second,
-	}
+	// The rest are ignored
+	hcs.Endpoint = "endpoint"
+	hcs.Compression = configcompression.TypeSnappy
+	hcs.HTTP2ReadIdleTimeout = 15 * time.Second
+	hcs.HTTP2PingTimeout = 20 * time.Second
 	client2 := NewHTTPClient(hcs)
 	expectedTransport := &http.Transport{
 		TLSHandshakeTimeout:   10 * time.Second,
@@ -77,7 +81,6 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxIdleConnsPerHost:   maxIdleConnPerHost,
 		MaxConnsPerHost:       maxConnPerHost,
 		IdleConnTimeout:       idleConnTimeout,
-		DisableKeepAlives:     true,
 		ForceAttemptHTTP2:     false,
 		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
 	}
@@ -85,31 +88,32 @@ func TestNewHTTPClient(t *testing.T) {
 		expectedTransport,
 		client2.Transport.(*http.Transport),
 		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{}),
-		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext")); diff != "" {
+		cmpopts.IgnoreFields(http.Transport{}, "Proxy", "DialContext"),
+	); diff != "" {
 		t.Errorf("Mismatched transports -want +got %s", diff)
 	}
 	assert.Equal(t, 10*time.Second, client2.Timeout)
 
 	// Checking that the client config can receive ProxyUrl and
 	// it will be passed to the http client.
-	hcsForC3 := confighttp.ClientConfig{
-		ReadBufferSize:      100,
-		WriteBufferSize:     200,
-		Timeout:             10 * time.Second,
+	hcsForC3 := confighttp.NewDefaultClientConfig()
+	hcsForC3.ReadBufferSize = 100
+	hcsForC3.WriteBufferSize = 200
+	hcsForC3.Timeout = 10 * time.Second
+	hcsForC3.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
 		IdleConnTimeout:     idleConnTimeout,
 		MaxIdleConns:        maxIdleConn,
 		MaxIdleConnsPerHost: maxIdleConnPerHost,
-		MaxConnsPerHost:     maxConnPerHost,
-		DisableKeepAlives:   true,
-		TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
-		ProxyURL:            "http://datadog-proxy.myorganization.com:3128",
+	})
+	hcsForC3.MaxConnsPerHost = maxConnPerHost
+	hcsForC3.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
+	hcsForC3.ProxyURL = "http://datadog-proxy.myorganization.com:3128"
 
-		// The rest are ignored
-		Endpoint:             "endpoint",
-		Compression:          configcompression.TypeSnappy,
-		HTTP2ReadIdleTimeout: 15 * time.Second,
-		HTTP2PingTimeout:     20 * time.Second,
-	}
+	// The rest are ignored
+	hcsForC3.Endpoint = "endpoint"
+	hcsForC3.Compression = configcompression.TypeSnappy
+	hcsForC3.HTTP2ReadIdleTimeout = 15 * time.Second
+	hcsForC3.HTTP2PingTimeout = 20 * time.Second
 	ddURL, _ := url.Parse("https://datadoghq.com")
 	parsedProxy, _ := url.Parse("http://datadog-proxy.myorganization.com:3128")
 	client3 := NewHTTPClient(hcsForC3)
@@ -131,23 +135,23 @@ func TestNewHTTPClient(t *testing.T) {
 
 	// Checking that in the absence of ProxyUrl in the client config, the
 	// environment variable is used for the http proxy.
-	hcsForC5 := confighttp.ClientConfig{
-		ReadBufferSize:      100,
-		WriteBufferSize:     200,
-		Timeout:             10 * time.Second,
+	hcsForC5 := confighttp.NewDefaultClientConfig()
+	hcsForC5.ReadBufferSize = 100
+	hcsForC5.WriteBufferSize = 200
+	hcsForC5.Timeout = 10 * time.Second
+	hcsForC5.Keepalive = configoptional.Some(confighttp.KeepaliveClientConfig{
 		IdleConnTimeout:     idleConnTimeout,
 		MaxIdleConns:        maxIdleConn,
 		MaxIdleConnsPerHost: maxIdleConnPerHost,
-		MaxConnsPerHost:     maxConnPerHost,
-		DisableKeepAlives:   true,
-		TLS:                 configtls.ClientConfig{InsecureSkipVerify: true},
+	})
+	hcsForC5.MaxConnsPerHost = maxConnPerHost
+	hcsForC5.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
-		// The rest are ignored
-		Endpoint:             "endpoint",
-		Compression:          configcompression.TypeSnappy,
-		HTTP2ReadIdleTimeout: 15 * time.Second,
-		HTTP2PingTimeout:     20 * time.Second,
-	}
+	// The rest are ignored
+	hcsForC5.Endpoint = "endpoint"
+	hcsForC5.Compression = configcompression.TypeSnappy
+	hcsForC5.HTTP2ReadIdleTimeout = 15 * time.Second
+	hcsForC5.HTTP2PingTimeout = 20 * time.Second
 	parsedEnvProxy, _ := url.Parse("http://datadog-proxy-from-env.myorganization.com:3128")
 	client5 := NewHTTPClient(hcsForC5)
 	tr5 := client5.Transport.(*http.Transport)

@@ -597,6 +597,31 @@ resourceMetrics:
             stringValue: VM0
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
+          - description: The amount of CPU used by the VM.
+            name: vcenter.vm.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.utilization
+            unit: '%'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
@@ -686,6 +711,31 @@ resourceMetrics:
             stringValue: VM1
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
+          - description: The amount of CPU used by the VM.
+            name: vcenter.vm.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.utilization
+            unit: '%'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
@@ -778,6 +828,31 @@ resourceMetrics:
             stringValue: VM2
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
+          - description: The amount of CPU used by the VM.
+            name: vcenter.vm.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.utilization
+            unit: '%'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
@@ -870,6 +945,31 @@ resourceMetrics:
             stringValue: VM3
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
+          - description: The amount of CPU used by the VM.
+            name: vcenter.vm.cpu.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.utilization
+            unit: '%'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:

@@ -6,6 +6,7 @@ package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -16,20 +17,55 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
+// brokerKey is the cache key for per-broker attribute sets used in OnBrokerE2E.
+// The set of distinct (nodeID, host, outcome) combinations is bounded by
+// 2 × number-of-brokers (success + failure), so the cache never grows unboundedly.
+type brokerKey struct {
+	nodeID  int32
+	host    string
+	outcome string // "success" | "failure"
+}
+
 // FranzProducerMetrics implements the relevant franz-go hook interfaces to
 // record the metrics defined in the metadata telemetry.
 type FranzProducerMetrics struct {
-	tb *metadata.TelemetryBuilder
+	tb            *metadata.TelemetryBuilder
+	brokerE2EMu   sync.RWMutex
+	brokerE2EOpts map[brokerKey]metric.MeasurementOption
 }
 
 // NewFranzProducerMetrics creates an instance of FranzProducerMetrics from metadata TelemetryBuilder.
-func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder) FranzProducerMetrics {
-	return FranzProducerMetrics{tb: tb}
+func NewFranzProducerMetrics(tb *metadata.TelemetryBuilder) *FranzProducerMetrics {
+	return &FranzProducerMetrics{
+		tb:            tb,
+		brokerE2EOpts: make(map[brokerKey]metric.MeasurementOption),
+	}
 }
 
-var _ kgo.HookBrokerConnect = FranzProducerMetrics{}
+// brokerE2EOpt returns a cached MeasurementOption for the given key, building
+// and storing it on first use.
+func (fpm *FranzProducerMetrics) brokerE2EOpt(k brokerKey) metric.MeasurementOption {
+	fpm.brokerE2EMu.RLock()
+	opt, ok := fpm.brokerE2EOpts[k]
+	fpm.brokerE2EMu.RUnlock()
+	if ok {
+		return opt
+	}
+	attrs := attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(k.nodeID)),
+		attribute.String("server.address", k.host),
+		attribute.String("outcome", k.outcome),
+	)
+	opt = metric.WithAttributeSet(attrs)
+	fpm.brokerE2EMu.Lock()
+	fpm.brokerE2EOpts[k] = opt
+	fpm.brokerE2EMu.Unlock()
+	return opt
+}
 
-func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
+var _ kgo.HookBrokerConnect = (*FranzProducerMetrics)(nil)
+
+func (fpm *FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
@@ -45,9 +81,9 @@ func (fpm FranzProducerMetrics) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.
 	)
 }
 
-var _ kgo.HookBrokerDisconnect = FranzProducerMetrics{}
+var _ kgo.HookBrokerDisconnect = (*FranzProducerMetrics)(nil)
 
-func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
+func (fpm *FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
 	fpm.tb.KafkaBrokerClosed.Add(
 		context.Background(),
 		1,
@@ -56,11 +92,17 @@ func (fpm FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ ne
 			attribute.String("server.address", meta.Host),
 		)),
 	)
+	// Evict cached attribute sets for this broker so that nodes which come
+	// and go over time do not cause unbounded growth of brokerE2EOpts.
+	fpm.brokerE2EMu.Lock()
+	delete(fpm.brokerE2EOpts, brokerKey{nodeID: meta.NodeID, host: meta.Host, outcome: "success"})
+	delete(fpm.brokerE2EOpts, brokerKey{nodeID: meta.NodeID, host: meta.Host, outcome: "failure"})
+	fpm.brokerE2EMu.Unlock()
 }
 
-var _ kgo.HookBrokerThrottle = FranzProducerMetrics{}
+var _ kgo.HookBrokerThrottle = (*FranzProducerMetrics)(nil)
 
-func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
+func (fpm *FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
 	attrs := attribute.NewSet(
 		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("server.address", meta.Host),
@@ -78,9 +120,9 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 	)
 }
 
-var _ kgo.HookBrokerE2E = FranzProducerMetrics{}
+var _ kgo.HookBrokerE2E = (*FranzProducerMetrics)(nil)
 
-func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, e2e kgo.BrokerE2E) {
+func (fpm *FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, e2e kgo.BrokerE2E) {
 	// Do not pollute producer metrics with non-produce requests
 	if kmsg.Key(key) != kmsg.Produce {
 		return
@@ -90,29 +132,25 @@ func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, 
 	if e2e.Err() != nil {
 		outcome = "failure"
 	}
-	attrs := attribute.NewSet(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		attribute.String("server.address", meta.Host),
-		attribute.String("outcome", outcome),
-	)
+	opt := fpm.brokerE2EOpt(brokerKey{nodeID: meta.NodeID, host: meta.Host, outcome: outcome})
 	// KafkaExporterLatency is deprecated in favor of KafkaExporterWriteLatency.
 	fpm.tb.KafkaExporterLatency.Record(
 		context.Background(),
 		e2e.DurationE2E().Milliseconds()+e2e.WriteWait.Milliseconds(),
-		metric.WithAttributeSet(attrs),
+		opt,
 	)
 	fpm.tb.KafkaExporterWriteLatency.Record(
 		context.Background(),
 		e2e.DurationE2E().Seconds()+e2e.WriteWait.Seconds(),
-		metric.WithAttributeSet(attrs),
+		opt,
 	)
 }
 
-var _ kgo.HookProduceBatchWritten = FranzProducerMetrics{}
+var _ kgo.HookProduceBatchWritten = (*FranzProducerMetrics)(nil)
 
 // OnProduceBatchWritten is called when a batch has been produced.
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookProduceBatchWritten
-func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.ProduceBatchMetrics) {
+func (fpm *FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, topic string, partition int32, m kgo.ProduceBatchMetrics) {
 	attrs := attribute.NewSet(
 		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
 		attribute.String("server.address", meta.Host),
@@ -145,13 +183,13 @@ func (fpm FranzProducerMetrics) OnProduceBatchWritten(meta kgo.BrokerMetadata, t
 	)
 }
 
-var _ kgo.HookProduceRecordUnbuffered = FranzProducerMetrics{}
+var _ kgo.HookProduceRecordUnbuffered = (*FranzProducerMetrics)(nil)
 
 // OnProduceRecordUnbuffered records the number of produced messages that were
 // not produced due to errors. The successfully produced records is recorded by
 // `OnProduceBatchWritten`.
 // https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#HookProduceRecordUnbuffered
-func (fpm FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err error) {
+func (fpm *FranzProducerMetrics) OnProduceRecordUnbuffered(r *kgo.Record, err error) {
 	if err == nil {
 		return // Covered by OnProduceBatchWritten.
 	}

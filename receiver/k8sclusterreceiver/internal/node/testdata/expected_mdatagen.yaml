@@ -7,6 +7,12 @@ resourceMetrics:
         - key: k8s.node.uid
           value:
             stringValue: test-node-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.node.name
+          idKeys:
+            - k8s.node.uid
+          type: k8s.node
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

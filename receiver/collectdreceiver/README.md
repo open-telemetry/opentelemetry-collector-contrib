@@ -4,7 +4,6 @@
 This receiver can receive data exported by the CollectD's `write_http` plugin. Only JSON format is supported.
 Authentication is not supported at this time.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |

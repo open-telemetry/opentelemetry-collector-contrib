@@ -264,3 +264,98 @@ func TestUnmarshallCloudwatchLog_ExtractedFields(t *testing.T) {
 		})
 	}
 }
+
+// recordingInner records bytes handed to UnmarshalLogs and returns one
+// non-empty plog.Logs so dispatched output is observable.
+type recordingInner struct {
+	received [][]byte
+}
+
+func (r *recordingInner) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	r.received = append(r.received, buf)
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty()
+	return logs, nil
+}
+
+func TestMatchRoute(t *testing.T) {
+	inner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		routes: []route{
+			{name: "lambda", inner: inner, logGroupParts: []string{"", "aws", "lambda", "*"}, payload: PayloadMessage},
+			{name: "vpcflow", inner: inner, logStreamParts: []string{"eni-*"}, payload: PayloadMessage},
+			{name: "catchall", inner: inner, logGroupParts: []string{"*"}, payload: PayloadMessage},
+		},
+	}
+
+	r := f.matchRoute("/aws/lambda/foo", "anything")
+	require.NotNil(t, r)
+	require.Equal(t, "lambda", r.name)
+
+	r = f.matchRoute("/random/group", "eni-0abc")
+	require.NotNil(t, r)
+	require.Equal(t, "vpcflow", r.name)
+
+	r = f.matchRoute("/random/group", "anything")
+	require.NotNil(t, r)
+	require.Equal(t, "catchall", r.name)
+}
+
+func TestMultiEnvelopeRouting(t *testing.T) {
+	ctInner := &recordingInner{}
+	lambdaInner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		routes: []route{
+			{name: "lambda", inner: lambdaInner, logGroupParts: []string{"", "aws", "lambda", "*"}, payload: PayloadMessage},
+			{name: "cloudtrail", inner: ctInner, logStreamParts: []string{"*_CloudTrail_*"}, payload: PayloadMessage},
+		},
+	}
+
+	payload := []byte(`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"/aws/cloudtrail/management","logStream":"acc_CloudTrail_us-east-1","logEvents":[{"id":"e1","timestamp":1000,"message":"ct event"}]}
+{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"/aws/lambda/foo","logStream":"latest","logEvents":[{"id":"e2","timestamp":2000,"message":"lambda event"}]}`)
+
+	_, err := f.UnmarshalAWSLogs(bytes.NewReader(payload))
+	require.NoError(t, err)
+
+	require.Len(t, ctInner.received, 1)
+	require.Len(t, lambdaInner.received, 1)
+	require.Equal(t, []byte("ct event"), ctInner.received[0])
+	require.Equal(t, []byte("lambda event"), lambdaInner.received[0])
+}
+
+func TestNoMatchFallback(t *testing.T) {
+	inner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		buildInfo: component.BuildInfo{},
+		routes: []route{
+			{name: "lambda", inner: inner, logGroupParts: []string{"", "aws", "lambda", "*"}, payload: PayloadMessage},
+		},
+	}
+
+	payload := []byte(`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"/aws/rds/mydb","logStream":"some-stream","logEvents":[{"id":"e1","timestamp":1000,"message":"fallback event"}]}`)
+
+	logs, err := f.UnmarshalAWSLogs(bytes.NewReader(payload))
+	require.NoError(t, err)
+
+	require.Empty(t, inner.received, "no inner should have been dispatched to")
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	require.Equal(t, "fallback event",
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestControlMessageInRoutedMode(t *testing.T) {
+	inner := &recordingInner{}
+	f := &SubscriptionFilterUnmarshaler{
+		routes: []route{
+			{name: "catchall", inner: inner, logGroupParts: []string{"*"}, payload: PayloadMessage},
+		},
+	}
+
+	payload := []byte(`{"messageType":"CONTROL_MESSAGE","owner":"123","logGroup":"any","logStream":"any","logEvents":[]}`)
+
+	logs, err := f.UnmarshalAWSLogs(bytes.NewReader(payload))
+	require.NoError(t, err)
+
+	require.Empty(t, inner.received, "CONTROL_MESSAGE must not dispatch")
+	require.Equal(t, 0, logs.ResourceLogs().Len())
+}

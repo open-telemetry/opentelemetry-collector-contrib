@@ -3,14 +3,13 @@
 
 This receiver gets OTLP messages from a Google Cloud [Pubsub](https://cloud.google.com/pubsub) subscription.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, logs, metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglecloudpubsub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglecloudpubsub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglecloudpubsub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglecloudpubsub) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_googlecloudpubsub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_googlecloudpubsub&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@alexvanboxel](https://www.github.com/alexvanboxel) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@alexvanboxel](https://www.github.com/alexvanboxel), [@braydonk](https://www.github.com/braydonk), [@dpaasman00](https://www.github.com/dpaasman00) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -35,6 +34,8 @@ The following configuration options are supported:
 * `ignore_encoding_error` (Optional): Ignore errors when the configured encoder fails to decoding a PubSub messages.
   It's advised to set this to `true` when using a custom encoder, and use `receiver.googlecloudpubsub.encoding_error`
   metric to monitor the number of errors. Ignoring the error will cause the receiver to drop the message.
+* `flow_control` (Optional): Allows to fine tune the flow control settings for the subscription stream. See
+  [Flow control](#flow-control) for more details.
 
 ```yaml
 receivers:
@@ -98,6 +99,34 @@ it expects the subscription to be created upfront. Security wise it's best to gi
 service account and give the subscription `Pub/Sub Subscriber` permission.
 
 The subscription should also be of delivery type `Pull`.
+
+### Flow control
+
+The flow control allows to fine tune the flow control settings for the subscription stream.
+
+* `trigger_ack_batch_duration` (Optional): Part of the control loop, the time between each message
+  acknowledge batch.
+* `stream_ack_deadline` (Optional): The ack deadline to use for the stream. The minimum deadline you can specify
+  is 10 seconds. The maximum deadline you can specify is 600 seconds (10 minutes).
+* `max_outstanding_messages` (Optional): Flow control settings for the maximum number of outstanding messages. When
+  there are max_outstanding_messages currently sent to the streaming pull client that have not yet been acked or 
+  nacked, the server stops sending more messages. The sending of messages resumes once the number of outstanding
+  messages is less than this value. If the value is <= 0, there is no limit to the number of outstanding messages.
+* `max_outstanding_bytes` (Optional): Flow control settings for the maximum number of outstanding bytes. When there
+  are max_outstanding_bytes or more worth of messages currently sent to the streaming pull client that have not yet
+  been acked or nacked, the server will stop sending more messages. The sending of messages resumes once the number
+  of outstanding bytes is less than this value. If the value is <= 0, there is no limit to the number of outstanding
+  bytes.
+
+```yaml
+flow_control:
+  trigger_ack_batch_duration: 1s
+  stream_ack_deadline: 60s
+  max_outstanding_messages: 1000000
+  max_outstanding_bytes: 1000000
+```
+
+More details can be found at [Pub/Sub gRPC StreamingPullRequest](https://docs.cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest)
 
 ### Filtering
 

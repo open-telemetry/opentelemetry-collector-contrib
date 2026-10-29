@@ -13,111 +13,80 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetAwsVolumeID("aws.volume.id-val")
 			rb.SetContainerID("container.id-val")
-			rb.SetFsType("fs.type-val")
-			rb.SetGcePdName("gce.pd.name-val")
-			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
-			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sNodeSystemContainerName("k8s.node.system_container.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sVolumeName("k8s.volume.name-val")
 			rb.SetK8sVolumeType("k8s.volume.type-val")
-			rb.SetPartition("partition-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("aws.volume.id")
+			containerIDAttrVal, ok := res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aws.volume.id-val", val.Str())
+				assert.Equal(t, "container.id-val", containerIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.id")
+			k8sContainerNameAttrVal, ok := res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.id-val", val.Str())
+				assert.Equal(t, "k8s.container.name-val", k8sContainerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("fs.type")
+			k8sNamespaceNameAttrVal, ok := res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "fs.type-val", val.Str())
+				assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("gce.pd.name")
+			k8sNodeNameAttrVal, ok := res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gce.pd.name-val", val.Str())
+				assert.Equal(t, "k8s.node.name-val", k8sNodeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("glusterfs.endpoints.name")
+			k8sNodeSystemContainerNameAttrVal, ok := res.Attributes().Get("k8s.node.system_container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "glusterfs.endpoints.name-val", val.Str())
+				assert.Equal(t, "k8s.node.system_container.name-val", k8sNodeSystemContainerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("glusterfs.path")
+			k8sPersistentvolumeclaimNameAttrVal, ok := res.Attributes().Get("k8s.persistentvolumeclaim.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "glusterfs.path-val", val.Str())
+				assert.Equal(t, "k8s.persistentvolumeclaim.name-val", k8sPersistentvolumeclaimNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.container.name")
+			k8sPodNameAttrVal, ok := res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.container.name-val", val.Str())
+				assert.Equal(t, "k8s.pod.name-val", k8sPodNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.namespace.name")
+			k8sPodUIDAttrVal, ok := res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.namespace.name-val", val.Str())
+				assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.node.name")
+			k8sVolumeNameAttrVal, ok := res.Attributes().Get("k8s.volume.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.node.name-val", val.Str())
+				assert.Equal(t, "k8s.volume.name-val", k8sVolumeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.name")
+			k8sVolumeTypeAttrVal, ok := res.Attributes().Get("k8s.volume.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.persistentvolumeclaim.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("k8s.pod.name")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "k8s.pod.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("k8s.pod.uid")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "k8s.pod.uid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("k8s.volume.name")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "k8s.volume.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("k8s.volume.type")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "k8s.volume.type-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("partition")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "partition-val", val.Str())
+				assert.Equal(t, "k8s.volume.type-val", k8sVolumeTypeAttrVal.Str())
 			}
 		})
 	}

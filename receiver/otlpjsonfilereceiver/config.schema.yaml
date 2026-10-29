@@ -7,4 +7,4 @@ properties:
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer.config
+  - $ref: /pkg/stanza/fileconsumer.config

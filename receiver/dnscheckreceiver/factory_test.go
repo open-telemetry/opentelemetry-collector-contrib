@@ -1,0 +1,57 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package dnscheckreceiver
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dnscheckreceiver/internal/metadata"
+)
+
+func TestNewFactory(t *testing.T) {
+	factory := NewFactory()
+	require.NotNil(t, factory)
+	assert.Equal(t, "dns_check", factory.Type().String())
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NotNil(t, cfg)
+
+	config, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Empty(t, config.DNSServers)
+	assert.Empty(t, config.Hostnames)
+}
+
+func TestCreateMetricsReceiver(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	// Populate config to make it valid.
+	config := cfg.(*Config)
+	config.DNSServers = []DNSServerConfig{{Endpoint: "8.8.8.8", Timeout: 5 * time.Second}}
+	config.Hostnames = []HostnameConfig{{Name: "example.com", RecordType: "A"}}
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	consumer := consumertest.NewNop()
+
+	receiver, err := factory.CreateMetrics(t.Context(), set, cfg, consumer)
+	assert.NotNil(t, receiver)
+	assert.NoError(t, err)
+}
+
+func TestFactoryCanBeUsed(t *testing.T) {
+	factory := NewFactory()
+	err := componenttest.CheckConfigStruct(factory.CreateDefaultConfig())
+	require.NoError(t, err)
+}

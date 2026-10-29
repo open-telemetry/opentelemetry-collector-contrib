@@ -45,91 +45,90 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("host.arch")
+			hostArchAttrVal, ok := res.Attributes().Get("host.arch")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.arch-val", val.Str())
+				assert.Equal(t, "host.arch-val", hostArchAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.cpu.cache.l2.size")
+			hostCPUCacheL2SizeAttrVal, ok := res.Attributes().Get("host.cpu.cache.l2.size")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, 22, val.Int())
+				assert.EqualValues(t, 22, hostCPUCacheL2SizeAttrVal.Int())
 			}
-			val, ok = res.Attributes().Get("host.cpu.family")
+			hostCPUFamilyAttrVal, ok := res.Attributes().Get("host.cpu.family")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.cpu.family-val", val.Str())
+				assert.Equal(t, "host.cpu.family-val", hostCPUFamilyAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.cpu.model.id")
+			hostCPUModelIDAttrVal, ok := res.Attributes().Get("host.cpu.model.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.cpu.model.id-val", val.Str())
+				assert.Equal(t, "host.cpu.model.id-val", hostCPUModelIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.cpu.model.name")
+			hostCPUModelNameAttrVal, ok := res.Attributes().Get("host.cpu.model.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.cpu.model.name-val", val.Str())
+				assert.Equal(t, "host.cpu.model.name-val", hostCPUModelNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.cpu.stepping")
+			hostCPUSteppingAttrVal, ok := res.Attributes().Get("host.cpu.stepping")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.cpu.stepping-val", val.Str())
+				assert.Equal(t, "host.cpu.stepping-val", hostCPUSteppingAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.cpu.vendor.id")
+			hostCPUVendorIDAttrVal, ok := res.Attributes().Get("host.cpu.vendor.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.cpu.vendor.id-val", val.Str())
+				assert.Equal(t, "host.cpu.vendor.id-val", hostCPUVendorIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.id")
+			hostIDAttrVal, ok := res.Attributes().Get("host.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "host.id-val", val.Str())
+				assert.Equal(t, "host.id-val", hostIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("host.interface")
+			hostInterfaceAttrVal, ok := res.Attributes().Get("host.interface")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, []any{"host.interface-item1", "host.interface-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"host.interface-item1", "host.interface-item2"}, hostInterfaceAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("host.ip")
+			hostIPAttrVal, ok := res.Attributes().Get("host.ip")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, []any{"host.ip-item1", "host.ip-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"host.ip-item1", "host.ip-item2"}, hostIPAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("host.mac")
+			hostMacAttrVal, ok := res.Attributes().Get("host.mac")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, []any{"host.mac-item1", "host.mac-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"host.mac-item1", "host.mac-item2"}, hostMacAttrVal.Slice().AsRaw())
 			}
-			val, ok = res.Attributes().Get("host.name")
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.build.id")
+			osBuildIDAttrVal, ok := res.Attributes().Get("os.build.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.build.id-val", val.Str())
+				assert.Equal(t, "os.build.id-val", osBuildIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.description")
+			osDescriptionAttrVal, ok := res.Attributes().Get("os.description")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.description-val", val.Str())
+				assert.Equal(t, "os.description-val", osDescriptionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.name")
+			osNameAttrVal, ok := res.Attributes().Get("os.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.name-val", val.Str())
+				assert.Equal(t, "os.name-val", osNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.type")
+			osTypeAttrVal, ok := res.Attributes().Get("os.type")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "os.type-val", val.Str())
+				assert.Equal(t, "os.type-val", osTypeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("os.version")
+			osVersionAttrVal, ok := res.Attributes().Get("os.version")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.version-val", val.Str())
+				assert.Equal(t, "os.version-val", osVersionAttrVal.Str())
 			}
 		})
 	}

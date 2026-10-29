@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
@@ -61,9 +60,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
+	ClientConfig  confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken configopaque.String `mapstructure:"access_token"`
@@ -77,8 +76,8 @@ type Config struct {
 	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
-	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
-	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+	// TLS settings for the SignalFx ingest endpoint. Configure a CA file when the endpoint
+	// uses a self-signed certificate whose CA is not loaded in the system cert pool.
 	IngestTLSs configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -98,7 +97,7 @@ type Config struct {
 	// Dimension update client configuration used for metadata updates.
 	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
 
-	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+	AccessTokenPassthroughConfig splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	DisableDefaultTranslationRules bool `mapstructure:"disable_default_translation_rules"`
 
@@ -108,12 +107,12 @@ type Config struct {
 
 	// SyncHostMetadata defines if the exporter should scrape host metadata and
 	// sends it as property updates to SignalFx backend.
-	// IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor.
-	//            If this option is enabled make sure that `resourcedetection` processor
+	// IMPORTANT: Host metadata synchronization relies on `resource_detection` processor.
+	//            If this option is enabled make sure that `resource_detection` processor
 	//            is enabled in the pipeline with one of the cloud provider detectors
 	//            or environment variable detector setting a unique value to
 	//            `host.name` attribute within your k8s cluster. Also keep override
-	//            And keep `override=true` in resourcedetection config.
+	//            And keep `override=true` in resource_detection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 
 	// RootPath is the host's root directory used when syncing metadata; applies to linux only.
@@ -126,7 +125,7 @@ type Config struct {
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
 	// This option can be used to included metrics that are otherwise dropped by default.
-	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+	// See ./internal/translation/default_metrics.yaml for a list of metrics that are dropped by default.
 	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
 
 	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
@@ -139,7 +138,9 @@ type Config struct {
 	DefaultProperties map[string]string `mapstructure:"default_properties"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
-	Correlation *correlation.Config `mapstructure:"correlation"`
+	//
+	// Deprecated: this configuration section is ignored
+	Correlation map[string]string `mapstructure:"correlation"`
 
 	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
 	// to be used in a dimension key.
@@ -163,6 +164,7 @@ type DimensionClientConfig struct {
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 	Timeout             time.Duration `mapstructure:"timeout"`
 	DropTags            bool          `mapstructure:"drop_tags"`
+	StripK8sLabelPrefix bool          `mapstructure:"strip_k8s_label_prefix"`
 }
 
 func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
@@ -184,7 +186,7 @@ func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricT
 func (cfg *Config) getIngestURL() (*url.URL, error) {
 	strURL := cfg.IngestURL
 	if cfg.IngestURL == "" {
-		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://ingest.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	ingestURL, err := url.Parse(strURL)
@@ -197,7 +199,7 @@ func (cfg *Config) getIngestURL() (*url.URL, error) {
 func (cfg *Config) getAPIURL() (*url.URL, error) {
 	strURL := cfg.APIURL
 	if cfg.APIURL == "" {
-		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
+		strURL = fmt.Sprintf("https://api.%s.observability.splunkcloud.com", cfg.Realm)
 	}
 
 	apiURL, err := url.Parse(strURL)
@@ -231,7 +233,7 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.Timeout < 0 {
+	if cfg.ClientConfig.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 

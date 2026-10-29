@@ -1,4 +1,0 @@
-change_type: 'deprecation'
-component: extension/azure_auth
-note: Introduce new snake case compliant name `azure_auth`
-issues: [46775]

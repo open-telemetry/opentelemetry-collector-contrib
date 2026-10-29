@@ -18,6 +18,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "command"
+            default:
+              - "command"
       memcached.connections.current:
         description: "MemcachedConnectionsCurrentMetricConfig provides config for the memcached.connections.current metric."
         type: object
@@ -39,6 +55,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
       memcached.current_items:
         description: "MemcachedCurrentItemsMetricConfig provides config for the memcached.current_items metric."
         type: object
@@ -60,6 +92,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       memcached.operation_hit_ratio:
         description: "MemcachedOperationHitRatioMetricConfig provides config for the memcached.operation_hit_ratio metric."
         type: object
@@ -67,6 +115,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
       memcached.operations:
         description: "MemcachedOperationsMetricConfig provides config for the memcached.operations metric."
         type: object
@@ -74,6 +138,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "operation"
+            default:
+              - "type"
+              - "operation"
       memcached.threads:
         description: "MemcachedThreadsMetricConfig provides config for the memcached.threads metric."
         type: object

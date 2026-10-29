@@ -6,6 +6,8 @@ package ctxresource // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
@@ -30,13 +32,10 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 }
 
-func accessResourceAttributes[K Context]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
+func accessResourceAttributes[K Context]() ctxutil.MapGetSetter[K] {
+	return ctxutil.MapGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (pcommon.Map, error) {
 			return tCtx.GetResource().Attributes(), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			return ctxutil.SetMap(tCtx.GetResource().Attributes(), val)
 		},
 	}
 }
@@ -58,9 +57,11 @@ func accessResourceDroppedAttributesCount[K Context]() ottl.StandardGetSetter[K]
 			return int64(tCtx.GetResource().DroppedAttributesCount()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(int64); ok {
-				tCtx.GetResource().SetDroppedAttributesCount(uint32(i))
+			i, err := ctxutil.ExpectType[int64](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetResource().SetDroppedAttributesCount(uint32(i))
 			return nil
 		},
 	}
@@ -72,9 +73,11 @@ func accessResourceSchemaURLItem[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetResourceSchemaURLItem().SchemaUrl(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if schemaURL, ok := val.(string); ok {
-				tCtx.GetResourceSchemaURLItem().SetSchemaUrl(schemaURL)
+			schemaURL, err := ctxutil.ExpectType[string](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetResourceSchemaURLItem().SetSchemaUrl(schemaURL)
 			return nil
 		},
 	}

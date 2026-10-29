@@ -68,14 +68,14 @@ var traceJSON = []byte(`
 
 func TestStartAndShutdown(t *testing.T) {
 	port := 12800
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  fmt.Sprintf(":%d", port),
+	}
 	config := &configuration{
-		CollectorHTTPPort: port,
-		CollectorHTTPSettings: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  fmt.Sprintf(":%d", port),
-			},
-		},
+		CollectorHTTPPort:     port,
+		CollectorHTTPSettings: httpServerConfig,
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -126,14 +126,14 @@ func TestGRPCReception(t *testing.T) {
 }
 
 func TestHttpReception(t *testing.T) {
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  fmt.Sprintf(":%d", 12800),
+	}
 	config := &configuration{
-		CollectorHTTPPort: 12800,
-		CollectorHTTPSettings: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  fmt.Sprintf(":%d", 12800),
-			},
-		},
+		CollectorHTTPPort:     12800,
+		CollectorHTTPSettings: httpServerConfig,
 	}
 
 	sink := new(consumertest.TracesSink)

@@ -244,8 +244,10 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	}()
 	client := newFakeClientWithAllResources()
 
-	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, nil, component.MustNewID("foo"))
+	// Mock initial cache sync timing out. A zero timeout guarantees the
+	// deadline is already past before the informers can sync, regardless of
+	// how fast the fake client's initial sync happens to be.
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 0, tt, nil, component.MustNewID("foo"))
 
 	createPods(t, client, 1, false)
 
@@ -374,7 +376,7 @@ func setupReceiver(client *fake.Clientset, osQuotaClient quotaclientset.Interfac
 		NodeConditionTypesToReport: []string{"Ready"},
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
-		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig:       metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
 	config.Namespaces = namespaces
@@ -409,6 +411,8 @@ func newFakeClientWithAllResources() *fake.Clientset {
 				gvkToAPIResource(gvk.ReplicationController),
 				gvkToAPIResource(gvk.ResourceQuota),
 				gvkToAPIResource(gvk.Service),
+				gvkToAPIResource(gvk.PersistentVolume),
+				gvkToAPIResource(gvk.PersistentVolumeClaim),
 			},
 		},
 		{

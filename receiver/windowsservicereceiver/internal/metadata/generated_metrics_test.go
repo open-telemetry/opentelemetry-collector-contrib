@@ -19,7 +19,6 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
-	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -38,11 +37,6 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:        "reaggregate_set",
-			metricsSet:  testDataSetReag,
-			resAttrsSet: testDataSetReag,
-		},
-		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -59,21 +53,16 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.metricsSet != testDataSetReag {
-				assert.Equal(t, expectedWarnings, observedLogs.Len())
-			}
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordWindowsServiceStatusDataPoint(ts, 1, "name-val", AttributeStartupModeBootStart)
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
-			if tt.name == "reaggregate_set" {
-			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -112,12 +101,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("name")
+					nameAttrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.Equal(t, "name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("startup_mode")
+					assert.Equal(t, "name-val", nameAttrVal.Str())
+					startupModeAttrVal, ok := dp.Attributes().Get("startup_mode")
 					assert.True(t, ok)
-					assert.Equal(t, "boot_start", attrVal.Str())
+					assert.Equal(t, "boot_start", startupModeAttrVal.Str())
 				}
 			}
 		})

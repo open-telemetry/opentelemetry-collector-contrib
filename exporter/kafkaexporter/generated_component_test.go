@@ -3,20 +3,19 @@
 package kafkaexporter
 
 import (
-	"context"
+	"fmt"
+	"reflect"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
+
+	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 var typ = component.MustNewType("kafka")
@@ -29,84 +28,47 @@ func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
-func TestComponentLifecycle(t *testing.T) {
-	factory := NewFactory()
+func TestComponentDefaultQueueBatchSender(t *testing.T) {
+	optionalQueueType := reflect.TypeOf(configoptional.None[exporterhelper.QueueBatchConfig]())
 
-	tests := []struct {
-		createFn func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error)
-		name     string
-	}{
+	checkConfig := func(t *testing.T) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+		cfg := reflect.Indirect(reflect.ValueOf(NewFactory().CreateDefaultConfig()))
+		require.Equal(t, reflect.Struct, cfg.Kind(), "exporter default config must be a struct or pointer to a struct")
 
-		{
-			name: "logs",
-			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogs(ctx, set, cfg)
-			},
-		},
-
-		{
-			name: "metrics",
-			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetrics(ctx, set, cfg)
-			},
-		},
-
-		{
-			name: "traces",
-			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTraces(ctx, set, cfg)
-			},
-		},
+		var queueConfig configoptional.Optional[exporterhelper.QueueBatchConfig]
+		found := false
+		for i := 0; i < cfg.NumField(); i++ {
+			fieldType := cfg.Type().Field(i)
+			tag := strings.Split(fieldType.Tag.Get("mapstructure"), ",")[0]
+			if tag != "sending_queue" {
+				continue
+			}
+			require.False(t, found, "exporter default config must define sending_queue exactly once")
+			require.Equal(t, optionalQueueType, fieldType.Type, "sending_queue must have type configoptional.Optional[exporterhelper.QueueBatchConfig]")
+			queueConfig = cfg.Field(i).Interface().(configoptional.Optional[exporterhelper.QueueBatchConfig])
+			found = true
+		}
+		require.True(t, found, "exporter default config must define sending_queue")
+		return queueConfig
 	}
+	const queueBatchFeatureGate = "pkg.exporterhelper.queueBatchEnabled"
 
-	cm, err := confmaptest.LoadConf("metadata.yaml")
-	require.NoError(t, err)
-	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub("tests::config")
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(&cfg))
+	var queueBatchGate *featuregate.Gate
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == queueBatchFeatureGate {
+			queueBatchGate = gate
+		}
+	})
+	require.NotNil(t, queueBatchGate)
+	initialValue := queueBatchGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, initialValue))
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
-			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
-			require.NoError(t, err)
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("batch-feature-gate-%v", enabled), func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, enabled))
+			require.Equal(t, internalmetadata.NewDefaultSendingQueueConfig(), checkConfig(t))
 		})
 	}
-}
-
-func generateLifecycleTestLogs() plog.Logs {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("resource", "R1")
-	l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	l.Body().SetStr("test log message")
-	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return logs
-}
-
-func generateLifecycleTestMetrics() pmetric.Metrics {
-	metrics := pmetric.NewMetrics()
-	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("resource", "R1")
-	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	m.SetName("test_metric")
-	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().PutStr("test_attr", "value_1")
-	dp.SetIntValue(123)
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return metrics
-}
-
-func generateLifecycleTestTraces() ptrace.Traces {
-	traces := ptrace.NewTraces()
-	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("resource", "R1")
-	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.Attributes().PutStr("test_attr", "value_1")
-	span.SetName("test_span")
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	return traces
 }

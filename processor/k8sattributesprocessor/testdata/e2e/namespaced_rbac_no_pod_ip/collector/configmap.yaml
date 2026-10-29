@@ -47,7 +47,7 @@ data:
           - k8s.node.name
           - container.id
           - container.image.name
-          - container.image.tag
+          - container.image.tags
         pod_association:
           - sources:
               - from: resource_attribute

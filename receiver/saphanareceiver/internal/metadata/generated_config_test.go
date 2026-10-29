@@ -20,146 +20,216 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SaphanaAlertCount: MetricConfig{
+					SaphanaAlertCount: SaphanaAlertCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaAlertCountMetricAttributeKey{SaphanaAlertCountMetricAttributeKeyAlertRating},
+					},
+					SaphanaBackupLatest: SaphanaBackupLatestMetricConfig{
 						Enabled: true,
 					},
-					SaphanaBackupLatest: MetricConfig{
+					SaphanaColumnMemoryUsed: SaphanaColumnMemoryUsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaColumnMemoryUsedMetricAttributeKey{SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemoryType, SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemorySubtype},
+					},
+					SaphanaComponentMemoryUsed: SaphanaComponentMemoryUsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaComponentMemoryUsedMetricAttributeKey{SaphanaComponentMemoryUsedMetricAttributeKeyComponent},
+					},
+					SaphanaConnectionCount: SaphanaConnectionCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaConnectionCountMetricAttributeKey{SaphanaConnectionCountMetricAttributeKeyConnectionStatus},
+					},
+					SaphanaCPUUsed: SaphanaCPUUsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaCPUUsedMetricAttributeKey{SaphanaCPUUsedMetricAttributeKeyCPUType},
+					},
+					SaphanaDiskSizeCurrent: SaphanaDiskSizeCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaDiskSizeCurrentMetricAttributeKey{SaphanaDiskSizeCurrentMetricAttributeKeyPath, SaphanaDiskSizeCurrentMetricAttributeKeyDiskUsageType, SaphanaDiskSizeCurrentMetricAttributeKeyDiskStateUsedFree},
+					},
+					SaphanaHostMemoryCurrent: SaphanaHostMemoryCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaHostMemoryCurrentMetricAttributeKey{SaphanaHostMemoryCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaHostSwapCurrent: SaphanaHostSwapCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaHostSwapCurrentMetricAttributeKey{SaphanaHostSwapCurrentMetricAttributeKeyHostSwapState},
+					},
+					SaphanaInstanceCodeSize: SaphanaInstanceCodeSizeMetricConfig{
 						Enabled: true,
 					},
-					SaphanaColumnMemoryUsed: MetricConfig{
+					SaphanaInstanceMemoryCurrent: SaphanaInstanceMemoryCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaInstanceMemoryCurrentMetricAttributeKey{SaphanaInstanceMemoryCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaInstanceMemorySharedAllocated: SaphanaInstanceMemorySharedAllocatedMetricConfig{
 						Enabled: true,
 					},
-					SaphanaComponentMemoryUsed: MetricConfig{
+					SaphanaInstanceMemoryUsedPeak: SaphanaInstanceMemoryUsedPeakMetricConfig{
 						Enabled: true,
 					},
-					SaphanaConnectionCount: MetricConfig{
+					SaphanaLicenseExpirationTime: SaphanaLicenseExpirationTimeMetricConfig{
 						Enabled: true,
 					},
-					SaphanaCPUUsed: MetricConfig{
+					SaphanaLicenseLimit: SaphanaLicenseLimitMetricConfig{
 						Enabled: true,
 					},
-					SaphanaDiskSizeCurrent: MetricConfig{
+					SaphanaLicensePeak: SaphanaLicensePeakMetricConfig{
 						Enabled: true,
 					},
-					SaphanaHostMemoryCurrent: MetricConfig{
+					SaphanaNetworkRequestAverageTime: SaphanaNetworkRequestAverageTimeMetricConfig{
 						Enabled: true,
 					},
-					SaphanaHostSwapCurrent: MetricConfig{
+					SaphanaNetworkRequestCount: SaphanaNetworkRequestCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaNetworkRequestCountMetricAttributeKey{SaphanaNetworkRequestCountMetricAttributeKeyActivePendingRequestState},
+					},
+					SaphanaNetworkRequestFinishedCount: SaphanaNetworkRequestFinishedCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaNetworkRequestFinishedCountMetricAttributeKey{SaphanaNetworkRequestFinishedCountMetricAttributeKeyInternalExternalRequestType},
+					},
+					SaphanaReplicationAverageTime: SaphanaReplicationAverageTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SaphanaReplicationAverageTimeMetricAttributeKey{SaphanaReplicationAverageTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationAverageTimeMetricAttributeKeySecondaryHost, SaphanaReplicationAverageTimeMetricAttributeKeyPort, SaphanaReplicationAverageTimeMetricAttributeKeyReplicationMode},
+					},
+					SaphanaReplicationBacklogSize: SaphanaReplicationBacklogSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaReplicationBacklogSizeMetricAttributeKey{SaphanaReplicationBacklogSizeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeyPort, SaphanaReplicationBacklogSizeMetricAttributeKeyReplicationMode},
+					},
+					SaphanaReplicationBacklogTime: SaphanaReplicationBacklogTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaReplicationBacklogTimeMetricAttributeKey{SaphanaReplicationBacklogTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeyPort, SaphanaReplicationBacklogTimeMetricAttributeKeyReplicationMode},
+					},
+					SaphanaRowStoreMemoryUsed: SaphanaRowStoreMemoryUsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaRowStoreMemoryUsedMetricAttributeKey{SaphanaRowStoreMemoryUsedMetricAttributeKeyRowMemoryType},
+					},
+					SaphanaSchemaMemoryUsedCurrent: SaphanaSchemaMemoryUsedCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaMemoryUsedCurrentMetricAttributeKey{SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchemaMemoryType},
+					},
+					SaphanaSchemaMemoryUsedMax: SaphanaSchemaMemoryUsedMaxMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaMemoryUsedMaxMetricAttributeKey{SaphanaSchemaMemoryUsedMaxMetricAttributeKeySchema},
+					},
+					SaphanaSchemaOperationCount: SaphanaSchemaOperationCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaOperationCountMetricAttributeKey{SaphanaSchemaOperationCountMetricAttributeKeySchema, SaphanaSchemaOperationCountMetricAttributeKeySchemaOperationType},
+					},
+					SaphanaSchemaRecordCompressedCount: SaphanaSchemaRecordCompressedCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaRecordCompressedCountMetricAttributeKey{SaphanaSchemaRecordCompressedCountMetricAttributeKeySchema},
+					},
+					SaphanaSchemaRecordCount: SaphanaSchemaRecordCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaRecordCountMetricAttributeKey{SaphanaSchemaRecordCountMetricAttributeKeySchema, SaphanaSchemaRecordCountMetricAttributeKeySchemaRecordType},
+					},
+					SaphanaServiceCodeSize: SaphanaServiceCodeSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceCodeSizeMetricAttributeKey{SaphanaServiceCodeSizeMetricAttributeKeyService},
+					},
+					SaphanaServiceCount: SaphanaServiceCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceCountMetricAttributeKey{SaphanaServiceCountMetricAttributeKeyServiceStatus},
+					},
+					SaphanaServiceMemoryCompactorsAllocated: SaphanaServiceMemoryCompactorsAllocatedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey{SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKeyService},
+					},
+					SaphanaServiceMemoryCompactorsFreeable: SaphanaServiceMemoryCompactorsFreeableMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey{SaphanaServiceMemoryCompactorsFreeableMetricAttributeKeyService},
+					},
+					SaphanaServiceMemoryEffectiveLimit: SaphanaServiceMemoryEffectiveLimitMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryEffectiveLimitMetricAttributeKey{SaphanaServiceMemoryEffectiveLimitMetricAttributeKeyService},
+					},
+					SaphanaServiceMemoryHeapCurrent: SaphanaServiceMemoryHeapCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryHeapCurrentMetricAttributeKey{SaphanaServiceMemoryHeapCurrentMetricAttributeKeyService, SaphanaServiceMemoryHeapCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaServiceMemoryLimit: SaphanaServiceMemoryLimitMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryLimitMetricAttributeKey{SaphanaServiceMemoryLimitMetricAttributeKeyService},
+					},
+					SaphanaServiceMemorySharedCurrent: SaphanaServiceMemorySharedCurrentMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemorySharedCurrentMetricAttributeKey{SaphanaServiceMemorySharedCurrentMetricAttributeKeyService, SaphanaServiceMemorySharedCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaServiceMemoryUsed: SaphanaServiceMemoryUsedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryUsedMetricAttributeKey{SaphanaServiceMemoryUsedMetricAttributeKeyService, SaphanaServiceMemoryUsedMetricAttributeKeyServiceMemoryUsedType},
+					},
+					SaphanaServiceStackSize: SaphanaServiceStackSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceStackSizeMetricAttributeKey{SaphanaServiceStackSizeMetricAttributeKeyService},
+					},
+					SaphanaServiceThreadCount: SaphanaServiceThreadCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceThreadCountMetricAttributeKey{SaphanaServiceThreadCountMetricAttributeKeyThreadStatus},
+					},
+					SaphanaTransactionBlocked: SaphanaTransactionBlockedMetricConfig{
 						Enabled: true,
 					},
-					SaphanaInstanceCodeSize: MetricConfig{
+					SaphanaTransactionCount: SaphanaTransactionCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaTransactionCountMetricAttributeKey{SaphanaTransactionCountMetricAttributeKeyTransactionType},
+					},
+					SaphanaUptime: SaphanaUptimeMetricConfig{
 						Enabled: true,
 					},
-					SaphanaInstanceMemoryCurrent: MetricConfig{
-						Enabled: true,
+					SaphanaVolumeOperationCount: SaphanaVolumeOperationCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaVolumeOperationCountMetricAttributeKey{SaphanaVolumeOperationCountMetricAttributeKeyPath, SaphanaVolumeOperationCountMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationCountMetricAttributeKeyVolumeOperationType},
 					},
-					SaphanaInstanceMemorySharedAllocated: MetricConfig{
-						Enabled: true,
+					SaphanaVolumeOperationSize: SaphanaVolumeOperationSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaVolumeOperationSizeMetricAttributeKey{SaphanaVolumeOperationSizeMetricAttributeKeyPath, SaphanaVolumeOperationSizeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeMetricAttributeKeyVolumeOperationType},
 					},
-					SaphanaInstanceMemoryUsedPeak: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaLicenseExpirationTime: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaLicenseLimit: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaLicensePeak: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaNetworkRequestAverageTime: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaNetworkRequestCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaNetworkRequestFinishedCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaReplicationAverageTime: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaReplicationBacklogSize: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaReplicationBacklogTime: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaRowStoreMemoryUsed: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaSchemaMemoryUsedCurrent: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaSchemaMemoryUsedMax: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaSchemaOperationCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaSchemaRecordCompressedCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaSchemaRecordCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceCodeSize: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemoryCompactorsAllocated: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemoryCompactorsFreeable: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemoryEffectiveLimit: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemoryHeapCurrent: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemoryLimit: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemorySharedCurrent: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceMemoryUsed: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceStackSize: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaServiceThreadCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaTransactionBlocked: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaTransactionCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaUptime: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaVolumeOperationCount: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaVolumeOperationSize: MetricConfig{
-						Enabled: true,
-					},
-					SaphanaVolumeOperationTime: MetricConfig{
-						Enabled: true,
+					SaphanaVolumeOperationTime: SaphanaVolumeOperationTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaVolumeOperationTimeMetricAttributeKey{SaphanaVolumeOperationTimeMetricAttributeKeyPath, SaphanaVolumeOperationTimeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeMetricAttributeKeyVolumeOperationType},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -172,140 +242,210 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SaphanaAlertCount: MetricConfig{
+					SaphanaAlertCount: SaphanaAlertCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaAlertCountMetricAttributeKey{SaphanaAlertCountMetricAttributeKeyAlertRating},
+					},
+					SaphanaBackupLatest: SaphanaBackupLatestMetricConfig{
 						Enabled: false,
 					},
-					SaphanaBackupLatest: MetricConfig{
+					SaphanaColumnMemoryUsed: SaphanaColumnMemoryUsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaColumnMemoryUsedMetricAttributeKey{SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemoryType, SaphanaColumnMemoryUsedMetricAttributeKeyColumnMemorySubtype},
+					},
+					SaphanaComponentMemoryUsed: SaphanaComponentMemoryUsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaComponentMemoryUsedMetricAttributeKey{SaphanaComponentMemoryUsedMetricAttributeKeyComponent},
+					},
+					SaphanaConnectionCount: SaphanaConnectionCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaConnectionCountMetricAttributeKey{SaphanaConnectionCountMetricAttributeKeyConnectionStatus},
+					},
+					SaphanaCPUUsed: SaphanaCPUUsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaCPUUsedMetricAttributeKey{SaphanaCPUUsedMetricAttributeKeyCPUType},
+					},
+					SaphanaDiskSizeCurrent: SaphanaDiskSizeCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaDiskSizeCurrentMetricAttributeKey{SaphanaDiskSizeCurrentMetricAttributeKeyPath, SaphanaDiskSizeCurrentMetricAttributeKeyDiskUsageType, SaphanaDiskSizeCurrentMetricAttributeKeyDiskStateUsedFree},
+					},
+					SaphanaHostMemoryCurrent: SaphanaHostMemoryCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaHostMemoryCurrentMetricAttributeKey{SaphanaHostMemoryCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaHostSwapCurrent: SaphanaHostSwapCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaHostSwapCurrentMetricAttributeKey{SaphanaHostSwapCurrentMetricAttributeKeyHostSwapState},
+					},
+					SaphanaInstanceCodeSize: SaphanaInstanceCodeSizeMetricConfig{
 						Enabled: false,
 					},
-					SaphanaColumnMemoryUsed: MetricConfig{
+					SaphanaInstanceMemoryCurrent: SaphanaInstanceMemoryCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaInstanceMemoryCurrentMetricAttributeKey{SaphanaInstanceMemoryCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaInstanceMemorySharedAllocated: SaphanaInstanceMemorySharedAllocatedMetricConfig{
 						Enabled: false,
 					},
-					SaphanaComponentMemoryUsed: MetricConfig{
+					SaphanaInstanceMemoryUsedPeak: SaphanaInstanceMemoryUsedPeakMetricConfig{
 						Enabled: false,
 					},
-					SaphanaConnectionCount: MetricConfig{
+					SaphanaLicenseExpirationTime: SaphanaLicenseExpirationTimeMetricConfig{
 						Enabled: false,
 					},
-					SaphanaCPUUsed: MetricConfig{
+					SaphanaLicenseLimit: SaphanaLicenseLimitMetricConfig{
 						Enabled: false,
 					},
-					SaphanaDiskSizeCurrent: MetricConfig{
+					SaphanaLicensePeak: SaphanaLicensePeakMetricConfig{
 						Enabled: false,
 					},
-					SaphanaHostMemoryCurrent: MetricConfig{
+					SaphanaNetworkRequestAverageTime: SaphanaNetworkRequestAverageTimeMetricConfig{
 						Enabled: false,
 					},
-					SaphanaHostSwapCurrent: MetricConfig{
+					SaphanaNetworkRequestCount: SaphanaNetworkRequestCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaNetworkRequestCountMetricAttributeKey{SaphanaNetworkRequestCountMetricAttributeKeyActivePendingRequestState},
+					},
+					SaphanaNetworkRequestFinishedCount: SaphanaNetworkRequestFinishedCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaNetworkRequestFinishedCountMetricAttributeKey{SaphanaNetworkRequestFinishedCountMetricAttributeKeyInternalExternalRequestType},
+					},
+					SaphanaReplicationAverageTime: SaphanaReplicationAverageTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SaphanaReplicationAverageTimeMetricAttributeKey{SaphanaReplicationAverageTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationAverageTimeMetricAttributeKeySecondaryHost, SaphanaReplicationAverageTimeMetricAttributeKeyPort, SaphanaReplicationAverageTimeMetricAttributeKeyReplicationMode},
+					},
+					SaphanaReplicationBacklogSize: SaphanaReplicationBacklogSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaReplicationBacklogSizeMetricAttributeKey{SaphanaReplicationBacklogSizeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogSizeMetricAttributeKeyPort, SaphanaReplicationBacklogSizeMetricAttributeKeyReplicationMode},
+					},
+					SaphanaReplicationBacklogTime: SaphanaReplicationBacklogTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaReplicationBacklogTimeMetricAttributeKey{SaphanaReplicationBacklogTimeMetricAttributeKeyPrimaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeySecondaryHost, SaphanaReplicationBacklogTimeMetricAttributeKeyPort, SaphanaReplicationBacklogTimeMetricAttributeKeyReplicationMode},
+					},
+					SaphanaRowStoreMemoryUsed: SaphanaRowStoreMemoryUsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaRowStoreMemoryUsedMetricAttributeKey{SaphanaRowStoreMemoryUsedMetricAttributeKeyRowMemoryType},
+					},
+					SaphanaSchemaMemoryUsedCurrent: SaphanaSchemaMemoryUsedCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaMemoryUsedCurrentMetricAttributeKey{SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchema, SaphanaSchemaMemoryUsedCurrentMetricAttributeKeySchemaMemoryType},
+					},
+					SaphanaSchemaMemoryUsedMax: SaphanaSchemaMemoryUsedMaxMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaMemoryUsedMaxMetricAttributeKey{SaphanaSchemaMemoryUsedMaxMetricAttributeKeySchema},
+					},
+					SaphanaSchemaOperationCount: SaphanaSchemaOperationCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaOperationCountMetricAttributeKey{SaphanaSchemaOperationCountMetricAttributeKeySchema, SaphanaSchemaOperationCountMetricAttributeKeySchemaOperationType},
+					},
+					SaphanaSchemaRecordCompressedCount: SaphanaSchemaRecordCompressedCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaRecordCompressedCountMetricAttributeKey{SaphanaSchemaRecordCompressedCountMetricAttributeKeySchema},
+					},
+					SaphanaSchemaRecordCount: SaphanaSchemaRecordCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaSchemaRecordCountMetricAttributeKey{SaphanaSchemaRecordCountMetricAttributeKeySchema, SaphanaSchemaRecordCountMetricAttributeKeySchemaRecordType},
+					},
+					SaphanaServiceCodeSize: SaphanaServiceCodeSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceCodeSizeMetricAttributeKey{SaphanaServiceCodeSizeMetricAttributeKeyService},
+					},
+					SaphanaServiceCount: SaphanaServiceCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceCountMetricAttributeKey{SaphanaServiceCountMetricAttributeKeyServiceStatus},
+					},
+					SaphanaServiceMemoryCompactorsAllocated: SaphanaServiceMemoryCompactorsAllocatedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey{SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKeyService},
+					},
+					SaphanaServiceMemoryCompactorsFreeable: SaphanaServiceMemoryCompactorsFreeableMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey{SaphanaServiceMemoryCompactorsFreeableMetricAttributeKeyService},
+					},
+					SaphanaServiceMemoryEffectiveLimit: SaphanaServiceMemoryEffectiveLimitMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryEffectiveLimitMetricAttributeKey{SaphanaServiceMemoryEffectiveLimitMetricAttributeKeyService},
+					},
+					SaphanaServiceMemoryHeapCurrent: SaphanaServiceMemoryHeapCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryHeapCurrentMetricAttributeKey{SaphanaServiceMemoryHeapCurrentMetricAttributeKeyService, SaphanaServiceMemoryHeapCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaServiceMemoryLimit: SaphanaServiceMemoryLimitMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryLimitMetricAttributeKey{SaphanaServiceMemoryLimitMetricAttributeKeyService},
+					},
+					SaphanaServiceMemorySharedCurrent: SaphanaServiceMemorySharedCurrentMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemorySharedCurrentMetricAttributeKey{SaphanaServiceMemorySharedCurrentMetricAttributeKeyService, SaphanaServiceMemorySharedCurrentMetricAttributeKeyMemoryStateUsedFree},
+					},
+					SaphanaServiceMemoryUsed: SaphanaServiceMemoryUsedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceMemoryUsedMetricAttributeKey{SaphanaServiceMemoryUsedMetricAttributeKeyService, SaphanaServiceMemoryUsedMetricAttributeKeyServiceMemoryUsedType},
+					},
+					SaphanaServiceStackSize: SaphanaServiceStackSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceStackSizeMetricAttributeKey{SaphanaServiceStackSizeMetricAttributeKeyService},
+					},
+					SaphanaServiceThreadCount: SaphanaServiceThreadCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaServiceThreadCountMetricAttributeKey{SaphanaServiceThreadCountMetricAttributeKeyThreadStatus},
+					},
+					SaphanaTransactionBlocked: SaphanaTransactionBlockedMetricConfig{
 						Enabled: false,
 					},
-					SaphanaInstanceCodeSize: MetricConfig{
+					SaphanaTransactionCount: SaphanaTransactionCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaTransactionCountMetricAttributeKey{SaphanaTransactionCountMetricAttributeKeyTransactionType},
+					},
+					SaphanaUptime: SaphanaUptimeMetricConfig{
 						Enabled: false,
 					},
-					SaphanaInstanceMemoryCurrent: MetricConfig{
-						Enabled: false,
+					SaphanaVolumeOperationCount: SaphanaVolumeOperationCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaVolumeOperationCountMetricAttributeKey{SaphanaVolumeOperationCountMetricAttributeKeyPath, SaphanaVolumeOperationCountMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationCountMetricAttributeKeyVolumeOperationType},
 					},
-					SaphanaInstanceMemorySharedAllocated: MetricConfig{
-						Enabled: false,
+					SaphanaVolumeOperationSize: SaphanaVolumeOperationSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaVolumeOperationSizeMetricAttributeKey{SaphanaVolumeOperationSizeMetricAttributeKeyPath, SaphanaVolumeOperationSizeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationSizeMetricAttributeKeyVolumeOperationType},
 					},
-					SaphanaInstanceMemoryUsedPeak: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaLicenseExpirationTime: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaLicenseLimit: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaLicensePeak: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaNetworkRequestAverageTime: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaNetworkRequestCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaNetworkRequestFinishedCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaReplicationAverageTime: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaReplicationBacklogSize: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaReplicationBacklogTime: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaRowStoreMemoryUsed: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaSchemaMemoryUsedCurrent: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaSchemaMemoryUsedMax: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaSchemaOperationCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaSchemaRecordCompressedCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaSchemaRecordCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceCodeSize: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemoryCompactorsAllocated: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemoryCompactorsFreeable: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemoryEffectiveLimit: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemoryHeapCurrent: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemoryLimit: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemorySharedCurrent: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceMemoryUsed: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceStackSize: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaServiceThreadCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaTransactionBlocked: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaTransactionCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaUptime: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaVolumeOperationCount: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaVolumeOperationSize: MetricConfig{
-						Enabled: false,
-					},
-					SaphanaVolumeOperationTime: MetricConfig{
-						Enabled: false,
+					SaphanaVolumeOperationTime: SaphanaVolumeOperationTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SaphanaVolumeOperationTimeMetricAttributeKey{SaphanaVolumeOperationTimeMetricAttributeKeyPath, SaphanaVolumeOperationTimeMetricAttributeKeyDiskUsageType, SaphanaVolumeOperationTimeMetricAttributeKeyVolumeOperationType},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -318,10 +458,429 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SaphanaAlertCountMetricConfig{}, SaphanaBackupLatestMetricConfig{}, SaphanaColumnMemoryUsedMetricConfig{}, SaphanaComponentMemoryUsedMetricConfig{}, SaphanaConnectionCountMetricConfig{}, SaphanaCPUUsedMetricConfig{}, SaphanaDiskSizeCurrentMetricConfig{}, SaphanaHostMemoryCurrentMetricConfig{}, SaphanaHostSwapCurrentMetricConfig{}, SaphanaInstanceCodeSizeMetricConfig{}, SaphanaInstanceMemoryCurrentMetricConfig{}, SaphanaInstanceMemorySharedAllocatedMetricConfig{}, SaphanaInstanceMemoryUsedPeakMetricConfig{}, SaphanaLicenseExpirationTimeMetricConfig{}, SaphanaLicenseLimitMetricConfig{}, SaphanaLicensePeakMetricConfig{}, SaphanaNetworkRequestAverageTimeMetricConfig{}, SaphanaNetworkRequestCountMetricConfig{}, SaphanaNetworkRequestFinishedCountMetricConfig{}, SaphanaReplicationAverageTimeMetricConfig{}, SaphanaReplicationBacklogSizeMetricConfig{}, SaphanaReplicationBacklogTimeMetricConfig{}, SaphanaRowStoreMemoryUsedMetricConfig{}, SaphanaSchemaMemoryUsedCurrentMetricConfig{}, SaphanaSchemaMemoryUsedMaxMetricConfig{}, SaphanaSchemaOperationCountMetricConfig{}, SaphanaSchemaRecordCompressedCountMetricConfig{}, SaphanaSchemaRecordCountMetricConfig{}, SaphanaServiceCodeSizeMetricConfig{}, SaphanaServiceCountMetricConfig{}, SaphanaServiceMemoryCompactorsAllocatedMetricConfig{}, SaphanaServiceMemoryCompactorsFreeableMetricConfig{}, SaphanaServiceMemoryEffectiveLimitMetricConfig{}, SaphanaServiceMemoryHeapCurrentMetricConfig{}, SaphanaServiceMemoryLimitMetricConfig{}, SaphanaServiceMemorySharedCurrentMetricConfig{}, SaphanaServiceMemoryUsedMetricConfig{}, SaphanaServiceStackSizeMetricConfig{}, SaphanaServiceThreadCountMetricConfig{}, SaphanaTransactionBlockedMetricConfig{}, SaphanaTransactionCountMetricConfig{}, SaphanaUptimeMetricConfig{}, SaphanaVolumeOperationCountMetricConfig{}, SaphanaVolumeOperationSizeMetricConfig{}, SaphanaVolumeOperationTimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestSaphanaAlertCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaAlertCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaAlertCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.alert.count doesn't have an attribute invalid, valid attributes: [rating]")
+
+	cfg = DefaultMetricsConfig().SaphanaAlertCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaColumnMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaColumnMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaColumnMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.column.memory.used doesn't have an attribute invalid, valid attributes: [type, subtype]")
+
+	cfg = DefaultMetricsConfig().SaphanaColumnMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaComponentMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaComponentMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaComponentMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.component.memory.used doesn't have an attribute invalid, valid attributes: [component]")
+
+	cfg = DefaultMetricsConfig().SaphanaComponentMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaConnectionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaConnectionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaConnectionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.connection.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SaphanaConnectionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaCPUUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaCPUUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaCPUUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.cpu.used doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaCPUUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaDiskSizeCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaDiskSizeCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaDiskSizeCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.disk.size.current doesn't have an attribute invalid, valid attributes: [path, usage_type, state]")
+
+	cfg = DefaultMetricsConfig().SaphanaDiskSizeCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaHostMemoryCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaHostMemoryCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaHostMemoryCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.host.memory.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaHostMemoryCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaHostSwapCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaHostSwapCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaHostSwapCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.host.swap.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaHostSwapCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaInstanceMemoryCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaInstanceMemoryCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaInstanceMemoryCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.instance.memory.current doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaInstanceMemoryCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaNetworkRequestCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaNetworkRequestCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaNetworkRequestCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.network.request.count doesn't have an attribute invalid, valid attributes: [state]")
+
+	cfg = DefaultMetricsConfig().SaphanaNetworkRequestCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaNetworkRequestFinishedCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaNetworkRequestFinishedCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaNetworkRequestFinishedCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.network.request.finished.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaNetworkRequestFinishedCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaReplicationAverageTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaReplicationAverageTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaReplicationAverageTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.replication.average_time doesn't have an attribute invalid, valid attributes: [primary, secondary, port, mode]")
+
+	cfg = DefaultMetricsConfig().SaphanaReplicationAverageTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaReplicationBacklogSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaReplicationBacklogSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaReplicationBacklogSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.replication.backlog.size doesn't have an attribute invalid, valid attributes: [primary, secondary, port, mode]")
+
+	cfg = DefaultMetricsConfig().SaphanaReplicationBacklogSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaReplicationBacklogTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaReplicationBacklogTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaReplicationBacklogTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.replication.backlog.time doesn't have an attribute invalid, valid attributes: [primary, secondary, port, mode]")
+
+	cfg = DefaultMetricsConfig().SaphanaReplicationBacklogTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaRowStoreMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaRowStoreMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaRowStoreMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.row_store.memory.used doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaRowStoreMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaMemoryUsedCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaMemoryUsedCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaMemoryUsedCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.memory.used.current doesn't have an attribute invalid, valid attributes: [schema, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaMemoryUsedCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaMemoryUsedMaxMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaMemoryUsedMax
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaMemoryUsedMaxMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.memory.used.max doesn't have an attribute invalid, valid attributes: [schema]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaMemoryUsedMax
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.operation.count doesn't have an attribute invalid, valid attributes: [schema, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaRecordCompressedCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaRecordCompressedCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaRecordCompressedCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.record.compressed.count doesn't have an attribute invalid, valid attributes: [schema]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaRecordCompressedCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaSchemaRecordCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaSchemaRecordCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaSchemaRecordCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.schema.record.count doesn't have an attribute invalid, valid attributes: [schema, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaSchemaRecordCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceCodeSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceCodeSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceCodeSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.code_size doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceCodeSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryCompactorsAllocatedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryCompactorsAllocated
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryCompactorsAllocatedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.compactors.allocated doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryCompactorsAllocated
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryCompactorsFreeableMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryCompactorsFreeable
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryCompactorsFreeableMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.compactors.freeable doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryCompactorsFreeable
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryEffectiveLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryEffectiveLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryEffectiveLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.effective_limit doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryEffectiveLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryHeapCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryHeapCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryHeapCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.heap.current doesn't have an attribute invalid, valid attributes: [service, state]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryHeapCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryLimitMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryLimit
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryLimitMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.limit doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryLimit
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemorySharedCurrentMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemorySharedCurrent
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemorySharedCurrentMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.shared.current doesn't have an attribute invalid, valid attributes: [service, state]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemorySharedCurrent
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceMemoryUsedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceMemoryUsed
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceMemoryUsedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.memory.used doesn't have an attribute invalid, valid attributes: [service, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceMemoryUsed
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceStackSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceStackSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceStackSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.stack_size doesn't have an attribute invalid, valid attributes: [service]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceStackSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaServiceThreadCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaServiceThreadCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaServiceThreadCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.service.thread.count doesn't have an attribute invalid, valid attributes: [status]")
+
+	cfg = DefaultMetricsConfig().SaphanaServiceThreadCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaTransactionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaTransactionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaTransactionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.transaction.count doesn't have an attribute invalid, valid attributes: [type]")
+
+	cfg = DefaultMetricsConfig().SaphanaTransactionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaVolumeOperationCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaVolumeOperationCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaVolumeOperationCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.volume.operation.count doesn't have an attribute invalid, valid attributes: [path, usage_type, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaVolumeOperationCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaVolumeOperationSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaVolumeOperationSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaVolumeOperationSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.volume.operation.size doesn't have an attribute invalid, valid attributes: [path, usage_type, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaVolumeOperationSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSaphanaVolumeOperationTimeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SaphanaVolumeOperationTime
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SaphanaVolumeOperationTimeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric saphana.volume.operation.time doesn't have an attribute invalid, valid attributes: [path, usage_type, type]")
+
+	cfg = DefaultMetricsConfig().SaphanaVolumeOperationTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -329,7 +888,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

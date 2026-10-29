@@ -16,9 +16,9 @@ Size of uncompressed incoming log data in bytes (either direct Pub/Sub message p
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| gcp.gcs.bucket.name | Bucket name. | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| gcp.gcs.bucket.name | Bucket name. | Any Str | - |
 
 ### otelcol_http.server.request.active.count
 
@@ -38,6 +38,6 @@ Duration of requests in seconds.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| http.response.status_code | HTTP response status code. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| http.response.status_code | HTTP response status code. | Any Int | - |

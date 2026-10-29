@@ -321,6 +321,23 @@ func TestFranzProducerMetrics(t *testing.T) {
 			metricdatatest.IgnoreTimestamp(),
 		)
 	})
+	t.Run("should evict broker E2E cache on disconnect", func(t *testing.T) {
+		testTel := componenttest.NewTelemetry()
+		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+		require.NoError(t, err)
+		defer tb.Shutdown()
+		fpm := NewFranzProducerMetrics(tb)
+		meta := kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}
+
+		// Populate the cache for both outcomes.
+		fpm.OnBrokerE2E(meta, int16(kmsg.Produce), kgo.BrokerE2E{})
+		fpm.OnBrokerE2E(meta, int16(kmsg.Produce), kgo.BrokerE2E{WriteErr: errors.New("oops")})
+		require.Len(t, fpm.brokerE2EOpts, 2)
+
+		// Disconnect should evict both entries.
+		fpm.OnBrokerDisconnect(meta, nil)
+		require.Empty(t, fpm.brokerE2EOpts)
+	})
 	t.Run("should report the metrics when OnBrokerThrottle hook is called", func(t *testing.T) {
 		testTel := componenttest.NewTelemetry()
 		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())

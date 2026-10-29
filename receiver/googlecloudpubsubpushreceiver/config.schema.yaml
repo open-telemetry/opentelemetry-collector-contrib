@@ -3,6 +3,7 @@ type: object
 properties:
   encoding:
     description: Endpoint identifies the expected encoding of messages received from Pub/Sub.
+    x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
 allOf:

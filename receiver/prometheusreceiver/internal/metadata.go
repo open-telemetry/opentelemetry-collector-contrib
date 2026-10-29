@@ -15,78 +15,86 @@ type dataPoint struct {
 	boundary float64
 }
 
-// internalMetricMetadata allows looking up metadata for internal scrape metrics
-var internalMetricMetadata = map[string]*scrape.MetricMetadata{
-	scrapeUpMetricName: {
+var (
+	internalUpMetadata = scrape.MetricMetadata{
 		MetricFamily: scrapeUpMetricName,
 		Type:         model.MetricTypeGauge,
 		Help:         "The scraping was successful",
-	},
-	"scrape_duration_seconds": {
+	}
+	internalScrapeDurationMetadata = scrape.MetricMetadata{
 		MetricFamily: "scrape_duration_seconds",
 		Unit:         "seconds",
 		Type:         model.MetricTypeGauge,
 		Help:         "Duration of the scrape",
-	},
-	"scrape_samples_scraped": {
+	}
+	internalScrapeSamplesMetadata = scrape.MetricMetadata{
 		MetricFamily: "scrape_samples_scraped",
 		Type:         model.MetricTypeGauge,
 		Help:         "The number of samples the target exposed",
-	},
-	"scrape_series_added": {
+	}
+	internalScrapeSeriesAddedMetadata = scrape.MetricMetadata{
 		MetricFamily: "scrape_series_added",
 		Type:         model.MetricTypeGauge,
 		Help:         "The approximate number of new series in this scrape",
-	},
-	"scrape_samples_post_metric_relabeling": {
+	}
+	internalScrapeSamplesPostRelabelingMetadata = scrape.MetricMetadata{
 		MetricFamily: "scrape_samples_post_metric_relabeling",
 		Type:         model.MetricTypeGauge,
 		Help:         "The number of samples remaining after metric relabeling was applied",
-	},
+	}
+)
+
+// lookupInternalMetricMetadata looks up metadata for internal scrape metrics.
+func lookupInternalMetricMetadata(metricName string) *scrape.MetricMetadata {
+	switch metricName {
+	case scrapeUpMetricName:
+		return &internalUpMetadata
+	case "scrape_duration_seconds":
+		return &internalScrapeDurationMetadata
+	case "scrape_samples_scraped":
+		return &internalScrapeSamplesMetadata
+	case "scrape_series_added":
+		return &internalScrapeSeriesAddedMetadata
+	case "scrape_samples_post_metric_relabeling":
+		return &internalScrapeSamplesPostRelabelingMetadata
+	default:
+		return nil
+	}
 }
 
-func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrape.MetricMetadata, string) {
-	if metadata, ok := internalMetricMetadata[metricName]; ok {
-		return metadata, metricName
+func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (scrape.MetricMetadata, string) {
+	if metadata := lookupInternalMetricMetadata(metricName); metadata != nil {
+		return *metadata, metricName
 	}
 	if metadata, ok := mc.GetMetadata(metricName); ok {
-		return &metadata, metricName
+		return metadata, metricName
 	}
 	// If we didn't find metadata with the original name,
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
-	if metadata, ok := mc.GetMetadata(normalizedName); ok {
-		if metadata.Type == model.MetricTypeCounter {
-			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
-			if strings.HasSuffix(metricName, metricSuffixCreated) {
-				return &metadata, normalizedName + metricSuffixTotal
+	if normalizedName != metricName {
+		if metadata, ok := mc.GetMetadata(normalizedName); ok {
+			if metadata.Type == model.MetricTypeCounter {
+				// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
+				if strings.HasSuffix(metricName, metricSuffixCreated) {
+					return metadata, normalizedName + metricSuffixTotal
+				}
+				// END NB (eriksywu)
+				return metadata, metricName
 			}
-			// END NB (eriksywu)
-			return &metadata, metricName
+			return metadata, normalizedName
 		}
-		return &metadata, normalizedName
 	}
 	// Otherwise, the metric is unknown
-	return &scrape.MetricMetadata{
+	return scrape.MetricMetadata{
 		MetricFamily: metricName,
 		Type:         model.MetricTypeUnknown,
 	}, metricName
 }
 
-// isCounterCreatedLine determines whether a metric is a _created line for a counter appended by an om-text parser
-// these assumptions are made
-// 1. the metric name of an OM counter line would always have either _total or _created as a suffix
-// 2. the omptextarser stores metadata of every om text line using the counter's normalized name (i.e foo_counter_total => foo_counter, foo_counter_created => foo_counter)
-// 3. the promtextparser stores metadata without normalization of metric name
-func isCounterCreatedLine(metricName, normalizedMetricName string, mc scrape.MetricMetadataStore) bool {
-	if !strings.HasSuffix(metricName, metricSuffixCreated) {
-		return false
-	}
-	md, ok := mc.GetMetadata(normalizedMetricName)
-	return ok && md.Type == model.MetricTypeCounter
-}
-
 type emptyMetadataStore struct{}
+
+var emptyMetadataStoreInstance = &emptyMetadataStore{}
 
 func (emptyMetadataStore) ListMetadata() []scrape.MetricMetadata {
 	return nil

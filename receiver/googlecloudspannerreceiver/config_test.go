@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -42,6 +42,8 @@ func TestLoadConfig(t *testing.T) {
 			BackfillEnabled:                   true,
 			CardinalityTotalLimit:             200000,
 			HideTopnLockstatsRowrangestartkey: true,
+			HideSplitStatsKeys:                true,
+			HideClientIPAddress:               true,
 			TruncateText:                      true,
 			Projects: []Project{
 				{
@@ -186,7 +188,7 @@ func TestValidateConfig(t *testing.T) {
 				Projects:               testCase.projects,
 			}
 
-			err := xconfmap.Validate(cfg)
+			err := confmap.Validate(cfg)
 
 			if testCase.requireError {
 				require.Error(t, err)

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"path/filepath"
 	"testing"
 
@@ -17,43 +16,73 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetricassert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
-	apacheMock := newMockServer(t)
-	defer func() { apacheMock.Close() }()
+	tests := []struct {
+		name         string
+		enableNew    bool
+		disableOld   bool
+		expectedFile string
+	}{
+		{
+			// Default behavior: only the original metric/attribute names are emitted.
+			name:         "default_old_format",
+			expectedFile: "metrics.assert.yaml",
+		},
+		{
+			// receiver.apache.enableNewFormatMetrics only: both formats are emitted.
+			name:         "both_formats",
+			enableNew:    true,
+			expectedFile: "metrics_both.assert.yaml",
+		},
+		{
+			// Both gates: only the new format is emitted.
+			name:         "new_format_only",
+			enableNew:    true,
+			disableOld:   true,
+			expectedFile: "metrics_new.assert.yaml",
+		},
+	}
 
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
-	require.NoError(t, xconfmap.Validate(cfg))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.enableNew {
+				defer testutil.SetFeatureGateForTest(t, metadata.ReceiverApacheEnableNewFormatMetricsFeatureGate, true)()
+			}
+			if tt.disableOld {
+				defer testutil.SetFeatureGateForTest(t, metadata.ReceiverApacheDisableOldFormatMetricsFeatureGate, true)()
+			}
 
-	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
-	require.NoError(t, err)
-	scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
+			apacheMock := newMockServer(t)
+			defer func() { apacheMock.Close() }()
 
-	err = scraper.start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
+			require.NoError(t, confmap.Validate(cfg))
 
-	actualMetrics, err := scraper.scrape(t.Context())
-	require.NoError(t, err)
+			serverName, port, err := parseResourceAttributes(cfg.ClientConfig.Endpoint)
+			require.NoError(t, err)
+			scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-	url, err := url.Parse(apacheMock.URL)
-	require.NoError(t, err)
+			err = scraper.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err)
 
-	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
+			actualMetrics, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
 
-	// The port is random, so we shouldn't check if this value matches.
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+			expectedFile := filepath.Join("testdata", "scraper", tt.expectedFile)
+			// To regenerate: uncomment, run the test once, re-comment.
+			// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics))
+			require.NoError(t, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
+		})
+	}
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -78,52 +107,52 @@ func TestParseScoreboard(t *testing.T) {
 		scoreboard := `S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................`
 		results := parseScoreboard(scoreboard)
 
-		require.Equal(t, int64(150), results[metadata.AttributeScoreboardStateOpen])
-		require.Equal(t, int64(217), results[metadata.AttributeScoreboardStateWaiting])
-		require.Equal(t, int64(1), results[metadata.AttributeScoreboardStateStarting])
-		require.Equal(t, int64(4), results[metadata.AttributeScoreboardStateReading])
-		require.Equal(t, int64(12), results[metadata.AttributeScoreboardStateSending])
-		require.Equal(t, int64(2), results[metadata.AttributeScoreboardStateKeepalive])
-		require.Equal(t, int64(2), results[metadata.AttributeScoreboardStateDnslookup])
-		require.Equal(t, int64(4), results[metadata.AttributeScoreboardStateClosing])
-		require.Equal(t, int64(1), results[metadata.AttributeScoreboardStateLogging])
-		require.Equal(t, int64(3), results[metadata.AttributeScoreboardStateFinishing])
-		require.Equal(t, int64(4), results[metadata.AttributeScoreboardStateIdleCleanup])
+		require.Equal(t, int64(150), results["open"])
+		require.Equal(t, int64(217), results["waiting"])
+		require.Equal(t, int64(1), results["starting"])
+		require.Equal(t, int64(4), results["reading"])
+		require.Equal(t, int64(12), results["sending"])
+		require.Equal(t, int64(2), results["keepalive"])
+		require.Equal(t, int64(2), results["dnslookup"])
+		require.Equal(t, int64(4), results["closing"])
+		require.Equal(t, int64(1), results["logging"])
+		require.Equal(t, int64(3), results["finishing"])
+		require.Equal(t, int64(4), results["idle_cleanup"])
 	})
 
 	t.Run("test unknown", func(t *testing.T) {
 		scoreboard := `qwertyuiopasdfghjklzxcvbnm`
 		results := parseScoreboard(scoreboard)
 
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateReading])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateSending])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
-		require.Equal(t, int64(26), results[metadata.AttributeScoreboardStateUnknown])
+		require.Equal(t, int64(0), results["open"])
+		require.Equal(t, int64(0), results["waiting"])
+		require.Equal(t, int64(0), results["starting"])
+		require.Equal(t, int64(0), results["reading"])
+		require.Equal(t, int64(0), results["sending"])
+		require.Equal(t, int64(0), results["keepalive"])
+		require.Equal(t, int64(0), results["dnslookup"])
+		require.Equal(t, int64(0), results["closing"])
+		require.Equal(t, int64(0), results["logging"])
+		require.Equal(t, int64(0), results["finishing"])
+		require.Equal(t, int64(0), results["idle_cleanup"])
+		require.Equal(t, int64(26), results["unknown"])
 	})
 
 	t.Run("test empty defaults", func(t *testing.T) {
 		emptyString := ""
 		results := parseScoreboard(emptyString)
 
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateReading])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateSending])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
-		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
+		require.Equal(t, int64(0), results["open"])
+		require.Equal(t, int64(0), results["waiting"])
+		require.Equal(t, int64(0), results["starting"])
+		require.Equal(t, int64(0), results["reading"])
+		require.Equal(t, int64(0), results["sending"])
+		require.Equal(t, int64(0), results["keepalive"])
+		require.Equal(t, int64(0), results["dnslookup"])
+		require.Equal(t, int64(0), results["closing"])
+		require.Equal(t, int64(0), results["logging"])
+		require.Equal(t, int64(0), results["finishing"])
+		require.Equal(t, int64(0), results["idle_cleanup"])
 	})
 }
 
@@ -188,6 +217,8 @@ CPUChildrenUser: 0.02
 CPUSystem: 0.03
 CPUUser: 0.04
 CPULoad: 0.66
+ReqPerSec: 719.771
+BytesPerSec: 73.12
 Load1: 0.9
 Load5: 0.4
 Load15: 0.3

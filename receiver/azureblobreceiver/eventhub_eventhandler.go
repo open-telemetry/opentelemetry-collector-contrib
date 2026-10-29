@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -133,32 +134,60 @@ func (p *eventHubEventHandler) newMessageHandler(ctx context.Context, event *aze
 	if marshalErr != nil {
 		return marshalErr
 	}
-	subject := eventDataSlice[0].Subject
-	containerName := strings.Split(strings.Split(subject, "containers/")[1], "/")[0]
-	eventType := eventDataSlice[0].EventType
-	blobName := strings.Split(subject, "blobs/")[1]
-
-	if eventType == blobCreatedEventType {
-		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
-		if err != nil {
-			return err
-		}
-		switch containerName {
-		case p.logsContainerName:
-			err = p.logsDataConsumer.consumeLogsJSON(ctx, blobData.Bytes())
-			if err != nil {
-				return err
-			}
-		case p.tracesContainerName:
-			err = p.tracesDataConsumer.consumeTracesJSON(ctx, blobData.Bytes())
-			if err != nil {
-				return err
-			}
-		default:
-			p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
-		}
+	if len(eventDataSlice) == 0 {
+		return errors.New("event hub message contains no events")
 	}
 
+	if eventDataSlice[0].EventType != blobCreatedEventType {
+		return nil
+	}
+
+	containerName, blobName, err := parseBlobSubject(eventDataSlice[0].Subject)
+	if err != nil {
+		return err
+	}
+
+	return p.processBlobCreatedEventType(ctx, containerName, blobName)
+}
+
+// parseBlobSubject extracts the container and blob names from a blob event
+// subject of the form "/blobServices/default/containers/{container}/blobs/{blob}".
+func parseBlobSubject(subject string) (containerName, blobName string, err error) {
+	_, afterContainers, found := strings.Cut(subject, "/containers/")
+	if !found {
+		return "", "", fmt.Errorf("unexpected blob event subject %q: missing %q", subject, "/containers/")
+	}
+	containerName, afterContainer, _ := strings.Cut(afterContainers, "/")
+	blobName, found = strings.CutPrefix(afterContainer, "blobs/")
+	if !found || containerName == "" || blobName == "" {
+		return "", "", fmt.Errorf("unexpected blob event subject %q: missing container or blob name", subject)
+	}
+	return containerName, blobName, nil
+}
+
+func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, containerName, blobName string) error {
+	blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
+	if err != nil {
+		return err
+	}
+
+	switch containerName {
+	case p.logsContainerName:
+		if err := p.logsDataConsumer.consumeLogs(ctx, blobData.Bytes()); err != nil {
+			return err
+		}
+	case p.tracesContainerName:
+		if err := p.tracesDataConsumer.consumeTraces(ctx, blobData.Bytes()); err != nil {
+			return err
+		}
+	default:
+		p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
+		return nil
+	}
+
+	if err := p.blobClient.deleteBlob(ctx, containerName, blobName); err != nil {
+		p.logger.Error("failed to delete blob", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
+	}
 	return nil
 }
 

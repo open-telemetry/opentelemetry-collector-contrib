@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"iter"
+	"strconv"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -23,10 +24,13 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -78,6 +82,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&logsHandler{
@@ -88,10 +93,11 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 				},
 				attrs,
 				headerAttrKeys,
+				propagator,
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Logs.Topics, config.Logs.ExcludeTopics, newConsumeMessageFunc)
+	return newFranzKafkaConsumer(config, set, config.Logs.Topics, config.Logs.ExcludeTopics, newConsumeMessageFunc)
 }
 
 func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -105,6 +111,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&metricsHandler{
@@ -115,10 +122,11 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 				},
 				attrs,
 				headerAttrKeys,
+				propagator,
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Metrics.Topics, config.Metrics.ExcludeTopics, newConsumeMessageFunc)
+	return newFranzKafkaConsumer(config, set, config.Metrics.Topics, config.Metrics.ExcludeTopics, newConsumeMessageFunc)
 }
 
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
@@ -132,6 +140,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&tracesHandler{
@@ -142,10 +151,11 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 				},
 				attrs,
 				headerAttrKeys,
+				propagator,
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Traces.Topics, config.Traces.ExcludeTopics, consumeFn)
+	return newFranzKafkaConsumer(config, set, config.Traces.Topics, config.Traces.ExcludeTopics, consumeFn)
 }
 
 func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xconsumer.Profiles) (xreceiver.Profiles, error) {
@@ -159,6 +169,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 		}
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
+		propagator := traceContextPropagator()
 		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&profilesHandler{
@@ -169,23 +180,11 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 				},
 				attrs,
 				headerAttrKeys,
+				propagator,
 			)
 		}, nil
 	}
-	return newReceiver(config, set, config.Profiles.Topics, config.Profiles.ExcludeTopics, consumeFn)
-}
-
-func newReceiver(
-	config *Config,
-	set receiver.Settings,
-	topics []string,
-	excludeTopics []string,
-	consumeFn func(host component.Host,
-		obsrecv *receiverhelper.ObsReport,
-		telBldr *metadata.TelemetryBuilder,
-	) (consumeMessageFunc, error),
-) (component.Component, error) {
-	return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
+	return newFranzKafkaConsumer(config, set, config.Profiles.Topics, config.Profiles.ExcludeTopics, consumeFn)
 }
 
 type logsHandler struct {
@@ -362,6 +361,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	handler messageHandler[T],
 	attrs attribute.Set,
 	headerAttrKeys map[string]string,
+	propagator propagation.TextMapPropagator,
 ) error {
 	if logger.Core().Enabled(zap.DebugLevel) {
 		logger.Debug("kafka message received",
@@ -373,7 +373,10 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		)
 	}
 
-	ctx = contextWithHeaders(ctx, record.Headers)
+	ctx = contextWithMetadata(ctx, record)
+	if propagator != nil {
+		ctx = propagator.Extract(ctx, (*kafka.HeaderCarrier)(&record.Headers))
+	}
 
 	obsCtx := handler.startObsReport(ctx)
 	data, n, err := handler.unmarshalData(record.Value)
@@ -396,7 +399,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		}
 	}
 
-	err = handler.consumeData(ctx, data)
+	err = handler.consumeData(obsCtx, data)
 	handler.endObsReport(obsCtx, n, err)
 	return err
 }
@@ -444,12 +447,21 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 	return backOff
 }
 
-func contextWithHeaders(ctx context.Context, headers []kgo.RecordHeader) context.Context {
-	if len(headers) == 0 {
-		return ctx
+func traceContextPropagator() propagation.TextMapPropagator {
+	propagator := otel.GetTextMapPropagator()
+	if len(propagator.Fields()) == 0 {
+		return nil
 	}
-	m := make(map[string][]string, len(headers))
-	for _, h := range headers {
+	return propagator
+}
+
+func contextWithMetadata(ctx context.Context, record *kgo.Record) context.Context {
+	m := map[string][]string{
+		"kafka.topic":     {record.Topic},
+		"kafka.partition": {strconv.FormatInt(int64(record.Partition), 10)},
+		"kafka.offset":    {strconv.FormatInt(record.Offset, 10)},
+	}
+	for _, h := range record.Headers {
 		m[h.Key] = append(m[h.Key], string(h.Value))
 	}
 	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(m)})

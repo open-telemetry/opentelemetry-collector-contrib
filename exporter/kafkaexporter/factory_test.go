@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -44,16 +43,16 @@ func TestCreateMetricExporter(t *testing.T) {
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				conf.Metadata.Full = false
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
+				conf.ClientConfig.Metadata.Full = false
+				conf.ClientConfig.Brokers = []string{"invalid:9092"}
+				conf.ClientConfig.ProtocolVersion = "2.0.0"
 			}),
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.Metrics.Encoding = "otlp_proto"
 			}),
 		},
@@ -61,13 +60,11 @@ func TestCreateMetricExporter(t *testing.T) {
 			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
-					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
-					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
-					return batch
-				}())
+				batch := conf.QueueBatchConfig.GetOrInsertDefault().Batch.GetOrInsertDefault()
+				batch.Sizer = exporterhelper.RequestSizerTypeBytes
+				batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
 			}),
 		},
 	}
@@ -102,16 +99,16 @@ func TestCreateLogExporter(t *testing.T) {
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				conf.Metadata.Full = false
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
+				conf.ClientConfig.Metadata.Full = false
+				conf.ClientConfig.Brokers = []string{"invalid:9092"}
+				conf.ClientConfig.ProtocolVersion = "2.0.0"
 			}),
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.Logs.Encoding = "otlp_proto"
 			}),
 		},
@@ -119,13 +116,11 @@ func TestCreateLogExporter(t *testing.T) {
 			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
-					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
-					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
-					return batch
-				}())
+				batch := conf.QueueBatchConfig.GetOrInsertDefault().Batch.GetOrInsertDefault()
+				batch.Sizer = exporterhelper.RequestSizerTypeBytes
+				batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
 			}),
 		},
 	}
@@ -160,16 +155,16 @@ func TestCreateTraceExporter(t *testing.T) {
 		{
 			name: "valid config (no validating brokers)",
 			conf: applyConfigOption(func(conf *Config) {
-				conf.Metadata.Full = false
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
+				conf.ClientConfig.Metadata.Full = false
+				conf.ClientConfig.Brokers = []string{"invalid:9092"}
+				conf.ClientConfig.ProtocolVersion = "2.0.0"
 			}),
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.Traces.Encoding = "otlp_proto"
 			}),
 		},
@@ -177,13 +172,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
-					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
-					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
-					return batch
-				}())
+				batch := conf.QueueBatchConfig.GetOrInsertDefault().Batch.GetOrInsertDefault()
+				batch.Sizer = exporterhelper.RequestSizerTypeBytes
+				batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
 			}),
 		},
 	}
@@ -218,16 +211,16 @@ func TestCreateProfileExporter(t *testing.T) {
 		{
 			name: "valid config (no validating broker)",
 			conf: applyConfigOption(func(conf *Config) {
-				conf.Metadata.Full = false
-				conf.Brokers = []string{"invalid:9092"}
-				conf.ProtocolVersion = "2.0.0"
+				conf.ClientConfig.Metadata.Full = false
+				conf.ClientConfig.Brokers = []string{"invalid:9092"}
+				conf.ClientConfig.ProtocolVersion = "2.0.0"
 			}),
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.Profiles.Encoding = "otlp_proto"
 			}),
 		},
@@ -235,13 +228,11 @@ func TestCreateProfileExporter(t *testing.T) {
 			name: "with include metadata keys and batch partition metadata keys",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check
-				conf.Metadata.Full = false
+				conf.ClientConfig.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(func() exporterhelper.BatchConfig {
-					batch := exporterhelper.BatchConfig{Sizer: exporterhelper.RequestSizerTypeBytes}
-					batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
-					return batch
-				}())
+				batch := conf.QueueBatchConfig.GetOrInsertDefault().Batch.GetOrInsertDefault()
+				batch.Sizer = exporterhelper.RequestSizerTypeBytes
+				batch.Partition.MetadataKeys = []string{"k1", "k2", "k3"}
 			}),
 		},
 	}

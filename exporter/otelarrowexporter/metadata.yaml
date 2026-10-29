@@ -7,9 +7,24 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jmacd, moh-osman3, lquerel]
+    active: [jmacd, JakeDern]
+    emeritus: [moh-osman3]
+
+sending_queue:
+  support: has_overrides
+  overrides:
+    enabled: true
+    sizer: items
+    queue_size: 100000
+    num_consumers: 100
+    block_on_overflow: true
+    batch:
+      enabled: true
+      flush_timeout: 1s
+      sizer: items
+      min_size: 1000
+      max_size: 1500
 
 tests:
   config:
     endpoint: http://127.0.0.1:4317
-

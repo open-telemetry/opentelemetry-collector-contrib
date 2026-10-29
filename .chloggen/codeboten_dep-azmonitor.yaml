@@ -1,4 +1,0 @@
-change_type: 'deprecation'
-component: receiver/azure_monitor
-note: Introduce new snake case compliant name `azure_monitor`
-issues: [46730]

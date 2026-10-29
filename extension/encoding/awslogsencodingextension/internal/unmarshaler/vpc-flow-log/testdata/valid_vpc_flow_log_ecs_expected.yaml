@@ -1,0 +1,86 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "5"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0abc1234def567890
+              - key: source.port
+                value:
+                  intValue: "49152"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "15"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "3500"
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1700000000"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: ACCEPT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: aws.ecs.cluster.arn
+                value:
+                  stringValue: arn:aws:ecs:us-east-1:123456789012:cluster/my-cluster
+              - key: aws.ecs.cluster.name
+                value:
+                  stringValue: my-cluster
+              - key: aws.ecs.container.instance.arn
+                value:
+                  stringValue: arn:aws:ecs:us-east-1:123456789012:container-instance/my-cluster/abcdef
+              - key: aws.ecs.container.instance.id
+                value:
+                  stringValue: abcdef1234567890
+              - key: aws.ecs.container.id
+                value:
+                  stringValue: container-1
+              - key: aws.ecs.second.container.id
+                value:
+                  stringValue: container-2
+              - key: aws.ecs.service.name
+                value:
+                  stringValue: my-service
+              - key: aws.ecs.task.definition.arn
+                value:
+                  stringValue: arn:aws:ecs:us-east-1:123456789012:task-definition/my-task:1
+              - key: aws.ecs.task.arn
+                value:
+                  stringValue: arn:aws:ecs:us-east-1:123456789012:task/my-cluster/abcdef
+              - key: aws.ecs.task.id
+                value:
+                  stringValue: abcdef1234567890
+              - key: source.address
+                value:
+                  stringValue: 10.0.1.100
+              - key: destination.address
+                value:
+                  stringValue: 10.0.2.200
+            body: {}
+            timeUnixNano: "1700000060000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.vpcflow
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

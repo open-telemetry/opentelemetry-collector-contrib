@@ -19,6 +19,9 @@ $defs:
     description: OtelToHecFields defines the mapping of attributes to HEC fields
     type: object
     properties:
+      name:
+        description: Name informs the exporter to map the log record event name field to a specific HEC field.
+        type: string
       severity_number:
         description: SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
         type: string

@@ -15,27 +15,22 @@ jobs:
       actions: read
       contents: read
       security-events: write
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    env:
-      # Force CodeQL to run the extraction on the files compiled by our custom
-      # build command, as opposed to letting the autobuilder figure it out.
-      # See: https://github.com/github/codeql-action/issues/1101#issuecomment-1157729589
-      CODEQL_EXTRACTOR_GO_BUILD_TRACING: "on"
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
-        id: go-setup
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: go
+          build-mode: manual
 
       - name: Build Artifact
         run: |
@@ -43,7 +38,7 @@ jobs:
           make otelcontribcol
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@0d579ffd059c29b07949a3cce3983f0780820c98 # v4
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         timeout-minutes: 60
 
       - run: ./.github/workflows/scripts/check-disk-space.sh

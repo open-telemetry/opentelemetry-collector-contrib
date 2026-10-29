@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
@@ -23,6 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	authID := component.MustNewID("azureauth")
+	encodingID := component.MustNewID("azure_encoding")
 
 	tests := []struct {
 		id                  component.ID
@@ -77,6 +78,61 @@ func TestLoadConfig(t *testing.T) {
 			id:                  component.NewIDWithName(metadata.Type, "auth_missing_namespace"),
 			expectedErrContains: "event_hub.namespace is required when using auth",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "blob_checkpoint_store"),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+				BlobCheckpointStore: &BlobCheckpointStoreConfig{
+					Connection:    "DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net",
+					ContainerName: "eventhub-checkpoints",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "blob_checkpoint_store_auth"),
+			expected: &Config{
+				EventHub: EventHubConfig{
+					Name:      "hubName",
+					Namespace: "namespace.servicebus.windows.net",
+				},
+				Auth: &authID,
+				BlobCheckpointStore: &BlobCheckpointStoreConfig{
+					StorageAccountURL: "https://myaccount.blob.core.windows.net",
+					ContainerName:     "eventhub-checkpoints",
+				},
+			},
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_missing_container"),
+			expectedErrContains: "blob_checkpoint_store.container_name is required",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_missing_connection"),
+			expectedErrContains: "blob_checkpoint_store.connection is required when not using auth",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_auth_missing_url"),
+			expectedErrContains: "blob_checkpoint_store.storage_account_url is required when using auth",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_with_partition"),
+			expectedErrContains: "blob_checkpoint_store is mutually exclusive with partition and offset",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_with_storage"),
+			expectedErrContains: "blob_checkpoint_store is mutually exclusive with storage",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "encoding"),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+				Encoding:   &encodingID,
+			},
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "format_and_encoding"),
+			expectedErrContains: "format and encoding are mutually exclusive",
+		},
 	}
 
 	for _, tt := range tests {
@@ -89,10 +145,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErrContains != "" {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.expectedErrContains)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.expectedErrContains)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

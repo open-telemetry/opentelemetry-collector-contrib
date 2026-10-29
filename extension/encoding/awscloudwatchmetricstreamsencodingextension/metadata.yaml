@@ -12,7 +12,8 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [axw, constanca-m, Kavindu-Dodan]
+    active: [constanca-m, Kavindu-Dodan]
+    emeritus: [axw]
 
 tests:
   config:

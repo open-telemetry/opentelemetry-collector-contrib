@@ -94,21 +94,17 @@ func BenchmarkTransform(b *testing.B) {
 func BenchmarkHostResourceData_MarshalJSON(b *testing.B) {
 	testCases := []struct {
 		name string
-		data HostResourceData
+		data ResourceData
 	}{
 		{
 			name: "empty data map",
-			data: HostResourceData{
-				EcsVersion: EcsVersion{V: EcsVersionString},
-				HostID:     "test-host-id-12345",
-				Data:       map[string]string{},
+			data: ResourceData{
+				Data: map[string]string{},
 			},
 		},
 		{
 			name: "small data map",
-			data: HostResourceData{
-				EcsVersion: EcsVersion{V: EcsVersionString},
-				HostID:     "test-host-id-12345",
+			data: ResourceData{
 				Data: map[string]string{
 					"os.type":    "Linux",
 					"os.version": "5.15.0",
@@ -118,9 +114,7 @@ func BenchmarkHostResourceData_MarshalJSON(b *testing.B) {
 		},
 		{
 			name: "large data map",
-			data: HostResourceData{
-				EcsVersion: EcsVersion{V: EcsVersionString},
-				HostID:     "test-host-id-12345",
+			data: ResourceData{
 				Data: map[string]string{
 					"os.type":             "Linux",
 					"os.version":          "5.15.0",
@@ -137,9 +131,7 @@ func BenchmarkHostResourceData_MarshalJSON(b *testing.B) {
 		},
 		{
 			name: "data with empty values",
-			data: HostResourceData{
-				EcsVersion: EcsVersion{V: EcsVersionString},
-				HostID:     "test-host-id-12345",
+			data: ResourceData{
 				Data: map[string]string{
 					"os.type":    "Linux",
 					"os.version": "",

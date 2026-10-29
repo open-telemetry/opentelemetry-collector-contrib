@@ -1,10 +1,10 @@
-metricstransform:
+metrics_transform:
   transforms:
     - include: name
       action: update
       new_name: new_name
 
-metricstransform/multiple:
+metrics_transform/multiple:
   transforms:
     - include: name1
       match_type: strict
@@ -57,6 +57,7 @@ metricstransform/multiple:
       match_type: regexp
       action: combine
       new_name: combined_metric_name
+      aggregation_type: sum
       submatch_case: lower
 
     - include: name2

@@ -67,44 +67,44 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["VcenterClusterHostCount"] = mb.metricVcenterClusterHostCount.config.AggregationStrategy
-			aggMap["VcenterClusterVMCount"] = mb.metricVcenterClusterVMCount.config.AggregationStrategy
-			aggMap["VcenterClusterVsanLatencyAvg"] = mb.metricVcenterClusterVsanLatencyAvg.config.AggregationStrategy
-			aggMap["VcenterClusterVsanOperations"] = mb.metricVcenterClusterVsanOperations.config.AggregationStrategy
-			aggMap["VcenterClusterVsanThroughput"] = mb.metricVcenterClusterVsanThroughput.config.AggregationStrategy
-			aggMap["VcenterDatacenterClusterCount"] = mb.metricVcenterDatacenterClusterCount.config.AggregationStrategy
-			aggMap["VcenterDatacenterDiskSpace"] = mb.metricVcenterDatacenterDiskSpace.config.AggregationStrategy
-			aggMap["VcenterDatacenterHostCount"] = mb.metricVcenterDatacenterHostCount.config.AggregationStrategy
-			aggMap["VcenterDatacenterVMCount"] = mb.metricVcenterDatacenterVMCount.config.AggregationStrategy
-			aggMap["VcenterDatastoreDiskUsage"] = mb.metricVcenterDatastoreDiskUsage.config.AggregationStrategy
-			aggMap["VcenterHostCPUReserved"] = mb.metricVcenterHostCPUReserved.config.AggregationStrategy
-			aggMap["VcenterHostDiskLatencyAvg"] = mb.metricVcenterHostDiskLatencyAvg.config.AggregationStrategy
-			aggMap["VcenterHostDiskLatencyMax"] = mb.metricVcenterHostDiskLatencyMax.config.AggregationStrategy
-			aggMap["VcenterHostDiskThroughput"] = mb.metricVcenterHostDiskThroughput.config.AggregationStrategy
-			aggMap["VcenterHostNetworkPacketDropRate"] = mb.metricVcenterHostNetworkPacketDropRate.config.AggregationStrategy
-			aggMap["VcenterHostNetworkPacketErrorRate"] = mb.metricVcenterHostNetworkPacketErrorRate.config.AggregationStrategy
-			aggMap["VcenterHostNetworkPacketRate"] = mb.metricVcenterHostNetworkPacketRate.config.AggregationStrategy
-			aggMap["VcenterHostNetworkThroughput"] = mb.metricVcenterHostNetworkThroughput.config.AggregationStrategy
-			aggMap["VcenterHostNetworkUsage"] = mb.metricVcenterHostNetworkUsage.config.AggregationStrategy
-			aggMap["VcenterHostVsanLatencyAvg"] = mb.metricVcenterHostVsanLatencyAvg.config.AggregationStrategy
-			aggMap["VcenterHostVsanOperations"] = mb.metricVcenterHostVsanOperations.config.AggregationStrategy
-			aggMap["VcenterHostVsanThroughput"] = mb.metricVcenterHostVsanThroughput.config.AggregationStrategy
-			aggMap["VcenterResourcePoolMemoryGranted"] = mb.metricVcenterResourcePoolMemoryGranted.config.AggregationStrategy
-			aggMap["VcenterResourcePoolMemoryUsage"] = mb.metricVcenterResourcePoolMemoryUsage.config.AggregationStrategy
-			aggMap["VcenterVMCPUTime"] = mb.metricVcenterVMCPUTime.config.AggregationStrategy
-			aggMap["VcenterVMDiskLatencyAvg"] = mb.metricVcenterVMDiskLatencyAvg.config.AggregationStrategy
-			aggMap["VcenterVMDiskLatencyMax"] = mb.metricVcenterVMDiskLatencyMax.config.AggregationStrategy
-			aggMap["VcenterVMDiskThroughput"] = mb.metricVcenterVMDiskThroughput.config.AggregationStrategy
-			aggMap["VcenterVMDiskUsage"] = mb.metricVcenterVMDiskUsage.config.AggregationStrategy
-			aggMap["VcenterVMNetworkBroadcastPacketRate"] = mb.metricVcenterVMNetworkBroadcastPacketRate.config.AggregationStrategy
-			aggMap["VcenterVMNetworkMulticastPacketRate"] = mb.metricVcenterVMNetworkMulticastPacketRate.config.AggregationStrategy
-			aggMap["VcenterVMNetworkPacketDropRate"] = mb.metricVcenterVMNetworkPacketDropRate.config.AggregationStrategy
-			aggMap["VcenterVMNetworkPacketRate"] = mb.metricVcenterVMNetworkPacketRate.config.AggregationStrategy
-			aggMap["VcenterVMNetworkThroughput"] = mb.metricVcenterVMNetworkThroughput.config.AggregationStrategy
-			aggMap["VcenterVMNetworkUsage"] = mb.metricVcenterVMNetworkUsage.config.AggregationStrategy
-			aggMap["VcenterVMVsanLatencyAvg"] = mb.metricVcenterVMVsanLatencyAvg.config.AggregationStrategy
-			aggMap["VcenterVMVsanOperations"] = mb.metricVcenterVMVsanOperations.config.AggregationStrategy
-			aggMap["VcenterVMVsanThroughput"] = mb.metricVcenterVMVsanThroughput.config.AggregationStrategy
+			aggMap["vcenter.cluster.host.count"] = mb.metricVcenterClusterHostCount.config.AggregationStrategy
+			aggMap["vcenter.cluster.vm.count"] = mb.metricVcenterClusterVMCount.config.AggregationStrategy
+			aggMap["vcenter.cluster.vsan.latency.avg"] = mb.metricVcenterClusterVsanLatencyAvg.config.AggregationStrategy
+			aggMap["vcenter.cluster.vsan.operations"] = mb.metricVcenterClusterVsanOperations.config.AggregationStrategy
+			aggMap["vcenter.cluster.vsan.throughput"] = mb.metricVcenterClusterVsanThroughput.config.AggregationStrategy
+			aggMap["vcenter.datacenter.cluster.count"] = mb.metricVcenterDatacenterClusterCount.config.AggregationStrategy
+			aggMap["vcenter.datacenter.disk.space"] = mb.metricVcenterDatacenterDiskSpace.config.AggregationStrategy
+			aggMap["vcenter.datacenter.host.count"] = mb.metricVcenterDatacenterHostCount.config.AggregationStrategy
+			aggMap["vcenter.datacenter.vm.count"] = mb.metricVcenterDatacenterVMCount.config.AggregationStrategy
+			aggMap["vcenter.datastore.disk.usage"] = mb.metricVcenterDatastoreDiskUsage.config.AggregationStrategy
+			aggMap["vcenter.host.cpu.reserved"] = mb.metricVcenterHostCPUReserved.config.AggregationStrategy
+			aggMap["vcenter.host.disk.latency.avg"] = mb.metricVcenterHostDiskLatencyAvg.config.AggregationStrategy
+			aggMap["vcenter.host.disk.latency.max"] = mb.metricVcenterHostDiskLatencyMax.config.AggregationStrategy
+			aggMap["vcenter.host.disk.throughput"] = mb.metricVcenterHostDiskThroughput.config.AggregationStrategy
+			aggMap["vcenter.host.network.packet.drop.rate"] = mb.metricVcenterHostNetworkPacketDropRate.config.AggregationStrategy
+			aggMap["vcenter.host.network.packet.error.rate"] = mb.metricVcenterHostNetworkPacketErrorRate.config.AggregationStrategy
+			aggMap["vcenter.host.network.packet.rate"] = mb.metricVcenterHostNetworkPacketRate.config.AggregationStrategy
+			aggMap["vcenter.host.network.throughput"] = mb.metricVcenterHostNetworkThroughput.config.AggregationStrategy
+			aggMap["vcenter.host.network.usage"] = mb.metricVcenterHostNetworkUsage.config.AggregationStrategy
+			aggMap["vcenter.host.vsan.latency.avg"] = mb.metricVcenterHostVsanLatencyAvg.config.AggregationStrategy
+			aggMap["vcenter.host.vsan.operations"] = mb.metricVcenterHostVsanOperations.config.AggregationStrategy
+			aggMap["vcenter.host.vsan.throughput"] = mb.metricVcenterHostVsanThroughput.config.AggregationStrategy
+			aggMap["vcenter.resource_pool.memory.granted"] = mb.metricVcenterResourcePoolMemoryGranted.config.AggregationStrategy
+			aggMap["vcenter.resource_pool.memory.usage"] = mb.metricVcenterResourcePoolMemoryUsage.config.AggregationStrategy
+			aggMap["vcenter.vm.cpu.time"] = mb.metricVcenterVMCPUTime.config.AggregationStrategy
+			aggMap["vcenter.vm.disk.latency.avg"] = mb.metricVcenterVMDiskLatencyAvg.config.AggregationStrategy
+			aggMap["vcenter.vm.disk.latency.max"] = mb.metricVcenterVMDiskLatencyMax.config.AggregationStrategy
+			aggMap["vcenter.vm.disk.throughput"] = mb.metricVcenterVMDiskThroughput.config.AggregationStrategy
+			aggMap["vcenter.vm.disk.usage"] = mb.metricVcenterVMDiskUsage.config.AggregationStrategy
+			aggMap["vcenter.vm.network.broadcast.packet.rate"] = mb.metricVcenterVMNetworkBroadcastPacketRate.config.AggregationStrategy
+			aggMap["vcenter.vm.network.multicast.packet.rate"] = mb.metricVcenterVMNetworkMulticastPacketRate.config.AggregationStrategy
+			aggMap["vcenter.vm.network.packet.drop.rate"] = mb.metricVcenterVMNetworkPacketDropRate.config.AggregationStrategy
+			aggMap["vcenter.vm.network.packet.rate"] = mb.metricVcenterVMNetworkPacketRate.config.AggregationStrategy
+			aggMap["vcenter.vm.network.throughput"] = mb.metricVcenterVMNetworkThroughput.config.AggregationStrategy
+			aggMap["vcenter.vm.network.usage"] = mb.metricVcenterVMNetworkUsage.config.AggregationStrategy
+			aggMap["vcenter.vm.vsan.latency.avg"] = mb.metricVcenterVMVsanLatencyAvg.config.AggregationStrategy
+			aggMap["vcenter.vm.vsan.operations"] = mb.metricVcenterVMVsanOperations.config.AggregationStrategy
+			aggMap["vcenter.vm.vsan.throughput"] = mb.metricVcenterVMVsanThroughput.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -113,266 +113,300 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterHostCountDataPoint(ts, 3, false)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterHostCountDataPoint(ts+1, 3, false)
+				assert.Equal(t, 2, mb.metricVcenterClusterHostCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVMCountDataPoint(ts, 3, AttributeVMCountPowerStateOff)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterVMCountDataPoint(ts+1, 3, AttributeVMCountPowerStateOff)
+				assert.Equal(t, 2, mb.metricVcenterClusterVMCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVMTemplateCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanCongestionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts+1, 3, AttributeVsanLatencyTypeWrite)
+				assert.Equal(t, 2, mb.metricVcenterClusterVsanLatencyAvg.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterVsanOperationsDataPoint(ts+1, 3, AttributeVsanOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricVcenterClusterVsanOperations.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterVsanThroughputDataPoint(ts+1, 3, AttributeVsanThroughputDirectionWrite)
+				assert.Equal(t, 2, mb.metricVcenterClusterVsanThroughput.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 1, AttributeEntityStatusRed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 3, AttributeEntityStatusYellow)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatacenterClusterCountDataPoint(ts+1, 3, AttributeEntityStatusYellow)
+				assert.Equal(t, 2, mb.metricVcenterDatacenterClusterCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterCPULimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 1, AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 3, AttributeDiskStateUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts+1, 3, AttributeDiskStateUsed)
+				assert.Equal(t, 2, mb.metricVcenterDatacenterDiskSpace.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterHostCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeHostPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterHostCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeHostPowerStateOff)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatacenterHostCountDataPoint(ts+1, 3, AttributeEntityStatusYellow, AttributeHostPowerStateOff)
+				assert.Equal(t, 2, mb.metricVcenterDatacenterHostCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterVMCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeVMCountPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatacenterVMCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeVMCountPowerStateOff)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatacenterVMCountDataPoint(ts+1, 3, AttributeEntityStatusYellow, AttributeVMCountPowerStateOff)
+				assert.Equal(t, 2, mb.metricVcenterDatacenterVMCount.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 3, AttributeDiskStateUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatastoreDiskUsageDataPoint(ts+1, 3, AttributeDiskStateUsed)
+				assert.Equal(t, 2, mb.metricVcenterDatastoreDiskUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUCapacityDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUReservedDataPoint(ts, 1, AttributeCPUReservationTypeTotal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostCPUReservedDataPoint(ts, 3, AttributeCPUReservationTypeUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostCPUReservedDataPoint(ts+1, 3, AttributeCPUReservationTypeUsed)
+				assert.Equal(t, 2, mb.metricVcenterHostCPUReserved.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts+1, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostDiskLatencyAvg.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 3, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts+1, 3, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostDiskLatencyMax.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostDiskThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostDiskThroughputDataPoint(ts+1, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostDiskThroughput.data.Sum().DataPoints().Len())
 			}
+
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryActiveDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryBalloonedDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryCapacityDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryGrantedDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostNetworkPacketDropRate.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostNetworkPacketErrorRate.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostNetworkPacketRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostNetworkPacketRate.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostNetworkThroughputDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostNetworkThroughput.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostNetworkUsageDataPoint(ts, 3, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostNetworkUsageDataPoint(ts+1, 3, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterHostNetworkUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCacheHitRateDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCongestionsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts+1, 3, AttributeVsanLatencyTypeWrite)
+				assert.Equal(t, 2, mb.metricVcenterHostVsanLatencyAvg.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostVsanOperationsDataPoint(ts+1, 3, AttributeVsanOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricVcenterHostVsanOperations.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostVsanThroughputDataPoint(ts+1, 3, AttributeVsanThroughputDirectionWrite)
+				assert.Equal(t, 2, mb.metricVcenterHostVsanThroughput.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 1, AttributeMemoryGrantedTypePrivate)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 3, AttributeMemoryGrantedTypeShared)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts+1, 3, AttributeMemoryGrantedTypeShared)
+				assert.Equal(t, 2, mb.metricVcenterResourcePoolMemoryGranted.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1, AttributeMemoryUsageTypeGuest)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 3, AttributeMemoryUsageTypeHost)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts+1, 3, AttributeMemoryUsageTypeHost)
+				assert.Equal(t, 2, mb.metricVcenterResourcePoolMemoryUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUReadinessDataPoint(ts, 1)
@@ -381,67 +415,70 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterVMCPUTimeDataPoint(ts, 1, AttributeCPUStateIdle, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMCPUTimeDataPoint(ts, 3, AttributeCPUStateReady, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMCPUTimeDataPoint(ts+1, 3, AttributeCPUStateReady, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMCPUTime.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 3, AttributeDiskDirectionWrite, AttributeDiskTypePhysical, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts+1, 3, AttributeDiskDirectionWrite, AttributeDiskTypePhysical, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMDiskLatencyAvg.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 3, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts+1, 3, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMDiskLatencyMax.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMDiskThroughputDataPoint(ts+1, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMDiskThroughput.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMDiskUsageDataPoint(ts, 3, AttributeDiskStateUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMDiskUsageDataPoint(ts+1, 3, AttributeDiskStateUsed)
+				assert.Equal(t, 2, mb.metricVcenterVMDiskUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryGrantedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
@@ -450,61 +487,81 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMNetworkBroadcastPacketRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMNetworkMulticastPacketRate.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMNetworkPacketDropRate.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMNetworkPacketRateDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMNetworkPacketRate.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMNetworkThroughputDataPoint(ts+1, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMNetworkThroughput.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1, "object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMNetworkUsageDataPoint(ts, 3, "object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMNetworkUsageDataPoint(ts+1, 3, "object_name-val-2")
+				assert.Equal(t, 2, mb.metricVcenterVMNetworkUsage.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts+1, 3, AttributeVsanLatencyTypeWrite)
+				assert.Equal(t, 2, mb.metricVcenterVMVsanLatencyAvg.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMVsanOperationsDataPoint(ts+1, 3, AttributeVsanOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricVcenterVMVsanOperations.data.Gauge().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMVsanThroughputDataPoint(ts+1, 3, AttributeVsanThroughputDirectionWrite)
+				assert.Equal(t, 2, mb.metricVcenterVMVsanThroughput.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -631,14 +688,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("effective")
+						hostEffectiveAttrVal, ok := dp.Attributes().Get("effective")
 						assert.True(t, ok)
-						assert.True(t, attrVal.Bool())
+						assert.True(t, hostEffectiveAttrVal.Bool())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.cluster.host.count"], "Found a duplicate in the metrics slice: vcenter.cluster.host.count")
 						validatedMetrics["vcenter.cluster.host.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of hosts in the cluster.", mi.Description())
 						assert.Equal(t, "{hosts}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -703,14 +762,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("power_state")
+						vmCountPowerStateAttrVal, ok := dp.Attributes().Get("power_state")
 						assert.True(t, ok)
-						assert.Equal(t, "on", attrVal.Str())
+						assert.Equal(t, "on", vmCountPowerStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.cluster.vm.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm.count")
 						validatedMetrics["vcenter.cluster.vm.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of virtual machines in the cluster.", mi.Description())
 						assert.Equal(t, "{virtual_machines}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -771,14 +832,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						vsanLatencyTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanLatencyTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.cluster.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.latency.avg")
 						validatedMetrics["vcenter.cluster.vsan.latency.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The overall cluster latency while accessing vSAN storage.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -811,14 +874,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						vsanOperationTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanOperationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.cluster.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.operations")
 						validatedMetrics["vcenter.cluster.vsan.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The vSAN IOPs of a cluster.", mi.Description())
 						assert.Equal(t, "{operations/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -851,14 +916,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						vsanThroughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanThroughputDirectionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.cluster.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.throughput")
 						validatedMetrics["vcenter.cluster.vsan.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The vSAN throughput of a cluster.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -893,14 +960,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status")
+						entityStatusAttrVal, ok := dp.Attributes().Get("status")
 						assert.True(t, ok)
-						assert.Equal(t, "red", attrVal.Str())
+						assert.Equal(t, "red", entityStatusAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.datacenter.cluster.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.cluster.count")
 						validatedMetrics["vcenter.datacenter.cluster.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of clusters in the datacenter.", mi.Description())
 						assert.Equal(t, "{clusters}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -965,14 +1034,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("disk_state")
+						diskStateAttrVal, ok := dp.Attributes().Get("disk_state")
 						assert.True(t, ok)
-						assert.Equal(t, "available", attrVal.Str())
+						assert.Equal(t, "available", diskStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.datacenter.disk.space"], "Found a duplicate in the metrics slice: vcenter.datacenter.disk.space")
 						validatedMetrics["vcenter.datacenter.disk.space"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of available and used disk space in the datacenter.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1009,17 +1080,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status")
+						entityStatusAttrVal, ok := dp.Attributes().Get("status")
 						assert.True(t, ok)
-						assert.Equal(t, "red", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("power_state")
+						assert.Equal(t, "red", entityStatusAttrVal.Str())
+						hostPowerStateAttrVal, ok := dp.Attributes().Get("power_state")
 						assert.True(t, ok)
-						assert.Equal(t, "on", attrVal.Str())
+						assert.Equal(t, "on", hostPowerStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.datacenter.host.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.host.count")
 						validatedMetrics["vcenter.datacenter.host.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of hosts in the datacenter.", mi.Description())
 						assert.Equal(t, "{hosts}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1072,17 +1145,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status")
+						entityStatusAttrVal, ok := dp.Attributes().Get("status")
 						assert.True(t, ok)
-						assert.Equal(t, "red", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("power_state")
+						assert.Equal(t, "red", entityStatusAttrVal.Str())
+						vmCountPowerStateAttrVal, ok := dp.Attributes().Get("power_state")
 						assert.True(t, ok)
-						assert.Equal(t, "on", attrVal.Str())
+						assert.Equal(t, "on", vmCountPowerStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.datacenter.vm.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.vm.count")
 						validatedMetrics["vcenter.datacenter.vm.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of VM's in the datacenter.", mi.Description())
 						assert.Equal(t, "{virtual_machines}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1121,14 +1196,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("disk_state")
+						diskStateAttrVal, ok := dp.Attributes().Get("disk_state")
 						assert.True(t, ok)
-						assert.Equal(t, "available", attrVal.Str())
+						assert.Equal(t, "available", diskStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
 						validatedMetrics["vcenter.datastore.disk.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of space in the datastore.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1191,14 +1268,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cpu_reservation_type")
+						cpuReservationTypeAttrVal, ok := dp.Attributes().Get("cpu_reservation_type")
 						assert.True(t, ok)
-						assert.Equal(t, "total", attrVal.Str())
+						assert.Equal(t, "total", cpuReservationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.cpu.reserved"], "Found a duplicate in the metrics slice: vcenter.host.cpu.reserved")
 						validatedMetrics["vcenter.host.cpu.reserved"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The CPU of the host reserved for use by virtual machines.", mi.Description())
 						assert.Equal(t, "MHz", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1259,17 +1338,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						diskDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
 						validatedMetrics["vcenter.host.disk.latency.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The latency of operations to the host system's disk.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1304,14 +1385,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("object")
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.max")
 						validatedMetrics["vcenter.host.disk.latency.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Highest latency value across all disks used by the host.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1346,17 +1429,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						diskDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.host.disk.throughput")
 						validatedMetrics["vcenter.host.disk.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", mi.Description())
 						assert.Equal(t, "{KiBy/s}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1380,6 +1465,34 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("object")
 						assert.False(t, ok)
 					}
+				case "vcenter.host.memory.active":
+					assert.False(t, validatedMetrics["vcenter.host.memory.active"], "Found a duplicate in the metrics slice: vcenter.host.memory.active")
+					validatedMetrics["vcenter.host.memory.active"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory the host's powered-on VMs are actively using.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.memory.ballooned":
+					assert.False(t, validatedMetrics["vcenter.host.memory.ballooned"], "Found a duplicate in the metrics slice: vcenter.host.memory.ballooned")
+					validatedMetrics["vcenter.host.memory.ballooned"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of guest physical memory reclaimed from the host's VMs via the balloon driver.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.memory.capacity":
 					assert.False(t, validatedMetrics["vcenter.host.memory.capacity"], "Found a duplicate in the metrics slice: vcenter.host.memory.capacity")
 					validatedMetrics["vcenter.host.memory.capacity"] = true
@@ -1394,6 +1507,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "vcenter.host.memory.granted":
+					assert.False(t, validatedMetrics["vcenter.host.memory.granted"], "Found a duplicate in the metrics slice: vcenter.host.memory.granted")
+					validatedMetrics["vcenter.host.memory.granted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of machine memory that is granted to the powered-on VMs on the host.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.memory.usage":
 					assert.False(t, validatedMetrics["vcenter.host.memory.usage"], "Found a duplicate in the metrics slice: vcenter.host.memory.usage")
 					validatedMetrics["vcenter.host.memory.usage"] = true
@@ -1433,17 +1560,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.drop.rate")
 						validatedMetrics["vcenter.host.network.packet.drop.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", mi.Description())
 						assert.Equal(t, "{packets/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1478,17 +1607,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.network.packet.error.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.error.rate")
 						validatedMetrics["vcenter.host.network.packet.error.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", mi.Description())
 						assert.Equal(t, "{errors/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1523,17 +1654,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.rate")
 						validatedMetrics["vcenter.host.network.packet.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", mi.Description())
 						assert.Equal(t, "{packets/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1570,17 +1703,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.network.throughput"], "Found a duplicate in the metrics slice: vcenter.host.network.throughput")
 						validatedMetrics["vcenter.host.network.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", mi.Description())
 						assert.Equal(t, "{KiBy/s}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1619,14 +1754,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("object")
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.network.usage"], "Found a duplicate in the metrics slice: vcenter.host.network.usage")
 						validatedMetrics["vcenter.host.network.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", mi.Description())
 						assert.Equal(t, "{KiBy/s}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1685,14 +1822,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						vsanLatencyTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanLatencyTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.vsan.latency.avg")
 						validatedMetrics["vcenter.host.vsan.latency.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The host latency while accessing vSAN storage.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1725,14 +1864,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						vsanOperationTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanOperationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.host.vsan.operations")
 						validatedMetrics["vcenter.host.vsan.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The vSAN IOPs of a host.", mi.Description())
 						assert.Equal(t, "{operations/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1765,14 +1906,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						vsanThroughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanThroughputDirectionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.host.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.host.vsan.throughput")
 						validatedMetrics["vcenter.host.vsan.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The vSAN throughput of a host.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1849,14 +1992,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						memoryGrantedTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "private", attrVal.Str())
+						assert.Equal(t, "private", memoryGrantedTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.resource_pool.memory.granted"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.granted")
 						validatedMetrics["vcenter.resource_pool.memory.granted"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.", mi.Description())
 						assert.Equal(t, "MiBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1921,14 +2066,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						memoryUsageTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "guest", attrVal.Str())
+						assert.Equal(t, "guest", memoryUsageTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.resource_pool.memory.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.usage")
 						validatedMetrics["vcenter.resource_pool.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The usage of the memory by the resource pool.", mi.Description())
 						assert.Equal(t, "MiBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1975,17 +2122,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu_state")
+						cpuStateAttrVal, ok := dp.Attributes().Get("cpu_state")
 						assert.True(t, ok)
-						assert.Equal(t, "idle", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "idle", cpuStateAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.cpu.time"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.time")
 						validatedMetrics["vcenter.vm.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU time spent in idle, ready or wait state.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2046,20 +2195,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						diskDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("disk_type")
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+						diskTypeAttrVal, ok := dp.Attributes().Get("disk_type")
 						assert.True(t, ok)
-						assert.Equal(t, "virtual", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "virtual", diskTypeAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
 						validatedMetrics["vcenter.vm.disk.latency.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The latency of operations to the virtual machine's disk.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2096,14 +2247,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("object")
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.max")
 						validatedMetrics["vcenter.vm.disk.latency.max"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The highest reported total latency (device and kernel times) over an interval of 20 seconds.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2136,17 +2289,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						diskDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "read", diskDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
 						validatedMetrics["vcenter.vm.disk.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average number of kilobytes read from or written to the virtual disk each second.", mi.Description())
 						assert.Equal(t, "{KiBy/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2183,14 +2338,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("disk_state")
+						diskStateAttrVal, ok := dp.Attributes().Get("disk_state")
 						assert.True(t, ok)
-						assert.Equal(t, "available", attrVal.Str())
+						assert.Equal(t, "available", diskStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.disk.usage"], "Found a duplicate in the metrics slice: vcenter.vm.disk.usage")
 						validatedMetrics["vcenter.vm.disk.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of storage space used by the virtual machine.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2319,17 +2476,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.network.broadcast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.broadcast.packet.rate")
 						validatedMetrics["vcenter.vm.network.broadcast.packet.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
 						assert.Equal(t, "{packets/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2364,17 +2523,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.network.multicast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.multicast.packet.rate")
 						validatedMetrics["vcenter.vm.network.multicast.packet.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
 						assert.Equal(t, "{packets/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2409,17 +2570,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
 						validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
 						assert.Equal(t, "{packets/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2454,17 +2617,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.rate")
 						validatedMetrics["vcenter.vm.network.packet.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
 						assert.Equal(t, "{packets/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2501,17 +2666,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						throughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmitted", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
+						assert.Equal(t, "transmitted", throughputDirectionAttrVal.Str())
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.network.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.network.throughput")
 						validatedMetrics["vcenter.vm.network.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2550,14 +2717,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("object")
+						objectNameAttrVal, ok := dp.Attributes().Get("object")
 						assert.True(t, ok)
-						assert.Equal(t, "object_name-val", attrVal.Str())
+						assert.Equal(t, "object_name-val", objectNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.network.usage"], "Found a duplicate in the metrics slice: vcenter.vm.network.usage")
 						validatedMetrics["vcenter.vm.network.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", mi.Description())
 						assert.Equal(t, "{KiBy/s}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2592,14 +2761,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						vsanLatencyTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanLatencyTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.latency.avg")
 						validatedMetrics["vcenter.vm.vsan.latency.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The virtual machine latency while accessing vSAN storage.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2632,14 +2803,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						vsanOperationTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanOperationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.operations")
 						validatedMetrics["vcenter.vm.vsan.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The vSAN IOPs of a virtual machine.", mi.Description())
 						assert.Equal(t, "{operations/s}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2672,14 +2845,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						vsanThroughputDirectionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", vsanThroughputDirectionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["vcenter.vm.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.throughput")
 						validatedMetrics["vcenter.vm.vsan.throughput"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The vSAN throughput of a virtual machine.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

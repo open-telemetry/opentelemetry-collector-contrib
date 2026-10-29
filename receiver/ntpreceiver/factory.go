@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	scraperConfig.CollectionInterval = 30 * time.Minute
 	return &Config{
 		ControllerConfig:     scraperConfig,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Version:              4,
 		Endpoint:             "pool.ntp.org:123",
 	}
@@ -39,7 +39,8 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, cfg co
 	rCfg := cfg.(*Config)
 	mp := newScraper(rCfg, settings)
 	s, err := scraper.NewMetrics(
-		mp.scrape)
+		mp.scrape,
+	)
 	if err != nil {
 		return nil, err
 	}

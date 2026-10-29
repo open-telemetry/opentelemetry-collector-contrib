@@ -8,40 +8,179 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
+	"net"
+	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	// registers the mysql driver
-	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
+	"go.opentelemetry.io/collector/component"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
 
+// dbProduct identifies the database product (MySQL or MariaDB).
+type dbProduct int
+
+const (
+	dbProductMySQL dbProduct = iota
+	dbProductMariaDB
+)
+
+// minMySQLReplicaStatusVersion is the MySQL version at which SHOW REPLICA STATUS
+// replaced SHOW SLAVE STATUS. Initialized at package load; panics on bad literal.
+var minMySQLReplicaStatusVersion = version.Must(version.NewVersion("8.0.22"))
+
+// minMySQLPerfSchemaLogStatusVersion is the MySQL version at which
+// performance_schema.log_status was introduced.
+var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11"))
+
+// minMySQLGlobalStatusRedoLogVersion is the MySQL version at which the
+// structured InnoDB redo-log status variables were added to SHOW GLOBAL STATUS.
+var minMySQLGlobalStatusRedoLogVersion = version.Must(version.NewVersion("8.0.30"))
+
+type innodbRedoLogStatsSource int
+
+const (
+	innodbRedoLogStatsSourceUnsupported innodbRedoLogStatsSource = iota
+	innodbRedoLogStatsSourceGlobalStatus
+	innodbRedoLogStatsSourceLogStatus
+)
+
+// dbVersion holds the parsed database version and product identity.
+// Capability predicates keep version-specific branching out of callers.
+type dbVersion struct {
+	product dbProduct
+	version *version.Version
+}
+
+// isValid reports whether a version was successfully detected.
+func (v dbVersion) isValid() bool {
+	return v.version != nil
+}
+
+// productString returns a human-readable product name for logging.
+func (v dbVersion) productString() string {
+	if v.product == dbProductMariaDB {
+		return "MariaDB"
+	}
+	return "MySQL"
+}
+
+// systemName returns the db.system.name value following OpenTelemetry semantic
+// conventions, sourced from the semconv package so the values stay tied to the
+// spec. This is distinct from productString, which is intended for
+// human-readable logging.
+func (v dbVersion) systemName() string {
+	if v.product == dbProductMariaDB {
+		return semconv.DBSystemNameMariaDB.Value.AsString()
+	}
+	return semconv.DBSystemNameMySQL.Value.AsString()
+}
+
+// supportsQuerySampleText reports whether the server's
+// performance_schema.events_statements_summary_by_digest table includes the
+// query_sample_text column, introduced in MySQL 8.0.3. Absent on MySQL <8.0.3
+// and all MariaDB versions.
+var minMySQLQuerySampleTextVersion = version.Must(version.NewVersion("8.0.3"))
+
+func (v dbVersion) supportsQuerySampleText() bool {
+	if !v.isValid() {
+		return false
+	}
+	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLQuerySampleTextVersion)
+}
+
+// supportsReplicaStatus reports whether the server uses SHOW REPLICA STATUS
+// (MySQL 8.0.22+). Older MySQL versions and all MariaDB versions use the
+// deprecated SHOW SLAVE STATUS syntax.
+func (v dbVersion) supportsReplicaStatus() bool {
+	if !v.isValid() {
+		return false
+	}
+	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
+}
+
+// supportsProcesslist reports whether performance_schema.processlist is available
+// (MySQL 8.0.22+). This table exposes HOST as "host:port" for TCP/IP connections,
+// enabling population of client.port and network.peer.port on query sample events.
+//
+// The only alternative source that exposes host:port is information_schema.PROCESSLIST,
+// but it is not used: its implementation iterates active threads while holding a global
+// mutex (same as SHOW PROCESSLIST), which has negative performance consequences on busy
+// systems. It was also deprecated in MySQL 8.0, removed in MySQL 9.0, and was already
+// removed from this receiver in a prior change. performance_schema.processlist is
+// lock-free and reads directly from Performance Schema data structures.
+//
+// As a result, client.port and network.peer.port remain 0 on MariaDB (all versions)
+// and MySQL < 8.0.22, where this table is not available.
+func (v dbVersion) supportsProcesslist() bool {
+	if !v.isValid() {
+		return false
+	}
+	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
+}
+
+func (v dbVersion) supportsInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() != innodbRedoLogStatsSourceUnsupported
+}
+
+func (v dbVersion) requiresBackupAdminForInnodbRedoLogStats() bool {
+	return v.innodbRedoLogStatsSource() == innodbRedoLogStatsSourceLogStatus
+}
+
+func (v dbVersion) innodbRedoLogStatsSource() innodbRedoLogStatsSource {
+	if !v.isValid() || v.product != dbProductMySQL {
+		return innodbRedoLogStatsSourceUnsupported
+	}
+	if !v.version.LessThan(minMySQLGlobalStatusRedoLogVersion) {
+		return innodbRedoLogStatsSourceGlobalStatus
+	}
+	if !v.version.LessThan(minMySQLPerfSchemaLogStatusVersion) {
+		return innodbRedoLogStatsSourceLogStatus
+	}
+	return innodbRedoLogStatsSourceUnsupported
+}
+
 type client interface {
 	Connect() error
-	getVersion() (*version.Version, error)
+	checkDBAvailability() error
+	getDBVersion() dbVersion
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getInnodbTransactionStats() (innodbTransactionStats, error)
+	getQueryExecutionTime() (float64, error)
+	getActiveSessionCount() (int64, error)
+	getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error)
 	getTableStats() ([]tableStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
 	getStatementEventsStats() ([]statementEventStats, error)
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
-	getReplicaStatusStats() ([]replicaStatusStats, error)
-	getQuerySamples(uint64) ([]querySample, error)
-	getTopQueries(uint64, uint64) ([]topQuery, error)
-	explainQuery(statement, schema string, logger *zap.Logger) string
+	// supportsReplicaStatus controls whether SHOW REPLICA STATUS or the
+	// deprecated SHOW SLAVE STATUS is used.
+	getReplicaStatusStats(supportsReplicaStatus bool) ([]replicaStatusStats, error)
+	// supportsSampleText controls top-query template selection (MySQL 8+ vs fallback).
+	getTopQueries(topN, lookback uint64, supportsSampleText bool) ([]topQuery, error)
+	// supportsProcesslist controls whether the performance_schema.processlist JOIN
+	// is included to populate client.port and network.peer.port (MySQL 8.0.22+).
+	getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error)
+	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
 
 type mySQLClient struct {
-	connStr                        string
 	client                         *sql.DB
 	statementEventsDigestTextLimit int
 	statementEventsLimit           int
 	statementEventsTimeLimit       time.Duration
+	dbVersion                      dbVersion
 }
 
 type ioWaitsStats struct {
@@ -73,6 +212,18 @@ type tableStats struct {
 	averageRowLength int64
 	dataLength       int64
 	indexLength      int64
+}
+
+type innodbTransactionStats struct {
+	historyListLength            int64
+	activeTransactions           int64
+	maxActiveTransactionDuration int64
+}
+
+type innodbRedoLogStats struct {
+	currentLSN    int64
+	checkpointLSN int64
+	checkpointAge int64
 }
 
 type statementEventStats struct {
@@ -198,17 +349,28 @@ type replicaStatusStats struct {
 }
 
 type querySample struct {
+	sessionID          int64
 	threadID           int64
 	processlistUser    string
 	processlistHost    string
+	clientPort         uint64
 	processlistDB      string
 	processlistCommand string
 	processlistState   string
+	digestText         string
 	sqlText            string
 	digest             string
 	eventID            int64
-	waitEvent          string
+	sessionStatus      string
+	waitType           string
 	waitTime           float64
+	statementTimerWait float64
+	traceparent        string
+	// clientName is the client driver's self-reported identity
+	// (session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL
+	// Connector/J" or "libmysql". Empty if the client reported no connect
+	// attributes.
+	clientName string
 }
 
 type topQuery struct {
@@ -218,63 +380,121 @@ type topQuery struct {
 	countStar                 int64
 	sumTimerWaitInPicoSeconds int64
 	querySampleText           string
+	// sumRowsExamined and sumRowsSent are raw cumulative counters from
+	// events_statements_summary_by_digest, diffed the same way as countStar.
+	sumRowsExamined int64
+	sumRowsSent     int64
 }
 
 var _ client = (*mySQLClient)(nil)
 
+func newMySQLClientFromDB(db *sql.DB, stmtEvents StatementEventsConfig) *mySQLClient {
+	return &mySQLClient{
+		client:                         db,
+		statementEventsDigestTextLimit: stmtEvents.DigestTextLimit,
+		statementEventsLimit:           stmtEvents.Limit,
+		statementEventsTimeLimit:       stmtEvents.TimeLimit,
+	}
+}
+
 func newMySQLClient(conf *Config) (client, error) {
-	tls, err := conf.TLS.LoadTLSConfig(context.Background())
+	f, err := newClientFactory(conf, component.MustNewID("mysql"))
 	if err != nil {
 		return nil, err
 	}
-	tlsConfig := ""
-	if tls != nil {
-		err := mysql.RegisterTLSConfig("custom", tls)
-		if err != nil {
-			return nil, err
-		}
-		tlsConfig = "custom"
-	}
-
-	driverConf := mysql.Config{
-		User:                 conf.Username,
-		Passwd:               string(conf.Password),
-		Net:                  string(conf.Transport),
-		Addr:                 conf.Endpoint,
-		DBName:               conf.Database,
-		AllowNativePasswords: conf.AllowNativePasswords,
-		TLS:                  tls,
-		TLSConfig:            tlsConfig,
-	}
-	connStr := driverConf.FormatDSN()
-
-	return &mySQLClient{
-		connStr:                        connStr,
-		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
-		statementEventsLimit:           conf.StatementEvents.Limit,
-		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}, nil
+	return f.connect(context.Background())
 }
 
 func (c *mySQLClient) Connect() error {
-	clientDB, err := sql.Open("mysql", c.connStr)
-	if err != nil {
-		return fmt.Errorf("unable to connect to database: %w", err)
+	if c.client != nil {
+		c.populateDBVersion()
+		return nil
 	}
-	c.client = clientDB
+	return errors.New("mysql client has no database handle")
+}
+
+func (c *mySQLClient) populateDBVersion() {
+	if dbVer, verErr := c.fetchDBVersion(); verErr == nil {
+		c.dbVersion = dbVer
+	}
+}
+
+func (c *mySQLClient) checkDBAvailability() error {
+	const healthCheckTimeout = 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), healthCheckTimeout)
+	defer cancel()
+
+	var result int
+	if err := c.client.QueryRowContext(ctx, "/* otel-collector-ignore */ SELECT 1 FROM DUAL").Scan(&result); err != nil {
+		return err
+	}
+	if result != 1 {
+		return fmt.Errorf("unexpected database availability query result: %d", result)
+	}
 	return nil
 }
 
-// getVersion queries the db for the version.
-func (c *mySQLClient) getVersion() (*version.Version, error) {
-	query := "SELECT VERSION();"
+// fetchDBVersion queries the database for its version string and parses it
+// into a dbVersion. Called once during Connect. A short context timeout
+// prevents a blackholed or slow endpoint from stalling collector startup.
+func (c *mySQLClient) fetchDBVersion() (dbVersion, error) {
+	const versionDetectTimeout = 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), versionDetectTimeout)
+	defer cancel()
+
 	var versionStr string
-	err := c.client.QueryRow(query).Scan(&versionStr)
-	if err != nil {
-		return nil, err
+	if err := c.client.QueryRowContext(ctx, "SELECT VERSION();").Scan(&versionStr); err != nil {
+		return dbVersion{}, err
 	}
-	version, err := version.NewVersion(versionStr)
-	return version, err
+	return parseDBVersion(versionStr)
+}
+
+// mariaDBVersionRe extracts the leading semver triplet from a MariaDB VERSION()
+// string after the optional MySQL-compat "5.5.5-" prefix has been stripped.
+// Examples handled:
+//   - "10.11.6-MariaDB"                          → "10.11.6"
+//   - "5.5.5-10.11.6-MariaDB"                    → "10.11.6"
+//   - "10.6.14-MariaDB-1:10.6.14+maria~ubu2204"  → "10.6.14"
+//   - "10.11.6-MariaDB-log"                      → "10.11.6"
+var mariaDBVersionRe = regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
+
+// mysqlCompatPrefix is prepended by older MariaDB 10.x builds to fool
+// MySQL clients that require a version >= 5.5.5. Strip it before parsing.
+const mysqlCompatPrefix = "5.5.5-"
+
+// parseDBVersion parses a raw VERSION() string into a dbVersion.
+//
+// MySQL strings (no "MariaDB" substring): the semver is everything before the
+// first "-" (handles suffixes like "-log").
+//
+// MariaDB strings: strip the optional MySQL-compat "5.5.5-" prefix, then
+// extract the leading dotted-decimal triplet via regex.
+func parseDBVersion(versionStr string) (dbVersion, error) {
+	if strings.Contains(versionStr, "MariaDB") {
+		s := strings.TrimPrefix(versionStr, mysqlCompatPrefix)
+		m := mariaDBVersionRe.FindStringSubmatch(s)
+		if m == nil {
+			return dbVersion{}, fmt.Errorf("failed to parse MariaDB version %q: no semver found", versionStr)
+		}
+		v, err := version.NewVersion(m[1])
+		if err != nil {
+			return dbVersion{}, fmt.Errorf("failed to parse MariaDB version %q: %w", versionStr, err)
+		}
+		return dbVersion{product: dbProductMariaDB, version: v}, nil
+	}
+
+	// MySQL: strip any suffix after the first "-"
+	semverStr, _, _ := strings.Cut(versionStr, "-")
+	v, err := version.NewVersion(semverStr)
+	if err != nil {
+		return dbVersion{}, fmt.Errorf("failed to parse db version %q: %w", versionStr, err)
+	}
+	return dbVersion{product: dbProductMySQL, version: v}, nil
+}
+
+// getDBVersion returns the cached database version established during Connect.
+func (c *mySQLClient) getDBVersion() dbVersion {
+	return c.dbVersion
 }
 
 // getGlobalStats queries the db for global status metrics.
@@ -287,6 +507,73 @@ func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
 	return query(*c, q)
+}
+
+// getQueryExecutionTime queries the db for cumulative SQL statement execution time in seconds.
+func (c *mySQLClient) getQueryExecutionTime() (float64, error) {
+	q := "SELECT COALESCE(SUM(SUM_TIMER_WAIT), 0) / 1000000000000.0 " +
+		"FROM performance_schema.events_statements_summary_by_digest"
+
+	var executionTime float64
+	err := c.client.QueryRow(q).Scan(&executionTime)
+	return executionTime, err
+}
+
+// getActiveSessionCount queries the db for the number of active sessions.
+func (c *mySQLClient) getActiveSessionCount() (int64, error) {
+	q := "/* otel-collector-ignore */ SELECT COUNT(*) " +
+		"FROM performance_schema.threads " +
+		"WHERE PROCESSLIST_STATE IS NOT NULL " +
+		"AND TRIM(PROCESSLIST_STATE) != '' " +
+		"AND PROCESSLIST_COMMAND NOT IN ('Sleep', 'Daemon') " +
+		"AND PROCESSLIST_ID != CONNECTION_ID() " +
+		"AND COALESCE(PROCESSLIST_INFO, '') != '' " +
+		"AND COALESCE(PROCESSLIST_INFO, '') NOT LIKE '/* otel-collector-ignore */%'"
+
+	var activeSessionCount int64
+	err := c.client.QueryRow(q).Scan(&activeSessionCount)
+	return activeSessionCount, err
+}
+
+// getInnodbTransactionStats queries the db for InnoDB transaction metrics.
+func (c *mySQLClient) getInnodbTransactionStats() (innodbTransactionStats, error) {
+	q := "SELECT " +
+		"COALESCE((SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len'), 0), " +
+		"COUNT(*), " +
+		"COALESCE(MAX(TIMESTAMPDIFF(SECOND, trx_started, NOW())), 0) " +
+		"FROM information_schema.innodb_trx"
+	var stats innodbTransactionStats
+	err := c.client.QueryRow(q).Scan(
+		&stats.historyListLength,
+		&stats.activeTransactions,
+		&stats.maxActiveTransactionDuration,
+	)
+	return stats, err
+}
+
+// getInnodbRedoLogStatsFromLogStatus queries performance_schema.log_status for
+// InnoDB redo log metrics on MySQL versions before the structured global status
+// variables were introduced.
+func (c *mySQLClient) getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error) {
+	q := "SELECT " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN')) AS SIGNED), " +
+		"CAST(JSON_UNQUOTE(JSON_EXTRACT(STORAGE_ENGINES, '$.InnoDB.LSN_checkpoint')) AS SIGNED) " +
+		"FROM performance_schema.log_status"
+	var currentLSN, checkpointLSN sql.NullInt64
+	if err := c.client.QueryRow(q).Scan(&currentLSN, &checkpointLSN); err != nil {
+		return innodbRedoLogStats{}, err
+	}
+	if !currentLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log current LSN in performance_schema.log_status")
+	}
+	if !checkpointLSN.Valid {
+		return innodbRedoLogStats{}, errors.New("missing InnoDB redo log checkpoint LSN in performance_schema.log_status")
+	}
+	return innodbRedoLogStats{
+		currentLSN:    currentLSN.Int64,
+		checkpointLSN: checkpointLSN.Int64,
+		checkpointAge: currentLSN.Int64 - checkpointLSN.Int64,
+	}, nil
 }
 
 // getTableStats queries the db for information_schema table size metrics.
@@ -313,6 +600,10 @@ func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -342,18 +633,26 @@ func (c *mySQLClient) getTableIoWaitsStats() ([]tableIoWaitsStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
+// indexIoWaitsQuery lists the COUNT_ and SUM_TIMER_ columns in DELETE, FETCH, INSERT, UPDATE order so
+// they line up with the fields scanned in getIndexIoWaitsStats (countDelete, countFetch, countInsert,
+// countUpdate). The two must stay in sync, otherwise the mysql.index.io.wait.* metrics are reported
+// under the wrong operation. This matches the ordering already used by getTableIoWaitsStats.
+const indexIoWaitsQuery = "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
+	"COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE," +
+	"FLOOR(SUM_TIMER_DELETE/1000), FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000) " +
+	"FROM performance_schema.table_io_waits_summary_by_index_usage " +
+	"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
+
 // getIndexIoWaitsStats queries the db for index_io_waits metrics.
 func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
-	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, ifnull(INDEX_NAME, 'NONE') as INDEX_NAME," +
-		"COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE, COUNT_DELETE," +
-		"FLOOR(SUM_TIMER_FETCH/1000), FLOOR(SUM_TIMER_INSERT/1000), FLOOR(SUM_TIMER_UPDATE/1000), FLOOR(SUM_TIMER_DELETE/1000) " +
-		"FROM performance_schema.table_io_waits_summary_by_index_usage " +
-		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');"
-
-	rows, err := c.client.Query(query)
+	rows, err := c.client.Query(indexIoWaitsQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -368,6 +667,10 @@ func (c *mySQLClient) getIndexIoWaitsStats() ([]indexIoWaitsStats, error) {
 			return nil, err
 		}
 		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil
@@ -407,6 +710,10 @@ func (c *mySQLClient) getStatementEventsStats() ([]statementEventStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
@@ -441,20 +748,16 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 		stats = append(stats, s)
 	}
 
-	return stats, nil
-}
-
-func (c *mySQLClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
-	mysqlVersion, err := c.getVersion()
-	if err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
+	return stats, nil
+}
+
+func (c *mySQLClient) getReplicaStatusStats(supportsReplicaStatus bool) ([]replicaStatusStats, error) {
 	query := "SHOW REPLICA STATUS"
-	minMysqlVersion, _ := version.NewVersion("8.0.22")
-	if strings.Contains(mysqlVersion.String(), "MariaDB") {
-		query = "SHOW SLAVE STATUS"
-	} else if mysqlVersion.LessThan(minMysqlVersion) {
+	if !supportsReplicaStatus {
 		query = "SHOW SLAVE STATUS"
 	}
 
@@ -698,21 +1001,40 @@ func (c *mySQLClient) getReplicaStatusStats() ([]replicaStatusStats, error) {
 		stats = append(stats, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return stats, nil
 }
 
 //go:embed templates/topQuery.tmpl
 var topQueryTemplate string
 
-func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64) ([]topQuery, error) {
-	tmpl := template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
+//go:embed templates/topQueryNoSampleText.tmpl
+var topQueryNoSampleTextTemplate string
+
+func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSampleText bool) ([]topQuery, error) {
+	// Select the appropriate template based on version support.
+	// MySQL <8 and all MariaDB versions lack query_sample_text in
+	// events_statements_summary_by_digest, so we use the fallback template,
+	// whose SELECT is a strict prefix of the primary one (see topQueryNoSampleText.tmpl).
+	tmplSrc := topQueryTemplate
+	if !supportsSampleText {
+		tmplSrc = topQueryNoSampleTextTemplate
+	}
+
+	tmpl, tmplErr := template.New("topQuery").Option("missingkey=error").Parse(tmplSrc)
+	if tmplErr != nil {
+		return nil, fmt.Errorf("failed to parse top query template: %w", tmplErr)
+	}
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, map[string]any{
+	if tmplErr = tmpl.Execute(&buf, map[string]any{
 		"topNValue":    topNValue,
 		"lookbackTime": lookbackTime,
-	}); err != nil {
-		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}); tmplErr != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", tmplErr)
 	}
 
 	rows, err := c.client.Query(buf.String())
@@ -722,34 +1044,59 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64) ([]topQuery,
 
 	defer rows.Close()
 
-	var topQueries []topQuery
-	for rows.Next() {
-		var tq topQuery
-		err := rows.Scan(
+	// scanRow is defined once outside the loop to avoid re-evaluating
+	// supportsSampleText on every iteration.
+	scanRow := func(tq *topQuery) error {
+		if supportsSampleText {
+			return rows.Scan(
+				&tq.schemaName,
+				&tq.digest,
+				&tq.digestText,
+				&tq.countStar,
+				&tq.sumTimerWaitInPicoSeconds,
+				&tq.sumRowsExamined,
+				&tq.sumRowsSent,
+				&tq.querySampleText,
+			)
+		}
+		// querySampleText stays "" — sentinel for "no sample available"
+		return rows.Scan(
 			&tq.schemaName,
 			&tq.digest,
 			&tq.digestText,
 			&tq.countStar,
 			&tq.sumTimerWaitInPicoSeconds,
-			&tq.querySampleText,
+			&tq.sumRowsExamined,
+			&tq.sumRowsSent,
 		)
-		if err != nil {
+	}
+
+	var topQueries []topQuery
+	for rows.Next() {
+		var tq topQuery
+		if err := scanRow(&tq); err != nil {
 			return nil, err
 		}
 		topQueries = append(topQueries, tq)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return topQueries, nil
 }
 
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
-func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
+func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit": limit,
+		"limit":               limit,
+		"supportsProcesslist": supportsProcesslist,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
@@ -761,55 +1108,115 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 
 	defer rows.Close()
 
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
 	var samples []querySample
 	for rows.Next() {
 		var s querySample
-		err := rows.Scan(
-			&s.threadID,
-			&s.processlistUser,
-			&s.processlistHost,
-			&s.processlistDB,
-			&s.processlistCommand,
-			&s.processlistState,
-			&s.sqlText,
-			&s.digest,
-			&s.eventID,
-			&s.waitEvent,
-			&s.waitTime,
-		)
-		if err != nil {
+		dest := make([]any, 0, len(cols))
+		for _, col := range cols {
+			switch strings.ToLower(col) {
+			case "session_id":
+				dest = append(dest, &s.sessionID)
+			case "internal_thread_id":
+				dest = append(dest, &s.threadID)
+			case "session_user":
+				dest = append(dest, &s.processlistUser)
+			case "client_address":
+				dest = append(dest, &s.processlistHost)
+			case "client_port":
+				dest = append(dest, &s.clientPort)
+			case "current_database":
+				dest = append(dest, &s.processlistDB)
+			case "session_command":
+				dest = append(dest, &s.processlistCommand)
+			case "session_state":
+				dest = append(dest, &s.processlistState)
+			case "digest_text":
+				dest = append(dest, &s.digestText)
+			case "sql_text":
+				dest = append(dest, &s.sqlText)
+			case "fingerprint":
+				dest = append(dest, &s.digest)
+			case "activity_event_id":
+				dest = append(dest, &s.eventID)
+			case "session_status":
+				dest = append(dest, &s.sessionStatus)
+			case "wait_type":
+				dest = append(dest, &s.waitType)
+			case "wait_time_seconds":
+				dest = append(dest, &s.waitTime)
+			case "statement_timer_wait_seconds":
+				dest = append(dest, &s.statementTimerWait)
+			case "traceparent":
+				dest = append(dest, &s.traceparent)
+			case "client_name":
+				dest = append(dest, &s.clientName)
+			default:
+				return nil, fmt.Errorf("unknown column name %q for query samples", col)
+			}
+		}
+		if err := rows.Scan(dest...); err != nil {
 			return nil, err
+		}
+
+		// pl.HOST from performance_schema.processlist uses "host:port" for IPv4 and
+		// "[::1]:port" for IPv6, both parseable by net.SplitHostPort. When processlist
+		// is not joined (supportsProcesslist=false), processlistHost is a bare hostname
+		// from thread.processlist_host and SplitHostPort will return an error — in that
+		// case we leave processlistHost as-is and clientPort as 0.
+		if host, portStr, splitErr := net.SplitHostPort(s.processlistHost); splitErr == nil {
+			if port, parseErr := strconv.ParseUint(portStr, 10, 64); parseErr == nil {
+				s.processlistHost = host
+				s.clientPort = port
+			}
 		}
 
 		samples = append(samples, s)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return samples, nil
 }
 
-func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger) string {
-	if strings.HasSuffix(statement, "...") {
-		logger.Warn("statement is truncated, skipping explain", zap.String("statement", statement))
+func (c *mySQLClient) explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string {
+	if strings.HasSuffix(sampleStatement, "...") {
+		logger.Debug("statement is truncated, skipping explain", zap.String("digest_text", digestText))
+		return ""
+	}
+	if !isQueryExplainable(digestText) {
+		logger.Debug("statement is not explainable, skipping explain query", zap.String("digest", digest))
 		return ""
 	}
 
-	if !isQueryExplainable(statement) {
-		logger.Debug("statement is not explainable, skipping explain query", zap.String("statement", statement))
+	ctx := context.Background()
+	conn, err := c.client.Conn(ctx)
+	if err != nil {
+		logger.Warn("unable to acquire connection for explain", zap.String("digest", digest), zap.Error(err))
 		return ""
 	}
+	defer conn.Close()
 
 	if schema != "" {
-		if _, err := c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
-			logger.Error(fmt.Sprintf("unable to use schema: %s", schema), zap.Error(err))
+		if _, err = conn.ExecContext(ctx, fmt.Sprintf("/* otel-collector-ignore */ USE `%s`;", strings.ReplaceAll(schema, "`", "``"))); err != nil {
+			logger.Warn(fmt.Sprintf("unable to use schema: %s", schema), zap.String("digest", digest), zap.Error(err))
 			return ""
 		}
 	}
 
 	var plan string
-	err := c.client.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
-	if err != nil {
-		logger.Error("unable to execute explain statement", zap.Error(err))
+	if err = conn.QueryRowContext(ctx, "EXPLAIN FORMAT=json "+strings.TrimSpace(sampleStatement)).Scan(&plan); err != nil {
+		logger.Warn("unable to execute explain statement", zap.String("digest", digest), zap.Error(err))
 		return ""
+	}
+	if plan == "" {
+		logger.Warn("explain query returned empty plan", zap.String("digest", digest))
 	}
 	return plan
 }
@@ -826,7 +1233,7 @@ func isQueryExplainable(query string) bool {
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
-	lowerQuery := strings.ToLower(trimmedQuery)
+	lowerQuery := strings.ToLower(stripLeadingSQLComments(trimmedQuery))
 
 	for _, keyword := range sqlStartingKeywords {
 		if strings.HasPrefix(lowerQuery, keyword) {
@@ -834,6 +1241,30 @@ func isQueryExplainable(query string) bool {
 		}
 	}
 	return false
+}
+
+// stripLeadingSQLComments removes leading block (/* ... */)
+// and line comments (-- ... and # ...) from a query.
+func stripLeadingSQLComments(query string) string {
+	for {
+		switch {
+		case strings.HasPrefix(query, "/*"):
+			end := strings.Index(query, "*/")
+			if end == -1 {
+				return query
+			}
+			query = strings.TrimSpace(query[end+2:])
+		case strings.HasPrefix(query, "--"), strings.HasPrefix(query, "#"):
+			end := strings.Index(query, "\n")
+			if end == -1 {
+				// remaining text is a comment
+				return ""
+			}
+			query = strings.TrimSpace(query[end+1:])
+		default:
+			return query
+		}
+	}
 }
 
 func query(c mySQLClient, query string) (map[string]string, error) {
@@ -849,6 +1280,10 @@ func query(c mySQLClient, query string) (map[string]string, error) {
 			return nil, err
 		}
 		stats[key] = val
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return stats, nil

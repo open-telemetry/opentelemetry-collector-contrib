@@ -42,6 +42,31 @@ type teststep struct {
 }
 
 func TestHealthCheckExtensionUsage(t *testing.T) {
+	serverConfigWithoutCheckCollectorPipeline := confighttp.NewDefaultServerConfig()
+	serverConfigWithoutCheckCollectorPipeline.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfigWithCustomizedPath := confighttp.NewDefaultServerConfig()
+	serverConfigWithCustomizedPath.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfigWithBothCustomResponseBody := confighttp.NewDefaultServerConfig()
+	serverConfigWithBothCustomResponseBody.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfigWithHealthyCustomResponseBody := confighttp.NewDefaultServerConfig()
+	serverConfigWithHealthyCustomResponseBody.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
+	serverConfigWithUnhealthyCustomResponseBody := confighttp.NewDefaultServerConfig()
+	serverConfigWithUnhealthyCustomResponseBody.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
 	tests := []struct {
 		name      string
 		config    *Config
@@ -52,13 +77,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 			config: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  testutil.GetAvailableLocalAddress(t),
-							},
-						},
-						Path: "/",
+						ServerConfig: serverConfigWithoutCheckCollectorPipeline,
+						Path:         "/",
 						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 							Enabled:                  false,
 							Interval:                 "5m",
@@ -89,13 +109,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 			config: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  testutil.GetAvailableLocalAddress(t),
-							},
-						},
-						Path: "/health",
+						ServerConfig: serverConfigWithCustomizedPath,
+						Path:         "/health",
 						CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 							Enabled:                  false,
 							Interval:                 "5m",
@@ -123,13 +138,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 			config: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  testutil.GetAvailableLocalAddress(t),
-							},
-						},
-						Path: "/",
+						ServerConfig: serverConfigWithBothCustomResponseBody,
+						Path:         "/",
 						ResponseBody: &healthcheck.ResponseBodyConfig{
 							Healthy:   "ALL OK",
 							Unhealthy: "NOT OK",
@@ -164,13 +174,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 			config: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  testutil.GetAvailableLocalAddress(t),
-							},
-						},
-						Path: "/",
+						ServerConfig: serverConfigWithHealthyCustomResponseBody,
+						Path:         "/",
 						ResponseBody: &healthcheck.ResponseBodyConfig{
 							Healthy: "ALL OK",
 						},
@@ -204,13 +209,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 			config: &Config{
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
-						ServerConfig: confighttp.ServerConfig{
-							NetAddr: confignet.AddrConfig{
-								Transport: "tcp",
-								Endpoint:  testutil.GetAvailableLocalAddress(t),
-							},
-						},
-						Path: "/",
+						ServerConfig: serverConfigWithUnhealthyCustomResponseBody,
+						Path:         "/",
 						ResponseBody: &healthcheck.ResponseBodyConfig{
 							Unhealthy: "NOT OK",
 						},
@@ -243,25 +243,22 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use context.Background() instead of t.Context() because createExtension starts
-			// a background goroutine that needs to stay alive for the duration of the test.
-			// t.Context() may be cancelled immediately causing the goroutine to exit prematurely.
-			//nolint:usetesting
-			hcExt, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), tt.config)
+			hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), tt.config)
 			require.NoError(t, err)
 			require.NotNil(t, hcExt)
 
-			//nolint:usetesting
-			require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
-			//nolint:usetesting
-			t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
+			require.NoError(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				// cleanup functions run after test context is cancelled
+				require.NoError(t, hcExt.Shutdown(context.WithoutCancel(t.Context())))
+			})
 
 			// Give a chance for the server goroutine to run.
 			runtime.Gosched()
-			require.Eventuallyf(t, ensureServerRunning(tt.config.NetAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
+			require.Eventuallyf(t, ensureServerRunning(tt.config.Config.ServerConfig.NetAddr.Endpoint), 30*time.Second, 1*time.Second, "Failed to start the testing server.")
 
 			client := &http.Client{}
-			url := "http://" + tt.config.NetAddr.Endpoint + tt.config.Path
+			url := "http://" + tt.config.Config.ServerConfig.NetAddr.Endpoint + tt.config.Config.Path
 
 			// Cast to PipelineWatcher for step functions
 			pw, ok := hcExt.(extensioncapabilities.PipelineWatcher)
@@ -290,16 +287,16 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 }
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  testutil.GetAvailableLocalAddress(t),
+	}
 	config := &Config{
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  testutil.GetAvailableLocalAddress(t),
-					},
-				},
-				Path: "/",
+				ServerConfig: serverConfig,
+				Path:         "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 					Enabled:                  false,
 					Interval:                 "5m",
@@ -309,14 +306,9 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 		},
 	}
 
-	// Use context.Background() instead of t.Context() because createExtension starts
-	// a background goroutine that needs to stay alive for the duration of the test.
-	// t.Context() may be cancelled immediately causing the goroutine to exit prematurely.
-	//nolint:usetesting
-	hcExt, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), config)
+	hcExt, err := createExtension(t.Context(), extensiontest.NewNopSettings(extensiontest.NopType), config)
 	require.NoError(t, err)
 	require.NotNil(t, hcExt)
 
-	//nolint:usetesting
-	require.NoError(t, hcExt.Shutdown(context.Background()))
+	require.NoError(t, hcExt.Shutdown(t.Context()))
 }

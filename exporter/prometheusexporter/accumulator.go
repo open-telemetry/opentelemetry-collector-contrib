@@ -62,6 +62,9 @@ type accumulator interface {
 	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
 	// The number or metrics and attributes returned will be the same.
 	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopeNames, scopeVersions, scopeSchemaURLs []string, scopeAttributes []pcommon.Map)
+	// cleanupExpired removes registered metrics whose last update exceeds the
+	// configured expiration, independently of Collect.
+	cleanupExpired()
 }
 
 // LastValueAccumulator keeps last value for accumulated metrics
@@ -133,7 +136,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeNam
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature)
@@ -162,7 +165,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature)
@@ -212,7 +215,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature)
@@ -264,7 +267,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
@@ -332,7 +335,7 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
@@ -423,6 +426,22 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 	})
 
 	return metrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
+}
+
+// cleanupExpired removes registered metrics that have exceeded the expiration
+// time. This is the same expiration logic that Collect() performs inline, but
+// can be called independently so that stale time series are evicted even when
+// no Prometheus scrape is active.
+func (a *lastValueAccumulator) cleanupExpired() {
+	expirationTime := time.Now().Add(-a.metricExpiration)
+	a.registeredMetrics.Range(func(key, value any) bool {
+		v := value.(*accumulatedValue)
+		if expirationTime.After(v.updated) {
+			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))
+			a.registeredMetrics.Delete(key)
+		}
+		return true
+	})
 }
 
 func timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, metric pmetric.Metric, attributes, resourceAttrs pcommon.Map) string {
@@ -669,16 +688,13 @@ func downscaleBucketSide(offset int32, counts []uint64, fromScale, targetScale i
 	newOffset := floorDivInt32(first, factor)
 	newLast := floorDivInt32(last, factor)
 	newLen := int(newLast - newOffset + 1)
+	out := make([]uint64, newLen)
 	for i := range counts {
 		k := offset + int32(i)
 		nk := floorDivInt32(k, factor)
-		if k%factor == 0 {
-			counts[nk-newOffset] = counts[i]
-		} else {
-			counts[nk-newOffset] += counts[i]
-		}
+		out[nk-newOffset] += counts[i]
 	}
-	return newOffset, counts[:newLen]
+	return newOffset, out
 }
 
 func mergeBuckets(offsetA int32, countsA []uint64, offsetB int32, countsB []uint64) (int32, []uint64) {

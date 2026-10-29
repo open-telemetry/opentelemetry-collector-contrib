@@ -22,9 +22,9 @@ The number of cache operations of the instance.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The result of a cache request. | Str: ``hit``, ``miss`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The result of a cache request. | Str: ``hit``, ``miss`` | Recommended | - |
 
 ### mongodb.collection.count
 
@@ -36,9 +36,9 @@ The number of collections.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.connection.count
 
@@ -50,10 +50,10 @@ The number of connections.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The status of the connection. | Str: ``active``, ``available``, ``current`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The status of the connection. | Str: ``active``, ``available``, ``current`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.cursor.count
 
@@ -81,9 +81,9 @@ The size of the collection. Data compression does not affect this value.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.database.count
 
@@ -103,10 +103,10 @@ The number of document operations executed.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.extent.count
 
@@ -118,9 +118,9 @@ The number of extents.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.global_lock.time
 
@@ -140,10 +140,10 @@ The number of times an index has been accessed.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| collection | The name of a collection. | Any Str | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| collection | The name of a collection. | Any Str | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.index.count
 
@@ -155,9 +155,9 @@ The number of indexes.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.index.size
 
@@ -169,9 +169,9 @@ Sum of the space allocated to all indexes in the database, including free index 
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.memory.usage
 
@@ -183,10 +183,10 @@ The amount of memory used.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of memory used. | Str: ``resident``, ``virtual`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of memory used. | Str: ``resident``, ``virtual`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.network.io.receive
 
@@ -222,9 +222,9 @@ The number of objects.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.operation.count
 
@@ -236,9 +236,9 @@ The number of operations executed.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
 
 ### mongodb.operation.time
 
@@ -250,9 +250,9 @@ The total time spent performing operations.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
 
 ### mongodb.session.count
 
@@ -274,9 +274,9 @@ If collection data is compressed it reflects the compressed size.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ## Optional Metrics
 
@@ -303,6 +303,20 @@ The number of write operations currently being processed.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {writes} | Sum | Int | Cumulative | false | Development |
+
+### mongodb.assert.count
+
+The number of assertions raised since the server process started.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {assert} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.assert.type | The type of assertion raised by the server. | Str: ``msg``, ``regular``, ``user``, ``warning``, ``tripwire`` | Recommended | - |
 
 ### mongodb.commands.rate
 
@@ -336,6 +350,20 @@ The number of getmores executed per second.
 | ---- | ----------- | ---------- | --------- |
 | {getmore}/s | Gauge | Double | Development |
 
+### mongodb.global_lock.queue.count
+
+The number of operations queued waiting for the global lock.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.global_lock.queue.type | The type of operation waiting for the global lock. | Str: ``read``, ``write`` | Recommended | - |
+
 ### mongodb.health
 
 The health status of the server.
@@ -364,11 +392,11 @@ Number of times the lock was acquired in the specified mode.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended | - |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.lock.acquire.time
 
@@ -376,15 +404,15 @@ Cumulative wait time for the lock acquisitions.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| microseconds | Sum | Int | Cumulative | true | Development |
+| us | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended | - |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.lock.acquire.wait_count
 
@@ -396,11 +424,11 @@ Number of times the lock acquisitions encountered waits because the locks were h
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended | - |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
 ### mongodb.lock.deadlock.count
 
@@ -412,25 +440,39 @@ Number of times the lock acquisitions encountered deadlocks.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended |
-| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended |
-| db.namespace | The name of a database. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` | Recommended | - |
+| lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` | Recommended | - |
+| db.namespace | The name of a database. | Any Str | Recommended | - |
 
-### mongodb.operation.latency.time
+### mongodb.operation.latency.count
 
-The latency of operations.
+The number of operations included in the operation latency statistics.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| us | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Recommended | - |
+
+### mongodb.operation.latency.time
+
+Cumulative latency of operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| us | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` | Recommended | - |
 
 ### mongodb.operation.repl.count
 
@@ -442,9 +484,33 @@ The number of replicated operations executed.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` | Recommended | - |
+
+### mongodb.oplog.limit
+
+The maximum amount of storage the oplog is allowed to use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.usage
+
+The amount of storage the oplog is using.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+### mongodb.oplog.window
+
+The time span between the oldest and the newest entry retained in the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ### mongodb.page_faults
 
@@ -461,6 +527,38 @@ The number of queries executed per second.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {query}/s | Gauge | Double | Development |
+
+### mongodb.query_executor.collection_scan.count
+
+The number of queries that performed a collection scan.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {query} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.collection_scan.non_tailable.count
+
+The number of queries that performed a collection scan without a tailable cursor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {query} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.document.scanned.count
+
+The number of documents scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {document} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.query_executor.index_key.scanned.count
+
+The number of index keys scanned by the query executor.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {index_key} | Sum | Int | Cumulative | true | Development |
 
 ### mongodb.repl_commands_per_sec
 
@@ -510,6 +608,65 @@ The number of replicated updates executed per second.
 | ---- | ----------- | ---------- | --------- |
 | {update}/s | Gauge | Double | Development |
 
+### mongodb.replica.status
+
+The current state of the scraped replica.
+
+A timeseries is produced for every possible state. The value is 1 for the state the instance is currently in, and 0 for all others.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.state | The state of a replica within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
+### mongodb.replica_set.headroom
+
+The time margin a replica set member has before it falls off the end of the oplog.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.name | The name of the replica, in host:port form. | Any Str | Recommended | - |
+
+### mongodb.replica_set.lag
+
+The time a replica set member is behind the primary.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.name | The name of the replica, in host:port form. | Any Str | Recommended | - |
+| mongodb.replica_set.lag.type | The replication progress that the lag is measured against. | Str: ``applied``, ``durable`` | Recommended | - |
+
+### mongodb.replica_set.member.count
+
+The number of members in the replica set.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {member} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.replica.state | The state of a replica within the replica set. | Str: ``startup``, ``primary``, ``secondary``, ``recovering``, ``startup2``, ``unknown``, ``arbiter``, ``down``, ``rollback``, ``removed`` | Recommended | - |
+
 ### mongodb.updates.rate
 
 The number of updates executed per second.
@@ -526,6 +683,71 @@ The amount of time that the server has been running.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Int | Cumulative | true | Development |
 
+### mongodb.write_concern.wait.time
+
+The cumulative time spent waiting for write concern acknowledgement.
+
+Increments for write operations that specify a write concern greater than w:1, which includes
+the w:"majority" default applied to replica sets since MongoDB 5.0. Accumulates under an
+ordinary replica set workload and stays at zero on a standalone deployment and for writes that
+specify w:1.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.concurrent_transaction.ticket.in_use
+
+The number of in-flight WiredTiger read/write concurrent-transaction tickets.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {ticket} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.concurrent_transaction.ticket.type | The WiredTiger concurrent-transaction ticket type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mongodb.wt.fsync.count
+
+The total number of fsync I/Os issued by the WiredTiger storage engine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {fsync} | Sum | Int | Cumulative | true | Development |
+
+### mongodb.wt.log.operation.count
+
+The total number of WiredTiger journal operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| mongodb.wt.log.operation.type | The WiredTiger journal operation type. | Str: ``write``, ``sync``, ``flush`` | Recommended | - |
+
+### mongodb.wt.log.sync.time
+
+The cumulative time spent syncing the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### mongodb.wt.log.write
+
+The total number of bytes written to the WiredTiger journal.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | true | Development |
+
 ### mongodb.wtcache.bytes.read
 
 The number of bytes read into the WiredTiger cache.
@@ -534,10 +756,103 @@ The number of bytes read into the WiredTiger cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.query_sample
+
+query sample
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| client.address | Hostname or address of the client. | Any Str | - |
+| client.port | TCP port used by the client. | Any Int | - |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
+| db.namespace | The name of a database. | Any Str | - |
+| db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed (e.g. find, aggregate, insert). | Any Str | - |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| mongodb.query.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
+| user.name | Name of the user associated with the operation. | Any Str | - |
+| mongodb.client.app.name | The identifier of the client application which ran the operation, as set by the driver's `appName` connection option. | Any Str | - |
+| mongodb.cursor.await_data | Whether the tailable cursor waits for new data instead of returning immediately. | Any Bool | - |
+| mongodb.cursor.id | The identifier of the cursor. | Any Str | - |
+| mongodb.cursor.no_timeout | Whether the cursor is configured not to time out when idle. | Any Bool | - |
+| mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
+| mongodb.cursor.returned_batches | The cumulative number of batches returned by the cursor. | Any Int | - |
+| mongodb.cursor.returned_documents | The cumulative number of documents returned by the cursor. | Any Int | - |
+| mongodb.cursor.tailable | Whether the cursor is a tailable cursor. | Any Bool | - |
+| mongodb.lsid.id | The UUID portion of the logical session identifier associated with the MongoDB operation. | Any Str | - |
+| mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
+| mongodb.operation.plan.summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
+| mongodb.query.framework | The MongoDB query execution engine that processed this operation. Only present for operations that flow through the query subsystem (reads, read-modify-writes, and getMore continuations); absent for pure inserts, index management, and administrative commands. Known values include `classic` and `sbe`.
+ | Any Str | - |
+| mongodb.operation.state | Simplified state of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
+| mongodb.operation.type | The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.operation.comment | The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON. | Any Slice | - |
+| mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+| mongodb.operation.prepared_read_conflict.count | The number of times the MongoDB operation had to wait for a prepared transaction with a write to commit or abort. | Any Int | - |
+| mongodb.operation.write_conflict.count | The number of times the MongoDB operation conflicted with another write operation on the same document. | Any Int | - |
+| mongodb.operation.yield.count | The number of times the MongoDB operation yielded to allow other operations to complete. | Any Int | - |
+| mongodb.operation.wait.type | The set of wait conditions the MongoDB operation is currently blocked on. Possible values: `lock` (from `waitingForLock`), `flow_control` (from `waitingForFlowControl`), and `latch` (when `waitingForLatch` is a non-empty document). An empty slice indicates the operation is not waiting on any of these conditions.
+ | Any Slice | - |
+| mongodb.operation.wait.details | Details about what the MongoDB operation is waiting on. | Any Str | - |
+
+### db.server.top_query
+
+Emits one event per slow query execution. The top N slowest executions per scrape window are emitted.
+Note: when database profiling is disabled, the receiver falls back to MongoDB's diagnostic log (`getLog`), a fixed-size ring buffer (~1024 entries) that may rotate slow-query entries out before the next scrape on busy servers; enable the profiler for reliable capture.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.collection.name | The MongoDB collection being accessed within the database stated in db.namespace. | Any Str | - |
+| db.namespace | The name of a database. | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed (e.g. find, aggregate, insert). | Any Str | - |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
+| mongodb.cursor.id | The identifier of the cursor. | Any Str | - |
+| mongodb.cursor.originating_command | The obfuscated command that originally created the cursor. | Any Str | - |
+| mongodb.explain_plan.hash | FNV-64a hash of the obfuscated explain plan structure, identifying the execution plan shape. | Any Str | - |
+| mongodb.explain_plan.text | The obfuscated query explain plan, if collection is enabled. | Any Str | - |
+| mongodb.operation.comment | The comments attached to the MongoDB command. String comments are reported as-is; array comments are expanded into multiple entries; non-string values are reported as MongoDB Extended JSON. | Any Slice | - |
+| mongodb.operation.cpu.time | CPU time in seconds for this query execution. | Any Double | - |
+| mongodb.operation.docs_examined | Number of documents examined by this query execution. | Any Int | - |
+| mongodb.operation.docs_returned | Number of documents returned by this query execution. | Any Int | - |
+| mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+| mongodb.operation.keys_examined | Number of index keys examined by this query execution. | Any Int | - |
+| mongodb.operation.plan.summary | Summary of the execution plan for the MongoDB operation. | Any Str | - |
+| mongodb.operation.response_length | Response length in bytes for this query execution. | Any Int | - |
+| mongodb.operation.type | The raw MongoDB operation type from `$currentOp.op` (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.query.truncated | Whether the value carried by db.query.text is a truncated rendering of the MongoDB command, as indicated by `$truncated` in the currentOp output. | Any Bool | - |
+
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| server.address | The address of the MongoDB host. | Any Str | true |
-| server.port | The port of the MongoDB host. | Any Int | false |
-| service.instance.id | A unique identifier of the MongoDB resource as a UUID v5, derived from server address and port. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| db.system.version | The database version of the instance. Examples include "5.0.0", "6.0.4". | Any Str | false | - | - |
+| server.address | The address of the monitored MongoDB instance. A loopback address (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. | Any Str | true | - | - |
+| server.port | The port of the monitored MongoDB instance, defaulting to 27017 when the instance does not report one. | Any Int | true | - | - |
+| service.instance.id | A unique identifier of the MongoDB instance as a UUID v5, derived from the address and port using the OTel namespace. The address is resolved the same way as server.address. | Any Str | true | - | - |
+| service.name | Logical name of the service. When enabled, defaults to unknown_service:mongodb. | Any Str | false | - | - |
+| service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

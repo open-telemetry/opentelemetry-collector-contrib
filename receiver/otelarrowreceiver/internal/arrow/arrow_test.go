@@ -368,6 +368,10 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 }
 
 func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
+	ctc.startWithSignal(signalTraces, newConsumer, bq, opts...)
+}
+
+func (ctc *commonTestCase) startWithSignal(sig signalType, newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
 	var authServer extensionauth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
@@ -396,12 +400,8 @@ func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq 
 	)
 	require.NoError(ctc.T, err)
 	go func() {
-		ctc.streamErr <- rcvr.ArrowTraces(ctc.stream)
+		ctc.streamErr <- rcvr.anyStream(ctc.stream, sig)
 	}()
-}
-
-func requireCanceledStatus(t *testing.T, err error) {
-	requireStatus(t, codes.Canceled, err)
 }
 
 func requireCanceledOrCleanStatus(t *testing.T, err error) {
@@ -474,11 +474,18 @@ func TestBoundedQueueLimits(t *testing.T) {
 			// There is an end-to-end test of admission control, including the
 			// ResourceExhausted status code we expect, in
 			// internal/otelarrow/test/e2e_test.go.
+			sendDone := make(chan struct{})
 			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
 				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(sizer.TracesSize(td)-100), 0)
+				close(sendDone)
 			} else {
-				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+					func(_ *arrowpb.BatchStatus) error {
+						close(sendDone)
+						return nil
+					},
+				)
 				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(tt.admitLimit), 0)
 			}
 			require.NoError(t, err)
@@ -496,6 +503,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 				}, []json.Marshaler{
 					compareJSONTraces{actualTD},
 				})
+				<-sendDone
 				requireCanceledOrCleanStatus(t, ctc.cancelAndWait())
 			}
 		})
@@ -511,7 +519,16 @@ func TestReceiverTraces(t *testing.T) {
 	batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	// Use a channel to synchronize: ensure Send completes before we
+	// cancel the context, avoiding a race where cancellation arrives
+	// before the receiver goroutine calls Send.
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+		func(_ *arrowpb.BatchStatus) error {
+			close(sendDone)
+			return nil
+		},
+	)
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
@@ -522,8 +539,9 @@ func TestReceiverTraces(t *testing.T) {
 		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
 	})
 
+	<-sendDone
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func TestReceiverLogs(t *testing.T) {
@@ -534,13 +552,20 @@ func TestReceiverLogs(t *testing.T) {
 	batch, err := ctc.testProducer.BatchArrowRecordsFromLogs(ld)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+		func(_ *arrowpb.BatchStatus) error {
+			close(sendDone)
+			return nil
+		},
+	)
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalLogs, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
 
+	<-sendDone
 	err = ctc.cancelAndWait()
 	requireCanceledOrCleanStatus(t, err)
 }
@@ -554,9 +579,15 @@ func TestReceiverMetrics(t *testing.T) {
 	batch, err := ctc.testProducer.BatchArrowRecordsFromMetrics(md)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+		func(_ *arrowpb.BatchStatus) error {
+			close(sendDone)
+			return nil
+		},
+	)
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalMetrics, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	otelAssert.Equiv(stdTesting, []json.Marshaler{
@@ -565,8 +596,9 @@ func TestReceiverMetrics(t *testing.T) {
 		compareJSONMetrics{(<-ctc.consume).Data.(pmetric.Metrics)},
 	})
 
+	<-sendDone
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func TestReceiverRecvError(t *testing.T) {
@@ -591,7 +623,7 @@ func TestReceiverSendError(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(status.Errorf(codes.Unavailable, "test send error"))
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalLogs, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
@@ -638,7 +670,7 @@ func TestReceiverTimeoutError(t *testing.T) {
 	batch.Headers = make([]byte, hpb.Len())
 	copy(batch.Headers, hpb.Bytes())
 
-	ctc.start(ctc.newRealConsumer, defaultBQ())
+	ctc.startWithSignal(signalLogs, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
@@ -659,19 +691,23 @@ func TestReceiverTimeoutError(t *testing.T) {
 func TestReceiverConsumeError(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
-	data := []any{
-		testdata.GenerateTraces(2),
-		testdata.GenerateMetrics(2),
-		testdata.GenerateLogs(2),
+	type testItem struct {
+		data any
+		sig  signalType
+	}
+	items := []testItem{
+		{data: testdata.GenerateTraces(2), sig: signalTraces},
+		{data: testdata.GenerateMetrics(2), sig: signalMetrics},
+		{data: testdata.GenerateLogs(2), sig: signalLogs},
 	}
 
-	for _, item := range data {
+	for _, item := range items {
 		tc := newUnhealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
 		var err error
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			batch, err = ctc.testProducer.BatchArrowRecordsFromTraces(input)
 		case plog.Logs:
@@ -685,13 +721,19 @@ func TestReceiverConsumeError(t *testing.T) {
 
 		batch = copyBatch(batch)
 
-		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).Return(nil)
+		sendDone := make(chan struct{})
+		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).DoAndReturn(
+			func(_ *arrowpb.BatchStatus) error {
+				close(sendDone)
+				return nil
+			},
+		)
 
-		ctc.start(ctc.newRealConsumer, defaultBQ())
+		ctc.startWithSignal(item.sig, ctc.newRealConsumer, defaultBQ())
 
 		ctc.putBatch(batch, nil)
 
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			otelAssert.Equiv(stdTesting, []json.Marshaler{
 				compareJSONTraces{input},
@@ -712,25 +754,30 @@ func TestReceiverConsumeError(t *testing.T) {
 			})
 		}
 
+		<-sendDone
 		err = ctc.cancelAndWait()
 		requireCanceledOrCleanStatus(t, err)
 	}
 }
 
 func TestReceiverInvalidData(t *testing.T) {
-	data := []any{
-		testdata.GenerateTraces(2),
-		testdata.GenerateMetrics(2),
-		testdata.GenerateLogs(2),
+	type testItem struct {
+		data any
+		sig  signalType
+	}
+	items := []testItem{
+		{data: testdata.GenerateTraces(2), sig: signalTraces},
+		{data: testdata.GenerateMetrics(2), sig: signalMetrics},
+		{data: testdata.GenerateLogs(2), sig: signalLogs},
 	}
 
-	for _, item := range data {
+	for _, item := range items {
 		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
 		var err error
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			batch, err = ctc.testProducer.BatchArrowRecordsFromTraces(input)
 		case plog.Logs:
@@ -745,7 +792,7 @@ func TestReceiverInvalidData(t *testing.T) {
 		batch = copyBatch(batch)
 
 		// newErrorConsumer determines the internal error in decoding above
-		ctc.start(ctc.newErrorConsumer, defaultBQ())
+		ctc.startWithSignal(item.sig, ctc.newErrorConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
 		err = ctc.wait()
@@ -754,19 +801,23 @@ func TestReceiverInvalidData(t *testing.T) {
 }
 
 func TestReceiverMemoryLimit(t *testing.T) {
-	data := []any{
-		testdata.GenerateTraces(2),
-		testdata.GenerateMetrics(2),
-		testdata.GenerateLogs(2),
+	type testItem struct {
+		data any
+		sig  signalType
+	}
+	items := []testItem{
+		{data: testdata.GenerateTraces(2), sig: signalTraces},
+		{data: testdata.GenerateMetrics(2), sig: signalMetrics},
+		{data: testdata.GenerateLogs(2), sig: signalLogs},
 	}
 
-	for _, item := range data {
+	for _, item := range items {
 		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
 		var err error
-		switch input := item.(type) {
+		switch input := item.data.(type) {
 		case ptrace.Traces:
 			batch, err = ctc.testProducer.BatchArrowRecordsFromTraces(input)
 		case plog.Logs:
@@ -782,12 +833,61 @@ func TestReceiverMemoryLimit(t *testing.T) {
 
 		// The Recv() returns an error, there are no Send() calls.
 
-		ctc.start(ctc.newOOMConsumer, defaultBQ())
+		ctc.startWithSignal(item.sig, ctc.newOOMConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
 		err = ctc.wait()
 		requireExhaustedStatus(t, err)
 	}
+}
+
+// TestReceiverPayloadPositionIndependent verifies that the receiver
+// correctly processes data based on the gRPC service method rather than
+// the ArrowPayload.Type field at position 0.
+//
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46878
+func TestReceiverPayloadPositionIndependent(t *testing.T) {
+	stdTesting := otelAssert.NewStdUnitTest(t)
+	tc := newHealthyTestChannel(t)
+	ctc := newCommonTestCase(t, tc)
+
+	td := testdata.GenerateTraces(2)
+	batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
+	require.NoError(t, err)
+
+	batch = copyBatch(batch)
+
+	// Reverse the payload order so that the root payload type (SPANS)
+	// is no longer at position 0.
+	payloads := batch.ArrowPayloads
+	require.Greater(t, len(payloads), 1, "need multiple payloads to test reordering")
+	for i, j := 0, len(payloads)-1; i < j; i, j = i+1, j-1 {
+		payloads[i], payloads[j] = payloads[j], payloads[i]
+	}
+
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(func(_ *arrowpb.BatchStatus) error {
+		close(sendDone)
+		return nil
+	})
+
+	ctc.startWithSignal(signalTraces, ctc.newRealConsumer, defaultBQ())
+	ctc.putBatch(batch, nil)
+
+	otelAssert.Equiv(stdTesting, []json.Marshaler{
+		compareJSONTraces{td},
+	}, []json.Marshaler{
+		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
+	})
+
+	<-sendDone
+
+	// Like other cancel-driven shutdown tests in this file, the
+	// recv goroutine may observe EOF before the Canceled status
+	// surfaces (especially on Windows runners), so accept either a
+	// Canceled status or a clean shutdown. See issue #46000.
+	err = ctc.cancelAndWait()
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func copyBatch(in *arrowpb.BatchArrowRecords) *arrowpb.BatchArrowRecords {
@@ -898,8 +998,9 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 		var hpb bytes.Buffer
 		hpe := hpack.NewEncoder(&hpb)
 
-		for _, md := range expectData {
+		for i, md := range expectData {
 			td := testdata.GenerateTraces(2)
+			td.ResourceSpans().At(0).Resource().Attributes().PutInt("test.batch", int64(i))
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 			assert.NoError(t, err)
@@ -932,8 +1033,21 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 		assert.NoError(t, ctc.wait())
 	})
 
-	for _, expect := range expectData {
-		info := client.FromContext((<-ctc.consume).Ctx)
+	seen := make([]bool, len(expectData))
+	for range expectData {
+		result := <-ctc.consume
+		traces := result.Data.(ptrace.Traces)
+
+		id, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get("test.batch")
+		require.True(t, ok)
+		idx := int(id.Int())
+		require.GreaterOrEqual(t, idx, 0)
+		require.Less(t, idx, len(expectData))
+		require.False(t, seen[idx])
+		seen[idx] = true
+
+		expect := maps.Clone(expectData[idx])
+		info := client.FromContext(result.Ctx)
 
 		// The static stream context contains one extra variable.
 		if expect == nil {
@@ -1275,8 +1389,9 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 		var hpb bytes.Buffer
 		hpe := hpack.NewEncoder(&hpb)
 
-		for _, md := range expectData {
+		for i, md := range expectData {
 			td := testdata.GenerateTraces(2)
+			td.ResourceSpans().At(0).Resource().Attributes().PutInt("test.batch", int64(i))
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 			assert.NoError(t, err)
@@ -1304,6 +1419,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 	}()
 
 	var expectCodes []arrowpb.StatusCode
+	var expectedHeaders []map[string][]string
 
 	for _, testInput := range expectData {
 		// The static stream context contains one extra variable.
@@ -1326,14 +1442,30 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 		}
 
 		expectCodes = append(expectCodes, expectCode)
+		expectedHeaders = append(expectedHeaders, cpy)
+	}
 
-		if expectCode != arrowpb.StatusCode_OK {
+	seen := make([]bool, len(expectData))
+	for _, code := range expectCodes {
+		if code != arrowpb.StatusCode_OK {
 			continue
 		}
 
-		info := client.FromContext((<-ctc.consume).Ctx)
+		result := <-ctc.consume
+		traces := result.Data.(ptrace.Traces)
 
-		for key, vals := range cpy {
+		id, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get("test.batch")
+		require.True(t, ok)
+		idx := int(id.Int())
+		require.GreaterOrEqual(t, idx, 0)
+		require.Less(t, idx, len(expectData))
+		require.False(t, seen[idx])
+		require.Equal(t, arrowpb.StatusCode_OK, expectCodes[idx])
+		seen[idx] = true
+
+		info := client.FromContext(result.Ctx)
+
+		for key, vals := range expectedHeaders[idx] {
 			if includeMeta {
 				require.Equal(t, vals, info.Metadata.Get(key))
 			} else {
@@ -1399,10 +1531,12 @@ func TestHeaderReceiverIsTraced(t *testing.T) {
 		require.Equal(
 			t,
 			trace.TraceID{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff},
-			spanCtx.TraceID())
+			spanCtx.TraceID(),
+		)
 		require.Equal(
 			t,
 			trace.SpanID{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77},
-			spanCtx.SpanID())
+			spanCtx.SpanID(),
+		)
 	}
 }

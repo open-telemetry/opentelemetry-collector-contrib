@@ -1,4 +1,0 @@
-change_type: 'deprecation'
-component: extension/aws_logs_encoding
-note: Introduce new snake case compliant name `aws_logs_encoding`
-issues: [46776]

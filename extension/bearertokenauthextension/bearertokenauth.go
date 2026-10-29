@@ -4,22 +4,25 @@
 package bearertokenauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/subtle"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 
-	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 var _ credentials.PerRPCCredentials = (*perRPCAuth)(nil)
@@ -52,114 +55,125 @@ type bearerTokenAuth struct {
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
 
-	shutdownCH chan struct{}
+	tokenResolver credentialsfile.ValueResolver
+	logger        *zap.Logger
 
-	filename string
-	logger   *zap.Logger
+	// waitForTokenFile makes Start block until the token file is read
+	// successfully (respecting the retry budget) instead of retrying in the
+	// background. See Config.WaitForTokenFile.
+	waitForTokenFile bool
+
+	// startOnce guards Start so the resolver is started at most once.
+	startOnce sync.Once
+	// startWG tracks the background resolver Start goroutine. Shutdown waits on
+	// it so it does not race the resolver's own start-up.
+	startWG sync.WaitGroup
 }
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
-	if cfg.Filename != "" && (cfg.BearerToken != "" || len(cfg.Tokens) > 0) {
-		logger.Warn("a filename is specified. Configured token(s) is ignored!")
-	}
 	a := &bearerTokenAuth{
-		header:   cfg.Header,
-		scheme:   cfg.Scheme,
-		filename: cfg.Filename,
-		logger:   logger,
+		header:           cfg.Header,
+		scheme:           cfg.Scheme,
+		logger:           logger,
+		waitForTokenFile: cfg.WaitForTokenFile,
 	}
+
+	var inlineToken string
 	switch {
 	case len(cfg.Tokens) > 0:
 		tokens := make([]string, len(cfg.Tokens))
 		for i, token := range cfg.Tokens {
 			tokens[i] = string(token)
 		}
-		a.setAuthorizationValues(tokens) // Store tokens
+		a.setAuthorizationValues(tokens)
+		return a
 	case cfg.BearerToken != "":
-		a.setAuthorizationValues([]string{string(cfg.BearerToken)}) // Store token
-	case cfg.Filename != "":
-		a.refreshToken() // Load tokens from file
+		inlineToken = string(cfg.BearerToken)
 	}
+
+	if cfg.Filename != "" && (cfg.BearerToken != "" || len(cfg.Tokens) > 0) {
+		logger.Warn("a filename is specified. Configured token(s) is ignored!")
+	}
+
+	// Create token resolver for single token (inline or file)
+	if cfg.Filename != "" || inlineToken != "" {
+		resolver, err := credentialsfile.NewValueResolver(
+			inlineToken,
+			cfg.Filename,
+			logger,
+			credentialsfile.WithOnChange(func(_ string) {
+				if cfg.Filename != "" {
+					logger.Info("refresh token", zap.String("filename", cfg.Filename))
+				}
+				a.updateAuthorizationValues()
+			}),
+			credentialsfile.WithRetry(cfg.RetryOnFailure),
+		)
+		if err != nil {
+			logger.Error("failed to create token resolver", zap.Error(err))
+			return a
+		}
+		a.tokenResolver = resolver
+		// Initialize token values
+		a.updateAuthorizationValues()
+	}
+
 	return a
 }
 
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
-	if b.filename == "" {
+//
+// When WaitForTokenFile is enabled, Start blocks until the token file is read
+// successfully (respecting the retry budget) and returns an error if it cannot
+// be read, so collector startup fails. Otherwise the resolver is started in the
+// background and read failures are reported asynchronously as a component
+// status event.
+func (b *bearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+	if b.tokenResolver == nil {
 		return nil
 	}
 
-	if b.shutdownCH != nil {
-		return errors.New("bearerToken file monitoring is already running")
-	}
-
-	// Read file once
-	b.refreshToken()
-
-	b.shutdownCH = make(chan struct{})
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
-	// start file watcher
-	go b.startWatcher(ctx, watcher)
-
-	// Watch the parent directory instead of the file directly to handle atomic replacements
-	// This eliminates race conditions with fsnotify when files are atomically replaced
-	watchDir := filepath.Dir(b.filename)
-	return watcher.Add(watchDir)
-}
-
-func (b *bearerTokenAuth) startWatcher(ctx context.Context, watcher *fsnotify.Watcher) {
-	defer watcher.Close()
-	for {
-		select {
-		case _, ok := <-b.shutdownCH:
-			_ = ok
+	var startErr error
+	b.startOnce.Do(func() {
+		if b.waitForTokenFile {
+			// Block until the token file is read or the retry budget is exhausted.
+			startErr = b.tokenResolver.Start(ctx)
 			return
-		case <-ctx.Done():
-			return
-		case event, ok := <-watcher.Events:
-			if !ok {
-				continue
-			}
-
-			// Only process events for our target file by filtering events
-			// Since we're watching the parent directory, we get events for all files in it
-			if event.Name != b.filename {
-				continue
-			}
-
-			// Handle file events for our target file
-			// Since we're watching the directory, we don't need to manage watch add/remove
-			// The directory watch persists even when files are atomically replaced
-			if event.Op&fsnotify.Write == fsnotify.Write ||
-				event.Op&fsnotify.Create == fsnotify.Create ||
-				event.Op&fsnotify.Remove == fsnotify.Remove ||
-				event.Op&fsnotify.Chmod == fsnotify.Chmod {
-				b.refreshToken()
-			}
 		}
-	}
+		b.startWG.Go(func() {
+			if err := b.tokenResolver.Start(ctx); err != nil {
+				b.logger.Error("failed to start token resolver", zap.Error(err))
+				componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
+			}
+		})
+	})
+
+	return startErr
 }
 
-// Reloads token from file
-func (b *bearerTokenAuth) refreshToken() {
-	b.logger.Info("refresh token", zap.String("filename", b.filename))
-	tokenData, err := os.ReadFile(b.filename)
-	if err != nil {
-		b.logger.Error(err.Error())
+func (b *bearerTokenAuth) updateAuthorizationValues() {
+	if b.tokenResolver == nil {
 		return
 	}
 
-	tokens := strings.Split(string(tokenData), "\n")
-	for i, token := range tokens {
-		tokens[i] = strings.TrimSpace(token)
+	tokenData := b.tokenResolver.Value()
+	var validTokens []string
+	scanner := bufio.NewScanner(bytes.NewReader([]byte(tokenData)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Split by whitespace (spaces, tabs, etc.)
+		// strings.Fields handles leading/trailing whitespace and multiple spaces automatically.
+		parts := strings.Fields(line)
+
+		// If the line has at least one part, the first part is the token.
+		// Everything else is treated as a comment/ignored.
+		if len(parts) > 0 {
+			validTokens = append(validTokens, parts[0])
+		}
 	}
-	b.setAuthorizationValues(tokens) // Stores new tokens
+	b.setAuthorizationValues(validTokens)
 }
 
 func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {
@@ -192,16 +206,12 @@ func (b *bearerTokenAuth) authorizationValue() string {
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *bearerTokenAuth) Shutdown(_ context.Context) error {
-	if b.filename == "" {
-		return nil
+	// Wait for the background Start goroutine to finish so we don't race the
+	// resolver's own start-up when tearing it down.
+	b.startWG.Wait()
+	if b.tokenResolver != nil {
+		return b.tokenResolver.Shutdown()
 	}
-
-	if b.shutdownCH == nil {
-		return errors.New("bearerToken file monitoring is not running")
-	}
-	b.shutdownCH <- struct{}{}
-	close(b.shutdownCH)
-	b.shutdownCH = nil
 	return nil
 }
 
@@ -241,7 +251,7 @@ func (b *bearerTokenAuth) Authenticate(ctx context.Context, headers map[string][
 			return ctx, nil // Authentication successful, token is valid
 		}
 	}
-	return ctx, fmt.Errorf("scheme or token does not match: %s", token) // Token is invalid
+	return ctx, errors.New("provided authorization does not match expected scheme or token") // Token is invalid
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.

@@ -24,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = "https://opensearch.example.com:9200"
+		cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
@@ -37,7 +37,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = "https://opensearch.example.com:9200"
+		cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
 	})
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
@@ -45,6 +45,34 @@ func TestFactory_CreateLogs(t *testing.T) {
 	require.NotNil(t, exporter)
 
 	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestFactory_CreateMetrics(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
+	})
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestFactory_CreateMetrics_UnsupportedMode(t *testing.T) {
+	factory := NewFactory()
+	params := exportertest.NewNopSettings(metadata.Type)
+
+	for _, mode := range []string{"ecs", "flatten_attributes", "bodymap"} {
+		cfg := withDefaultConfig(func(cfg *Config) {
+			cfg.ClientConfig.Endpoint = "https://opensearch.example.com:9200"
+			cfg.MappingsSettings.Mode = mode
+		})
+		exporter, err := factory.CreateMetrics(t.Context(), params, cfg)
+		require.ErrorIs(t, err, errMetricsMappingModeUnsupported, "mode %q", mode)
+		require.Nil(t, exporter)
+	}
 }
 
 func TestCreateLogsExporter_WithDynamicIndex(t *testing.T) {

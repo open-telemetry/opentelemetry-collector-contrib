@@ -1,3 +1,40 @@
+$defs:
+  metric_config:
+    type: object
+    properties:
+      attribute_columns:
+        type: array
+        items:
+          type: string
+      description:
+        type: string
+      metric_name:
+        type: string
+      static_attributes:
+        type: object
+        additionalProperties:
+          type: string
+      unit:
+        type: string
+      value_column:
+        type: string
+      value_type:
+        type: string
+  search_config:
+    type: object
+    properties:
+      earliest:
+        type: string
+      latest:
+        type: string
+      metrics:
+        type: array
+        items:
+          $ref: metric_config
+      spl:
+        type: string
+      target:
+        type: string
 type: object
 properties:
   build_version_info:
@@ -8,6 +45,10 @@ properties:
     $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   search_head:
     $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  searches:
+    type: array
+    items:
+      $ref: search_config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: ./internal/metadata.metrics_builder_config

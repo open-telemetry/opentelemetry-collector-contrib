@@ -12,13 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,29 +38,40 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
-			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "1.2.3.4:1234",
+			expected: func() component.Config {
+				serverConfig := confighttp.NewDefaultServerConfig()
+				serverConfig.NetAddr.Endpoint = "1.2.3.4:1234"
+				serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
+					Config: configtls.Config{
+						CertFile: "certs/server.crt",
+						KeyFile:  "certs/server.key",
+						CAFile:   "certs/ca.crt",
 					},
-					TLS: configoptional.Some(configtls.ServerConfig{
-						Config: configtls.Config{
-							CertFile: "certs/server.crt",
-							KeyFile:  "certs/server.key",
-							CAFile:   "certs/ca.crt",
-						},
-					}),
-				},
-				Namespace: "test-space",
-				ConstLabels: map[string]string{
-					"label1":        "value1",
-					"another label": "spaced value",
-				},
-				SendTimestamps:    true,
-				MetricExpiration:  60 * time.Minute,
-				AddMetricSuffixes: false,
-			},
+				})
+
+				return &Config{
+					ServerConfig: serverConfig,
+					Namespace:    "test-space",
+					ConstLabels: map[string]string{
+						"label1":        "value1",
+						"another label": "spaced value",
+					},
+					SendTimestamps:    true,
+					MetricExpiration:  60 * time.Minute,
+					AddMetricSuffixes: false,
+					QueueBatchConfig:  createDefaultConfig().(*Config).QueueBatchConfig,
+				}
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "3"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+					Included: []string{"service.name", "k8s.pod.name"},
+				}
+				return cfg
+			}(),
 		},
 	}
 
@@ -72,8 +84,27 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{Included: []string{"foo"}}
+	assert.NoError(t, cfg.Validate())
+
+	invalidCfg := createDefaultConfig().(*Config)
+	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
+	assert.Error(t, invalidCfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	assert.Error(t, cfg.Validate())
+
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
+	assert.NoError(t, cfg.Validate())
 }

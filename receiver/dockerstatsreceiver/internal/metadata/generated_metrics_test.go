@@ -67,23 +67,25 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["ContainerBlockioIoMergedRecursive"] = mb.metricContainerBlockioIoMergedRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioIoQueuedRecursive"] = mb.metricContainerBlockioIoQueuedRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioIoServiceBytesRecursive"] = mb.metricContainerBlockioIoServiceBytesRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioIoServiceTimeRecursive"] = mb.metricContainerBlockioIoServiceTimeRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioIoServicedRecursive"] = mb.metricContainerBlockioIoServicedRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioIoTimeRecursive"] = mb.metricContainerBlockioIoTimeRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioIoWaitTimeRecursive"] = mb.metricContainerBlockioIoWaitTimeRecursive.config.AggregationStrategy
-			aggMap["ContainerBlockioSectorsRecursive"] = mb.metricContainerBlockioSectorsRecursive.config.AggregationStrategy
-			aggMap["ContainerCPUUsagePercpu"] = mb.metricContainerCPUUsagePercpu.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageRxBytes"] = mb.metricContainerNetworkIoUsageRxBytes.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageRxDropped"] = mb.metricContainerNetworkIoUsageRxDropped.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageRxErrors"] = mb.metricContainerNetworkIoUsageRxErrors.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageRxPackets"] = mb.metricContainerNetworkIoUsageRxPackets.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageTxBytes"] = mb.metricContainerNetworkIoUsageTxBytes.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageTxDropped"] = mb.metricContainerNetworkIoUsageTxDropped.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageTxErrors"] = mb.metricContainerNetworkIoUsageTxErrors.config.AggregationStrategy
-			aggMap["ContainerNetworkIoUsageTxPackets"] = mb.metricContainerNetworkIoUsageTxPackets.config.AggregationStrategy
+			aggMap["container.blockio.io_merged_recursive"] = mb.metricContainerBlockioIoMergedRecursive.config.AggregationStrategy
+			aggMap["container.blockio.io_queued_recursive"] = mb.metricContainerBlockioIoQueuedRecursive.config.AggregationStrategy
+			aggMap["container.blockio.io_service_bytes_recursive"] = mb.metricContainerBlockioIoServiceBytesRecursive.config.AggregationStrategy
+			aggMap["container.blockio.io_service_time_recursive"] = mb.metricContainerBlockioIoServiceTimeRecursive.config.AggregationStrategy
+			aggMap["container.blockio.io_serviced_recursive"] = mb.metricContainerBlockioIoServicedRecursive.config.AggregationStrategy
+			aggMap["container.blockio.io_time_recursive"] = mb.metricContainerBlockioIoTimeRecursive.config.AggregationStrategy
+			aggMap["container.blockio.io_wait_time_recursive"] = mb.metricContainerBlockioIoWaitTimeRecursive.config.AggregationStrategy
+			aggMap["container.blockio.sectors_recursive"] = mb.metricContainerBlockioSectorsRecursive.config.AggregationStrategy
+			aggMap["container.cpu.usage.percpu"] = mb.metricContainerCPUUsagePercpu.config.AggregationStrategy
+			aggMap["container.network.io.usage.rx_bytes"] = mb.metricContainerNetworkIoUsageRxBytes.config.AggregationStrategy
+			aggMap["container.network.io.usage.rx_dropped"] = mb.metricContainerNetworkIoUsageRxDropped.config.AggregationStrategy
+			aggMap["container.network.io.usage.rx_errors"] = mb.metricContainerNetworkIoUsageRxErrors.config.AggregationStrategy
+			aggMap["container.network.io.usage.rx_packets"] = mb.metricContainerNetworkIoUsageRxPackets.config.AggregationStrategy
+			aggMap["container.network.io.usage.tx_bytes"] = mb.metricContainerNetworkIoUsageTxBytes.config.AggregationStrategy
+			aggMap["container.network.io.usage.tx_dropped"] = mb.metricContainerNetworkIoUsageTxDropped.config.AggregationStrategy
+			aggMap["container.network.io.usage.tx_errors"] = mb.metricContainerNetworkIoUsageTxErrors.config.AggregationStrategy
+			aggMap["container.network.io.usage.tx_packets"] = mb.metricContainerNetworkIoUsageTxPackets.config.AggregationStrategy
+			aggMap["container.state.health.status"] = mb.metricContainerStateHealthStatus.config.AggregationStrategy
+			aggMap["container.state.status"] = mb.metricContainerStateStatus.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -97,49 +99,72 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoMergedRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoQueuedRecursive.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoServiceBytesRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoServiceTimeRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoServicedRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoTimeRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioIoWaitTimeRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts+1, 3, "device_major-val-2", "device_minor-val-2", "operation-val-2")
+				assert.Equal(t, 2, mb.metricContainerBlockioSectorsRecursive.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -159,7 +184,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
@@ -168,19 +192,19 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "core-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerCPUUsagePercpuDataPoint(ts, 3, "core-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerCPUUsagePercpuDataPoint(ts+1, 3, "core-val-2")
+				assert.Equal(t, 2, mb.metricContainerCPUUsagePercpu.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
@@ -202,7 +226,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryFailsDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryFileDataPoint(ts, 1)
@@ -221,7 +244,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryPercentDataPoint(ts, 1)
@@ -249,7 +271,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
@@ -292,71 +313,89 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageRxBytes.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageRxDropped.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageRxErrors.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageRxPackets.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageTxBytes.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageTxDropped.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageTxErrors.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "interface-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 3, "interface-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts+1, 3, "interface-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIoUsageTxPackets.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -367,6 +406,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerRestartsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerStateHealthStatusDataPoint(ts, 1, AttributeContainerStateHealthStateStarting)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerStateHealthStatusDataPoint(ts, 3, AttributeContainerStateHealthStateHealthy)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerStateHealthStatusDataPoint(ts+1, 3, AttributeContainerStateHealthStateHealthy)
+				assert.Equal(t, 2, mb.metricContainerStateHealthStatus.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordContainerStateStatusDataPoint(ts, 1, AttributeContainerStateStatusCreated)
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerStateStatusDataPoint(ts, 3, AttributeContainerStateStatusRunning)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerStateStatusDataPoint(ts+1, 3, AttributeContainerStateStatusRunning)
+				assert.Equal(t, 2, mb.metricContainerStateStatus.data.Sum().DataPoints().Len())
+			}
 
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
@@ -399,6 +456,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxDropped.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxErrors.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageTxPackets.aggDataPoints)
+				assert.Empty(t, mb.metricContainerStateHealthStatus.aggDataPoints)
+				assert.Empty(t, mb.metricContainerStateStatus.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -441,20 +500,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_merged_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_merged_recursive")
 						validatedMetrics["container.blockio.io_merged_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -495,20 +556,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_queued_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_queued_recursive")
 						validatedMetrics["container.blockio.io_queued_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -549,20 +612,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_service_bytes_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_service_bytes_recursive")
 						validatedMetrics["container.blockio.io_service_bytes_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of bytes transferred to/from the disk by the group and descendant groups.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -603,20 +668,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_service_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_service_time_recursive")
 						validatedMetrics["container.blockio.io_service_time_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -657,20 +724,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_serviced_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_serviced_recursive")
 						validatedMetrics["container.blockio.io_serviced_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -711,20 +780,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_time_recursive")
 						validatedMetrics["container.blockio.io_time_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -765,20 +836,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.io_wait_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_wait_time_recursive")
 						validatedMetrics["container.blockio.io_wait_time_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -819,20 +892,22 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device_major")
+						deviceMajorAttrVal, ok := dp.Attributes().Get("device_major")
 						assert.True(t, ok)
-						assert.Equal(t, "device_major-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("device_minor")
+						assert.Equal(t, "device_major-val", deviceMajorAttrVal.Str())
+						deviceMinorAttrVal, ok := dp.Attributes().Get("device_minor")
 						assert.True(t, ok)
-						assert.Equal(t, "device_minor-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("operation")
+						assert.Equal(t, "device_minor-val", deviceMinorAttrVal.Str())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "operation-val", attrVal.Str())
+						assert.Equal(t, "operation-val", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.blockio.sectors_recursive"], "Found a duplicate in the metrics slice: container.blockio.sectors_recursive")
 						validatedMetrics["container.blockio.sectors_recursive"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "{sectors}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -965,14 +1040,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("core")
+						coreAttrVal, ok := dp.Attributes().Get("core")
 						assert.True(t, ok)
-						assert.Equal(t, "core-val", attrVal.Str())
+						assert.Equal(t, "core-val", coreAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.cpu.usage.percpu"], "Found a duplicate in the metrics slice: container.cpu.usage.percpu")
 						validatedMetrics["container.cpu.usage.percpu"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Per-core CPU usage by the container (Only available with cgroups v1).", mi.Description())
 						assert.Equal(t, "ns", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1607,14 +1684,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.rx_bytes"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_bytes")
 						validatedMetrics["container.network.io.usage.rx_bytes"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Bytes received by the container.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1651,14 +1730,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.rx_dropped"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_dropped")
 						validatedMetrics["container.network.io.usage.rx_dropped"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Incoming packets dropped.", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1695,14 +1776,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.rx_errors"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_errors")
 						validatedMetrics["container.network.io.usage.rx_errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Received errors. Not supported on Windows.", mi.Description())
 						assert.Equal(t, "{errors}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1739,14 +1822,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.rx_packets"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_packets")
 						validatedMetrics["container.network.io.usage.rx_packets"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Packets received.", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1783,14 +1868,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.tx_bytes"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_bytes")
 						validatedMetrics["container.network.io.usage.tx_bytes"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Bytes sent.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1827,14 +1914,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.tx_dropped"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_dropped")
 						validatedMetrics["container.network.io.usage.tx_dropped"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Outgoing packets dropped.", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1871,14 +1960,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.tx_errors"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_errors")
 						validatedMetrics["container.network.io.usage.tx_errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Sent errors. Not supported on Windows.", mi.Description())
 						assert.Equal(t, "{errors}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1915,14 +2006,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.network.io.usage.tx_packets"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_packets")
 						validatedMetrics["container.network.io.usage.tx_packets"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Packets sent.", mi.Description())
 						assert.Equal(t, "{packets}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1986,6 +2079,98 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.state.health.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.state.health.status"], "Found a duplicate in the metrics slice: container.state.health.status")
+						validatedMetrics["container.state.health.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.", mi.Description())
+						assert.Equal(t, "{container}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						containerStateHealthStateAttrVal, ok := dp.Attributes().Get("container.state.health.state")
+						assert.True(t, ok)
+						assert.Equal(t, "starting", containerStateHealthStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.state.health.status"], "Found a duplicate in the metrics slice: container.state.health.status")
+						validatedMetrics["container.state.health.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The number of containers that are currently in a given health state. All possible container health states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current health state will be non-zero.", mi.Description())
+						assert.Equal(t, "{container}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["container.state.health.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("container.state.health.state")
+						assert.False(t, ok)
+					}
+				case "container.state.status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.state.status"], "Found a duplicate in the metrics slice: container.state.status")
+						validatedMetrics["container.state.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", mi.Description())
+						assert.Equal(t, "{status}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						containerStateStatusAttrVal, ok := dp.Attributes().Get("container.state.status")
+						assert.True(t, ok)
+						assert.Equal(t, "created", containerStateStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.state.status"], "Found a duplicate in the metrics slice: container.state.status")
+						validatedMetrics["container.state.status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead", mi.Description())
+						assert.Equal(t, "{status}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["container.state.status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("container.state.status")
+						assert.False(t, ok)
+					}
 				case "container.uptime":
 					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
 					validatedMetrics["container.uptime"] = true

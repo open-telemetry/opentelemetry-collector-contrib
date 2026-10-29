@@ -10,11 +10,17 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 //go:embed testdata/schema.yaml
@@ -36,9 +42,15 @@ func TestRequestTranslation(t *testing.T) {
 
 	schemaURL := fmt.Sprintf("%s/1.1.0", s.URL)
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
+		5*time.Minute, 5,
+		telemetryBuilder,
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
@@ -66,6 +78,136 @@ func TestRequestTranslation(t *testing.T) {
 	}
 }
 
+// TestRequestTranslationUpgrade verifies that the upgrade path fetches the target schema
+// URL (not the incoming signal's URL). Real OTel schema files only contain history up to
+// their own version, so an incoming 1.0.0 schema file has no knowledge of changes made
+// in 1.1.0–1.9.0. The processor must fetch the target schema file to get the full history.
+func TestRequestTranslationUpgrade(t *testing.T) {
+	t.Parallel()
+
+	// fullSchema contains history for 1.0.0–1.9.0, including a rename in 1.8.0.
+	// stubSchema simulates what a real 1.0.0 schema file looks like: it only knows
+	// about itself and has no forward history.
+	fullSchema := LoadTranslationVersion(t, TranslationVersion190)
+	stubSchema := `file_format: 1.0.0
+schema_url: https://example.com/1.0.0
+versions:
+  1.0.0:
+`
+
+	// URL-aware server: serve the full schema only at the target URL.
+	// All other URLs (simulating older signal schema files) return the stub.
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var content string
+		if strings.HasSuffix(r.URL.Path, TranslationVersion190) {
+			content = fullSchema
+		} else {
+			content = stubSchema
+		}
+		_, err := w.Write([]byte(content))
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(s.Close)
+
+	targetURL := fmt.Sprintf("%s/%s", s.URL, TranslationVersion190)
+	signalURL := fmt.Sprintf("%s/1.0.0", s.URL)
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	m, err := NewManager(
+		[]string{targetURL},
+		zaptest.NewLogger(t),
+		5*time.Minute, 5,
+		telemetryBuilder,
+		nil,
+		NewHTTPProvider(s.Client()),
+	)
+	require.NoError(t, err)
+
+	tr, err := m.RequestTranslation(t.Context(), signalURL)
+	require.NoError(t, err, "Must not error on upgrade path")
+	require.NotNil(t, tr)
+
+	// The translator must know about 1.0.0 (loaded from the target schema file).
+	assert.True(t, tr.SupportedVersion(&Version{1, 0, 0}), "Must support the incoming signal version")
+
+	// Apply the upgrade: 1.8.0 in the target schema renames db.cassandra.keyspace → db.name.
+	scopeSpans := ptrace.NewScopeSpans()
+	scopeSpans.SetSchemaUrl(signalURL)
+	span := scopeSpans.Spans().AppendEmpty()
+	span.Attributes().PutStr("db.cassandra.keyspace", "my_keyspace")
+
+	require.NoError(t, tr.ApplyScopeSpanChanges(scopeSpans, signalURL))
+
+	val, ok := span.Attributes().Get("db.name")
+	require.True(t, ok, "db.name must exist after upgrade — rename was not applied")
+	assert.Equal(t, "my_keyspace", val.Str())
+
+	_, oldExists := span.Attributes().Get("db.cassandra.keyspace")
+	assert.False(t, oldExists, "old attribute must be removed after upgrade")
+}
+
+// TestRequestTranslationV2Manifest verifies that when the schema URL serves a
+// manifest/2.0 document, the manager follows resolved_registry_uri through the
+// same provider chain and constructs a single-hop translator from the resolved
+// registry.
+func TestRequestTranslationV2Manifest(t *testing.T) {
+	t.Parallel()
+
+	resolved := LoadTranslationVersion(t, "v2_resolved_simple.yaml")
+
+	mux := http.NewServeMux()
+	var s *httptest.Server
+	mux.HandleFunc("/resolved/2.0.0.yaml", func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(resolved))
+		assert.NoError(t, err)
+	})
+	mux.HandleFunc("/2.0.0", func(w http.ResponseWriter, _ *http.Request) {
+		manifest := fmt.Sprintf(`file_format: manifest/2.0
+schema_url: %s/2.0.0
+resolved_registry_uri: %s/resolved/2.0.0.yaml
+`, s.URL, s.URL)
+		_, err := w.Write([]byte(manifest))
+		assert.NoError(t, err)
+	})
+	s = httptest.NewServer(mux)
+	t.Cleanup(s.Close)
+
+	targetURL := fmt.Sprintf("%s/2.0.0", s.URL)
+	signalURL := fmt.Sprintf("%s/1.30.0", s.URL)
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	m, err := NewManager(
+		[]string{targetURL},
+		zaptest.NewLogger(t),
+		5*time.Minute, 5,
+		telemetryBuilder,
+		nil,
+		NewHTTPProvider(s.Client()),
+	)
+	require.NoError(t, err)
+
+	tr, err := m.RequestTranslation(t.Context(), signalURL)
+	require.NoError(t, err)
+	require.NotNil(t, tr)
+
+	// Single-hop translator: any incoming version is "supported" and renames
+	// from v2_resolved_simple.yaml should apply.
+	scopeSpans := ptrace.NewScopeSpans()
+	scopeSpans.SetSchemaUrl(signalURL)
+	span := scopeSpans.Spans().AppendEmpty()
+	span.Attributes().PutStr("old.attr.name", "value")
+
+	require.NoError(t, tr.ApplyScopeSpanChanges(scopeSpans, signalURL))
+
+	val, ok := span.Attributes().Get("new.attr.name")
+	require.True(t, ok, "v2 manifest+resolved indirection must rename old -> new")
+	assert.Equal(t, "value", val.Str())
+}
+
 type errorProvider struct{}
 
 func (*errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
@@ -75,9 +217,15 @@ func (*errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
 func TestManagerError(t *testing.T) {
 	t.Parallel()
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	m, err := NewManager(
 		[]string{"http://localhost/1.1.0"},
 		zaptest.NewLogger(t),
+		5*time.Minute, 5,
+		telemetryBuilder,
+		nil,
 		&errorProvider{},
 	)
 	require.NoError(t, err, "Must not error when created manager")

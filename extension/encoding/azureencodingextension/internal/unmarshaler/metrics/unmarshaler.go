@@ -15,9 +15,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
@@ -36,15 +37,15 @@ var timeGrains = map[string]int64{
 // azureMetricRecord represents a single Azure Metric following
 // the common schema does not exist (yet):
 type azureMetricRecord struct {
-	Time       string  `json:"time"`
-	ResourceID string  `json:"resourceId"`
-	MetricName string  `json:"metricName"`
-	TimeGrain  string  `json:"timeGrain"`
-	Total      float64 `json:"total"`
-	Count      float64 `json:"count"`
-	Minimum    float64 `json:"minimum"`
-	Maximum    float64 `json:"maximum"`
-	Average    float64 `json:"average"`
+	Time       string   `json:"time"`
+	ResourceID string   `json:"resourceId"`
+	MetricName string   `json:"metricName"`
+	TimeGrain  string   `json:"timeGrain"`
+	Total      *float64 `json:"total"`
+	Count      *float64 `json:"count"`
+	Minimum    *float64 `json:"minimum"`
+	Maximum    *float64 `json:"maximum"`
+	Average    *float64 `json:"average"`
 	// Fields below are available only via DCR, not via Diagnostic Settings
 	Unit       string         `json:"unit"`
 	Dimensions map[string]any `json:"dimension"`
@@ -110,7 +111,7 @@ func (r ResourceMetricsUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metric
 	case unmarshaler.FormatUnknown:
 		return pmetric.NewMetrics(), nil
 	default:
-		return pmetric.NewMetrics(), fmt.Errorf("unrecognized batch format: %q", batchFormat)
+		return pmetric.NewMetrics(), fmt.Errorf("unrecognized batch format: %d", batchFormat)
 	}
 
 	m := pmetric.NewMetrics()
@@ -152,6 +153,7 @@ func (r ResourceMetricsUnmarshaler) unmarshalRecord(allResourceScopeMetrics map[
 		scopeMetrics = pmetric.NewScopeMetrics()
 		scopeMetrics.Scope().SetName(metadata.ScopeName)
 		scopeMetrics.Scope().SetVersion(r.buildInfo.Version)
+		scopeMetrics.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.ProviderFromResourceID(azureMetric.ResourceID))
 		allResourceScopeMetrics[azureMetric.ResourceID] = scopeMetrics
 	}
 
@@ -176,23 +178,29 @@ func (r ResourceMetricsUnmarshaler) unmarshalRecord(allResourceScopeMetrics map[
 
 	metrics := scopeMetrics.Metrics()
 	for _, agg := range r.aggregations {
+		var value *float64
+		switch agg {
+		case AggregationTotal:
+			value = azureMetric.Total
+		case AggregationCount:
+			value = azureMetric.Count
+		case AggregationMinimum:
+			value = azureMetric.Minimum
+		case AggregationMaximum:
+			value = azureMetric.Maximum
+		case AggregationAverage:
+			value = azureMetric.Average
+		}
+		if value == nil {
+			continue
+		}
+
 		m := metrics.AppendEmpty()
 		m.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), agg)))
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
-		switch agg {
-		case AggregationTotal:
-			dp.SetDoubleValue(azureMetric.Total)
-		case AggregationCount:
-			dp.SetDoubleValue(azureMetric.Count)
-		case AggregationMinimum:
-			dp.SetDoubleValue(azureMetric.Minimum)
-		case AggregationMaximum:
-			dp.SetDoubleValue(azureMetric.Maximum)
-		case AggregationAverage:
-			dp.SetDoubleValue(azureMetric.Average)
-		}
+		dp.SetDoubleValue(*value)
 		// Only for records exported via DCRs
 		if azureMetric.Unit != "" {
 			m.SetUnit(azureMetric.Unit)

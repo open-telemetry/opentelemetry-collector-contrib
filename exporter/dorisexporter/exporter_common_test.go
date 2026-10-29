@@ -21,7 +21,7 @@ func TestNewCommonExporter(t *testing.T) {
 
 func TestCommonExporter_FormatTime(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "http://localhost:8030"
+	cfg.ClientConfig.Endpoint = "http://localhost:8030"
 	cfg.CreateSchema = false
 	err := cfg.Validate()
 	require.NoError(t, err)

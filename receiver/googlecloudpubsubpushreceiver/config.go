@@ -18,11 +18,11 @@ var _ component.Config = (*Config)(nil)
 
 // Config defines configuration for the receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Endpoint identifies the expected encoding of messages
 	// received from Pub/Sub.
-	Encoding component.ID `mapstructure:"encoding"`
+	Encoding *component.ID `mapstructure:"encoding"`
 }
 
 const defaultEndpoint = "0.0.0.0:8080"
@@ -42,11 +42,11 @@ func createDefaultConfig() component.Config {
 func (c *Config) Validate() error {
 	var errs []error
 
-	if c.Encoding == (component.ID{}) {
+	if c.Encoding == nil || *c.Encoding == (component.ID{}) {
 		errs = append(errs, errors.New("encoding must be set"))
 	}
 
-	_, _, err := net.SplitHostPort(c.NetAddr.Endpoint)
+	_, _, err := net.SplitHostPort(c.ServerConfig.NetAddr.Endpoint)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("misformatted endpoint: %w", err))
 	}

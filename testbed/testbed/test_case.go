@@ -196,6 +196,11 @@ func (tc *TestCase) EnableRecording() {
 // AgentMemoryInfo returns raw memory info struct about the agent
 // as returned by github.com/shirou/gopsutil/process
 func (tc *TestCase) AgentMemoryInfo() (uint32, uint32, error) {
+	select {
+	case <-tc.errorSignal:
+		return 0, 0, fmt.Errorf("agent process exited: %s", tc.errorCause)
+	default:
+	}
 	stat, err := tc.agentProc.GetProcessMon().MemoryInfo()
 	if err != nil {
 		return 0, 0, err

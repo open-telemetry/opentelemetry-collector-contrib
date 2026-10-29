@@ -1,5 +1,6 @@
 display_name: Google Cloud Spanner Receiver
-type: googlecloudspanner
+type: google_cloud_spanner
+deprecated_type: googlecloudspanner
 
 status:
   class: receiver
@@ -7,9 +8,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, KiranmayiB, nsj07]
-    emeritus: [architjugran, varunraiko, harishbohara11, dsimil]
+    active: [dashpole, nsj07]
+    emeritus: [architjugran, dsimil, harishbohara11, KiranmayiB, varunraiko]
 tests:
   config:
-  goleak:
-    skip: true

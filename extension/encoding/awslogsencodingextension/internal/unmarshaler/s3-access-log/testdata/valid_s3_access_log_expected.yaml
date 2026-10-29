@@ -76,6 +76,9 @@ resourceLogs:
               - key: aws.s3.acl_required
                 value:
                   boolValue: true
+              - key: aws.s3.source_region
+                value:
+                  stringValue: us-east-1
             body: {}
             timeUnixNano: "1549411238000000000"
         scope:

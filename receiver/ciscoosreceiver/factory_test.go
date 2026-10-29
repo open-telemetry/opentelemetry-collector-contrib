@@ -35,7 +35,7 @@ func newTestDevice(name, host string) DeviceConfig {
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
-	assert.Equal(t, "ciscoos", factory.Type().String())
+	assert.Equal(t, "cisco_os", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -45,8 +45,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	config, ok := cfg.(*Config)
 	require.True(t, ok)
-	assert.Equal(t, 1*time.Minute, config.CollectionInterval)
-	assert.Equal(t, 10*time.Second, config.Timeout)
+	assert.Equal(t, 1*time.Minute, config.ControllerConfig.CollectionInterval)
+	assert.Equal(t, 10*time.Second, config.ControllerConfig.Timeout)
 	assert.Empty(t, config.Devices)
 	assert.Empty(t, config.Scrapers)
 }

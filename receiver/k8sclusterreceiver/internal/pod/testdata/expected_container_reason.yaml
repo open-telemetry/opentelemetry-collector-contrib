@@ -13,6 +13,12 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.pod.name
+          idKeys:
+            - k8s.pod.uid
+          type: k8s.pod
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -51,6 +57,14 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.container.name
+            - container.image.name
+            - container.image.tag
+          idKeys:
+            - container.id
+          type: k8s.container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -132,4 +146,4 @@ resourceMetrics:
             unit: "{cpu}"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest 
+          version: latest

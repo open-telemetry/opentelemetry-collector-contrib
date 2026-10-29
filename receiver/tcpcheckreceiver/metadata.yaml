@@ -1,5 +1,6 @@
 display_name: TCP Check Receiver
-type: tcpcheck
+type: tcp_check
+deprecated_type: tcpcheck
 
 description: This receiver creates stats by connecting to a TCP server.
 
@@ -9,24 +10,27 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, michael-burt, chengchuanpeng, yanfeng1992]
+    active: [atoulme, michael-burt, chengchuanpeng]
+    emeritus: [yanfeng1992]
 
 resource_attributes:
 
 attributes:
   error.code:
     description: Error code recorded during check
+    requirement_level: recommended
     type: string
     enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
   tcpcheck.endpoint:
     description: TCP endpoint
+    requirement_level: required
     type: string
 
 metrics:
   tcpcheck.duration:
     description: Measures the duration of TCP connection.
     enabled: true
-    stability: development
+    stability: alpha
     gauge:
       value_type: int
     unit: ms
@@ -34,17 +38,17 @@ metrics:
   tcpcheck.error:
     description: Records errors occurring during TCP check.
     enabled: true
-    stability: development
+    stability: alpha
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    unit: "{errors}"
+    unit: "{error}"
     attributes: [tcpcheck.endpoint, error.code]
   tcpcheck.status:
     description: 1 if the TCP client successfully connected, otherwise 0.
     enabled: true
-    stability: development
+    stability: alpha
     gauge:
       value_type: int
     unit: "1"

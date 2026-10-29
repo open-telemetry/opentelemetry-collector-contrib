@@ -57,6 +57,12 @@ func (m severityMap) find(value any) (entry.Severity, string, error) {
 			return severity, strV, nil
 		}
 		return entry.Default, strV, nil
+	case int64:
+		strV := strconv.FormatInt(v, 10)
+		if severity, ok := m[strV]; ok {
+			return severity, strV, nil
+		}
+		return entry.Default, strV, nil
 	case float64:
 		if v != float64(int(v)) {
 			return entry.Default, "", fmt.Errorf("type %T cannot be a severity unless it is a whole number", v)

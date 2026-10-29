@@ -11,28 +11,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
-// Deprecated: Use the `json` config option instead. This feature gate will be removed in a future version.
-var featureGateJSON = featuregate.GlobalRegistry().MustRegister(
-	"clickhouse.json",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterDescription("Deprecated: Use the `json` config option instead."),
-	featuregate.WithRegisterToVersion("v0.149.0"),
-)
-
 // NewFactory creates a factory for the ClickHouse exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -45,7 +38,7 @@ func createLogsExporter(
 	c.collectorVersion = set.BuildInfo.Version
 
 	var exp anyLogsExporter
-	if useJSON(set.Logger, c) {
+	if c.JSON {
 		exp = newLogsJSONExporter(set.Logger, c)
 	} else {
 		exp = newLogsExporter(set.Logger, c)
@@ -73,7 +66,7 @@ func createTracesExporter(
 	c.collectorVersion = set.BuildInfo.Version
 
 	var exp anyTracesExporter
-	if useJSON(set.Logger, c) {
+	if c.JSON {
 		exp = newTracesJSONExporter(set.Logger, c)
 	} else {
 		exp = newTracesExporter(set.Logger, c)
@@ -92,12 +85,27 @@ func createTracesExporter(
 	)
 }
 
-func useJSON(logger *zap.Logger, c *Config) bool {
-	if featureGateJSON.IsEnabled() {
-		logger.Warn("The clickhouse.json feature gate is deprecated. Use the `json` config option instead.")
-		return true
-	}
-	return c.JSON
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	c := cfg.(*Config)
+	c.collectorVersion = set.BuildInfo.Version
+
+	exp := newProfilesExporter(set.Logger, c)
+
+	return xexporterhelper.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		exp.pushProfilesData,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
+	)
 }
 
 func createMetricExporter(

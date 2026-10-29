@@ -18,9 +18,9 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
 
 ### otelcol_kafka_broker_connects
 
@@ -34,10 +34,10 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_broker_throttling_duration
 
@@ -51,9 +51,9 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_thro
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
 
 ### otelcol_kafka_broker_throttling_latency
 
@@ -67,9 +67,9 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
 
 ### otelcol_kafka_receiver_bytes
 
@@ -83,12 +83,12 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_receiver_bytes_uncompressed
 
@@ -100,16 +100,18 @@ The uncompressed size in bytes of received records seen by the client.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_receiver_current_offset
 
 Current message offset
+
+Reported only for currently assigned partitions after processing at least one record. Reporting stops when a partition is lost, revoked, or terminally paused, and resumes after a reassigned partition processes a record. Temporary backpressure and rewind pauses continue reporting the last observed offset. With eager group_rebalance_strategies (e.g. range), every rebalance revokes all partitions, so each series pauses until that partition's next record; the default cooperative-sticky strategy only affects moved partitions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -117,10 +119,10 @@ Current message offset
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
 
 ### otelcol_kafka_receiver_latency
 
@@ -134,12 +136,12 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_receiver_re
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_receiver_messages
 
@@ -153,16 +155,18 @@ Deprecated in favor of kafka_receiver_records.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_receiver_offset_lag
 
 Current offset lag
+
+Reported only for currently assigned partitions after processing at least one record. Reporting stops when a partition is lost, revoked, or terminally paused, and resumes after a reassigned partition processes a record. Temporary backpressure and rewind pauses continue reporting the last observed lag. With eager group_rebalance_strategies (e.g. range), every rebalance revokes all partitions, so each series pauses until that partition's next record; the default cooperative-sticky strategy only affects moved partitions.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -170,10 +174,10 @@ Current offset lag
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
 
 ### otelcol_kafka_receiver_partition_close
 
@@ -203,12 +207,12 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_receiver_records
 
@@ -220,12 +224,12 @@ The number of received records.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_receiver_records_delay
 
@@ -236,17 +240,16 @@ Note that this metric may slow down high-volume consuming.
 Only produced when franz-go is enabled.
 This metric is reported with an assumption that the exporter and the receiver clocks are synchronized.
 
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | s | Histogram | Double | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
 
 ### otelcol_kafka_receiver_unmarshal_failed_log_records
 
@@ -258,10 +261,10 @@ Number of log records failed to be unmarshaled
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
 
 ### otelcol_kafka_receiver_unmarshal_failed_metric_points
 
@@ -273,10 +276,10 @@ Number of metric points failed to be unmarshaled
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
 
 ### otelcol_kafka_receiver_unmarshal_failed_profiles
 
@@ -288,10 +291,10 @@ Number of profiles failed to be unmarshaled
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
 
 ### otelcol_kafka_receiver_unmarshal_failed_spans
 
@@ -303,7 +306,7 @@ Number of spans failed to be unmarshaled
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |

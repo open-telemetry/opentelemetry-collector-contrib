@@ -244,3 +244,38 @@ transform/context_statements_error_mode:
         - set(resource.attributes["name"], "propagate")
     - statements:
         - set(resource.attributes["name"], "ignore")
+
+transform/shared_cache:
+  trace_statements:
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["name"], "bear")
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["copy"], resource.attributes["name"])
+  metric_statements:
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["name"], "bear")
+  log_statements:
+    - shared_cache: true
+      statements:
+        - set(resource.attributes["name"], "bear")
+
+transform/flatten:
+  flatten:
+    log: true
+  log_statements:
+    - set(resource.attributes["host.name"], log.attributes["host.name"])
+
+transform/flatten_data:
+  flatten_data: true
+  log_statements:
+    - set(resource.attributes["host.name"], log.attributes["host.name"])
+
+transform/flatten_data_and_flatten_log:
+  flatten_data: true
+  flatten:
+    log: true
+  log_statements:
+    - set(resource.attributes["host.name"], log.attributes["host.name"])

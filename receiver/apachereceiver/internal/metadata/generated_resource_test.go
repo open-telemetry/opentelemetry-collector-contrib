@@ -30,16 +30,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("apache.server.name")
+			apacheServerNameAttrVal, ok := res.Attributes().Get("apache.server.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "apache.server.name-val", val.Str())
+				assert.Equal(t, "apache.server.name-val", apacheServerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("apache.server.port")
+			apacheServerPortAttrVal, ok := res.Attributes().Get("apache.server.port")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "apache.server.port-val", val.Str())
+				assert.Equal(t, "apache.server.port-val", apacheServerPortAttrVal.Str())
 			}
 		})
 	}

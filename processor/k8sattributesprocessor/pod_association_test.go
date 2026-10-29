@@ -78,3 +78,60 @@ func TestExtractPodIDKeepsHostNameWhenValueIsIP(t *testing.T) {
 	assert.Equal(t, "host.name", pid[0].Source.Name)
 	assert.Equal(t, "10.1.2.3", pid[0].Value)
 }
+
+func TestBuildPodIdentifierString(t *testing.T) {
+	tests := []struct {
+		name     string
+		id       kube.PodIdentifier
+		expected string
+	}{
+		{
+			name:     "empty identifier returns empty string",
+			id:       kube.PodIdentifier{},
+			expected: "",
+		},
+		{
+			name: "connection source omits actual IP value",
+			id: kube.PodIdentifier{
+				kube.PodIdentifierAttributeFromConnection("192.168.1.42"),
+			},
+			expected: "connection",
+		},
+		{
+			name: "resource_attribute source uses attribute name not value",
+			id: kube.PodIdentifier{
+				kube.PodIdentifierAttributeFromResourceAttribute("k8s.pod.uid", "some-uid-value"),
+			},
+			expected: "resource_attribute/k8s.pod.uid",
+		},
+		{
+			name: "resource_attribute with k8s.pod.ip",
+			id: kube.PodIdentifier{
+				kube.PodIdentifierAttributeFromResourceAttribute("k8s.pod.ip", "10.0.0.5"),
+			},
+			expected: "resource_attribute/k8s.pod.ip",
+		},
+		{
+			name: "multi-source association joins with plus",
+			id: kube.PodIdentifier{
+				kube.PodIdentifierAttributeFromResourceAttribute("k8s.pod.uid", "uid-abc"),
+				kube.PodIdentifierAttributeFromResourceAttribute("container.id", "container-xyz"),
+			},
+			expected: "resource_attribute/k8s.pod.uid+resource_attribute/container.id",
+		},
+		{
+			name: "two different source types joined",
+			id: kube.PodIdentifier{
+				kube.PodIdentifierAttributeFromConnection("10.0.0.1"),
+				kube.PodIdentifierAttributeFromResourceAttribute("k8s.pod.ip", "10.0.0.1"),
+			},
+			expected: "connection+resource_attribute/k8s.pod.ip",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, buildPodIdentifierString(tt.id))
+		})
+	}
+}

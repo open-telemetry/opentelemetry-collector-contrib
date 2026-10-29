@@ -4,17 +4,24 @@
 package sqlserverreceiver
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"os"
 	"testing"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -50,7 +57,12 @@ func TestFactory(t *testing.T) {
 					QuerySample: QuerySample{
 						MaxRowsPerQuery: 100,
 					},
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					TopProcedureCollection: TopProcedureCollection{
+						MaxProcedureSampleCount: 1000,
+						TopProcedureCount:       250,
+						CollectionInterval:      time.Minute,
+					},
+					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				}
 
@@ -82,7 +94,7 @@ func TestFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
+				scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(t.Context()))
@@ -98,22 +110,22 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupScrapers(params, cfg)
+				scrapers, _, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
 
-				sqlScrapers := setupSQLServerScrapers(params, cfg)
+				sqlScrapers, _ := setupSQLServerScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				databaseIOScraperFound := false
 				for _, scraper := range sqlScrapers {
-					if scraper.sqlQuery == getSQLServerDatabaseIOQuery(cfg.InstanceName) {
+					if scraper.sqlQuery == getSQLServerDatabaseIOQuery() {
 						databaseIOScraperFound = true
 						break
 					}
@@ -121,12 +133,12 @@ func TestFactory(t *testing.T) {
 
 				require.True(t, databaseIOScraperFound)
 				cfg.InstanceName = "instanceName"
-				sqlScrapers = setupSQLServerScrapers(params, cfg)
+				sqlScrapers, _ = setupSQLServerScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				databaseIOScraperFound = false
 				for _, scraper := range sqlScrapers {
-					if scraper.sqlQuery == getSQLServerDatabaseIOQuery(cfg.InstanceName) {
+					if scraper.sqlQuery == getSQLServerDatabaseIOQuery() {
 						databaseIOScraperFound = true
 						break
 					}
@@ -154,7 +166,8 @@ func TestFactory(t *testing.T) {
 					t.Context(),
 					receivertest.NewNopSettings(metadata.Type),
 					nil,
-					consumertest.NewNop())
+					consumertest.NewNop(),
+				)
 				require.ErrorIs(t, err, errConfigNotSQLServer)
 			},
 		},
@@ -170,7 +183,7 @@ func TestFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
+				scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(t.Context()))
@@ -186,26 +199,26 @@ func TestFactory(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
-				scrapers, err := setupLogsScrapers(params, cfg)
+				scrapers, _, err := setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.Empty(t, scrapers)
 
-				sqlScrapers := setupSQLServerLogsScrapers(params, cfg)
+				sqlScrapers, _ := setupSQLServerLogsScrapers(params, cfg)
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Events.DbServerTopQuery.Enabled = true
-				scrapers, err = setupLogsScrapers(params, cfg)
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+				scrapers, _, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
 
-				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
+				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
 				q := getSQLServerQueryTextAndPlanQuery()
@@ -231,6 +244,43 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, r.Shutdown(t.Context()))
 			},
 		},
+		{
+			desc: "[logs] db.server.query_plan alone does not run the query-text-and-plan scraper",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.Username = "sa"
+				cfg.Password = "password"
+				cfg.Server = "0.0.0.0"
+				cfg.Port = 1433
+				require.NoError(t, cfg.Validate())
+				cfg.InstanceName = "instanceName"
+
+				// db.server.query_plan only splits the plan out of db.server.top_query, so on its own
+				// it collects nothing.
+				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				sqlScrapers, _ := setupSQLServerLogsScrapers(params, cfg)
+				require.Empty(t, sqlScrapers)
+
+				// Enabling db.server.top_query as well wires the shared scraper up.
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+				sqlScrapers, _ = setupSQLServerLogsScrapers(params, cfg)
+
+				q := getSQLServerQueryTextAndPlanQuery()
+
+				databaseTopQueryScraperFound := false
+				for _, scraper := range sqlScrapers {
+					if scraper.sqlQuery == q {
+						databaseTopQueryScraperFound = true
+						break
+					}
+				}
+
+				require.True(t, databaseTopQueryScraperFound)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -252,6 +302,239 @@ func TestNewCache(t *testing.T) {
 	require.NotNil(t, cache.Values())
 }
 
+// TestScrapersShareSingleConnectionPool verifies that all scrapers created for
+// a receiver share one *sql.DB connection pool rather than each opening its own.
+func TestScrapersShareSingleConnectionPool(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	// Enable metrics that map to several distinct queries so more than one
+	// scraper is created.
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true // database IO query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverOsWaitDuration.Enabled = true  // wait stats query
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = true   // properties query
+	require.NoError(t, cfg.Validate())
+	require.True(t, cfg.isDirectDBConnectionEnabled)
+
+	params := receivertest.NewNopSettings(metadata.Type)
+	scrapers, provider := setupSQLServerScrapers(params, cfg)
+	require.Greater(t, len(scrapers), 1, "expected more than one scraper to prove pool sharing")
+	require.NotNil(t, provider)
+	// The pool is owned by the receiver; close it once when the test finishes.
+	defer func() { require.NoError(t, provider.close()) }()
+
+	for _, s := range scrapers {
+		require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	}
+
+	shared := scrapers[0].db
+	require.NotNil(t, shared)
+	for _, s := range scrapers {
+		require.Same(t, shared, s.db, "all scrapers must share the same *sql.DB pool")
+	}
+
+	// Scraper shutdown must not close the shared pool; the receiver owns it.
+	for _, s := range scrapers {
+		require.NoError(t, s.Shutdown(t.Context()))
+	}
+}
+
+// TestConnectionPoolSettings verifies the pool is sized from the scraper count
+// by default and that explicit config overrides win.
+func TestConnectionPoolSettings(t *testing.T) {
+	const dsn = "server=0.0.0.0;user id=sa;password=password;port=1433"
+
+	t.Run("default max_open derived from scraper count", func(t *testing.T) {
+		db, err := sql.Open("sqlserver", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		setConnectionPoolSettings(db, ConnectionPool{}, 4)
+		require.Equal(t, 4, db.Stats().MaxOpenConnections)
+	})
+
+	t.Run("explicit max_open overrides the default", func(t *testing.T) {
+		db, err := sql.Open("sqlserver", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		maxOpen := 12
+		setConnectionPoolSettings(db, ConnectionPool{MaxOpen: &maxOpen}, 4)
+		require.Equal(t, 12, db.Stats().MaxOpenConnections)
+	})
+
+	t.Run("scraper count is floored at one", func(t *testing.T) {
+		db, err := sql.Open("sqlserver", dsn)
+		require.NoError(t, err)
+		defer db.Close()
+
+		setConnectionPoolSettings(db, ConnectionPool{}, 0)
+		require.Equal(t, 1, db.Stats().MaxOpenConnections)
+	})
+}
+
+// TestDBProviderCloseIsSafe verifies the close semantics the receiver relies on
+// when construction fails: closing is safe on a nil provider, a no-op when the
+// pool was never opened, and idempotent.
+func TestDBProviderCloseIsSafe(t *testing.T) {
+	t.Run("nil provider", func(t *testing.T) {
+		var provider *dbProvider
+		require.NoError(t, provider.close())
+	})
+
+	t.Run("never opened", func(t *testing.T) {
+		provider := newDBProvider(&Config{Server: "0.0.0.0", Username: "sa", Password: "password", Port: 1433}, 2)
+		require.NoError(t, provider.close())
+	})
+
+	t.Run("idempotent after open", func(t *testing.T) {
+		provider := newDBProvider(&Config{Server: "0.0.0.0", Username: "sa", Password: "password", Port: 1433}, 2)
+		_, err := provider.getDB()
+		require.NoError(t, err)
+		require.NoError(t, provider.close())
+		require.NoError(t, provider.close())
+	})
+
+	t.Run("getDB after close does not open a new pool", func(t *testing.T) {
+		provider := newDBProvider(&Config{Server: "0.0.0.0", Username: "sa", Password: "password", Port: 1433}, 2)
+		// close before the pool is ever opened, as happens on construction
+		// error paths.
+		require.NoError(t, provider.close())
+
+		db, err := provider.getDB()
+		require.ErrorIs(t, err, errDBProviderClosed)
+		require.Nil(t, db, "getDB must not open a pool after close")
+	})
+}
+
+func TestDBProviderDetectInstanceInfo(t *testing.T) {
+	t.Run("returns cached value on second call without re-querying", func(t *testing.T) {
+		calls := 0
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			calls++
+			v, e := "15.0.4261.1", "enterprise"
+			return &v, &e, nil
+		}
+
+		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+		db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+		require.NoError(t, err)
+		defer db.Close()
+		provider.db = db
+
+		v1, e1, resolved1 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
+		require.True(t, resolved1)
+		require.Equal(t, "15.0.4261.1", v1)
+		require.Equal(t, "enterprise", e1)
+
+		v2, e2, resolved2 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
+		require.True(t, resolved2)
+		require.Equal(t, "15.0.4261.1", v2)
+		require.Equal(t, "enterprise", e2)
+		require.Equal(t, 1, calls, "detectSQLServerInstanceInfo should only be called once")
+	})
+
+	t.Run("NULL result latches so subsequent intervals do not retry", func(t *testing.T) {
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		nullStr := ""
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			return &nullStr, &nullStr, nil
+		}
+
+		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+		db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+		require.NoError(t, err)
+		defer db.Close()
+		provider.db = db
+
+		v, e, resolved := provider.detectInstanceInfo(t.Context(), zap.NewNop())
+		require.True(t, resolved)
+		require.Empty(t, v)
+		require.Empty(t, e)
+		require.NotNil(t, provider.dbVersion)
+		require.NotNil(t, provider.dbEdition)
+
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			t.Fatal("detectSQLServerInstanceInfo called again after NULL was latched")
+			return nil, nil, nil
+		}
+		v, e, resolved = provider.detectInstanceInfo(t.Context(), zap.NewNop())
+		require.True(t, resolved)
+		require.Empty(t, v)
+		require.Empty(t, e)
+	})
+
+	t.Run("transient error returns unresolved and retries next interval", func(t *testing.T) {
+		calls := 0
+		orig := detectSQLServerInstanceInfo
+		t.Cleanup(func() { detectSQLServerInstanceInfo = orig })
+		detectSQLServerInstanceInfo = func(_ context.Context, _ *sql.DB) (*string, *string, error) {
+			calls++
+			return nil, nil, errors.New("connection refused")
+		}
+
+		provider := newDBProvider(&Config{Server: "127.0.0.1", Port: 1433}, 1)
+		db, err := sql.Open("sqlserver", "sqlserver://sa:invalid@127.0.0.1:1433")
+		require.NoError(t, err)
+		defer db.Close()
+		provider.db = db
+
+		_, _, resolved1 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
+		require.False(t, resolved1)
+		_, _, resolved2 := provider.detectInstanceInfo(t.Context(), zap.NewNop())
+		require.False(t, resolved2)
+		require.Equal(t, 2, calls, "should retry on transient errors")
+	})
+}
+
+func TestSetupSQLServerScrapersInstanceInfoWiring(t *testing.T) {
+	cfg := &Config{
+		Server:   "0.0.0.0",
+		Username: "sa",
+		Password: "password",
+		Port:     1433,
+	}
+	require.NoError(t, cfg.Validate())
+
+	t.Run("instanceInfoFunc is nil when both disabled", func(t *testing.T) {
+		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+		cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = false
+		cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = false
+		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		for _, s := range scrapers {
+			require.Nil(t, s.instanceInfoFunc)
+		}
+	})
+
+	t.Run("instanceInfoFunc is set when edition enabled", func(t *testing.T) {
+		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+		cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverDbEdition.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.NotEmpty(t, scrapers)
+		for _, s := range scrapers {
+			require.NotNil(t, s.instanceInfoFunc)
+		}
+	})
+
+	t.Run("instanceInfoFunc is set when version enabled", func(t *testing.T) {
+		cfg.MetricsBuilderConfig = metadata.NewDefaultMetricsBuilderConfig()
+		cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+		scrapers, _ := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.NotEmpty(t, scrapers)
+		for _, s := range scrapers {
+			require.NotNil(t, s.instanceInfoFunc)
+		}
+	})
+}
+
 func TestSetupQueries(t *testing.T) {
 	var metadata map[string]any
 
@@ -262,7 +545,46 @@ func TestSetupQueries(t *testing.T) {
 
 	metricsMetadata, ok := metadata["metrics"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, metricsMetadata, 50, "Every time metrics are added or removed, the function `setupQueries` must "+
+	require.Len(t, metricsMetadata, 102, "Every time metrics are added or removed, the function `setupQueries` must "+
 		"be modified to properly account for the change. Please update `setupQueries` and then, "+
 		"and only then, update the expected metric count here.")
+}
+
+func TestProcedureDefinitionWithoutTopProcedureLogsWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.WarnLevel)
+	params := receivertest.NewNopSettings(metadata.Type)
+	params.Logger = zap.New(core)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = false
+	require.NoError(t, cfg.Validate())
+
+	setupSQLServerLogsScrapers(params, cfg)
+
+	require.Equal(t, 1, observedLogs.Len(), "expected exactly one warning log")
+	assert.Contains(t, observedLogs.All()[0].Message, "db.server.procedure_definition is enabled but db.server.top_procedure is not")
+}
+
+func TestProcedureDefinitionWithTopProcedureLogsNoWarning(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.WarnLevel)
+	params := receivertest.NewNopSettings(metadata.Type)
+	params.Logger = zap.New(core)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	setupSQLServerLogsScrapers(params, cfg)
+
+	assert.Equal(t, 0, observedLogs.Len(), "no warning expected when top_procedure is also enabled")
 }

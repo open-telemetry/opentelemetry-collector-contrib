@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: e2ek8sattribute-sharedprocessor
+data:
+  relay: |
+    exporters:
+      otlp_grpc:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      # "full" config: extracts many metadata fields and labels.
+      # Used by both traces and metrics pipelines to verify that the same
+      # processor configuration is shared across signal types.
+      k8s_attributes/full:
+        extract:
+          labels:
+          - from: pod
+            key: app
+            tag_name: k8s.labels.app
+          metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.namespace.name
+          - k8s.deployment.name
+          - k8s.node.name
+        pod_association:
+        - sources:
+          - from: connection
+      # "minimal" config: extracts only the pod name.
+      # Used by the logs pipeline to verify that a different config
+      # produces a separate processor instance with different behavior.
+      k8s_attributes/minimal:
+        extract:
+          metadata:
+          - k8s.pod.name
+        pod_association:
+        - sources:
+          - from: connection
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        traces:
+          exporters:
+          - otlp_grpc
+          processors:
+          - k8s_attributes/full
+          receivers:
+          - otlp
+        metrics:
+          exporters:
+          - otlp_grpc
+          processors:
+          - k8s_attributes/full
+          receivers:
+          - otlp
+        logs:
+          exporters:
+          - otlp_grpc
+          processors:
+          - k8s_attributes/minimal
+          receivers:
+          - otlp

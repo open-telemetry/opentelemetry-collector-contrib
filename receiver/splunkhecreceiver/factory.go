@@ -5,13 +5,14 @@ package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -24,6 +25,8 @@ import (
 const (
 	// Default endpoint to bind to.
 	defaultEndpoint = "localhost:8088"
+
+	defaultServerTimeout = 20 * time.Second
 )
 
 // NewFactory creates a factory for Splunk HEC receiver.
@@ -32,7 +35,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
@@ -40,8 +44,12 @@ func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.WriteTimeout = defaultServerTimeout
+	serverConfig.ReadHeaderTimeout = defaultServerTimeout
+	serverConfig.NetAddr = netAddr
 	return &Config{
-		ServerConfig:                 confighttp.ServerConfig{NetAddr: netAddr},
+		ServerConfig:                 serverConfig,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
 		HecToOtelAttrs: translator.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,

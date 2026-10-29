@@ -4,10 +4,12 @@
 package yanggrpcreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver"
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 
@@ -18,7 +20,9 @@ func NewFactory() receiver.Factory {
 	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithMetrics(func(ctx context.Context, settings receiver.Settings, config component.Config, metrics consumer.Metrics) (receiver.Metrics, error) {
+			return createMetricsReceiver(ctx, settings, config, metrics), nil
+		}, metadata.MetricsStability),
 		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
@@ -42,12 +46,12 @@ func createDefaultConfig() component.Config {
 			MaxModules:      1000,
 		},
 	}
-	config.NetAddr.Transport = "tcp"
-	config.NetAddr.Endpoint = "localhost:57500"
-	config.MaxRecvMsgSizeMiB = 4
-	config.MaxConcurrentStreams = 100
-	config.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Time = 30 * time.Second
-	config.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Timeout = 10 * time.Second
+	config.ServerConfig.NetAddr.Transport = "tcp"
+	config.ServerConfig.NetAddr.Endpoint = "localhost:57500"
+	config.ServerConfig.MaxRecvMsgSizeMiB = 4
+	config.ServerConfig.MaxConcurrentStreams = 100
+	config.ServerConfig.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Time = 30 * time.Second
+	config.ServerConfig.Keepalive.GetOrInsertDefault().ServerParameters.GetOrInsertDefault().Timeout = 10 * time.Second
 
 	return config
 }

@@ -1,0 +1,22 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signal_to_metrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+    scopeMetrics:
+      - metrics:
+          - description: Spans with dynamically resolved resource attributes from client metadata
+            name: with_dynamic_resource_attrs
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "29"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

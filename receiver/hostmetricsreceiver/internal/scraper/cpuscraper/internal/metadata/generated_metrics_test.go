@@ -58,9 +58,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemCPUFrequency"] = mb.metricSystemCPUFrequency.config.AggregationStrategy
-			aggMap["SystemCPUTime"] = mb.metricSystemCPUTime.config.AggregationStrategy
-			aggMap["SystemCPUUtilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
+			aggMap["system.cpu.frequency"] = mb.metricSystemCPUFrequency.config.AggregationStrategy
+			aggMap["system.cpu.time"] = mb.metricSystemCPUTime.config.AggregationStrategy
+			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -71,28 +71,36 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu-val")
+			mb.RecordSystemCPUFrequencyDataPoint(ts, 1, "cpu.frequency-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu-val-2")
+				mb.RecordSystemCPUFrequencyDataPoint(ts, 3, "cpu.frequency-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemCPUFrequencyDataPoint(ts+1, 3, "cpu.frequency-val-2")
+				assert.Equal(t, 2, mb.metricSystemCPUFrequency.data.Gauge().DataPoints().Len())
 			}
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPULogicalCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSystemCPUPhysicalCountDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemCPUTimeDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemCPUTimeDataPoint(ts+1, 3, "cpu-val-2", AttributeStateInterrupt)
+				assert.Equal(t, 2, mb.metricSystemCPUTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemCPUUtilizationDataPoint(ts, 3, "cpu-val-2", AttributeStateInterrupt)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemCPUUtilizationDataPoint(ts+1, 3, "cpu-val-2", AttributeStateInterrupt)
+				assert.Equal(t, 2, mb.metricSystemCPUUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -141,14 +149,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu")
+						cpuFrequencyAttrVal, ok := dp.Attributes().Get("cpu")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
+						assert.Equal(t, "cpu.frequency-val", cpuFrequencyAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.frequency"], "Found a duplicate in the metrics slice: system.cpu.frequency")
 						validatedMetrics["system.cpu.frequency"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current frequency of the CPU core in Hz.", mi.Description())
 						assert.Equal(t, "Hz", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -211,17 +221,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "idle", attrVal.Str())
+						assert.Equal(t, "idle", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
 						validatedMetrics["system.cpu.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total seconds each logical CPU spent on each mode.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -258,17 +267,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "idle", attrVal.Str())
+						assert.Equal(t, "idle", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
 						validatedMetrics["system.cpu.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

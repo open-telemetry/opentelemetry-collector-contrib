@@ -20,7 +20,7 @@ func newLogsExporter(cfg component.Config, set exp.Settings) (*logsExporter, err
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Logs.Endpoint, oCfg.Logs.Headers)
+	signalExporter, err := newSignalExporter(oCfg, set, oCfg.Logs.ClientConfig.Endpoint, oCfg.Logs.ClientConfig.Headers)
 	if err != nil {
 		return nil, err
 	}

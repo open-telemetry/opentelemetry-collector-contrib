@@ -58,13 +58,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
-			aggMap["SystemDiskIo"] = mb.metricSystemDiskIo.config.AggregationStrategy
-			aggMap["SystemDiskIoTime"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
-			aggMap["SystemDiskMerged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
-			aggMap["SystemDiskOperationTime"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
-			aggMap["SystemDiskOperations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
-			aggMap["SystemDiskPendingOperations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
-			aggMap["SystemDiskWeightedIoTime"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
+			aggMap["system.disk.io"] = mb.metricSystemDiskIo.config.AggregationStrategy
+			aggMap["system.disk.io_time"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
+			aggMap["system.disk.merged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
+			aggMap["system.disk.operation_time"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
+			aggMap["system.disk.operations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
+			aggMap["system.disk.pending_operations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
+			aggMap["system.disk.weighted_io_time"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -73,54 +73,68 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskIoDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskIoDataPoint(ts+1, 3, "device-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSystemDiskIo.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskIoTimeDataPoint(ts, 3, "device-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskIoTimeDataPoint(ts+1, 3, "device-val-2")
+				assert.Equal(t, 2, mb.metricSystemDiskIoTime.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskMergedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskMergedDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskMergedDataPoint(ts+1, 3, "device-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSystemDiskMerged.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskOperationTimeDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskOperationTimeDataPoint(ts+1, 3, "device-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSystemDiskOperationTime.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskOperationsDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskOperationsDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskOperationsDataPoint(ts+1, 3, "device-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSystemDiskOperations.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "device-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskPendingOperationsDataPoint(ts, 3, "device-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskPendingOperationsDataPoint(ts+1, 3, "device-val-2")
+				assert.Equal(t, 2, mb.metricSystemDiskPendingOperations.data.Sum().DataPoints().Len())
 			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 3, "device-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemDiskWeightedIoTimeDataPoint(ts+1, 3, "device-val-2")
+				assert.Equal(t, 2, mb.metricSystemDiskWeightedIoTime.data.Sum().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -175,17 +189,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.io"], "Found a duplicate in the metrics slice: system.disk.io")
 						validatedMetrics["system.disk.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk bytes transferred.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -224,14 +240,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.io_time"], "Found a duplicate in the metrics slice: system.disk.io_time")
 						validatedMetrics["system.disk.io_time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -268,17 +286,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.merged"], "Found a duplicate in the metrics slice: system.disk.merged")
 						validatedMetrics["system.disk.merged"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of disk reads/writes merged into single physical disk access operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -317,17 +337,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.operation_time"], "Found a duplicate in the metrics slice: system.disk.operation_time")
 						validatedMetrics["system.disk.operation_time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent in disk operations.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -366,17 +388,19 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.operations"], "Found a duplicate in the metrics slice: system.disk.operations")
 						validatedMetrics["system.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Disk operations count.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -415,14 +439,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.pending_operations"], "Found a duplicate in the metrics slice: system.disk.pending_operations")
 						validatedMetrics["system.disk.pending_operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The queue size of pending I/O operations.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -459,14 +485,16 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("device")
+						deviceAttrVal, ok := dp.Attributes().Get("device")
 						assert.True(t, ok)
-						assert.Equal(t, "device-val", attrVal.Str())
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.disk.weighted_io_time"], "Found a duplicate in the metrics slice: system.disk.weighted_io_time")
 						validatedMetrics["system.disk.weighted_io_time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time disk spent activated multiplied by the queue length.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

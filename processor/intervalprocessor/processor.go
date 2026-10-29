@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/metrics"
 )
 
@@ -27,6 +28,7 @@ type intervalProcessor struct {
 	cancel context.CancelFunc
 	logger *zap.Logger
 
+	wg        sync.WaitGroup
 	stateLock sync.Mutex
 
 	md                 pmetric.Metrics
@@ -70,23 +72,27 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 
 func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
 	exportTicker := time.NewTicker(p.config.Interval)
-	go func() {
+	p.wg.Go(func() {
 		for {
 			select {
 			case <-p.ctx.Done():
 				exportTicker.Stop()
+				// Flush remaining buffered metrics before exiting.
+				// Use context.Background() since p.ctx is already cancelled.
+				p.exportMetrics(context.Background())
 				return
 			case <-exportTicker.C:
-				p.exportMetrics()
+				p.exportMetrics(p.ctx)
 			}
 		}
-	}()
+	})
 
 	return nil
 }
 
 func (p *intervalProcessor) Shutdown(_ context.Context) error {
 	p.cancel()
+	p.wg.Wait()
 	return nil
 }
 
@@ -128,38 +134,44 @@ func (p *intervalProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 						return false
 					}
 
-					if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-						return false
-					}
+					temporality := sum.AggregationTemporality()
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneSum := mClone.Sum()
 
-					aggregateDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup)
+					if temporality == pmetric.AggregationTemporalityCumulative {
+						aggregateDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup)
+					} else {
+						aggregateDeltaDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup, data.Adder{}.Numbers)
+					}
 					return true
 				case pmetric.MetricTypeHistogram:
 					histogram := m.Histogram()
 
-					if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-						return false
-					}
+					temporality := histogram.AggregationTemporality()
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneHistogram := mClone.Histogram()
 
-					aggregateDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup)
+					if temporality == pmetric.AggregationTemporalityCumulative {
+						aggregateDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup)
+					} else {
+						aggregateDeltaDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup, data.Adder{}.Histograms)
+					}
 					return true
 				case pmetric.MetricTypeExponentialHistogram:
 					expHistogram := m.ExponentialHistogram()
 
-					if expHistogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-						return false
-					}
+					temporality := expHistogram.AggregationTemporality()
 
 					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
 					cloneExpHistogram := mClone.ExponentialHistogram()
 
-					aggregateDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup)
+					if temporality == pmetric.AggregationTemporalityCumulative {
+						aggregateDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup)
+					} else {
+						aggregateDeltaDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup, data.Adder{}.Exponential)
+					}
 					return true
 				default:
 					errs = errors.Join(fmt.Errorf("invalid MetricType %d", m.Type()))
@@ -201,7 +213,31 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 	}
 }
 
-func (p *intervalProcessor) exportMetrics() {
+func aggregateDeltaDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP, addFunc func(state, dp DP)) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		dp := dataPoints.At(i)
+
+		streamID := identity.OfStream(metricID, dp)
+		existingDP, ok := dpLookup[streamID]
+		if !ok {
+			dpClone := mCloneDataPoints.AppendEmpty()
+			dp.CopyTo(dpClone)
+			dpLookup[streamID] = dpClone
+			continue
+		}
+
+		addFunc(existingDP, dp)
+
+		if dp.StartTimestamp() < existingDP.StartTimestamp() || existingDP.StartTimestamp() == 0 {
+			existingDP.SetStartTimestamp(dp.StartTimestamp())
+		}
+		if dp.Timestamp() > existingDP.Timestamp() {
+			existingDP.SetTimestamp(dp.Timestamp())
+		}
+	}
+}
+
+func (p *intervalProcessor) exportMetrics(ctx context.Context) {
 	md := func() pmetric.Metrics {
 		p.stateLock.Lock()
 		defer p.stateLock.Unlock()
@@ -223,7 +259,7 @@ func (p *intervalProcessor) exportMetrics() {
 		return out
 	}()
 
-	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
+	if err := p.nextConsumer.ConsumeMetrics(ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
 	}
 }

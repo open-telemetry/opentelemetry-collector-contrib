@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix && !freebsd && !solaris
+
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
 import (
@@ -9,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	ddMetrics "github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/google/uuid"
@@ -21,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
@@ -80,11 +82,15 @@ type datadogExtension struct {
 	configs *configs
 
 	// components to assist in payload sending/logging
-	logger     *zap.Logger
-	serializer agentcomponents.SerializerWithForwarder
+	logger            *zap.Logger
+	serializer        agentcomponents.SerializerWithForwarder
+	telemetrySettings component.TelemetrySettings
 
 	// struct to store extension info
 	info *info
+
+	// host stores the component host for use when creating the HTTP server
+	host component.Host
 
 	otelCollectorMetadata *payload.OtelCollector
 	httpServer            *httpserver.Server
@@ -94,17 +100,22 @@ type datadogExtension struct {
 }
 
 var (
-	_ extensioncapabilities.ConfigWatcher   = (*datadogExtension)(nil)
-	_ extensioncapabilities.PipelineWatcher = (*datadogExtension)(nil)
-	_ componentstatus.Watcher               = (*datadogExtension)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher = (*datadogExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher       = (*datadogExtension)(nil)
+	_ componentstatus.Watcher                     = (*datadogExtension)(nil)
 )
 
-// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface, which allows
+// NotifyConfigSnapshot implements the extensioncapabilities.ConfigSnapshotWatcher interface, which allows
 // this extension to be notified of the Collector's effective configuration.
 // This method is called during startup by the Collector's service after calling Start.
-func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
+func (e *datadogExtension) NotifyConfigSnapshot(_ context.Context, configSnapshot extensioncapabilities.ConfigSnapshot) error {
 	e.configs.mutex.Lock()
 	defer e.configs.mutex.Unlock()
+
+	conf := configSnapshot.Effective()
+	if conf == nil {
+		conf = confmap.New()
+	}
 
 	e.configs.collector = conf
 
@@ -120,7 +131,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 
 	// Prepare the base payload
 	otelCollectorPayload := payload.PrepareOtelCollectorMetadata(
-		e.info.host.Identifier,
+		e.info.host.SourceIdentifier.Primary,
 		e.info.hostnameSource,
 		e.info.uuid,
 		e.info.build.Version, // This is the same version from buildInfo; it is possible we could want to set a different version here in the future
@@ -130,6 +141,8 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.configs.extension.InstallationMethod,
 		buildInfo,
 		int64(payloadTTL),
+		e.configs.extension.GatewayService,
+		e.configs.extension.GatewayDestination,
 	)
 
 	// Populate resource attributes collected from TelemetrySettings.Resource
@@ -165,11 +178,15 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.logger,
 		e.serializer,
 		e.configs.extension.HTTPConfig,
-		e.info.host.Identifier,
+		e.info.host.SourceIdentifier.Primary,
 		e.info.uuid,
 		otelCollectorPayload,
+		e.telemetrySettings,
 	)
-	e.httpServer.Start()
+	startErr := e.httpServer.Start(context.Background(), e.host)
+	if startErr != nil {
+		return startErr
+	}
 	_, err = e.httpServer.SendPayload()
 	if err != nil {
 		return err
@@ -200,6 +217,9 @@ func (*datadogExtension) ComponentStatusChanged(
 
 // Start starts the extension via the component interface.
 func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
+	// Store host for later use when creating the HTTP server
+	e.host = host
+
 	// Retrieve module information from the host
 	if mi, ok := host.(hostcapabilities.ModuleInfo); ok {
 		e.info.modules = mi.GetModuleInfos()
@@ -245,7 +265,7 @@ func (e *datadogExtension) sendLivenessMetric(_ context.Context) error {
 	allTags = append(allTags, "hostname_source:"+e.info.hostnameSource)
 
 	// Create the liveness metric serie directly in agent format
-	serie := metrics.CreateLivenessSerie(e.info.host.Identifier, timestamp, allTags)
+	serie := metrics.CreateLivenessSerie(e.info.host.SourceIdentifier.Primary, timestamp, allTags)
 
 	// Send using the serializer (forwarder handles retries internally)
 	err := e.serializer.SendSeriesWithMetadata(ddMetrics.Series{serie})
@@ -255,7 +275,7 @@ func (e *datadogExtension) sendLivenessMetric(_ context.Context) error {
 	}
 
 	e.logger.Debug("Successfully sent extension liveness metric",
-		zap.String("hostname", e.info.host.Identifier),
+		zap.String("hostname", e.info.host.SourceIdentifier.Primary),
 		zap.String("hostname_source", e.info.hostnameSource))
 	return nil
 }
@@ -344,45 +364,57 @@ func (e *datadogExtension) GetSerializer() agentcomponents.SerializerWithForward
 	return e.serializer
 }
 
+// buildAgentConfig builds the Agent config component backing this extension's serializer
+// and forwarder. Extracted so option propagation can be unit tested on its own.
+//
+// extraOptions are host-supplied (see WithConfigOptions) and applied last, so they can
+// override anything set below.
+func buildAgentConfig(cfg *Config, extraOptions ...agentcomponents.ConfigOption) coreconfig.Component {
+	ddConfig := &datadogconfig.Config{
+		API:          cfg.API,
+		ClientConfig: cfg.ClientConfig,
+	}
+	options := []agentcomponents.ConfigOption{
+		agentcomponents.WithAPIConfig(ddConfig),
+		agentcomponents.WithForwarderConfig(),
+		agentcomponents.WithPayloadsConfig(),
+		// Use ClientConfig proxy and TLS settings instead of environment variables
+		agentcomponents.WithProxy(ddConfig),
+		agentcomponents.WithTLSSetting(ddConfig),
+		// logging_frequency required to be set to avoid "divide by zero" error
+		agentcomponents.WithLoggingConfig(),
+	}
+	return agentcomponents.NewConfigComponent(append(options, extraOptions...)...)
+}
+
 func newExtension(
 	ctx context.Context,
 	cfg *Config,
 	set extension.Settings,
 	hostProvider source.Provider,
 	uuidProvider uuidProvider,
+	configOptions ...agentcomponents.ConfigOption,
 ) (*datadogExtension, error) {
-	// Create configuration for agent components
-	// Convert datadogextension.Config to datadogconfig.Config
-	ddConfig := &datadogconfig.Config{
-		API:          cfg.API,
-		ClientConfig: cfg.ClientConfig,
-	}
-	host, err := hostProvider.Source(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	var host source.Source
 	var hostnameSource string
 	if cfg.Hostname != "" {
+		// Hostname is already known from config; skip the source provider to avoid
+		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
+		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname, SourceIdentifier: source.SourceIdentifier{Primary: cfg.Hostname}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 	} else {
 		hostnameSource = "inferred"
-	}
-
-	// Create agent components with proxy configuration from ClientConfig
-	configOptions := []agentcomponents.ConfigOption{
-		agentcomponents.WithAPIConfig(ddConfig),
-		agentcomponents.WithForwarderConfig(),
-		agentcomponents.WithPayloadsConfig(),
-		// Use ClientConfig proxy settings instead of environment variables
-		agentcomponents.WithProxy(ddConfig),
-		// logging_frequency required to be set to avoid "divide by zero" error
-		agentcomponents.WithCustomConfig("logging_frequency", 1, pkgconfigmodel.SourceDefault),
+		var err error
+		host, err = hostProvider.Source(context.Background())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Create agent components
-	configComponent := agentcomponents.NewConfigComponent(configOptions...)
+	configComponent := buildAgentConfig(cfg, configOptions...)
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
-	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.Identifier)
+	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.SourceIdentifier.Primary)
 
 	// Collect resource attributes from TelemetrySettings.Resource
 	// Format: map[string]string
@@ -404,9 +436,10 @@ func newExtension(
 	channel := make(chan struct{}, 1)
 
 	e := &datadogExtension{
-		configs:    &configs{extension: cfg},
-		logger:     set.Logger,
-		serializer: serializer,
+		configs:           &configs{extension: cfg},
+		logger:            set.Logger,
+		serializer:        serializer,
+		telemetrySettings: set.TelemetrySettings,
 		info: &info{
 			host:               host,
 			hostnameSource:     hostnameSource,

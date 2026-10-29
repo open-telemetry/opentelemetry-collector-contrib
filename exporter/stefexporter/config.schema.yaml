@@ -1,4 +1,4 @@
-description: Config defines configuration for logging exporter.
+description: Config defines configuration for STEF exporter.
 type: object
 properties:
   retry_on_failure:

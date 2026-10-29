@@ -8,7 +8,7 @@ $defs:
         items:
           x-customType: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator.Config
       retry_on_failure:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.config
+        $ref: /internal/coreinternal/consumerretry.config
       storage:
         x-pointer: true
         type: string

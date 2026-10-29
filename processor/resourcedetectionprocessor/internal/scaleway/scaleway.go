@@ -1,25 +1,24 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_scaleway
+
 package scaleway // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
 	instance "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway/internal/metadata"
-)
-
-const (
-	// TypeStr is type of detector.
-	TypeStr = "scaleway"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -29,29 +28,37 @@ var newScalewayClient = instance.NewMetadataAPI
 
 // Detector is a Scaleway metadata detector.
 type Detector struct {
-	client *instance.MetadataAPI
-	logger *zap.Logger
-	rb     *metadata.ResourceBuilder
+	client                *instance.MetadataAPI
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new Scaleway metadata detector.
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	cli := newScalewayClient()
 
 	return &Detector{
-		client: cli,
-		logger: p.Logger,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		client:                cli,
+		logger:                p.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
-	md, err := d.client.GetMetadata()
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	md, err := d.client.GetMetadataWithContext(ctx)
 	if err != nil || md == nil {
 		d.logger.Debug("Scaleway detector: not running on Scaleway or metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			if err == nil {
+				err = errors.New("scaleway metadata is nil")
+			}
+			return pcommon.NewResource(), "", fmt.Errorf("scaleway metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

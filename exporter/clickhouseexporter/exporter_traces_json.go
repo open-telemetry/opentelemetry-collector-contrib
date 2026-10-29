@@ -49,13 +49,13 @@ func (e *tracesJSONExporter) start(ctx context.Context, _ component.Host) error 
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClientFromOptions(opt)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
 	if err != nil {
 		return err
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); createDBErr != nil {
+		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); createDBErr != nil {
 			return createDBErr
 		}
 
@@ -226,7 +226,14 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 }
 
 func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names, attrs []string, err error) {
-	for i := 0; i < events.Len(); i++ {
+	n := events.Len()
+	if n == 0 {
+		return nil, nil, nil, nil
+	}
+	times = make([]time.Time, 0, n)
+	names = make([]string, 0, n)
+	attrs = make([]string, 0, n)
+	for i := range n {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
@@ -238,11 +245,19 @@ func convertEventsJSON(events ptrace.SpanEventSlice) (times []time.Time, names, 
 		attrs = append(attrs, string(eventAttrBytes))
 	}
 
-	return times, names, attrs, err
+	return times, names, attrs, nil
 }
 
 func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, attrs []string, err error) {
-	for i := 0; i < links.Len(); i++ {
+	n := links.Len()
+	if n == 0 {
+		return nil, nil, nil, nil, nil
+	}
+	traceIDs = make([]string, 0, n)
+	spanIDs = make([]string, 0, n)
+	states = make([]string, 0, n)
+	attrs = make([]string, 0, n)
+	for i := range n {
 		link := links.At(i)
 		traceIDs = append(traceIDs, link.TraceID().String())
 		spanIDs = append(spanIDs, link.SpanID().String())
@@ -255,7 +270,7 @@ func convertLinksJSON(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states, at
 		attrs = append(attrs, string(linkAttrBytes))
 	}
 
-	return traceIDs, spanIDs, states, attrs, err
+	return traceIDs, spanIDs, states, attrs, nil
 }
 
 func (e *tracesJSONExporter) renderInsertTracesJSONSQL() {
@@ -277,7 +292,7 @@ func (e *tracesJSONExporter) renderInsertTracesJSONSQL() {
 func renderCreateTracesJSONTableSQL(cfg *Config) string {
 	ttlExpr := internal.GenerateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
 	return fmt.Sprintf(sqltemplates.TracesJSONCreateTable,
-		cfg.database(), cfg.TracesTableName, cfg.clusterString(),
+		cfg.database(), cfg.TracesTableName, cfg.tableClusterString(),
 		cfg.tableEngineString(),
 		ttlExpr,
 	)

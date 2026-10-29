@@ -83,7 +83,10 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 			},
 
 			ServiceDiscoveryConfigs: discovery.Configs{
-				&discovery.StaticConfig{
+				// Must be a value, not a pointer: only discovery.StaticConfig is
+				// registered for YAML marshaling, which the prometheus receiver
+				// performs on startup.
+				discovery.StaticConfig{
 					{
 						Targets: []model.LabelSet{
 							{model.AddressLabel: model.LabelValue(u.Host)},

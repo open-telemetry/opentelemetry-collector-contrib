@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
@@ -38,6 +39,9 @@ type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
 	// Traces related configurations
 	Traces TracesConfig `mapstructure:"traces"`
+	// Compression format of blob payloads (default = "", meaning none).
+	// Options are "", "gzip", or "auto", which detects gzip per blob from its header.
+	Compression string `mapstructure:"compression"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -52,6 +56,10 @@ type EventHubConfig struct {
 type LogsConfig struct {
 	// Name of the blob container with the logs (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
+	// Encoding of log blobs in this container (default = "otlp_json").
+	// Either one of the built-in values "otlp_json" or "otlp_proto", or the
+	// ID of an encoding extension that implements plog.Unmarshaler.
+	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -59,6 +67,10 @@ type LogsConfig struct {
 type TracesConfig struct {
 	// Name of the blob container with the traces (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
+	// Encoding of trace blobs in this container (default = "otlp_json").
+	// Either one of the built-in values "otlp_json" or "otlp_proto", or the
+	// ID of an encoding extension that implements ptrace.Unmarshaler.
+	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -111,6 +123,56 @@ func (e *CloudType) UnmarshalText(text []byte) error {
 	}
 }
 
+const (
+	// EncodingOTLPJSON denotes OTLP/JSON-encoded blob payloads.
+	EncodingOTLPJSON = "otlp_json"
+	// EncodingOTLPProto denotes OTLP/Protobuf-encoded blob payloads.
+	EncodingOTLPProto = "otlp_proto"
+
+	// CompressionNone denotes uncompressed blob payloads.
+	CompressionNone = ""
+	// CompressionGzip denotes gzip-compressed blob payloads.
+	CompressionGzip = "gzip"
+	// CompressionAuto detects gzip compression per blob from its header.
+	CompressionAuto = "auto"
+)
+
+// isBuiltinEncoding reports whether enc is one of the encodings the receiver
+// can unmarshal without an encoding extension.
+func isBuiltinEncoding(enc string) bool {
+	switch enc {
+	case EncodingOTLPJSON, EncodingOTLPProto:
+		return true
+	default:
+		return false
+	}
+}
+
+// validateEncoding accepts either a built-in encoding or a syntactically valid
+// encoding extension ID. The existence of the referenced extension cannot be
+// checked here as the host's extensions are only available once the component
+// starts; it is verified in blobReceiver.Start.
+func validateEncoding(enc string) error {
+	if isBuiltinEncoding(enc) {
+		return nil
+	}
+	var id component.ID
+	if err := id.UnmarshalText([]byte(enc)); err != nil {
+		return fmt.Errorf("encoding %q is not a supported built-in encoding (%q, %q) or a valid encoding extension ID: %w", enc, EncodingOTLPJSON, EncodingOTLPProto, err)
+	}
+	return nil
+}
+
+// validateCompression accepts the supported compression formats.
+func validateCompression(compression string) error {
+	switch compression {
+	case CompressionNone, CompressionGzip, CompressionAuto:
+		return nil
+	default:
+		return fmt.Errorf("compression %q is not supported. supported options include [%q,%q,%q]", compression, CompressionNone, CompressionGzip, CompressionAuto)
+	}
+}
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
 	switch c.Authentication {
@@ -134,6 +196,17 @@ func (c Config) Validate() (err error) {
 		if c.ConnectionString == "" {
 			err = multierr.Append(err, errMissingConnectionString)
 		}
+	}
+
+	if encErr := validateEncoding(c.Logs.Encoding); encErr != nil {
+		err = multierr.Append(err, fmt.Errorf("logs.%w", encErr))
+	}
+	if encErr := validateEncoding(c.Traces.Encoding); encErr != nil {
+		err = multierr.Append(err, fmt.Errorf("traces.%w", encErr))
+	}
+
+	if compErr := validateCompression(c.Compression); compErr != nil {
+		err = multierr.Append(err, compErr)
 	}
 
 	return err

@@ -1,15 +1,16 @@
 # Windows Event Log Receiver Test Configurations
 
-This directory contains test configurations for the windowseventlogreceiver.
+This directory contains test configurations for the Windows Event Log receiver.
 
 ## Files
 
 - **config.yaml** - Minimal test configuration used by unit tests
 - **collector-config-example.yaml** - Complete collector configuration demonstrating various use cases
+- **test-evtx.evtx** - EVTX archive for testing reading from EVTX archives
 
 ## Testing on Windows
 
-The windowseventlogreceiver only works on Windows operating systems. To test:
+The Windows Event Log receiver only works on Windows operating systems. To test:
 
 ### 1. Build the Collector
 
@@ -73,11 +74,11 @@ Check the output (console or log file depending on your exporter configuration) 
 
 ### Operators
 
-The `windowseventlogreceiver` uses the Stanza adapter framework, which supports additional operators for log processing:
+The Windows Event Log receiver uses the Stanza adapter framework, which supports additional operators for log processing:
 
 ```yaml
 receivers:
-  windowseventlog:
+  windows_event_log:
     channel: application
     start_at: end
     operators:

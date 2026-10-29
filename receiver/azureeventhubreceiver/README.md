@@ -50,19 +50,33 @@ Either `connection` or `auth` must be specified.
 | `offset` | string | No | `""` | Starting offset. Only applicable when `partition` is set. |
 | `storage` | string | No | | ID of a [storage extension] for checkpoint persistence. |
 
+### Distributed Consumption Settings
+
+When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2#Processor) to coordinate partition ownership across multiple collector instances via Azure Blob Storage. This is mutually exclusive with `partition`, `offset`, and `storage`.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `blob_checkpoint_store.connection` | string | * | | Azure Blob Storage connection string. Required when not using `auth`. |
+| `blob_checkpoint_store.storage_account_url` | string | * | | Blob service URL (e.g., `https://myaccount.blob.core.windows.net`). Required when using `auth`. |
+| `blob_checkpoint_store.container_name` | string | Yes | | Blob container for checkpoint data. Must already exist before starting the collector. |
+
+\* One of `connection` or `storage_account_url` is required.
+
 ### Polling Settings
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `max_poll_events` | int | No | `100` | Maximum events to retrieve per poll. |
 | `poll_rate` | int | No | `5` | Maximum seconds to wait before returning fewer than `max_poll_events`. |
+| `prefetch_count` | int | No | `0` | Size of the SDK's per-partition prefetch buffer. The SDK fills this buffer asynchronously so `ReceiveEvents` calls return from a local cache instead of waiting on the network. `0` uses the SDK default (300). A negative value disables prefetch. Increase this when poll batches are draining the buffer faster than the SDK refills it. |
 
 ### Data Transformation Settings
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `format` | string | No | `azure` | Message format: `azure`, `raw`, or `""`. See [Format](#format) section. |
-| `apply_semantic_conventions` | bool | No | `false` | Translate Azure Resource Logs using OpenTelemetry semantic convention attribute names. |
+| `format` | string | No | `azure` | Message format: `azure`, `raw`, or `""`. Mutually exclusive with `encoding`. See [Format](#format) section. |
+| `encoding` | string | No | | ID of an [encoding extension] used to unmarshal the message body. Mutually exclusive with `format`. See [Encoding](#encoding) section. |
+| `apply_semantic_conventions` | bool | No | `false` | Translate Azure Resource Logs using OpenTelemetry semantic convention attribute names. The semantic convention version is controlled by the `pkg.translator.azurelogs.EmitV1LogConventions` and `pkg.translator.azurelogs.DontEmitV0LogConventions` feature gates. See the [translator documentation](../../pkg/translator/azurelogs/documentation.md). |
 | `time_formats.logs` | []string | No | | Custom time formats for logs. Uses [Go time layout](https://pkg.go.dev/time#Layout). Falls back to ISO8601. |
 | `time_formats.metrics` | []string | No | | Custom time formats for metrics. |
 | `time_formats.traces` | []string | No | | Custom time formats for traces. |
@@ -118,6 +132,40 @@ extensions:
     directory: /var/lib/otelcol/eventhub
 ```
 
+#### Distributed Consumption with Blob Checkpoint Store
+
+When `blob_checkpoint_store` is configured, the receiver automatically:
+- Coordinates partition ownership across collector instances via blob leases
+- Checkpoints progress to Azure Blob Storage
+- Rebalances partitions when instances are added or removed
+
+**Prerequisites:**
+- The blob container must already exist before starting the collector
+- All collector instances must use the same consumer group and container
+
+```yaml
+# With connection strings
+receivers:
+  azure_event_hub:
+    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+    blob_checkpoint_store:
+      connection: DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net
+      container_name: eventhub-checkpoints
+```
+
+```yaml
+# With auth extension
+receivers:
+  azure_event_hub:
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
+    blob_checkpoint_store:
+      storage_account_url: https://myaccount.blob.core.windows.net
+      container_name: eventhub-checkpoints
+```
+
 #### Custom Time Formats and Partitioning
 
 ```yaml
@@ -132,16 +180,6 @@ receivers:
       logs: ["01/02/2006 15:04:05", "2006-01-02 15:04:05"]
       metrics: ["01/02/2006 15:04:05"]
 ```
-
-## Feature Gates
-
-The following feature gates are available for this receiver:
-
-### `receiver.azureeventhubreceiver.UseAzeventhubs`
-
-| Status | Default | From Version | To Version |
-|--------|---------|--------------|------------|
-| Stable | `true`  | v0.129.0     | v0.144.0   |
 
 ## Known Limitations
 
@@ -173,25 +211,25 @@ attributes. The table below summarizes the mapping between the
 and the OpenTelemetry attributes.
 
 
-| Azure                            | OpenTelemetry                          |
-|----------------------------------|----------------------------------------|
-| callerIpAddress (optional)       | network.peer.address (attribute)       |
-| correlationId (optional)         | azure.correlation.id (attribute)       |
-| category (optional)              | azure.category (attribute)             |
-| durationMs (optional)            | azure.duration (attribute)             |
-| Level (optional)                 | severity_number, severity_text (field) |
-| location (optional)              | cloud.region (attribute)               |
-| —                                | cloud.provider (attribute)             |
-| operationName (required)         | azure.operation.name (attribute)       |
-| operationVersion (optional)      | azure.operation.version (attribute)    |
-| properties (optional)            | azure.properties (attribute, nested)   |
-| resourceId (required)            | azure.resource.id (resource attribute) |
-| resultDescription (optional)     | azure.result.description (attribute)   |
-| resultSignature (optional)       | azure.result.signature (attribute)     |
-| resultType (optional)            | azure.result.type (attribute)          |
-| tenantId (required, tenant logs) | azure.tenant.id (attribute)            |
-| time or timeStamp (required)     | time_unix_nano (time takes precedence) |
-| identity (optional)              | azure.identity (attribute, nested)     |
+| Azure                                                                  | OpenTelemetry                                                                                    |
+|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| callerIpAddress (optional)                                             | network.peer.address (attribute)                                                                 |
+| correlationId (optional)                                               | azure.correlation.id (attribute)                                                                 |
+| category (optional)                                                    | azure.category (attribute)                                                                       |
+| durationMs (optional)                                                  | azure.duration (attribute)                                                                       |
+| Level (optional)                                                       | severity_number, severity_text (field)                                                           |
+| location (optional)                                                    | cloud.region (attribute)                                                                         |
+| —                                                                      | cloud.provider (attribute)                                                                       |
+| operationName (required)                                               | azure.operation.name (attribute)                                                                 |
+| operationVersion (optional)                                            | azure.operation.version (attribute)                                                              |
+| properties or EventProperties (optional)                               | azure.properties (attribute, nested, `properties` takes precedence)                              |
+| resourceId (required)                                                  | azure.resource.id (resource attribute)                                                           |
+| resultDescription (optional)                                           | azure.result.description (attribute)                                                             |
+| resultSignature (optional)                                             | azure.result.signature (attribute)                                                               |
+| resultType (optional)                                                  | azure.result.type (attribute)                                                                    |
+| tenantId (required, tenant logs)                                       | azure.tenant.id (attribute)                                                                      |
+| time, timeStamp, EventTimeString, EventTimestamp, startTime (required) | time_unix_nano (fields listed in order of precedence, with `time` having the highest precedence) |
+| identity (optional)                                                    | azure.identity (attribute, nested)                                                               |
 
 Notes:
 * JSON does not distinguish between fixed and floating point numbers. All
@@ -257,4 +295,26 @@ Traces based on Azure Application Insights array of records from `AppRequests` &
 | Id          | span.id                                               |
 | AppRoleName | service.name                                          |
 
+## Encoding
+
+As an alternative to the built-in `format`, the `encoding` option delegates
+unmarshaling of the message body to an [encoding extension]. This is mutually
+exclusive with `format`.
+
+```yaml
+extensions:
+  azure_encoding:
+
+receivers:
+  azure_event_hub:
+    connection: Endpoint=sb://<namespace>.servicebus.windows.net/;SharedAccessKeyName=<key-name>;SharedAccessKey=<key>;EntityPath=<hub-name>
+    encoding: azure_encoding
+```
+
+> [!NOTE]
+> The encoding extension only receives the message body. AMQP properties and
+> enqueued time (which the `raw` format maps onto the LogRecord) are not applied
+> on the encoding path. Use `format: raw` if you need those.
+
 [storage extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage
+[encoding extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding

@@ -30,16 +30,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("aerospike.namespace")
+			aerospikeNamespaceAttrVal, ok := res.Attributes().Get("aerospike.namespace")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aerospike.namespace-val", val.Str())
+				assert.Equal(t, "aerospike.namespace-val", aerospikeNamespaceAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("aerospike.node.name")
+			aerospikeNodeNameAttrVal, ok := res.Attributes().Get("aerospike.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "aerospike.node.name-val", val.Str())
+				assert.Equal(t, "aerospike.node.name-val", aerospikeNodeNameAttrVal.Str())
 			}
 		})
 	}

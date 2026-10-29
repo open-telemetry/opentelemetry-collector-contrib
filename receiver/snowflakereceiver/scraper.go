@@ -107,7 +107,7 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 }
 
 func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeBillingCloudServiceTotal.Enabled && !s.conf.Metrics.SnowflakeBillingTotalCreditTotal.Enabled && !s.conf.Metrics.SnowflakeBillingVirtualWarehouseTotal.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeBillingCloudServiceTotal.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeBillingTotalCreditTotal.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeBillingVirtualWarehouseTotal.Enabled {
 		return
 	}
 
@@ -125,7 +125,7 @@ func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pc
 }
 
 func (s *snowflakeMetricsScraper) scrapeWarehouseBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeBillingWarehouseTotalCreditTotal.Enabled && !s.conf.Metrics.SnowflakeBillingWarehouseCloudServiceTotal.Enabled && !s.conf.Metrics.SnowflakeBillingWarehouseVirtualWarehouseTotal.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeBillingWarehouseTotalCreditTotal.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeBillingWarehouseCloudServiceTotal.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeBillingWarehouseVirtualWarehouseTotal.Enabled {
 		return
 	}
 
@@ -143,7 +143,7 @@ func (s *snowflakeMetricsScraper) scrapeWarehouseBillingMetrics(ctx context.Cont
 }
 
 func (s *snowflakeMetricsScraper) scrapeLoginMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeLoginsTotal.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeLoginsTotal.Enabled {
 		return
 	}
 
@@ -159,7 +159,7 @@ func (s *snowflakeMetricsScraper) scrapeLoginMetrics(ctx context.Context, t pcom
 }
 
 func (s *snowflakeMetricsScraper) scrapeHighLevelQueryMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeQueryExecuted.Enabled && !s.conf.Metrics.SnowflakeQueryBlocked.Enabled && !s.conf.Metrics.SnowflakeQueryQueuedOverload.Enabled && !s.conf.Metrics.SnowflakeQueryQueuedProvision.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryExecuted.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryBlocked.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryQueuedOverload.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryQueuedProvision.Enabled {
 		return
 	}
 	highLevelQueryMetrics, err := s.client.FetchHighLevelQueryMetrics(ctx)
@@ -177,16 +177,16 @@ func (s *snowflakeMetricsScraper) scrapeHighLevelQueryMetrics(ctx context.Contex
 }
 
 func (s *snowflakeMetricsScraper) scrapeDBMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeDatabaseQueryCount.Enabled && !s.conf.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled && !s.conf.Metrics.SnowflakeQueryBytesSpilledLocalAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeQueryBytesSpilledRemoteAvg.Enabled && !s.conf.Metrics.SnowflakeQueryBytesWrittenAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeQueryCompilationTimeAvg.Enabled && !s.conf.Metrics.SnowflakeQueryDataScannedCacheAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeQueryExecutionTimeAvg.Enabled && !s.conf.Metrics.SnowflakeQueryPartitionsScannedAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeQueuedOverloadTimeAvg.Enabled && !s.conf.Metrics.SnowflakeQueuedProvisioningTimeAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeQueuedRepairTimeAvg.Enabled && !s.conf.Metrics.SnowflakeRowsInsertedAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeRowsDeletedAvg.Enabled && !s.conf.Metrics.SnowflakeRowsProducedAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeRowsUnloadedAvg.Enabled && !s.conf.Metrics.SnowflakeRowsUpdatedAvg.Enabled &&
-		!s.conf.Metrics.SnowflakeTotalElapsedTimeAvg.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeDatabaseQueryCount.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryBytesSpilledLocalAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryBytesSpilledRemoteAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryBytesWrittenAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryCompilationTimeAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryDataScannedCacheAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryExecutionTimeAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueryPartitionsScannedAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueuedOverloadTimeAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueuedProvisioningTimeAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeQueuedRepairTimeAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeRowsInsertedAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeRowsDeletedAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeRowsProducedAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeRowsUnloadedAvg.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeRowsUpdatedAvg.Enabled &&
+		!s.conf.MetricsBuilderConfig.Metrics.SnowflakeTotalElapsedTimeAvg.Enabled {
 		return
 	}
 	DBMetrics, err := s.client.FetchDbMetrics(ctx)
@@ -220,7 +220,7 @@ func (s *snowflakeMetricsScraper) scrapeDBMetrics(ctx context.Context, t pcommon
 }
 
 func (s *snowflakeMetricsScraper) scrapeSessionMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeSessionIDCount.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeSessionIDCount.Enabled {
 		return
 	}
 
@@ -236,7 +236,7 @@ func (s *snowflakeMetricsScraper) scrapeSessionMetrics(ctx context.Context, t pc
 }
 
 func (s *snowflakeMetricsScraper) scrapeSnowpipeMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakePipeCreditsUsedTotal.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakePipeCreditsUsedTotal.Enabled {
 		return
 	}
 
@@ -252,7 +252,7 @@ func (s *snowflakeMetricsScraper) scrapeSnowpipeMetrics(ctx context.Context, t p
 }
 
 func (s *snowflakeMetricsScraper) scrapeStorageMetrics(ctx context.Context, t pcommon.Timestamp, errs chan<- error) {
-	if !s.conf.Metrics.SnowflakeStorageStorageBytesTotal.Enabled && !s.conf.Metrics.SnowflakeStorageStageBytesTotal.Enabled && !s.conf.Metrics.SnowflakeStorageFailsafeBytesTotal.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SnowflakeStorageStorageBytesTotal.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeStorageStageBytesTotal.Enabled && !s.conf.MetricsBuilderConfig.Metrics.SnowflakeStorageFailsafeBytesTotal.Enabled {
 		return
 	}
 

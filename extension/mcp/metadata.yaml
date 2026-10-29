@@ -1,0 +1,14 @@
+display_name: MCP Server
+type: mcp
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [pavolloffay, codeboten, dmitryax]
+
+tests:
+  config:
+    endpoint: localhost:0

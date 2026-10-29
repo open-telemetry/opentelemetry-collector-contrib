@@ -51,9 +51,9 @@ func Test_Scrape_All(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
-	cfg.Metrics.FileAtime.Enabled = true
-	cfg.Metrics.FileCtime.Enabled = true
-	cfg.Metrics.FileCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileAtime.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileCtime.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileCount.Enabled = true
 
 	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	metrics, err := s.scrape(t.Context())
@@ -94,4 +94,35 @@ func Test_Scrape_All(t *testing.T) {
 	fileCount = metrics.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0)
 	require.Equal(t, "file.count", fileCount.Name())
 	require.Equal(t, int64(1), fileCount.Gauge().DataPoints().At(0).IntValue())
+	// file.include is opt-in, so it must not be present by default.
+	_, ok := fileCount.Gauge().DataPoints().At(0).Attributes().Get("file.include")
+	require.False(t, ok)
+}
+
+func Test_Scrape_FileCount_IncludeAttribute(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := newDefaultConfig().(*Config)
+	cfg.Include = filepath.Join(tmpDir, "*.log")
+	// Isolate file.count by disabling the default per-file metrics.
+	cfg.MetricsBuilderConfig.Metrics.FileMtime.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.FileSize.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.FileCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.FileCount.EnabledAttributes = []metadata.FileCountMetricAttributeKey{
+		metadata.FileCountMetricAttributeKeyFileInclude,
+	}
+
+	logFile := filepath.Join(tmpDir, "my.log")
+	err := os.WriteFile(logFile, []byte("something"), 0o600)
+	require.NoError(t, err)
+
+	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	fileCount := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	require.Equal(t, "file.count", fileCount.Name())
+	require.Equal(t, int64(1), fileCount.Gauge().DataPoints().At(0).IntValue())
+	includeValue, ok := fileCount.Gauge().DataPoints().At(0).Attributes().Get("file.include")
+	require.True(t, ok)
+	require.Equal(t, cfg.Include, includeValue.Str())
 }

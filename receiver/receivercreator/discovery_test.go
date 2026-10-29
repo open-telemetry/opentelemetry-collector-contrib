@@ -225,9 +225,9 @@ endpoint: 1.2.3.4:6379`
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
+				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
 				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
-				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
+				require.Equal(t, subreceiverTemplate.receiverConfig.id, test.expectedReceiver.receiverConfig.id)
 			} else {
 				require.Error(t, err)
 			}
@@ -239,11 +239,11 @@ func TestK8sHintsBuilderLogs(t *testing.T) {
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
 
 	id := component.ID{}
-	err := id.UnmarshalText([]byte("filelog/pod-2-UID_redis"))
+	err := id.UnmarshalText([]byte("file_log/pod-2-UID_redis"))
 	assert.NoError(t, err)
 
 	idNginx := component.ID{}
-	err = idNginx.UnmarshalText([]byte("filelog/pod-2-UID_nginx"))
+	err = idNginx.UnmarshalText([]byte("file_log/pod-2-UID_nginx"))
 	assert.NoError(t, err)
 
 	config := `
@@ -584,8 +584,14 @@ include:
 					Enabled:            true,
 					IgnoreReceivers:    test.ignoreReceivers,
 					DefaultAnnotations: test.defaultAnnotations,
+					DefaultFileLogConfig: userConfigMap{
+						"include_file_path": true,
+						"include_file_name": false,
+						"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+					},
 				},
-				logger)
+				logger,
+			)
 			env, err := test.inputEndpoint.Env()
 			require.NoError(t, err)
 			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
@@ -595,9 +601,9 @@ include:
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
+				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
 				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
-				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
+				require.Equal(t, subreceiverTemplate.receiverConfig.id, test.expectedReceiver.receiverConfig.id)
 			} else {
 				require.Error(t, err)
 			}
@@ -682,7 +688,8 @@ nested_example:
 				assert.Equal(
 					t,
 					test.expectedConf,
-					conf)
+					conf,
+				)
 			}
 		})
 	}
@@ -750,10 +757,48 @@ operators:
 					"my-uid",
 					"my-pod",
 					"my-ns",
-					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))),
+					userConfigMap{
+						"include_file_path": true,
+					},
+					zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)),
+				),
 			)
 		})
 	}
+}
+
+func TestCreateLogsConfigDoesNotMutateDefaultConfig(t *testing.T) {
+	defaultConfig := userConfigMap{
+		"include_file_path": true,
+	}
+	logger := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
+
+	createLogsConfig(
+		map[string]string{
+			"io.opentelemetry.discovery.logs/config": "operators:\n- type: regex_parser\n  id: test-regex-parser",
+		},
+		"annotated-container",
+		"uid-1",
+		"annotated-pod",
+		"namespace",
+		defaultConfig,
+		logger,
+	)
+
+	config := createLogsConfig(
+		nil,
+		"unrelated-container",
+		"uid-2",
+		"unrelated-pod",
+		"namespace",
+		defaultConfig,
+		logger,
+	)
+
+	assert.Equal(t, userConfigMap{
+		"include":           []string{"/var/log/pods/namespace_unrelated-pod_uid-2/unrelated-container/*.log"},
+		"include_file_path": true,
+	}, config)
 }
 
 func TestDiscoveryEnabled(t *testing.T) {

@@ -12,7 +12,10 @@ $defs:
         $ref: context_id
       error_mode:
         description: ErrorMode determines how the processor reacts to errors that occur while processing this group of statements. When provided, it overrides the default Config ErrorMode.
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+        $ref: /pkg/ottl.error_mode
+      shared_cache:
+        description: SharedCache enables sharing per-context caches between all statement groups with this option enabled in the same processor instance.
+        type: boolean
       statements:
         type: array
         items:

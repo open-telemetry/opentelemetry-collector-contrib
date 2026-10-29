@@ -45,7 +45,8 @@ func NewConnectorFactory(componentType component.Type, metricsStability, traceSt
 		componentType,
 		createDefaultConfig,
 		connector.WithTracesToMetrics(f.createTracesToMetricsConnector, metricsStability),
-		connector.WithTracesToTraces(createTracesToTracesConnector, traceStability))
+		connector.WithTracesToTraces(createTracesToTracesConnector, traceStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -53,7 +54,6 @@ func createDefaultConfig() component.Config {
 		Traces: datadogconfig.TracesConnectorConfig{
 			TracesConfig: datadogconfig.TracesConfig{
 				IgnoreResources:        []string{},
-				PeerServiceAggregation: true,
 				PeerTagsAggregation:    true,
 				ComputeStatsBySpanKind: true,
 			},

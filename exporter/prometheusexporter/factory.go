@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -23,19 +23,23 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *queueCfg.Batch.GetOrInsertDefault()
+	queueCfg.Batch = configoptional.Default(batchCfg)
+
 	return &Config{
-		ServerConfig:      confighttp.ServerConfig{NetAddr: netAddr},
+		ServerConfig:      confighttp.NewDefaultServerConfig(),
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
 		EnableOpenMetrics: false,
 		AddMetricSuffixes: true,
+		QueueBatchConfig:  configoptional.Default(queueCfg),
 	}
 }
 
@@ -65,8 +69,14 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	settings := pcfg.ResourceConstantLabels
+	if settings.IsEmpty() && !metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() && !pcfg.ResourceToTelemetrySettings.IsEmpty() {
+		set.Logger.Warn("resource_to_telemetry_conversion is deprecated; use resource_constant_labels instead")
+		settings = pcfg.ResourceToTelemetrySettings
+	}
+
 	return &wrapMetricsExporter{
-		Metrics:  resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
+		Metrics:  resourcetotelemetry.WrapMetricsExporter(settings, exporter),
 		exporter: prometheus,
 	}, nil
 }

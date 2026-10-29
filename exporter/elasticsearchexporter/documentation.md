@@ -2,6 +2,29 @@
 
 # elasticsearch
 
+## Sending Queue
+
+**Support:** This component overrides the default QueueBatch configuration.
+
+```yaml
+sending_queue:
+    enabled: true              # OVERRIDE
+    wait_for_result: false     # default
+    sizer: requests            # default
+    queue_size: 10             # OVERRIDE
+    block_on_overflow: true    # OVERRIDE
+    storage: null              # default
+    num_consumers: 10          # default
+    batch:
+        enabled: true          # OVERRIDE
+        flush_timeout: 10s     # OVERRIDE
+        sizer: bytes           # OVERRIDE
+        min_size: 1000000      # OVERRIDE
+        max_size: 5000000      # OVERRIDE
+        partition:
+            metadata_keys: []  # default
+```
+
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
@@ -16,10 +39,10 @@ Count of the completed bulk requests.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http.response.status_code | HTTP status code. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
 
 ### otelcol.elasticsearch.bulk_requests.latency
 
@@ -31,10 +54,10 @@ Latency of Elasticsearch bulk operations in seconds.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http.response.status_code | HTTP status code. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
 
 ### otelcol.elasticsearch.docs.processed
 
@@ -46,12 +69,13 @@ Count of documents flushed to Elasticsearch.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http.response.status_code | HTTP status code. | Any Int |
-| failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` |
-| error.type | The type of error that occurred when processing the documents. | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
+| failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` | - |
+| error.type | The type of error that occurred when processing the documents. | Any Str | - |
+| db.collection.name | The index or data stream documents were written to, as reported in the bulk response `_index`, with backing and failure store indices folded into their data stream name. Only set when `telemetry::include_destination_index` is enabled. | Any Str | - |
 
 ### otelcol.elasticsearch.docs.received
 
@@ -70,6 +94,30 @@ Only document level retries are captured, whole bulk request retries are not cap
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Alpha |
+
+### otelcol.elasticsearch.docs.retried_http_request
+
+Count of documents retried due to HTTP request-level failures.
+
+Counts documents that are retried because an entire bulk HTTP
+request failed with a retryable status code (as configured in
+`retry_on_status`) and was retried by the Elasticsearch client,
+up to the `max_retries` limit.
+
+In contrast, `elasticsearch.docs.retried` counts documents retried
+individually within otherwise successful bulk requests due to
+document-specific failures such as mapping conflicts.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Alpha |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
 
 ### otelcol.elasticsearch.flushed.bytes
 

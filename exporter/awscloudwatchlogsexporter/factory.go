@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-// Package awscloudwatchlogsexporter provides a logging exporter for the OpenTelemetry collector.
+// Package awscloudwatchlogsexporter provides an AWS CloudWatch Logs exporter for the OpenTelemetry collector.
 // This package is subject to change and may break configuration settings and behavior.
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
@@ -25,13 +25,16 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
 	queueSettings := exporterhelper.NewDefaultQueueConfig()
 	// For backwards compatibilitiy, we default to 1 consumer
 	queueSettings.NumConsumers = 1
+	batchCfg := *queueSettings.Batch.GetOrInsertDefault()
+	queueSettings.Batch = configoptional.Some(batchCfg)
 
 	return &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),

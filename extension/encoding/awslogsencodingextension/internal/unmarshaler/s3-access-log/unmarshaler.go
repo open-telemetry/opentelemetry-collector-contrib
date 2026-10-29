@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -176,16 +176,20 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 	var value string
 	var err error
 	for i = 0; remaining != ""; i++ {
-		if i >= len(attributeNames) {
-			return errors.New("values in log line exceed the number of available fields")
-		}
-
 		value, remaining, err = scanField(remaining)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err
+		}
+
+		if i >= len(attributeNames) {
+			// Skip unknown fields for forward compatibility with future AWS S3
+			// access log format additions. AWS may append new fields without a
+			// format version bump.
+			// See https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
+			continue
 		}
 
 		if value == unknownField && i != fieldIndexACLRequired {
@@ -207,7 +211,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		}
 	}
 
-	if i != fieldIndexACLRequired+1 {
+	if i < fieldIndexACLRequired+1 {
 		return errors.New("values in log line are less than the number of available fields")
 	}
 
@@ -236,7 +240,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		fieldIndexTotalTime:
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return fmt.Errorf("value for field %q in log line is not a number", field)
+			return fmt.Errorf("value for field %d in log line is not a number", field)
 		}
 		attrName := attributeNames[field]
 		record.Attributes().PutInt(attrName, n)
@@ -250,7 +254,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		case unknownField:
 			record.Attributes().PutBool(attrName, false)
 		default:
-			return fmt.Errorf("unknown value %q for field %q", value, field)
+			return fmt.Errorf("unknown value %q for field %d", value, field)
 		}
 	case fieldIndexTLSVersion:
 		// The value is one of following: TLSv1.1, TLSv1.2, TLSv1.3.

@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector/internal/metadata"
@@ -22,12 +23,13 @@ var (
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
-	return connector.NewFactory(
+	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithLogsToTraces(createTracesConnector, component.StabilityLevelAlpha),
-		connector.WithLogsToMetrics(createMetricsConnector, component.StabilityLevelAlpha),
-		connector.WithLogsToLogs(createLogsConnector, component.StabilityLevelAlpha),
+		xconnector.WithLogsToTraces(createTracesConnector, component.StabilityLevelAlpha),
+		xconnector.WithLogsToMetrics(createMetricsConnector, component.StabilityLevelAlpha),
+		xconnector.WithLogsToLogs(createLogsConnector, component.StabilityLevelAlpha),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

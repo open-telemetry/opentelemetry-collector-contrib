@@ -17,13 +17,15 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	TopMetricsQueryMaxRows            int       `mapstructure:"top_metrics_query_max_rows"`
 	BackfillEnabled                   bool      `mapstructure:"backfill_enabled"`
 	CardinalityTotalLimit             int       `mapstructure:"cardinality_total_limit"`
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
+	HideSplitStatsKeys                bool      `mapstructure:"hide_split_stats_keys"`
+	HideClientIPAddress               bool      `mapstructure:"hide_client_ip_address"`
 	TruncateText                      bool      `mapstructure:"truncate_text"`
 }
 
@@ -39,8 +41,8 @@ type Instance struct {
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
-		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
+	if config.ControllerConfig.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
+		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.ControllerConfig.CollectionInterval.Seconds())
 	}
 
 	if config.TopMetricsQueryMaxRows <= 0 {
