@@ -321,6 +321,7 @@ receiver/podmanreceiver
 receiver/postgresqlreceiver
 receiver/pprofreceiver
 receiver/prometheusremotewritereceiver
+receiver/prometheusremotewritereceiver/compliance
 receiver/pulsarreceiver
 receiver/purefareceiver
 receiver/purefbreceiver
