@@ -82,20 +82,30 @@ func k8sEventToLogData(logger *zap.Logger, ev *eventsv1.Event, version string) p
 	attrs.PutStr("k8s.event.reporting_controller", ev.ReportingController)
 	attrs.PutStr("k8s.event.reporting_instance", ev.ReportingInstance)
 
-	// For series events, use series.count; for single events omit (no equivalent of core/v1 count).
+	// For series events, use series.count; fall back to deprecatedCount for events
+	// created by the legacy core/v1 recorder (e.g. kubelet).
 	if ev.Series != nil && ev.Series.Count != 0 {
 		attrs.PutInt("k8s.event.count", int64(ev.Series.Count))
+	} else if ev.DeprecatedCount != 0 {
+		attrs.PutInt("k8s.event.count", int64(ev.DeprecatedCount))
 	}
 
 	return ld
 }
 
 // getEventTimestamp returns the most relevant timestamp for an events.k8s.io/v1 Event.
-// Priority: series.lastObservedTime > eventTime. For series events this gives the most
-// recent occurrence; for single events eventTime is the only available timestamp.
+// Priority: series.lastObservedTime > eventTime > deprecatedLastTimestamp > deprecatedFirstTimestamp.
+// The deprecated fields cover events created by the legacy core/v1 recorder (e.g. kubelet),
+// which leaves eventTime and series unset.
 func getEventTimestamp(ev *eventsv1.Event) time.Time {
-	if ev.Series != nil && ev.Series.LastObservedTime.Time != (time.Time{}) {
+	if ev.Series != nil && !ev.Series.LastObservedTime.IsZero() {
 		return ev.Series.LastObservedTime.Time
 	}
-	return ev.EventTime.Time
+	if !ev.EventTime.IsZero() {
+		return ev.EventTime.Time
+	}
+	if !ev.DeprecatedLastTimestamp.IsZero() {
+		return ev.DeprecatedLastTimestamp.Time
+	}
+	return ev.DeprecatedFirstTimestamp.Time
 }
