@@ -47,6 +47,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadatatest"
 )
 
 var writeV2RequestFixture = &writev2.Request{
@@ -1445,9 +1446,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			// The sample is dropped by design, so the receiver accepts it and counts it as written.
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    0,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -1479,9 +1481,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			// The sample is dropped by design, so the receiver accepts it and counts it as written.
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    0,
+				Samples:    1,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -4626,6 +4629,223 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1_1, mockConsumer.metrics[2]))
 }
 
+// TestResourceCacheEvictionsAreCounted asserts that every entry evicted from the
+// resource metrics cache is reported in the receiver's internal telemetry.
+func TestResourceCacheEvictionsAreCounted(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+	settings := metadatatest.NewSettings(tel)
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	// Purge before the telemetry shutdown above so the evictions it triggers are still recorded.
+	defer writeReceiver.rmCache.Purge()
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	writeReceiver.obsrecv = obsrecv
+
+	// Shrink the still empty cache so that every new job/instance pair evicts the previous one.
+	require.Zero(t, writeReceiver.rmCache.Resize(1))
+
+	ts := httptest.NewServer(http.HandlerFunc(writeReceiver.handlePRW))
+	defer ts.Close()
+
+	const pairs = 3
+	for i := range pairs {
+		req := &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "normal_metric", // 1, 2
+				"job", fmt.Sprintf("service_%d", i), // 3, 4
+				"instance", fmt.Sprintf("host_%d", i), // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+			},
+		}
+		pBuf := proto.NewBuffer(nil)
+		require.NoError(t, pBuf.Marshal(req))
+
+		resp, err := http.Post(
+			ts.URL,
+			fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
+			bytes.NewBuffer(pBuf.Bytes()),
+		)
+		require.NoError(t, err)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+	}
+
+	// The first pair fills the single slot; each of the following pairs evicts one entry.
+	metadatatest.AssertEqualReceiverPrometheusremotewriteResourceCacheEvictions(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: pairs - 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// setupMetricsReceiverWithConfig creates a receiver from the given config, so tests can
+// exercise settings such as resource_cache_size the way a user would set them.
+func setupMetricsReceiverWithConfig(t *testing.T, cfg *Config, nextConsumer consumer.Metrics) *prometheusRemoteWriteReceiver {
+	t.Helper()
+
+	require.NoError(t, cfg.Validate())
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	writeReceiver.obsrecv = obsrecv
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	return writeReceiver
+}
+
+// TestResourceCacheSizeKeepsTargetInfoAcrossRequests is the regression guard for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52195:
+// a Prometheus server with more job/instance pairs than the resource cache can hold
+// evicts entries on every request, so metrics sent after target_info lose the
+// target_info resource attributes and end up in a separate resource.
+// With resource_cache_size at or above the number of pairs every metric keeps them.
+func TestResourceCacheSizeKeepsTargetInfoAcrossRequests(t *testing.T) {
+	const pairs = 3
+
+	// Symbols shared by both requests: the job/instance pairs, the metric names and the
+	// extra target_info label that must survive as a resource attribute.
+	symbols := []string{""}
+	symbolRef := func(s string) uint32 {
+		for i, existing := range symbols {
+			if existing == s {
+				return uint32(i)
+			}
+		}
+		symbols = append(symbols, s)
+		return uint32(len(symbols) - 1)
+	}
+	nameRef := symbolRef("__name__")
+	jobRef := symbolRef("job")
+	instanceRef := symbolRef("instance")
+	regionRef := symbolRef("region")
+	regionValueRef := symbolRef("us-central1")
+	targetInfoRef := symbolRef("target_info")
+	normalMetricRef := symbolRef("normal_metric")
+
+	targetInfoRequest := &writev2.Request{}
+	metricsRequest := &writev2.Request{}
+	for i := range pairs {
+		jobValueRef := symbolRef(fmt.Sprintf("service_%d", i))
+		instanceValueRef := symbolRef(fmt.Sprintf("host_%d", i))
+		targetInfoRequest.Timeseries = append(targetInfoRequest.Timeseries, writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{nameRef, targetInfoRef, jobRef, jobValueRef, instanceRef, instanceValueRef, regionRef, regionValueRef},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		})
+		metricsRequest.Timeseries = append(metricsRequest.Timeseries, writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{nameRef, normalMetricRef, jobRef, jobValueRef, instanceRef, instanceValueRef},
+			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+		})
+	}
+	targetInfoRequest.Symbols = symbols
+	metricsRequest.Symbols = symbols
+
+	tests := []struct {
+		name              string
+		resourceCacheSize int
+		// allEnriched is whether every resource of the second request still carries the
+		// "region" attribute learned from target_info in the first request.
+		allEnriched bool
+	}{
+		{
+			name:              "cache smaller than the number of job/instance pairs",
+			resourceCacheSize: pairs - 1,
+			// The pairs evicted after the first request are cache misses in the second one:
+			// each miss stores a bare job/instance resource and evicts another entry.
+			allEnriched: false,
+		},
+		{
+			name:              "cache holds every job/instance pair",
+			resourceCacheSize: pairs,
+			allEnriched:       true,
+		},
+		{
+			name:              "cache larger than the number of job/instance pairs",
+			resourceCacheSize: pairs * 10,
+			allEnriched:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ResourceCacheSize = tt.resourceCacheSize
+			mockConsumer := new(mockConsumer)
+			prwReceiver := setupMetricsReceiverWithConfig(t, cfg, mockConsumer)
+
+			ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+			defer ts.Close()
+
+			for _, req := range []*writev2.Request{targetInfoRequest, metricsRequest} {
+				pBuf := proto.NewBuffer(nil)
+				require.NoError(t, pBuf.Marshal(req))
+
+				resp, err := http.Post(
+					ts.URL,
+					fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
+					bytes.NewBuffer(pBuf.Bytes()),
+				)
+				require.NoError(t, err)
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				require.NoError(t, resp.Body.Close())
+				require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+			}
+
+			// The first request only carries target_info, which is stored in the cache and
+			// never forwarded as a metric; only the second request reaches the consumer.
+			require.Len(t, mockConsumer.metrics, 1)
+			rms := mockConsumer.metrics[0].ResourceMetrics()
+			// Within one request the receiver never splits a job/instance pair.
+			require.Equal(t, pairs, rms.Len())
+
+			enriched := 0
+			for i := 0; i < rms.Len(); i++ {
+				attrs := rms.At(i).Resource().Attributes()
+				_, hasServiceName := attrs.Get("service.name")
+				assert.True(t, hasServiceName, "resource %d lost its job label", i)
+				if region, ok := attrs.Get("region"); ok {
+					assert.Equal(t, "us-central1", region.Str())
+					enriched++
+				}
+			}
+			if tt.allEnriched {
+				assert.Equal(t, pairs, enriched, "every resource should carry the target_info attributes")
+			} else {
+				assert.Less(t, enriched, pairs, "some resources should have lost the target_info attributes")
+			}
+		})
+	}
+}
+
 func buildMetaDataMapByID(ms pmetric.Metrics) map[string]map[string]any {
 	result := make(map[string]map[string]any)
 	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
@@ -4754,29 +4974,7 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 // setupMetricsReceiverWithConsumer creates a receiver with a custom consumer for testing.
 func setupMetricsReceiverWithConsumer(t *testing.T, nextConsumer consumer.Metrics) *prometheusRemoteWriteReceiver {
 	t.Helper()
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
-	require.NoError(t, err)
-	require.NotNil(t, prwReceiver, "metrics receiver creation failed")
-
-	receiverID := component.MustNewID("test")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             receiverID,
-		Transport:              "http",
-		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
-	})
-	require.NoError(t, err)
-
-	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
-	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
-	t.Cleanup(func() {
-		writeReceiver.rmCache.Purge()
-	})
-
-	return writeReceiver
+	return setupMetricsReceiverWithConfig(t, createDefaultConfig().(*Config), nextConsumer)
 }
 
 func TestHandlePRWConsumerResponse(t *testing.T) {
@@ -5023,4 +5221,215 @@ func TestInvalidSchemaLogging(t *testing.T) {
 	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
 	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
 	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
+}
+
+// droppedSeriesRequest builds a request carrying a classic histogram family, a summary family and
+// a counter. With typed metadata the first two families are dropped by design; without it every
+// series is translated to an untyped gauge. The two shapes share the samples and exemplars so
+// that the written stats can be compared against the same sent counts.
+func droppedSeriesRequest(typed bool) *writev2.Request {
+	symbols := []string{
+		"",
+		"__name__",              // 1
+		"test_histogram_bucket", // 2
+		"test_histogram_sum",    // 3
+		"test_histogram_count",  // 4
+		"test_summary",          // 5
+		"test_summary_sum",      // 6
+		"test_summary_count",    // 7
+		"test_counter_total",    // 8
+		"job", "test_job",       // 9, 10
+		"instance", "test_instance", // 11, 12
+		"le", "1", "+Inf", // 13, 14, 15
+		"quantile", "0.5", "0.99", // 16, 17, 18
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 19, 20
+	}
+	metricType := func(typed bool, t writev2.Metadata_MetricType) writev2.Metadata {
+		if !typed {
+			return writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_UNSPECIFIED}
+		}
+		return writev2.Metadata{Type: t}
+	}
+	sample := []writev2.Sample{{Value: 1, Timestamp: 1}}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{19, 20}, Value: 1.5, Timestamp: 1}}
+	histogram := metricType(typed, writev2.Metadata_METRIC_TYPE_HISTOGRAM)
+	summary := metricType(typed, writev2.Metadata_METRIC_TYPE_SUMMARY)
+	counter := metricType(typed, writev2.Metadata_METRIC_TYPE_COUNTER)
+	return &writev2.Request{
+		Symbols: symbols,
+		Timeseries: []writev2.TimeSeries{
+			{Metadata: histogram, LabelsRefs: []uint32{1, 2, 11, 12, 9, 10, 13, 14}, Samples: sample},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 2, 11, 12, 9, 10, 13, 15}, Samples: sample, Exemplars: exemplar},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 3, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: histogram, LabelsRefs: []uint32{1, 4, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 17}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 6, 11, 12, 9, 10}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 7, 11, 12, 9, 10}, Samples: sample},
+			{
+				Metadata:   counter,
+				LabelsRefs: []uint32{1, 8, 11, 12, 9, 10},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}, {Value: 2, Timestamp: 2}},
+				Exemplars:  exemplar,
+			},
+		},
+	}
+}
+
+// sentStats counts what a sender puts in a request. Prometheus subtracts the Written response
+// headers from these counts and reports any positive difference as failed samples.
+func sentStats(req *writev2.Request) remote.WriteResponseStats {
+	stats := remote.WriteResponseStats{Confirmed: true}
+	for i := range req.Timeseries {
+		ts := &req.Timeseries[i]
+		stats.Samples += len(ts.Samples)
+		stats.Histograms += len(ts.Histograms)
+		stats.Exemplars += len(ts.Exemplars)
+	}
+	return stats
+}
+
+func TestDroppedSeriesAreCountedAsWritten(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		// typed sends the metadata a Prometheus started with --enable-feature=metadata-wal-records sends.
+		typed               bool
+		expectedMetricNames map[string]pmetric.MetricType
+		expectedDataPoints  int
+	}{
+		{
+			name:  "with metadata the classic histogram and summary series are dropped but still counted",
+			typed: true,
+			expectedMetricNames: map[string]pmetric.MetricType{
+				"test_counter_total": pmetric.MetricTypeSum,
+			},
+			expectedDataPoints: 2,
+		},
+		{
+			// Nothing changes without metadata: every series is an untyped gauge and was already
+			// counted before this regression test existed.
+			name:  "without metadata every series is written as an untyped gauge",
+			typed: false,
+			expectedMetricNames: map[string]pmetric.MetricType{
+				"test_histogram_bucket": pmetric.MetricTypeGauge,
+				"test_histogram_sum":    pmetric.MetricTypeGauge,
+				"test_histogram_count":  pmetric.MetricTypeGauge,
+				"test_summary":          pmetric.MetricTypeGauge,
+				"test_summary_sum":      pmetric.MetricTypeGauge,
+				"test_summary_count":    pmetric.MetricTypeGauge,
+				"test_counter_total":    pmetric.MetricTypeGauge,
+			},
+			expectedDataPoints: 10,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := droppedSeriesRequest(tc.typed)
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+			pBuf := proto.NewBuffer(nil)
+			require.NoError(t, pBuf.Marshal(request))
+			// handlePRW is called without the confighttp middleware, so the body is not compressed.
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+			req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, req)
+			resp := w.Result()
+			defer resp.Body.Close()
+
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			// The headers are what the sender compares against what it sent: any difference is
+			// reported as failed samples and logged as a partial write.
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, sentStats(request), written)
+
+			require.Len(t, sink.AllMetrics(), 1)
+			metrics := sink.AllMetrics()[0]
+			assert.Equal(t, tc.expectedDataPoints, metrics.DataPointCount())
+			gotMetricNames := make(map[string]pmetric.MetricType)
+			for _, rm := range metrics.ResourceMetrics().All() {
+				for _, sm := range rm.ScopeMetrics().All() {
+					for _, m := range sm.Metrics().All() {
+						gotMetricNames[m.Name()] = m.Type()
+					}
+				}
+			}
+			assert.Equal(t, tc.expectedMetricNames, gotMetricNames)
+		})
+	}
+}
+
+func TestDroppedSeriesAreCountedInTelemetry(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	defer writeReceiver.rmCache.Purge()
+
+	// Nothing is dropped without metadata. With it, each request drops four classic histogram
+	// series and four summary series.
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(false))
+	require.NoError(t, err)
+	for range 2 {
+		_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+		require.NoError(t, err)
+	}
+
+	metadatatest.AssertEqualReceiverPrometheusremotewriteDroppedSeries(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{Attributes: otelattr.NewSet(otelattr.String("metric_type", "classic_histogram")), Value: 8},
+			{Attributes: otelattr.NewSet(otelattr.String("metric_type", "summary")), Value: 8},
+		},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	prwReceiver, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	defer writeReceiver.rmCache.Purge()
+
+	// Nothing is dropped without metadata, so nothing is logged.
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(false))
+	require.NoError(t, err)
+	require.Empty(t, obs.All())
+
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+	require.NoError(t, err)
+
+	// One Debug entry per dropped series, and nothing at Info or above.
+	assert.Empty(t, obs.FilterLevelExact(zapcore.InfoLevel).All())
+	assert.Empty(t, obs.FilterLevelExact(zapcore.WarnLevel).All())
+	assert.Empty(t, obs.FilterLevelExact(zapcore.ErrorLevel).All())
+	var got []map[string]any
+	for _, entry := range obs.FilterLevelExact(zapcore.DebugLevel).All() {
+		got = append(got, entry.ContextMap())
+	}
+	series := func(name, extra string) string {
+		return `{__name__="` + name + `", instance="test_instance", job="test_job"` + extra + `}`
+	}
+	assert.Equal(t, []map[string]any{
+		{"series": series("test_histogram_bucket", `, le="1"`), "metric_type": "classic_histogram"},
+		{"series": series("test_histogram_bucket", `, le="+Inf"`), "metric_type": "classic_histogram"},
+		{"series": series("test_histogram_sum", ""), "metric_type": "classic_histogram"},
+		{"series": series("test_histogram_count", ""), "metric_type": "classic_histogram"},
+		{"series": series("test_summary", `, quantile="0.5"`), "metric_type": "summary"},
+		{"series": series("test_summary", `, quantile="0.99"`), "metric_type": "summary"},
+		{"series": series("test_summary_sum", ""), "metric_type": "summary"},
+		{"series": series("test_summary_count", ""), "metric_type": "summary"},
+	}, got)
+
+	// At Info, the default level, the Debug entries are not even built.
+	infoCore, infoObs := observer.New(zapcore.InfoLevel)
+	writeReceiver.settings.Logger = zap.New(infoCore)
+	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
+	require.NoError(t, err)
+	assert.Empty(t, infoObs.All())
 }

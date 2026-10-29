@@ -9,8 +9,9 @@ description: |
 status:
   class: processor
   stability:
-    development: [logs, metrics, traces, profiles]
-  distributions: []
+    alpha: [logs, metrics, traces]
+    development: [profiles]
+  distributions: [contrib]
   codeowners:
     active: [paulojmdias, dmitryax]
     emeritus: [axw]
@@ -22,3 +23,33 @@ tests:
   config:
     keys:
       service: 'resource.attributes["service.name"]'
+
+attributes:
+  error.type:
+    description: Why key evaluation failed.
+    type: string
+    enum:
+      - evaluation_failed
+      - invalid_value_type
+
+telemetry:
+  metrics:
+    processor.partitioning.key_evaluation.errors:
+      prefix: otelcol.
+      enabled: true
+      description: Number of batches rejected because a key expression failed to evaluate or returned a non-string value.
+      stability: development
+      unit: "{batch}"
+      attributes: [error.type]
+      sum:
+        value_type: int
+        monotonic: true
+    processor.partitioning.partitions:
+      prefix: otelcol.
+      enabled: true
+      description: Number of partitions each incoming batch was split into.
+      stability: development
+      unit: "{partition}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 2, 3, 5, 10, 20, 50, 100, 250, 1000]
