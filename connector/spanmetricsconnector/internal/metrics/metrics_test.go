@@ -9,6 +9,7 @@ import (
 
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -466,15 +467,17 @@ func TestSumMetrics_ExpireSeries(t *testing.T) {
 	now := time.Unix(123, 0)
 	sm := SumMetrics{
 		metrics: map[Key]*Sum{
-			"active":    {lastSeen: now},
-			"stale":     {lastSeen: now.Add(-2 * time.Second)},
-			overflowKey: {lastSeen: now.Add(-2 * time.Second)},
+			"active":     {lastSeen: now, reported: true},
+			"stale":      {lastSeen: now.Add(-2 * time.Second), reported: true},
+			"unreported": {lastSeen: now.Add(-2 * time.Second)},
+			overflowKey:  {lastSeen: now.Add(-2 * time.Second), reported: true},
 		},
 	}
 
 	sm.ExpireSeries(time.Second, now)
 
 	assert.Contains(t, sm.metrics, Key("active"))
+	assert.Contains(t, sm.metrics, Key("unreported"))
 	assert.NotContains(t, sm.metrics, Key("stale"))
 	assert.NotContains(t, sm.metrics, Key(overflowKey))
 }
@@ -483,14 +486,16 @@ func TestExplicitHistogramMetrics_ExpireSeries(t *testing.T) {
 	now := time.Unix(123, 0)
 	hm := &explicitHistogramMetrics{
 		metrics: map[Key]*explicitHistogram{
-			"active": {lastSeen: now},
-			"stale":  {lastSeen: now.Add(-2 * time.Second)},
+			"active":     {lastSeen: now, reported: true},
+			"stale":      {lastSeen: now.Add(-2 * time.Second), reported: true},
+			"unreported": {lastSeen: now.Add(-2 * time.Second)},
 		},
 	}
 
 	hm.ExpireSeries(time.Second, now)
 
 	assert.Contains(t, hm.metrics, Key("active"))
+	assert.Contains(t, hm.metrics, Key("unreported"))
 	assert.NotContains(t, hm.metrics, Key("stale"))
 }
 
@@ -498,14 +503,16 @@ func TestExponentialHistogramMetrics_ExpireSeries(t *testing.T) {
 	now := time.Unix(123, 0)
 	hm := &exponentialHistogramMetrics{
 		metrics: map[Key]*exponentialHistogram{
-			"active": {lastSeen: now},
-			"stale":  {lastSeen: now.Add(-2 * time.Second)},
+			"active":     {lastSeen: now, reported: true},
+			"stale":      {lastSeen: now.Add(-2 * time.Second), reported: true},
+			"unreported": {lastSeen: now.Add(-2 * time.Second)},
 		},
 	}
 
 	hm.ExpireSeries(time.Second, now)
 
 	assert.Contains(t, hm.metrics, Key("active"))
+	assert.Contains(t, hm.metrics, Key("unreported"))
 	assert.NotContains(t, hm.metrics, Key("stale"))
 }
 
@@ -592,6 +599,146 @@ func TestSumMetrics_BuildMetrics(t *testing.T) {
 	}
 }
 
+func TestExplicitHistogramMetrics_BuildMetrics_FirstFlushIsZero(t *testing.T) {
+	bounds := []float64{1, 10}
+	startTimestamp := func(Key, pcommon.Timestamp) pcommon.Timestamp { return 0 }
+	attributesFun := pcommon.NewMap
+
+	tests := []struct {
+		name               string
+		temporality        pmetric.AggregationTemporality
+		wantFirstCount     uint64
+		wantFirstSum       float64
+		wantFirstBucket    []uint64
+		wantFirstExemplars int
+	}{
+		{
+			name:               "cumulative first flush is zero",
+			temporality:        pmetric.AggregationTemporalityCumulative,
+			wantFirstCount:     0,
+			wantFirstSum:       0,
+			wantFirstBucket:    []uint64{0, 0, 0},
+			wantFirstExemplars: 0,
+		},
+		{
+			name:               "delta first flush holds the batch",
+			temporality:        pmetric.AggregationTemporalityDelta,
+			wantFirstCount:     2,
+			wantFirstSum:       7,
+			wantFirstBucket:    []uint64{0, 2, 0},
+			wantFirstExemplars: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hm := NewExplicitHistogramMetrics(bounds, 1, 0)
+			h, _ := hm.GetOrCreate("key1", attributesFun, 0, time.Now())
+			h.Observe(2)
+			h.Observe(5)
+			h.AddExemplar(pcommon.TraceID{1}, pcommon.SpanID{1}, 5)
+
+			first := pmetric.NewMetric()
+			hm.BuildMetrics(first, pcommon.Timestamp(1000), startTimestamp, tt.temporality)
+			require.Equal(t, 1, first.Histogram().DataPoints().Len())
+			dp := first.Histogram().DataPoints().At(0)
+			assert.Equal(t, tt.wantFirstCount, dp.Count())
+			assert.Equal(t, tt.wantFirstSum, dp.Sum())
+			assert.Equal(t, bounds, dp.ExplicitBounds().AsRaw())
+			assert.Equal(t, tt.wantFirstBucket, dp.BucketCounts().AsRaw())
+			assert.Equal(t, tt.wantFirstExemplars, dp.Exemplars().Len())
+			hm.ClearExemplars()
+
+			second := pmetric.NewMetric()
+			hm.BuildMetrics(second, pcommon.Timestamp(2000), startTimestamp, tt.temporality)
+			require.Equal(t, 1, second.Histogram().DataPoints().Len())
+			dp = second.Histogram().DataPoints().At(0)
+			assert.Equal(t, uint64(2), dp.Count())
+			assert.Equal(t, float64(7), dp.Sum())
+			assert.Equal(t, []uint64{0, 2, 0}, dp.BucketCounts().AsRaw())
+			if tt.temporality == pmetric.AggregationTemporalityCumulative {
+				require.Equal(t, 1, dp.Exemplars().Len())
+				assert.Equal(t, pcommon.Timestamp(2000), dp.Exemplars().At(0).Timestamp())
+			} else {
+				assert.Equal(t, 0, dp.Exemplars().Len())
+			}
+		})
+	}
+}
+
+func TestExponentialHistogramMetrics_BuildMetrics_FirstFlushIsZero(t *testing.T) {
+	startTimestamp := func(Key, pcommon.Timestamp) pcommon.Timestamp { return 0 }
+	attributesFun := pcommon.NewMap
+
+	tests := []struct {
+		name               string
+		temporality        pmetric.AggregationTemporality
+		wantFirstCount     uint64
+		wantFirstSum       float64
+		wantFirstExemplars int
+	}{
+		{
+			name:               "cumulative first flush is zero",
+			temporality:        pmetric.AggregationTemporalityCumulative,
+			wantFirstCount:     0,
+			wantFirstSum:       0,
+			wantFirstExemplars: 0,
+		},
+		{
+			name:               "delta first flush holds the batch",
+			temporality:        pmetric.AggregationTemporalityDelta,
+			wantFirstCount:     2,
+			wantFirstSum:       7,
+			wantFirstExemplars: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hm := NewExponentialHistogramMetrics(160, 1, 0)
+			h, _ := hm.GetOrCreate("key1", attributesFun, 0, time.Now())
+			h.Observe(2)
+			h.Observe(5)
+			h.AddExemplar(pcommon.TraceID{1}, pcommon.SpanID{1}, 5)
+
+			first := pmetric.NewMetric()
+			hm.BuildMetrics(first, pcommon.Timestamp(1000), startTimestamp, tt.temporality)
+			require.Equal(t, 1, first.ExponentialHistogram().DataPoints().Len())
+			dp := first.ExponentialHistogram().DataPoints().At(0)
+			assert.Equal(t, tt.wantFirstCount, dp.Count())
+			assert.Equal(t, tt.wantFirstSum, dp.Sum())
+			assert.Equal(t, uint64(0), dp.ZeroCount())
+			assert.Equal(t, tt.wantFirstExemplars, dp.Exemplars().Len())
+			if tt.wantFirstCount == 0 {
+				assert.Empty(t, dp.Positive().BucketCounts().AsRaw())
+				assert.Empty(t, dp.Negative().BucketCounts().AsRaw())
+				assert.False(t, dp.HasMin())
+				assert.False(t, dp.HasMax())
+			} else {
+				assert.NotEmpty(t, dp.Positive().BucketCounts().AsRaw())
+			}
+			hm.ClearExemplars()
+
+			second := pmetric.NewMetric()
+			hm.BuildMetrics(second, pcommon.Timestamp(2000), startTimestamp, tt.temporality)
+			require.Equal(t, 1, second.ExponentialHistogram().DataPoints().Len())
+			dp = second.ExponentialHistogram().DataPoints().At(0)
+			assert.Equal(t, uint64(2), dp.Count())
+			assert.Equal(t, float64(7), dp.Sum())
+			assert.Equal(t, first.ExponentialHistogram().DataPoints().At(0).Scale(), dp.Scale())
+			assert.Equal(t, float64(2), dp.Min())
+			assert.Equal(t, float64(5), dp.Max())
+			assert.NotEmpty(t, dp.Positive().BucketCounts().AsRaw())
+			if tt.temporality == pmetric.AggregationTemporalityCumulative {
+				require.Equal(t, 1, dp.Exemplars().Len())
+				assert.Equal(t, pcommon.Timestamp(2000), dp.Exemplars().At(0).Timestamp())
+			} else {
+				assert.Equal(t, 0, dp.Exemplars().Len())
+			}
+		})
+	}
+}
+
 func TestSumMetrics_ClearExemplars(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -602,6 +749,7 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 			name: "Clear exemplars from multiple sums",
 			metrics: map[Key]*Sum{
 				"key1": {
+					reported: true,
 					exemplars: func() pmetric.ExemplarSlice {
 						es := pmetric.NewExemplarSlice()
 						es.AppendEmpty()
@@ -609,6 +757,7 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 					}(),
 				},
 				"key2": {
+					reported: true,
 					exemplars: func() pmetric.ExemplarSlice {
 						es := pmetric.NewExemplarSlice()
 						es.AppendEmpty()
@@ -618,6 +767,19 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 				},
 			},
 			expected: 0,
+		},
+		{
+			name: "Keep exemplars of sums that have not reported their value yet",
+			metrics: map[Key]*Sum{
+				"key1": {
+					exemplars: func() pmetric.ExemplarSlice {
+						es := pmetric.NewExemplarSlice()
+						es.AppendEmpty()
+						return es
+					}(),
+				},
+			},
+			expected: 1,
 		},
 	}
 

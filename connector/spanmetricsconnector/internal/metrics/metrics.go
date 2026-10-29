@@ -57,6 +57,8 @@ type explicitHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
+	isFirst        bool
+	reported       bool
 	lastSeen       time.Time
 }
 
@@ -69,7 +71,10 @@ type exponentialHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
-	lastSeen       time.Time
+	// isFirst has the same meaning as explicitHistogram.isFirst.
+	isFirst  bool
+	reported bool
+	lastSeen time.Time
 }
 
 type BuildAttributesFun func() pcommon.Map
@@ -124,6 +129,7 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 			bucketCounts:     make([]uint64, len(m.bounds)+1),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
+			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = h
@@ -147,20 +153,31 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
 		dp.ExplicitBounds().FromRaw(h.bounds)
-		dp.BucketCounts().FromRaw(h.bucketCounts)
-		dp.SetCount(h.count)
-		dp.SetSum(h.sum)
-		for i := 0; i < h.exemplars.Len(); i++ {
-			h.exemplars.At(i).SetTimestamp(timestamp)
+		if temporality == pmetric.AggregationTemporalityCumulative && h.isFirst {
+			// Report an empty histogram for the first flush of a new series.
+			dp.BucketCounts().FromRaw(make([]uint64, len(h.bucketCounts)))
+			dp.SetCount(0)
+			dp.SetSum(0)
+			h.isFirst = false
+		} else {
+			dp.BucketCounts().FromRaw(h.bucketCounts)
+			dp.SetCount(h.count)
+			dp.SetSum(h.sum)
+			for i := 0; i < h.exemplars.Len(); i++ {
+				h.exemplars.At(i).SetTimestamp(timestamp)
+			}
+			h.exemplars.CopyTo(dp.Exemplars())
+			h.reported = true
 		}
-		h.exemplars.CopyTo(dp.Exemplars())
 		h.attributes.CopyTo(dp.Attributes())
 	}
 }
 
 func (m *explicitHistogramMetrics) ClearExemplars() {
 	for _, h := range m.metrics {
-		h.exemplars = pmetric.NewExemplarSlice()
+		if h.reported {
+			h.exemplars = pmetric.NewExemplarSlice()
+		}
 	}
 }
 
@@ -169,7 +186,7 @@ func (m *explicitHistogramMetrics) ExpireSeries(expiration time.Duration, now ti
 		return
 	}
 	for k, h := range m.metrics {
-		if now.Sub(h.lastSeen) >= expiration {
+		if h.reported && now.Sub(h.lastSeen) >= expiration {
 			delete(m.metrics, k)
 		}
 	}
@@ -212,6 +229,7 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimeStamp,
+			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
 		m.metrics[key] = h
@@ -234,11 +252,17 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 		startTimestamp := startTimeStampGenerator(k, e.startTimestamp)
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
-		expoHistToExponentialDataPoint(e.histogram, dp)
-		for i := 0; i < e.exemplars.Len(); i++ {
-			e.exemplars.At(i).SetTimestamp(timestamp)
+		if temporality == pmetric.AggregationTemporalityCumulative && e.isFirst {
+			emptyExponentialDataPoint(e.histogram, dp)
+			e.isFirst = false
+		} else {
+			expoHistToExponentialDataPoint(e.histogram, dp)
+			for i := 0; i < e.exemplars.Len(); i++ {
+				e.exemplars.At(i).SetTimestamp(timestamp)
+			}
+			e.exemplars.CopyTo(dp.Exemplars())
+			e.reported = true
 		}
-		e.exemplars.CopyTo(dp.Exemplars())
 		e.attributes.CopyTo(dp.Attributes())
 	}
 }
@@ -274,9 +298,15 @@ func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetri
 	}
 }
 
+func emptyExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
+	dp.SetScale(agg.Scale())
+}
+
 func (m *exponentialHistogramMetrics) ClearExemplars() {
-	for _, m := range m.metrics {
-		m.exemplars = pmetric.NewExemplarSlice()
+	for _, h := range m.metrics {
+		if h.reported {
+			h.exemplars = pmetric.NewExemplarSlice()
+		}
 	}
 }
 
@@ -285,7 +315,7 @@ func (m *exponentialHistogramMetrics) ExpireSeries(expiration time.Duration, now
 		return
 	}
 	for k, h := range m.metrics {
-		if now.Sub(h.lastSeen) >= expiration {
+		if h.reported && now.Sub(h.lastSeen) >= expiration {
 			delete(m.metrics, k)
 		}
 	}
@@ -350,6 +380,7 @@ type Sum struct {
 	// to the desired value.  This avoids Prometheus throwing away the first
 	// value in the series, due to the transition from null -> x.
 	isFirst  bool
+	reported bool
 	lastSeen time.Time
 }
 
@@ -443,18 +474,21 @@ func (m *SumMetrics) BuildMetrics(
 			s.isFirst = false
 		} else {
 			dp.SetIntValue(int64(s.count))
+			for i := 0; i < s.exemplars.Len(); i++ {
+				s.exemplars.At(i).SetTimestamp(timestamp)
+			}
+			s.exemplars.CopyTo(dp.Exemplars())
+			s.reported = true
 		}
-		for i := 0; i < s.exemplars.Len(); i++ {
-			s.exemplars.At(i).SetTimestamp(timestamp)
-		}
-		s.exemplars.CopyTo(dp.Exemplars())
 		s.attributes.CopyTo(dp.Attributes())
 	}
 }
 
 func (m *SumMetrics) ClearExemplars() {
 	for _, sum := range m.metrics {
-		sum.exemplars = pmetric.NewExemplarSlice()
+		if sum.reported {
+			sum.exemplars = pmetric.NewExemplarSlice()
+		}
 	}
 }
 
@@ -463,7 +497,7 @@ func (m *SumMetrics) ExpireSeries(expiration time.Duration, now time.Time) {
 		return
 	}
 	for k, s := range m.metrics {
-		if now.Sub(s.lastSeen) >= expiration {
+		if s.reported && now.Sub(s.lastSeen) >= expiration {
 			delete(m.metrics, k)
 		}
 	}

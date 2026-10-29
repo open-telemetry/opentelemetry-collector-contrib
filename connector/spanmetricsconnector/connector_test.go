@@ -120,6 +120,9 @@ func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics) bool {
 				dps := metric.Histogram().DataPoints()
 				for dp := 0; dp < dps.Len(); dp++ {
 					d := dps.At(dp)
+					if d.Count() == 0 {
+						continue
+					}
 					assert.Positive(tb, d.Exemplars().Len())
 				}
 			}
@@ -283,30 +286,38 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		assert.Equal(tb, metricNameDuration, metric.Name())
 		assert.Equal(tb, defaultUnit.String(), metric.Unit())
 
+		expectedObservations := numCumulativeConsumptions
+		if expectedTemporality == pmetric.AggregationTemporalityCumulative && numCumulativeConsumptions == 1 {
+			expectedObservations = 0
+		}
+
 		if metric.Type() == pmetric.MetricTypeExponentialHistogram {
 			hist := metric.ExponentialHistogram()
 			assert.Equal(tb, expectedTemporality, hist.AggregationTemporality())
-			verifyExponentialHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
+			verifyExponentialHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, expectedObservations)
 		} else {
 			hist := metric.Histogram()
 			assert.Equal(tb, expectedTemporality, hist.AggregationTemporality())
-			verifyExplicitHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
+			verifyExplicitHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, expectedObservations)
 		}
 	}
 	return true
 }
 
-func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
+// verifyExplicitHistogramDataPoints checks that every data point holds exactly
+// expectedObservations observations of sampleDuration.
+func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, expectedObservations int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
 	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(expectedObservations),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
 		)
+		assert.Equal(tb, uint64(expectedObservations), dp.Count())
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
@@ -328,7 +339,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
 			wantBucketCount = 0
 			if bi == foundDurationIndex {
-				wantBucketCount = uint64(numCumulativeConsumptions)
+				wantBucketCount = uint64(expectedObservations)
 			}
 			assert.Equal(tb, wantBucketCount, dp.BucketCounts().At(bi))
 		}
@@ -336,19 +347,25 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 	}
 }
 
-func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
+// verifyExponentialHistogramDataPoints checks that every data point holds exactly
+// expectedObservations observations of sampleDuration.
+func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, expectedObservations int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
 	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
-			sampleDuration.Seconds()*float64(numCumulativeConsumptions),
+			sampleDuration.Seconds()*float64(expectedObservations),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.",
 		)
-		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
-		assert.Equal(tb, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
+		assert.Equal(tb, uint64(expectedObservations), dp.Count())
+		if expectedObservations == 0 {
+			assert.Empty(tb, dp.Positive().BucketCounts().AsRaw())
+		} else {
+			assert.Equal(tb, []uint64{uint64(expectedObservations)}, dp.Positive().BucketCounts().AsRaw())
+		}
 		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(tb, dp, seenMetricIDs)
@@ -521,13 +538,13 @@ func initSpan(span span, s ptrace.Span) {
 	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
 }
 
-func setSpanAttributeValue(traces ptrace.Traces, key, value string) {
+func setStringAttrValue(traces ptrace.Traces, value string) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		scopeSpans := traces.ResourceSpans().At(i).ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				spans.At(k).Attributes().PutStr(key, value)
+				spans.At(k).Attributes().PutStr(stringAttrName, value)
 			}
 		}
 	}
@@ -1261,7 +1278,7 @@ func TestConsumeTraces(t *testing.T) {
 			histogramConfig:        explicitHistogramsConfig,
 			exemplarConfig:         enabledExemplarsConfig,
 			verifier:               verifyExemplarsExist,
-			traces:                 []ptrace.Traces{buildSampleTrace()},
+			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
 	}
 
@@ -1293,11 +1310,12 @@ func TestConsumeTraces(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Trigger flush.
+				flushed := len(mcon.AllMetrics())
 				mockClock.Advance(time.Nanosecond)
 				// TODO: Remove time.Sleep call, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42461
 				time.Sleep(10 * time.Millisecond)
 				require.Eventually(t, func() bool {
-					return len(mcon.AllMetrics()) > 0
+					return len(mcon.AllMetrics()) > flushed
 				}, 1*time.Second, 10*time.Millisecond)
 				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
 			}
@@ -1408,10 +1426,10 @@ func TestSeriesExpiration(t *testing.T) {
 	ctx := metadata.NewIncomingContext(t.Context(), nil)
 
 	tracesA := buildSampleTrace()
-	setSpanAttributeValue(tracesA, stringAttrName, "A")
+	setStringAttrValue(tracesA, "A")
 
 	tracesB := buildSampleTrace()
-	setSpanAttributeValue(tracesB, stringAttrName, "B")
+	setStringAttrValue(tracesB, "B")
 
 	require.NoError(t, p.ConsumeTraces(ctx, tracesA))
 	exported := p.buildMetrics()
@@ -1430,6 +1448,180 @@ func TestSeriesExpiration(t *testing.T) {
 	exported = p.buildMetrics()
 	assert.False(t, hasDataPointWithStringAttrValue(exported, "A"))
 	assert.True(t, hasDataPointWithStringAttrValue(exported, "B"))
+}
+
+func TestSeriesRestartAtZeroAfterExpiration(t *testing.T) {
+	for _, histCfg := range []struct {
+		name string
+		cfg  func() HistogramConfig
+	}{
+		{name: "explicit", cfg: explicitHistogramsConfig},
+		{name: "exponential", cfg: exponentialHistogramsConfig},
+	} {
+		t.Run(histCfg.name, func(t *testing.T) {
+			mockClock := clockwork.NewFakeClock()
+			p, err := newConnectorImp(new("defaultNullValue"), histCfg.cfg, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+			require.NoError(t, err)
+
+			p.config.SeriesExpiration = time.Millisecond
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			traces := buildSampleTrace()
+			setStringAttrValue(traces, "A")
+
+			flush := func() pmetric.Metrics {
+				exported := p.buildMetrics()
+				p.resetState()
+				return exported
+			}
+
+			require.NoError(t, p.ConsumeTraces(ctx, traces))
+			calls, duration := sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(0), calls)
+			assert.Equal(t, uint64(0), duration)
+
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(sampleTraceSeries), calls)
+			assert.Equal(t, uint64(sampleTraceSeries), duration)
+
+			mockClock.Advance(time.Millisecond)
+			assert.True(t, hasDataPointWithStringAttrValue(flush(), "A"))
+			assert.False(t, hasDataPointWithStringAttrValue(flush(), "A"))
+
+			require.NoError(t, p.ConsumeTraces(ctx, traces))
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(0), calls)
+			assert.Equal(t, uint64(0), duration)
+
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(sampleTraceSeries), calls)
+			assert.Equal(t, uint64(sampleTraceSeries), duration)
+		})
+	}
+}
+
+func TestResourceIsNotExpiredBeforeReportingItsData(t *testing.T) {
+	for _, histCfg := range []struct {
+		name string
+		cfg  func() HistogramConfig
+	}{
+		{name: "explicit", cfg: explicitHistogramsConfig},
+		{name: "exponential", cfg: exponentialHistogramsConfig},
+	} {
+		t.Run(histCfg.name, func(t *testing.T) {
+			mockClock := clockwork.NewFakeClock()
+			p, err := newConnectorImp(new("defaultNullValue"), histCfg.cfg, disabledExemplarsConfig, disabledEventsConfig, cumulative, time.Millisecond, []string{}, 1000, mockClock, false)
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			traces := buildSampleTrace()
+			setStringAttrValue(traces, "A")
+
+			flush := func() pmetric.Metrics {
+				exported := p.buildMetrics()
+				p.resetState()
+				return exported
+			}
+
+			require.NoError(t, p.ConsumeTraces(ctx, traces))
+			mockClock.Advance(time.Millisecond)
+			calls, duration := sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(0), calls)
+			assert.Equal(t, uint64(0), duration)
+
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(sampleTraceSeries), calls)
+			assert.Equal(t, uint64(sampleTraceSeries), duration)
+
+			assert.Zero(t, p.resourceMetrics.Len())
+		})
+	}
+}
+
+func TestSeriesIsNotExpiredBeforeReportingItsData(t *testing.T) {
+	for _, histCfg := range []struct {
+		name string
+		cfg  func() HistogramConfig
+	}{
+		{name: "explicit", cfg: explicitHistogramsConfig},
+		{name: "exponential", cfg: exponentialHistogramsConfig},
+	} {
+		t.Run(histCfg.name, func(t *testing.T) {
+			mockClock := clockwork.NewFakeClock()
+			p, err := newConnectorImp(new("defaultNullValue"), histCfg.cfg, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, mockClock, false)
+			require.NoError(t, err)
+
+			p.config.SeriesExpiration = time.Millisecond
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			traces := buildSampleTrace()
+			setStringAttrValue(traces, "A")
+
+			flush := func() pmetric.Metrics {
+				exported := p.buildMetrics()
+				p.resetState()
+				return exported
+			}
+
+			require.NoError(t, p.ConsumeTraces(ctx, traces))
+			mockClock.Advance(time.Millisecond)
+			calls, duration := sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(0), calls)
+			assert.Equal(t, uint64(0), duration)
+
+			calls, duration = sumSeriesValuesWithStringAttrValue(t, flush())
+			assert.Equal(t, int64(sampleTraceSeries), calls)
+			assert.Equal(t, uint64(sampleTraceSeries), duration)
+
+			assert.False(t, hasDataPointWithStringAttrValue(flush(), "A"))
+		})
+	}
+}
+
+const sampleTraceSeries = 3
+
+func sumSeriesValuesWithStringAttrValue(tb testing.TB, metrics pmetric.Metrics) (calls int64, durationCount uint64) {
+	const value = "A"
+	var callsFound, durationFound int
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		scopeMetrics := metrics.ResourceMetrics().At(i).ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			metricSlice := scopeMetrics.At(j).Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				metric := metricSlice.At(k)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						if attr, ok := dps.At(l).Attributes().Get(stringAttrName); ok && attr.Str() == value {
+							calls += dps.At(l).IntValue()
+							callsFound++
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						if attr, ok := dps.At(l).Attributes().Get(stringAttrName); ok && attr.Str() == value {
+							durationCount += dps.At(l).Count()
+							durationFound++
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						if attr, ok := dps.At(l).Attributes().Get(stringAttrName); ok && attr.Str() == value {
+							durationCount += dps.At(l).Count()
+							durationFound++
+						}
+					}
+				default:
+				}
+			}
+		}
+	}
+	require.Equal(tb, sampleTraceSeries, callsFound, "unexpected number of calls data points with %s=%s", stringAttrName, value)
+	require.Equal(tb, sampleTraceSeries, durationFound, "unexpected number of duration data points with %s=%s", stringAttrName, value)
+	return calls, durationCount
 }
 
 func TestResourceMetricsKeyAttributes(t *testing.T) {
@@ -2115,63 +2307,53 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 			p.metricsConsumer = &consumertest.MetricsSink{}
 			require.NoError(t, err)
 
-			traces := ptrace.NewTraces()
-			trace1ID := [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
-			initServiceSpans(
-				serviceSpans{
-					serviceName: "service-b",
-					spans: []span{
-						{
-							name:       "/ping",
-							kind:       ptrace.SpanKindServer,
-							statusCode: ptrace.StatusCodeError,
-							traceID:    trace1ID,
-							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
-						},
-					},
-				}, traces.ResourceSpans().AppendEmpty(),
-			)
-
-			// Test
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
-
-			// Verify exactly 1 exemplar is added to all data points when flushing
-			err = p.ConsumeTraces(ctx, traces)
-			require.NoError(t, err)
-
-			p.exportMetrics(ctx)
-			m := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0]
-			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace1ID)
-
-			// Verify exemplars from previous batch's trace are replaced with exemplars for the new batch's trace
-			traces = ptrace.NewTraces()
-			trace2ID := [16]byte{0x00, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
-			initServiceSpans(
-				serviceSpans{
-					serviceName: "service-b",
-					spans: []span{
-						{
-							name:       "/ping",
-							kind:       ptrace.SpanKindServer,
-							statusCode: ptrace.StatusCodeError,
-							traceID:    trace2ID,
-							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+			consumeTrace := func(traceID pcommon.TraceID) {
+				traces := ptrace.NewTraces()
+				initServiceSpans(
+					serviceSpans{
+						serviceName: "service-b",
+						spans: []span{
+							{
+								name:       "/ping",
+								kind:       ptrace.SpanKindServer,
+								statusCode: ptrace.StatusCodeError,
+								traceID:    traceID,
+								spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+							},
 						},
-					},
-				}, traces.ResourceSpans().AppendEmpty(),
-			)
+					}, traces.ResourceSpans().AppendEmpty(),
+				)
+				require.NoError(t, p.ConsumeTraces(ctx, traces))
+				p.exportMetrics(ctx)
+			}
 
-			err = p.ConsumeTraces(ctx, traces)
-			require.NoError(t, err)
+			trace1ID := pcommon.TraceID{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			trace2ID := pcommon.TraceID{0x00, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			trace3ID := pcommon.TraceID{0x22, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			sink := p.metricsConsumer.(*consumertest.MetricsSink)
 
-			p.exportMetrics(ctx)
-			m = p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[1]
-			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace2ID)
+			consumeTrace(trace1ID)
+			if tt.temporality == cumulative {
+				assertDataPointsHaveExemplarsForTraces(t, sink.AllMetrics()[0])
+			} else {
+				assertDataPointsHaveExemplarsForTraces(t, sink.AllMetrics()[0], trace1ID)
+			}
+
+			consumeTrace(trace2ID)
+			if tt.temporality == cumulative {
+				assertDataPointsHaveExemplarsForTraces(t, sink.AllMetrics()[1], trace1ID, trace2ID)
+			} else {
+				assertDataPointsHaveExemplarsForTraces(t, sink.AllMetrics()[1], trace2ID)
+			}
+
+			consumeTrace(trace3ID)
+			assertDataPointsHaveExemplarsForTraces(t, sink.AllMetrics()[2], trace3ID)
 		})
 	}
 }
 
-func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetric.Metrics, traceID pcommon.TraceID) {
+func assertDataPointsHaveExemplarsForTraces(t *testing.T, metrics pmetric.Metrics, traceIDs ...pcommon.TraceID) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -2186,24 +2368,21 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, 1, dp.Exemplars().Len())
-						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+						assertExemplarTraceIDs(t, dp.Exemplars(), traceIDs)
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, 1, dp.Exemplars().Len())
-						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+						assertExemplarTraceIDs(t, dp.Exemplars(), traceIDs)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
 					assert.Positive(t, dps.Len())
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Equal(t, 1, dp.Exemplars().Len())
-						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+						assertExemplarTraceIDs(t, dp.Exemplars(), traceIDs)
 					}
 				default:
 					t.Fatalf("Unexpected metric type %s", metric.Type())
@@ -2211,6 +2390,19 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 			}
 		}
 	}
+}
+
+func assertExemplarTraceIDs(t *testing.T, exemplars pmetric.ExemplarSlice, traceIDs []pcommon.TraceID) {
+	t.Helper()
+	want := traceIDs
+	if want == nil {
+		want = []pcommon.TraceID{}
+	}
+	got := make([]pcommon.TraceID, 0, exemplars.Len())
+	for i := 0; i < exemplars.Len(); i++ {
+		got = append(got, exemplars.At(i).TraceID())
+	}
+	assert.Equal(t, want, got)
 }
 
 func TestTimestampsForUninterruptedStream(t *testing.T) {
