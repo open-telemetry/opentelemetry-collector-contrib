@@ -378,14 +378,14 @@ func TestHMACSignatureSuccess(t *testing.T) {
 }
 
 func TestHMACSignatureWithFingerprintPrefix(t *testing.T) {
-	secret := "fp-secret"
+	secret := "fp-webhook-secret"
 	body := `{"requestId": "abc123"}`
 	signature := "v1=" + computeHMACSHA256(secret, body)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.HMACSignature = HMACSignature{
-		Secret: "fp-secret",
+		Secret: "fp-webhook-secret",
 		Header: "fpjs-event-signature",
 		Prefix: "v1=",
 	}
@@ -518,7 +518,7 @@ func TestHMACSignatureFailures(t *testing.T) {
 			desc: "Wrong secret produces signature mismatch",
 			cfg:  hmacCfg(),
 			req: func() *http.Request {
-				wrongSig := "sha256=" + computeHMACSHA256("wrong-secret", body)
+				wrongSig := "sha256=" + computeHMACSHA256("wrong-webhook-secret", body)
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
 				req.Header.Set("X-Hub-Signature-256", wrongSig)
 				return req
