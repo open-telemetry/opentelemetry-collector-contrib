@@ -35,7 +35,8 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 
 		if ok && !isEmptyStats(stats) {
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
-			acc.accumulate(convertToOTLPMetrics(containerPrefix, containerMetrics, containerResource, timestamp))
+			containerStartTime := getContainerStartTime(containerMetadata)
+			acc.accumulate(convertToOTLPMetrics(containerPrefix, containerMetrics, containerResource, timestamp, containerStartTime))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
 		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
 			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
@@ -51,7 +52,8 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		taskMetrics.EphemeralStorageUtilized = metadata.EphemeralStorageMetrics.Utilized
 		taskMetrics.EphemeralStorageReserved = metadata.EphemeralStorageMetrics.Reserved
 	}
-	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp))
+	taskStartTime := getTaskStartTime(metadata)
+	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp, taskStartTime))
 }
 
 func (acc *metricDataAccumulator) accumulate(md pmetric.Metrics) {
@@ -109,4 +111,56 @@ func calculateDuration(startTime, endTime string) (float64, error) {
 	}
 	duration := end.Sub(start)
 	return duration.Seconds(), nil
+}
+
+func parseTimestamp(ts string) pcommon.Timestamp {
+	if ts == "" {
+		return 0
+	}
+	t, err := time.Parse(time.RFC3339Nano, ts)
+	if err != nil {
+		return 0
+	}
+	return pcommon.NewTimestampFromTime(t)
+}
+
+func getContainerStartTime(cm *ecsutil.ContainerMetadata) pcommon.Timestamp {
+	if ts := parseTimestamp(cm.StartedAt); ts != 0 {
+		return ts
+	}
+	return parseTimestamp(cm.CreatedAt)
+}
+
+func getTaskStartTime(metadata ecsutil.TaskMetadata) pcommon.Timestamp {
+	var earliestTime time.Time
+	for i := range metadata.Containers {
+		cm := &metadata.Containers[i]
+		if cm.StartedAt != "" {
+			if t, err := time.Parse(time.RFC3339Nano, cm.StartedAt); err == nil {
+				if earliestTime.IsZero() || t.Before(earliestTime) {
+					earliestTime = t
+				}
+			}
+		}
+	}
+	if !earliestTime.IsZero() {
+		return pcommon.NewTimestampFromTime(earliestTime)
+	}
+	if ts := parseTimestamp(metadata.PullStartedAt); ts != 0 {
+		return ts
+	}
+	for i := range metadata.Containers {
+		cm := &metadata.Containers[i]
+		if cm.CreatedAt != "" {
+			if t, err := time.Parse(time.RFC3339Nano, cm.CreatedAt); err == nil {
+				if earliestTime.IsZero() || t.Before(earliestTime) {
+					earliestTime = t
+				}
+			}
+		}
+	}
+	if !earliestTime.IsZero() {
+		return pcommon.NewTimestampFromTime(earliestTime)
+	}
+	return 0
 }

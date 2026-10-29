@@ -13,7 +13,9 @@ import (
 )
 
 func TestConvertToOTMetrics(t *testing.T) {
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	startTimestamp := pcommon.NewTimestampFromTime(now.Add(-10 * time.Minute))
 	m := ECSMetrics{}
 
 	m.MemoryUsage = 100
@@ -23,13 +25,29 @@ func TestConvertToOTMetrics(t *testing.T) {
 	m.CPUTotalUsage = 100
 
 	resource := pcommon.NewResource()
-	md := convertToOTLPMetrics("container.", m, resource, timestamp)
+	md := convertToOTLPMetrics("container.", m, resource, timestamp, startTimestamp)
 	require.Equal(t, 26, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	assert.Contains(t, md.ResourceMetrics().At(0).SchemaUrl(), "https://opentelemetry.io/schemas/")
+
+	scopeMetrics := md.ResourceMetrics().At(0).ScopeMetrics()
+	for i := 0; i < scopeMetrics.Len(); i++ {
+		ms := scopeMetrics.At(i).Metrics()
+		for j := 0; j < ms.Len(); j++ {
+			metric := ms.At(j)
+			if metric.Type() == pmetric.MetricTypeSum {
+				assert.True(t, metric.Sum().IsMonotonic())
+				assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+				assert.Equal(t, startTimestamp, metric.Sum().DataPoints().At(0).StartTimestamp())
+				assert.Equal(t, timestamp, metric.Sum().DataPoints().At(0).Timestamp())
+			}
+		}
+	}
 }
 
 func TestConvertToOTMetricsTaskLevel(t *testing.T) {
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	startTimestamp := pcommon.NewTimestampFromTime(now.Add(-10 * time.Minute))
 	m := ECSMetrics{}
 
 	m.MemoryUsage = 100
@@ -41,7 +59,7 @@ func TestConvertToOTMetricsTaskLevel(t *testing.T) {
 	m.EphemeralStorageReserved = 21000
 
 	resource := pcommon.NewResource()
-	md := convertToOTLPMetrics(taskPrefix, m, resource, timestamp)
+	md := convertToOTLPMetrics(taskPrefix, m, resource, timestamp, startTimestamp)
 	// Task level has 26 base metrics + 2 ephemeral storage metrics = 28
 	require.Equal(t, 28, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	assert.Contains(t, md.ResourceMetrics().At(0).SchemaUrl(), "https://opentelemetry.io/schemas/")
@@ -51,7 +69,14 @@ func TestConvertToOTMetricsTaskLevel(t *testing.T) {
 	for i := 0; i < scopeMetrics.Len(); i++ {
 		ms := scopeMetrics.At(i).Metrics()
 		for j := 0; j < ms.Len(); j++ {
-			metricsByName[ms.At(j).Name()] = ms.At(j)
+			metric := ms.At(j)
+			metricsByName[metric.Name()] = metric
+			if metric.Type() == pmetric.MetricTypeSum {
+				assert.True(t, metric.Sum().IsMonotonic())
+				assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+				assert.Equal(t, startTimestamp, metric.Sum().DataPoints().At(0).StartTimestamp())
+				assert.Equal(t, timestamp, metric.Sum().DataPoints().At(0).Timestamp())
+			}
 		}
 	}
 
@@ -85,12 +110,27 @@ func TestDoubleGauge(t *testing.T) {
 }
 
 func TestIntSum(t *testing.T) {
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
+	startTimestamp := pcommon.NewTimestampFromTime(now.Add(-5 * time.Minute))
 	intValue := int64(100)
 
 	ilm := pmetric.NewScopeMetrics()
-	appendIntSum("cpu_utilized", "Count", intValue, timestamp, ilm)
+	appendIntSum("cpu_utilized", "Count", intValue, timestamp, startTimestamp, ilm)
 	require.NotNil(t, ilm)
+	require.Equal(t, 1, ilm.Metrics().Len())
+
+	metric := ilm.Metrics().At(0)
+	assert.Equal(t, "cpu_utilized", metric.Name())
+	assert.Equal(t, "Count", metric.Unit())
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.True(t, metric.Sum().IsMonotonic())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+	require.Equal(t, 1, metric.Sum().DataPoints().Len())
+	dp := metric.Sum().DataPoints().At(0)
+	assert.Equal(t, intValue, dp.IntValue())
+	assert.Equal(t, timestamp, dp.Timestamp())
+	assert.Equal(t, startTimestamp, dp.StartTimestamp())
 }
 
 func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
