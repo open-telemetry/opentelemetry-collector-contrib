@@ -11,7 +11,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/moby/moby/api v1.56.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.164.1
@@ -24,7 +24,7 @@ require (
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
-	go.opentelemetry.io/collector/config/configopaque v1.70.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.70.0
 	go.opentelemetry.io/collector/confmap v1.70.0
 	go.opentelemetry.io/collector/consumer v1.70.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.0

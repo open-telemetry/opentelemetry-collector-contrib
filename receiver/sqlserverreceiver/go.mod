@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.1
