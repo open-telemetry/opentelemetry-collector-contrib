@@ -137,8 +137,7 @@ func (w *fileWriter) evict() error {
 	return w.shutdown()
 }
 
-// Shutdown stops the exporter and is invoked during shutdown.
-// It stops the flush ticker if set.
+// shutdown stops the flusher and closes the file.
 func (w *fileWriter) shutdown() error {
 	// Snapshot and nil out stopTicker under the lock to prevent a double-close
 	// if shutdown is called more than once.
