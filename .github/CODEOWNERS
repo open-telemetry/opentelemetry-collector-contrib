@@ -51,6 +51,7 @@ exporter/awskinesisexporter/                                     @open-telemetry
 exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @Erog38
 exporter/awsxrayexporter/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 exporter/azureblobexporter/                                      @open-telemetry/collector-contrib-approvers @hgaol @MovieStoreGuy
+exporter/azuredataexplorerexporter/                              @open-telemetry/collector-contrib-approvers @Abhimanyu9988
 exporter/azuremonitorexporter/                                   @open-telemetry/collector-contrib-approvers @hgaol
 exporter/bmchelixexporter/                                       @open-telemetry/collector-contrib-approvers @bertysentry @NassimBtk @MovieStoreGuy
 exporter/cassandraexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
@@ -412,7 +413,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
-exporter/azuredataexplorerexporter/                              @open-telemetry/collector-contrib-approvers
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers
 receiver/fluentforwardreceiver/                                  @open-telemetry/collector-contrib-approvers
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers

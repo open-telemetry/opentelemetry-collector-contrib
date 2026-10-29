@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporter/azuredataexplorer
+note: Add a new code owner and restore beta stability
+issues: [52282]
+subtext:
+change_logs: [user]
