@@ -67,6 +67,9 @@ properties:
     $ref: connection_pool
   datasource:
     type: string
+  db_auth:
+    description: DBAuth optionally references a database credential provider extension. When set, the provider supplies the secret at connection time. Username remains available as provider input; a static password cannot be set.
+    $ref: /config/configdbauth.id
   instance_name:
     type: string
   password:
