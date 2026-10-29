@@ -97,8 +97,8 @@ components:
     - extension/encoding
     - extension/file_storage
     - extension/file_telemetry_policy
+    - extension/google_client_auth
     - extension/google_cloud_logentry_encoding
-    - extension/googleclientauth
     - extension/headers_setter
     - extension/health_check
     - extension/healthcheckv2
@@ -243,6 +243,7 @@ components:
     - processor/transformprocessor/internal/logparsingfuncs
     - processor/unroll
     - processor/upclouddetector
+    - processor/verify
     - processor/vultrdetector
     - provider/aes
     - provider/googlesecretmanager
@@ -336,7 +337,6 @@ components:
     - receiver/redis
     - receiver/riak
     - receiver/saphana
-    - receiver/signalfx
     - receiver/skywalking
     - receiver/snmp
     - receiver/snowflake
@@ -378,4 +378,5 @@ components:
     - scraper/system
     - scraper/zookeeper
     - testbed
+    - testbed/integrationtests/elasticsearch
     - testbed/mockdatasenders/mockdatadogagentexporter

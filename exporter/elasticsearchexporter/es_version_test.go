@@ -9,12 +9,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -100,6 +102,7 @@ func TestGetElasticsearchVersions(t *testing.T) {
 	for _, tc := range []struct {
 		name                  string
 		handler               http.HandlerFunc
+		authConfig            *AuthenticationSettings
 		expectConnected       bool
 		expectSemverParseFail bool
 		expectedVersion       string
@@ -142,6 +145,44 @@ func TestGetElasticsearchVersions(t *testing.T) {
 			expectConnected:       true,
 			expectSemverParseFail: true,
 		},
+		{
+			name: "connects using configured API key",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				auth := r.Header.Get("Authorization")
+				if auth != "APIKey test-123" {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"version":{"number":"9.6.0-SNAPSHOT","build_flavor":"default"}}`))
+			},
+			authConfig: &AuthenticationSettings{
+				APIKey: configopaque.String("test-123"),
+			},
+			expectConnected: true,
+			expectedVersion: "9.6.0-SNAPSHOT",
+			expectedFlavor:  "default",
+		},
+		{
+			name: "connects using configured username and password",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				uname, pass, ok := r.BasicAuth()
+				if !ok || uname != "elastic" || pass != "changeme" {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{"version":{"number":"9.6.0-SNAPSHOT","build_flavor":"default"}}`))
+			},
+			authConfig: &AuthenticationSettings{
+				User:     "elastic",
+				Password: configopaque.String("changeme"),
+			},
+			expectConnected: true,
+			expectedVersion: "9.6.0-SNAPSHOT",
+			expectedFlavor:  "default",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := httptest.NewServer(tc.handler)
@@ -153,6 +194,9 @@ func TestGetElasticsearchVersions(t *testing.T) {
 
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoints = []string{srv.URL}
+			if tc.authConfig != nil {
+				cfg.Authentication = *tc.authConfig
+			}
 
 			actualVersion := getElasticsearchVersions(t.Context(), cfg, set, componenttest.NewNopHost())
 
@@ -177,7 +221,51 @@ func TestGetElasticsearchVersions(t *testing.T) {
 			assert.Equal(t, srv.URL, fields["endpoint"])
 
 			assert.Equal(t, tc.expectedVersion, actualVersion.String())
-			t.Logf("actualVersion: %s\n", actualVersion.String())
+		})
+	}
+}
+
+func TestGetElasticsearchVersionsFailedAuthNotRetried(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		httpStatus int
+		cfg        RetrySettings
+	}{
+		{
+			name:       "No retries are done for 401 failed request",
+			httpStatus: http.StatusUnauthorized,
+			cfg: RetrySettings{
+				Enabled:       true,
+				MaxRetries:    3,
+				RetryOnStatus: []int{401},
+			},
+		},
+		{
+			name:       "No retries are done for 403 failed request",
+			httpStatus: http.StatusForbidden,
+			cfg: RetrySettings{
+				Enabled:       true,
+				MaxRetries:    3,
+				RetryOnStatus: []int{403},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var calls atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				calls.Add(1)
+				w.WriteHeader(tc.httpStatus)
+			}))
+			t.Cleanup(server.Close)
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoints = []string{server.URL}
+			cfg.Retry = tc.cfg
+			set := exportertest.NewNopSettings(metadata.Type)
+
+			_ = getElasticsearchVersions(t.Context(), cfg, set, componenttest.NewNopHost())
+
+			assert.Equalf(t, int32(1), calls.Load(), "%d must not be retried", tc.cfg.RetryOnStatus[0])
 		})
 	}
 }
@@ -190,12 +278,12 @@ func TestSupportsExponentialHistograms(t *testing.T) {
 	}{
 		{
 			name:            "exponential histograms are supported",
-			v:               "9.3.0",
+			v:               "9.4.0",
 			expectedSupport: true,
 		},
 		{
-			name:            "exponential histograms are supported for 9.3.0 SNAPSHOT",
-			v:               "9.3.0-SNAPSHOT",
+			name:            "exponential histograms are supported for 9.4.0 SNAPSHOT",
+			v:               "9.4.0-SNAPSHOT",
 			expectedSupport: true,
 		},
 		{
