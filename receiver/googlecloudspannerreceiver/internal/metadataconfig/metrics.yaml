@@ -1,5 +1,56 @@
 metadata:
 #
+# -------------------------------------------- Active Partitioned DMLs -------------------------------------------------
+#
+  - name: "active partitioned dmls"
+    query: "SELECT SESSION_ID, TEXT, TEXT_FINGERPRINT, NUM_PARTITIONS_TOTAL, NUM_PARTITIONS_COMPLETE, NUM_TRIVIAL_PARTITIONS_COMPLETE, PROGRESS, ROWS_PROCESSED, START_TIMESTAMP, LAST_UPDATE_TIMESTAMP FROM SPANNER_SYS.ACTIVE_PARTITIONED_DMLS ORDER BY START_TIMESTAMP ASC, LAST_UPDATE_TIMESTAMP ASC, ROWS_PROCESSED DESC"
+    metric_name_prefix: "database/spanner/active_partitioned_dmls/"
+    high_cardinality: true
+    labels:
+      - name: "session_id"
+        column_name: "SESSION_ID"
+        value_type: "string"
+      - name: "query_text"
+        column_name: "TEXT"
+        value_type: "string"
+      - name: "query_text_fingerprint"
+        column_name: "TEXT_FINGERPRINT"
+        value_type: "string"
+      - name: "progress"
+        column_name: "PROGRESS"
+        value_type: "string"
+      - name: "start_timestamp"
+        column_name: "START_TIMESTAMP"
+        value_type: "timestamp"
+      - name: "last_update_timestamp"
+        column_name: "LAST_UPDATE_TIMESTAMP"
+        value_type: "timestamp"
+    metrics:
+      - name: "num_partitions_total"
+        column_name: "NUM_PARTITIONS_TOTAL"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "num_partitions_complete"
+        column_name: "NUM_PARTITIONS_COMPLETE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "num_trivial_partitions_complete"
+        column_name: "NUM_TRIVIAL_PARTITIONS_COMPLETE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "rows_processed"
+        column_name: "ROWS_PROCESSED"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Active Queries Summary --------------------------------------------------
 #
   - name: "active queries summary"
