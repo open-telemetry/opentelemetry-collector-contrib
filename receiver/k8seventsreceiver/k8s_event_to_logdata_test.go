@@ -5,10 +5,14 @@ package k8seventsreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
@@ -131,4 +135,26 @@ func TestScopeNameAndVersion(t *testing.T) {
 
 	assert.Equal(t, metadata.ScopeName, sl.Scope().Name())
 	assert.Equal(t, version, sl.Scope().Version())
+}
+
+func TestK8sEventToLogDataLegacyRecorderFallback(t *testing.T) {
+	first := time.Now().Add(-time.Hour).Truncate(time.Second)
+	last := time.Now().Truncate(time.Second)
+
+	k8sEvent := getEvent("Normal")
+	k8sEvent.Series = nil
+	k8sEvent.EventTime = metav1.MicroTime{}
+	k8sEvent.DeprecatedFirstTimestamp = metav1.Time{Time: first}
+	k8sEvent.DeprecatedLastTimestamp = metav1.Time{Time: last}
+	k8sEvent.DeprecatedCount = 5
+
+	lr := k8sEventToLogData(zap.NewNop(), k8sEvent, "latest").ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, pcommon.NewTimestampFromTime(last), lr.Timestamp())
+	count, ok := lr.Attributes().Get("k8s.event.count")
+	require.True(t, ok)
+	assert.Equal(t, int64(5), count.Int())
+
+	k8sEvent.DeprecatedLastTimestamp = metav1.Time{}
+	lr = k8sEventToLogData(zap.NewNop(), k8sEvent, "latest").ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, pcommon.NewTimestampFromTime(first), lr.Timestamp())
 }
