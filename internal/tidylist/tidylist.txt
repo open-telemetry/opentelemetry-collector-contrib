@@ -320,8 +320,8 @@ receiver/otlpjsonfilereceiver
 receiver/podmanreceiver
 receiver/postgresqlreceiver
 receiver/pprofreceiver
-receiver/prometheusremotewritereceiver
 receiver/prometheusremotewritereceiver/compliance
+receiver/prometheusremotewritereceiver
 receiver/pulsarreceiver
 receiver/purefareceiver
 receiver/purefbreceiver

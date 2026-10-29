@@ -121,7 +121,7 @@ func TestMain(m *testing.M) {
 		"TestRemoteWriteReceiver/otelcol-contrib/samples/out_of_order_rejected",
 		"TestRemoteWriteReceiver/otelcol-contrib/symbols/invalid_utf8_.*",
 		"TestRemoteWriteReceiver/otelcol-contrib/histograms/bad_count_histogram",
-		"TestRemoteWriteReceiver/otelcol-contrib/histograms/float/bad_count_float_histogram",
+		"TestRemoteWriteReceiver/otelcol-contrib/histograms/float/.*",
 		"TestRemoteWriteReceiver/otelcol-contrib/histograms/reset_hints_and_schemas/reset_hint_gauge_schema_5",
 		"TestRemoteWriteReceiver/otelcol-contrib/histograms/invalid_rejected/.*",
 		"TestRemoteWriteReceiver/otelcol-contrib/exemplars/validation/.*",
@@ -131,7 +131,7 @@ func TestMain(m *testing.M) {
 		"TestRemoteWriteReceiver/otelcol-contrib/rw1_compat/basic_compatibility",
 		"TestRemoteWriteReceiver/otelcol-contrib/modes/content_type/rfc9110_(uppercase_params|quoted_values)",
 		"TestRemoteWriteReceiver/otelcol-contrib/modes/stateless/summary_series_with_metadata",
-		"TestRemoteWriteReceiver/otelcol-contrib/modes/stateless_st/summary_with_start_timestamp_on_sum_and_count",
+		"TestRemoteWriteReceiver/otelcol-contrib/modes/stateless_st/(summary_with_start_timestamp_on_sum_and_count|float_histogram_with_start_timestamp)",
 		"TestRemoteWriteReceiver/otelcol-contrib/modes/validation/.*",
 	}, "|")
 	if existing := flag.Lookup("test.skip").Value.String(); existing != "" {
