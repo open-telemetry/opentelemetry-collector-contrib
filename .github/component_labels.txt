@@ -273,7 +273,6 @@ receiver/faroreceiver receiver/faro
 receiver/filelogreceiver receiver/filelog
 receiver/filestatsreceiver receiver/filestats
 receiver/flinkmetricsreceiver receiver/flinkmetrics
-receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
 receiver/gnmireceiver receiver/gnmi
@@ -366,6 +365,7 @@ receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
 testbed testbed
+testbed/integrationtests/elasticsearch testbed/integrationtests/elasticsearch
 testbed/mockdatasenders/mockdatadogagentexporter testbed/mockdatasenders/mockdatadogagentexporter
 reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
@@ -373,4 +373,5 @@ reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/logicmonitorexporter exporter/logicmonitor
+receiver/fluentforwardreceiver receiver/fluentforward
 receiver/riakreceiver receiver/riak

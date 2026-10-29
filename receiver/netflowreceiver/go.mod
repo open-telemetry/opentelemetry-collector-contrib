@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflo
 go 1.26.0
 
 require (
-	github.com/netsampler/goflow2/v2 v2.2.6
+	github.com/netsampler/goflow2/v2 v2.2.7
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.0

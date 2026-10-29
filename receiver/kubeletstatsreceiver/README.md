@@ -419,3 +419,10 @@ When tuning collection for larger clusters, consider the following:
 - **Kubernetes API access:** Configuring `k8s_api_config` enables additional Kubernetes API lookups for detailed persistent-volume metadata and node capacity used to calculate the `k8s.{container,pod}.{cpu,memory}.node utilization` metrics. Ensure the required permissions are configured.
 - **Network metric cardinality:** By default, node and pod network metrics are collected only for the default network interface. Enabling `collect_all_network_interfaces` increases the number of emitted metrics and their cardinality because metrics include the `interface` attribute.
 - **Metric selection:** Use `metric_groups` and the individual metric enablement settings to limit the telemetry emitted to what your monitoring requirements need.
+## Available Benchmarks
+
+The Kubelet Stats Receiver is benchmarked as part of the Collector Contrib testbed load tests. The test scrapes a mock kubelet endpoint with increasing pod counts and records Collector CPU and memory consumption.
+
+Results are published on the [Collector Contrib load-test benchmark dashboard](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/).
+
+See the [testbed benchmark](../../testbed/tests/kubeletstats_receiver_test.go) for the workload and setup details.

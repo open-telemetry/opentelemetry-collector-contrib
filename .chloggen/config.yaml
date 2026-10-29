@@ -378,4 +378,5 @@ components:
     - scraper/system
     - scraper/zookeeper
     - testbed
+    - testbed/integrationtests/elasticsearch
     - testbed/mockdatasenders/mockdatadogagentexporter
