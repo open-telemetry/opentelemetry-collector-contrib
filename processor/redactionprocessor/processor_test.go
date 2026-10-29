@@ -1682,6 +1682,49 @@ func TestSpanEventRedacted(t *testing.T) {
 	require.Equal(t, "foobar", val.Str())
 }
 
+func TestLogBodyAllowedStringValue(t *testing.T) {
+	for _, summary := range []string{debug, info} {
+		t.Run(summary, func(t *testing.T) {
+			body := pcommon.NewValueStr("user@mycompany.com")
+			tc := testConfig{
+				config: &Config{
+					AllowAllKeys:  true,
+					AllowedValues: []string{`.+@mycompany\.com`},
+					BlockedValues: []string{`[a-z]+@[a-z]+\.com`},
+					Summary:       summary,
+				},
+				logBody: &body,
+			}
+
+			outLogs := runLogsTest(t, tc)
+			outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+			outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			assert.Equal(t, pcommon.ValueTypeStr, outLogBody.Type())
+			assert.Equal(t, "user@mycompany.com", outLogBody.Str())
+
+			val, found := outLogAttrs.Get(redactionBodyAllowedCount)
+			require.True(t, found)
+			assert.Equal(t, int64(1), val.Int())
+
+			// The keys list is a debug-only detail; the count is emitted at
+			// both levels.
+			if summary == debug {
+				val, found = outLogAttrs.Get(redactionBodyAllowedKeys)
+				require.True(t, found)
+				assert.Equal(t, "body", val.Str())
+			} else {
+				_, found = outLogAttrs.Get(redactionBodyAllowedKeys)
+				assert.False(t, found)
+			}
+
+			_, found = outLogAttrs.Get(redactionBodyMaskedKeys)
+			assert.False(t, found)
+			_, found = outLogAttrs.Get(redactionBodyRedactedKeys)
+			assert.False(t, found)
+		})
+	}
+}
+
 func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	stringBody := pcommon.NewValueStr("placeholder 4111111111111111")
 	tc := testConfig{
