@@ -38,36 +38,6 @@ func TestCreateTestProcessor(t *testing.T) {
 	assert.NotNil(t, p)
 }
 
-func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
-	// prepare
-	f := NewFactory()
-
-	// test
-	for _, tt := range []struct {
-		config      *Config
-		expectedErr error
-	}{
-		{
-			&Config{
-				DiscardOrphans: true,
-			},
-			errDiscardOrphansNotSupported,
-		},
-		{
-			&Config{
-				StoreOnDisk: true,
-			},
-			errDiskStorageNotSupported,
-		},
-	} {
-		p, err := f.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, consumertest.NewNop())
-
-		// verify
-		assert.ErrorIs(t, tt.expectedErr, err)
-		assert.Nil(t, p)
-	}
-}
-
 func TestCreateProcessorServiceEmitNumTracesLessThanNumWorkers(t *testing.T) {
 	cfg := &Config{
 		NumTraces:    1,
