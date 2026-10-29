@@ -20,6 +20,7 @@ const (
 	awsMSKExpiryJitterFrac     = 0.5
 	awsMSKRefreshTimeout       = 30 * time.Second
 	awsMSKCachedRefreshTimeout = 10 * time.Second
+	awsMSKFallbackSafetyMargin = time.Minute
 )
 
 // loadAWSCredentialsProvider is a variable so tests can replace it.
@@ -112,7 +113,7 @@ func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, 
 }
 
 func (p *awsMSKRefreshProvider) fallbackExpiry() time.Time {
-	return p.actualExpiry
+	return p.actualExpiry.Add(-awsMSKFallbackSafetyMargin)
 }
 
 func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current aws.Credentials, refreshErr error) (aws.Credentials, error) {
@@ -123,8 +124,9 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 	}
 	retryIn := min(p.retryDelay(), fallbackExpiry.Sub(now))
 	current.Expires = now.Add(retryIn)
-	// This expiry is already the next retry deadline, capped at the original
-	// AWS expiry. Subtracting the SDK window again would cause a refresh storm.
+	// This expiry is already the next retry deadline, capped before the original
+	// AWS expiry to leave time for broker authentication. Subtracting the SDK
+	// window again would cause a refresh storm.
 	p.skipExpiryAdjustment = true
 	p.logger.Warn("AWS MSK credential refresh retaining still-valid credentials",
 		zap.Duration("credential_time_to_expiry", p.actualExpiry.Sub(now)),

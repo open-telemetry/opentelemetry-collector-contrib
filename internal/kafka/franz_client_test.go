@@ -966,11 +966,12 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 		failing.Store(true)
 		time.Sleep(time.Until(creds.Expires))
 
-		for time.Now().Before(actualExpiry) {
+		fallbackExpiry := actualExpiry.Add(-awsMSKFallbackSafetyMargin)
+		for time.Now().Before(fallbackExpiry) {
 			fallback, retrieveErr := cache.Retrieve(t.Context())
 			require.NoError(t, retrieveErr)
 			assert.Equal(t, "AKID1", fallback.AccessKeyID)
-			retryIn := min(45*time.Second, time.Until(actualExpiry))
+			retryIn := min(45*time.Second, time.Until(fallbackExpiry))
 			assert.Equal(t, time.Now().Add(retryIn), fallback.Expires)
 			before := calls.Load()
 			authenticate("AKID1")
@@ -979,10 +980,10 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 		}
 		expired, err := cache.Retrieve(t.Context())
 		require.ErrorIs(t, err, refreshErr)
-		assert.False(t, expired.HasKeys(), "credentials must be rejected at their original AWS expiry")
+		assert.False(t, expired.HasKeys(), "fallback must stop before the original AWS expiry")
 		_, response, err := mechanism.Authenticate(t.Context(), "broker:9098")
 		require.ErrorIs(t, err, refreshErr)
-		assert.Empty(t, response, "expired credentials must never produce an OAuth token")
+		assert.Empty(t, response, "credentials inside the safety margin must never produce an OAuth token")
 		time.Sleep(time.Second)
 		_, err = cache.Retrieve(t.Context())
 		require.ErrorIs(t, err, refreshErr)
@@ -1129,12 +1130,12 @@ func TestAWSMSKRefreshProviderRejectsExpiredCredentials(t *testing.T) {
 	assert.False(t, creds.HasKeys())
 }
 
-func TestAWSMSKCredentialCacheExpiresDuringRefresh(t *testing.T) {
+func TestAWSMSKCredentialCacheFallbackExpiresDuringRefresh(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		var calls atomic.Int32
 		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			if calls.Add(1) == 1 {
-				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(awsMSKCachedRefreshTimeout / 2)}, nil
+				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(awsMSKFallbackSafetyMargin + awsMSKCachedRefreshTimeout/2)}, nil
 			}
 			<-ctx.Done()
 			return aws.Credentials{}, ctx.Err()
@@ -1142,11 +1143,18 @@ func TestAWSMSKCredentialCacheExpiresDuringRefresh(t *testing.T) {
 		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
 		_, err := cache.Retrieve(t.Context())
 		require.NoError(t, err)
-		// The cached refresh timeout outlasts the credentials' remaining life.
-		// Fallback must check real expiry after the failed refresh completes.
+		// The short refresh starts with usable credentials, but finishes inside
+		// their safety margin. Recheck fallback eligibility after it completes.
+		started := time.Now()
 		creds, err := cache.Retrieve(t.Context())
 		require.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.Equal(t, awsMSKCachedRefreshTimeout, time.Since(started))
 		assert.False(t, creds.HasKeys())
+		assert.True(t, provider.actualExpiry.After(time.Now()), "AWS validity alone must not bypass the safety margin")
+		started = time.Now()
+		_, err = cache.Retrieve(t.Context())
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.Equal(t, awsMSKRefreshTimeout, time.Since(started), "fresh credentials now require the full refresh budget")
 	})
 }
 

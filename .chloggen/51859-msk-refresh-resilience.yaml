@@ -2,5 +2,5 @@ change_type: enhancement
 component: internal/kafka
 note: Bound MSK IAM web-identity credential refreshes and retain still-valid credentials when an early refresh fails.
 issues: [51859]
-subtext: Refresh uses a jittered early-expiry window and never retains credentials beyond their original AWS expiration.
+subtext: Refresh uses a jittered early-expiry window and stops reusing fallback credentials one minute before their original AWS expiration.
 change_logs: [user]
