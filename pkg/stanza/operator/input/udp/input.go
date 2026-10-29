@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"sync"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 

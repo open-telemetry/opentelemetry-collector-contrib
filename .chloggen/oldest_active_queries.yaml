@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Add remaining labels (`start_time`, `query_text_fingerprint`, `query_text`, `query_text_truncated`, `session_id`, `query_id`, `api_client_header`, `user_agent_header`, `server_region`, `priority`, `transaction_type`) and `truncate_text` support to `oldest_active_queries` metrics to help identify and troubleshoot long-running active queries."
+issues: [52257]
+subtext: ""
+change_logs: [user]

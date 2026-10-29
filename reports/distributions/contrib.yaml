@@ -120,6 +120,7 @@ components:
         - metric_start_time
         - metrics_transform
         - metricsgeneration
+        - partitioning
         - probabilistic_sampler
         - redaction
         - remotetap
@@ -219,7 +220,6 @@ components:
         - redis
         - riak
         - saphana
-        - signalfx
         - skywalking
         - snmp
         - snowflake

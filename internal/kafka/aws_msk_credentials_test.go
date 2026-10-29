@@ -103,17 +103,19 @@ func TestAWSMSKCredentialCacheFallbackSafetyMargin(t *testing.T) {
 
 func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 	for _, tt := range []struct {
-		name      string
-		lifetime  time.Duration
-		wantCalls int32
-		wantKey   string
-		profile   bool
-		static    bool
+		name         string
+		lifetime     time.Duration
+		wantCalls    int32
+		wantKey      string
+		profile      bool
+		static       bool
+		stallRefresh bool
 	}{
 		{name: "reuse valid credentials", lifetime: 10 * time.Minute, wantCalls: 1, wantKey: "AKID1"},
 		{name: "refresh near-expiry credentials", lifetime: 30 * time.Second, wantCalls: 2, wantKey: "AKID2"},
 		{name: "shared profile web identity", lifetime: 10 * time.Minute, wantCalls: 1, wantKey: "AKID1", profile: true},
 		{name: "static credentials take precedence", wantKey: "STATIC", static: true},
+		{name: "fallback on stalled STS refresh", lifetime: 2 * time.Minute, wantCalls: 2, wantKey: "AKID1", stallRefresh: true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			// Given a real web identity provider backed by a local STS endpoint.
@@ -131,6 +133,10 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 				}
 				assert.Equal(t, "test-session", r.Form.Get("RoleSessionName"))
 				call := calls.Add(1)
+				if tt.stallRefresh && call > 1 {
+					<-r.Context().Done()
+					return
+				}
 				lifetime := tt.lifetime
 				if call > 1 {
 					lifetime = time.Hour
@@ -177,12 +183,18 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 			require.NoError(t, err)
 
 			// When credentials are requested again without waiting for expiration.
+			started := time.Now()
 			creds, err := provider.Retrieve(t.Context())
 
 			// Then only credentials inside the expiry window are refreshed.
 			require.NoError(t, err)
 			require.Equal(t, tt.wantKey, creds.AccessKeyID)
 			require.Equal(t, tt.wantCalls, calls.Load())
+			if tt.stallRefresh {
+				elapsed := time.Since(started)
+				assert.GreaterOrEqual(t, elapsed, awsMSKCachedRefreshTimeout)
+				assert.Less(t, elapsed, 2*awsMSKCachedRefreshTimeout, "the SDK HTTP refresh must use the short budget")
+			}
 		})
 	}
 }
