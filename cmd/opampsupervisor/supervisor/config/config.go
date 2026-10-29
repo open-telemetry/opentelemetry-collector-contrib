@@ -102,11 +102,21 @@ type Capabilities struct {
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
 
-	// Deprecated: ReportsRemoteConfig has no effect. AcceptsRemoteConfig enables both the
-	// AcceptsRemoteConfig and ReportsRemoteConfig OpAMP capabilities. This field will be
-	// removed in a future release.
+	// Deprecated: ReportsRemoteConfig has no effect and setting it to true fails validation.
+	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig OpAMP
+	// capabilities. This field will be removed in v0.165.0.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
 	ReportsRemoteConfig bool `mapstructure:"reports_remote_config"`
+}
+
+func (c Capabilities) Validate() error {
+	if c.ReportsRemoteConfig {
+		return errors.New("reports_remote_config is deprecated and has no effect; " +
+			"remote config status is reported whenever accepts_remote_config is enabled. " +
+			"Remove reports_remote_config from the supervisor config; it will be removed in v0.165.0. " +
+			"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763")
+	}
+	return nil
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -223,6 +233,7 @@ type Agent struct {
 	Description                 AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	StopGracePeriod             time.Duration     `mapstructure:"stop_grace_period"`
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
@@ -279,6 +290,10 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	if a.StopGracePeriod <= 0 {
+		return errors.New("agent::stop_grace_period must be positive")
+	}
+
 	for _, file := range a.ConfigFiles {
 		if !strings.HasPrefix(file, "$") {
 			continue
@@ -290,6 +305,12 @@ func (a Agent) Validate() error {
 
 	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
+	// TODO: remove once the supervisor downloads and verifies packages.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if a.Package.Verifier.Type != VerifierTypeNone {
+		return errors.New("agent::package::verifier is not yet supported")
 	}
 
 	if err := a.validateFallbackConfigs(); err != nil {
@@ -474,6 +495,7 @@ func DefaultSupervisor() Supervisor {
 			OrphanDetectionInterval:     5 * time.Second,
 			ConfigApplyTimeout:          5 * time.Second,
 			BootstrapTimeout:            3 * time.Second,
+			StopGracePeriod:             10 * time.Second,
 			PassthroughLogs:             false,
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,

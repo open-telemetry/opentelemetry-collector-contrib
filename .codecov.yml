@@ -337,6 +337,10 @@ component_management:
     name: extension_filetelemetrypolicy
     paths:
     - extension/filetelemetrypolicyextension/**
+  - component_id: extension_fleettracker_redisfleettracker
+    name: extension_fleettracker_redisfleettracker
+    paths:
+    - extension/fleettracker/redisfleettrackerextension/**
   - component_id: extension_googleclientauth
     name: extension_googleclientauth
     paths:
@@ -365,6 +369,10 @@ component_management:
     name: extension_internal_credentialsfile
     paths:
     - extension/internal/credentialsfile/**
+  - component_id: extension_internal_secretprovider
+    name: extension_internal_secretprovider
+    paths:
+    - extension/internal/secretprovider/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
@@ -673,6 +681,10 @@ component_management:
     name: processor_metricstransform
     paths:
     - processor/metricstransformprocessor/**
+  - component_id: processor_partitioning
+    name: processor_partitioning
+    paths:
+    - processor/partitioningprocessor/**
   - component_id: processor_probabilisticsampler
     name: processor_probabilisticsampler
     paths:
@@ -733,6 +745,10 @@ component_management:
     name: processor_unroll
     paths:
     - processor/unrollprocessor/**
+  - component_id: processor_verify
+    name: processor_verify
+    paths:
+    - processor/verifyprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:
@@ -877,6 +893,10 @@ component_management:
     name: receiver_gitlab
     paths:
     - receiver/gitlabreceiver/**
+  - component_id: receiver_gnmi
+    name: receiver_gnmi
+    paths:
+    - receiver/gnmireceiver/**
   - component_id: receiver_googlecloudmonitoring
     name: receiver_googlecloudmonitoring
     paths:
@@ -985,6 +1005,10 @@ component_management:
     name: receiver_namedpipe
     paths:
     - receiver/namedpipereceiver/**
+  - component_id: receiver_nats
+    name: receiver_nats
+    paths:
+    - receiver/natsreceiver/**
   - component_id: receiver_netflow
     name: receiver_netflow
     paths:
@@ -1073,10 +1097,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_signalfx
-    name: receiver_signalfx
-    paths:
-    - receiver/signalfxreceiver/**
   - component_id: receiver_simpleprometheus
     name: receiver_simpleprometheus
     paths:

@@ -39,6 +39,26 @@ func TestNewUploadManager(t *testing.T) {
 			errVal: "",
 		},
 		{
+			name: "valid configuration with static credentials",
+			conf: &Config{
+				S3Uploader: S3UploaderConfig{
+					Region:              "local",
+					S3Bucket:            "my-awesome-bucket",
+					S3Prefix:            "opentelemetry",
+					S3PartitionFormat:   "year=%Y/month=%m/day=%d/hour=%H",
+					S3PartitionTimezone: "Europe/London",
+					FilePrefix:          "ingested-data-",
+					Endpoint:            "localhost",
+					AccessKey:           "access",
+					SecretKey:           "secret",
+					S3ForcePathStyle:    true,
+					DisableSSL:          true,
+					Compression:         configcompression.TypeGzip,
+				},
+			},
+			errVal: "",
+		},
+		{
 			name: "invalid timezone configuration",
 			conf: &Config{
 				S3Uploader: S3UploaderConfig{

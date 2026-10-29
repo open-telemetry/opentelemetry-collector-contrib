@@ -387,26 +387,26 @@ func CreateTestProfiles() pprofile.Profiles {
 
 	dic.StringTable().Append("samples", "count", "cpu", "nanoseconds")
 	st := profile.SampleType()
-	st.SetTypeStrindex(2)
-	st.SetUnitStrindex(3)
+	st.SetTypeStrindex(1)
+	st.SetUnitStrindex(2)
 	pt := profile.PeriodType()
-	pt.SetTypeStrindex(4)
-	pt.SetUnitStrindex(5)
+	pt.SetTypeStrindex(3)
+	pt.SetUnitStrindex(4)
 
 	a := dic.AttributeTable().AppendEmpty()
-	a.SetKeyStrindex(6)
+	a.SetKeyStrindex(5)
 	dic.StringTable().Append("process.executable.build_id.htlhash")
 	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKeyStrindex(7)
+	a.SetKeyStrindex(6)
 	dic.StringTable().Append("profile.frame.type")
 	a.Value().SetStr("native")
 	a = dic.AttributeTable().AppendEmpty()
-	a.SetKeyStrindex(8)
+	a.SetKeyStrindex(7)
 	dic.StringTable().Append("host.id")
 	a.Value().SetStr("localhost")
 
-	profile.AttributeIndices().Append(2)
+	profile.AttributeIndices().Append(3)
 
 	sample := profile.Samples().AppendEmpty()
 	sample.TimestampsUnixNano().Append(0)
@@ -415,12 +415,12 @@ func CreateTestProfiles() pprofile.Profiles {
 	stack.LocationIndices().Append(1)
 
 	m := dic.MappingTable().AppendEmpty()
-	m.AttributeIndices().Append(4)
+	m.AttributeIndices().Append(1)
 
 	l := dic.LocationTable().AppendEmpty()
 	l.SetMappingIndex(1)
 	l.SetAddress(111)
-	l.AttributeIndices().Append(1)
+	l.AttributeIndices().Append(2)
 
 	return profiles
 }

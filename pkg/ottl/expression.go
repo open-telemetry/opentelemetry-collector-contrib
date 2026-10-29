@@ -18,7 +18,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/exp/constraints"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlerror"
 )
 
 // ExprFunc is a function in OTTL
@@ -182,6 +184,13 @@ func resolveIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error
 
 var errNilKeyExpressionResult = errors.New("key expression returned nil, expected an int or string")
 
+var errNilMapKeyExpressionResult = errors.New("map key expression returned nil, expected a string")
+
+var errDynamicMapKeysDisabled = fmt.Errorf(
+	"map keys must be string literals; using a path or converter as a map key requires the `%s` feature gate to be enabled",
+	metadata.PkgOttlEnableDynamicMapKeysFeatureGate.ID(),
+)
+
 func resolveExpressionIndexKey[K any](ctx context.Context, tCtx K, key Key[K]) (any, error) {
 	keyGetter, err := key.ExpressionGetter(ctx, tCtx)
 	if err != nil {
@@ -269,14 +278,19 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return evaluated, nil
 }
 
-type mapGetter[K any] struct {
-	mapValues map[string]Getter[K]
+type mapEntry[K any] struct {
+	key   Getter[K]
+	value Getter[K]
 }
 
-func newMapGetter[K any](mapValues map[string]Getter[K]) (Getter[K], error) {
-	g := mapGetter[K]{mapValues: mapValues}
-	for _, v := range mapValues {
-		if !isLiteralGetter(v) {
+type mapGetter[K any] struct {
+	entries []mapEntry[K]
+}
+
+func newMapGetter[K any](entries []mapEntry[K]) (Getter[K], error) {
+	g := mapGetter[K]{entries: entries}
+	for _, entry := range entries {
+		if !isLiteralGetter(entry.key) || !isLiteralGetter(entry.value) {
 			return &g, nil
 		}
 	}
@@ -287,11 +301,40 @@ func newMapGetter[K any](mapValues map[string]Getter[K]) (Getter[K], error) {
 	return newLiteral[K, any](val), nil
 }
 
+// coerceToMapKey converts the result of a map key expression into a string.
+func coerceToMapKey(val any) (string, error) {
+	switch v := val.(type) {
+	case string:
+		return v, nil
+	case *string:
+		if v != nil {
+			return *v, nil
+		}
+		return "", errNilMapKeyExpressionResult
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeStr {
+			return v.Str(), nil
+		}
+		return "", fmt.Errorf("map key must evaluate to a string, got %s", v.Type().String())
+	case nil:
+		return "", errNilMapKeyExpressionResult
+	}
+	return "", fmt.Errorf("map key must evaluate to a string, got %T", val)
+}
+
 func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	result := pcommon.NewMap()
-	result.EnsureCapacity(len(m.mapValues))
-	for k, v := range m.mapValues {
-		val, err := v.Get(ctx, tCtx)
+	result.EnsureCapacity(len(m.entries))
+	for _, entry := range m.entries {
+		rawKey, err := entry.key.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		k, err := coerceToMapKey(rawKey)
+		if err != nil {
+			return nil, err
+		}
+		val, err := entry.value.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -381,6 +424,9 @@ func newStandardPSliceGetter[K any](getter Getter[K]) (PSliceGetter[K], error) {
 // StandardPSliceGetter is a basic implementation of PSliceGetter
 type StandardPSliceGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves a pcommon.Slice value.
@@ -487,6 +533,9 @@ func newStandardStringGetter[K any](getter Getter[K]) (StringGetter[K], error) {
 // StandardStringGetter is a basic implementation of StringGetter
 type StandardStringGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves a string value.
@@ -538,6 +587,9 @@ func newStandardIntGetter[K any](getter Getter[K]) (IntGetter[K], error) {
 // StandardIntGetter is a basic implementation of IntGetter
 type StandardIntGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves an int64 value.
@@ -587,6 +639,9 @@ func newStandardFloatGetter[K any](getter Getter[K]) (FloatGetter[K], error) {
 // StandardFloatGetter is a basic implementation of FloatGetter
 type StandardFloatGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves a float64 value.
@@ -636,6 +691,9 @@ func newStandardBoolGetter[K any](getter Getter[K]) (BoolGetter[K], error) {
 // StandardBoolGetter is a basic implementation of BoolGetter
 type StandardBoolGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves a bool value.
@@ -711,6 +769,14 @@ type PMapGetSetter[K any] interface {
 	Set(ctx context.Context, tCtx K, val pcommon.Map) error
 }
 
+type pMapGetSetterProvider[K any] interface {
+	PMapGetSetter() PMapGetSetter[K]
+}
+
+type pMapGetterProvider[K any] interface {
+	PMapGetter() PMapGetter[K]
+}
+
 // StandardPMapGetSetter is a basic implementation of PMapGetSetter
 type StandardPMapGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (pcommon.Map, error)
@@ -727,6 +793,9 @@ func (path StandardPMapGetSetter[K]) Set(ctx context.Context, tCtx K, val pcommo
 
 // newStandardPMapGetSetter creates a new StandardPMapGetSetter from a GetSetter[K]
 func newStandardPMapGetSetter[K any](getSetter GetSetter[K]) (PMapGetSetter[K], error) {
+	if p, ok := getSetter.(pMapGetSetterProvider[K]); ok && !isLiteralGetter(getSetter) {
+		return p.PMapGetSetter(), nil
+	}
 	g, err := newStandardPMapGetter(getSetter)
 	if err != nil {
 		return nil, err
@@ -746,6 +815,9 @@ type PMapGetter[K any] interface {
 // newStandardPMapGetter creates a new StandardPMapGetter from a Getter[K],
 // also checking if the Getter is a literalGetter.
 func newStandardPMapGetter[K any](getter Getter[K]) (PMapGetter[K], error) {
+	if p, ok := getter.(pMapGetterProvider[K]); ok && !isLiteralGetter(getter) {
+		return p.PMapGetter(), nil
+	}
 	g := StandardPMapGetter[K]{
 		Getter: getter.Get,
 	}
@@ -762,6 +834,9 @@ func newStandardPMapGetter[K any](getter Getter[K]) (PMapGetter[K], error) {
 // StandardPMapGetter is a basic implementation of PMapGetter
 type StandardPMapGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves a pcommon.Map value.
@@ -823,6 +898,9 @@ func newStandardStringLikeGetter[K any](getter Getter[K]) (StringLikeGetter[K], 
 // StandardStringLikeGetter is a basic implementation of StringLikeGetter
 type StandardStringLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (string, bool, error) {
@@ -889,6 +967,9 @@ func newStandardFloatLikeGetter[K any](getter Getter[K]) (FloatLikeGetter[K], er
 // StandardFloatLikeGetter is a basic implementation of FloatLikeGetter
 type StandardFloatLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (float64, bool, error) {
@@ -968,6 +1049,9 @@ func newStandardIntLikeGetter[K any](getter Getter[K]) (IntLikeGetter[K], error)
 // StandardIntLikeGetter is a basic implementation of IntLikeGetter
 type StandardIntLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (int64, bool, error) {
@@ -1047,6 +1131,9 @@ func newStandardByteSliceLikeGetter[K any](getter Getter[K]) (ByteSliceLikeGette
 // StandardByteSliceLikeGetter is a basic implementation of ByteSliceLikeGetter
 type StandardByteSliceLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte, bool, error) {
@@ -1137,6 +1224,9 @@ func newStandardBoolLikeGetter[K any](getter Getter[K]) (BoolLikeGetter[K], erro
 // StandardBoolLikeGetter is a basic implementation of BoolLikeGetter
 type StandardBoolLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (bool, bool, error) {
@@ -1202,13 +1292,13 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 	if val.Enum != nil {
 		enum, err := p.enumParser((*EnumSymbol)(val.Enum))
 		if err != nil {
-			return nil, err
+			return nil, ottlerror.FromError(val.Pos, err)
 		}
 		return newLiteral[K, any](int64(*enum)), nil
 	}
 
 	if val.Lambda != nil {
-		return nil, errors.New("lambda expressions can only be passed to function arguments that accept them")
+		return nil, ottlerror.New(val.Lambda.Pos, "lambda expressions can only be passed to function arguments that accept them")
 	}
 
 	if eL := val.Literal; eL != nil {
@@ -1235,26 +1325,42 @@ func (p *parseContext[K]) newGetter(val value) (Getter[K], error) {
 			}
 			slice[i] = getter
 		}
-		return newListGetter(slice)
+		g, err := newListGetter(slice)
+		if err != nil {
+			return nil, ottlerror.FromError(val.Pos, err)
+		}
+		return g, nil
 	}
 
 	if val.Map != nil {
-		mapValues := map[string]Getter[K]{}
+		entries := make([]mapEntry[K], 0, len(val.Map.Values))
 		for _, kvp := range val.Map.Values {
+			keyGetter, err := p.newMapKeyGetter(kvp.Key)
+			if err != nil {
+				return nil, err
+			}
 			getter, err := p.newGetter(*kvp.Value)
 			if err != nil {
 				return nil, err
 			}
-			mapValues[*kvp.Key] = getter
+			entries = append(entries, mapEntry[K]{key: keyGetter, value: getter})
 		}
-		return newMapGetter(mapValues)
+		g, err := newMapGetter(entries)
+		if err != nil {
+			return nil, ottlerror.FromError(val.Pos, err)
+		}
+		return g, nil
 	}
 
 	if val.MathExpression == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
-		return nil, errors.New("no value field set. This is a bug in the OpenTelemetry Transformation Language")
+		return nil, ottlerror.New(val.Pos, "no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
-	return p.evaluateMathExpression(val.MathExpression)
+	g, err := p.evaluateMathExpression(val.MathExpression)
+	if err != nil {
+		return nil, ottlerror.FromError(val.Pos, err)
+	}
+	return g, nil
 }
 
 func (p *parseContext[K]) newGetterFromConverter(c converter) (Getter[K], error) {
@@ -1297,6 +1403,9 @@ func newStandardTimeGetter[K any](getter Getter[K]) (TimeGetter[K], error) {
 // StandardTimeGetter is a basic implementation of TimeGetter
 type StandardTimeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves a time.Time value.
@@ -1341,6 +1450,9 @@ func newStandardDurationGetter[K any](getter Getter[K]) (DurationGetter[K], erro
 // StandardDurationGetter is a basic implementation of DurationGetter
 type StandardDurationGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Get retrieves an time.Duration value.
@@ -1360,4 +1472,25 @@ func (g StandardDurationGetter[K]) Get(ctx context.Context, tCtx K) (time.Durati
 	default:
 		return 0, TypeError(fmt.Sprintf("expected duration but got %T", val))
 	}
+}
+
+func (p *parseContext[K]) newMapKeyGetter(k *mapKey) (Getter[K], error) {
+	switch {
+	case k.String != nil:
+		return newLiteral[K, any](*k.String), nil
+	case k.Converter != nil:
+		if !metadata.PkgOttlEnableDynamicMapKeysFeatureGate.IsEnabled() {
+			return nil, ottlerror.FromError(k.Converter.Pos, errDynamicMapKeysDisabled)
+		}
+		return p.newGetterFromConverter(*k.Converter)
+	case k.Path != nil:
+		if !metadata.PkgOttlEnableDynamicMapKeysFeatureGate.IsEnabled() {
+			return nil, ottlerror.FromError(k.Path.Pos, errDynamicMapKeysDisabled)
+		}
+		return p.buildGetSetterFromPath(k.Path)
+	case k.Editor != nil:
+		return nil, ottlerror.Errorf(k.Editor.Pos, "converter names must start with an uppercase letter but got '%v'", k.Editor.Function)
+	}
+	// In practice, can't happen since the DSL grammar guarantees one is set
+	return nil, errors.New("no map key field set. This is a bug in the OpenTelemetry Transformation Language")
 }
