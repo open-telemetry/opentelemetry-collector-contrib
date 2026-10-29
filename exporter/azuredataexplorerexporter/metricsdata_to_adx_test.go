@@ -155,7 +155,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := tt.metricsDataFn(tt.metricDataType, ts)
-			actualMetrics := rawMetricsToAdxMetrics(t.Context(), metrics, false, zap.NewNop())
+			actualMetrics := rawMetricsToAdxMetrics(t.Context(), metrics, zap.NewNop())
 			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
@@ -762,7 +762,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 			res := tt.resourceFn()
 			md := tt.metricDataFn()
 			emptyscopemap := make(map[string]any, 2)
-			actualMetrics := mapToAdxMetric(res, md, emptyscopemap, false, zap.NewNop())
+			actualMetrics := mapToAdxMetric(res, md, emptyscopemap, zap.NewNop())
 			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
@@ -921,7 +921,7 @@ func Test_extractExemplars_nonFiniteValuesAreSerializable(t *testing.T) {
 
 			// The whole row must still serialize; previously this returned an error
 			// and the metric was dropped.
-			adxMetrics := mapToAdxMetric(newDummyResource(), newSumWithExemplar(tt.value), map[string]any{}, true, zap.NewNop())
+			adxMetrics := mapToAdxMetric(newDummyResource(), newSumWithExemplar(tt.value), map[string]any{}, zap.NewNop())
 			require.Len(t, adxMetrics, 1)
 			encoded, err := jsoniter.MarshalToString(adxMetrics[0])
 			require.NoError(t, err)
@@ -957,7 +957,7 @@ func newSumWithExemplar(value float64) pmetric.Metric {
 	return m
 }
 
-func Test_mapToAdxMetric_includeExemplars(t *testing.T) {
+func Test_mapToAdxMetric_exemplars(t *testing.T) {
 	t.Parallel()
 
 	res := newDummyResource()
@@ -979,17 +979,20 @@ func Test_mapToAdxMetric_includeExemplars(t *testing.T) {
 		return m
 	}
 
-	// Disabled (default): exemplars are dropped, preserving existing behavior.
-	off := mapToAdxMetric(res, newSum(), emptyscopemap, false, zap.NewNop())
-	assert.Len(t, off, 1)
-	assert.Nil(t, off[0].Exemplars)
+	sum := mapToAdxMetric(res, newSum(), emptyscopemap, zap.NewNop())
+	assert.Len(t, sum, 1)
+	assert.Len(t, sum[0].Exemplars, 1)
+	assert.Equal(t, "00000000000000000000000000000001", sum[0].Exemplars[0]["trace_id"])
+	assert.Equal(t, "0000000000000002", sum[0].Exemplars[0]["span_id"])
 
-	// Enabled: exemplars are carried with the metric.
-	on := mapToAdxMetric(res, newSum(), emptyscopemap, true, zap.NewNop())
-	assert.Len(t, on, 1)
-	assert.Len(t, on[0].Exemplars, 1)
-	assert.Equal(t, "00000000000000000000000000000001", on[0].Exemplars[0]["trace_id"])
-	assert.Equal(t, "0000000000000002", on[0].Exemplars[0]["span_id"])
+	// Without exemplars the Exemplars key is absent from the payload, keeping it
+	// identical to the pre-exemplar format.
+	noExemplars := newSum()
+	noExemplars.Sum().DataPoints().At(0).Exemplars().RemoveIf(func(pmetric.Exemplar) bool { return true })
+	plain := mapToAdxMetric(res, noExemplars, emptyscopemap, zap.NewNop())
+	payload, err := jsoniter.MarshalToString(plain[0])
+	require.NoError(t, err)
+	assert.NotContains(t, payload, "Exemplars")
 
 	// Histogram: exemplars attach to the representative _count row only.
 	newHist := func() pmetric.Metric {
@@ -1001,6 +1004,8 @@ func Test_mapToAdxMetric_includeExemplars(t *testing.T) {
 		dp.BucketCounts().FromRaw(distributionCounts)
 		dp.SetSum(23)
 		dp.SetCount(14)
+		dp.SetMin(1)
+		dp.SetMax(9)
 		dp.SetTimestamp(ts)
 		ex := dp.Exemplars().AppendEmpty()
 		ex.SetDoubleValue(2820)
@@ -1008,7 +1013,7 @@ func Test_mapToAdxMetric_includeExemplars(t *testing.T) {
 		ex.SetTraceID(pcommon.TraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 		return m
 	}
-	hist := mapToAdxMetric(res, newHist(), emptyscopemap, true, zap.NewNop())
+	hist := mapToAdxMetric(res, newHist(), emptyscopemap, zap.NewNop())
 	var countRows, exemplarRows int
 	for _, m := range hist {
 		if m.MetricName == "http.server.duration_count" {
