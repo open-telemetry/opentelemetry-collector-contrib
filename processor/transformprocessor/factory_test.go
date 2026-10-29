@@ -219,25 +219,19 @@ func TestFactoryCreateMetrics_ConvertSummaryToHistogram(t *testing.T) {
 		want          []string
 	}{
 		{
-			name:       "summary is converted in place",
+			name:       "a histogram is added and the summary is kept",
 			statements: []string{`convert_summary_to_histogram("cumulative") where metric.type == METRIC_DATA_TYPE_SUMMARY and metric.name == "rpc_duration_seconds"`},
-			want:       []string{"rpc_duration_seconds:Histogram"},
+			want:       []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram"},
 		},
 		{
-			name: "copy with a guard converts only the copy",
-			statements: []string{
-				`copy_metric(name="rpc_duration_seconds_histogram") where metric.name == "rpc_duration_seconds"`,
-				`convert_summary_to_histogram("cumulative") where metric.name == "rpc_duration_seconds_histogram"`,
-			},
-			want: []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram"},
+			name:       "custom suffix",
+			statements: []string{`convert_summary_to_histogram("cumulative", "_hist")`},
+			want:       []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_hist:Histogram"},
 		},
 		{
-			name: "copy without a guard converts both",
-			statements: []string{
-				`copy_metric(name="rpc_duration_seconds_histogram") where metric.name == "rpc_duration_seconds"`,
-				`convert_summary_to_histogram("cumulative")`,
-			},
-			want: []string{"rpc_duration_seconds:Histogram", "rpc_duration_seconds_histogram:Histogram"},
+			name:       "without a where clause the added histogram is not converted again",
+			statements: []string{`convert_summary_to_histogram("cumulative")`},
+			want:       []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram"},
 		},
 		{
 			name: "quantiles are kept when extracted first",
@@ -245,15 +239,15 @@ func TestFactoryCreateMetrics_ConvertSummaryToHistogram(t *testing.T) {
 				`convert_summary_quantile_val_to_gauge()`,
 				`convert_summary_to_histogram("cumulative")`,
 			},
-			want: []string{"rpc_duration_seconds:Histogram", "rpc_duration_seconds.quantiles:Gauge"},
+			want: []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds.quantiles:Gauge", "rpc_duration_seconds_histogram:Histogram"},
 		},
 		{
-			name: "quantiles are lost when extracted after",
+			name: "quantiles are kept when extracted after",
 			statements: []string{
 				`convert_summary_to_histogram("cumulative")`,
 				`convert_summary_quantile_val_to_gauge()`,
 			},
-			want: []string{"rpc_duration_seconds:Histogram"},
+			want: []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram", "rpc_duration_seconds.quantiles:Gauge"},
 		},
 		{
 			name:          "invalid temporality is rejected when the processor is created",

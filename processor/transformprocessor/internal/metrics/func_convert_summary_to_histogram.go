@@ -16,6 +16,7 @@ import (
 
 type convertSummaryToHistogramArguments struct {
 	StringAggTemp string
+	Suffix        ottl.Optional[string]
 }
 
 func newConvertSummaryToHistogramFactory() ottl.Factory[*ottlmetric.TransformContext] {
@@ -28,10 +29,15 @@ func createConvertSummaryToHistogramFunction(_ ottl.FunctionContext, oArgs ottl.
 		return nil, errors.New("convertSummaryToHistogramFactory args must be of type *convertSummaryToHistogramArguments")
 	}
 
-	return convertSummaryToHistogram(args.StringAggTemp)
+	return convertSummaryToHistogram(args.StringAggTemp, args.Suffix)
 }
 
-func convertSummaryToHistogram(stringAggTemp string) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+func convertSummaryToHistogram(stringAggTemp string, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
+	// An empty suffix would give the new metric the same name as the Summary.
+	metricNameSuffix := "_histogram"
+	if !suffix.IsEmpty() && suffix.Get() != "" {
+		metricNameSuffix = suffix.Get()
+	}
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -48,16 +54,18 @@ func convertSummaryToHistogram(stringAggTemp string) (ottl.ExprFunc[*ottlmetric.
 			return nil, nil
 		}
 
-		summaryDps := metric.Summary().DataPoints()
-
-		// SetEmptyHistogram replaces the metric's data but the Summary data points captured above stay readable.
-		histogram := metric.SetEmptyHistogram()
+		histogramMetric := tCtx.GetMetrics().AppendEmpty()
+		histogramMetric.SetDescription(metric.Description())
+		histogramMetric.SetName(metric.Name() + metricNameSuffix)
+		histogramMetric.SetUnit(metric.Unit())
+		histogram := histogramMetric.SetEmptyHistogram()
 		histogram.SetAggregationTemporality(aggTemp)
 
+		dps := metric.Summary().DataPoints()
 		histogramDps := histogram.DataPoints()
-		histogramDps.EnsureCapacity(summaryDps.Len())
-		for i := 0; i < summaryDps.Len(); i++ {
-			dp := summaryDps.At(i)
+		histogramDps.EnsureCapacity(dps.Len())
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
 			histogramDp := histogramDps.AppendEmpty()
 			dp.Attributes().CopyTo(histogramDp.Attributes())
 			histogramDp.SetStartTimestamp(dp.StartTimestamp())
@@ -68,7 +76,6 @@ func convertSummaryToHistogram(stringAggTemp string) (ottl.ExprFunc[*ottlmetric.
 			// A single bucket spanning (-Inf, +Inf): no explicit bounds, one count.
 			histogramDp.BucketCounts().FromRaw([]uint64{dp.Count()})
 		}
-
 		return nil, nil
 	}, nil
 }

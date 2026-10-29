@@ -11,7 +11,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_convertSummaryToHistogram(t *testing.T) {
@@ -31,15 +33,18 @@ func Test_convertSummaryToHistogram(t *testing.T) {
 	tests := []struct {
 		name          string
 		stringAggTemp string
+		suffix        ottl.Optional[string]
 		input         pmetric.Metric
-		want          func(pmetric.Metric)
+		want          func(pmetric.MetricSlice)
 	}{
 		{
 			name:          "summary to cumulative histogram",
 			stringAggTemp: "cumulative",
 			input:         getTestSummaryMetric(),
-			want: func(m pmetric.Metric) {
-				m.SetName("summary_metric")
+			want: func(metrics pmetric.MetricSlice) {
+				getTestSummaryMetric().CopyTo(metrics.AppendEmpty())
+				m := metrics.AppendEmpty()
+				m.SetName("summary_metric_histogram")
 				h := m.SetEmptyHistogram()
 				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				dp := h.DataPoints().AppendEmpty()
@@ -53,10 +58,48 @@ func Test_convertSummaryToHistogram(t *testing.T) {
 			name:          "summary to delta histogram",
 			stringAggTemp: "delta",
 			input:         getTestSummaryMetric(),
-			want: func(m pmetric.Metric) {
-				m.SetName("summary_metric")
+			want: func(metrics pmetric.MetricSlice) {
+				getTestSummaryMetric().CopyTo(metrics.AppendEmpty())
+				m := metrics.AppendEmpty()
+				m.SetName("summary_metric_histogram")
 				h := m.SetEmptyHistogram()
 				h.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := h.DataPoints().AppendEmpty()
+				dp.SetCount(100)
+				dp.SetSum(12.34)
+				dp.BucketCounts().FromRaw([]uint64{100})
+				getTestAttributes().CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:          "custom suffix",
+			stringAggTemp: "cumulative",
+			suffix:        ottl.NewTestingOptional("_custom_suf"),
+			input:         getTestSummaryMetric(),
+			want: func(metrics pmetric.MetricSlice) {
+				getTestSummaryMetric().CopyTo(metrics.AppendEmpty())
+				m := metrics.AppendEmpty()
+				m.SetName("summary_metric_custom_suf")
+				h := m.SetEmptyHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := h.DataPoints().AppendEmpty()
+				dp.SetCount(100)
+				dp.SetSum(12.34)
+				dp.BucketCounts().FromRaw([]uint64{100})
+				getTestAttributes().CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:          "empty suffix uses the default",
+			stringAggTemp: "cumulative",
+			suffix:        ottl.NewTestingOptional(""),
+			input:         getTestSummaryMetric(),
+			want: func(metrics pmetric.MetricSlice) {
+				getTestSummaryMetric().CopyTo(metrics.AppendEmpty())
+				m := metrics.AppendEmpty()
+				m.SetName("summary_metric_histogram")
+				h := m.SetEmptyHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				dp := h.DataPoints().AppendEmpty()
 				dp.SetCount(100)
 				dp.SetSum(12.34)
@@ -68,8 +111,10 @@ func Test_convertSummaryToHistogram(t *testing.T) {
 			name:          "multiple data points keep metadata, timestamps and attributes",
 			stringAggTemp: "cumulative",
 			input:         multiDpSummary(),
-			want: func(m pmetric.Metric) {
-				m.SetName("summary_metric")
+			want: func(metrics pmetric.MetricSlice) {
+				multiDpSummary().CopyTo(metrics.AppendEmpty())
+				m := metrics.AppendEmpty()
+				m.SetName("summary_metric_histogram")
 				m.SetDescription("desc")
 				m.SetUnit("ms")
 				h := m.SetEmptyHistogram()
@@ -93,11 +138,18 @@ func Test_convertSummaryToHistogram(t *testing.T) {
 			stringAggTemp: "cumulative",
 			input: func() pmetric.Metric {
 				m := pmetric.NewMetric()
+				m.SetName("summary_metric")
 				m.SetEmptySummary()
 				return m
 			}(),
-			want: func(m pmetric.Metric) {
-				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			want: func(metrics pmetric.MetricSlice) {
+				m := pmetric.NewMetric()
+				m.SetName("summary_metric")
+				m.SetEmptySummary()
+				m.CopyTo(metrics.AppendEmpty())
+				h := metrics.AppendEmpty()
+				h.SetName("summary_metric_histogram")
+				h.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			},
 		},
 		{
@@ -110,11 +162,16 @@ func Test_convertSummaryToHistogram(t *testing.T) {
 				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				return m
 			}(),
-			want: func(m pmetric.Metric) {
+			want: func(metrics pmetric.MetricSlice) {
+				m := pmetric.NewMetric()
 				m.SetName("summary_metric")
-				h := m.SetEmptyHistogram()
-				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				dp := h.DataPoints().AppendEmpty()
+				m.SetEmptySummary().DataPoints().AppendEmpty().SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				m.CopyTo(metrics.AppendEmpty())
+				h := metrics.AppendEmpty()
+				h.SetName("summary_metric_histogram")
+				hist := h.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := hist.DataPoints().AppendEmpty()
 				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				dp.SetSum(0)
 				dp.BucketCounts().FromRaw([]uint64{0})
@@ -124,49 +181,60 @@ func Test_convertSummaryToHistogram(t *testing.T) {
 			name:          "non summary is untouched",
 			stringAggTemp: "cumulative",
 			input:         getTestGaugeMetric(),
-			want:          func(m pmetric.Metric) { getTestGaugeMetric().CopyTo(m) },
+			want: func(metrics pmetric.MetricSlice) {
+				getTestGaugeMetric().CopyTo(metrics.AppendEmpty())
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metric := pmetric.NewMetric()
-			tt.input.CopyTo(metric)
+			sMetrics := pmetric.NewScopeMetrics()
+			tt.input.CopyTo(sMetrics.Metrics().AppendEmpty())
 
-			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
-			defer tCtx.Close()
-
-			evaluate, err := convertSummaryToHistogram(tt.stringAggTemp)
+			evaluate, err := convertSummaryToHistogram(tt.stringAggTemp, tt.suffix)
 			require.NoError(t, err)
 
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
+			defer tCtx.Close()
 			_, err = evaluate(t.Context(), tCtx)
 			require.NoError(t, err)
 
-			expected := pmetric.NewMetric()
+			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
-			assert.Equal(t, expected, metric)
+
+			expectedMetrics := pmetric.NewMetrics()
+			expected.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
+
+			actualMetrics := pmetric.NewMetrics()
+			sMetrics.MoveTo(actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty())
+
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }
 
 func Test_convertSummaryToHistogram_validation(t *testing.T) {
-	_, err := convertSummaryToHistogram("not a real aggregation temporality")
+	_, err := convertSummaryToHistogram("not a real aggregation temporality", ottl.Optional[string]{})
 	assert.EqualError(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 }
 
 func BenchmarkConvertSummaryToHistogram(b *testing.B) {
-	template := getTestSummaryMetric()
+	template := pmetric.NewScopeMetrics()
+	getTestSummaryMetric().CopyTo(template.Metrics().AppendEmpty())
 
-	exprFunc, err := convertSummaryToHistogram("cumulative")
+	sMetrics := pmetric.NewScopeMetrics()
+	template.CopyTo(sMetrics)
+
+	exprFunc, err := convertSummaryToHistogram("cumulative", ottl.Optional[string]{})
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	metric := pmetric.NewMetric()
-	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
 	b.Cleanup(transformContext.Close)
 	b.ReportAllocs()
 	for b.Loop() {
-		template.CopyTo(metric)
+		template.CopyTo(sMetrics)
 		if _, err = exprFunc(b.Context(), transformContext); err != nil {
 			b.Fatal(err)
 		}

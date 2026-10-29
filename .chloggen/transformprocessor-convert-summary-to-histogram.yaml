@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/transform
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `convert_summary_to_histogram` metric function to convert a Summary into a single-bucket Histogram.
+note: Add the `convert_summary_to_histogram` metric function to create a single-bucket Histogram from a Summary.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [0]
