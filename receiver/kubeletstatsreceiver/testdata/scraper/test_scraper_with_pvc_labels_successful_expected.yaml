@@ -316,12 +316,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: glusterfs.endpoints.name
-          value:
-            stringValue: endpoints_name
-        - key: glusterfs.path
-          value:
-            stringValue: path
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -388,12 +382,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: aws.volume.id
-          value:
-            stringValue: volume_id
-        - key: fs.type
-          value:
-            stringValue: fs_type
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -412,9 +400,6 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: awsElasticBlockStore
-        - key: partition
-          value:
-            stringValue: "10"
     schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
@@ -463,12 +448,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: fs.type
-          value:
-            stringValue: fs_type
-        - key: gce.pd.name
-          value:
-            stringValue: pd_name
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -487,9 +466,6 @@ resourceMetrics:
         - key: k8s.volume.type
           value:
             stringValue: gcePersistentDisk
-        - key: partition
-          value:
-            stringValue: "10"
     schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:

@@ -19,6 +19,57 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func TestConvertGCPTimeSeriesToMetrics_DistributionSum(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		count   int64
+		mean    float64
+		wantSum float64
+	}{
+		{name: "single observation", count: 1, mean: 12.5, wantSum: 12.5},
+		{name: "nonzero mean", count: 4, mean: 12.5, wantSum: 50},
+		{name: "zero mean", count: 4},
+		{name: "empty distribution"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			mr := newGoogleCloudMonitoringReceiver(&Config{}, zap.NewNop())
+			metrics := pmetric.NewMetrics()
+			ts := &monitoringpb.TimeSeries{
+				Metric:     &metric.Metric{Type: "custom.googleapis.com/latency"},
+				Resource:   &monitoredres.MonitoredResource{Type: "global"},
+				MetricKind: metric.MetricDescriptor_DELTA,
+				ValueType:  metric.MetricDescriptor_DISTRIBUTION,
+				Points: []*monitoringpb.Point{{
+					Interval: &monitoringpb.TimeInterval{
+						StartTime: &timestamppb.Timestamp{Seconds: 100},
+						EndTime:   &timestamppb.Timestamp{Seconds: 160},
+					},
+					Value: &monitoringpb.TypedValue{Value: &monitoringpb.TypedValue_DistributionValue{
+						DistributionValue: &distribution.Distribution{
+							Count: tt.count,
+							Mean:  tt.mean,
+							BucketOptions: &distribution.Distribution_BucketOptions{
+								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{Bounds: []float64{20}},
+								},
+							},
+							BucketCounts: []int64{tt.count},
+						},
+					}},
+				}},
+			}
+
+			mr.convertGCPTimeSeriesToMetrics(metrics, &metric.MetricDescriptor{}, ts)
+
+			require.Equal(t, 1, metrics.DataPointCount())
+			dp := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+			assert.Equal(t, uint64(tt.count), dp.Count())
+			assert.Equal(t, tt.count > 0, dp.HasSum())
+			assert.Equal(t, tt.wantSum, dp.Sum())
+		})
+	}
+}
+
 func TestConvertGCPTimeSeriesToMetrics_DeltaPointsOrdering(t *testing.T) {
 	mr := newGoogleCloudMonitoringReceiver(&Config{}, zap.NewNop())
 	metrics := pmetric.NewMetrics()

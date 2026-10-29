@@ -4077,24 +4077,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		settings.Logger.Warn("[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.")
 	}
-	if mbc.ResourceAttributes.AwsVolumeID.Enabled {
-		settings.Logger.Warn("[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.FsType.Enabled {
-		settings.Logger.Warn("[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.GcePdName.Enabled {
-		settings.Logger.Warn("[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.Enabled {
-		settings.Logger.Warn("[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.GlusterfsPath.Enabled {
-		settings.Logger.Warn("[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
-	if mbc.ResourceAttributes.Partition.Enabled {
-		settings.Logger.Warn("[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon")
-	}
 	mb := &MetricsBuilder{
 		config:                                       mbc,
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
@@ -4170,41 +4152,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.AwsVolumeID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.AwsVolumeID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.FsType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.FsType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.GcePdName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GcePdName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsPath.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.GlusterfsPath.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
@@ -4259,12 +4211,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
-	}
-	if mbc.ResourceAttributes.Partition.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.Partition.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsExclude)
 	}
 
 	for _, op := range options {

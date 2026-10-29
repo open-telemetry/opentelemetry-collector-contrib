@@ -17,12 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
 )
 
-var (
-	// TODO: Remove this feature gate when the legacy metric names are removed.
-	legacyMetricNamesFeatureGate   = metadata.ConnectorServicegraphLegacyLatencyMetricNamesFeatureGate
-	legacyLatencyUnitMsFeatureGate = metadata.ConnectorServicegraphLegacyLatencyUnitMsFeatureGate
-)
-
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
 	return xconnector.NewFactory(
