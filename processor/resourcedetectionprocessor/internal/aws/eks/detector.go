@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	imdsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
@@ -83,7 +83,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	}
 
 	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName)
+	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName, cfg.APIConfig)
 	if err != nil {
 		return nil, err
 	}
