@@ -5,6 +5,7 @@ package redactionprocessor
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"sort"
@@ -572,7 +573,7 @@ func TestHMACDifferentKeys(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       configopaque.String("key-one"),
+		HMACKey:       configopaque.String("key-one-aaaaaaaaaaaaaaaaaaaaaaaa"), // 32 bytes, the minimum Validate accepts
 		Summary:       "silent",
 	}
 
@@ -580,7 +581,7 @@ func TestHMACDifferentKeys(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       configopaque.String("key-two"),
+		HMACKey:       configopaque.String("key-two-bbbbbbbbbbbbbbbbbbbbbbbb"), // 32 bytes, the minimum Validate accepts
 		Summary:       "silent",
 	}
 
@@ -611,6 +612,9 @@ func TestHMACDifferentKeys(t *testing.T) {
 }
 
 func TestRedactSummaryDebugHashMD5(t *testing.T) {
+	if fips140.Enabled() {
+		t.Skip("md5 is rejected by Config.Validate in FIPS 140-3 mode and panics under GODEBUG=fips140=only")
+	}
 	tc := testConfig{
 		config: &Config{
 			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
