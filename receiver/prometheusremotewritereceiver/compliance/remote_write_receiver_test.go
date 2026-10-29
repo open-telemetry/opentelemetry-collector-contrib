@@ -108,15 +108,15 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Skip known compliance gaps in receiver/prometheusremotewritereceiver:
-	// - out_of_order_rejected: the receiver is a stateless translator and does not track series timestamps across requests.
-	// - invalid_utf8_*: symbol table entries are not validated for UTF-8 before constructing labels.
-	// - bad_count_*, reset_hint_gauge_*, invalid_rejected/*: invalid or gauge histograms are dropped with 204 instead of rejected with 400.
-	// - exemplars/validation/*: invalid exemplar label refs are dropped instead of rejected with 400.
-	// - summary_*: summaries are intentionally unsupported and dropped without incrementing Samples-Written.
-	// - metadata_without_data: series with only metadata and no data points return 204 instead of 400.
-	// - request/* and modes/content_type/rfc9110_*: HTTP method, Content-Encoding (confighttp), Accept/Accept-Encoding 415 headers, and RFC 9110 mode params are not strictly enforced.
-	// - rw1_compat/basic_compatibility: Remote Write 1.0 is intentionally unsupported.
-	// - modes/validation/*: stateless and stateless-st mode SHOULD rejections are not implemented.
+	// - out_of_order_rejected (SHOULD): the receiver is a stateless translator and does not track series timestamps across requests.
+	// - invalid_utf8_* (MUST): symbol table entries are not validated for UTF-8 before constructing labels.
+	// - bad_count_*, invalid_rejected/* (MUST) and float/*, float_histogram_*, reset_hint_gauge_* (MUST/SHOULD): float and gauge histograms are intentionally dropped without incrementing Histograms-Written, and invalid histograms are dropped or normalized with 204 instead of rejected with 400.
+	// - exemplars/validation/* (MUST/SHOULD): invalid exemplar label refs are dropped instead of rejected with 400.
+	// - summary_* (MUST/SHOULD): summaries are intentionally unsupported and dropped.
+	// - metadata_without_data (SHOULD): series with only metadata and no data points return 204 instead of 400.
+	// - request/* and modes/content_type/rfc9110_* (MUST for HTTP method, Content-Encoding, Snappy framed, and Content-Type mode params; SHOULD for 415 Accept/Accept-Encoding headers): not strictly enforced.
+	// - rw1_compat/basic_compatibility (MAY): Remote Write 1.0 is intentionally unsupported.
+	// - modes/validation/* (SHOULD): stateless and stateless-st mode rejections are not implemented.
 	skip := strings.Join([]string{
 		"TestRemoteWriteReceiver/otelcol-contrib/samples/out_of_order_rejected",
 		"TestRemoteWriteReceiver/otelcol-contrib/symbols/invalid_utf8_.*",
