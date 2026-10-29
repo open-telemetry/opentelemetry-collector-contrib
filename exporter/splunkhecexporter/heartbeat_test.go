@@ -126,7 +126,10 @@ func Test_Heartbeat_success(t *testing.T) {
 	for _, tt := range tests {
 		consumeLogsChan := make(chan plog.Logs, 10)
 		consumeFn := func(_ context.Context, ld plog.Logs) error {
-			consumeLogsChan <- ld
+			select {
+			case consumeLogsChan <- ld:
+			default:
+			}
 			return nil
 		}
 		reader := sdkmetric.NewManualReader()
@@ -147,9 +150,10 @@ func Test_Heartbeat_success(t *testing.T) {
 			assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 				got, err = getMetricValue(reader, sentMetricsName)
 				require.NoError(tt, err)
-				assert.NotEmpty(tt, got)
+				if assert.NotEmpty(tt, got) {
+					assert.Positive(tt, got[0], "there should be at least one success metric datapoint")
+				}
 			}, time.Second, 10*time.Millisecond)
-			assert.Positive(t, got[0], "there should be at least one success metric datapoint")
 			attrs, err := getAttributes(reader, sentMetricsName)
 			require.NoError(t, err)
 			assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])
