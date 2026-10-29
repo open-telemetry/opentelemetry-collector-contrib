@@ -46,12 +46,14 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseExecutionErrors.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFileSize.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFullScanRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIo.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTransactionsActive.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbAllocationWaitersCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = enabled
@@ -383,6 +385,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedTempDBContention.yaml")
 				case getSQLServerTempDBFileQuery():
 					expectedFile = filepath.Join("testdata", "expectedTempDBFile.yaml")
+				case getSQLServerDatabaseSizeQuery():
+					expectedFile = filepath.Join("testdata", "expectedDatabaseSize.yaml")
 				}
 
 				// Uncomment line below to re-generate expected metrics.
@@ -1319,6 +1323,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("tempDBContentionQueryData.txt")
 	case getSQLServerTempDBFileQuery():
 		queryResults, err = readFile("tempDBFileQueryData.txt")
+	case getSQLServerDatabaseSizeQuery():
+		queryResults, err = readFile("databaseSizeQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -2905,6 +2911,56 @@ func TestIsTempDBQueryEnabled(t *testing.T) {
 
 	metrics.SqlserverDatabaseTempdbSpace.Enabled = true
 	assert.True(t, isTempDBQueryEnabled(metrics))
+}
+
+func TestRecordDatabaseSizeMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFileSize.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var databaseSizeScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerDatabaseSizeQuery() {
+			databaseSizeScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, databaseSizeScraper, "database size scraper should be present")
+
+	err := databaseSizeScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, databaseSizeScraper.Shutdown(t.Context()))
+
+	databaseSizeScraper.client = mockClient{
+		SQL: databaseSizeScraper.sqlQuery,
+	}
+
+	actualMetrics, err := databaseSizeScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 2 database files (1 data, 1 log) = 2 data points
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == metadata.MetricsInfo.SqlserverDatabaseFileSize.Name {
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 2, totalDP)
 }
 
 func TestIsTempDBContentionQueryEnabled(t *testing.T) {

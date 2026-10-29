@@ -969,6 +969,10 @@ var MetricsInfo = metricsInfo{
 	SqlserverDatabaseExecutionErrors: metricInfo{
 		Name: "sqlserver.database.execution.errors",
 	},
+	SqlserverDatabaseFileSize: metricInfo{
+		Name:       "sqlserver.database.file.size",
+		Attributes: []string{"file_type", "db.namespace"},
+	},
 	SqlserverDatabaseFullScanRate: metricInfo{
 		Name: "sqlserver.database.full_scan.rate",
 	},
@@ -990,6 +994,9 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverDatabaseTempdbVersionStoreSize: metricInfo{
 		Name: "sqlserver.database.tempdb.version_store.size",
+	},
+	SqlserverDatabaseTransactionsActive: metricInfo{
+		Name: "sqlserver.database.transactions.active",
 	},
 	SqlserverDeadlockRate: metricInfo{
 		Name: "sqlserver.deadlock.rate",
@@ -1274,12 +1281,14 @@ type metricsInfo struct {
 	SqlserverDatabaseBackupOrRestoreRate                  metricInfo
 	SqlserverDatabaseCount                                metricInfo
 	SqlserverDatabaseExecutionErrors                      metricInfo
+	SqlserverDatabaseFileSize                             metricInfo
 	SqlserverDatabaseFullScanRate                         metricInfo
 	SqlserverDatabaseIo                                   metricInfo
 	SqlserverDatabaseLatency                              metricInfo
 	SqlserverDatabaseOperations                           metricInfo
 	SqlserverDatabaseTempdbSpace                          metricInfo
 	SqlserverDatabaseTempdbVersionStoreSize               metricInfo
+	SqlserverDatabaseTransactionsActive                   metricInfo
 	SqlserverDeadlockRate                                 metricInfo
 	SqlserverDiskIo                                       metricInfo
 	SqlserverDiskOperations                               metricInfo
@@ -2587,6 +2596,100 @@ func newMetricSqlserverDatabaseExecutionErrors(cfg SqlserverDatabaseExecutionErr
 	return m
 }
 
+type metricSqlserverDatabaseFileSize struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        SqlserverDatabaseFileSizeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills sqlserver.database.file.size metric with initial data.
+func (m *metricSqlserverDatabaseFileSize) init() {
+	m.data.SetName("sqlserver.database.file.size")
+	m.data.SetDescription("Size of database files.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricSqlserverDatabaseFileSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fileTypeAttributeValue string, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDatabaseFileSizeMetricAttributeKeyFileType) {
+		dp.Attributes().PutStr("file_type", fileTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverDatabaseFileSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverDatabaseFileSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverDatabaseFileSize(cfg SqlserverDatabaseFileSizeMetricConfig) metricSqlserverDatabaseFileSize {
+	m := metricSqlserverDatabaseFileSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverDatabaseFullScanRate struct {
 	data     pmetric.Metric                            // data buffer for generated metric.
 	config   SqlserverDatabaseFullScanRateMetricConfig // metric config provided by user.
@@ -3078,6 +3181,56 @@ func (m *metricSqlserverDatabaseTempdbVersionStoreSize) emit(metrics pmetric.Met
 
 func newMetricSqlserverDatabaseTempdbVersionStoreSize(cfg SqlserverDatabaseTempdbVersionStoreSizeMetricConfig) metricSqlserverDatabaseTempdbVersionStoreSize {
 	m := metricSqlserverDatabaseTempdbVersionStoreSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverDatabaseTransactionsActive struct {
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   SqlserverDatabaseTransactionsActiveMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.database.transactions.active metric with initial data.
+func (m *metricSqlserverDatabaseTransactionsActive) init() {
+	m.data.SetName("sqlserver.database.transactions.active")
+	m.data.SetDescription("Number of active transactions in the database.")
+	m.data.SetUnit("{transactions}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverDatabaseTransactionsActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverDatabaseTransactionsActive) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverDatabaseTransactionsActive) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverDatabaseTransactionsActive(cfg SqlserverDatabaseTransactionsActiveMetricConfig) metricSqlserverDatabaseTransactionsActive {
+	m := metricSqlserverDatabaseTransactionsActive{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -8078,12 +8231,14 @@ type MetricsBuilder struct {
 	metricSqlserverDatabaseBackupOrRestoreRate                  metricSqlserverDatabaseBackupOrRestoreRate
 	metricSqlserverDatabaseCount                                metricSqlserverDatabaseCount
 	metricSqlserverDatabaseExecutionErrors                      metricSqlserverDatabaseExecutionErrors
+	metricSqlserverDatabaseFileSize                             metricSqlserverDatabaseFileSize
 	metricSqlserverDatabaseFullScanRate                         metricSqlserverDatabaseFullScanRate
 	metricSqlserverDatabaseIo                                   metricSqlserverDatabaseIo
 	metricSqlserverDatabaseLatency                              metricSqlserverDatabaseLatency
 	metricSqlserverDatabaseOperations                           metricSqlserverDatabaseOperations
 	metricSqlserverDatabaseTempdbSpace                          metricSqlserverDatabaseTempdbSpace
 	metricSqlserverDatabaseTempdbVersionStoreSize               metricSqlserverDatabaseTempdbVersionStoreSize
+	metricSqlserverDatabaseTransactionsActive                   metricSqlserverDatabaseTransactionsActive
 	metricSqlserverDeadlockRate                                 metricSqlserverDeadlockRate
 	metricSqlserverDiskIo                                       metricSqlserverDiskIo
 	metricSqlserverDiskOperations                               metricSqlserverDiskOperations
@@ -8205,12 +8360,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverDatabaseBackupOrRestoreRate:                  newMetricSqlserverDatabaseBackupOrRestoreRate(mbc.Metrics.SqlserverDatabaseBackupOrRestoreRate),
 		metricSqlserverDatabaseCount:                                newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
 		metricSqlserverDatabaseExecutionErrors:                      newMetricSqlserverDatabaseExecutionErrors(mbc.Metrics.SqlserverDatabaseExecutionErrors),
+		metricSqlserverDatabaseFileSize:                             newMetricSqlserverDatabaseFileSize(mbc.Metrics.SqlserverDatabaseFileSize),
 		metricSqlserverDatabaseFullScanRate:                         newMetricSqlserverDatabaseFullScanRate(mbc.Metrics.SqlserverDatabaseFullScanRate),
 		metricSqlserverDatabaseIo:                                   newMetricSqlserverDatabaseIo(mbc.Metrics.SqlserverDatabaseIo),
 		metricSqlserverDatabaseLatency:                              newMetricSqlserverDatabaseLatency(mbc.Metrics.SqlserverDatabaseLatency),
 		metricSqlserverDatabaseOperations:                           newMetricSqlserverDatabaseOperations(mbc.Metrics.SqlserverDatabaseOperations),
 		metricSqlserverDatabaseTempdbSpace:                          newMetricSqlserverDatabaseTempdbSpace(mbc.Metrics.SqlserverDatabaseTempdbSpace),
 		metricSqlserverDatabaseTempdbVersionStoreSize:               newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
+		metricSqlserverDatabaseTransactionsActive:                   newMetricSqlserverDatabaseTransactionsActive(mbc.Metrics.SqlserverDatabaseTransactionsActive),
 		metricSqlserverDeadlockRate:                                 newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
 		metricSqlserverDiskIo:                                       newMetricSqlserverDiskIo(mbc.Metrics.SqlserverDiskIo),
 		metricSqlserverDiskOperations:                               newMetricSqlserverDiskOperations(mbc.Metrics.SqlserverDiskOperations),
@@ -8445,12 +8602,14 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverDatabaseBackupOrRestoreRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseExecutionErrors.emit(ils.Metrics())
+	mb.metricSqlserverDatabaseFileSize.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseFullScanRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseIo.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseLatency.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseOperations.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseTempdbSpace.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.emit(ils.Metrics())
+	mb.metricSqlserverDatabaseTransactionsActive.emit(ils.Metrics())
 	mb.metricSqlserverDeadlockRate.emit(ils.Metrics())
 	mb.metricSqlserverDiskIo.emit(ils.Metrics())
 	mb.metricSqlserverDiskOperations.emit(ils.Metrics())
@@ -8673,6 +8832,11 @@ func (mb *MetricsBuilder) RecordSqlserverDatabaseExecutionErrorsDataPoint(ts pco
 	mb.metricSqlserverDatabaseExecutionErrors.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverDatabaseFileSizeDataPoint adds a data point to sqlserver.database.file.size metric.
+func (mb *MetricsBuilder) RecordSqlserverDatabaseFileSizeDataPoint(ts pcommon.Timestamp, val int64, fileTypeAttributeValue string, dbNamespaceAttributeValue string) {
+	mb.metricSqlserverDatabaseFileSize.recordDataPoint(mb.startTime, ts, val, fileTypeAttributeValue, dbNamespaceAttributeValue)
+}
+
 // RecordSqlserverDatabaseFullScanRateDataPoint adds a data point to sqlserver.database.full_scan.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverDatabaseFullScanRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverDatabaseFullScanRate.recordDataPoint(mb.startTime, ts, val)
@@ -8711,6 +8875,16 @@ func (mb *MetricsBuilder) RecordSqlserverDatabaseTempdbSpaceDataPoint(ts pcommon
 // RecordSqlserverDatabaseTempdbVersionStoreSizeDataPoint adds a data point to sqlserver.database.tempdb.version_store.size metric.
 func (mb *MetricsBuilder) RecordSqlserverDatabaseTempdbVersionStoreSizeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverDatabaseTransactionsActiveDataPoint adds a data point to sqlserver.database.transactions.active metric.
+func (mb *MetricsBuilder) RecordSqlserverDatabaseTransactionsActiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverDatabaseTransactionsActive, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverDatabaseTransactionsActive.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordSqlserverDeadlockRateDataPoint adds a data point to sqlserver.deadlock.rate metric.

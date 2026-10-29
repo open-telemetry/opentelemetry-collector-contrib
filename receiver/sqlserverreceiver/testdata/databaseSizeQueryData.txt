@@ -1,0 +1,16 @@
+[
+  {
+    "measurement": "sqlserver_database_file_size",
+    "sql_instance": "testhost",
+    "database_name": "testdb",
+    "file_type": "rows",
+    "size_bytes": "134217728"
+  },
+  {
+    "measurement": "sqlserver_database_file_size",
+    "sql_instance": "testhost",
+    "database_name": "testdb",
+    "file_type": "log",
+    "size_bytes": "67108864"
+  }
+]

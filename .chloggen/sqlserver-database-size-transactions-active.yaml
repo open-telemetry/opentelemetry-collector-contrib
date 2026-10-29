@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: "Add `sqlserver.database.file.size` and `sqlserver.database.transactions.active` metrics."
+
+issues: [52492]
+
+subtext: The two new metrics are disabled by default.
+
+change_logs: [user]

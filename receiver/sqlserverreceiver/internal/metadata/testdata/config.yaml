@@ -46,6 +46,9 @@ all_set:
       attributes: ["database.status"]
     sqlserver.database.execution.errors:
       enabled: true
+    sqlserver.database.file.size:
+      enabled: true
+      attributes: ["file_type","db.namespace"]
     sqlserver.database.full_scan.rate:
       enabled: true
     sqlserver.database.io:
@@ -61,6 +64,8 @@ all_set:
       enabled: true
       attributes: ["tempdb.state"]
     sqlserver.database.tempdb.version_store.size:
+      enabled: true
+    sqlserver.database.transactions.active:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
@@ -321,6 +326,9 @@ reaggregate_set:
       attributes: []
     sqlserver.database.execution.errors:
       enabled: true
+    sqlserver.database.file.size:
+      enabled: true
+      attributes: []
     sqlserver.database.full_scan.rate:
       enabled: true
     sqlserver.database.io:
@@ -336,6 +344,8 @@ reaggregate_set:
       enabled: true
       attributes: []
     sqlserver.database.tempdb.version_store.size:
+      enabled: true
+    sqlserver.database.transactions.active:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
@@ -596,6 +606,9 @@ none_set:
       attributes: ["database.status"]
     sqlserver.database.execution.errors:
       enabled: false
+    sqlserver.database.file.size:
+      enabled: false
+      attributes: ["file_type","db.namespace"]
     sqlserver.database.full_scan.rate:
       enabled: false
     sqlserver.database.io:
@@ -611,6 +624,8 @@ none_set:
       enabled: false
       attributes: ["tempdb.state"]
     sqlserver.database.tempdb.version_store.size:
+      enabled: false
+    sqlserver.database.transactions.active:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
