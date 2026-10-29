@@ -1025,6 +1025,60 @@ func TestAWSMSKCredentialCacheConcurrentRefresh(t *testing.T) {
 	})
 }
 
+func TestAWSMSKCredentialCacheRefreshTimeoutWithFallback(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var calls atomic.Int32
+		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+			if calls.Add(1) == 1 {
+				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
+			}
+			deadline, ok := ctx.Deadline()
+			assert.True(t, ok)
+			assert.Equal(t, awsMSKCachedRefreshTimeout, time.Until(deadline))
+			<-ctx.Done()
+			return aws.Credentials{}, ctx.Err()
+		}), zap.NewNop())
+		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
+		originalLoader := loadAWSCredentialsProvider
+		t.Cleanup(func() { loadAWSCredentialsProvider = originalLoader })
+		loadAWSCredentialsProvider = func(context.Context, string, *zap.Logger) (aws.CredentialsProvider, error) {
+			return cache, nil
+		}
+		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+			Mechanism: AWSMSKIAMOAUTHBEARER,
+			AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+		}, componenttest.NewNopHost(), zap.NewNop())
+		require.NoError(t, err)
+		cl, err := kgo.NewClient(opt)
+		require.NoError(t, err)
+		mechanism := cl.OptValue(kgo.SASL).([]sasl.Mechanism)[0]
+		cl.Close()
+		creds, err := cache.Retrieve(t.Context())
+		require.NoError(t, err)
+		_, hasDeadline := t.Context().Deadline()
+		require.False(t, hasDeadline, "exercise authentication without a caller deadline")
+		// Cover both the first early refresh and a retry during fallback.
+		for round := range 2 {
+			time.Sleep(time.Until(creds.Expires))
+			started := time.Now()
+			var wg sync.WaitGroup
+			for range 32 {
+				wg.Go(func() {
+					_, response, authErr := mechanism.Authenticate(t.Context(), "broker:9098")
+					assert.NoError(t, authErr)
+					assert.NotEmpty(t, response)
+				})
+			}
+			wg.Wait()
+			assert.Equal(t, awsMSKCachedRefreshTimeout, time.Since(started))
+			assert.Equal(t, int32(round+2), calls.Load(), "concurrent authentications must share one refresh")
+			creds, err = cache.Retrieve(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, "AKID", creds.AccessKeyID)
+		}
+	})
+}
+
 func TestAWSMSKCredentialCacheRefreshTimeout(t *testing.T) {
 	for _, callerTimeout := range []time.Duration{0, time.Second} {
 		t.Run(callerTimeout.String(), func(t *testing.T) {
@@ -1080,7 +1134,7 @@ func TestAWSMSKCredentialCacheExpiresDuringRefresh(t *testing.T) {
 		var calls atomic.Int32
 		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			if calls.Add(1) == 1 {
-				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(15 * time.Second)}, nil
+				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(awsMSKCachedRefreshTimeout / 2)}, nil
 			}
 			<-ctx.Done()
 			return aws.Credentials{}, ctx.Err()
@@ -1088,7 +1142,7 @@ func TestAWSMSKCredentialCacheExpiresDuringRefresh(t *testing.T) {
 		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
 		_, err := cache.Retrieve(t.Context())
 		require.NoError(t, err)
-		// The 30-second refresh timeout outlasts the credentials' remaining life.
+		// The cached refresh timeout outlasts the credentials' remaining life.
 		// Fallback must check real expiry after the failed refresh completes.
 		creds, err := cache.Retrieve(t.Context())
 		require.ErrorIs(t, err, context.DeadlineExceeded)

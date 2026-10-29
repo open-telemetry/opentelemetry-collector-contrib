@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	awsMSKExpiryWindow     = 5 * time.Minute
-	awsMSKExpiryJitterFrac = 0.5
-	awsMSKRefreshTimeout   = 30 * time.Second
+	awsMSKExpiryWindow         = 5 * time.Minute
+	awsMSKExpiryJitterFrac     = 0.5
+	awsMSKRefreshTimeout       = 30 * time.Second
+	awsMSKCachedRefreshTimeout = 10 * time.Second
 )
 
 // loadAWSCredentialsProvider is a variable so tests can replace it.
@@ -85,7 +86,11 @@ func newAWSMSKRefreshProvider(provider aws.CredentialsProvider, logger *zap.Logg
 func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
 	// CredentialsCache suppresses the caller's deadline for its shared refresh.
 	// Bound the underlying provider here, including all of the SDK's STS retries.
-	ctx, cancel := context.WithTimeout(ctx, awsMSKRefreshTimeout)
+	refreshTimeout := awsMSKRefreshTimeout
+	if p.fallbackExpiry().After(time.Now()) {
+		refreshTimeout = awsMSKCachedRefreshTimeout
+	}
+	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
 	defer cancel()
 	started := time.Now()
 	p.logger.Debug("AWS MSK credential refresh started")
@@ -106,12 +111,17 @@ func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, 
 	return creds, nil
 }
 
+func (p *awsMSKRefreshProvider) fallbackExpiry() time.Time {
+	return p.actualExpiry
+}
+
 func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current aws.Credentials, refreshErr error) (aws.Credentials, error) {
 	now := time.Now()
-	if !current.HasKeys() || !current.CanExpire || !p.actualExpiry.After(now) {
+	fallbackExpiry := p.fallbackExpiry()
+	if !current.HasKeys() || !current.CanExpire || !fallbackExpiry.After(now) {
 		return aws.Credentials{}, refreshErr
 	}
-	retryIn := min(p.retryDelay(), p.actualExpiry.Sub(now))
+	retryIn := min(p.retryDelay(), fallbackExpiry.Sub(now))
 	current.Expires = now.Add(retryIn)
 	// This expiry is already the next retry deadline, capped at the original
 	// AWS expiry. Subtracting the SDK window again would cause a refresh storm.
