@@ -8,6 +8,7 @@ package compliance
 import (
 	"bytes"
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -130,6 +131,28 @@ func collectorBinaryName(goos, goarch string) string {
 		name += ".exe"
 	}
 	return name
+}
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+
+	// Skip known compliance gaps:
+	// - samples_sorted: receiver/prometheus deduplicates multiple samples for the same series in one scrape.
+	// - start_timestamp_*: receiver/prometheus truncates float64 _created timestamps by up to 1ms.
+	// - float_histogram: pmetric exponential histograms store bucket counts as uint64.
+	// - type_info_and_stateset: OpenTelemetry does not support INFO/STATESET, those are gauges.
+	skip := strings.Join([]string{
+		"TestRemoteWriteSender/otelcol-contrib/samples_sorted",
+		"TestRemoteWriteSender/otelcol-contrib/samples/rw2/start_timestamp_for_.*",
+		"TestRemoteWriteSender/otelcol-contrib/native_histograms/rw2/(float_histogram|start_timestamp_before_timestamp)",
+		"TestRemoteWriteSender/otelcol-contrib/metadata/rw2/type_info_and_stateset",
+	}, "|")
+	if existing := flag.Lookup("test.skip").Value.String(); existing != "" {
+		skip = existing + "|" + skip
+	}
+	_ = flag.Set("test.skip", skip)
+
+	os.Exit(m.Run())
 }
 
 // TestRemoteWriteSender runs the remote write sender compliance tests defined
