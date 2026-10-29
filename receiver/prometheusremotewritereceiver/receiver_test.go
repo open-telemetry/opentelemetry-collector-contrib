@@ -1576,7 +1576,7 @@ func TestTranslateV2(t *testing.T) {
 		},
 		{
 			name: "nhcb histogram - all observations outside the buckets leave a zero count and sum",
-			// A histogram whose only observation was NaN has nothing in any bucket. OTLP requires
+			// A histogram whose observations were all NaN has nothing in any bucket. OTLP requires
 			// the sum to be zero when the count is, so both are zero.
 			request: &writev2.Request{
 				Symbols: []string{

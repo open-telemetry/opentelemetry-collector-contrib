@@ -8,7 +8,7 @@ issues: [50337]
 
 subtext: |
   A count can be lower than the one Prometheus sent, because observations that
-  no bucket represents are not counted. A refused histogram is logged at error
-  level rather than info.
+  no bucket represents are not counted. A custom bucket histogram whose bounds
+  or buckets cannot be represented is now dropped and logged at error level.
 
 change_logs: [user]
