@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/auth"
+	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/credentials/idtoken"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -116,7 +117,13 @@ func TestStart_idtoken(t *testing.T) {
 			TokenType: idToken,
 			Audience:  "my-audience",
 		},
-		newIDTokenCredentials: func(opts *idtoken.Options) (*auth.Credentials, error) {
+		newIDTokenCredentials: func(*idtoken.Options) (*auth.Credentials, error) {
+			t.Fatal("newIDTokenCredentials must not be called when ADC found a credentials file")
+			return nil, nil
+		},
+		newIDTokenCredentialsFromJSON: func(credType credentials.CredType, b []byte, opts *idtoken.Options) (*auth.Credentials, error) {
+			assert.Equal(t, credentials.AuthorizedUser, credType)
+			assert.NotEmpty(t, b)
 			assert.Equal(t, "my-audience", opts.Audience)
 
 			return auth.NewCredentials(&auth.CredentialsOptions{
@@ -130,6 +137,33 @@ func TestStart_idtoken(t *testing.T) {
 	token, err := ca.Token()
 	assert.NoError(t, err)
 	assert.Equal(t, "dummy token", token.AccessToken)
+}
+
+// On GCE, ID token creation must not silently switch to the metadata server
+// identity when ADC selected the gcloud well-known file; it must use that file
+// (and fail for authorized_user credentials, as before).
+func TestStart_idtokenWithWellKnownFileADC(t *testing.T) {
+	b, err := os.ReadFile("testdata/fake_creds.json")
+	require.NoError(t, err)
+	home := t.TempDir()
+	for _, dir := range []string{
+		filepath.Join(home, ".config", "gcloud"), // Linux / macOS
+		filepath.Join(home, "gcloud"),            // Windows (APPDATA)
+	} {
+		require.NoError(t, os.MkdirAll(dir, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "application_default_credentials.json"), b, 0o600))
+	}
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+	t.Setenv("HOME", home)
+	t.Setenv("APPDATA", home)
+
+	cfg := CreateDefaultConfig().(*Config)
+	cfg.TokenType = idToken
+	cfg.Audience = "my-audience"
+	ext, err := CreateExtension(t.Context(), extension.Settings{}, cfg)
+	require.NoError(t, err)
+	err = ext.Start(t.Context(), nil)
+	assert.ErrorContains(t, err, "unsupported credentials type")
 }
 
 func Test_newTokenSource_idtokenWithoutCredsJSON(t *testing.T) {

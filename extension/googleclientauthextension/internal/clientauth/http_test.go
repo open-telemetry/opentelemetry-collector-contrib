@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/auth"
+	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/credentials/idtoken"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -90,7 +91,7 @@ func TestRoundTripperWithIDToken(t *testing.T) {
 			Audience:     "http://example.com",
 			TokenHeader:  authorizationHeader,
 		},
-		newIDTokenCredentials: func(_ *idtoken.Options) (*auth.Credentials, error) {
+		newIDTokenCredentialsFromJSON: func(_ credentials.CredType, _ []byte, _ *idtoken.Options) (*auth.Credentials, error) {
 			return auth.NewCredentials(&auth.CredentialsOptions{
 				TokenProvider: &mockTokenProvider{token: "dummy token"},
 			}), nil
