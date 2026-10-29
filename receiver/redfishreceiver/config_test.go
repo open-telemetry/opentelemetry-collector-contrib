@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -61,6 +62,24 @@ func TestConfig_Validate(t *testing.T) {
 				},
 			},
 			expectError: true,
+		},
+		{
+			desc: "Bad Config - TLS Cert Without Key",
+			cfg: &Config{
+				Servers: []Server{
+					{BaseURL: "https://localhost:3000", TLS: configtls.ClientConfig{Config: configtls.Config{CertFile: "client.crt"}}, ComputerSystemID: "1", Resources: validResources},
+				},
+			},
+			expectError: true,
+		},
+		{
+			desc: "Valid Config - mTLS",
+			cfg: &Config{
+				Servers: []Server{
+					{BaseURL: "https://localhost:3000", TLS: configtls.ClientConfig{Config: configtls.Config{CAFile: "ca.crt", CertFile: "client.crt", KeyFile: "client.key"}}, ComputerSystemID: "1", Resources: validResources},
+				},
+			},
+			expectError: false,
 		},
 		{
 			desc: "Valid Config",
