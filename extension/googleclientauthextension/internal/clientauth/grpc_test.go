@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"cloud.google.com/go/auth"
-	authcredentials "cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/credentials/idtoken"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/credentials"
@@ -38,7 +37,7 @@ func TestPerRPCCredentialsWithIDToken(t *testing.T) {
 			TokenType:    idToken,
 			Audience:     "http://example.com",
 		},
-		newIDTokenCredentialsFromJSON: func(_ authcredentials.CredType, _ []byte, _ *idtoken.Options) (*auth.Credentials, error) {
+		newIDTokenCredentials: func(_ *idtoken.Options) (*auth.Credentials, error) {
 			return auth.NewCredentials(&auth.CredentialsOptions{
 				TokenProvider: &mockTokenProvider{token: "dummy token"},
 			}), nil

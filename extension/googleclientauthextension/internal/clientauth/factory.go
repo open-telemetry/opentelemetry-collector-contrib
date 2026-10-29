@@ -5,7 +5,6 @@ package clientauth // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,9 +31,8 @@ const (
 func CreateExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 	ca := &clientAuthenticator{
-		config:                        config,
-		newIDTokenCredentials:         idtoken.NewCredentials,
-		newIDTokenCredentialsFromJSON: idtoken.NewCredentialsFromJSON,
+		config:                config,
+		newIDTokenCredentials: idtoken.NewCredentials,
 	}
 	return ca, nil
 }
@@ -44,8 +42,7 @@ type clientAuthenticator struct {
 	*oauth.TokenSource
 	config *Config
 
-	newIDTokenCredentials         func(opts *idtoken.Options) (*auth.Credentials, error)
-	newIDTokenCredentialsFromJSON func(credType credentials.CredType, b []byte, opts *idtoken.Options) (*auth.Credentials, error)
+	newIDTokenCredentials func(opts *idtoken.Options) (*auth.Credentials, error)
 }
 
 func (ca *clientAuthenticator) Start(ctx context.Context, _ component.Host) error {
@@ -83,22 +80,14 @@ func (ca *clientAuthenticator) Start(ctx context.Context, _ component.Host) erro
 
 func (ca *clientAuthenticator) newTokenSource(creds *auth.Credentials) (oauth2.TokenSource, error) {
 	if ca.config.TokenType == idToken {
-		opts := &idtoken.Options{Audience: ca.config.Audience}
 		var err error
-		// Reuse the credentials file selected by ADC so ID tokens come from
-		// the same identity as access tokens. Without it, idtoken would skip
-		// the gcloud well-known file and use the metadata server on GCE.
-		if b := creds.JSON(); len(b) > 0 {
-			var f struct {
-				Type string `json:"type"`
-			}
-			if err = json.Unmarshal(b, &f); err != nil {
-				return nil, fmt.Errorf("failed to parse credentials type: %w", err)
-			}
-			creds, err = ca.newIDTokenCredentialsFromJSON(credentials.CredType(f.Type), b, opts)
-		} else {
-			creds, err = ca.newIDTokenCredentials(opts)
-		}
+		creds, err = ca.newIDTokenCredentials(&idtoken.Options{
+			Audience: ca.config.Audience,
+			// Reuse the credentials file selected by ADC so ID tokens use the
+			// same identity; otherwise idtoken skips the gcloud well-known file
+			// and falls back to the metadata server on GCE.
+			CredentialsJSON: creds.JSON(), //nolint:staticcheck // SA1019: JSON was already loaded by ADC (DetectDefault), not from an untrusted source.
+		})
 		if err != nil {
 			return nil, err
 		}

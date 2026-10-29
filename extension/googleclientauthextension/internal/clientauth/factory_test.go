@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/auth"
-	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/credentials/idtoken"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -120,13 +119,8 @@ func TestStart_idtoken(t *testing.T) {
 			TokenType: idToken,
 			Audience:  "my-audience",
 		},
-		newIDTokenCredentials: func(*idtoken.Options) (*auth.Credentials, error) {
-			t.Fatal("newIDTokenCredentials must not be called when ADC found a credentials file")
-			return nil, nil
-		},
-		newIDTokenCredentialsFromJSON: func(credType credentials.CredType, b []byte, opts *idtoken.Options) (*auth.Credentials, error) {
-			assert.Equal(t, credentials.AuthorizedUser, credType)
-			assert.NotEmpty(t, b)
+		newIDTokenCredentials: func(opts *idtoken.Options) (*auth.Credentials, error) {
+			assert.NotEmpty(t, opts.CredentialsJSON) //nolint:staticcheck // SA1019: see newTokenSource.
 			assert.Equal(t, "my-audience", opts.Audience)
 
 			return auth.NewCredentials(&auth.CredentialsOptions{
@@ -184,6 +178,7 @@ func Test_newTokenSource_idtokenWithoutCredsJSON(t *testing.T) {
 			Audience:  "my-audience",
 		},
 		newIDTokenCredentials: func(opts *idtoken.Options) (*auth.Credentials, error) {
+			assert.Empty(t, opts.CredentialsJSON) //nolint:staticcheck // SA1019: see newTokenSource.
 			assert.Equal(t, "my-audience", opts.Audience)
 
 			return auth.NewCredentials(&auth.CredentialsOptions{
