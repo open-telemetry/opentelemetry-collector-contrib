@@ -19,7 +19,7 @@ import (
 )
 
 func TestEC2TrimmedBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, availableDetectorFactories(), internal.DetectorType("ec2"))
+	require.Contains(t, internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes(), "ec2")
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Preserve the EC2-only configuration reported in issue #47218, including

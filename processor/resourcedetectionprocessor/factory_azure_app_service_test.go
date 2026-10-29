@@ -17,7 +17,7 @@ import (
 )
 
 func TestAzureAppServiceTrimmedBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, availableDetectorFactories(), internal.DetectorType("azureappservice"))
+	require.Contains(t, internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes(), "azureappservice")
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Detectors = []string{"azureappservice"}

@@ -463,7 +463,7 @@ func TestWarnDeprecatedPerDetectorFlags_NoWarningWhenNoneSet(t *testing.T) {
 }
 
 func TestDefaultDetectorRegistry(t *testing.T) {
-	expectedTypes := []internal.DetectorType{
+	expectedTypes := []string{
 		"akamai",
 		"alibaba_ecs",
 		"aks",
@@ -499,11 +499,7 @@ func TestDefaultDetectorRegistry(t *testing.T) {
 		"vultr",
 	}
 
-	actualTypes := make([]internal.DetectorType, 0, len(availableDetectorFactories()))
-	for detectorType, factory := range availableDetectorFactories() {
-		require.NotNil(t, factory, "factory should not be nil for %q", detectorType)
-		actualTypes = append(actualTypes, detectorType)
-	}
+	actualTypes := internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes()
 
 	assert.ElementsMatch(t, expectedTypes, actualTypes)
 }

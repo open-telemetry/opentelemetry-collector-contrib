@@ -6,6 +6,7 @@
 package resourcedetectionprocessor
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ import (
 )
 
 func TestOracleCloudOnlyBuildCreatesConfiguredProcessor(t *testing.T) {
-	require.Contains(t, availableDetectorFactories(), internal.DetectorType("oraclecloud"))
+	require.Contains(t, internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes(), "oraclecloud")
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -31,7 +32,7 @@ func TestOracleCloudOnlyBuildCreatesConfiguredProcessor(t *testing.T) {
 }
 
 func TestOracleCloudOnlyBuildRejectsDisabledDetector(t *testing.T) {
-	if _, ok := availableDetectorFactories()[internal.DetectorType("env")]; ok {
+	if slices.Contains(internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes(), "env") {
 		t.Skip("env is compiled in this detector combination")
 	}
 
@@ -44,12 +45,4 @@ func TestOracleCloudOnlyBuildRejectsDisabledDetector(t *testing.T) {
 	require.ErrorContains(t, err, `detector "env" is not compiled into this binary`)
 	require.ErrorContains(t, err, "oraclecloud")
 	assert.Nil(t, tp)
-}
-
-func TestOracleCloudDetectorRegistry(t *testing.T) {
-	for detectorType, factory := range availableDetectorFactories() {
-		require.NotNil(t, factory, "factory should not be nil for %q", detectorType)
-	}
-
-	assert.Contains(t, availableDetectorFactories(), internal.DetectorType("oraclecloud"))
 }

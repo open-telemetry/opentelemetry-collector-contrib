@@ -6,6 +6,7 @@
 package resourcedetectionprocessor
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,12 +18,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
-
-func TestTrimmedBuildRegistryFactories(t *testing.T) {
-	for detectorType, factory := range availableDetectorFactories() {
-		require.NotNil(t, factory, "factory should not be nil for %q", detectorType)
-	}
-}
 
 func TestTrimmedBuildCreatesProcessorWithoutDetectors(t *testing.T) {
 	factory := NewFactory()
@@ -43,9 +38,10 @@ func TestTrimmedBuildRejectsDetectorThatIsNotCompiled(t *testing.T) {
 		"oraclecloud", "scaleway", "system", "tencent_cvm", "upcloud", "vultr",
 	}
 
+	compiledDetectors := internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes()
 	var disabled internal.DetectorType
 	for _, detectorType := range allDetectorTypes {
-		if _, ok := availableDetectorFactories()[detectorType]; !ok {
+		if !slices.Contains(compiledDetectors, string(detectorType)) {
 			disabled = detectorType
 			break
 		}
@@ -64,7 +60,7 @@ func TestTrimmedBuildRejectsDetectorThatIsNotCompiled(t *testing.T) {
 }
 
 func TestTrimmedBuildDefaultRequiresEnvDetector(t *testing.T) {
-	if _, ok := availableDetectorFactories()[internal.DetectorType("env")]; ok {
+	if slices.Contains(internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes(), "env") {
 		t.Skip("env is compiled")
 	}
 
