@@ -1,0 +1,678 @@
+groups:
+  - id: postgresql.backends
+    type: metric
+    metric_name: postgresql.backends
+    stability: development
+    brief: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+    instrument: updowncounter
+    unit: '1'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.bgwriter.buffers.allocated
+    type: metric
+    metric_name: postgresql.bgwriter.buffers.allocated
+    stability: development
+    brief: Number of buffers allocated.
+    instrument: counter
+    unit: '{buffers}'
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.bgwriter.buffers.writes
+    type: metric
+    metric_name: postgresql.bgwriter.buffers.writes
+    stability: development
+    brief: Number of buffers written.
+    instrument: counter
+    unit: '{buffers}'
+    attributes:
+      - ref: bg_buffer_source
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.bgwriter.checkpoint.count
+    type: metric
+    metric_name: postgresql.bgwriter.checkpoint.count
+    stability: development
+    brief: The number of checkpoints performed.
+    instrument: counter
+    unit: '{checkpoints}'
+    attributes:
+      - ref: bg_checkpoint_type
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.bgwriter.duration
+    type: metric
+    metric_name: postgresql.bgwriter.duration
+    stability: development
+    brief: Total time spent writing and syncing files to disk by checkpoints.
+    instrument: counter
+    unit: ms
+    attributes:
+      - ref: bg_duration_type
+    annotations:
+      scraper:
+        enabled: true
+        value_type: double
+  - id: postgresql.bgwriter.maxwritten
+    type: metric
+    metric_name: postgresql.bgwriter.maxwritten
+    stability: development
+    brief: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
+    instrument: counter
+    unit: '1'
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.blks_hit
+    type: metric
+    metric_name: postgresql.blks_hit
+    stability: development
+    brief: Number of times disk blocks were found already in the buffer cache.
+    instrument: counter
+    unit: '{blks_hit}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.blks_read
+    type: metric
+    metric_name: postgresql.blks_read
+    stability: development
+    brief: Number of disk blocks read in this database.
+    instrument: counter
+    unit: '{blks_read}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.blocks_read
+    type: metric
+    metric_name: postgresql.blocks_read
+    stability: development
+    brief: The number of blocks read.
+    instrument: counter
+    unit: '1'
+    attributes:
+      - ref: source
+      - ref: db.namespace
+      - ref: db.collection.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - source
+          - db.namespace
+          - db.collection.name
+  - id: postgresql.commits
+    type: metric
+    metric_name: postgresql.commits
+    stability: development
+    brief: The number of commits.
+    instrument: counter
+    unit: '1'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.connection.max
+    type: metric
+    metric_name: postgresql.connection.max
+    stability: development
+    brief: Configured maximum number of client connections allowed
+    instrument: gauge
+    unit: '{connections}'
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.database.count
+    type: metric
+    metric_name: postgresql.database.count
+    stability: development
+    brief: Number of user databases.
+    instrument: updowncounter
+    unit: '{databases}'
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.database.locks
+    type: metric
+    metric_name: postgresql.database.locks
+    stability: development
+    brief: The number of database locks, including those held by the receiver's own connections.
+    instrument: gauge
+    unit: '{lock}'
+    attributes:
+      - ref: relation
+      - ref: mode
+      - ref: lock_type
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+        attribute_order:
+          - relation
+          - mode
+          - lock_type
+          - db.namespace
+  - id: postgresql.db_size
+    type: metric
+    metric_name: postgresql.db_size
+    stability: development
+    brief: The database disk usage.
+    instrument: updowncounter
+    unit: By
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.deadlocks
+    type: metric
+    metric_name: postgresql.deadlocks
+    stability: development
+    brief: The number of deadlocks.
+    instrument: counter
+    unit: '{deadlock}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.function.calls
+    type: metric
+    metric_name: postgresql.function.calls
+    stability: development
+    brief: The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
+    instrument: counter
+    unit: '{call}'
+    attributes:
+      - ref: function
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+        attribute_order:
+          - function
+          - db.namespace
+  - id: postgresql.index.scans
+    type: metric
+    metric_name: postgresql.index.scans
+    stability: development
+    brief: The number of index scans on a table.
+    instrument: counter
+    unit: '{scans}'
+    attributes:
+      - ref: db.namespace
+      - ref: db.collection.name
+      - ref: postgresql.index.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - db.namespace
+          - db.collection.name
+          - postgresql.index.name
+  - id: postgresql.index.size
+    type: metric
+    metric_name: postgresql.index.size
+    stability: development
+    brief: The size of the index on disk.
+    instrument: gauge
+    unit: By
+    note: 'No data point is reported for an index that is dropped while the receiver is collecting,
+
+      because its size is no longer measurable.
+
+      '
+    attributes:
+      - ref: db.namespace
+      - ref: db.collection.name
+      - ref: postgresql.index.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - db.namespace
+          - db.collection.name
+          - postgresql.index.name
+  - id: postgresql.operations
+    type: metric
+    metric_name: postgresql.operations
+    stability: development
+    brief: The number of db row operations.
+    instrument: counter
+    unit: '1'
+    attributes:
+      - ref: operation
+      - ref: db.namespace
+      - ref: db.collection.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - operation
+          - db.namespace
+          - db.collection.name
+  - id: postgresql.query.conflicts
+    type: metric
+    metric_name: postgresql.query.conflicts
+    stability: development
+    brief: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
+    instrument: counter
+    unit: '{query}'
+    attributes:
+      - ref: postgresql.conflict.type
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+        attribute_order:
+          - postgresql.conflict.type
+          - db.namespace
+  - id: postgresql.query.execution.time
+    type: metric
+    metric_name: postgresql.query.execution.time
+    stability: development
+    brief: The total execution time of SQL statements currently tracked by pg_stat_statements for the database.
+    instrument: counter
+    unit: s
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: double
+  - id: postgresql.replication.data_delay
+    type: metric
+    metric_name: postgresql.replication.data_delay
+    stability: development
+    brief: The amount of data delayed in replication.
+    instrument: gauge
+    unit: By
+    attributes:
+      - ref: replication_client
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.rollbacks
+    type: metric
+    metric_name: postgresql.rollbacks
+    stability: development
+    brief: The number of rollbacks.
+    instrument: counter
+    unit: '1'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.rows
+    type: metric
+    metric_name: postgresql.rows
+    stability: development
+    brief: The number of rows in the database.
+    instrument: updowncounter
+    unit: '1'
+    attributes:
+      - ref: state
+      - ref: db.namespace
+      - ref: db.collection.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - state
+          - db.namespace
+          - db.collection.name
+  - id: postgresql.sequential_scans
+    type: metric
+    metric_name: postgresql.sequential_scans
+    stability: development
+    brief: The number of sequential scans.
+    instrument: counter
+    unit: '{sequential_scan}'
+    attributes:
+      - ref: db.namespace
+      - ref: db.collection.name
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+        attribute_order:
+          - db.namespace
+          - db.collection.name
+  - id: postgresql.table.count
+    type: metric
+    metric_name: postgresql.table.count
+    stability: development
+    brief: Number of user tables in a database.
+    instrument: updowncounter
+    unit: '{table}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.table.size
+    type: metric
+    metric_name: postgresql.table.size
+    stability: development
+    brief: Total disk space used by a table, including its indexes and TOAST data.
+    instrument: updowncounter
+    unit: By
+    note: 'No data point is reported for a table that is dropped while the receiver is collecting,
+
+      because its size is no longer measurable. The table''s other metrics are still reported.
+
+      '
+    attributes:
+      - ref: db.namespace
+      - ref: db.collection.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - db.namespace
+          - db.collection.name
+  - id: postgresql.table.vacuum.count
+    type: metric
+    metric_name: postgresql.table.vacuum.count
+    stability: development
+    brief: Number of times a table has manually been vacuumed.
+    instrument: counter
+    unit: '{vacuum}'
+    attributes:
+      - ref: db.namespace
+      - ref: db.collection.name
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - db.namespace
+          - db.collection.name
+  - id: postgresql.temp.io
+    type: metric
+    metric_name: postgresql.temp.io
+    stability: development
+    brief: Total amount of data written to temporary files by queries.
+    instrument: counter
+    unit: By
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.temp_files
+    type: metric
+    metric_name: postgresql.temp_files
+    stability: development
+    brief: The number of temp files.
+    instrument: counter
+    unit: '{temp_file}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.tup_deleted
+    type: metric
+    metric_name: postgresql.tup_deleted
+    stability: development
+    brief: Number of rows deleted by queries in the database.
+    instrument: counter
+    unit: '{tup_deleted}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.tup_fetched
+    type: metric
+    metric_name: postgresql.tup_fetched
+    stability: development
+    brief: Number of rows fetched by queries in the database.
+    instrument: counter
+    unit: '{tup_fetched}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.tup_inserted
+    type: metric
+    metric_name: postgresql.tup_inserted
+    stability: development
+    brief: Number of rows inserted by queries in the database.
+    instrument: counter
+    unit: '{tup_inserted}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.tup_returned
+    type: metric
+    metric_name: postgresql.tup_returned
+    stability: development
+    brief: Number of rows returned by queries in the database.
+    instrument: counter
+    unit: '{tup_returned}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.tup_updated
+    type: metric
+    metric_name: postgresql.tup_updated
+    stability: development
+    brief: Number of rows updated by queries in the database.
+    instrument: counter
+    unit: '{tup_updated}'
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.vector.insert.duration
+    type: metric
+    metric_name: postgresql.vector.insert.duration
+    stability: development
+    brief: The cumulative execution time of statements that insert vectors into pgvector tables.
+    instrument: counter
+    unit: s
+    note: 'Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+
+      extension in the scanned database.
+
+      '
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: double
+  - id: postgresql.vector.insert.rows
+    type: metric
+    metric_name: postgresql.vector.insert.rows
+    stability: development
+    brief: The number of vectors inserted into pgvector tables.
+    instrument: counter
+    unit: '{vectors}'
+    note: 'Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+
+      extension in the scanned database.
+
+      '
+    attributes:
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+  - id: postgresql.vector.search.calls
+    type: metric
+    metric_name: postgresql.vector.search.calls
+    stability: development
+    brief: The number of vector similarity search operations executed, grouped by the distance function used.
+    instrument: counter
+    unit: '{search}'
+    note: 'Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+
+      additionally require pgvector 0.7.0 or later.
+
+      '
+    attributes:
+      - ref: postgresql.distance.function.name
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+        attribute_order:
+          - postgresql.distance.function.name
+          - db.namespace
+  - id: postgresql.vector.search.duration
+    type: metric
+    metric_name: postgresql.vector.search.duration
+    stability: development
+    brief: The cumulative execution time of vector similarity searches, grouped by the distance function used.
+    instrument: counter
+    unit: s
+    note: 'Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+
+      additionally require pgvector 0.7.0 or later.
+
+      '
+    attributes:
+      - ref: postgresql.distance.function.name
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: double
+        attribute_order:
+          - postgresql.distance.function.name
+          - db.namespace
+  - id: postgresql.vector.search.rows_returned
+    type: metric
+    metric_name: postgresql.vector.search.rows_returned
+    stability: development
+    brief: The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.
+    instrument: counter
+    unit: '{rows}'
+    note: 'Requires the `pg_stat_statements` extension, PostgreSQL 13 or later, and the `pgvector`
+
+      extension in the scanned database. The `l1`, `hamming`, and `jaccard` distance functions
+
+      additionally require pgvector 0.7.0 or later.
+
+      '
+    attributes:
+      - ref: postgresql.distance.function.name
+      - ref: db.namespace
+    annotations:
+      scraper:
+        enabled: false
+        value_type: int
+        attribute_order:
+          - postgresql.distance.function.name
+          - db.namespace
+  - id: postgresql.wal.age
+    type: metric
+    metric_name: postgresql.wal.age
+    stability: development
+    brief: Age of the oldest WAL file.
+    instrument: gauge
+    unit: s
+    note: 'This metric requires WAL to be enabled with at least one replica.
+
+      '
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+  - id: postgresql.wal.delay
+    type: metric
+    metric_name: postgresql.wal.delay
+    stability: development
+    brief: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
+    instrument: gauge
+    unit: s
+    note: 'This metric requires WAL to be enabled with at least one replica.
+
+      '
+    attributes:
+      - ref: wal_operation_lag
+      - ref: replication_client
+    annotations:
+      scraper:
+        enabled: false
+        value_type: double
+        attribute_order:
+          - wal_operation_lag
+          - replication_client
+  - id: postgresql.wal.lag
+    type: metric
+    metric_name: postgresql.wal.lag
+    stability: development
+    brief: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
+    instrument: gauge
+    unit: s
+    note: 'This metric requires WAL to be enabled with at least one replica.
+
+      '
+    attributes:
+      - ref: wal_operation_lag
+      - ref: replication_client
+    annotations:
+      scraper:
+        enabled: true
+        value_type: int
+        attribute_order:
+          - wal_operation_lag
+          - replication_client

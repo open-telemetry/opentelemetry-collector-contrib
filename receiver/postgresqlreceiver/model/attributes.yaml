@@ -1,0 +1,485 @@
+groups:
+  - id: resource.attributes
+    type: attribute_group
+    brief: Resource attributes
+    attributes:
+      - id: db.system.version
+        brief: The database version of the instance. Examples include "13.18" and "17.2".
+        type: string
+        stability: development
+        examples:
+          - '13.18'
+          - '17.2'
+        requirement_level: opt_in
+      - id: postgresql.database.name
+        brief: The name of the database.
+        type: string
+        stability: development
+        examples:
+          - otel
+          - postgres
+      - id: postgresql.index.name
+        brief: The name of the index on a table.
+        type: string
+        stability: development
+        examples:
+          - table1_pkey
+      - id: postgresql.schema.name
+        brief: The schema name.
+        type: string
+        stability: development
+        examples:
+          - public
+      - id: postgresql.table.name
+        brief: The table name.
+        type: string
+        stability: development
+        examples:
+          - table1
+      - id: server.address
+        brief: The address of the PostgreSQL server. A loopback endpoint is reported as the name of the machine running the collector, because the server is then co-located with it. With transport `unix` the socket path is reported instead.
+        type: string
+        stability: development
+        examples:
+          - db.example.com
+          - localhost
+      - id: server.port
+        brief: The port number of the PostgreSQL server.
+        type: int
+        stability: development
+      - id: service.instance.id
+        brief: A unique identifier of the PostgreSQL instance.
+        type: string
+        stability: development
+        examples:
+          - 550e8400-e29b-41d4-a716-446655440000
+      - id: service.name
+        brief: Logical name of the service. When enabled, defaults to unknown_service:postgresql.
+        type: string
+        stability: development
+        examples:
+          - unknown_service:postgresql
+        requirement_level: opt_in
+      - id: service.namespace
+        brief: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+        type: string
+        stability: development
+        examples:
+          - production
+        requirement_level: opt_in
+  - id: metric.attributes
+    type: attribute_group
+    brief: Metric attributes
+    attributes:
+      - id: bg_buffer_source
+        brief: The source of a buffer write.
+        type:
+          members:
+            - id: backend
+              value: backend
+              stability: development
+            - id: backend_fsync
+              value: backend_fsync
+              stability: development
+            - id: checkpoints
+              value: checkpoints
+              stability: development
+            - id: bgwriter
+              value: bgwriter
+              stability: development
+        stability: development
+        requirement_level: recommended
+        annotations:
+          scraper:
+            name_override: source
+      - id: bg_checkpoint_type
+        brief: The type of checkpoint state.
+        type:
+          members:
+            - id: requested
+              value: requested
+              stability: development
+            - id: scheduled
+              value: scheduled
+              stability: development
+        stability: development
+        requirement_level: recommended
+        annotations:
+          scraper:
+            name_override: type
+      - id: bg_duration_type
+        brief: The type of time spent during the checkpoint.
+        type:
+          members:
+            - id: sync
+              value: sync
+              stability: development
+            - id: write
+              value: write
+              stability: development
+        stability: development
+        requirement_level: recommended
+        annotations:
+          scraper:
+            name_override: type
+      - id: db.collection.name
+        brief: The name of the table within the database.
+        type: string
+        stability: development
+        examples:
+          - table1
+      - id: db.namespace
+        brief: The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL.
+        type: string
+        stability: development
+        examples:
+          - otel|public
+      - id: db.query.text
+        brief: The text of the database query being executed.
+        type: string
+        stability: development
+        examples:
+          - SELECT * FROM table1 WHERE id = ?
+      - id: db.system.name
+        brief: The database management system (DBMS) product as identified by the client instrumentation.
+        type:
+          members:
+            - id: postgresql
+              value: postgresql
+              stability: development
+        stability: development
+      - id: function
+        brief: The name of the function.
+        type: string
+        stability: development
+        examples:
+          - my_function
+        requirement_level: recommended
+      - id: lock_type
+        brief: Type of the lockable object.
+        type: string
+        stability: development
+        examples:
+          - relation
+          - transactionid
+        requirement_level: recommended
+      - id: mode
+        brief: Name of the lock mode held or desired by the process.
+        type: string
+        stability: development
+        examples:
+          - AccessShareLock
+          - RowExclusiveLock
+        requirement_level: recommended
+      - id: network.peer.address
+        brief: IP address of the client connected to this backend.
+        type: string
+        stability: development
+        examples:
+          - 10.0.0.5
+      - id: network.peer.port
+        brief: TCP port number that the client is using for communication with this backend.
+        type: int
+        stability: development
+      - id: operation
+        brief: The database operation.
+        type:
+          members:
+            - id: ins
+              value: ins
+              stability: development
+            - id: upd
+              value: upd
+              stability: development
+            - id: del
+              value: del
+              stability: development
+            - id: hot_upd
+              value: hot_upd
+              stability: development
+        stability: development
+        requirement_level: recommended
+      - id: postgresql.application_name
+        brief: Name of the application that is connected to this backend.
+        type: string
+        stability: development
+        examples:
+          - psql
+      - id: postgresql.backend.connection.start
+        brief: UTC timestamp (RFC3339) when this backend was started.
+        type: string
+        stability: development
+        examples:
+          - '2026-01-01T00:00:00Z'
+      - id: postgresql.blocking.lock.mode
+        brief: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
+        type: string
+        stability: development
+        examples:
+          - RowExclusiveLock
+      - id: postgresql.blocking.lock.relation
+        brief: The name of the relation (table) being waited on. Empty string when not blocked or when lock is not on a relation.
+        type: string
+        stability: development
+        examples:
+          - table1
+      - id: postgresql.blocking.lock.type
+        brief: The type of lock resource being waited on (e.g. relation, transactionid, tuple). Empty string when not blocked.
+        type: string
+        stability: development
+        examples:
+          - relation
+      - id: postgresql.blocking.pids
+        brief: Array of PIDs of sessions blocking this session (from pg_blocking_pids). Empty array when not blocked.
+        type: string
+        stability: development
+        examples:
+          - '[123,456]'
+      - id: postgresql.blocking.start_time
+        brief: UTC timestamp (RFC3339) when the current lock wait began, derived from pg_locks.waitstart. Empty string when not blocked.
+        type: string
+        stability: development
+        examples:
+          - '2026-01-01T00:00:00Z'
+      - id: postgresql.blocking.transaction.start_time
+        brief: UTC timestamp (RFC3339) when the current transaction started. Empty string when no active transaction.
+        type: string
+        stability: development
+        examples:
+          - '2026-01-01T00:00:00Z'
+      - id: postgresql.blocking.wait_duration
+        brief: Whole seconds this session has been waiting for a lock, measured from pg_locks.waitstart. 0 when not blocked.
+        type: int
+        stability: development
+      - id: postgresql.calls
+        brief: Number of times the statement was executed, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.client_hostname
+        brief: Host name of the connected client, as reported by a reverse DNS lookup of client_addr.
+        type: string
+        stability: development
+        examples:
+          - client1.example.com
+      - id: postgresql.conflict.type
+        brief: The type of recovery conflict that caused a query to be canceled on a standby server.
+        type:
+          members:
+            - id: tablespace
+              value: tablespace
+              stability: development
+            - id: lock
+              value: lock
+              stability: development
+            - id: snapshot
+              value: snapshot
+              stability: development
+            - id: bufferpin
+              value: bufferpin
+              stability: development
+            - id: deadlock
+              value: deadlock
+              stability: development
+        stability: development
+        requirement_level: recommended
+      - id: postgresql.distance.function.name
+        brief: The vector distance (similarity) function used by the query, one of the pgvector distance functions.
+        type:
+          members:
+            - id: cosine
+              value: cosine
+              stability: development
+            - id: l2
+              value: l2
+              stability: development
+            - id: inner_product
+              value: inner_product
+              stability: development
+            - id: l1
+              value: l1
+              stability: development
+            - id: hamming
+              value: hamming
+              stability: development
+            - id: jaccard
+              value: jaccard
+              stability: development
+        stability: development
+        requirement_level: recommended
+      - ref: postgresql.index.name
+      - id: postgresql.pid
+        brief: Process ID of this backend.
+        type: int
+        stability: development
+      - id: postgresql.query_id
+        brief: Identifier of this backend's most recent query. If state is active this field shows the identifier of the currently executing query. In all other states, it shows the identifier of last query that was executed.
+        type: string
+        stability: development
+        examples:
+          - '1234567890'
+      - id: postgresql.query_plan
+        brief: The execution plan used by PostgreSQL for the query.
+        type: string
+        stability: development
+        examples:
+          - '[{"Plan": {"Node Type": "Seq Scan", "Relation Name": "table1"}}]'
+      - id: postgresql.query_start
+        brief: Time when the currently active query was started, or if state is not active, when the last query was started.
+        type: string
+        stability: development
+        examples:
+          - '2026-01-01T00:00:00Z'
+      - id: postgresql.queryid
+        brief: Hash code to identify identical normalized queries.
+        type: string
+        stability: development
+        examples:
+          - '1234567890'
+      - id: postgresql.rolname
+        brief: The name of the PostgreSQL role that executed the query.
+        type: string
+        stability: development
+        examples:
+          - postgres
+      - id: postgresql.rows
+        brief: Total number of rows retrieved or affected by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.shared_blks_dirtied
+        brief: Total number of shared blocks dirtied by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.shared_blks_hit
+        brief: Total number of shared block cache hits by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.shared_blks_read
+        brief: Total number of shared blocks read by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.shared_blks_written
+        brief: Total number of shared blocks written by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.state
+        brief: Current overall state of this backend
+        type: string
+        stability: development
+        examples:
+          - active
+          - idle
+      - id: postgresql.temp_blks_read
+        brief: Total number of temp blocks read by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.temp_blks_written
+        brief: Total number of temp blocks written by the statement, reported in delta value.
+        type: int
+        stability: development
+      - id: postgresql.total_exec_time
+        brief: Total time spent executing the statement, in delta seconds.
+        type: double
+        stability: development
+      - id: postgresql.total_plan_time
+        brief: Total time spent planning the statement, in delta seconds.
+        type: double
+        stability: development
+      - id: postgresql.userid
+        brief: OID of the role that executed the statement. Stays set even after the role is dropped.
+        type: string
+        stability: development
+        examples:
+          - '10'
+      - id: postgresql.wait_event
+        brief: Wait event name if backend is currently waiting, otherwise NULL.
+        type: string
+        stability: development
+        examples:
+          - ClientRead
+      - id: postgresql.wait_event_type
+        brief: The type of event for which the backend is waiting, if any; otherwise NULL.
+        type: string
+        stability: development
+        examples:
+          - Client
+      - id: relation
+        brief: The name of the relation (table, index, view, etc.) targeted by the lock, or empty if the target is not a relation or part of a relation.
+        type: string
+        stability: development
+        examples:
+          - table1
+        requirement_level: recommended
+      - id: replication_client
+        brief: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
+        type: string
+        stability: development
+        examples:
+          - 10.0.0.5
+          - unix
+        requirement_level: recommended
+      - id: source
+        brief: The block read source type.
+        type:
+          members:
+            - id: heap_read
+              value: heap_read
+              stability: development
+            - id: heap_hit
+              value: heap_hit
+              stability: development
+            - id: idx_read
+              value: idx_read
+              stability: development
+            - id: idx_hit
+              value: idx_hit
+              stability: development
+            - id: toast_read
+              value: toast_read
+              stability: development
+            - id: toast_hit
+              value: toast_hit
+              stability: development
+            - id: tidx_read
+              value: tidx_read
+              stability: development
+            - id: tidx_hit
+              value: tidx_hit
+              stability: development
+        stability: development
+        requirement_level: recommended
+      - id: state
+        brief: The tuple (row) state.
+        type:
+          members:
+            - id: dead
+              value: dead
+              stability: development
+            - id: live
+              value: live
+              stability: development
+        stability: development
+        requirement_level: recommended
+      - id: user.name
+        brief: Name of the user logged into this backend.
+        type: string
+        stability: development
+        examples:
+          - postgres
+      - id: wal_operation_lag
+        brief: The operation which is responsible for the lag.
+        type:
+          members:
+            - id: flush
+              value: flush
+              stability: development
+            - id: replay
+              value: replay
+              stability: development
+            - id: write
+              value: write
+              stability: development
+        stability: development
+        requirement_level: recommended
+        annotations:
+          scraper:
+            name_override: operation
