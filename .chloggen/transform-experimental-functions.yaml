@@ -10,12 +10,12 @@ component: processor/transform
 note: Add the `processor.transform.enableExperimentalFunctions` feature gate, which new transform processor functions will require while they are experimental.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47306]
+issues: [52523]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: All existing transform processor functions are stable and do not require the feature gate.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
