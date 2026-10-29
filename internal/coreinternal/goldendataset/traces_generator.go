@@ -20,9 +20,6 @@ import (
 // spans for defined in the file specified by the spanPairsFile parameter.
 // The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
 func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, error) {
-	if metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0NetworkConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1NetworkConventions")
-	}
 	if metadata.InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate.IsEnabled() {
 		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1DatabaseConventions")
 	}

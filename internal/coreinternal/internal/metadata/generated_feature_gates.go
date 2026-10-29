@@ -24,8 +24,8 @@ var InternalCoreinternalGoldendatasetDontEmitV0FaaSConventionsFeatureGate = feat
 
 var InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0HTTPConventions",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv HTTP attributes http.user_agent, http.flavor (semconv v1.19.0), and http.client_ip."),
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv HTTP attributes http.user_agent, http.flavor (semconv v1.19.0), http.client_ip, and http.status_code (semconv v1.25.0). Enable together with pkg.translator.zipkin.DontEmitV0HttpConventions for consistent round-trip translation in tests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
 )
@@ -40,10 +40,11 @@ var InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate =
 
 var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0NetworkConventions",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.12.0 attributes (net.host.ip, net.peer.ip, http.host, http.server_name)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )
 
 var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -72,8 +73,8 @@ var InternalCoreinternalGoldendatasetEmitV1FaaSConventionsFeatureGate = featureg
 
 var InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.EmitV1HTTPConventions",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with user_agent.original, network.protocol.name, network.protocol.version, and client.address (semconv v1.40.0) alongside legacy http.user_agent, http.flavor, and http.client_ip to support migration."),
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with user_agent.original, network.protocol.name, network.protocol.version, client.address, and http.response.status_code (semconv v1.40.0) alongside legacy http.user_agent, http.flavor, http.client_ip, and http.status_code to support migration. Enable together with pkg.translator.zipkin.EmitV1HttpConventions for consistent round-trip translation in tests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
 )
@@ -88,10 +89,11 @@ var InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate = fea
 
 var InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.EmitV1NetworkConventions",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with network.local.address, network.peer.address, and server.address (semconv v1.38.0) instead of the deprecated net.host.ip, net.peer.ip, http.host, http.server_name (semconv v1.12.0). Enable together with pkg.translator.zipkin.EmitV1NetworkConventions for consistent round-trip translation in tests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(

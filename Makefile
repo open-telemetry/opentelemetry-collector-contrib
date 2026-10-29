@@ -313,7 +313,6 @@ exporter/datadogexporter: internal/datadog
 # reading" or "no such file" errors from gofumpt/gci). Serialize each parent
 # relative to its children; unrelated modules still run in parallel.
 cmd/telemetrygen/internal/e2etest: cmd/telemetrygen
-exporter/elasticsearchexporter/integrationtest: exporter/elasticsearchexporter
 extension/dbauth/awsiamdbauthextension: extension/dbauth
 extension/encoding/avrologencodingextension extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awslogsencodingextension extension/encoding/azureencodingextension extension/encoding/googlecloudlogentryencodingextension extension/encoding/jaegerencodingextension extension/encoding/jsonlogencodingextension extension/encoding/otlpencodingextension extension/encoding/skywalkingencodingextension extension/encoding/textencodingextension extension/encoding/zipkinencodingextension: extension/encoding
 extension/observer/cfgardenobserver extension/observer/dockerobserver extension/observer/ecsobserver extension/observer/hostobserver extension/observer/k8sobserver: extension/observer
@@ -321,7 +320,7 @@ extension/storage/dbstorage extension/storage/filestorage extension/storage/redi
 extension/tailstorage/pebbletailstorageextension/integrationtest: extension/tailstorage/pebbletailstorageextension
 internal/aws/xray/testdata/sampleapp internal/aws/xray/testdata/sampleserver: internal/aws/xray
 internal/datadog/e2e: internal/datadog
-pkg/ottl/contexts/xprofile pkg/ottl/xottl: pkg/ottl
+pkg/ottl/contexts/xprofile pkg/ottl/contexts/xspanlink pkg/ottl/xottl: pkg/ottl
 testbed/mockdatasenders/mockdatadogagentexporter: testbed
 
 # Trigger each module's delegation target
@@ -713,8 +712,7 @@ $(1)
 endef
 
 # List of directories where certificates are stored for unit tests.
-CERT_DIRS := receiver/signalfxreceiver/testdata \
-             receiver/splunkhecreceiver/testdata \
+CERT_DIRS := receiver/splunkhecreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/cert \
              receiver/mongodbreceiver/testdata/certs \
              receiver/cloudflarereceiver/testdata/cert

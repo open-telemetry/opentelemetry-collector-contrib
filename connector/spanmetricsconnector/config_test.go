@@ -199,7 +199,7 @@ func TestLoadConfig(t *testing.T) {
 				Namespace: DefaultNamespace,
 			},
 			extraAssertions: func(config *Config) {
-				assert.Equal(t, defaultDeltaTimestampCacheSize, config.GetDeltaTimestampCacheSize())
+				assert.Equal(t, 10000, config.GetDeltaTimestampCacheSize())
 			},
 		},
 		{
@@ -415,6 +415,48 @@ func TestValidateEventDimensions(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestGetDeltaTimestampCacheSize(t *testing.T) {
+	customTimestampCacheSize := 123
+	tests := []struct {
+		name               string
+		resourceCacheSize  int
+		timestampCacheSize *int
+		want               int
+	}{
+		{
+			name:              "default",
+			resourceCacheSize: defaultResourceMetricsCacheSize,
+			want:              10000,
+		},
+		{
+			name:              "small resource cache size",
+			resourceCacheSize: 1,
+			want:              1000,
+		},
+		{
+			name:              "custom resource cache size",
+			resourceCacheSize: 2000,
+			want:              20000,
+		},
+		{
+			name:               "explicit timestamp cache size",
+			resourceCacheSize:  2000,
+			timestampCacheSize: &customTimestampCacheSize,
+			want:               123,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				ResourceMetricsCacheSize: tt.resourceCacheSize,
+				TimestampCacheSize:       tt.timestampCacheSize,
+			}
+			assert.Equal(t, tt.want, cfg.GetDeltaTimestampCacheSize())
 		})
 	}
 }

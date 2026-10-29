@@ -14,8 +14,8 @@ status:
     alpha: [logs,metrics]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, mx-psi, TylerHelmuth, iblancasa]
-    emeritus: [leonsp-ai]
+    active: [mx-psi, TylerHelmuth, iblancasa]
+    emeritus: [leonsp-ai, dmitryax]
 
 tests:
   config:
