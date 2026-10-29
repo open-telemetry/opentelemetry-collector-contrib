@@ -21,6 +21,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	imdsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -83,7 +84,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	}
 
 	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName, cfg.APIConfig)
+	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName, k8sconfig.FromConfigTypes(cfg.APIConfig))
 	if err != nil {
 		return nil, err
 	}
