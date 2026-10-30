@@ -266,6 +266,32 @@ Span events are stored in separate documents. They will be routed with `data_str
 
 Attribute `elasticsearch.index` will be removed from the final document if exists.
 
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "1730039445123.456789",
+  "attributes": {
+    "attr.foo": "attr.foo.value"
+  },
+  "data_stream": {
+    "dataset": "attr.dataset.otel",
+    "namespace": "resource.attribute.namespace",
+    "type": "logs"
+  },
+  "observed_timestamp": "1730039445123.456789",
+  "resource": {
+    "attributes": {
+      "resource.attr.foo": "resource.attr.foo.value"
+    }
+  },
+  "scope": {},
+  "body": {
+    "text": "foo"
+  }
+}
+```
+
 | Signal    | Supported          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
@@ -281,6 +307,29 @@ Attribute `elasticsearch.index` will be removed from the final document if exist
 In `ecs` mapping mode, the Elasticsearch Exporter maps fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS] where possible.
 This mode may be used for compatibility with existing dashboards that work with ECS.
+
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-10-27T14:30:45.123456789Z",
+  "application": "myapp",
+  "attrKey1": "abc",
+  "attrKey2": "def",
+  "data_stream": {
+    "dataset": "generic",
+    "namespace": "default",
+    "type": "logs"
+  },
+  "error": {
+    "stacktrace": "no no no no"
+  },
+  "message": "hello world",
+  "service": {
+    "name": "myservice"
+  }
+}
+```
 
 | Signal    | `ecs`              |
 | --------- | ------------------ |
@@ -306,6 +355,16 @@ of a log record as the exact content of the Elasticsearch document without any t
 This mapping mode is intended for use cases where the client wishes to have complete control over
 the Elasticsearch document structure.
 
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "id": 1,
+  "key": "value"
+}
+```
+
 | Signal    | `bodymap`          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
@@ -317,6 +376,22 @@ the Elasticsearch document structure.
 
 In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
 field names of from the OTLP data structures.
+
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-10-27T14:30:45.123456789Z",
+  "Scope.name": "",
+  "Scope.version": "",
+  "Scope.keyInt": 42,
+  "Scope.keyStr": "val str",
+  "SeverityNumber": 0,
+  "TraceFlags": 0,
+  "Attributes.o.sub_i": 19,
+  "Attributes.s": "baz"
+}
+```
 
 | Signal    | `none`             |
 | --------- | ------------------ |
@@ -333,6 +408,22 @@ The `raw` mapping mode is identical to `none`, except for two differences:
    while in `raw` mode they are not.
  - In `none` mode span events are mapped with an `Events.` prefix,
    while in `raw` mode they are not.
+
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-10-27T14:30:45.123456789Z",
+  "Scope.name": "",
+  "Scope.version": "",
+  "Scope.keyInt": 42,
+  "Scope.keyStr": "val str",
+  "SeverityNumber": 0,
+  "TraceFlags": 0,
+  "o.sub_i": 19,
+  "s": "baz"
+}
+```
 
 | Signal    | `raw `             |
 | --------- | ------------------ |
