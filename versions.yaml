@@ -374,3 +374,4 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/integrationtest
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension/integrationtest
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/compliance
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/compliance
