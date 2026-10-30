@@ -929,12 +929,15 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 				// Exact-value assertions where the value is known.
 				assertStrAttrEqual(t, attrs, "db.system.name", "mysql", idx)
 				assertStrAttrEqual(t, attrs, "mysql.threads.processlist_command", "Query", idx)
+				// GET_LOCK is a genuine blocked wait, so session.status must be "waiting"
+				// here — asserting the exact value (not just non-empty) is what makes the
+				// wait_event.type/.name reassembly check below meaningful instead of skippable.
+				assertStrAttrEqual(t, attrs, "mysql.session.status", "waiting", idx)
 
 				// Non-empty string attributes — value is version/session-dependent.
 				assertStrAttrNonEmpty(t, attrs, "user.name", idx)
 				assertStrAttrNonEmpty(t, attrs, "mysql.threads.processlist_state", idx)
 				assertStrAttrNonEmpty(t, attrs, "mysql.wait_type", idx)
-				assertStrAttrNonEmpty(t, attrs, "mysql.session.status", idx)
 				// digest is empty for in-flight statements that haven't completed
 				// digesting yet (MySQL 5.7, MariaDB) — presence is sufficient.
 				_, hasDigest := attrs.Get("mysql.events_statements_current.digest")
@@ -959,6 +962,19 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 				if hasWTW {
 					assert.GreaterOrEqual(t, wtw.Double(), float64(0),
 						"record %d (GET_LOCK): mysql.events_waits_current.timer_wait must be >= 0", idx)
+				}
+
+				// mysql.wait_event.type and mysql.wait_event.name are derived from
+				// mysql.wait_type by splitting it on its first two '/'-separated
+				// segments — reassembling the two must reproduce the raw value exactly.
+				waitType, hasWaitType := attrs.Get("mysql.wait_type")
+				waitEventType, hasWaitEventType := attrs.Get("mysql.wait_event.type")
+				waitEventName, hasWaitEventName := attrs.Get("mysql.wait_event.name")
+				assert.True(t, hasWaitType && hasWaitEventType && hasWaitEventName,
+					"record %d (GET_LOCK): mysql.wait_type/mysql.wait_event.type/mysql.wait_event.name missing on a waiting record", idx)
+				if hasWaitType && hasWaitEventType && hasWaitEventName {
+					assert.Equal(t, waitType.Str(), "wait/"+waitEventType.Str()+"/"+waitEventName.Str(),
+						"record %d (GET_LOCK): mysql.wait_event.type/.name must reassemble to mysql.wait_type", idx)
 				}
 
 				// Network attributes — non-negative integers (port may be 0 for Unix socket clients).
