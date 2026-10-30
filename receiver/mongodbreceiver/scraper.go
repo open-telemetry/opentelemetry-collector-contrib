@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"net"
@@ -75,7 +76,14 @@ const (
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
 func generateInstanceID(serverAddress string, serverPort int64) string {
 	name := fmt.Sprintf("%s:%d", serverAddress, serverPort)
-	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
+	// UUID v5 is defined over SHA-1, which the Go FIPS 140-3 module rejects for new
+	// uses. The identifier only turns a stable seed into a stable id, so it is
+	// derived outside strict enforcement (GODEBUG=fips140=only) and does not change.
+	var instanceID uuid.UUID
+	fips140.WithoutEnforcement(func() {
+		instanceID = uuid.NewSHA1(otelNamespaceUUID, []byte(name))
+	})
+	return instanceID.String()
 }
 
 type mongodbScraper struct {

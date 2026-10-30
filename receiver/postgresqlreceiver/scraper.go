@@ -6,6 +6,7 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"container/heap"
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"math"
@@ -122,7 +123,16 @@ func newPostgreSQLScraper(
 	}
 	var serviceInstanceID string
 	if useOTelSemconv {
-		serviceInstanceID = uuid.NewSHA1(otelNamespaceUUID, []byte(resolveServiceInstanceSeed(config, settings.Logger))).String()
+		seed := resolveServiceInstanceSeed(config, settings.Logger)
+		// UUID v5 is defined over SHA-1, which the Go FIPS 140-3 module rejects for
+		// new uses. The identifier only turns a stable seed into a stable id, so it
+		// is derived outside strict enforcement (GODEBUG=fips140=only) and does not
+		// change.
+		var instanceID uuid.UUID
+		fips140.WithoutEnforcement(func() {
+			instanceID = uuid.NewSHA1(otelNamespaceUUID, []byte(seed))
+		})
+		serviceInstanceID = instanceID.String()
 	} else {
 		serviceInstanceID = getInstanceID(config.AddrConfig.Endpoint, settings.Logger)
 	}

@@ -6,6 +6,7 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"container/heap"
 	"context"
+	"crypto/fips140"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -81,7 +82,14 @@ func newMySQLScraper(
 		}
 	}
 	serverEndpoint := resolveServerEndpoint(config, settings.Logger)
-	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(serverEndpoint.instanceIDSeed)).String()
+	// UUID v5 is defined over SHA-1, which the Go FIPS 140-3 module rejects for new
+	// uses. The identifier only turns a stable seed into a stable id, so it is
+	// derived outside strict enforcement (GODEBUG=fips140=only) and does not change.
+	var serviceInstanceUUID uuid.UUID
+	fips140.WithoutEnforcement(func() {
+		serviceInstanceUUID = uuid.NewSHA1(otelUUIDv5Namespace, []byte(serverEndpoint.instanceIDSeed))
+	})
+	serviceInstanceID := serviceInstanceUUID.String()
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,
