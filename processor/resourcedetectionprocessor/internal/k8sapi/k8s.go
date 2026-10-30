@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/internal/metadata"
@@ -37,7 +38,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		return nil, err
 	}
 	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	k8snodeProvider, err := k8snode.NewProvider(nodeName, cfg.APIConfig)
+	k8snodeProvider, err := k8snode.NewProvider(nodeName, k8sconfig.FromConfigTypes(cfg.APIConfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed creating k8snode detector: %w", err)
 	}
@@ -80,6 +81,23 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			return pcommon.NewResource(), "", nil
 		}
 		d.rb.SetK8sNodeName(nodeName)
+	}
+
+	if d.ra.HostID.Enabled {
+		machineID, err := d.provider.NodeMachineID(ctx)
+		if err != nil {
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node machine ID: %w", err)
+			}
+			d.logger.Debug("k8snode metadata unavailable", zap.Error(err))
+			return pcommon.NewResource(), "", nil
+		}
+		// Some kubelets don't report a machine ID; omit host.id rather than emit it empty.
+		if machineID != "" {
+			d.rb.SetHostID(machineID)
+		} else {
+			d.logger.Debug("k8s node reports an empty machine ID, skipping host.id")
+		}
 	}
 
 	if d.ra.K8sClusterUID.Enabled {
