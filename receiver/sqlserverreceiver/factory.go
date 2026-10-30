@@ -12,8 +12,10 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
-	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
+	mssql "github.com/microsoft/go-mssqldb"
+	_ "github.com/microsoft/go-mssqldb/azuread"             // register "azuresql" driver for Azure AD / managed identity auth
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Kerberos driver
+	"github.com/microsoft/go-mssqldb/msdsn"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -21,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -112,6 +116,18 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
+	if isTempDBQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBQuery())
+	}
+
+	if isTempDBContentionQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBContentionQuery())
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled {
+		queries = append(queries, getSQLServerTempDBFileQuery())
+	}
+
 	return queries
 }
 
@@ -139,6 +155,11 @@ func setupLogQueries(cfg *Config) []string {
 func getDBConnectionString(config *Config) string {
 	if config.DataSource != "" {
 		return config.DataSource
+	}
+	if !config.DBAuth.IsEmpty() {
+		// The credential provider supplies secrets at connection time. Keep the
+		// username in the DSN because providers may use it as mint input.
+		return fmt.Sprintf("server=%s;user id=%s;port=%d", config.Server, config.Username, config.Port)
 	}
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
@@ -184,6 +205,7 @@ type dbProvider struct {
 	dsn         string
 	pool        ConnectionPool
 	numScrapers int
+	dbAuthID    configdbauth.ID
 
 	mu                      sync.Mutex
 	db                      *sql.DB
@@ -194,6 +216,11 @@ type dbProvider struct {
 	dbVersion               *string
 	dbEdition               *string
 	instanceInfoErrReported bool
+
+	// credentialProvider is set by start() when db_auth is configured.
+	credentialProvider dbauth.Provider
+	startOnce          sync.Once
+	startErr           error
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -203,13 +230,43 @@ func newDBProvider(cfg *Config, numScrapers int) *dbProvider {
 		dsn:         getDBConnectionString(cfg),
 		pool:        cfg.ConnectionPool,
 		numScrapers: numScrapers,
+		dbAuthID:    cfg.DBAuth,
 	}
+}
+
+// start resolves the database credential provider referenced by dbAuthID. It is
+// idempotent and safe for concurrent calls: the extension is
+// looked up exactly once, and the result (credential or error) is cached.
+// start must be called before the first getDB() when db_auth is configured.
+func (p *dbProvider) start(host component.Host) error {
+	if p.dbAuthID.IsEmpty() {
+		return nil
+	}
+	p.startOnce.Do(func() {
+		credentialProvider, err := p.dbAuthID.GetProvider(host.GetExtensions())
+		if err != nil {
+			p.startErr = err
+			return
+		}
+		// Write under p.mu so getDB() can safely read the resolved provider.
+		p.mu.Lock()
+		p.credentialProvider = credentialProvider
+		p.mu.Unlock()
+	})
+	return p.startErr
 }
 
 // getDB lazily opens and configures the shared pool, returning the same
 // *sql.DB on every call. It satisfies sqlquery.DbProviderFunc. Once the
 // provider has been closed it refuses to open a new pool, so a pool can never
 // be created after close and leaked.
+//
+// Three connection modes are supported:
+//   - db_auth provider set: uses mssql.NewSecurityTokenConnector so a fresh
+//     credential is fetched for every new physical connection.
+//   - DSN fedauth (datasource contains "fedauth="): opens with the "azuresql"
+//     driver, which handles token acquisition internally.
+//   - Default: opens with the "sqlserver" driver (SQL auth or Kerberos).
 func (p *dbProvider) getDB() (*sql.DB, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -219,12 +276,59 @@ func (p *dbProvider) getDB() (*sql.DB, error) {
 	}
 	if !p.opened {
 		p.opened = true
-		p.db, p.openErr = sql.Open("sqlserver", p.dsn)
-		if p.openErr == nil {
+		dsnConfig, dsnErr := msdsn.Parse(p.dsn)
+		switch {
+		case p.credentialProvider != nil:
+			// Mode 1: token injected by the configured database credential provider.
+			// mssql.NewSecurityTokenConnector calls the provider for every new
+			// physical connection, so expiring credentials are refreshed.
+			if dsnErr != nil {
+				p.openErr = fmt.Errorf("failed to parse DSN for credential connector: %w", dsnErr)
+				break
+			}
+			credentialProvider := p.credentialProvider
+			endpoint := dsnConfig.Host
+			if dsnConfig.Port != 0 {
+				endpoint = fmt.Sprintf("%s:%d", endpoint, dsnConfig.Port)
+			}
+			username := dsnConfig.User
+			connector, err := mssql.NewSecurityTokenConnector(dsnConfig,
+				func(ctx context.Context) (string, error) {
+					credential, credentialErr := credentialProvider.GetCredential(ctx, dbauth.Request{
+						Endpoint: endpoint,
+						Username: username,
+					})
+					if credentialErr != nil {
+						return "", credentialErr
+					}
+					if credential == nil {
+						return "", errors.New("credential provider returned a nil credential")
+					}
+					return credential.Secret, nil
+				},
+			)
+			if err != nil {
+				p.openErr = fmt.Errorf("failed to create SQL credential connector: %w", err)
+				break
+			}
+			p.db = sql.OpenDB(connector)
+		case dsnErr == nil && hasFedAuth(dsnConfig):
+			// Mode 2: DSN-based fedauth; the azuresql driver handles token
+			// acquisition internally using the fedauth= parameter value.
+			p.db, p.openErr = sql.Open("azuresql", p.dsn)
+		default:
+			// Mode 3: SQL Server auth or Kerberos (existing behavior).
+			p.db, p.openErr = sql.Open("sqlserver", p.dsn)
+		}
+		if p.openErr == nil && p.db != nil {
 			setConnectionPoolSettings(p.db, p.pool, p.numScrapers)
 		}
 	}
 	return p.db, p.openErr
+}
+
+func hasFedAuth(config msdsn.Config) bool {
+	return config.Parameters["fedauth"] != ""
 }
 
 // close closes the shared pool. It is idempotent and safe to call on a nil
@@ -363,6 +467,10 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
 		}
 
+		if !cfg.DBAuth.IsEmpty() {
+			sqlServerScraper.startProviderFunc = provider.start
+		}
+
 		scrapers = append(scrapers, sqlServerScraper)
 	}
 
@@ -383,6 +491,11 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 	}
 
 	queries := setupLogQueries(cfg)
+
+	if cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
+		!cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		params.Logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+	}
 
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
@@ -424,6 +537,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 
 		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) || isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
 			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
+		}
+
+		if !cfg.DBAuth.IsEmpty() {
+			sqlServerScraper.startProviderFunc = provider.start
 		}
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -524,7 +641,6 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
-		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverErrorRate.Enabled ||
@@ -622,6 +738,22 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isTempDBQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDatabaseTempdbSpace.Enabled
+}
+
+func isTempDBContentionQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverTempdbAllocationWaitersCount.Enabled
 }
 
 func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {

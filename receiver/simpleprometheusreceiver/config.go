@@ -6,9 +6,11 @@ package simpleprometheusreceiver // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
+	configutil "github.com/prometheus/common/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -36,6 +38,20 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.CollectionInterval <= 0 {
 		return fmt.Errorf("collection_interval must be positive, got %s", cfg.CollectionInterval)
+	}
+	for _, header := range cfg.ClientConfig.Headers {
+		if _, ok := configutil.ReservedHeaders[http.CanonicalHeaderKey(header.Name)]; ok {
+			return fmt.Errorf("headers: header %q is reserved and cannot be set", header.Name)
+		}
+	}
+	if cfg.ClientConfig.ProxyURL != "" {
+		proxyURL, err := url.ParseRequestURI(cfg.ClientConfig.ProxyURL)
+		if err != nil {
+			return fmt.Errorf("proxy_url is not valid: %w", err)
+		}
+		if proxyURL.User != nil {
+			return errors.New("proxy_url must not contain credentials; see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52081")
+		}
 	}
 	return nil
 }

@@ -99,13 +99,12 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		ts, _ := c.getOrCreateTimeSeries(lbls)
-
 		histogram, err := exponentialToNativeHistogram(pt)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
+		ts, _ := c.getOrCreateTimeSeries(lbls)
 		ts.Histograms = append(ts.Histograms, histogram)
 
 		exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
@@ -123,6 +122,9 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		return prompb.Histogram{},
 			fmt.Errorf("cannot convert exponential to native histogram."+
 				" Scale must be >= -4, was %d", scale)
+	}
+	if !p.Flags().NoRecordedValue() && !p.HasSum() {
+		return prompb.Histogram{}, errors.New("cannot convert exponential to native histogram: sum is not set")
 	}
 
 	var scaleDown int32
@@ -167,9 +169,7 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		h.Sum = math.Float64frombits(value.StaleNaN)
 		h.Count = &prompb.Histogram_CountInt{CountInt: value.StaleNaN}
 	} else {
-		if p.HasSum() {
-			h.Sum = p.Sum()
-		}
+		h.Sum = p.Sum()
 		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
 	}
 	return h, nil

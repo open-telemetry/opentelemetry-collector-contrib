@@ -396,6 +396,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
+	rw2Gate := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate
+	originalRW2Enabled := rw2Gate.IsEnabled()
+	t.Cleanup(func() {
+		assert.Equal(t, originalRW2Enabled, rw2Gate.IsEnabled(), "RW2 feature gate must be restored after the subtests")
+	})
+
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
@@ -565,11 +571,21 @@ func Test_PushMetrics(t *testing.T) {
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			name:               "exponential_histogram_no_sum_case",
-			metrics:            exponentialNoSumHistogramBatch,
-			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 1,
-			httpResponseCode:   http.StatusAccepted,
+			name:                       "exponential_histogram_no_sum_case",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+		},
+		{
+			name:                       "exponential_histogram_no_sum_case_rw2",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+			enableSendingRW2:           true,
 		},
 		{
 			name:               "histogram_case",
@@ -729,7 +745,10 @@ func Test_PushMetrics(t *testing.T) {
 					t.Skip("test not supported when using WAL")
 				}
 				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
+					// RW2 cases mutate a global feature gate and must run serially.
+					if !tt.enableSendingRW2 {
+						t.Parallel()
+					}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker, tt.enableSendingRW2)
@@ -1647,5 +1666,77 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	for _, m := range metrics {
 		err := exporter.PushMetrics(ctx, m)
 		require.NoError(b, err)
+	}
+}
+
+func TestIsPayloadRejection(t *testing.T) {
+	for _, tt := range []struct {
+		status int
+		want   bool
+	}{
+		{status: http.StatusBadRequest, want: true},
+		{status: http.StatusConflict, want: true},
+		{status: http.StatusRequestEntityTooLarge, want: true},
+		{status: http.StatusUnprocessableEntity, want: true},
+		{status: http.StatusUnauthorized, want: false},
+		{status: http.StatusForbidden, want: false},
+		{status: http.StatusNotFound, want: false},
+		{status: http.StatusRequestTimeout, want: false},
+		{status: http.StatusUnsupportedMediaType, want: false},
+		{status: http.StatusTooManyRequests, want: false},
+	} {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			assert.Equal(t, tt.want, isPayloadRejection(tt.status))
+		})
+	}
+}
+
+func TestWriteRequestSampleCount(t *testing.T) {
+	series := func(samples, histograms int) prompb.TimeSeries {
+		ts := prompb.TimeSeries{Labels: []prompb.Label{{Name: "__name__", Value: "m"}}}
+		for i := range samples {
+			ts.Samples = append(ts.Samples, prompb.Sample{Value: 1, Timestamp: int64(i)})
+		}
+		for i := range histograms {
+			ts.Histograms = append(ts.Histograms, prompb.Histogram{Timestamp: int64(i)})
+		}
+		return ts
+	}
+
+	tests := []struct {
+		name string
+		req  *prompb.WriteRequest
+		want int
+	}{
+		{name: "request with no series", req: &prompb.WriteRequest{}, want: 0},
+		{
+			name: "samples only",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(3, 0)}},
+			want: 3,
+		},
+		{
+			name: "native histograms are samples too",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(0, 2)}},
+			want: 2,
+		},
+		{
+			name: "mixed across several series",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(2, 1), series(1, 4)}},
+			want: 8,
+		},
+		{
+			name: "exemplars are not counted",
+			req: &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{{
+				Samples:   []prompb.Sample{{Value: 1}},
+				Exemplars: []prompb.Exemplar{{Value: 1}, {Value: 2}},
+			}}},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, writeRequestSampleCount(tt.req))
+		})
 	}
 }

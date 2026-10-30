@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Add active partitioned DMLs metrics (`num_partitions_total`, `num_partitions_complete`, `num_trivial_partitions_complete`, `rows_processed`) to monitor the progress and execution of currently running Partitioned DML statements."
+issues: [52254]
+subtext: ""
+change_logs: [user]
