@@ -61,7 +61,7 @@ type mm struct {
 type loc struct {
 	mappingIdx int32
 	address    uint64
-	lines      string // String representation of a sorted list of lines.
+	lines      string // String representation of lines in their original inline order.
 	attrIdxs   string // List of consecutive increasing indices separated by a semicolon.
 }
 
@@ -659,25 +659,8 @@ func (lts *lookupTables) linesToString(lines []profile.Line) string {
 		return ""
 	}
 
-	slices.SortFunc(lines, func(a, b profile.Line) int {
-		if a.Line != b.Line {
-			return int(a.Line - b.Line)
-		}
-		if a.Column != b.Column {
-			return int(a.Column - b.Column)
-		}
-		if a.Function == nil && b.Function == nil {
-			return 0
-		}
-		if a.Function == nil {
-			return -1
-		}
-		if b.Function == nil {
-			return 1
-		}
-		return int(a.Function.ID - b.Function.ID)
-	})
-
+	// Lines describe the inline call chain, from the innermost function outward.
+	// Preserve that order in the location key and leave the input slice unchanged.
 	var parts []string
 	for _, line := range lines {
 		funcID := int32(-1)
