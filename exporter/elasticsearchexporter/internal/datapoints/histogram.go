@@ -29,6 +29,14 @@ func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint, hm Histo
 	}
 }
 
+func (dp Histogram) Validate() error {
+	if dp.metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative &&
+		dp.resolvedMapping() != HistogramMappingExponential {
+		return fmt.Errorf("cumulative temporality histogram %q is only supported when stored as exponential_histogram", dp.metric.Name())
+	}
+	return nil
+}
+
 func (dp Histogram) Value() (pcommon.Value, error) {
 	bucketCounts := dp.BucketCounts()
 	explicitBounds := dp.ExplicitBounds()
