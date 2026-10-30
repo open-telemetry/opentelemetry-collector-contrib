@@ -28,9 +28,10 @@ import (
 )
 
 const (
-	faroKind          = "kind"
-	faroTimestamp     = "timestamp"
-	faroContextPrefix = "context_"
+	faroKind            = "kind"
+	faroTimestamp       = "timestamp"
+	faroTimestampMicros = "timestamp_micros"
+	faroContextPrefix   = "context_"
 
 	faroSDKName         = "sdk_name"
 	faroSDKVersion      = "sdk_version"
@@ -360,6 +361,11 @@ func extractTimestampFromKeyVal(kv map[string]string) (time.Time, error) {
 	timestamp, err := time.Parse(string(faroTypes.TimeFormatRFC3339Milli), val)
 	if err != nil {
 		return timestamp, err
+	}
+	// The timestamp key keeps milliseconds only. The timestamp_micros key,
+	// when present, holds the sub-millisecond part too.
+	if micros, microsErr := strconv.ParseInt(kv[faroTimestampMicros], 10, 64); microsErr == nil {
+		timestamp = time.UnixMicro(micros).UTC()
 	}
 	return timestamp, nil
 }

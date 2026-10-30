@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
 	om "github.com/wk8/go-ordered-map/v2"
@@ -61,6 +62,16 @@ func keyValAdd(kv *keyVal, key, value string) {
 	}
 }
 
+// keyValAddTimestamp adds the timestamp at millisecond precision. When the
+// timestamp has sub-millisecond precision, it also adds the epoch microseconds,
+// so that consumers can order records that share a millisecond.
+func keyValAddTimestamp(kv *keyVal, ts time.Time) {
+	keyValAdd(kv, faroTimestamp, ts.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	if micros := ts.UnixMicro(); micros%1000 != 0 {
+		keyValAdd(kv, faroTimestampMicros, strconv.FormatInt(micros, 10))
+	}
+}
+
 // keyValToInterfaceSlice converts keyVal to []interface{}, typically used for logging
 func keyValToInterfaceSlice(kv *keyVal) []any {
 	slice := make([]any, kv.Len()*2)
@@ -84,7 +95,7 @@ func logToKeyVal(l *faroTypes.Log) *keyVal {
 		level = string(l.LogLevel)
 	}
 
-	keyValAdd(kv, faroTimestamp, l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, l.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindLog))
 	keyValAdd(kv, faroLogLevel, level)
 	keyValAdd(kv, faroLogMessage, l.Message)
@@ -97,7 +108,7 @@ func logToKeyVal(l *faroTypes.Log) *keyVal {
 // exceptionToKeyVal represents an Exception object as keyVal
 func exceptionToKeyVal(e *faroTypes.Exception) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, e.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindException))
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelError))
 	keyValAdd(kv, faroExceptionType, e.Type)
@@ -142,7 +153,7 @@ func frameToString(frame *faroTypes.Frame) string {
 func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 	kv := newKeyVal()
 
-	keyValAdd(kv, faroTimestamp, m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, m.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindMeasurement))
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroMeasurementType, m.Type)
@@ -164,7 +175,7 @@ func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 // eventToKeyVal produces key -> value representation of Event metadata
 func eventToKeyVal(e *faroTypes.Event) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, e.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindEvent))
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroEventName, e.Name)
