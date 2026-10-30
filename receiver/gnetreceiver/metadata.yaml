@@ -1,0 +1,23 @@
+type: gnet
+display_name: gnet Receiver
+
+description: |
+  High-throughput OTLP receiver using the gnet event-loop network library
+  (https://github.com/panjf2000/gnet) instead of the standard net/http + gRPC stack.
+  Uses a simple 4-byte length-prefixed framing over raw TCP with protobuf-encoded
+  OTLP payloads, eliminating HTTP/2 and gRPC overhead for agent-to-gateway hops
+  in high-QPS deployments.
+
+  Frame format:
+    [4 bytes big-endian length][N bytes OTLP ExportRequest protobuf]
+
+  Signal type is determined by a 1-byte signal tag prepended to every frame:
+    0x01 = traces, 0x02 = metrics, 0x03 = logs
+
+status:
+  class: receiver
+  stability:
+    development: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: []
