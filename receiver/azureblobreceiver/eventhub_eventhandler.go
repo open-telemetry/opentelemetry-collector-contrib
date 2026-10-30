@@ -166,23 +166,32 @@ func parseBlobSubject(subject string) (containerName, blobName string, err error
 }
 
 func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, containerName, blobName string) error {
+	var consume func(context.Context, []byte) error
+	switch containerName {
+	case p.logsContainerName:
+		if p.logsDataConsumer != nil {
+			consume = p.logsDataConsumer.consumeLogs
+		}
+	case p.tracesContainerName:
+		if p.tracesDataConsumer != nil {
+			consume = p.tracesDataConsumer.consumeTraces
+		}
+	default:
+		p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
+		return nil
+	}
+
+	if consume == nil {
+		return nil
+	}
+
 	blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 	if err != nil {
 		return err
 	}
 
-	switch containerName {
-	case p.logsContainerName:
-		if err := p.logsDataConsumer.consumeLogs(ctx, blobData.Bytes()); err != nil {
-			return err
-		}
-	case p.tracesContainerName:
-		if err := p.tracesDataConsumer.consumeTraces(ctx, blobData.Bytes()); err != nil {
-			return err
-		}
-	default:
-		p.logger.Debug("Unknown container name", zap.String("containerName", containerName))
-		return nil
+	if err := consume(ctx, blobData.Bytes()); err != nil {
+		return err
 	}
 
 	if err := p.blobClient.deleteBlob(ctx, containerName, blobName); err != nil {
