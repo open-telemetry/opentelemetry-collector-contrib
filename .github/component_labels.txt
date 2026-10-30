@@ -32,6 +32,7 @@ exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
 exporter/awsxrayexporter exporter/awsxray
 exporter/azureblobexporter exporter/azureblob
+exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/azuremonitorexporter exporter/azuremonitor
 exporter/bmchelixexporter exporter/bmchelix
 exporter/cassandraexporter exporter/cassandra
@@ -372,7 +373,6 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/logicmonitorexporter exporter/logicmonitor
 receiver/fluentforwardreceiver receiver/fluentforward
 receiver/riakreceiver receiver/riak
