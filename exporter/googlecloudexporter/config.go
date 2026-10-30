@@ -8,6 +8,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -18,6 +19,7 @@ type Config struct {
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	RetrySettings   configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 }
 
 func (cfg *Config) Validate() error {

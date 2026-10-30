@@ -12,6 +12,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,8 +38,11 @@ func NewFactory() exporter.Factory {
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
+	retrySettings := configretry.NewDefaultBackOffConfig()
+	retrySettings.Enabled = false
 	return &Config{
 		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: defaultTimeout},
+		RetrySettings:   retrySettings,
 		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Config:          collector.DefaultConfig(),
 	}
@@ -68,6 +72,7 @@ func createLogsExporter(
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithRetry(eCfg.RetrySettings),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
