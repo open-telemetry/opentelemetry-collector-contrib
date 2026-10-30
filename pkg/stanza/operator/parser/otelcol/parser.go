@@ -91,11 +91,9 @@ func parseJSONLine(line string) (map[string]any, error) {
 // service::telemetry::logs::disable_caller is set, so both are recognized by
 // position and shape rather than assumed to be there.
 func parseConsoleLine(line string) (map[string]any, error) {
-	// The stacktrace is appended after the fields on its own lines, so it is
-	// only seen here when the entry was recombined upstream.
-	line, stacktrace, hasStacktrace := strings.Cut(line, "\n")
+	head, fields, stacktrace := splitConsoleFields(line)
 
-	parts := strings.Split(line, consoleSeparator)
+	parts := strings.Split(head, consoleSeparator)
 	if len(parts) < 3 {
 		return nil, errors.New("line cannot be parsed as a console-encoded otelcol self-log")
 	}
@@ -104,18 +102,12 @@ func parseConsoleLine(line string) (map[string]any, error) {
 		"ts":    parts[0],
 		"level": parts[1],
 	}
-	if hasStacktrace {
-		result["stacktrace"] = strings.TrimSpace(stacktrace)
+	maps.Copy(result, fields)
+	if stacktrace != "" {
+		result["stacktrace"] = stacktrace
 	}
 
 	rest := parts[2:]
-	if len(rest) > 1 {
-		if fields, ok := decodeConsoleFields(rest[len(rest)-1]); ok {
-			maps.Copy(result, fields)
-			rest = rest[:len(rest)-1]
-		}
-	}
-
 	switch {
 	case len(rest) > 1 && callerRegex.MatchString(rest[0]):
 		result["caller"] = rest[0]
@@ -138,17 +130,42 @@ func parseConsoleLine(line string) (map[string]any, error) {
 	return result, nil
 }
 
-// decodeConsoleFields reports whether the last console field is zap's
-// structured context object rather than the tail of the message.
-func decodeConsoleFields(field string) (map[string]any, bool) {
-	if !strings.HasPrefix(field, "{") || !strings.HasSuffix(field, "}") {
-		return nil, false
+// splitConsoleFields separates zap's structured context object and the
+// stacktrace that may follow it from the rest of a console line. The stacktrace
+// is only present when the entry was recombined upstream.
+//
+// zap writes the message unescaped, so a recombined message can span lines,
+// but the fields object can't: zap's JSON encoder escapes newlines. That makes
+// the fields object the anchor between a multi-line message and the
+// stacktrace after it.
+func splitConsoleFields(line string) (head string, fields map[string]any, stacktrace string) {
+	for end := len(line); ; {
+		idx := strings.LastIndex(line[:end], consoleSeparator+"{")
+		// The fields always come after ts, level, and msg.
+		if idx == -1 || strings.Count(line[:idx], consoleSeparator) < 2 {
+			break
+		}
+		end = idx
+
+		candidate := line[idx+len(consoleSeparator):]
+		dec := json.NewDecoder(strings.NewReader(candidate))
+		var decoded map[string]any
+		if err := dec.Decode(&decoded); err != nil {
+			continue
+		}
+		after := candidate[dec.InputOffset():]
+		if after == "" {
+			return line[:idx], decoded, ""
+		}
+		if trace, ok := strings.CutPrefix(after, "\n"); ok {
+			return line[:idx], decoded, strings.TrimSpace(trace)
+		}
 	}
-	var fields map[string]any
-	if err := json.Unmarshal([]byte(field), &fields); err != nil {
-		return nil, false
-	}
-	return fields, true
+
+	// Without a fields object a multi-line message and a stacktrace look the
+	// same, so the first line break is taken to start the stacktrace.
+	head, stacktrace, _ = strings.Cut(line, "\n")
+	return head, nil, strings.TrimSpace(stacktrace)
 }
 
 // postProcess promotes the ts, level, msg, and resource fields of a parsed otelcol self-log

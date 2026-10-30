@@ -37,6 +37,8 @@ Zap's `console` encoding separates fields with a tab and lays them out as:
 
 `logger` is only present for a named logger, and `caller` is absent when `service::telemetry::logs::disable_caller` is set, so the operator identifies both by position and shape rather than assuming they are there. A stacktrace, emitted for `error` and above (`warn` and above with `service::telemetry::logs::development`), follows the fields on its own lines; it is only recovered into the `stacktrace` attribute when the entry was recombined upstream, for example with [`recombine`](recombine.md).
 
+zap writes the message unescaped, so a recombined message can span lines as well. The operator keeps it whole by anchoring on the fields object, which never contains a line break. A line without fields has nothing to anchor on, so its first line break is taken to start the stacktrace. The collector always writes `resource` as a field unless `service::telemetry::logs::disable_zap_resource` is set.
+
 ### Example Configurations
 
 #### Parse a json-encoded self-log line

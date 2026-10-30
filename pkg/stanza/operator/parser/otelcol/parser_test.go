@@ -171,6 +171,46 @@ func TestParseConsoleLine(t *testing.T) {
 				"stacktrace": "main.main\n\t/src/main.go:61",
 			},
 		},
+		{
+			// zap writes the message unescaped, so it spans lines once recombined.
+			name: "multiline_message",
+			line: ts + "\tinfo\tinternal/transaction.go:127\tfirst line\nsecond line\t" +
+				`{"otelcol.signal":"logs"}`,
+			want: map[string]any{
+				"ts": ts, "level": "info", "caller": "internal/transaction.go:127",
+				"msg": "first line\nsecond line", "otelcol.signal": "logs",
+			},
+		},
+		{
+			name: "multiline_message_and_stacktrace",
+			line: ts + "\terror\tinternal/transaction.go:127\tfirst line\nsecond line\t" +
+				`{"error":"connection refused"}` + "\nmain.main\n\t/src/main.go:61",
+			want: map[string]any{
+				"ts": ts, "level": "error", "caller": "internal/transaction.go:127",
+				"msg": "first line\nsecond line", "error": "connection refused",
+				"stacktrace": "main.main\n\t/src/main.go:61",
+			},
+		},
+		{
+			name: "multiline_message_with_json_line_and_stacktrace",
+			line: ts + "\terror\tinternal/transaction.go:127\tgot\t" + `{"a":1}` + "\nas the payload\t" +
+				`{"error":"connection refused"}` + "\nmain.main\n\t/src/main.go:61",
+			want: map[string]any{
+				"ts": ts, "level": "error", "caller": "internal/transaction.go:127",
+				"msg": "got\t" + `{"a":1}` + "\nas the payload", "error": "connection refused",
+				"stacktrace": "main.main\n\t/src/main.go:61",
+			},
+		},
+		{
+			// Without the fields object to anchor on, the first line break is
+			// taken to start the stacktrace.
+			name: "multiline_message_without_fields",
+			line: ts + "\tinfo\tinternal/transaction.go:127\tfirst line\nsecond line",
+			want: map[string]any{
+				"ts": ts, "level": "info", "caller": "internal/transaction.go:127",
+				"msg": "first line", "stacktrace": "second line",
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -190,48 +230,53 @@ func TestParseZapOutput(t *testing.T) {
 		for _, disableCaller := range []bool{false, true} {
 			for _, named := range []bool{false, true} {
 				for _, stacktrace := range []bool{false, true} {
-					name := fmt.Sprintf("%s/disable_caller=%v/named=%v/stacktrace=%v",
-						encoding, disableCaller, named, stacktrace)
-					t.Run(name, func(t *testing.T) {
-						msg := "Failed to scrape endpoint"
-						if !disableCaller {
-							// Exercise the ambiguity the caller field creates.
-							msg = "localhost:4317 refused the connection"
-						}
-						line := encodeWithZap(t, encoding, disableCaller, named, stacktrace, msg)
+					for _, multiline := range []bool{false, true} {
+						name := fmt.Sprintf("%s/disable_caller=%v/named=%v/stacktrace=%v/multiline=%v",
+							encoding, disableCaller, named, stacktrace, multiline)
+						t.Run(name, func(t *testing.T) {
+							msg := "Failed to scrape endpoint"
+							if !disableCaller {
+								// Exercise the ambiguity the caller field creates.
+								msg = "localhost:4317 refused the connection"
+							}
+							if multiline {
+								msg += "\nwhile scraping"
+							}
+							line := encodeWithZap(t, encoding, disableCaller, named, stacktrace, msg)
 
-						parsed, err := parseLine(line)
-						require.NoError(t, err)
-						m, ok := parsed.(map[string]any)
-						require.True(t, ok)
+							parsed, err := parseLine(line)
+							require.NoError(t, err)
+							m, ok := parsed.(map[string]any)
+							require.True(t, ok)
 
-						require.Equal(t, "error", m["level"])
-						require.Equal(t, msg, m["msg"])
-						require.Equal(t, map[string]any{"service.name": "otelcol"}, m["resource"])
+							require.Equal(t, "error", m["level"])
+							require.Equal(t, msg, m["msg"])
+							require.Equal(t, map[string]any{"service.name": "otelcol"}, m["resource"])
 
-						if disableCaller {
-							require.NotContains(t, m, "caller")
-						} else {
-							require.Regexp(t, `^\S+\.go:\d+$`, m["caller"])
-						}
-						if named {
-							require.Equal(t, loggerName, m["logger"])
-						} else {
-							require.NotContains(t, m, "logger")
-						}
-						if stacktrace {
-							require.Contains(t, m["stacktrace"], "otelcol.encodeWithZap")
-						} else {
-							require.NotContains(t, m, "stacktrace")
-						}
+							if disableCaller {
+								require.NotContains(t, m, "caller")
+							} else {
+								require.Regexp(t, `^\S+\.go:\d+$`, m["caller"])
+							}
+							if named {
+								require.Equal(t, loggerName, m["logger"])
+							} else {
+								require.NotContains(t, m, "logger")
+							}
+							if stacktrace {
+								require.Contains(t, m["stacktrace"], "otelcol.encodeWithZap")
+							} else {
+								require.NotContains(t, m, "stacktrace")
+							}
 
-						e := entry.New()
-						e.Body = line
-						require.NoError(t, newTestParser(t).Process(t.Context(), e))
-						require.Equal(t, msg, e.Body)
-						require.Equal(t, entry.Error, e.Severity)
-						require.False(t, e.Timestamp.IsZero())
-					})
+							e := entry.New()
+							e.Body = line
+							require.NoError(t, newTestParser(t).Process(t.Context(), e))
+							require.Equal(t, msg, e.Body)
+							require.Equal(t, entry.Error, e.Severity)
+							require.False(t, e.Timestamp.IsZero())
+						})
+					}
 				}
 			}
 		}
