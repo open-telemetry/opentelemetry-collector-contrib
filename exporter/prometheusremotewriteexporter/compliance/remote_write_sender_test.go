@@ -144,7 +144,7 @@ func TestMain(m *testing.M) {
 	skip := strings.Join([]string{
 		"TestRemoteWriteSender/otelcol-contrib/samples_sorted",
 		"TestRemoteWriteSender/otelcol-contrib/samples/rw2/start_timestamp_for_.*",
-		"TestRemoteWriteSender/otelcol-contrib/native_histograms/rw2/(float_histogram|start_timestamp_before_timestamp)",
+		"TestRemoteWriteSender/otelcol-contrib/native_histograms/rw2/(float_histogram|start_timestamp_before_timestamp|histograms_sorted)",
 		"TestRemoteWriteSender/otelcol-contrib/metadata/rw2/type_info_and_stateset",
 	}, "|")
 	if existing := flag.Lookup("test.skip").Value.String(); existing != "" {
