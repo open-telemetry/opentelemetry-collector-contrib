@@ -186,6 +186,9 @@ func TestCertificateHelpers(t *testing.T) {
 	_, cert, _ := newTestRSA(t)
 	full := base64.StdEncoding.EncodeToString(cert.Raw)
 	assert.True(t, certificateRefMatches(cert, full))
+	// TrimSpace: a ref with surrounding whitespace (e.g. from an env var) must still match.
+	assert.True(t, certificateRefMatches(cert, "  "+full+"\n"))
+	assert.True(t, certificateRefMatches(cert, "\t"+fingerprint(cert)+" "))
 }
 
 func TestValueToInterfaceAndSerializeFields(t *testing.T) {

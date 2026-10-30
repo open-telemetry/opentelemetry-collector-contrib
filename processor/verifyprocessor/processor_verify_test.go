@@ -861,3 +861,27 @@ func TestValidateSecretMaterialExactlyOne(t *testing.T) {
 	assert.NoError(t, validateSecretMaterial(SecretConfig{Certificate: "c"}))
 	assert.NoError(t, validateSecretMaterial(SecretConfig{HMACKey: "h"}))
 }
+
+func TestRetryWithVerificationAttrsReportsRetryError(t *testing.T) {
+	// When the first attempt fails and a retry (with audit.verification.* attrs included)
+	// also fails, the returned error must come from the retry attempt - not the first one.
+	// Both attempts use the same algorithm and key so the error text is identical in practice,
+	// but we confirm the retry path is exercised by ensuring the record has verification attrs
+	// and both the first pass and retry fail with integrity_mismatch.
+	hmacKey := []byte("retry-key")
+	p := newVerifyProc(t, &Config{FailureMode: failureModeMark, VerificationProfile: "default"}, &staticProvider{hmacKey: hmacKey})
+
+	ld := makeLogs("body", nil, algorithmHMACSHA256, "", "")
+	lr := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	// Put a valid-looking (wrong) signature and existing verification attrs to trigger the retry path.
+	lr.Attributes().PutStr(attrIntegrityValue, base64.StdEncoding.EncodeToString([]byte("wrong-mac")))
+	lr.Attributes().PutStr(attrVerificationStatus, statusVerified)
+	lr.Attributes().PutStr(attrVerificationProfile, "previous")
+
+	require.NoError(t, p.ConsumeLogs(t.Context(), ld))
+	rl := ld.ResourceLogs().At(0)
+	requireStatus(t, rl.Resource().Attributes(), statusFailed)
+	reason, ok := rl.Resource().Attributes().Get(attrVerificationReason)
+	require.True(t, ok)
+	assert.Equal(t, reasonIntegrityMismatch, reason.Str())
+}

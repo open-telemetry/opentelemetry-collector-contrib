@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/verify
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add core verification logic for `verifyprocessor` (JCS payload reconstruction, RS256/RS512/ES256/EdDSA/HMAC-SHA256, file/env key providers, strict/mark/drop failure modes).
+note: Add cryptographic log record integrity verification to `verifyprocessor`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51383]

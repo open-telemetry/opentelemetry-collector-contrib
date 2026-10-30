@@ -448,7 +448,7 @@ func (p *verifyProcessor) verifyLogRecord(lr plog.LogRecord, algorithm string) *
 		return &verifyFailure{reason: reasonSerializationError, err: serErr}
 	}
 	if retryErr := p.verifySignature(algorithm, stampedPayload, sigBytes); retryErr != nil {
-		return &verifyFailure{reason: reasonIntegrityMismatch, err: err}
+		return &verifyFailure{reason: reasonIntegrityMismatch, err: retryErr}
 	}
 	return nil
 }
@@ -525,6 +525,7 @@ func certificateRefMatches(cert *x509.Certificate, ref string) bool {
 	if cert == nil {
 		return false
 	}
+	ref = strings.TrimSpace(ref)
 	fingerprint := "sha256:" + hex.EncodeToString(sha256Sum(cert.Raw))
 	if ref == fingerprint {
 		return true

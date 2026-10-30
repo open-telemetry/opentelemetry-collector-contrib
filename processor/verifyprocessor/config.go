@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 const (
@@ -89,10 +90,10 @@ type K8sSecretConfig struct {
 // SecretPath is the path to the secret within that mount (e.g. "verify").
 // certificate and hmac_key are field names within the secret at SecretPath.
 type BaoKeyConfig struct {
-	Address      string `mapstructure:"address"`
-	Token        string `mapstructure:"token"`
-	MountPath    string `mapstructure:"mount_path"`
-	SecretPath   string `mapstructure:"secret_path"`
+	Address      string              `mapstructure:"address"`
+	Token        configopaque.String `mapstructure:"token"`
+	MountPath    string              `mapstructure:"mount_path"`
+	SecretPath   string              `mapstructure:"secret_path"`
 	SecretConfig `mapstructure:",squash"`
 }
 

@@ -86,6 +86,8 @@ processors:
       #   # hmac_key:  hmac_key
 
     # Optional dead-letter queue for verification failures.
+    # Note: dead_letter persistence is not yet implemented. Setting
+    # enabled: true produces a warning; failures are not written to storage.
     dead_letter:
       enabled: false
       # storage: file_storage
@@ -188,6 +190,11 @@ identical canonical JSON.
 
 Serialization fails with a hard error if the total pre-JCS JSON size exceeds
 2 MiB or the attribute nesting depth exceeds 128 levels.
+
+> **Note on certificate expiry:** The verifier does not reject expired certificates.
+> Signatures made by an expired certificate still verify successfully, which is
+> intentional for long-term audit log verification. Expiry enforcement, if needed,
+> must be done outside this processor.
 
 ## Output attributes
 
