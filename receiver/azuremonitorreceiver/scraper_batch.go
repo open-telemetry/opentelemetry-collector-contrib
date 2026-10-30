@@ -681,7 +681,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 									t := *metricValue.TimeStamp
 									lastTime, exists := metricsByGrain.lastEmittedTimestamps[tsKeyPrefix]
 									if !exists || t.After(lastTime) {
-										s.processQueryTimeseriesData(mb, resID, metric, metricValue, attributes)
+										s.processQueryTimeseriesData(mb, resID, metric, metricValue, attributes, now)
 										metricsByGrain.lastEmittedTimestamps[tsKeyPrefix] = t
 									}
 								}
@@ -731,11 +731,15 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 	metric azmetrics.Metric,
 	metricValue azmetrics.MetricValue,
 	attributes map[string]*string,
+	collectionTime time.Time,
 ) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	ts := pcommon.NewTimestampFromTime(*metricValue.TimeStamp)
+	dataPointTimestamp := *metricValue.TimeStamp
+	ts := pcommon.NewTimestampFromTime(dataPointTimestamp)
+	metricName := *metric.Name.Value
+	loggedDelay := false
 
 	aggregationsData := []struct {
 		name  string
@@ -749,9 +753,13 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 	}
 	for _, aggregation := range aggregationsData {
 		if aggregation.value != nil {
+			if !loggedDelay {
+				logDataPointDelay(s.settings.Logger, resourceID, metricName, collectionTime, dataPointTimestamp)
+				loggedDelay = true
+			}
 			mb.AddDataPoint(
 				resourceID,
-				*metric.Name.Value,
+				metricName,
 				aggregation.name,
 				string(*metric.Unit),
 				attributes,
