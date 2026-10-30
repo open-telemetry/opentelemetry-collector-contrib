@@ -5,6 +5,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -1161,4 +1163,86 @@ func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlo
 func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
+}
+
+type mockSTSClient struct {
+	mock.Mock
+}
+
+func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	out, _ := args.Get(0).(*sts.GetCallerIdentityOutput)
+	return out, args.Error(1)
+}
+
+func newTestLogsReceiver() *logsReceiver {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	return newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, &consumertest.LogsSink{})
+}
+
+func TestEnsureSessionSTSFailureDoesNotPanic(t *testing.T) {
+	rcvr := newTestLogsReceiver()
+	rcvr.client = defaultMockClient()
+
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("connection refused"))
+	rcvr.stsClient = stsMock
+
+	require.NoError(t, rcvr.ensureSession(t.Context()))
+	require.Empty(t, rcvr.accountID)
+	stsMock.AssertExpectations(t)
+}
+
+func TestEnsureSessionResolvesAccountID(t *testing.T) {
+	rcvr := newTestLogsReceiver()
+	rcvr.client = defaultMockClient()
+
+	accountID := "123456789012"
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).
+		Return(&sts.GetCallerIdentityOutput{Account: &accountID}, nil)
+	rcvr.stsClient = stsMock
+
+	require.NoError(t, rcvr.ensureSession(t.Context()))
+	require.Equal(t, accountID, rcvr.accountID)
+	stsMock.AssertExpectations(t)
+}
+
+func TestEnsureSessionRetriesAccountIDAfterSTSFailure(t *testing.T) {
+	rcvr := newTestLogsReceiver()
+	rcvr.client = defaultMockClient()
+
+	accountID := "123456789012"
+	stsMock := &mockSTSClient{}
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("temporary STS outage")).Once()
+	stsMock.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).
+		Return(&sts.GetCallerIdentityOutput{Account: &accountID}, nil).Once()
+	rcvr.stsClient = stsMock
+
+	require.NoError(t, rcvr.ensureSession(t.Context()))
+	require.Empty(t, rcvr.accountID)
+
+	require.NoError(t, rcvr.ensureSession(t.Context()))
+	require.Equal(t, accountID, rcvr.accountID)
+	stsMock.AssertExpectations(t)
+}
+
+func TestEnsureSessionSkipsSTSWhenAccountIDAlreadySet(t *testing.T) {
+	rcvr := newTestLogsReceiver()
+	rcvr.client = defaultMockClient()
+	rcvr.accountID = "111111111111"
+
+	stsMock := &mockSTSClient{}
+	rcvr.stsClient = stsMock
+
+	require.NoError(t, rcvr.ensureSession(t.Context()))
+	require.Equal(t, "111111111111", rcvr.accountID)
+	stsMock.AssertNotCalled(t, "GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything)
 }
