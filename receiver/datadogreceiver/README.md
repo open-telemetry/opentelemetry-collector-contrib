@@ -75,6 +75,20 @@ The value must be a string with a unit (e.g. "5m", "60s").
 
 Default: "5m"
 
+### traces.enable_v1_endpoint (Optional)
+
+When `true`, the receiver serves the `/v1.0/traces` endpoint and lists it in `/info`. Tracers that support the v1.0
+trace protocol and send their traces directly to the receiver then switch to that format by default (unless manually
+overridden). The receiver also announces support for native span events in `/info`, so tracers send span events as
+events instead of as a JSON tag.
+
+Traces in the v1 format have richer attribute types, and they are translated directly to OpenTelemetry. Attributes keep
+their native types (bool, int, double, bytes, array and map), and the trace id is the full 128-bit id. This can be a
+breaking change for your data: attributes that arrive as strings or doubles over the older endpoints may arrive with a
+different type.
+
+Default: `false`
+
 ### logs.decode_json_message (Optional)
 
 When `true`, log records whose `message` is itself a JSON object are expanded, mirroring Datadog's
@@ -146,6 +160,29 @@ Sum back to a Datadog rate.
 - `_dd.span_links`: This receiver supports DD Agent's `_dd.span_links` attribute for span links creation, as produced by Datadog's tracing libraries.
 Format example can be found [here](./internal/translator/traces_translator_test.go).
 
+### Differences between the v1 and older trace formats
+
+Datadog's v1 trace format supports richer attribute types and is much closer aligned to OpenTelemetry than the older
+formats. Instead of only string tags and double metrics, attributes can be bool, int, double, bytes, array or map. The
+receiver translates v1 traces to OpenTelemetry directly, so these types are kept, and other details follow the
+OpenTelemetry model too. For example, the trace id is the full 128-bit id from the trace chunk (so the
+`trace_id_cache_size` option and the `receiver.datadogreceiver.Enable128BitTraceID` feature gate do not apply), and the
+span kind is only set as the OpenTelemetry span kind, not also as a `span.kind` attribute. The resulting data can
+therefore differ from what the older formats produce for the same span.
+
+Traces in the v1 format can arrive in two ways:
+
+- From tracers that talk to the receiver directly, on `/v1.0/traces`. This needs the
+  [`traces.enable_v1_endpoint`](#tracesenable_v1_endpoint-optional) option.
+- Forwarded by a Datadog Agent that received them from tracers in the v1 format. The agent sends them to
+  `/api/v0.2/traces` (for example when the receiver is an `apm_config.additional_endpoints` target) in a separate field
+  of its payload. The receiver always reads that field, so this needs no option. Since version 7.84.0 the agent also
+  converts traces from tracers on older protocols to the v1 format by default, so these arrive this way too. Their
+  attributes stay strings and doubles, and the receiver restores the span links, span events and span kind that the
+  conversion loses.
+  Earlier versions of the receiver could not read these traces, so the agent had to be set to
+  `disable-convert-traces` (in `apm_config.features`). That is no longer needed.
+
 ### Datadog's API support
 
 **Traces**
@@ -156,7 +193,8 @@ Format example can be found [here](./internal/translator/traces_translator_test.
 | /v0.4/traces         | Alpha   | Support for msgpack and json |
 | /v0.5/traces         | Alpha   | Msgpack custom format        |
 | /v0.7/traces         | Alpha   |                              |
-| /api/v0.2/traces     | Alpha   |                              |
+| /v1.0/traces         | Alpha   | Msgpack, string-table format. Needs `traces.enable_v1_endpoint` |
+| /api/v0.2/traces     | Alpha   | Agent payloads, including v1 traces in `idxTracerPayloads` |
 
 **Metrics**
 
