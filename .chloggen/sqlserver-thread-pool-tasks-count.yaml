@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: "Add `sqlserver.thread_pool.tasks.count` metric, reporting scheduler task-queueing state."
+
+issues: [52413]
+
+subtext: This metric is disabled by default.
+
+change_logs: [user]

@@ -2728,6 +2728,54 @@ func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverThreadPoolTasksCountMetricAttributeKey specifies the key of an attribute for the sqlserver.thread_pool.tasks.count metric.
+type SqlserverThreadPoolTasksCountMetricAttributeKey string
+
+const (
+	SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState SqlserverThreadPoolTasksCountMetricAttributeKey = "sqlserver.thread_pool.task.state"
+)
+
+// SqlserverThreadPoolTasksCountMetricConfig provides config for the sqlserver.thread_pool.tasks.count metric.
+type SqlserverThreadPoolTasksCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverThreadPoolTasksCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverThreadPoolTasksCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverThreadPoolTasksCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState:
+		default:
+			return fmt.Errorf("metric sqlserver.thread_pool.tasks.count doesn't have an attribute %v, valid attributes: [sqlserver.thread_pool.task.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric.
 type SqlserverTransactionDelayMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -3154,6 +3202,7 @@ type MetricsConfig struct {
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
 	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
 	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
+	SqlserverThreadPoolTasksCount                         SqlserverThreadPoolTasksCountMetricConfig                         `mapstructure:"sqlserver.thread_pool.tasks.count"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
@@ -3501,6 +3550,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
+		},
+		SqlserverThreadPoolTasksCount: SqlserverThreadPoolTasksCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverThreadPoolTasksCountMetricAttributeKey{SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState},
 		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,

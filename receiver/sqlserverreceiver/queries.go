@@ -1107,7 +1107,9 @@ ELSE
 	AND wait_time_ms > 100;
 `
 
-// sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts.
+// sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts, and
+// sys.dm_os_waiting_tasks for the live count of tasks queued behind the worker-thread pool
+// (wait_type = 'THREADPOOL'), feeding sqlserver.thread_pool.tasks.count.
 const sqlServerWorkerThreadsQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
@@ -1125,6 +1127,8 @@ SELECT
 	,si.max_workers_count - SUM(s.active_workers_count) AS [available_threads]
 	,SUM(s.runnable_tasks_count) AS [waiting_for_cpu_threads]
 	,SUM(s.work_queue_count) AS [requests_waiting_for_threads]
+	,SUM(s.current_tasks_count) AS [current_tasks]
+	,(SELECT COUNT(*) FROM sys.dm_os_waiting_tasks WITH (NOLOCK) WHERE wait_type = 'THREADPOOL') AS [tasks_waiting_for_threadpool]
 FROM sys.dm_os_schedulers s
 CROSS JOIN sys.dm_os_sys_info si
 WHERE s.status = 'VISIBLE ONLINE'

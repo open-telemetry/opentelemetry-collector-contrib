@@ -2357,6 +2357,8 @@ func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) 
 	const requestsWaitingForThreads = "requests_waiting_for_threads"
 	const totalThreads = "total_threads"
 	const waitingForCPUThreads = "waiting_for_cpu_threads"
+	const currentTasks = "current_tasks"
+	const tasksWaitingForThreadpool = "tasks_waiting_for_threadpool"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -2404,6 +2406,27 @@ func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) 
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", waitingForCPUThreads, i, err))
 		} else {
 			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateWaitingForCPU)
+		}
+
+		val, err = retrieveInt(row, currentTasks)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", currentTasks, i, err))
+		} else {
+			s.mb.RecordSqlserverThreadPoolTasksCountDataPoint(now, val.(int64), metadata.AttributeSqlserverThreadPoolTaskStateCurrent)
+		}
+
+		val, err = retrieveInt(row, requestsWaitingForThreads)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", requestsWaitingForThreads, i, err))
+		} else {
+			s.mb.RecordSqlserverThreadPoolTasksCountDataPoint(now, val.(int64), metadata.AttributeSqlserverThreadPoolTaskStateQueued)
+		}
+
+		val, err = retrieveInt(row, tasksWaitingForThreadpool)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", tasksWaitingForThreadpool, i, err))
+		} else {
+			s.mb.RecordSqlserverThreadPoolTasksCountDataPoint(now, val.(int64), metadata.AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool)
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

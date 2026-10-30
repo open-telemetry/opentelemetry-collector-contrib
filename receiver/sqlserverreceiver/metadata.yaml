@@ -385,6 +385,11 @@ attributes:
     description: Numeric identifier of the tempdb file.
     type: int
     requirement_level: recommended
+  sqlserver.thread_pool.task.state:
+    description: State of a SQL Server task tracked for thread-pool diagnostics (sys.dm_os_schedulers / sys.dm_os_waiting_tasks).
+    type: string
+    requirement_level: recommended
+    enum: [current, queued, waiting_for_threadpool]
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
     type: double
@@ -1406,6 +1411,15 @@ metrics:
       value_type: int
       input_type: string
     attributes: [file_type, sqlserver.tempdb.file.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.thread_pool.tasks.count:
+    enabled: false
+    description: Number of SQL Server tasks tracked by schedulers, broken down by queueing state.
+    stability: development
+    unit: "{task}"
+    gauge:
+      value_type: int
+    attributes: [sqlserver.thread_pool.task.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false

@@ -1210,6 +1210,22 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str | Recommended | - |
 | sqlserver.tempdb.file.id | Numeric identifier of the tempdb file. | Any Int | Recommended | - |
 
+### sqlserver.thread_pool.tasks.count
+
+Number of SQL Server tasks tracked by schedulers, broken down by queueing state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {task} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.thread_pool.task.state | State of a SQL Server task tracked for thread-pool diagnostics (sys.dm_os_schedulers / sys.dm_os_waiting_tasks). | Str: ``current``, ``queued``, ``waiting_for_threadpool`` | Recommended | - |
+
 ### sqlserver.transaction.delay
 
 Time consumed in transaction delays.
