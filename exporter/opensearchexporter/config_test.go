@@ -407,7 +407,7 @@ func TestISMAndCustomMappingValidation(t *testing.T) {
 				c.MappingsSettings.ISM.Enabled = true
 				c.LogsIndex = "otel-logs-%{service.name}"
 			},
-			expectError: errISMDynamicLogsIndex.Error(),
+			expectError: errISMDynamicLogsIndex.Error() + `: "otel-logs-%{service.name}"`,
 		},
 		{
 			name: "ism enabled with dynamic traces_index is invalid",
@@ -416,7 +416,7 @@ func TestISMAndCustomMappingValidation(t *testing.T) {
 				c.MappingsSettings.ISM.Enabled = true
 				c.TracesIndex = "otel-traces-%{service.name}"
 			},
-			expectError: errISMDynamicTracesIndex.Error(),
+			expectError: errISMDynamicTracesIndex.Error() + `: "otel-traces-%{service.name}"`,
 		},
 		{
 			name: "index_template_file with otel-v1 and manage_index_template is valid",

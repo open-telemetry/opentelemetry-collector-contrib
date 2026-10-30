@@ -4,10 +4,15 @@
 package opensearchexporter
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/opensearch-project/opensearch-go/v4"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -86,4 +91,47 @@ func TestNewISMManagerCustomPolicyFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m.customPolicy)
 	assert.Equal(t, "custom", m.buildPolicyBody(otelV1SpanIndexAlias).Policy.Description)
+}
+
+func TestEnsureInitialIndex(t *testing.T) {
+	tests := []struct {
+		name         string
+		existsStatus int
+		wantCreate   bool
+	}{
+		{name: "alias missing creates initial index", existsStatus: http.StatusNotFound, wantCreate: true},
+		{name: "alias exists skips creation", existsStatus: http.StatusOK, wantCreate: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var createPath, createBody string
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.Method {
+				case http.MethodHead:
+					w.WriteHeader(tt.existsStatus)
+				case http.MethodPut:
+					body, _ := io.ReadAll(r.Body)
+					createPath, createBody = r.URL.Path, string(body)
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"acknowledged":true,"shards_acknowledged":true}`))
+				default:
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			}))
+			defer ts.Close()
+
+			client, err := opensearchapi.NewClient(opensearchapi.Config{Client: opensearch.Config{Addresses: []string{ts.URL}}})
+			require.NoError(t, err)
+			m := &ismManager{client: client, logger: zap.NewNop()}
+
+			m.ensureInitialIndex(t.Context(), "otel-v1-apm-span")
+
+			if tt.wantCreate {
+				assert.Equal(t, "/otel-v1-apm-span-000001", createPath)
+				assert.JSONEq(t, `{"aliases":{"otel-v1-apm-span":{"is_write_index":true}}}`, createBody)
+			} else {
+				assert.Empty(t, createPath)
+			}
+		})
+	}
 }

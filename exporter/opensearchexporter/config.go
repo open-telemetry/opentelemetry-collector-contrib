@@ -5,6 +5,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -279,10 +280,10 @@ func (cfg *Config) Validate() error {
 		// ISM manages a fixed rollover alias for the otel-v1 base index; dynamic per-record
 		// index names (%{...}) would bypass the alias, so the two are mutually exclusive.
 		if strings.Contains(cfg.LogsIndex, "%{") {
-			multiErr = append(multiErr, errISMDynamicLogsIndex)
+			multiErr = append(multiErr, fmt.Errorf("%w: %q", errISMDynamicLogsIndex, cfg.LogsIndex))
 		}
 		if strings.Contains(cfg.TracesIndex, "%{") {
-			multiErr = append(multiErr, errISMDynamicTracesIndex)
+			multiErr = append(multiErr, fmt.Errorf("%w: %q", errISMDynamicTracesIndex, cfg.TracesIndex))
 		}
 	}
 
