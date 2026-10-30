@@ -37,8 +37,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 h1:Nljr4q1GRA/
 github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0/go.mod h1:Y33QHnf0FfdVewFFISOGe20mkZbxX4H839o955/PoeI=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.211 h1:8dXxhrm1NWG/BWEXWc5LDI/Lph3/acURFnjhgS6ZMd8=
-github.com/DataDog/agent-payload/v5 v5.0.211/go.mod h1:z6tbYIJQWWQa3ozmZdit7jR3ROOKhgs/va4tNLu80mI=
+github.com/DataDog/agent-payload/v5 v5.0.214 h1:aYfdtFT6pa7mz/FwtMCzDs5JV5U1MsQMnvA8Rdo5Sv8=
+github.com/DataDog/agent-payload/v5 v5.0.214/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.83.0 h1:2KLI6VcH6fJkRwUqlqaXIDHvrRMRyFlPHQGxu+gKbig=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.83.0/go.mod h1:h76gHuO+I6c0Sm1pgcvb3LKItf3VLtUmrP+UDvIjhmw=
 github.com/DataDog/datadog-agent/comp/core/config v0.83.0 h1:VvtMXI29XxxmV8POsHp2ZfvIgCKeb8Vs6B7t1MEl1AQ=
@@ -253,8 +253,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.83.0 h1:wrO1OPCR8Dn/xrk5rdX
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.83.0/go.mod h1:X2z5fkg2UucG/y4kOWMQFcMuAnfMMRU02HOfOwdsmHs=
 github.com/DataDog/datadog-agent/pkg/version v0.83.0 h1:yn8UVbtBjUP3IR/0PLuvxI0tubwjSkS130HGm/dAbqM=
 github.com/DataDog/datadog-agent/pkg/version v0.83.0/go.mod h1:FPPLUqaEp7GSFzKWNQFvQNths4w3unI3htRKlwwqg5U=
-github.com/DataDog/datadog-api-client-go/v2 v2.66.0 h1:YBeIlj4Gdvs1B4l026a3I0a+qGGmiYzncas/WL4MJJA=
-github.com/DataDog/datadog-api-client-go/v2 v2.66.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.67.0 h1:fNIlvUjfCEL/wFrtXioCT+ah/o04M7475klcF97bZj0=
+github.com/DataDog/datadog-api-client-go/v2 v2.67.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.9.1 h1:jOxw/TaxGWok8RIxbpqn2p3RzSnQr/m3Q6TgaHqqOU0=
 github.com/DataDog/datadog-go/v5 v5.9.1/go.mod h1:2SBt8zJu6r7sRQHZFMQ8oCukWTKj0ymwulmNgQzJ1JM=

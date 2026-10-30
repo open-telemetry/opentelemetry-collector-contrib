@@ -150,8 +150,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.84.6 h1:2fcdUBZvzEMd2QzM/GJ
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.84.6/go.mod h1:qY+ZkRpFQpfVI9TS0lwczBGrBA+2Jqv3qKg0/D+HFjQ=
 github.com/DataDog/datadog-agent/pkg/version v0.84.6 h1:JQdbYFazIKJ2oCKwAylkx4nz1aPI0zLpcSg8k/Tlxog=
 github.com/DataDog/datadog-agent/pkg/version v0.84.6/go.mod h1:PmSFjPN+SQ3TrbZgKJjAmpLb81jup3aIr+XsDiva2pg=
-github.com/DataDog/datadog-api-client-go/v2 v2.66.0 h1:YBeIlj4Gdvs1B4l026a3I0a+qGGmiYzncas/WL4MJJA=
-github.com/DataDog/datadog-api-client-go/v2 v2.66.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.67.0 h1:fNIlvUjfCEL/wFrtXioCT+ah/o04M7475klcF97bZj0=
+github.com/DataDog/datadog-api-client-go/v2 v2.67.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/go-acl v1.0.1 h1:uRbp98YmlVZYqNNyTBFNI3Y6bnziBLyCIR4nRu0bIpU=
 github.com/DataDog/go-acl v1.0.1/go.mod h1:YJx333qSb3GUqCLIbqKeGaZS2pUYh2IYGI7+FsX18CU=
 github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee h1:tXibLZk3G6HncIFJKaNItsdzcrk4YqILNDZlXPTNt4k=
