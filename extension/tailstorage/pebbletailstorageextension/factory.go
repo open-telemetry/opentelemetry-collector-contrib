@@ -28,7 +28,9 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		OnReadError: ReadErrorPolicyDropTrace,
+		CacheSizeMiB:    defaultCacheSizeMiB,
+		MemTableSizeMiB: defaultMemTableSizeMiB,
+		OnReadError:     ReadErrorPolicyDropTrace,
 	}
 }
 
