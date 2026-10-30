@@ -25,6 +25,7 @@ Each statement can access and transform telemetry using functions, and allows th
 - [Config](#config)
 - [Grammar](#grammar)
 - [Supported functions](#supported-functions)
+- [Function stability](#function-stability)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -290,6 +291,10 @@ In addition to the common OTTL functions, the processor defines its own function
 **Traces only functions**
 
 - [set_semconv_span_name](#set_semconv_span_name)
+
+**Experimental functions**
+
+There are currently no experimental functions. See [Function stability](#function-stability).
 
 ### convert_sum_to_gauge
 
@@ -887,6 +892,28 @@ Examples:
 
 - `set_semconv_span_name("1.43.0", "original_span_name")`
 
+## Function stability
+
+The functions listed above under [Supported functions](#supported-functions), apart from experimental functions, are **frozen**.
+No frozen function will be removed and no existing signature or behavior will change in a backward-incompatible way without a major version bump.
+
+New functions are introduced as experimental functions first. While a function is experimental it is **not covered by
+the stability guarantee**: its name, arguments, and behavior may change in a backward-incompatible way, and the
+function may be removed entirely, in any minor release. Statements and conditions that use an experimental function
+only parse when the [`processor.transform.enableExperimentalFunctions`](#processortransformenableexperimentalfunctions)
+feature gate is enabled, and the processor logs a warning for each use.
+
+An experimental function may be promoted to the frozen set in a minor release when all of the following hold:
+
+1. It has been available as an experimental function for at least two minor releases.
+2. It has complete tests and complete documentation in this README.
+3. Its name, arguments, and behavior are settled: there are no open issues or pull requests proposing changes to them.
+4. There is demonstrated user demand for the function.
+5. It has sign-off from the transform processor code owners.
+
+The signature a function has at promotion is the signature it keeps, so any change to it must be made while the
+function is still experimental.
+
 ## Examples
 
 ### Perform transformation if field does not exist
@@ -1134,9 +1161,11 @@ The feature is currently only available for log processing.
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
 
-### `ottl.set.allowNil`
+### `processor.transform.enableExperimentalFunctions`
 
-The `ottl.set.allowNil` [feature gate](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/documentation.md) changes the behavior of the OTTL `set` function when a `nil` value is evaluated. When enabled, `set` will pass the `nil` value directly to the target. Depending on the target, this may result in an error or an empty value. See the [OTTL Documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) for full details and migration instructions.
+The `processor.transform.enableExperimentalFunctions` feature gate allows statements and conditions to use the processor's [experimental functions](#function-stability). When disabled (the default), using an experimental function fails at startup.
+
+Run collector: `./otelcol --config config.yaml --feature-gates=processor.transform.enableExperimentalFunctions`
 
 ## Compatibility
 

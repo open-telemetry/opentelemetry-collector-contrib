@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ProcessorTransformEnableExperimentalFunctionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.transform.enableExperimentalFunctions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Allow the transform processor's experimental functions to be used in statements and conditions. When disabled, experimental functions are rejected."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47306"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var ProcessorTransformEnableProfileStatementsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.transform.enableProfileStatements",
 	featuregate.StageAlpha,
