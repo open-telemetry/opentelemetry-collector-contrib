@@ -346,6 +346,7 @@ type replicaStatusStats struct {
 	parallelMode                string
 	replicateDoDomainIDs        string
 	replicateIgnoreDomainIDs    string
+	connectsTried               int64
 }
 
 type querySample struct {
@@ -990,8 +991,10 @@ func (c *mySQLClient) getReplicaStatusStats(supportsReplicaStatus bool) ([]repli
 				dest = append(dest, &s.replicateDoDomainIDs)
 			case "replicate_ignore_domain_ids":
 				dest = append(dest, &s.replicateIgnoreDomainIDs)
+			case "connects_tried":
+				dest = append(dest, &s.connectsTried)
 			default:
-				return nil, fmt.Errorf("unknown column name %s for replica status", col)
+				dest = append(dest, new(any))
 			}
 		}
 		err := rows.Scan(dest...)

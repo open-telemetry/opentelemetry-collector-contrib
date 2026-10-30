@@ -6,6 +6,7 @@ package mysqlreceiver
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
@@ -451,6 +452,190 @@ func TestGetReplicaStatusStatsNormalizesColumnSpellings(t *testing.T) {
 			assert.Equal(t, tt.wantChannelName, got[0].channelName)
 		})
 	}
+}
+
+func TestGetReplicaStatusStats_CompatibilityAndRegression(t *testing.T) {
+	tests := []struct {
+		name                  string
+		supportsReplicaStatus bool
+		query                 string
+		columns               []string
+		values                []driver.Value
+		wantStats             replicaStatusStats
+		wantErr               bool
+	}{
+		{
+			name:                  "MariaDB 12.3 with Connects_Tried",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns: []string{
+				"Slave_IO_Running", "Slave_SQL_Running", "Seconds_Behind_Master",
+				"SQL_Delay", "Channel_Name", "Connects_Tried",
+			},
+			values: []driver.Value{
+				"Yes", "Yes", int64(15), int64(30), "mariadb12_chan", int64(3),
+			},
+			wantStats: replicaStatusStats{
+				replicaIORunning:    "Yes",
+				replicaSQLRunning:   "Yes",
+				secondsBehindSource: sql.NullInt64{Int64: 15, Valid: true},
+				sqlDelay:            30,
+				channelName:         "mariadb12_chan",
+				connectsTried:       3,
+			},
+		},
+		{
+			name:                  "MariaDB 11.8 without Connects_Tried",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns: []string{
+				"Slave_IO_Running", "Slave_SQL_Running", "Seconds_Behind_Master",
+				"SQL_Delay", "Channel_Name",
+			},
+			values: []driver.Value{
+				"Yes", "No", int64(0), int64(10), "mariadb11_chan",
+			},
+			wantStats: replicaStatusStats{
+				replicaIORunning:    "Yes",
+				replicaSQLRunning:   "No",
+				secondsBehindSource: sql.NullInt64{Int64: 0, Valid: true},
+				sqlDelay:            10,
+				channelName:         "mariadb11_chan",
+				connectsTried:       0,
+			},
+		},
+		{
+			name:                  "MySQL 8.4 replica status",
+			supportsReplicaStatus: true,
+			query:                 "SHOW REPLICA STATUS",
+			columns: []string{
+				"Replica_IO_Running", "Replica_SQL_Running", "Seconds_Behind_Source",
+				"SQL_Delay", "Channel_Name",
+			},
+			values: []driver.Value{
+				"Yes", "Yes", int64(45), int64(0), "mysql84_chan",
+			},
+			wantStats: replicaStatusStats{
+				replicaIORunning:    "Yes",
+				replicaSQLRunning:   "Yes",
+				secondsBehindSource: sql.NullInt64{Int64: 45, Valid: true},
+				sqlDelay:            0,
+				channelName:         "mysql84_chan",
+			},
+		},
+		{
+			name:                  "MariaDB 12.3 with extra unknown columns safely ignored",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns: []string{
+				"Slave_IO_Running", "Slave_SQL_Running", "Seconds_Behind_Master",
+				"SQL_Delay", "Connects_Tried", "Unknown_Future_String_Col",
+				"Unknown_Future_Int_Col", "Unknown_Future_Null_Col",
+			},
+			values: []driver.Value{
+				"Yes", "Yes", int64(5), int64(0), int64(1), "extra_str", int64(1234), nil,
+			},
+			wantStats: replicaStatusStats{
+				replicaIORunning:    "Yes",
+				replicaSQLRunning:   "Yes",
+				secondsBehindSource: sql.NullInt64{Int64: 5, Valid: true},
+				sqlDelay:            0,
+				connectsTried:       1,
+			},
+		},
+		{
+			name:                  "Reordered columns preserved correctly",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns: []string{
+				"Connects_Tried", "SQL_Delay", "Slave_SQL_Running",
+				"Channel_Name", "Slave_IO_Running", "Seconds_Behind_Master",
+			},
+			values: []driver.Value{
+				int64(7), int64(120), "Yes", "reordered_chan", "No", int64(99),
+			},
+			wantStats: replicaStatusStats{
+				replicaIORunning:    "No",
+				replicaSQLRunning:   "Yes",
+				secondsBehindSource: sql.NullInt64{Int64: 99, Valid: true},
+				sqlDelay:            120,
+				channelName:         "reordered_chan",
+				connectsTried:       7,
+			},
+		},
+		{
+			name:                  "Malformed data in recognized column produces scan error",
+			supportsReplicaStatus: false,
+			query:                 "SHOW SLAVE STATUS",
+			columns: []string{
+				"Slave_IO_Running", "SQL_Delay",
+			},
+			values: []driver.Value{
+				"Yes", "not-a-valid-int",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			mock.ExpectQuery(regexp.QuoteMeta(tt.query)).
+				WillReturnRows(sqlmock.NewRows(tt.columns).AddRow(tt.values...))
+
+			c := &mySQLClient{client: db}
+			got, err := c.getReplicaStatusStats(tt.supportsReplicaStatus)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
+			require.Len(t, got, 1)
+
+			assert.Equal(t, tt.wantStats.replicaIORunning, got[0].replicaIORunning)
+			assert.Equal(t, tt.wantStats.replicaSQLRunning, got[0].replicaSQLRunning)
+			assert.Equal(t, tt.wantStats.secondsBehindSource, got[0].secondsBehindSource)
+			assert.Equal(t, tt.wantStats.sqlDelay, got[0].sqlDelay)
+			assert.Equal(t, tt.wantStats.channelName, got[0].channelName)
+			assert.Equal(t, tt.wantStats.connectsTried, got[0].connectsTried)
+		})
+	}
+}
+
+func TestGetReplicaStatusStats_EmptyAndError(t *testing.T) {
+	t.Run("empty result when not configured as replica", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		mock.ExpectQuery(regexp.QuoteMeta("SHOW SLAVE STATUS")).
+			WillReturnRows(sqlmock.NewRows([]string{"Slave_IO_Running", "Slave_SQL_Running"}))
+
+		c := &mySQLClient{client: db}
+		got, err := c.getReplicaStatusStats(false)
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+		assert.Empty(t, got)
+	})
+
+	t.Run("query error propagated", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+
+		mock.ExpectQuery(regexp.QuoteMeta("SHOW SLAVE STATUS")).
+			WillReturnError(errors.New("connection failed"))
+
+		c := &mySQLClient{client: db}
+		got, err := c.getReplicaStatusStats(false)
+		require.Error(t, err)
+		assert.Nil(t, got)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
 }
 
 func TestGetInnodbTransactionStats(t *testing.T) {
