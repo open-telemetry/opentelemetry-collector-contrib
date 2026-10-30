@@ -76,7 +76,7 @@ func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error
 
 	// Process the fields for numerical values (convenient to parse from string)
 	var clientPort string
-	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[2]); err != nil {
+	if record.ClientIP, clientPort, err = splitHostPort(fields[2]); err != nil {
 		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[2], err)
 	}
 	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
@@ -86,7 +86,7 @@ func convertTextToCLBAccessLogRecord(fields []string) (CLBAccessLogRecord, error
 	// Parse BackendIPPort into BackendIP and BackendPort
 	if record.BackendIPPort != unknownField {
 		var backendPort string
-		if record.BackendIP, backendPort, err = net.SplitHostPort(record.BackendIPPort); err != nil {
+		if record.BackendIP, backendPort, err = splitHostPort(record.BackendIPPort); err != nil {
 			return record, fmt.Errorf("could not parse backend IP:Port %s: %w", record.BackendIPPort, err)
 		}
 		if record.BackendPort, err = safeConvertStrToInt(backendPort); err != nil {
@@ -196,7 +196,7 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 
 	// Processing additional fields if applicable
 	var clientPort string
-	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[5]); err != nil {
+	if record.ClientIP, clientPort, err = splitHostPort(fields[5]); err != nil {
 		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[5], err)
 	}
 	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
@@ -204,7 +204,7 @@ func convertTextToNLBAccessLogRecord(fields []string) (NLBAccessLogRecord, error
 	}
 
 	var destinationPort string
-	if record.DestinationIP, destinationPort, err = net.SplitHostPort(fields[6]); err != nil {
+	if record.DestinationIP, destinationPort, err = splitHostPort(fields[6]); err != nil {
 		return record, fmt.Errorf("could not parse destination IP:Port %s: %w", fields[6], err)
 	}
 	if record.DestinationPort, err = safeConvertStrToInt(destinationPort); err != nil {
@@ -322,7 +322,7 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 		record.RequestTransformStatus = fields[32]
 	}
 	var clientPort string
-	if record.ClientIP, clientPort, err = net.SplitHostPort(fields[3]); err != nil {
+	if record.ClientIP, clientPort, err = splitHostPort(fields[3]); err != nil {
 		return record, fmt.Errorf("could not parse client IP:Port %s: %w", fields[3], err)
 	}
 	if record.ClientPort, err = safeConvertStrToInt(clientPort); err != nil {
@@ -332,7 +332,7 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 	// Parse TargetIPPort into TargetIP and TargetPort
 	if record.TargetIPPort != unknownField {
 		var targetPort string
-		if record.TargetIP, targetPort, err = net.SplitHostPort(record.TargetIPPort); err != nil {
+		if record.TargetIP, targetPort, err = splitHostPort(record.TargetIPPort); err != nil {
 			return record, fmt.Errorf("could not parse target IP:Port %s: %w", record.TargetIPPort, err)
 		}
 		if record.TargetPort, err = safeConvertStrToInt(targetPort); err != nil {
@@ -355,6 +355,19 @@ func convertTextToALBAccessLogRecord(fields []string) (ALBAccessLogRecord, error
 	}
 
 	return record, nil
+}
+
+// splitHostPort splits a "host:port" field, accepting unbracketed IPv6 hosts
+// as emitted by AWS ELB access logs (e.g. "2001:db8::1:20381").
+func splitHostPort(hostPort string) (host, port string, err error) {
+	if host, port, err = net.SplitHostPort(hostPort); err == nil {
+		return host, port, nil
+	}
+	i := strings.LastIndex(hostPort, ":")
+	if i < 0 {
+		return "", "", err
+	}
+	return hostPort[:i], hostPort[i+1:], nil
 }
 
 func safeConvertStrToInt(stringNum string) (int64, error) {
