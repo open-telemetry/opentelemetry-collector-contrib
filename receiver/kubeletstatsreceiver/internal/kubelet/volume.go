@@ -29,6 +29,10 @@ func setResourcesFromVolume(rb *metadata.ResourceBuilder, volume *v1.Volume) {
 		rb.SetK8sVolumeType(labelValueDownwardAPIVolume)
 	case volume.EmptyDir != nil:
 		rb.SetK8sVolumeType(labelValueEmptyDirVolume)
+	case volume.Ephemeral != nil:
+		rb.SetK8sVolumeType(labelValueEphemeralVolume)
+	case volume.Projected != nil:
+		rb.SetK8sVolumeType(labelValueProjectedVolume)
 	case volume.Secret != nil:
 		rb.SetK8sVolumeType(labelValueSecretVolume)
 	case volume.PersistentVolumeClaim != nil:
