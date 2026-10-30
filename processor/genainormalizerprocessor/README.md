@@ -21,6 +21,7 @@ The GenAI Normalizer Processor rewrites attributes on spans emitted by non-OTel 
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
 - `openllmetry` — [OpenLLMetry (Traceloop)](https://github.com/traceloop/openllmetry) instrumentation
+- `spring_ai` — [Spring AI](https://github.com/spring-projects/spring-ai) observations exported through the Micrometer tracing bridge
 
 Any other `name` is a [user-defined source](#user-defined-sources): the entry's `mappings` and `value_mappings` drive the normalization.
 
@@ -37,7 +38,7 @@ Each entry in `sources` accepts the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `name` | string | _required_ | Source identifier. Built-in names (`openinference`, `openllmetry`) use pre-defined mapping tables. Any other name is a user-defined source. Names must be unique across `sources`. |
+| `name` | string | _required_ | Source identifier. Built-in names (`openinference`, `openllmetry`, `spring_ai`) use pre-defined mapping tables. Any other name is a user-defined source. Names must be unique across `sources`. |
 | `remove_originals` | bool | `false` | Delete source attributes after mapping. |
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists. When `false`, skip the mapping. |
 | `mappings` | map\[string]string | _required for user-defined sources, rejected on built-ins_ | Source-attribute → target-attribute rename table. See [User-defined sources](#user-defined-sources). |
@@ -147,7 +148,7 @@ processors:
 
 ## User-defined sources
 
-Any `name` that is not a built-in (`openinference`, `openllmetry`) is a user-defined source. The entry's `mappings` and `value_mappings` drive the normalization. User-defined sources reuse the same `remove_originals`, `overwrite`, and type-coercion semantics as the built-in sources.
+Any `name` that is not a built-in (`openinference`, `openllmetry`, `spring_ai`) is a user-defined source. The entry's `mappings` and `value_mappings` drive the normalization. User-defined sources reuse the same `remove_originals`, `overwrite`, and type-coercion semantics as the built-in sources.
 
 | Field | Type | Description |
 |---|---|---|
@@ -330,6 +331,34 @@ OpenLLMetry instrumentation typically emits one of each collision pair (`llm.res
 
 See [`internal/openllmetry/mappings.go`](./internal/openllmetry/mappings.go) for the canonical map. Source reference: [OpenLLMetry semantic conventions](https://github.com/traceloop/openllmetry/blob/1ebfd1b77cfcfede74a40f28dbb0d9709bcff365/packages/opentelemetry-semantic-conventions-ai/opentelemetry/semconv_ai/__init__.py).
 
+### `spring_ai`
+
+Spring AI writes most `gen_ai.*` attributes under their OTel names already, but the Micrometer tracing bridge records every value as a string.
+
+Attribute renames:
+
+| Source attribute | Target attribute | Notes |
+|---|---|---|
+| `spring.ai.tool.definition.name` | `gen_ai.tool.name` | |
+| `spring.ai.tool.definition.description` | `gen_ai.tool.description` | |
+| `spring.ai.tool.type` | `gen_ai.tool.type` | |
+| `spring.ai.tool.call.id` | `gen_ai.tool.call.id` | |
+| `spring.ai.tool.call.arguments` | `gen_ai.tool.call.arguments` | |
+| `spring.ai.tool.call.result` | `gen_ai.tool.call.result` | |
+| `spring.ai.chat.client.conversation.id` | `gen_ai.conversation.id` | only present when the application passes `ChatMemory.CONVERSATION_ID` |
+| `gen_ai.request.embedding.dimensions` | `gen_ai.embeddings.dimension.count` | parsed as int |
+
+In-place changes:
+
+- String values of `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_creation.input_tokens` and `gen_ai.request.max_tokens` are parsed as int, and `gen_ai.request.temperature`, `top_p`, `top_k`, `frequency_penalty` and `presence_penalty` as double. `gen_ai.request.stream` is parsed as bool. Unparsable values are left unchanged.
+- `gen_ai.response.finish_reasons` and `gen_ai.request.stop_sequences` arrive as a string such as `["stop", "tool_use"]`, with each element quoted but not escaped, and are split into a `string[]` with the elements unchanged. An element that itself contains `", "` is split in two. A value not in this shape is wrapped into a single-element `string[]`.
+- `gen_ai.system` is copied to `gen_ai.provider.name`, except for `spring_ai`, which Spring AI sets on its own chat client, advisor and tool spans. `bedrock_converse`, `vertex_ai` and `google_genai` become `aws.bedrock`, `gcp.vertex_ai` and `gcp.gen_ai`. With `remove_originals`, `gen_ai.system` is removed once copied.
+- For `gen_ai.system` `anthropic`, the cache read and cache creation tokens are added to `gen_ai.usage.input_tokens`. Spring AI reports Anthropic's count, which excludes them, while the semantic conventions include them. This only happens while `input_tokens` is still a string, so a span is not counted twice.
+
+Spring AI's `framework` operation name on chat client and advisor spans has no OTel counterpart and passes through unchanged.
+
+See [`internal/springai`](./internal/springai) for the implementation. Source reference: [Spring AI tool observations](https://github.com/spring-projects/spring-ai/tree/cba03cdd219d9ee45d30c691349bfc733f6d1110/spring-ai-model/src/main/java/org/springframework/ai/tool/observation).
+
 ### Value transformations
 
 When a built-in mapping lands on `gen_ai.operation.name`, the string value is normalized to the OTel GenAI enum. Built-in lookups are case-insensitive; user-defined `value_mappings` are exact-match.
@@ -352,6 +381,7 @@ When a built-in mapping lands on `gen_ai.operation.name`, the string value is no
 | `openllmetry` | `llm.request.type` | `chat` | `chat` |
 | `openllmetry` | `llm.request.type` | `rerank` | `retrieval` |
 | `openllmetry` | `llm.request.type` | `embedding` | `embeddings` |
+| `spring_ai` | `gen_ai.operation.name` | `embedding` | `embeddings` |
 
 When a mapped attribute lands on `gen_ai.response.finish_reasons` with a string source value, the value is wrapped into a single-element `string[]` to match the OTel GenAI spec type.
 

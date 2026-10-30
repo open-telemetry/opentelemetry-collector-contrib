@@ -19,6 +19,11 @@ gen_ai_normalizer/openllmetry_only:
   sources:
     - name: openllmetry
 
+# Sources with only spring_ai defaults.
+gen_ai_normalizer/spring_ai_only:
+  sources:
+    - name: spring_ai
+
 # Both sources, applied in listed order.
 gen_ai_normalizer/openinference_and_openllmetry:
   sources:
