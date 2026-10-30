@@ -49,7 +49,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	if e.cfg.shouldCreateSchema() {
 		database := e.cfg.database()
 		clusterStr := e.cfg.clusterString()
-		if err := internal.CreateDatabase(ctx, e.db, database, clusterStr); err != nil {
+		if err := internal.CreateDatabase(ctx, e.db, database, clusterStr, e.cfg.databaseEngineString()); err != nil {
 			return err
 		}
 
