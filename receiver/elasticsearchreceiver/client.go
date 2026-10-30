@@ -87,7 +87,7 @@ var es7_9 = func() *version.Version {
 const (
 	// A comma separated list of metrics that will be gathered from NodeStats.
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-stats.html#cluster-nodes-stats-api-path-params
-	defaultNodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,ingest,indices,adaptive_selection,discovery,script,os"
+	defaultNodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,ingest,discovery,script,os"
 
 	// Extra NodeStats Metrics that are only supported on and after 7.9
 	nodeStatsMetricsAfter7_9 = ",indexing_pressure"
