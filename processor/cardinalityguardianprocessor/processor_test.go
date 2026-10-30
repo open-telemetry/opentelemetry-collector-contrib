@@ -628,46 +628,40 @@ func TestCardinalityProcessor_EpochRotation(t *testing.T) {
 	// Manually trigger a rotation to hit the coverage branch
 	p.rotate()
 
-	// Re-lock to check the flip occurred safely
+	// Re-lock to check the window advanced safely
 	shard.mu.RLock()
-	require.NotNil(t, tracker.previous)
+	require.NotNil(t, tracker.window)
 	shard.mu.RUnlock()
 }
 
-func TestTrackerRotateReusesPreviousSketch(t *testing.T) {
+func TestTrackerRotateSwapsWindowAndCurrent(t *testing.T) {
+	const noLimit = ^uint64(0)
 	tracker := newTracker()
-	tracker.insert(1)
-	tracker.insert(2)
+	tracker.insert(rotationBenchmarkHash(0, 1), noLimit)
+	tracker.insert(rotationBenchmarkHash(0, 2), noLimit)
 
-	oldCurrent := tracker.current
-	oldPrevious := tracker.previous
+	oldCurrent, oldWindow := tracker.current, tracker.window
+	require.False(t, tracker.rotate())
+	require.Same(t, oldCurrent, tracker.window)
+	require.Same(t, oldWindow, tracker.current)
+	require.Zero(t, tracker.current.Estimate())
+	require.True(t, tracker.needBaseline)
 
-	idle := tracker.rotate()
-
-	require.False(t, idle)
-	require.Same(t, oldPrevious, tracker.current)
-	require.Same(t, oldCurrent, tracker.previous)
-
+	// The first insert of the new epoch snapshots the baseline (2) before
+	// adding. A value from the previous epoch adds nothing; a new one grows
+	// the window by one.
+	tracker.insert(rotationBenchmarkHash(0, 1), noLimit)
+	require.Equal(t, uint64(2), tracker.cachedPrevEpoch)
+	tracker.insert(rotationBenchmarkHash(0, 3), noLimit)
 	tracker.mu.Lock()
-	currentEstimate := tracker.current.Estimate()
-	previousEstimate := tracker.previous.Estimate()
-	cachedCurrent := tracker.cachedCurr
-	cachedPrevious := tracker.cachedPrev
-	insertCount := tracker.insertCount
+	window := tracker.window.Estimate()
 	tracker.mu.Unlock()
-
-	require.Zero(t, currentEstimate)
-	require.GreaterOrEqual(t, previousEstimate, uint64(2))
-	require.Zero(t, cachedCurrent)
-	require.GreaterOrEqual(t, cachedPrevious, uint64(2))
-	require.Zero(t, insertCount)
-
-	curr, prev := tracker.insert(3)
-	require.GreaterOrEqual(t, curr, uint64(1))
-	require.GreaterOrEqual(t, prev, uint64(2))
+	require.Equal(t, uint64(3), window)
+	require.Equal(t, uint64(2), tracker.cachedPrevEpoch)
 }
 
 func TestTrackerRotateAcrossEpochs(t *testing.T) {
+	const noLimit = ^uint64(0)
 	for _, test := range []struct {
 		name            string
 		insertCount     int
@@ -675,45 +669,37 @@ func TestTrackerRotateAcrossEpochs(t *testing.T) {
 		wantReplacement bool
 	}{
 		{name: "sparse", insertCount: 32},
-		{name: "sparse_bound", insertCount: maxSparseSketchInsertCount},
-		{name: "above_sparse_bound", insertCount: maxSparseSketchInsertCount + 1, wantReplacement: true},
+		{name: "sparse_bound", insertCount: maxSparseSketchEntries},
+		{name: "above_sparse_bound", insertCount: maxSparseSketchEntries + 1, wantReplacement: true},
 		{name: "dense", insertCount: 10000, wantDense: true, wantReplacement: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tracker := newTracker()
 			for value := range test.insertCount {
-				tracker.insert(rotationBenchmarkHash(0, value))
+				tracker.insert(rotationBenchmarkHash(0, value), noLimit)
 			}
-			verifyRotationBenchmarkSketch(t, tracker.current, test.wantDense)
-			oldCurrent := tracker.current
-			oldPrevious := tracker.previous
-			cachedCurrent := tracker.cachedCurr
+			verifyRotationBenchmarkSketch(t, tracker.window, test.wantDense)
+			epoch1Window := tracker.window
 
-			require.False(t, tracker.rotate())
-			require.Same(t, oldCurrent, tracker.previous)
-			require.Same(t, oldPrevious, tracker.current)
-			require.Equal(t, cachedCurrent, tracker.cachedPrev)
-			require.Zero(t, tracker.current.Estimate())
-
-			// The first epoch's count must follow its sketch into previous so
-			// the second rotation can decide whether to reuse or replace it.
-			tracker.insert(rotationBenchmarkHash(1, 0))
 			require.False(t, tracker.rotate())
 			if test.wantReplacement {
-				require.NotSame(t, oldCurrent, tracker.current)
+				require.NotSame(t, epoch1Window, tracker.current)
 			} else {
-				require.Same(t, oldCurrent, tracker.current)
+				require.Same(t, epoch1Window, tracker.current)
 			}
 			verifyRotationBenchmarkSketch(t, tracker.current, false)
-			require.Zero(t, tracker.current.Estimate())
-			require.Zero(t, tracker.cachedCurr)
-			require.Same(t, oldPrevious, tracker.previous)
-			require.Equal(t, uint64(1), tracker.previous.Estimate())
-			require.Equal(t, uint64(1), tracker.cachedPrev)
 
-			// A quiet epoch must still be reusable after a busy one.
+			// Epoch 2: one new value, then rotation 2 makes it the baseline.
+			tracker.insert(rotationBenchmarkHash(1, 0), noLimit)
+			require.InDelta(t, test.insertCount, tracker.cachedPrevEpoch, float64(test.insertCount)/50+1)
+			require.False(t, tracker.rotate())
+			tracker.insert(rotationBenchmarkHash(2, 0), noLimit)
+			require.Equal(t, uint64(1), tracker.cachedPrevEpoch)
+			verifyRotationBenchmarkSketch(t, tracker.current, false)
+
+			// A quiet epoch must still rotate cleanly after a busy one.
+			require.False(t, tracker.rotate())
 			require.True(t, tracker.rotate())
-			require.Same(t, oldPrevious, tracker.current)
 			require.Zero(t, tracker.current.Estimate())
 		})
 	}
@@ -884,8 +870,8 @@ func TestCollectShardDeltas_Disabled(t *testing.T) {
 		{key: trackerKey{metricName: "m", attrKey: "k"}, t: newTracker()},
 	}
 	// Simulate some growth on the tracker.
-	entries[0].t.cachedCurr = 100
-	entries[0].t.cachedPrev = 0
+	entries[0].t.cachedWindow = 100
+	entries[0].t.cachedPrevEpoch = 0
 
 	result := collectShardDeltas(entries, nil, 0)
 	assert.Nil(t, result, "collectShardDeltas must return nil when topN=0")
@@ -1274,9 +1260,9 @@ func TestDropLogSampling_ResetOnRotate(t *testing.T) {
 	// Rotate epoch — counters should reset
 	p.rotate()
 
-	// Fill epoch 2 — must re-send baseline (0-19) plus new values (20-39)
-	// so the HLL accurately calculates the delta growth over the baseline.
-	for i := range 40 {
+	// Fill epoch 2 with only new values (20-39); growth over epoch 1 is
+	// visible without re-sending epoch 1's values.
+	for i := 20; i < 40; i++ {
 		attrs := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 		attrs.PutStr("label_key", fmt.Sprintf("value_%d", i))
 		p.handleAttributes("test.metric", attrs)
