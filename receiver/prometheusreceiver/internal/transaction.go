@@ -561,7 +561,7 @@ func (t *transaction) initTransaction(lbs labels.Labels) (resourceKey, error) {
 		t.mc = emptyMetadataStoreInstance
 	}
 
-	t.nodeResources[rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
+	t.nodeResources[rKey] = CreateResource(rKey.job, rKey.instance, target.URL(), target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
 
 	t.isNew = false
 	return rKey, nil
