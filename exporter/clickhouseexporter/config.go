@@ -306,6 +306,27 @@ func (cfg *Config) tableEngineString() string {
 	return fmt.Sprintf("%s(%s)", engine, params)
 }
 
+// traceIDTsTableEngine generates the ENGINE string for the trace ID timestamp lookup table,
+// preferring an aggregating engine so rows with the same TraceId collapse during merges.
+// The returned bool reports whether the engine is aggregating; non-aggregating engines
+// (e.g. ReplacingMergeTree) must keep Start in the sorting key to avoid losing rows.
+func (cfg *Config) traceIDTsTableEngine() (string, bool) {
+	engine := cfg.TableEngine.Name
+	params := cfg.TableEngine.Params
+
+	switch engine {
+	case "":
+		engine = "AggregatingMergeTree"
+		params = ""
+	case defaultTableEngineName:
+		engine = "AggregatingMergeTree"
+	case "ReplicatedMergeTree":
+		engine = "ReplicatedAggregatingMergeTree"
+	}
+
+	return fmt.Sprintf("%s(%s)", engine, params), strings.HasSuffix(engine, "AggregatingMergeTree")
+}
+
 // databaseEngineString generates the ENGINE clause for creating the database. Returns empty string if not set.
 func (cfg *Config) databaseEngineString() string {
 	if cfg.DatabaseEngine.Name == "" {
