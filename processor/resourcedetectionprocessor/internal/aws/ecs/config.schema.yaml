@@ -1,4 +1,8 @@
 type: object
 properties:
+  ec2_metadata:
+    type: boolean
+    default: false
+    description: Enrich EC2 tasks with host metadata using the ECS and EC2 APIs.
   resource_attributes:
     $ref: ./internal/metadata.resource_attributes_config
