@@ -12,6 +12,7 @@ kafka/full:
   max_fetch_wait: 1s
   max_partition_fetch_size: 4096
   max_decompress_batch_bytes: 536870912
+  on_decompress_too_large: skip
 
 kafka/group_rebalance_strategies:
   group_rebalance_strategies:
@@ -20,6 +21,16 @@ kafka/group_rebalance_strategies:
 kafka/zero_min_fetch_size:
   min_fetch_size: 0
   max_fetch_size: 1048576
+
+# On-decompress actions
+kafka/on_decompress_too_large_stall:
+  on_decompress_too_large: stall
+kafka/on_decompress_too_large_skip:
+  on_decompress_too_large: skip
+kafka/on_decompress_too_large_fatal:
+  on_decompress_too_large: fatal
+kafka/invalid_on_decompress_too_large:
+  on_decompress_too_large: ignore
 
 # Invalid configurations
 kafka/invalid_initial_offset:
