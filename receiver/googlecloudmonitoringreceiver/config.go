@@ -29,6 +29,14 @@ type Config struct {
 	// See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
 	UniverseDomain string         `mapstructure:"universe_domain"`
 	MetricsList    []MetricConfig `mapstructure:"metrics_list"`
+	// CompensateIngestDelay shifts each datapoint's timestamps forward by the
+	// metric's ingest delay (MetricDescriptor.metadata.ingest_delay), so samples
+	// carry the wall-clock time they became available rather than the
+	// source-observation time. This makes metrics immediately queryable at "now"
+	// by downstream consumers that evaluate against the current time (recording
+	// rules, alerting), at the cost of timestamps no longer matching the exact
+	// observation time in GCP. Defaults to false (source-true timestamps).
+	CompensateIngestDelay bool `mapstructure:"compensate_ingest_delay"`
 }
 
 type MetricConfig struct {
