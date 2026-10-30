@@ -785,6 +785,15 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  sqlserver.database.file.size:
+    enabled: false
+    description: Size of database files.
+    stability: development
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [file_type, db.namespace]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.full_scan.rate:
     enabled: false
     description: The number of unrestricted full table or index scans.
@@ -847,6 +856,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.database.transactions.active:
+    enabled: false
+    description: Number of active transactions in the database.
+    stability: development
+    unit: "{transactions}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.deadlock.rate:
     enabled: false
     description: Total number of deadlocks.

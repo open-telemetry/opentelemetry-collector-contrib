@@ -267,6 +267,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordTempDBContentionMetrics(ctx)
 	case getSQLServerTempDBFileQuery():
 		err = s.recordTempDBFileMetrics(ctx)
+	case getSQLServerDatabaseSizeQuery():
+		err = s.recordDatabaseSizeMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -904,6 +906,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const instanceKey = "instance"
 	// Constants are the columns for metrics from query
 	const activeTempTables = "Active Temp Tables"
+	const activeTransactions = "Active Transactions"
 	const autoParamAttemptsPerSec = "Auto-Param Attempts/sec"
 	const backupRestoreThroughputPerSec = "Backup/Restore Throughput/sec"
 	const batchRequestRate = "Batch Requests/sec"
@@ -1101,6 +1104,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverTableCountDataPoint(now, val.(int64), metadata.AttributeTableStateActive, metadata.AttributeTableStatusTemporary)
 			}
+		case activeTransactions:
+			errs = append(errs, s.mb.RecordSqlserverDatabaseTransactionsActiveDataPoint(now, row[valueKey]))
 		case autoParamAttemptsPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -2936,6 +2941,38 @@ func (s *sqlServerScraperHelper) recordTempDBFileMetrics(ctx context.Context) er
 			continue
 		}
 		errs = append(errs, s.mb.RecordSqlserverTempdbFileSizeDataPoint(now, row[sizeBytes], row[fileType], idVal.(int64)))
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseSizeMetrics(ctx context.Context) error {
+	const (
+		databaseName = "database_name"
+		fileType     = "file_type"
+		sizeBytes    = "size_bytes"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		val, parseErr := retrieveInt(row, sizeBytes)
+		if parseErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", sizeBytes, i, parseErr))
+			continue
+		}
+		s.mb.RecordSqlserverDatabaseFileSizeDataPoint(now, val.(int64), row[fileType], row[databaseName])
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
