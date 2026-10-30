@@ -66,4 +66,4 @@ OUTER APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
 OUTER APPLY sys.dm_exec_input_buffer(r.session_id, r.request_id) AS ib
 WHERE (o.TEXT IS NULL OR o.TEXT NOT LIKE N'/* otel-collector */%')
 	AND (ib.event_info IS NULL OR ib.event_info NOT LIKE N'/* otel-collector */%')
-	AND r.session_id != @@SPID;
+	AND r.session_id != @@SPID{database_filter AND DB_NAME(r.database_id)};
