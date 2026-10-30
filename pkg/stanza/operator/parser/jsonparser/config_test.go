@@ -118,6 +118,14 @@ func TestConfig(t *testing.T) {
 					return p
 				}(),
 			},
+			{
+				Name: "drop_field",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.DropField = true
+					return p
+				}(),
+			},
 		},
 	}.Run(t)
 }
