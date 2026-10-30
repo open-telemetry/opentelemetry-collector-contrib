@@ -146,7 +146,7 @@ func testTransactionAppendResource(t *testing.T) {
 	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "localhost:8080", nil, labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -175,8 +175,8 @@ func testTransactionAppendMultipleResources(t *testing.T) {
 	assert.NoError(t, tr.Commit())
 
 	expectedResources := []pcommon.Resource{
-		CreateResource("test-1", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
-		CreateResource("test-2", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
+		CreateResource("test-1", "localhost:8080", nil, labels.FromStrings(model.SchemeLabel, "http")),
+		CreateResource("test-2", "localhost:8080", nil, labels.FromStrings(model.SchemeLabel, "http")),
 	}
 
 	mds := sink.AllMetrics()
@@ -215,7 +215,7 @@ func testReceiverVersionAndNameAreAttached(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
 
-	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "localhost:8080", nil, labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -357,7 +357,7 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "localhost:8080", nil, labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -582,7 +582,7 @@ func TestAppendSTZeroSample(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "0.0.0.0:8855", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "0.0.0.0:8855", nil, labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -617,7 +617,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "0.0.0.0:8855", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "0.0.0.0:8855", nil, labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -2080,7 +2080,7 @@ func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
 	tr := newTxn(t, false)
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	// Prime nodeResources
-	tr.nodeResources[rk] = CreateResource(rk.job, rk.instance, labels.FromStrings(model.SchemeLabel, "http"))
+	tr.nodeResources[rk] = CreateResource(rk.job, rk.instance, nil, labels.FromStrings(model.SchemeLabel, "http"))
 
 	ls := labels.FromStrings(
 		string(model.MetricNameLabel), "target_info",

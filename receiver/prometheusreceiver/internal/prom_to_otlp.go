@@ -5,11 +5,14 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"net"
+	"net/url"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 // isDiscernibleHost checks if a host can be used as a value for the 'server.address' key.
@@ -32,10 +35,19 @@ func isDiscernibleHost(host string) bool {
 }
 
 // CreateResource creates the resource data added to OTLP payloads.
-func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
-	host, port, err := net.SplitHostPort(instance)
-	if err != nil {
-		host = instance
+func CreateResource(job, instance string, targetURL *url.URL, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
+	var host, port string
+	var err error
+	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetURL != nil {
+		host, port, err = net.SplitHostPort(targetURL.Host)
+		if err != nil {
+			host = targetURL.Host
+		}
+	} else {
+		host, port, err = net.SplitHostPort(instance)
+		if err != nil {
+			host = instance
+		}
 	}
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
