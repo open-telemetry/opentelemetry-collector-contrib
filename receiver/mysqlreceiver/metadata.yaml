@@ -175,6 +175,10 @@ attributes:
   mysql.client.name:
     description: The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
     type: string
+  mysql.column.name:
+    description: The name of the table column.
+    type: string
+    requirement_level: recommended
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -950,6 +954,30 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
+  mysql.table.auto_increment.limit:
+    enabled: false
+    description: The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.usage:
+    enabled: false
+    description: The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.utilization:
+    enabled: false
+    description: The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
   mysql.table.average_row_length:
     enabled: false
     description: The average row length in bytes for a given table.

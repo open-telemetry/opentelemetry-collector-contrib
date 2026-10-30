@@ -60,6 +60,9 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableRows.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableAverageRowLength.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableSize.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementLimit.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUsage.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableAutoIncrementUtilization.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlClientNetworkIo.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
@@ -99,6 +102,7 @@ func TestScrape(t *testing.T) {
 			tableIoWaitsFile:            "table_io_waits_stats",
 			indexIoWaitsFile:            "index_io_waits_stats",
 			tableStatsFile:              "table_stats",
+			autoIncrementStatsFile:      "auto_increment_stats",
 			statementEventsFile:         "statement_events",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
@@ -1315,6 +1319,7 @@ type mockClient struct {
 	tableIoWaitsFile             string
 	indexIoWaitsFile             string
 	tableStatsFile               string
+	autoIncrementStatsFile       string
 	statementEventsFile          string
 	tableLockWaitEventStatsFile  string
 	replicaStatusFile            string
@@ -1342,6 +1347,7 @@ type mockClient struct {
 	// was not) invoked, independent of whether the underlying fixture file
 	// exists or parses successfully.
 	tableStatsCallCount         int
+	autoIncrementStatsCallCount int
 	statementEventsCallCount    int
 	tableLockWaitEventCallCount int
 	replicaStatusCallCount      int
@@ -1461,6 +1467,31 @@ func (c *mockClient) getTableStats() ([]tableStats, error) {
 		s.averageRowLength, _ = parseInt(text[3])
 		s.dataLength, _ = parseInt(text[4])
 		s.indexLength, _ = parseInt(text[5])
+
+		stats = append(stats, s)
+	}
+	return stats, nil
+}
+
+func (c *mockClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
+	c.autoIncrementStatsCallCount++
+	var stats []autoIncrementStats
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.autoIncrementStatsFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s autoIncrementStats
+		text := strings.Split(scanner.Text(), "\t")
+		s.schema = text[0]
+		s.table = text[1]
+		s.column = text[2]
+		s.currentValue, _ = strconv.ParseFloat(text[3], 64)
+		s.maxValue, _ = strconv.ParseFloat(text[4], 64)
+		s.utilizationRatio, _ = strconv.ParseFloat(text[5], 64)
 
 		stats = append(stats, s)
 	}
@@ -2756,6 +2787,12 @@ type queryGuardGroup struct {
 
 var queryGuardGroups = []queryGuardGroup{
 	{
+		name:      "autoIncrementStats",
+		fields:    []string{"MysqlTableAutoIncrementLimit", "MysqlTableAutoIncrementUsage", "MysqlTableAutoIncrementUtilization"},
+		guard:     (*mySQLScraper).autoIncrementStatsMetricsEnabled,
+		callCount: func(c *mockClient) int { return c.autoIncrementStatsCallCount },
+	},
+	{
 		name:      "tableStats",
 		fields:    []string{"MysqlTableRows", "MysqlTableAverageRowLength", "MysqlTableSize"},
 		guard:     (*mySQLScraper).tableStatsMetricsEnabled,
@@ -2826,6 +2863,7 @@ func newQueryGuardMockClient() *mockClient {
 		tableIoWaitsFile:            "table_io_waits_stats_empty",
 		indexIoWaitsFile:            "index_io_waits_stats_empty",
 		tableStatsFile:              "table_stats_empty",
+		autoIncrementStatsFile:      "auto_increment_stats_empty",
 		statementEventsFile:         "statement_events_empty",
 		tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 		replicaStatusFile:           "replica_stats_empty",

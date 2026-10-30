@@ -143,6 +143,15 @@ all_set:
     mysql.statement_event.wait.time:
       enabled: true
       attributes: ["schema","digest","digest_text"]
+    mysql.table.auto_increment.limit:
+      enabled: true
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.usage:
+      enabled: true
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.utilization:
+      enabled: true
+      attributes: ["table","schema","mysql.column.name"]
     mysql.table.average_row_length:
       enabled: true
       attributes: ["table","schema"]
@@ -351,6 +360,15 @@ reaggregate_set:
       enabled: true
       attributes: []
     mysql.statement_event.wait.time:
+      enabled: true
+      attributes: []
+    mysql.table.auto_increment.limit:
+      enabled: true
+      attributes: []
+    mysql.table.auto_increment.usage:
+      enabled: true
+      attributes: []
+    mysql.table.auto_increment.utilization:
       enabled: true
       attributes: []
     mysql.table.average_row_length:
@@ -563,6 +581,15 @@ none_set:
     mysql.statement_event.wait.time:
       enabled: false
       attributes: ["schema","digest","digest_text"]
+    mysql.table.auto_increment.limit:
+      enabled: false
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.usage:
+      enabled: false
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.utilization:
+      enabled: false
+      attributes: ["table","schema","mysql.column.name"]
     mysql.table.average_row_length:
       enabled: false
       attributes: ["table","schema"]
