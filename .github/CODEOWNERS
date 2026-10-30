@@ -294,6 +294,7 @@ receiver/faroreceiver/                                           @open-telemetry
 receiver/filelogreceiver/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @paulojmdias @VihasMakwana @braydonk
 receiver/filestatsreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                                   @open-telemetry/collector-contrib-approvers @JonathanWamsley @Abhimanyu9988
+receiver/fluentforwardreceiver/                                  @open-telemetry/collector-contrib-approvers @evan-bradley @dyl10s
 receiver/githubreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @crobert-1
 receiver/gitlabreceiver/                                         @open-telemetry/collector-contrib-approvers @adrielp @niwoerner
 receiver/gnmireceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme
@@ -415,7 +416,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 # Start unmaintained components list
 
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers
-receiver/fluentforwardreceiver/                                  @open-telemetry/collector-contrib-approvers
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers
 
 # End unmaintained components list
