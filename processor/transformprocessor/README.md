@@ -273,6 +273,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+- [convert_summary_to_histogram](#convert_summary_to_histogram)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
@@ -476,6 +477,49 @@ Examples:
 - `convert_summary_sum_val_to_sum("delta", true, ".sum")`
 
 - `convert_summary_sum_val_to_sum("cumulative", false, ".sum")`
+
+### convert_summary_to_histogram
+
+`convert_summary_to_histogram(aggregation_temporality, Optional[suffix])`
+
+The `convert_summary_to_histogram` function creates a new Histogram metric with a single bucket from a Summary.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the aggregation temporality of the new metric. Summaries carry no temporality, so choose the one that matches how the source reports them (cumulative for Prometheus summaries).
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_histogram`.
+
+The name for the new metric will be `<summary metric name><suffix>`. The fields that are copied are: `description`, `unit`, and for each data point `attributes`, `start_time_unix_nano`, `time_unix_nano`, `flags`, `count` and `sum`. The bucket counts are `[count]` with no explicit bounds, so the single bucket spans (-Inf, +Inf). The new metric that is created will be passed to all functions in the metrics statements list. Function conditions will apply.
+
+**NOTE:** The quantile values of the Summary are not carried over, because they cannot be represented in a Histogram. To keep them, use `convert_summary_quantile_val_to_gauge`. The `min` and `max` of the Histogram are not set.
+
+**NOTE:** The `sum` is copied as it is. The OTLP specification says `sum` should not be set when negative values are recorded, and this function cannot detect that case.
+
+**NOTE:** The Summary is not removed. To drop it, use the [filter processor](../filterprocessor/README.md) after the transform processor. If it runs first, the Summary is dropped before it can be converted.
+
+```yaml
+processors:
+  transform:
+    metric_statements:
+      - context: metric
+        statements:
+          - convert_summary_to_histogram("cumulative")
+  filter:
+    metrics:
+      metric:
+        - metric.type == METRIC_DATA_TYPE_SUMMARY
+
+service:
+  pipelines:
+    metrics:
+      processors: [transform, filter]
+```
+
+**NOTE:** The [cumulativetodelta processor](../cumulativetodeltaprocessor/README.md) does not convert Summaries. To get delta output from a cumulative source, use `"cumulative"` here and run the `cumulativetodelta` processor after the transform processor.
+
+Examples:
+
+- `convert_summary_to_histogram("cumulative")`
+
+- `convert_summary_to_histogram("delta", "_hist")`
 
 ### copy_metric
 
