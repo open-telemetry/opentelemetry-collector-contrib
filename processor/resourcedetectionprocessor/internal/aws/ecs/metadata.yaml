@@ -94,3 +94,27 @@ resource_attributes:
     description: The cloud.region
     type: string
     enabled: true
+  host.id:
+    semantic_convention:
+      ref: host.md#host-id
+    description: The host.id of the EC2 instance running the collector task.
+    type: string
+    enabled: true
+  host.image.id:
+    semantic_convention:
+      ref: host.md#host-image-id
+    description: The host.image.id of the EC2 instance running the collector task.
+    type: string
+    enabled: true
+  host.name:
+    semantic_convention:
+      ref: host.md#host-name
+    description: The host.name of the EC2 instance running the collector task.
+    type: string
+    enabled: true
+  host.type:
+    semantic_convention:
+      ref: host.md#host-type
+    description: The host.type of the EC2 instance running the collector task.
+    type: string
+    enabled: true

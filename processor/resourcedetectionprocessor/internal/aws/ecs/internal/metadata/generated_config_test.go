@@ -39,6 +39,10 @@ func TestResourceAttributesConfig(t *testing.T) {
 				CloudPlatform:         ResourceAttributeConfig{Enabled: true},
 				CloudProvider:         ResourceAttributeConfig{Enabled: true},
 				CloudRegion:           ResourceAttributeConfig{Enabled: true},
+				HostID:                ResourceAttributeConfig{Enabled: true},
+				HostImageID:           ResourceAttributeConfig{Enabled: true},
+				HostName:              ResourceAttributeConfig{Enabled: true},
+				HostType:              ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -59,6 +63,10 @@ func TestResourceAttributesConfig(t *testing.T) {
 				CloudPlatform:         ResourceAttributeConfig{Enabled: false},
 				CloudProvider:         ResourceAttributeConfig{Enabled: false},
 				CloudRegion:           ResourceAttributeConfig{Enabled: false},
+				HostID:                ResourceAttributeConfig{Enabled: false},
+				HostImageID:           ResourceAttributeConfig{Enabled: false},
+				HostName:              ResourceAttributeConfig{Enabled: false},
+				HostType:              ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
