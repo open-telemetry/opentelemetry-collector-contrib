@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -19,13 +18,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// consoleLinePrefixRegex matches zap's console encoding up through the message:
-// <ts> <level> [<caller>] <rest>. It deliberately stops there: a regex can't
-// tell whether a "{" starts real trailing JSON or is just message text, since
-// that requires tracking brace nesting and string literals. Splitting the
-// trailing JSON out of <rest> is handled structurally by
-// splitConsoleMessageAndFields.
-var consoleLinePrefixRegex = regexp.MustCompile(`^(\S+)\s+(\S+)\s+(?:(\S+:\d+)\s+)?(.*)$`)
+// consoleSeparator is zap's field separator for console encoding. It is a tab
+// and not a space, which is what makes the optional logger/caller fields
+// separable from message text that contains spaces.
+const consoleSeparator = "\t"
+
+// callerRegex matches zap's caller encoding, "<trimmed path>/<file>.go:<line>".
+// Matching on shape is needed because the caller field is optional and sits
+// directly in front of the message.
+var callerRegex = regexp.MustCompile(`^\S+\.go:\d+$`)
 
 // Parser is an operator that parses otelcol self-logs and promotes the resource field onto the entry's Resource.
 type Parser struct {
@@ -81,65 +82,73 @@ func parseJSONLine(line string) (map[string]any, error) {
 	return parsed, nil
 }
 
-// parseConsoleLine parses a line where ts/level/caller are plain text, followed
-// by a message that may or may not have structured JSON fields appended after it.
+// parseConsoleLine parses zap's console encoding, whose fields are laid out as
+//
+//	<ts> <level> [<logger>] [<caller>] <msg> [<fields>]
+//
+// separated by consoleSeparator, optionally followed by a stacktrace. Logger
+// and caller are absent when the logger is unnamed and when
+// service::telemetry::logs::disable_caller is set, so both are recognized by
+// position and shape rather than assumed to be there.
 func parseConsoleLine(line string) (map[string]any, error) {
-	match := consoleLinePrefixRegex.FindStringSubmatch(line)
-	if match == nil {
+	// The stacktrace is appended after the fields on its own lines, so it is
+	// only seen here when the entry was recombined upstream.
+	line, stacktrace, hasStacktrace := strings.Cut(line, "\n")
+
+	parts := strings.Split(line, consoleSeparator)
+	if len(parts) < 3 {
 		return nil, errors.New("line cannot be parsed as a console-encoded otelcol self-log")
 	}
 
-	msg, fields := splitConsoleMessageAndFields(match[4])
-
 	result := map[string]any{
-		"ts":    match[1],
-		"level": match[2],
-		"msg":   msg,
+		"ts":    parts[0],
+		"level": parts[1],
 	}
-	if caller := match[3]; caller != "" {
-		result["caller"] = caller
+	if hasStacktrace {
+		result["stacktrace"] = strings.TrimSpace(stacktrace)
 	}
-	maps.Copy(result, fields)
+
+	rest := parts[2:]
+	if len(rest) > 1 {
+		if fields, ok := decodeConsoleFields(rest[len(rest)-1]); ok {
+			maps.Copy(result, fields)
+			rest = rest[:len(rest)-1]
+		}
+	}
+
+	switch {
+	case len(rest) > 1 && callerRegex.MatchString(rest[0]):
+		result["caller"] = rest[0]
+		rest = rest[1:]
+	case len(rest) > 2 && callerRegex.MatchString(rest[1]):
+		result["logger"] = rest[0]
+		result["caller"] = rest[1]
+		rest = rest[2:]
+	case len(rest) > 1 && rest[0] != "" && !strings.Contains(rest[0], " "):
+		// Only reachable with disable_caller set and a named logger. A logger
+		// name never contains a space, a message that was split by a tab of
+		// its own almost always does.
+		result["logger"] = rest[0]
+		rest = rest[1:]
+	}
+
+	// A message containing consoleSeparator is spread over the remaining parts.
+	result["msg"] = strings.Join(rest, consoleSeparator)
 
 	return result, nil
 }
 
-// splitConsoleMessageAndFields separates a message from an optional trailing
-// JSON object, so that:
-//   - braces inside the message text (e.g. "pool {default} is missing") don't
-//     get mistaken for the start of structured fields, and
-//   - nested objects inside the real trailing fields (e.g. "resource":{...})
-//     are matched to their correct closing brace, not the first "}" found.
-func splitConsoleMessageAndFields(rest string) (msg string, fields map[string]any) {
-	rest = strings.TrimSpace(rest)
-
-	// Trailing fields are always last on the line, so without a closing brace
-	// there is nothing to find and the whole scan can be skipped.
-	if !strings.HasSuffix(rest, "}") {
-		return rest, nil
+// decodeConsoleFields reports whether the last console field is zap's
+// structured context object rather than the tail of the message.
+func decodeConsoleFields(field string) (map[string]any, bool) {
+	if !strings.HasPrefix(field, "{") || !strings.HasSuffix(field, "}") {
+		return nil, false
 	}
-
-	searchFrom := 0
-	for {
-		idx := strings.IndexByte(rest[searchFrom:], '{')
-		if idx == -1 {
-			break
-		}
-		idx += searchFrom
-
-		candidate := rest[idx:]
-		dec := json.NewDecoder(strings.NewReader(candidate))
-		var decoded map[string]any
-		if err := dec.Decode(&decoded); err == nil {
-			if strings.TrimSpace(candidate[dec.InputOffset():]) == "" {
-				return strings.TrimSpace(rest[:idx]), decoded
-			}
-		}
-
-		searchFrom = idx + 1
+	var fields map[string]any
+	if err := json.Unmarshal([]byte(field), &fields); err != nil {
+		return nil, false
 	}
-
-	return rest, nil
+	return fields, true
 }
 
 // postProcess promotes the ts, level, msg, and resource fields of a parsed otelcol self-log
@@ -171,29 +180,20 @@ func setTimestamp(e *entry.Entry, m map[string]any) error {
 		return nil
 	}
 
-	switch v := tsVal.(type) {
-	case string:
-		for _, layout := range []string{
-			time.RFC3339Nano,
-			time.RFC3339,
-			"2006-01-02T15:04:05.999Z0700",
-			"2006-01-02 15:04:05.999999999",
-		} {
-			if t, err := time.Parse(layout, v); err == nil {
-				e.Timestamp = t
-				delete(m, "ts")
-				return nil
-			}
-		}
-		return fmt.Errorf("timestamp parser: value %q did not match any known layout", v)
-	case float64:
-		sec, dec := math.Modf(v)
-		e.Timestamp = time.Unix(int64(sec), int64(math.Round(dec*1e6))*1e3)
-		delete(m, "ts")
-		return nil
-	default:
+	v, ok := tsVal.(string)
+	if !ok {
 		return fmt.Errorf("timestamp parser: unsupported type %T for \"ts\" field", tsVal)
 	}
+
+	// The collector pins zap to ISO8601 for both encodings, so this is the only
+	// layout a self-log can carry.
+	t, err := time.Parse("2006-01-02T15:04:05.999Z0700", v)
+	if err != nil {
+		return fmt.Errorf("timestamp parser: value %q is not an ISO8601 timestamp", v)
+	}
+	e.Timestamp = t
+	delete(m, "ts")
+	return nil
 }
 
 func setSeverity(e *entry.Entry, m map[string]any) {

@@ -4,16 +4,23 @@
 package otelcol
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
+
+const loggerName = "prw.wal"
 
 func newTestParser(t *testing.T) *Parser {
 	config := NewConfigWithID("test")
@@ -21,14 +28,6 @@ func newTestParser(t *testing.T) *Parser {
 	op, err := config.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
-}
-
-func TestConfigBuild(t *testing.T) {
-	config := NewConfigWithID("test")
-	set := componenttest.NewNopTelemetrySettings()
-	op, err := config.Build(set)
-	require.NoError(t, err)
-	require.IsType(t, &Parser{}, op)
 }
 
 // TestConfigBuildUsesFixedSchema asserts the operator always reads the body and
@@ -78,84 +77,201 @@ func TestParseConsoleLineInvalid(t *testing.T) {
 	require.ErrorContains(t, err, "cannot be parsed as a console-encoded otelcol self-log")
 }
 
-// --- splitConsoleMessageAndFields: direct unit tests ---
+// TestParseConsoleLine covers the console field layouts the parser has to tell
+// apart, since the logger and caller fields are optional and sit directly in
+// front of the message.
+func TestParseConsoleLine(t *testing.T) {
+	const ts = "2026-07-06T22:56:21.989Z"
 
-func TestSplitConsoleMessageAndFields(t *testing.T) {
 	cases := []struct {
-		name       string
-		rest       string
-		wantMsg    string
-		wantFields map[string]any
+		name string
+		line string
+		want map[string]any
 	}{
 		{
-			name:       "no_trailing_fields",
-			rest:       "Collector started",
-			wantMsg:    "Collector started",
-			wantFields: nil,
-		},
-		{
-			name:       "simple_trailing_fields",
-			rest:       `Failed to scrape endpoint {"otelcol.component.id":"receiver_creator"}`,
-			wantMsg:    "Failed to scrape endpoint",
-			wantFields: map[string]any{"otelcol.component.id": "receiver_creator"},
-		},
-		{
-			name:       "nested_trailing_fields",
-			rest:       `Failed to scrape endpoint {"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
-			wantMsg:    "Failed to scrape endpoint",
-			wantFields: map[string]any{"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}},
-		},
-		{
-			name:       "brace_in_message_before_real_fields",
-			rest:       `Config value for pool {default} is missing {"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
-			wantMsg:    "Config value for pool {default} is missing",
-			wantFields: map[string]any{"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"}},
-		},
-		{
-			// "{}" alone is valid JSON, so this checks the scan doesn't stop early on it.
-			name:       "empty_object_in_message_before_real_fields",
-			rest:       `Cache miss for key {} retrying {"otelcol.signal":"logs"}`,
-			wantMsg:    "Cache miss for key {} retrying",
-			wantFields: map[string]any{"otelcol.signal": "logs"},
-		},
-		{
-			name: "many_braces_before_real_fields",
-			rest: `Pool stats: {a} {b} {c} {d} {e} retrying ` +
-				`{"resource":{"k8s.pod.name":"otel-agent-qkvqj"},"otelcol.component.id":"receiver_creator"}`,
-			wantMsg: "Pool stats: {a} {b} {c} {d} {e} retrying",
-			wantFields: map[string]any{
-				"resource":             map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
-				"otelcol.component.id": "receiver_creator",
+			name: "caller_and_fields",
+			line: ts + "\twarn\tinternal/transaction.go:127\tFailed to scrape endpoint\t" +
+				`{"otelcol.component.id":"receiver_creator"}`,
+			want: map[string]any{
+				"ts": ts, "level": "warn", "caller": "internal/transaction.go:127",
+				"msg": "Failed to scrape endpoint", "otelcol.component.id": "receiver_creator",
 			},
 		},
 		{
-			name:       "brace_in_message_no_real_fields",
-			rest:       "Value set to {ok}",
-			wantMsg:    "Value set to {ok}",
-			wantFields: nil,
+			name: "logger_and_caller",
+			line: ts + "\twarn\tprw.wal\tinternal/transaction.go:127\tFailed to scrape endpoint",
+			want: map[string]any{
+				"ts": ts, "level": "warn", "logger": "prw.wal",
+				"caller": "internal/transaction.go:127", "msg": "Failed to scrape endpoint",
+			},
 		},
 		{
-			// Does not end in "}", so this exercises the early-exit path.
-			name:       "brace_in_message_not_at_end",
-			rest:       "Config value for pool {default} is missing",
-			wantMsg:    "Config value for pool {default} is missing",
-			wantFields: nil,
+			// disable_caller: the first word of the message must not be taken
+			// for a caller just because it ends in ":<number>".
+			name: "no_caller_message_looks_like_caller",
+			line: ts + "\tinfo\tlocalhost:4317 refused the connection",
+			want: map[string]any{"ts": ts, "level": "info", "msg": "localhost:4317 refused the connection"},
 		},
 		{
-			name:       "malformed_trailing_fields",
-			rest:       `broken message {"resource": invalid}`,
-			wantMsg:    `broken message {"resource": invalid}`,
-			wantFields: nil,
+			name: "no_caller_with_logger",
+			line: ts + "\tinfo\tprw.wal\tFailed to scrape endpoint",
+			want: map[string]any{"ts": ts, "level": "info", "logger": "prw.wal", "msg": "Failed to scrape endpoint"},
+		},
+		{
+			name: "no_caller_no_logger_no_fields",
+			line: ts + "\tinfo\tCollector started",
+			want: map[string]any{"ts": ts, "level": "info", "msg": "Collector started"},
+		},
+		{
+			name: "empty_message",
+			line: ts + "\tinfo\tinternal/transaction.go:127\t\t" + `{"otelcol.signal":"logs"}`,
+			want: map[string]any{
+				"ts": ts, "level": "info", "caller": "internal/transaction.go:127",
+				"msg": "", "otelcol.signal": "logs",
+			},
+		},
+		{
+			name: "braces_in_message",
+			line: ts + "\twarn\tConfig value for pool {default} is missing\t" +
+				`{"resource":{"k8s.pod.name":"otel-agent-qkvqj"}}`,
+			want: map[string]any{
+				"ts": ts, "level": "warn", "msg": "Config value for pool {default} is missing",
+				"resource": map[string]any{"k8s.pod.name": "otel-agent-qkvqj"},
+			},
+		},
+		{
+			// The message is only separated from the fields by the tab, so a
+			// message that is itself a JSON object stays the message.
+			name: "json_object_in_message",
+			line: ts + "\tinfo\t" + `received {"a":1}` + "\t" + `{"otelcol.signal":"logs"}`,
+			want: map[string]any{
+				"ts": ts, "level": "info", "msg": `received {"a":1}`, "otelcol.signal": "logs",
+			},
+		},
+		{
+			name: "malformed_fields_stay_in_message",
+			line: ts + "\twarn\tbroken message\t" + `{"resource": invalid}`,
+			want: map[string]any{"ts": ts, "level": "warn", "msg": "broken message\t" + `{"resource": invalid}`},
+		},
+		{
+			name: "tab_in_message",
+			line: ts + "\tinfo\tinternal/transaction.go:127\tcolumns:\ta\tb\t" + `{"otelcol.signal":"logs"}`,
+			want: map[string]any{
+				"ts": ts, "level": "info", "caller": "internal/transaction.go:127",
+				"msg": "columns:\ta\tb", "otelcol.signal": "logs",
+			},
+		},
+		{
+			name: "stacktrace",
+			line: ts + "\terror\tinternal/transaction.go:127\tExporting failed\t" +
+				`{"error":"connection refused"}` + "\nmain.main\n\t/src/main.go:61",
+			want: map[string]any{
+				"ts": ts, "level": "error", "caller": "internal/transaction.go:127",
+				"msg": "Exporting failed", "error": "connection refused",
+				"stacktrace": "main.main\n\t/src/main.go:61",
+			},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			msg, fields := splitConsoleMessageAndFields(tc.rest)
-			require.Equal(t, tc.wantMsg, msg)
-			require.Equal(t, tc.wantFields, fields)
+			got, err := parseConsoleLine(tc.line)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// TestParseZapOutput feeds the parser output from a real zap logger built the
+// way the collector builds it, across every service::telemetry::logs setting
+// that changes the encoded layout.
+func TestParseZapOutput(t *testing.T) {
+	for _, encoding := range []string{"console", "json"} {
+		for _, disableCaller := range []bool{false, true} {
+			for _, named := range []bool{false, true} {
+				for _, stacktrace := range []bool{false, true} {
+					name := fmt.Sprintf("%s/disable_caller=%v/named=%v/stacktrace=%v",
+						encoding, disableCaller, named, stacktrace)
+					t.Run(name, func(t *testing.T) {
+						msg := "Failed to scrape endpoint"
+						if !disableCaller {
+							// Exercise the ambiguity the caller field creates.
+							msg = "localhost:4317 refused the connection"
+						}
+						line := encodeWithZap(t, encoding, disableCaller, named, stacktrace, msg)
+
+						parsed, err := parseLine(line)
+						require.NoError(t, err)
+						m, ok := parsed.(map[string]any)
+						require.True(t, ok)
+
+						require.Equal(t, "error", m["level"])
+						require.Equal(t, msg, m["msg"])
+						require.Equal(t, map[string]any{"service.name": "otelcol"}, m["resource"])
+
+						if disableCaller {
+							require.NotContains(t, m, "caller")
+						} else {
+							require.Regexp(t, `^\S+\.go:\d+$`, m["caller"])
+						}
+						if named {
+							require.Equal(t, loggerName, m["logger"])
+						} else {
+							require.NotContains(t, m, "logger")
+						}
+						if stacktrace {
+							require.Contains(t, m["stacktrace"], "otelcol.encodeWithZap")
+						} else {
+							require.NotContains(t, m, "stacktrace")
+						}
+
+						e := entry.New()
+						e.Body = line
+						require.NoError(t, newTestParser(t).Process(t.Context(), e))
+						require.Equal(t, msg, e.Body)
+						require.Equal(t, entry.Error, e.Severity)
+						require.False(t, e.Timestamp.IsZero())
+					})
+				}
+			}
+		}
+	}
+}
+
+// encodeWithZap mirrors how the collector builds its zap logger in
+// service/telemetry/otelconftelemetry: the production encoder config with an
+// ISO8601 clock, and the resource attributes attached as a dict field.
+func encodeWithZap(t *testing.T, encoding string, disableCaller, named, stacktrace bool, msg string) string {
+	t.Helper()
+
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	var enc zapcore.Encoder
+	if encoding == "console" {
+		enc = zapcore.NewConsoleEncoder(ec)
+	} else {
+		enc = zapcore.NewJSONEncoder(ec)
+	}
+
+	buf := &bytes.Buffer{}
+	var opts []zap.Option
+	if !disableCaller {
+		opts = append(opts, zap.AddCaller())
+	}
+	if stacktrace {
+		opts = append(opts, zap.AddStacktrace(zapcore.ErrorLevel))
+	}
+
+	logger := zap.New(zapcore.NewCore(enc, zapcore.AddSync(buf), zapcore.DebugLevel), opts...)
+	logger = logger.With(zap.Dict("resource", zap.String("service.name", "otelcol")))
+	if named {
+		logger = logger.Named(loggerName)
+	}
+	logger.Error(msg)
+	require.NoError(t, logger.Sync())
+
+	return strings.TrimRight(buf.String(), "\n")
 }
 
 func TestProcess(t *testing.T) {
@@ -308,7 +424,7 @@ func TestProcessUninterpretableTimestampIsPreserved(t *testing.T) {
 		{
 			name:           "unknown_layout",
 			body:           `{"ts":"not-a-timestamp","level":"warn","msg":"Failed to scrape endpoint"}`,
-			expectedErrMsg: `value "not-a-timestamp" did not match any known layout`,
+			expectedErrMsg: `value "not-a-timestamp" is not an ISO8601 timestamp`,
 			expectedTS:     "not-a-timestamp",
 		},
 		{

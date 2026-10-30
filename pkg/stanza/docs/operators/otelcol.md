@@ -23,9 +23,19 @@ The schema is fixed - `ts`, `level`, `msg`, and `resource` always come from the 
 | `resource`     | Resource |
 | anything else  | Attributes |
 
-Zap's `caller` is not promoted - it stays an attribute under `caller`. This is the same in both encodings: in `json` encoding zap writes it as a `caller` key, and in `console` encoding the operator reads it out of the line prefix and stores it under the same name.
+Zap's `caller`, `logger`, and `stacktrace` are not promoted - they stay attributes under those names, matching the keys zap uses in `json` encoding.
 
-If `ts` holds a value the operator cannot interpret, the raw value is left in `attributes` rather than dropped, and the entry is routed through [`on_error`](../types/on_error.md) so the problem is visible.
+If `ts` holds a value the operator cannot interpret, the raw value is left in `attributes` rather than dropped, and the entry is routed through [`on_error`](../types/on_error.md) so the problem is visible. The collector pins zap to ISO8601 timestamps for both encodings, so that is the only layout accepted.
+
+### Console encoding
+
+Zap's `console` encoding separates fields with a tab and lays them out as:
+
+```
+<ts> <level> [<logger>] [<caller>] <msg> [<fields>]
+```
+
+`logger` is only present for a named logger, and `caller` is absent when `service::telemetry::logs::disable_caller` is set, so the operator identifies both by position and shape rather than assuming they are there. A stacktrace, emitted for `error` and above (`warn` and above with `service::telemetry::logs::development`), follows the fields on its own lines; it is only recovered into the `stacktrace` attribute when the entry was recombined upstream, for example with [`recombine`](recombine.md).
 
 ### Example Configurations
 
