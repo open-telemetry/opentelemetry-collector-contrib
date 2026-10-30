@@ -6,6 +6,7 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"container/heap"
 	"context"
+	"crypto/fips140"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -42,6 +43,18 @@ const (
 // otelUUIDv5Namespace is the UUID v5 namespace for deriving service.instance.id,
 // as defined by the OpenTelemetry specification.
 var otelUUIDv5Namespace = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
+
+// newServiceInstanceID derives the UUID v5 service.instance.id from the seed.
+func newServiceInstanceID(seed string) string {
+	// UUID v5 is defined over SHA-1, which FIPS 140-3 does not approve for new uses.
+	// The hash only derives a stable identifier and is not a security function, so it
+	// runs outside strict enforcement (GODEBUG=fips140=only) instead of panicking there.
+	var id uuid.UUID
+	fips140.WithoutEnforcement(func() {
+		id = uuid.NewSHA1(otelUUIDv5Namespace, []byte(seed))
+	})
+	return id.String()
+}
 
 type mySQLScraper struct {
 	sqlclient              client
@@ -81,7 +94,7 @@ func newMySQLScraper(
 		}
 	}
 	serverEndpoint := resolveServerEndpoint(config, settings.Logger)
-	serviceInstanceID := uuid.NewSHA1(otelUUIDv5Namespace, []byte(serverEndpoint.instanceIDSeed)).String()
+	serviceInstanceID := newServiceInstanceID(serverEndpoint.instanceIDSeed)
 	return &mySQLScraper{
 		logger:                 settings.Logger,
 		config:                 config,

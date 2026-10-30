@@ -8,15 +8,15 @@ require (
 	cloud.google.com/go/auth v0.24.1-0.20261001053825-dbc26066f70a
 	cloud.google.com/go/auth/oauth2adapt v0.3.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.70.0
-	go.opentelemetry.io/collector/component/componenttest v0.164.0
-	go.opentelemetry.io/collector/confmap v1.70.0
-	go.opentelemetry.io/collector/extension v1.70.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.164.0
-	go.opentelemetry.io/collector/extension/xextension v0.164.0
+	go.opentelemetry.io/collector/component v1.70.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/confmap v1.70.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/extension v1.70.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/extension/extensiontest v0.164.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/extension/xextension v0.164.1-0.20261029175530-9afdf701f333
 	go.uber.org/goleak v1.3.0
 	golang.org/x/oauth2 v0.37.0
-	google.golang.org/grpc v1.84.0
+	google.golang.org/grpc v1.85.0
 )
 
 require (
@@ -35,15 +35,15 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
-	github.com/knadh/koanf/v2 v2.3.8 // indirect
+	github.com/knadh/koanf/v2 v2.4.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.70.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261029175530-9afdf701f333 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261029175530-9afdf701f333 // indirect
+	go.opentelemetry.io/collector/pdata v1.70.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
