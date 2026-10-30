@@ -15,6 +15,14 @@ verify/file_missing_material:
     type: file
     file: {}
 
+# File key_source with both certificate and hmac_key.
+verify/file_both_materials:
+  key_source:
+    type: file
+    file:
+      certificate: /etc/otelcol/cert.pem
+      hmac_key: /etc/otelcol/hmac.key
+
 # Invalid mode.
 verify/bad_mode:
   mode: deferred
@@ -25,7 +33,7 @@ verify/bad_mode:
 
 # Invalid failure_mode.
 verify/bad_failure_mode:
-  failure_mode: drop
+  failure_mode: nope
   key_source:
     type: file
     file:
@@ -57,4 +65,4 @@ verify/bad_dead_letter_mode:
     enabled: true
     storage: file_storage
     failure_modes:
-      - drop
+      - nope

@@ -23,8 +23,11 @@ and key material described by the resource attributes
 `audit.integrity.certificate`. Supported algorithms match
 `signingprocessor`: `RS256`, `RS512`, `ES256`, `EdDSA`, and `HMAC-SHA256`.
 
-Failed records can optionally be marked or dropped, and verification failures
-can be written to a dead-letter storage extension.
+Failed records can be annotated in place, cause the whole batch to be rejected,
+or be dropped while good records are still exported. Permanent errors identify
+failed records by `audit.record.id` when present (`id=<value>`), otherwise by
+batch index (`record[resource,scope,record]`), with no other log content.
+Verification failures can be written to a dead-letter storage extension.
 
 ## Configuration
 
@@ -40,7 +43,8 @@ processors:
     mode: sync
 
     # How to handle verification failures. Default: strict.
-    # - strict: drop failed records and fail the batch
+    # - strict: reject the whole batch (export nothing) on verification failure, return a permanent error
+    # - drop:   drop failed records, export the rest, return a permanent error
     # - mark:   annotate failed records and continue
     failure_mode: strict
 
@@ -82,6 +86,8 @@ processors:
       #   # hmac_key:  hmac_key
 
     # Optional dead-letter queue for verification failures.
+    # Note: dead_letter persistence is not yet implemented. Setting
+    # enabled: true produces a warning; failures are not written to storage.
     dead_letter:
       enabled: false
       # storage: file_storage
@@ -92,13 +98,13 @@ processors:
 
 Same provider set as [`signingprocessor`](../signingprocessor), but every
 provider uses the shared YAML keys `certificate` or `hmac_key` (private-key
-fields are omitted). For now each provider config should supply a single
-material — either a certificate or an HMAC secret.
+fields are omitted). Each provider config must supply exactly one material —
+either a certificate or an HMAC secret, not both.
 
 | Provider | `certificate` / `hmac_key` mean | Description |
 | --- | --- | --- |
-| `file` | Local file paths | Reads a PEM certificate or a raw HMAC secret from disk. Supports plain PEM and base64-encoded PEM for certificates. |
-| `env` | Key material (usually via `${env:}`) | Holds resolved PEM / HMAC strings from Collector confmap `${env:VAR}` expansion (not env-var names). |
+| `file` | Local file paths | Reads a PEM certificate or an HMAC secret from disk. HMAC content is standard base64, or the raw secret when that decode fails. Certificates may be plain PEM or base64-encoded PEM. |
+| `env` | Key material (usually via `${env:}`) | Holds resolved PEM or HMAC strings from Collector confmap `${env:VAR}` expansion (not env-var names). HMAC content is standard base64, or the raw secret when that decode fails. |
 | `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
 | `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) KV v2 secrets engine via [`github.com/openbao/openbao/api/v2`](https://pkg.go.dev/github.com/openbao/openbao/api/v2) (`mount_path` default `secret`, `secret_path` relative to that mount). |
 
@@ -147,6 +153,13 @@ canonicalises it with RFC 8785 (JCS), and signs the result. All
 `audit.integrity.*` attributes are excluded so the signature can be verified
 without removing those attributes first.
 
+The verifier also excludes its own `audit.verification.*` output attributes,
+so a record can pass through several verify processors. If that check fails
+and the record already carries `audit.verification.*` attributes, the payload
+is rebuilt once with them included (regardless of `audit.verification.profile`).
+This covers pipelines that re-sign a record after an earlier verify step
+(sign → verify → sign → verify), where the second signer covered those attributes.
+
 | Field                | JSON key             | Encoding                                       |
 |----------------------|----------------------|------------------------------------------------|
 | `EventName`          | `event_name`         | string; omitted if empty                       |
@@ -173,15 +186,42 @@ identical canonical JSON.
 | `bytes`   | `{"bytesValue": "<base64>"}`                                      |
 | `slice`   | JSON array (elements encoded recursively; max nesting depth 128)  |
 | `map`     | JSON object (values encoded recursively; max nesting depth 128)   |
+| `empty`   | `null` (same as `signingprocessor`)                               |
 
 Serialization fails with a hard error if the total pre-JCS JSON size exceeds
 2 MiB or the attribute nesting depth exceeds 128 levels.
 
+> **Note on certificate expiry:** The verifier does not reject expired certificates.
+> Signatures made by an expired certificate still verify successfully, which is
+> intentional for long-term audit log verification. Expiry enforcement, if needed,
+> must be done outside this processor.
+
 ## Output attributes
 
-The concrete verification implementation (follow-up PR) stamps per-record
-outcome attributes such as verification status and machine-readable reason
-codes after checking the integrity attributes above.
+When `failure_mode` is `mark` or `drop`, verification results are stamped with
+the same attribute names at the highest uniform level:
+
+1. All records in a resource agree → stamp the **resource** only.
+2. Otherwise, when all records in a scope agree → stamp that **scope** only.
+3. Otherwise (mixed success/failure in a scope) → stamp **each log record**.
+
+`strict` does not stamp (failed batches are not forwarded).
+
+| Attribute                      | Type   | Description                                                                 |
+|--------------------------------|--------|-----------------------------------------------------------------------------|
+| `audit.verification.status`    | string | `verified` or `failed`.                                                     |
+| `audit.verification.reason`    | string | Machine-readable failure reason; set only when status is `failed` and all failures share the same reason. |
+| `audit.verification.profile`   | string | Echo of the configured `verification_profile` (default: `default`).         |
+
+Failure reason codes include: `missing_integrity_value`, `missing_algorithm`,
+`unsupported_algorithm`, `missing_certificate`, `certificate_mismatch`,
+`key_material_mismatch`, `invalid_signature_encoding`, `integrity_mismatch`,
+`serialization_error`.
+
+Record-level `audit.verification.*` attributes are excluded from the signed
+payload reconstruction (with a one-shot retry that includes them when present)
+so re-verification remains stable. Resource- and scope-level stamps are outside
+the signed log payload.
 
 ## Example pipeline
 
