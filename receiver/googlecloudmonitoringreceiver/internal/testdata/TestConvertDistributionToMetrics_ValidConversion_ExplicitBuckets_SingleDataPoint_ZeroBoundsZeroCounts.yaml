@@ -8,4 +8,5 @@ resourceMetrics:
                 - startTimeUnixNano: "13000000000"
                   timeUnixNano: "73000000000"
                   count: 1234
+                  sum: 15425
         scope: {}

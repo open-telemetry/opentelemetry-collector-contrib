@@ -12,8 +12,10 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
-	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
+	mssql "github.com/microsoft/go-mssqldb"
+	_ "github.com/microsoft/go-mssqldb/azuread"             // register "azuresql" driver for Azure AD / managed identity auth
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Kerberos driver
+	"github.com/microsoft/go-mssqldb/msdsn"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
@@ -21,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -112,6 +116,18 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDiskIOQuery())
 	}
 
+	if isTempDBQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBQuery())
+	}
+
+	if isTempDBContentionQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+		queries = append(queries, getSQLServerTempDBContentionQuery())
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverTempdbFileSize.Enabled {
+		queries = append(queries, getSQLServerTempDBFileQuery())
+	}
+
 	return queries
 }
 
@@ -139,6 +155,11 @@ func setupLogQueries(cfg *Config) []string {
 func getDBConnectionString(config *Config) string {
 	if config.DataSource != "" {
 		return config.DataSource
+	}
+	if !config.DBAuth.IsEmpty() {
+		// The credential provider supplies secrets at connection time. Keep the
+		// username in the DSN because providers may use it as mint input.
+		return fmt.Sprintf("server=%s;user id=%s;port=%d", config.Server, config.Username, config.Port)
 	}
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
@@ -184,15 +205,22 @@ type dbProvider struct {
 	dsn         string
 	pool        ConnectionPool
 	numScrapers int
+	dbAuthID    configdbauth.ID
 
-	mu                 sync.Mutex
-	db                 *sql.DB
-	openErr            error
-	opened             bool
-	closed             bool
-	closeErr           error
-	dbVersion          *string
-	versionErrReported bool
+	mu                      sync.Mutex
+	db                      *sql.DB
+	openErr                 error
+	opened                  bool
+	closed                  bool
+	closeErr                error
+	dbVersion               *string
+	dbEdition               *string
+	instanceInfoErrReported bool
+
+	// credentialProvider is set by start() when db_auth is configured.
+	credentialProvider dbauth.Provider
+	startOnce          sync.Once
+	startErr           error
 }
 
 var errDBProviderClosed = errors.New("connection pool is closed")
@@ -202,13 +230,43 @@ func newDBProvider(cfg *Config, numScrapers int) *dbProvider {
 		dsn:         getDBConnectionString(cfg),
 		pool:        cfg.ConnectionPool,
 		numScrapers: numScrapers,
+		dbAuthID:    cfg.DBAuth,
 	}
+}
+
+// start resolves the database credential provider referenced by dbAuthID. It is
+// idempotent and safe for concurrent calls: the extension is
+// looked up exactly once, and the result (credential or error) is cached.
+// start must be called before the first getDB() when db_auth is configured.
+func (p *dbProvider) start(host component.Host) error {
+	if p.dbAuthID.IsEmpty() {
+		return nil
+	}
+	p.startOnce.Do(func() {
+		credentialProvider, err := p.dbAuthID.GetProvider(host.GetExtensions())
+		if err != nil {
+			p.startErr = err
+			return
+		}
+		// Write under p.mu so getDB() can safely read the resolved provider.
+		p.mu.Lock()
+		p.credentialProvider = credentialProvider
+		p.mu.Unlock()
+	})
+	return p.startErr
 }
 
 // getDB lazily opens and configures the shared pool, returning the same
 // *sql.DB on every call. It satisfies sqlquery.DbProviderFunc. Once the
 // provider has been closed it refuses to open a new pool, so a pool can never
 // be created after close and leaked.
+//
+// Three connection modes are supported:
+//   - db_auth provider set: uses mssql.NewSecurityTokenConnector so a fresh
+//     credential is fetched for every new physical connection.
+//   - DSN fedauth (datasource contains "fedauth="): opens with the "azuresql"
+//     driver, which handles token acquisition internally.
+//   - Default: opens with the "sqlserver" driver (SQL auth or Kerberos).
 func (p *dbProvider) getDB() (*sql.DB, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -218,12 +276,59 @@ func (p *dbProvider) getDB() (*sql.DB, error) {
 	}
 	if !p.opened {
 		p.opened = true
-		p.db, p.openErr = sql.Open("sqlserver", p.dsn)
-		if p.openErr == nil {
+		dsnConfig, dsnErr := msdsn.Parse(p.dsn)
+		switch {
+		case p.credentialProvider != nil:
+			// Mode 1: token injected by the configured database credential provider.
+			// mssql.NewSecurityTokenConnector calls the provider for every new
+			// physical connection, so expiring credentials are refreshed.
+			if dsnErr != nil {
+				p.openErr = fmt.Errorf("failed to parse DSN for credential connector: %w", dsnErr)
+				break
+			}
+			credentialProvider := p.credentialProvider
+			endpoint := dsnConfig.Host
+			if dsnConfig.Port != 0 {
+				endpoint = fmt.Sprintf("%s:%d", endpoint, dsnConfig.Port)
+			}
+			username := dsnConfig.User
+			connector, err := mssql.NewSecurityTokenConnector(dsnConfig,
+				func(ctx context.Context) (string, error) {
+					credential, credentialErr := credentialProvider.GetCredential(ctx, dbauth.Request{
+						Endpoint: endpoint,
+						Username: username,
+					})
+					if credentialErr != nil {
+						return "", credentialErr
+					}
+					if credential == nil {
+						return "", errors.New("credential provider returned a nil credential")
+					}
+					return credential.Secret, nil
+				},
+			)
+			if err != nil {
+				p.openErr = fmt.Errorf("failed to create SQL credential connector: %w", err)
+				break
+			}
+			p.db = sql.OpenDB(connector)
+		case dsnErr == nil && hasFedAuth(dsnConfig):
+			// Mode 2: DSN-based fedauth; the azuresql driver handles token
+			// acquisition internally using the fedauth= parameter value.
+			p.db, p.openErr = sql.Open("azuresql", p.dsn)
+		default:
+			// Mode 3: SQL Server auth or Kerberos (existing behavior).
+			p.db, p.openErr = sql.Open("sqlserver", p.dsn)
+		}
+		if p.openErr == nil && p.db != nil {
 			setConnectionPoolSettings(p.db, p.pool, p.numScrapers)
 		}
 	}
 	return p.db, p.openErr
+}
+
+func hasFedAuth(config msdsn.Config) bool {
+	return config.Parameters["fedauth"] != ""
 }
 
 // close closes the shared pool. It is idempotent and safe to call on a nil
@@ -246,45 +351,46 @@ func (p *dbProvider) close() error {
 	return p.closeErr
 }
 
-// detectVersion lazily queries SERVERPROPERTY('ProductVersion') and caches the
-// result. Returns (version, resolved): resolved=true means a definitive answer
-// was reached (success or confirmed NULL) and the caller should nil out its
-// versionFunc. resolved=false means a transient error; the caller should retry
-// next interval. The first error is logged at WARN; subsequent ones at DEBUG so
-// a permanent failure does not spam the log every interval. Safe for concurrent
-// use; all scrapers on this provider share the cached result.
-func (p *dbProvider) detectVersion(ctx context.Context, logger *zap.Logger) (string, bool) {
+// detectInstanceInfo lazily queries ProductVersion and Edition in one round-trip and caches both.
+// Returns (version, edition string, resolved bool): resolved=true means a definitive answer
+// was reached and the caller should nil out its instanceInfoFunc. resolved=false means a
+// transient error; the caller should retry next interval.
+func (p *dbProvider) detectInstanceInfo(ctx context.Context, logger *zap.Logger) (string, string, bool) {
 	p.mu.Lock()
-	if p.dbVersion != nil {
-		v := *p.dbVersion
+	if p.dbVersion != nil && p.dbEdition != nil {
+		v, e := *p.dbVersion, *p.dbEdition
 		p.mu.Unlock()
-		return v, true
+		return v, e, true
 	}
 	db := p.db
-	errReported := p.versionErrReported
+	errReported := p.instanceInfoErrReported
 	p.mu.Unlock()
 
-	v, err := detectSQLServerVersion(ctx, db)
-	if v != nil {
+	v, e, err := detectSQLServerInstanceInfo(ctx, db)
+	if v != nil && e != nil {
 		if *v == "" {
 			logger.Warn("failed to detect SQL Server version: SERVERPROPERTY returned NULL; db.system.version will not be set")
 		}
+		if *e == "" {
+			logger.Warn("failed to detect SQL Server edition: SERVERPROPERTY returned NULL; sqlserver.db.edition will not be set")
+		}
 		p.mu.Lock()
 		p.dbVersion = v
+		p.dbEdition = e
 		p.mu.Unlock()
-		return *v, true
+		return *v, *e, true
 	}
 	if err != nil {
 		if !errReported {
-			logger.Warn("failed to detect SQL Server version; db.system.version will not be set; will retry", zap.Error(err))
+			logger.Warn("failed to detect SQL Server instance info; db.system.version and sqlserver.db.edition will not be set; will retry", zap.Error(err))
 			p.mu.Lock()
-			p.versionErrReported = true
+			p.instanceInfoErrReported = true
 			p.mu.Unlock()
 		} else {
-			logger.Debug("failed to detect SQL Server version; retrying next interval", zap.Error(err))
+			logger.Debug("failed to detect SQL Server instance info; retrying next interval", zap.Error(err))
 		}
 	}
-	return "", false
+	return "", "", false
 }
 
 // setConnectionPoolSettings applies the configured pool settings, falling back
@@ -326,6 +432,9 @@ func setConnectionPoolSettings(db *sql.DB, pool ConnectionPool, numScrapers int)
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			params.Logger.Warn("sqlserver.db.edition is enabled but requires a direct database connection; it will not be set in Windows Performance Counter mode")
+		}
 		return nil, nil
 	}
 
@@ -354,8 +463,12 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 			cfg,
 			cache)
 
-		if isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
-			sqlServerScraper.versionFunc = provider.detectVersion
+		if isDbEditionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) || isDbSystemVersionEnabled(&cfg.MetricsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
+		}
+
+		if !cfg.DBAuth.IsEmpty() {
+			sqlServerScraper.startProviderFunc = provider.start
 		}
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -371,10 +484,18 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) ([]*sqlServer
 func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlServerScraperHelper, *dbProvider) {
 	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			params.Logger.Warn("sqlserver.db.edition is enabled but requires a direct database connection; it will not be set in Windows Performance Counter mode")
+		}
 		return nil, nil
 	}
 
 	queries := setupLogQueries(cfg)
+
+	if cfg.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
+		!cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		params.Logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+	}
 
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
@@ -414,8 +535,12 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) ([]*sqlSe
 			cfg,
 			cache)
 
-		if isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
-			sqlServerScraper.versionFunc = provider.detectVersion
+		if isDbEditionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) || isDbSystemVersionEnabled(&cfg.LogsBuilderConfig.ResourceAttributes) {
+			sqlServerScraper.instanceInfoFunc = provider.detectInstanceInfo
+		}
+
+		if !cfg.DBAuth.IsEmpty() {
+			sqlServerScraper.startProviderFunc = provider.start
 		}
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -516,7 +641,6 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
-		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverErrorRate.Enabled ||
@@ -614,6 +738,29 @@ func isDiskIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverDiskOperations.Enabled ||
 		metrics.SqlserverDiskIo.Enabled
+}
+
+func isTempDBQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverDatabaseTempdbSpace.Enabled
+}
+
+func isTempDBContentionQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverTempdbAllocationWaitersCount.Enabled
+}
+
+func isDbEditionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {
+	if resourceAttrs == nil {
+		return false
+	}
+	return resourceAttrs.SqlserverDbEdition.Enabled
 }
 
 func isDbSystemVersionEnabled(resourceAttrs *metadata.ResourceAttributesConfig) bool {

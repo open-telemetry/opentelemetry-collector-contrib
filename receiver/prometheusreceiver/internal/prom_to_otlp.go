@@ -9,10 +9,10 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
-// isDiscernibleHost checks if a host can be used as a value for the 'host.name' key.
+// isDiscernibleHost checks if a host can be used as a value for the 'server.address' key.
 // localhost-like hosts and unspecified (0.0.0.0) hosts are not discernible.
 func isDiscernibleHost(host string) bool {
 	ip := net.ParseIP(host)

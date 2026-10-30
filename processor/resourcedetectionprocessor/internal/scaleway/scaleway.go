@@ -14,7 +14,7 @@ import (
 	instance "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -49,8 +49,8 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
-	md, err := d.client.GetMetadata()
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	md, err := d.client.GetMetadataWithContext(ctx)
 	if err != nil || md == nil {
 		d.logger.Debug("Scaleway detector: not running on Scaleway or metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {

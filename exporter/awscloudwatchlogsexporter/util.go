@@ -15,7 +15,7 @@ import (
 // patternKeyToAttributeMap maps each placeholder key to the resource attribute names
 // that are searched, in order, to resolve its value.
 var patternKeyToAttributeMap = map[string][]string{
-	"ClusterName":          {"aws.ecs.cluster.name"},
+	"ClusterName":          {"aws.ecs.cluster.name", "k8s.cluster.name"},
 	"TaskId":               {"aws.ecs.task.id"},
 	"NodeName":             {"k8s.node.name"},
 	"PodName":              {"pod", "k8s.pod.name"},

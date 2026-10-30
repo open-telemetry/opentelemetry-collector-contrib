@@ -4,6 +4,7 @@
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
 import (
+	"crypto/fips140"
 	"encoding"
 	"errors"
 	"fmt"
@@ -45,7 +46,8 @@ type Config struct {
 
 	// HashFunction defines the function for hashing the values instead of
 	// masking them with a fixed string. By default, no hash function is used
-	// and masking with a fixed string is performed.
+	// and masking with a fixed string is performed. md5 and sha1 are rejected
+	// when the collector runs in FIPS 140-3 mode.
 	HashFunction HashFunction `mapstructure:"hash_function"`
 
 	// HMACKey is the secret key used for HMAC hashing when HashFunction is set to hmac-sha256 or hmac-sha512.
@@ -90,6 +92,10 @@ type Config struct {
 
 	// SkipConditions is a list of OTTL-style conditions used to skip redaction for matching telemetry.
 	SkipConditions []string `mapstructure:"skip_conditions"`
+	// MaskingString is the string that replaces the values being masked.
+	// If not set, the masked values will be replaced with "****".
+	// If HashFunction is set, this value must not be set
+	MaskingString string `mapstructure:"masking_string"`
 }
 
 func (u HashFunction) String() string {
@@ -128,6 +134,10 @@ func (u *HashFunction) UnmarshalText(text []byte) error {
 
 // Validate validates the configuration
 func (cfg *Config) Validate() error {
+	if err := cfg.validateHashFunction(fips140.Enabled()); err != nil {
+		return err
+	}
+
 	// Validate HMAC key requirements
 	if cfg.HashFunction == HMACSHA256 || cfg.HashFunction == HMACSHA512 {
 		key := string(cfg.HMACKey)
@@ -146,5 +156,22 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.MaskingString != "" && cfg.HashFunction != None {
+		return errors.New("masking_string must not be set when hash_function is defined")
+	}
+
+	return nil
+}
+
+// validateHashFunction rejects hash functions that are not FIPS 140-3 approved
+// when the collector runs in FIPS mode (GODEBUG=fips140=on or only)
+func (cfg *Config) validateHashFunction(fipsEnabled bool) error {
+	if !fipsEnabled {
+		return nil
+	}
+	switch cfg.HashFunction {
+	case MD5, SHA1:
+		return fmt.Errorf("hash_function %q is not allowed when the collector runs in FIPS 140-3 mode, use %s, %s or %s", cfg.HashFunction, SHA3, HMACSHA256, HMACSHA512)
+	}
 	return nil
 }

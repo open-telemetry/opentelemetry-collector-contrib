@@ -63,6 +63,8 @@ type redaction struct {
 	traceSkipper  *traceSkipper
 	logSkipper    *logSkipper
 	metricSkipper *metricSkipper
+	// Masking string used to replace masked values
+	maskingString string
 }
 
 // newRedaction creates a new instance of the redaction processor
@@ -112,6 +114,11 @@ func newRedaction(ctx context.Context, config *Config, settings component.Teleme
 		return nil, fmt.Errorf("failed to create metric skip conditions: %w", err)
 	}
 
+	maskingString := "****"
+	if config.MaskingString != "" {
+		maskingString = config.MaskingString
+	}
+
 	return &redaction{
 		allowList:          allowList,
 		ignoreList:         ignoreList,
@@ -127,6 +134,7 @@ func newRedaction(ctx context.Context, config *Config, settings component.Teleme
 		traceSkipper:       traceSkipper,
 		logSkipper:         logSkipper,
 		metricSkipper:      metricSkipper,
+		maskingString:      maskingString,
 	}, nil
 }
 
@@ -304,16 +312,13 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
-			// to investigate the correct behavior
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50417
-			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
-			return
-		}
-		processedValue := s.processStringValueForLogBody(strVal)
-		if strVal != processedValue {
-			maskedKeys = append(maskedKeys, "body")
-			body.SetStr(processedValue)
+			allowedKeys = append(allowedKeys, "body")
+		} else {
+			processedValue := s.processStringValueForLogBody(strVal)
+			if strVal != processedValue {
+				maskedKeys = append(maskedKeys, "body")
+				body.SetStr(processedValue)
+			}
 		}
 	}
 
@@ -557,7 +562,7 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case HMACSHA512:
 			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
-			return "****"
+			return s.maskingString
 		}
 	}
 	return regex.ReplaceAllStringFunc(val, hashFunc)
