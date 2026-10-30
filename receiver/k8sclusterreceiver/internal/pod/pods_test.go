@@ -102,7 +102,7 @@ func TestPodAndSidecarContainerMetricsReportCPUMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectSidecarContainers: true})
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectSidecarContainerMetrics: true})
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_sidecar.yaml"))
 	require.NoError(t, err)
@@ -187,7 +187,7 @@ func TestPodAndEphemeralContainerMetricsReportCPUMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectEphemeralContainers: true})
+	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectEphemeralContainerMetrics: true})
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_ephemeral.yaml"))
 	require.NoError(t, err)
@@ -250,27 +250,27 @@ func TestRecordMetricsContainerCollectionConfig(t *testing.T) {
 		},
 		{
 			name:           "sidecar containers",
-			cfg:            ContainerMetricsConfig{CollectSidecarContainers: true},
+			cfg:            ContainerMetricsConfig{CollectSidecarContainerMetrics: true},
 			wantContainers: []string{"app", "my-sidecar"},
 		},
 		{
 			name:           "all init containers",
-			cfg:            ContainerMetricsConfig{CollectAllInitContainers: true},
+			cfg:            ContainerMetricsConfig{CollectAllInitContainerMetrics: true},
 			wantContainers: []string{"app", "my-sidecar", "regular-init"},
 		},
 		{
 			name:           "ephemeral containers",
-			cfg:            ContainerMetricsConfig{CollectEphemeralContainers: true},
+			cfg:            ContainerMetricsConfig{CollectEphemeralContainerMetrics: true},
 			wantContainers: []string{"app", "debugger"},
 		},
 		{
 			name:           "sidecar and ephemeral containers",
-			cfg:            ContainerMetricsConfig{CollectSidecarContainers: true, CollectEphemeralContainers: true},
+			cfg:            ContainerMetricsConfig{CollectSidecarContainerMetrics: true, CollectEphemeralContainerMetrics: true},
 			wantContainers: []string{"app", "my-sidecar", "debugger"},
 		},
 		{
 			name:           "all init and ephemeral containers",
-			cfg:            ContainerMetricsConfig{CollectAllInitContainers: true, CollectEphemeralContainers: true},
+			cfg:            ContainerMetricsConfig{CollectAllInitContainerMetrics: true, CollectEphemeralContainerMetrics: true},
 			wantContainers: []string{"app", "my-sidecar", "regular-init", "debugger"},
 		},
 	}
@@ -777,7 +777,7 @@ func TestTransformKeepsSidecarButDropsRegularInitContainers(t *testing.T) {
 		},
 	}
 
-	got := Transform(originalPod, ContainerMetricsConfig{CollectSidecarContainers: true, CollectEphemeralContainers: true})
+	got := Transform(originalPod, ContainerMetricsConfig{CollectSidecarContainerMetrics: true, CollectEphemeralContainerMetrics: true})
 
 	require.Len(t, got.Spec.InitContainers, 1)
 	assert.Equal(t, "my-sidecar", got.Spec.InitContainers[0].Name)
@@ -830,18 +830,18 @@ func TestTransformContainerCollectionConfig(t *testing.T) {
 	assert.Empty(t, initNames(got))
 	assert.Empty(t, got.Spec.EphemeralContainers)
 
-	// CollectSidecarContainers: only sidecars, no ephemeral.
-	got = Transform(newPod(), ContainerMetricsConfig{CollectSidecarContainers: true})
+	// CollectSidecarContainerMetrics: only sidecars, no ephemeral.
+	got = Transform(newPod(), ContainerMetricsConfig{CollectSidecarContainerMetrics: true})
 	assert.Equal(t, []string{"my-sidecar"}, initNames(got))
 	assert.Empty(t, got.Spec.EphemeralContainers)
 
-	// CollectAllInitContainers: all init containers kept, still no ephemeral.
-	got = Transform(newPod(), ContainerMetricsConfig{CollectAllInitContainers: true})
+	// CollectAllInitContainerMetrics: all init containers kept, still no ephemeral.
+	got = Transform(newPod(), ContainerMetricsConfig{CollectAllInitContainerMetrics: true})
 	assert.ElementsMatch(t, []string{"regular-init", "my-sidecar"}, initNames(got))
 	assert.Empty(t, got.Spec.EphemeralContainers)
 
-	// CollectEphemeralContainers: ephemeral kept, no init containers.
-	got = Transform(newPod(), ContainerMetricsConfig{CollectEphemeralContainers: true})
+	// CollectEphemeralContainerMetrics: ephemeral kept, no init containers.
+	got = Transform(newPod(), ContainerMetricsConfig{CollectEphemeralContainerMetrics: true})
 	assert.Empty(t, initNames(got))
 	require.Len(t, got.Spec.EphemeralContainers, 1)
 }
@@ -954,13 +954,13 @@ func TestGetPodContainerProperties(t *testing.T) {
 	assert.NotContains(t, props, experimentalmetricmetadata.ResourceID("regular-init-id"))
 
 	// Enabling sidecars includes only the sidecar, not the regular init container.
-	props = getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectSidecarContainers: true})
+	props = getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectSidecarContainerMetrics: true})
 	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("app-id"))
 	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("sidecar-id"))
 	assert.NotContains(t, props, experimentalmetricmetadata.ResourceID("regular-init-id"))
 
 	// Enabling ephemeral and all init containers includes them.
-	props = getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectAllInitContainers: true, CollectEphemeralContainers: true})
+	props = getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectAllInitContainerMetrics: true, CollectEphemeralContainerMetrics: true})
 	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("app-id"))
 	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("sidecar-id"))
 	assert.Contains(t, props, experimentalmetricmetadata.ResourceID("debugger-id"))
@@ -985,7 +985,7 @@ func TestGetPodContainerPropertiesSkipsEmptyContainerID(t *testing.T) {
 		},
 	}
 
-	props := getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectSidecarContainers: true, CollectEphemeralContainers: true})
+	props := getPodContainerProperties(pod, zap.NewNop(), ContainerMetricsConfig{CollectSidecarContainerMetrics: true, CollectEphemeralContainerMetrics: true})
 	assert.NotContains(t, props, experimentalmetricmetadata.ResourceID(""))
 }
 

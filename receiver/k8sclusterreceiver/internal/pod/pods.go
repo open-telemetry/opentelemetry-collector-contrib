@@ -37,13 +37,18 @@ const (
 // ContainerMetricsConfig controls which non-primary pod containers are included when collecting
 // k8s.container metrics and entities. All are opt-in to preserve the receiver's default output.
 type ContainerMetricsConfig struct {
-	// CollectSidecarContainers includes sidecar containers (init containers with
+	// CollectSidecarContainerMetrics includes sidecar containers (init containers with
 	// restartPolicy: Always) when true.
-	CollectSidecarContainers bool
-	// CollectAllInitContainers includes all init containers (regular and sidecar) when true.
-	CollectAllInitContainers bool
-	// CollectEphemeralContainers includes ephemeral (debug) containers when true.
-	CollectEphemeralContainers bool
+	CollectSidecarContainerMetrics bool `mapstructure:"collect_sidecar_container_metrics"`
+	// CollectAllInitContainerMetrics includes all init containers (regular and sidecar) when true.
+	CollectAllInitContainerMetrics bool `mapstructure:"collect_all_init_container_metrics"`
+	// CollectEphemeralContainerMetrics includes ephemeral (debug) containers when true.
+	CollectEphemeralContainerMetrics bool `mapstructure:"collect_ephemeral_container_metrics"`
+}
+
+// collectInitContainers reports whether any init containers (sidecar or regular) are collected.
+func (cfg ContainerMetricsConfig) collectInitContainers() bool {
+	return cfg.CollectSidecarContainerMetrics || cfg.CollectAllInitContainerMetrics
 }
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -84,38 +89,40 @@ func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 	}
 
 	// Init containers to collect: sidecars (init containers with restartPolicy: Always) when
-	// CollectSidecarContainers is set, and every init container when CollectAllInitContainers is
+	// CollectSidecarContainerMetrics is set, and every init container when CollectAllInitContainerMetrics is
 	// set. All are opt-in, so the default output is unchanged.
-	initNames := make(map[string]struct{})
-	for _, c := range collectedInitContainers(pod, cfg) {
-		initNames[c.Name] = struct{}{}
-		newPod.Spec.InitContainers = append(newPod.Spec.InitContainers, corev1.Container{
-			Name:          c.Name,
-			RestartPolicy: c.RestartPolicy,
-			Resources: corev1.ResourceRequirements{
-				Requests: c.Resources.Requests,
-				Limits:   c.Resources.Limits,
-			},
-		})
-	}
-	for i := range pod.Status.InitContainerStatuses {
-		cs := &pod.Status.InitContainerStatuses[i]
-		if _, ok := initNames[cs.Name]; !ok {
-			continue
+	if cfg.collectInitContainers() {
+		initNames := make(map[string]struct{})
+		for _, c := range collectedInitContainers(pod, cfg) {
+			initNames[c.Name] = struct{}{}
+			newPod.Spec.InitContainers = append(newPod.Spec.InitContainers, corev1.Container{
+				Name:          c.Name,
+				RestartPolicy: c.RestartPolicy,
+				Resources: corev1.ResourceRequirements{
+					Requests: c.Resources.Requests,
+					Limits:   c.Resources.Limits,
+				},
+			})
 		}
-		newPod.Status.InitContainerStatuses = append(newPod.Status.InitContainerStatuses, corev1.ContainerStatus{
-			Name:                 cs.Name,
-			Image:                cs.Image,
-			ContainerID:          cs.ContainerID,
-			RestartCount:         cs.RestartCount,
-			Ready:                cs.Ready,
-			State:                cs.State,
-			LastTerminationState: cs.LastTerminationState,
-		})
+		for i := range pod.Status.InitContainerStatuses {
+			cs := &pod.Status.InitContainerStatuses[i]
+			if _, ok := initNames[cs.Name]; !ok {
+				continue
+			}
+			newPod.Status.InitContainerStatuses = append(newPod.Status.InitContainerStatuses, corev1.ContainerStatus{
+				Name:                 cs.Name,
+				Image:                cs.Image,
+				ContainerID:          cs.ContainerID,
+				RestartCount:         cs.RestartCount,
+				Ready:                cs.Ready,
+				State:                cs.State,
+				LastTerminationState: cs.LastTerminationState,
+			})
+		}
 	}
 
 	// Ephemeral (debug) containers are kept only when explicitly enabled.
-	if cfg.CollectEphemeralContainers {
+	if cfg.CollectEphemeralContainerMetrics {
 		for i := range pod.Spec.EphemeralContainers {
 			c := &pod.Spec.EphemeralContainers[i]
 			newPod.Spec.EphemeralContainers = append(newPod.Spec.EphemeralContainers, corev1.EphemeralContainer{
@@ -146,15 +153,15 @@ func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 }
 
 // collectedInitContainers returns the init containers whose metrics should be collected given cfg:
-// all init containers when CollectAllInitContainers is set, otherwise only sidecars (init
-// containers with restartPolicy: Always, GA since Kubernetes 1.29) when CollectSidecarContainers
+// all init containers when CollectAllInitContainerMetrics is set, otherwise only sidecars (init
+// containers with restartPolicy: Always, GA since Kubernetes 1.29) when CollectSidecarContainerMetrics
 // is set.
 func collectedInitContainers(pod *corev1.Pod, cfg ContainerMetricsConfig) []*corev1.Container {
 	var containers []*corev1.Container
 	for i := range pod.Spec.InitContainers {
 		c := &pod.Spec.InitContainers[i]
 		isSidecar := c.RestartPolicy != nil && *c.RestartPolicy == corev1.ContainerRestartPolicyAlways
-		if cfg.CollectAllInitContainers || (cfg.CollectSidecarContainers && isSidecar) {
+		if cfg.CollectAllInitContainerMetrics || (cfg.CollectSidecarContainerMetrics && isSidecar) {
 			containers = append(containers, c)
 		}
 	}
@@ -176,10 +183,12 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 		c := pod.Spec.Containers[i]
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
 	}
-	for _, c := range collectedInitContainers(pod, cfg) {
-		container.RecordSpecMetrics(logger, mb, *c, pod, ts)
+	if cfg.collectInitContainers() {
+		for _, c := range collectedInitContainers(pod, cfg) {
+			container.RecordSpecMetrics(logger, mb, *c, pod, ts)
+		}
 	}
-	if cfg.CollectEphemeralContainers {
+	if cfg.CollectEphemeralContainerMetrics {
 		for i := range pod.Spec.EphemeralContainers {
 			c := corev1.Container(pod.Spec.EphemeralContainers[i].EphemeralContainerCommon)
 			container.RecordSpecMetrics(logger, mb, c, pod, ts)
@@ -378,25 +387,27 @@ func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger, cfg Containe
 		km[md.ResourceID] = md
 	}
 
-	initNames := make(map[string]struct{})
-	for _, c := range collectedInitContainers(pod, cfg) {
-		initNames[c.Name] = struct{}{}
-	}
-	for i := range pod.Status.InitContainerStatuses {
-		cs := pod.Status.InitContainerStatuses[i]
-		if _, ok := initNames[cs.Name]; !ok {
-			continue
+	if cfg.collectInitContainers() {
+		initNames := make(map[string]struct{})
+		for _, c := range collectedInitContainers(pod, cfg) {
+			initNames[c.Name] = struct{}{}
 		}
-		// Skip containers without an ID: the container entity is keyed on container.id, so an
-		// empty ID has no stable identity and would collide with other not-yet-started containers.
-		if cs.ContainerID == "" {
-			continue
+		for i := range pod.Status.InitContainerStatuses {
+			cs := pod.Status.InitContainerStatuses[i]
+			if _, ok := initNames[cs.Name]; !ok {
+				continue
+			}
+			// Skip containers without an ID: the container entity is keyed on container.id, so an
+			// empty ID has no stable identity and would collide with other not-yet-started containers.
+			if cs.ContainerID == "" {
+				continue
+			}
+			md := container.GetMetadata(pod, cs, logger)
+			km[md.ResourceID] = md
 		}
-		md := container.GetMetadata(pod, cs, logger)
-		km[md.ResourceID] = md
 	}
 
-	if cfg.CollectEphemeralContainers {
+	if cfg.CollectEphemeralContainerMetrics {
 		for i := range pod.Status.EphemeralContainerStatuses {
 			cs := pod.Status.EphemeralContainerStatuses[i]
 			if cs.ContainerID == "" {
