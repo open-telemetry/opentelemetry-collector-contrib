@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"sync"
 	"time"
@@ -80,8 +79,7 @@ func newCloudMapResolver(
 	// credentials, and shared configuration files
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithDefaultRegion("us-east-1"))
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
-		return nil, err
+		return nil, fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
 
 	// Using the Config value, create the DynamoDB client
