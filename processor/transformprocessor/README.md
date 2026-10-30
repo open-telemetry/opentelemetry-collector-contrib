@@ -8,7 +8,7 @@
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftransform) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftransform) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_transform)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_transform&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta), [@bogdandrutu](https://www.github.com/bogdandrutu) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta), [@bogdandrutu](https://www.github.com/bogdandrutu) |
 | Emeritus      | [@anuraaga](https://www.github.com/anuraaga), [@kentquirk](https://www.github.com/kentquirk) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -1117,18 +1117,6 @@ The feature is currently only available for log processing.
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
-
-#### Migrating from `flatten_data`
-
-The `flatten_data` option is deprecated and will be removed in a future release. It behaves the same as `flatten.log`, and the processor logs a warning when it is used. To migrate, replace `flatten_data: true` with:
-
-  ```yaml
-  transform:
-    flatten:
-      log: true
-  ```
-
-`flatten_data` and `flatten.log` cannot both be set.
 
 ### `ottl.set.allowNil`
 
