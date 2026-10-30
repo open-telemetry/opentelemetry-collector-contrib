@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
@@ -53,7 +52,7 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	for _, f := range DefaultSpanEventFunctions() {
 		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
 	}
-	for _, f := range DefaultProfileFunctions() {
+	for _, f := range defaultProfileFunctionsMap() {
 		assert.Contains(t, config.profileFunctions, f.Name(), "missing profile function %v", f.Name())
 	}
 }
@@ -1345,85 +1344,11 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 	}
 }
 
-func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
-	type testCase struct {
-		name           string
-		statements     []common.ContextStatements
-		factoryOptions []FactoryOption
-		wantErrorWith  string
-	}
+func TestFactoryCreateProfiles_GateDisabled(t *testing.T) {
+	setProfileStatementsFeatureGate(t, false)
 
-	tests := []testCase{
-		{
-			name: "with profile functions : statement with added profile func",
-			statements: []common.ContextStatements{
-				{
-					Context:    common.ContextID("profile"),
-					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
-				},
-			},
-			factoryOptions: []FactoryOption{
-				WithProfileFunctions(DefaultProfileFunctions()),
-				WithProfileFunctions([]ottl.Factory[*ottlprofile.TransformContext]{createTestFuncFactory[*ottlprofile.TransformContext]("TestProfileFunc")}),
-			},
-		},
-		{
-			name: "with profile functions : statement with missing profile func",
-			statements: []common.ContextStatements{
-				{
-					Context:    common.ContextID("profile"),
-					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
-				},
-			},
-			wantErrorWith: `undefined function "TestProfileFunc"`,
-			factoryOptions: []FactoryOption{
-				WithProfileFunctions(DefaultProfileFunctions()),
-			},
-		},
-		{
-			name: "with profile functions : only custom functions",
-			statements: []common.ContextStatements{
-				{
-					Context:    common.ContextID("profile"),
-					Statements: []string{`testProfileFunc()`},
-				},
-			},
-			factoryOptions: []FactoryOption{
-				WithProfileFunctions([]ottl.Factory[*ottlprofile.TransformContext]{createTestFuncFactory[*ottlprofile.TransformContext]("testProfileFunc")}),
-			},
-		},
-		{
-			name: "with profile functions : missing default functions",
-			statements: []common.ContextStatements{
-				{
-					Context:    common.ContextID("profile"),
-					Statements: []string{`set(attributes["test"], TestProfileFunc())`},
-				},
-			},
-			wantErrorWith: `undefined function "set"`,
-			factoryOptions: []FactoryOption{
-				WithProfileFunctions([]ottl.Factory[*ottlprofile.TransformContext]{createTestFuncFactory[*ottlprofile.TransformContext]("TestProfileFunc")}),
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactoryWithOptions(tt.factoryOptions...)
-			cfg := factory.CreateDefaultConfig()
-			oCfg := cfg.(*Config)
-			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.ProfileStatements = tt.statements
-
-			_, err := factory.(xprocessor.Factory).CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-			if tt.wantErrorWith != "" {
-				if err == nil {
-					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
-				}
-				assert.Contains(t, err.Error(), tt.wantErrorWith)
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
+	factory := NewFactory().(xprocessor.Factory)
+	ap, err := factory.CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), factory.CreateDefaultConfig(), consumertest.NewNop())
+	assert.ErrorIs(t, err, errProfilesGateDisabled)
+	assert.Nil(t, ap)
 }
