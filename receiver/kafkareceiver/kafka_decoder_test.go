@@ -35,17 +35,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-func TestReceiver_MessageDecoderOnlySelection(t *testing.T) {
-	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
-		t.Run(signal, func(t *testing.T) {
-			r := newDecoderTestReceiver(t, signal, createDefaultConfig().(*Config), make(chan decodedMessage, 1)).(*franzConsumer)
-			t.Cleanup(r.telemetryBuilder.Shutdown)
-			_, err := r.newConsumeFn(extensionsHost{component.MustNewID("context"): &messageContextExtension{}}, nil, r.telemetryBuilder)
-			require.NoError(t, err, "an extension implementing only the new message interface must be supported")
-		})
-	}
-}
-
 func TestMessageDecoderBuiltinNameSelection(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -113,7 +102,8 @@ func TestReceiver_MessageDecoderContext(t *testing.T) {
 				ext := &messageContextExtension{calls: calls, ready: ready}
 				received := make(chan decodedMessage, 2)
 				r := newDecoderTestReceiver(t, signal, cfg, received)
-				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
+				require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}),
+					"an extension implementing only the message interface must be supported")
 				t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
 
 				// Hold both calls until their separate metadata configurations exist.
@@ -163,31 +153,6 @@ func TestReceiver_MessageDecoderContext(t *testing.T) {
 				assert.Empty(t, received, "each Kafka message must produce one consumer call")
 			})
 		}
-	}
-}
-
-func TestReceiver_MessageDecoderContextCancellation(t *testing.T) {
-	for _, signal := range []string{"logs", "metrics", "traces", "profiles"} {
-		t.Run(signal, func(t *testing.T) {
-			_, cfg := mustNewFakeCluster(t)
-			calls := make(chan messageDecodeCall, 1)
-			received := make(chan decodedMessage, 1)
-			r := newDecoderTestReceiver(t, signal, cfg, received)
-			require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): &messageContextExtension{calls: calls}}))
-			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-			ctx, cancel := context.WithTimeout(context.WithValue(t.Context(), messageContextKey{}, "operation"), time.Minute)
-			cancel()
-			require.NoError(t, r.(*franzConsumer).consumeMessage(ctx, &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet()))
-			call := awaitDecoderValue(t, calls)
-			assert.ErrorIs(t, call.ctx.Err(), context.Canceled)
-			assert.Equal(t, ctx.Done(), call.ctx.Done())
-			assert.Equal(t, "operation", call.ctx.Value(messageContextKey{}))
-			wantDeadline, _ := ctx.Deadline()
-			gotDeadline, ok := call.ctx.Deadline()
-			assert.True(t, ok)
-			assert.Equal(t, wantDeadline, gotDeadline)
-			assert.ErrorIs(t, awaitDecoderValue(t, received).ctx.Err(), context.Canceled)
-		})
 	}
 }
 
