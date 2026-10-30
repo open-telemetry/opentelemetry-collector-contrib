@@ -181,7 +181,7 @@ $defs:
         description: CompressionParams defines compression parameters for the producer.
         $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
       flush_max_messages:
-        description: The maximum number of messages the producer will send in a single broker request. Defaults to 10000 (franz-go default). Similar to `queue.buffering.max.messages` in the JVM producer.
+        description: The maximum number of records the producer buffers across all partitions before Produce blocks waiting for broker acknowledgements. Defaults to 10000 (franz-go default). Similar to `queue.buffering.max.messages` in librdkafka.
         type: integer
       linger:
         description: Linger controls the linger time for the producer. (default 10ms).

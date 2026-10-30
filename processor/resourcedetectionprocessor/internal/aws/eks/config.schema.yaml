@@ -5,4 +5,4 @@ properties:
   resource_attributes:
     $ref: ./internal/metadata.resource_attributes_config
 allOf:
-  - $ref: /internal/k8sconfig.api_config
+  - $ref: /internal/k8sconfig/k8sconfigtypes.api_config
