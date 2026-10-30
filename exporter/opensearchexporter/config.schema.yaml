@@ -27,6 +27,16 @@ $defs:
       unix_timestamp:
         description: Whether to store timestamp in Epoch milliseconds
         type: boolean
+  telemetry_settings:
+    description: TelemetrySettings configures request and response body logging for the OpenSearch client.
+    type: object
+    properties:
+      log_request_body:
+        description: LogRequestBody enables logging of OpenSearch request bodies at debug level.
+        type: boolean
+      log_response_body:
+        description: LogResponseBody enables logging of OpenSearch response bodies at debug level.
+        type: boolean
 description: Config defines configuration for OpenSearch exporter.
 type: object
 properties:
@@ -64,6 +74,8 @@ properties:
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  telemetry:
+    $ref: telemetry_settings
   traces_index:
     description: TracesIndex configures the index, index alias, or data stream name traces should be indexed in. https://opensearch.org/docs/latest/im-plugin/index/ https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
     type: string
