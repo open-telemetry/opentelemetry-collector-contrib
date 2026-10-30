@@ -66,3 +66,22 @@ func TestMetricCfg_Validate_RowCondition(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigValidateAzureSQLWithoutPort(t *testing.T) {
+	t.Parallel()
+	cfg := Config{
+		Driver:   DriverAzureSQL,
+		Host:     "sql.example.database.windows.net",
+		Database: "mydb",
+		Queries: []Query{{
+			SQL: "SELECT 1 AS count",
+			Metrics: []MetricCfg{{
+				MetricName:  "test.count",
+				ValueColumn: "count",
+				ValueType:   MetricValueTypeInt,
+				DataType:    MetricTypeGauge,
+			}},
+		}},
+	}
+	require.NoError(t, cfg.Validate())
+}
