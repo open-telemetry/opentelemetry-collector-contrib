@@ -24,3 +24,16 @@ func TestParser(t *testing.T) {
 	require.Len(t, info, 134)
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }
+
+func TestClusterParser(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38955")
+	}
+	s := newFakeAPIParser()
+	clusterInfo, err := s.clusterInfo()
+	require.NoError(t, err)
+	require.Len(t, clusterInfo, 13)
+	require.Equal(t, "ok", clusterInfo["cluster_state"])
+	require.Equal(t, "16384", clusterInfo["cluster_slots_assigned"])
+	require.Equal(t, "3", clusterInfo["cluster_size"]) // spot check: not "node_count"
+}
