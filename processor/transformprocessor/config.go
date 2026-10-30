@@ -25,7 +25,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+var (
+	errFlatLogsGateDisabled          = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errProfileStatementsGateDisabled = errors.New("'profile_statements' requires the 'processor.transform.EnableProfileStatements' feature gate to be enabled")
+	errProfilesGateDisabled          = errors.New("the profiles signal requires the 'processor.transform.EnableProfileStatements' feature gate to be enabled")
+)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -40,8 +44,6 @@ type Config struct {
 	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
 	// ProfileStatements configures the OTTL statements executed against profile data.
-	//
-	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
 
 	Flatten FlattenConfig `mapstructure:"flatten"`
@@ -191,7 +193,9 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if len(c.ProfileStatements) > 0 {
+	if len(c.ProfileStatements) > 0 && !metadata.ProcessorTransformEnableProfileStatementsFeatureGate.IsEnabled() {
+		errors = multierr.Append(errors, errProfileStatementsGateDisabled)
+	} else if len(c.ProfileStatements) > 0 {
 		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
 		if err != nil {
 			return err

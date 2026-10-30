@@ -8,6 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.transform.EnableProfileStatements` | alpha | Enables support for the profiles signal, including the `profile_statements` configuration option. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40489) |
 | `transform.flatten.logs` | alpha | Flatten log data prior to transformation so every record has a unique copy of the resource and scope. Regroups logs based on resource and scope after transformations. | v0.103.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
