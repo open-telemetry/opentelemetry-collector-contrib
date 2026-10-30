@@ -93,12 +93,7 @@ func (e *rabbitmqExporter) publishTraces(context context.Context, traces ptrace.
 		return err
 	}
 
-	message := publisher.Message{
-		Exchange:   e.config.Routing.Exchange,
-		RoutingKey: e.routingKey,
-		Body:       body,
-	}
-	return e.publisher.Publish(context, message)
+	return e.publish(context, body)
 }
 
 func (e *rabbitmqExporter) publishMetrics(context context.Context, metrics pmetric.Metrics) error {
@@ -107,12 +102,7 @@ func (e *rabbitmqExporter) publishMetrics(context context.Context, metrics pmetr
 		return err
 	}
 
-	message := publisher.Message{
-		Exchange:   e.config.Routing.Exchange,
-		RoutingKey: e.routingKey,
-		Body:       body,
-	}
-	return e.publisher.Publish(context, message)
+	return e.publish(context, body)
 }
 
 func (e *rabbitmqExporter) publishLogs(context context.Context, logs plog.Logs) error {
@@ -121,12 +111,22 @@ func (e *rabbitmqExporter) publishLogs(context context.Context, logs plog.Logs) 
 		return err
 	}
 
-	message := publisher.Message{
-		Exchange:   e.config.Routing.Exchange,
-		RoutingKey: e.routingKey,
-		Body:       body,
+	return e.publish(context, body)
+}
+
+func (e *rabbitmqExporter) publish(ctx context.Context, body []byte) error {
+	body, contentEncoding, err := compressBody(e.config.Compression, body)
+	if err != nil {
+		return err
 	}
-	return e.publisher.Publish(context, message)
+
+	message := publisher.Message{
+		Exchange:        e.config.Routing.Exchange,
+		RoutingKey:      e.routingKey,
+		Body:            body,
+		ContentEncoding: contentEncoding,
+	}
+	return e.publisher.Publish(ctx, message)
 }
 
 func (e *rabbitmqExporter) shutdown(_ context.Context) error {

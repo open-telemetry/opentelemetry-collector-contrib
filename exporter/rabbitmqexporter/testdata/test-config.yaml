@@ -18,6 +18,7 @@ rabbitmq/all_fields:
       routing_key: custom_routing_key
   encoding_extension: otlp_encoding/rabbitmq123
   durable: false
+  compression: zstd
   retry_on_failure:
     enabled: true
 
@@ -42,3 +43,11 @@ rabbitmq/missing_plainauth_username:
     auth:
       plain:
         password: pass
+
+rabbitmq/unsupported_compression:
+  connection:
+    endpoint: localhost:5672
+    auth:
+      plain:
+        username: user
+  compression: snappy
