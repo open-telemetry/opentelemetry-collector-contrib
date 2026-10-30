@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_k8s_api
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_k8s_api) && !omit_detector_k8s_api
 
 package k8sapi // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
 
