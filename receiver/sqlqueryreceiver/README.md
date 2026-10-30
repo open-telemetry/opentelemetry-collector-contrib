@@ -50,10 +50,11 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
   - [postgres](https://github.com/lib/pq) - `host=localhost port=5432 user=username password=user_password sslmode=disable`
   - [snowflake](https://github.com/snowflakedb/gosnowflake) - `username[:password]@<account_identifier>/dbname/schemaname[?param1=value&...&paramN=valueN]`
   - [sqlserver](https://github.com/microsoft/go-mssqldb) - `sqlserver://username:user_password@localhost:1433?database=db_name`
+  - Azure SQL with Microsoft Entra ID / managed identity - use the `azuresql` driver with the same SQL Server datasource format and `fedauth` parameter.
   - [tds](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
 
 **Other configuration fields:**
-- `driver` (required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
+- `driver` (required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _azuresql_, _hdb_ (SAP
   HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase), _clickhouse_.
 - `queries` (required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
@@ -66,6 +67,14 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
   - `telemetry.logs` (optional) Defines settings for the component's own logs.
     - `telemetry.logs.query` (optional, default `false`) If set to `true`, every time a SQL query is run, the text of the query and the values of its parameters will be logged together with the debug log `"Running query"`.
 - `max_open_conn` (optional, default `0`): The maximumn number of open connections to the sql server. <= 0 means unlimited
+
+For PostgreSQL, `db_auth` (optional) references a Collector extension implementing
+`dbauth.Provider`. The provider is resolved from the `extensions` map at receiver
+start and is called for every new physical PostgreSQL connection, so expiring
+credentials can be refreshed. It is only supported with the `postgres` driver
+and individual connection parameters; it cannot be combined with `datasource`
+or `password`. Keep `username` set to the PostgreSQL role mapped to the Entra
+identity.
 
 [storage_extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
 
@@ -153,6 +162,77 @@ receivers:
           - metric_name: movie.genres
             value_column: "count"
 ```
+
+### Azure Database for PostgreSQL with managed identity
+
+`azure_auth` can provide the short-lived Entra access token through `db_auth`.
+Configure the PostgreSQL resource scope explicitly; Azure Database for
+PostgreSQL uses `https://ossrdbms-aad.database.windows.net/.default` rather than
+the Azure SQL Database scope. The identity must be configured as a PostgreSQL
+Entra user and granted the required database permissions.
+
+```yaml
+extensions:
+  azure_auth:
+    managed_identity:
+    scopes:
+      - https://ossrdbms-aad.database.windows.net/.default
+
+receivers:
+  sql_query:
+    driver: postgres
+    host: myserver.postgres.database.azure.com
+    port: 5432
+    database: mydatabase
+    username: collector@myserver
+    db_auth: azure_auth
+    additional_params:
+      sslmode: require
+    queries:
+      - sql: "SELECT COUNT(*) AS count FROM public.my_table"
+        metrics:
+          - metric_name: my_table.rows
+            value_column: count
+            value_type: int
+            data_type: gauge
+
+service:
+  extensions: [azure_auth]
+  pipelines:
+    metrics:
+      receivers: [sql_query]
+      exporters: [debug]
+```
+
+### Azure SQL with managed identity
+
+The `azuresql` driver is registered by this receiver and supports the Microsoft
+Entra authentication modes provided by `go-mssqldb`. Use
+`ActiveDirectoryManagedIdentity` for an Azure managed identity; omit `username`
+and `password` for a system-assigned identity. The port is optional and defaults
+to the SQL Server driver's default.
+
+```yaml
+receivers:
+  sqlquery:
+    driver: azuresql
+    host: myserver.database.windows.net
+    database: mydatabase
+    additional_params:
+      fedauth: ActiveDirectoryManagedIdentity
+    queries:
+      - sql: "SELECT COUNT(*) AS count FROM dbo.my_table"
+        metrics:
+          - metric_name: my_table.rows
+            value_column: count
+            value_type: int
+            data_type: gauge
+```
+
+For a user-assigned identity, configure the identity according to the
+`go-mssqldb` driver's `fedauth` options (for example, pass its client ID using
+the driver-supported user ID parameter). For other supported Entra flows, see
+the [go-mssqldb Azure AD documentation](https://github.com/microsoft/go-mssqldb/tree/main/azuread).
 
 #### Logs Queries
 
