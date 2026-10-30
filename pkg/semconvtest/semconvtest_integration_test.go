@@ -221,13 +221,71 @@ func TestRegistryForSchemaURL(t *testing.T) {
 	}
 }
 
+func TestResolveRegistry(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    []semconvtest.WeaverOption
+		want    string
+		wantErr string
+	}{
+		{
+			name: "no options resolve to the pinned default registry",
+			want: semconvtest.DefaultRegistry,
+		},
+		{
+			name: "schema URL overrides the default registry",
+			opts: []semconvtest.WeaverOption{semconvtest.WithSchemaURL("https://opentelemetry.io/schemas/1.34.0")},
+			want: "https://github.com/open-telemetry/semantic-conventions.git@v1.34.0[model]",
+		},
+		{
+			name:    "empty schema URL rejected",
+			opts:    []semconvtest.WeaverOption{semconvtest.WithSchemaURL("")},
+			wantErr: "use WithRegistry",
+		},
+		{
+			name: "schema URL then registry rejected",
+			opts: []semconvtest.WeaverOption{
+				semconvtest.WithSchemaURL("https://opentelemetry.io/schemas/1.34.0"),
+				semconvtest.WithRegistry("custom"),
+			},
+			wantErr: "cannot be combined",
+		},
+		{
+			name: "registry then schema URL rejected",
+			opts: []semconvtest.WeaverOption{
+				semconvtest.WithRegistry("custom"),
+				semconvtest.WithSchemaURL("https://opentelemetry.io/schemas/1.34.0"),
+			},
+			wantErr: "cannot be combined",
+		},
+		{
+			name: "empty registry restores weaver's default",
+			opts: []semconvtest.WeaverOption{semconvtest.WithRegistry("")},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := semconvtest.ResolvedRegistry(tt.opts...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestWeaverMetricsWithSchemaURL(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	res := metrics.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().PutStr("invalid.resource.attribute", "value")
 
 	rec := &recordingTB{TB: t}
-	violations := semconvtest.TestMetrics(rec, metrics, semconvtest.WithSchemaURL("https://opentelemetry.io/schemas/1.44.0"))
+	// The schema version is deliberately not the default registry version:
+	// the run must fetch a registry that only WithSchemaURL selects.
+	violations := semconvtest.TestMetrics(rec, metrics, semconvtest.WithSchemaURL("https://opentelemetry.io/schemas/1.43.0"))
 
 	require.True(t, rec.failed, "expected TestMetrics to mark the test as failed")
 	resourceAttrViolation := findViolationByAttributeName(violations, "invalid.resource.attribute")

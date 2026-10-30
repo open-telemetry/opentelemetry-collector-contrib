@@ -105,14 +105,18 @@ func WithRegistry(registry string) WeaverOption {
 // https://opentelemetry.io/schemas/<version> URLs are supported; for any
 // other registry, use WithRegistry. Combining both options fails the test.
 func WithSchemaURL(schemaURL string) WeaverOption {
-	return func(o *weaverOptions) { o.schemaURL = schemaURL }
+	return func(o *weaverOptions) {
+		o.schemaURL = schemaURL
+		o.schemaURLSet = true
+	}
 }
 
 type weaverOptions struct {
-	version     string
-	registry    string
-	registrySet bool
-	schemaURL   string
+	version      string
+	registry     string
+	registrySet  bool
+	schemaURL    string
+	schemaURLSet bool
 }
 
 // normalizeWeaverVersion converts a Docker tag into a "v"-prefixed string
@@ -211,12 +215,11 @@ func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []Pol
 	})
 }
 
-// runLiveCheck performs the full live-check lifecycle: start a Weaver
-// container, send telemetry, stop the listener, parse the report, and fail tb
-// for every violation-level finding. The violation findings are returned.
-func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
-	tb.Helper()
-
+// resolveWeaverOptions applies the options to the defaults, validates the
+// Weaver version, and resolves a schema URL into its release registry. It
+// returns errors instead of failing a testing.TB so the resolution rules
+// are testable from the external test package.
+func resolveWeaverOptions(opts []WeaverOption) (*weaverOptions, error) {
 	options := &weaverOptions{
 		version:  defaultWeaverVersion,
 		registry: fmt.Sprintf(defaultRegistryTemplate, defaultRegistryVersion),
@@ -226,18 +229,32 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 	}
 
 	if err := validateWeaverVersion(options.version); err != nil {
-		tb.Fatal(err)
+		return nil, err
 	}
 
-	if options.schemaURL != "" {
+	if options.schemaURLSet {
 		if options.registrySet {
-			tb.Fatal("WithSchemaURL and WithRegistry cannot be combined: pick one registry source")
+			return nil, errors.New("WithSchemaURL and WithRegistry cannot be combined: pick one registry source")
 		}
 		registry, err := registryForSchemaURL(options.schemaURL)
 		if err != nil {
-			tb.Fatal(err)
+			return nil, err
 		}
 		options.registry = registry
+	}
+
+	return options, nil
+}
+
+// runLiveCheck performs the full live-check lifecycle: start a Weaver
+// container, send telemetry, stop the listener, parse the report, and fail tb
+// for every violation-level finding. The violation findings are returned.
+func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
+	tb.Helper()
+
+	options, err := resolveWeaverOptions(opts)
+	if err != nil {
+		tb.Fatal(err)
 	}
 
 	ctx := tb.Context()
