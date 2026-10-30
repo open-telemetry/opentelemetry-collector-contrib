@@ -45,6 +45,10 @@ $defs:
           polling_interval:
             type: string
             format: duration
+          socket:
+            description: 'Socket, when set, makes the client dial the OpAMP server over a local IPC socket instead of TCP: a Unix domain socket (transport "unix") or a Windows named pipe (transport "npipe"). The Endpoint above then only supplies the URL scheme, request path, and Host header, and its host:port is otherwise ignored.'
+            x-pointer: true
+            $ref: go.opentelemetry.io/collector/config/confignet.addr_config
           tls:
             $ref: go.opentelemetry.io/collector/config/configtls.client_config
       ws:
@@ -60,6 +64,10 @@ $defs:
             type: object
             additionalProperties:
               $ref: go.opentelemetry.io/collector/config/configopaque.string
+          socket:
+            description: 'Socket, when set, makes the client dial the OpAMP server over a local IPC socket instead of TCP: a Unix domain socket (transport "unix") or a Windows named pipe (transport "npipe"). The Endpoint above then only supplies the URL scheme, request path, and Host header, and its host:port is otherwise ignored.'
+            x-pointer: true
+            $ref: go.opentelemetry.io/collector/config/confignet.addr_config
           tls:
             $ref: go.opentelemetry.io/collector/config/configtls.client_config
 description: Config contains the configuration for the opamp extension. Trying to mirror the OpAMP supervisor config for some consistency.

@@ -12,13 +12,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type findArguments[K any] struct {
 	Source    ottl.Getter[K]
-	Predicate *ottl.LambdaExpression[K]
-	Mapper    ottl.Optional[*ottl.LambdaExpression[K]]
+	Predicate *xottl.LambdaExpression[K]
+	Mapper    ottl.Optional[*xottl.LambdaExpression[K]]
 }
 
 // NewFindFactory returns a factory for the Find OTTL function.
@@ -37,7 +38,7 @@ func createFindFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return find(args.Source, args.Predicate, &args.Mapper)
 }
 
-func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], mapper *ottl.Optional[*ottl.LambdaExpression[K]]) (ottl.ExprFunc[K], error) {
+func find[K any](source ottl.Getter[K], predicate *xottl.LambdaExpression[K], mapper *ottl.Optional[*xottl.LambdaExpression[K]]) (ottl.ExprFunc[K], error) {
 	err := predicate.ValidateArity(2)
 	if err != nil {
 		return nil, fmt.Errorf("invalid predicate: %w", err)
@@ -62,7 +63,7 @@ func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], map
 		}
 		defer lb.Close()
 
-		var valueMapper *ottl.LambdaActivation[K]
+		var valueMapper *xottl.LambdaActivation[K]
 		if !mapper.IsEmpty() {
 			m := mapper.Get()
 			valueMapper, err = m.Activate(ctx)
@@ -83,7 +84,7 @@ func find[K any](source ottl.Getter[K], predicate *ottl.LambdaExpression[K], map
 	}, nil
 }
 
-func findSliceValue[K any](tCtx K, source pcommon.Slice, lambda, mapper *ottl.LambdaActivation[K]) (any, error) {
+func findSliceValue[K any](tCtx K, source pcommon.Slice, lambda, mapper *xottl.LambdaActivation[K]) (any, error) {
 	for i, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, int64(i), v)
 		if err != nil {
@@ -96,7 +97,7 @@ func findSliceValue[K any](tCtx K, source pcommon.Slice, lambda, mapper *ottl.La
 	return nil, nil
 }
 
-func findMapValue[K any](tCtx K, source pcommon.Map, lambda, mapper *ottl.LambdaActivation[K]) (any, error) {
+func findMapValue[K any](tCtx K, source pcommon.Map, lambda, mapper *xottl.LambdaActivation[K]) (any, error) {
 	for k, v := range source.All() {
 		match, err := funcutil.EvaluateBiPredicate(tCtx, lambda, k, v)
 		if err != nil {
@@ -109,7 +110,7 @@ func findMapValue[K any](tCtx K, source pcommon.Map, lambda, mapper *ottl.Lambda
 	return nil, nil
 }
 
-func formatFindResult[K any](tCtx K, k any, v pcommon.Value, mapper *ottl.LambdaActivation[K]) (any, error) {
+func formatFindResult[K any](tCtx K, k any, v pcommon.Value, mapper *xottl.LambdaActivation[K]) (any, error) {
 	if mapper == nil {
 		return ottlcommon.GetValue(v), nil
 	}

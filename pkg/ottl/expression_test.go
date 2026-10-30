@@ -931,7 +931,7 @@ func Test_newGetter(t *testing.T) {
 	t.Run("lambda", func(t *testing.T) {
 		lambdaValue := value{
 			Lambda: &lambdaExpr{
-				Params: []localIdentifierDecl{"value"},
+				Params: []localIdentifierDecl{{Identifier: "value"}},
 				Body: lambdaBody{
 					Value: &value{
 						Literal: &mathExprLiteral{

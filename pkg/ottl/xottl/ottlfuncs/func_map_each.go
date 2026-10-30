@@ -13,12 +13,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type mapEachArguments[K any] struct {
 	Source ottl.Getter[K]
-	Mapper *ottl.LambdaExpression[K]
+	Mapper *xottl.LambdaExpression[K]
 }
 
 // NewMapEachFactory returns a factory for the MapEach OTTL function.
@@ -37,7 +38,7 @@ func createMapEachFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	return mapEach(args.Source, args.Mapper)
 }
 
-func mapEach[K any](source ottl.Getter[K], mapper *ottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
+func mapEach[K any](source ottl.Getter[K], mapper *xottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
 	err := mapper.ValidateArity(2)
 	if err != nil {
 		return nil, err
@@ -66,7 +67,7 @@ func mapEach[K any](source ottl.Getter[K], mapper *ottl.LambdaExpression[K]) (ot
 	}, nil
 }
 
-func mapMapValues[K any](tCtx K, source pcommon.Map, lb *ottl.LambdaActivation[K]) (pcommon.Map, error) {
+func mapMapValues[K any](tCtx K, source pcommon.Map, lb *xottl.LambdaActivation[K]) (pcommon.Map, error) {
 	var builder xpdata.MapBuilder
 	builder.EnsureCapacity(source.Len())
 	for k, v := range source.All() {
@@ -84,7 +85,7 @@ func mapMapValues[K any](tCtx K, source pcommon.Map, lb *ottl.LambdaActivation[K
 	return res, nil
 }
 
-func mapSliceValues[K any](tCtx K, source pcommon.Slice, lb *ottl.LambdaActivation[K]) (pcommon.Slice, error) {
+func mapSliceValues[K any](tCtx K, source pcommon.Slice, lb *xottl.LambdaActivation[K]) (pcommon.Slice, error) {
 	res := pcommon.NewSlice()
 	res.EnsureCapacity(source.Len())
 	for i, v := range source.All() {

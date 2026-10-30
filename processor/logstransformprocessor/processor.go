@@ -176,7 +176,7 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context, wg *sync.W
 }
 
 func (ltp *logsTransformProcessor) consumeStanzaLogEntries(ctx context.Context, entries []*entry.Entry) {
-	pLogs := adapter.ConvertEntries(entries)
+	pLogs := adapter.ConvertEntries(entries, "", "")
 	if err := ltp.consumer.ConsumeLogs(ctx, pLogs); err != nil {
 		ltp.set.Logger.Error("processor encountered an issue with next consumer", zap.Error(err))
 	}

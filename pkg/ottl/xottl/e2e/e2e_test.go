@@ -224,7 +224,7 @@ func Test_e2e_lambda_gate_disabled(t *testing.T) {
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false))
 
 	_, err := parseStatementWithAndWithoutPathContext(`set(attributes["test"], When(() => true, "pass", "fail"))`)
-	require.ErrorContains(t, err, "lambda expression arguments require the `ottl.functions.enableLambda` feature gate to be enabled")
+	require.ErrorContains(t, err, "function \"When\" is experimental and requires the `ottl.functions.enableLambda` feature gate to be enabled")
 }
 
 func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[*ottllog.TransformContext], error) {

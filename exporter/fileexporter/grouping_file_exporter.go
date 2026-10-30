@@ -32,6 +32,7 @@ type groupingFileExporter struct {
 	pathSuffix    string
 	attribute     string
 	maxOpenFiles  int
+	dirPerm       os.FileMode
 	newFileWriter func(path string) (*fileWriter, error)
 
 	mutex   sync.Mutex
@@ -196,12 +197,7 @@ func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf 
 		return err
 	}
 
-	err = writer.export(buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.Join(writer.export(buf), writer.release())
 }
 
 func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error) {
@@ -212,14 +208,11 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 
 	writer, ok := e.writers.Get(fullPath)
 	if ok {
+		writer.acquire()
 		return writer, nil
 	}
 
-	perm := os.FileMode(0o755)
-	if e.conf.directoryPermissionsParsed != 0 {
-		perm = os.FileMode(e.conf.directoryPermissionsParsed)
-	}
-	err := os.MkdirAll(path.Dir(fullPath), perm)
+	err := os.MkdirAll(path.Dir(fullPath), e.dirPerm)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +221,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 	if err != nil {
 		return nil, err
 	}
-
+	writer.acquire()
 	e.writers.Add(fullPath, writer)
 
 	writer.start()
@@ -265,7 +258,7 @@ func (e *groupingFileExporter) fullPath(pathSegment string) string {
 }
 
 func (e *groupingFileExporter) onEvict(_ string, writer *fileWriter) {
-	err := writer.shutdown()
+	err := writer.evict()
 	if err != nil {
 		e.logger.Warn("Failed to close file", zap.Error(err), zap.String("path", writer.path))
 	}
@@ -298,6 +291,11 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 		return err
 	}
 	export := buildExportFunc(e.conf)
+
+	e.dirPerm, err = e.conf.dirPermissions()
+	if err != nil {
+		return err
+	}
 
 	pathParts := strings.Split(e.conf.Path, "*")
 

@@ -235,7 +235,7 @@ func BenchmarkSerializeMetrics(b *testing.B) {
 				dp.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3, 4, 5, 6, 7, 8})
 				dp.Negative().SetOffset(1)
 				dp.Negative().BucketCounts().FromRaw([]uint64{1, 1, 1, 1})
-				return metrics, []datapoints.DataPoint{datapoints.NewExponentialHistogram(m, dp)}, elasticsearch.Index{}
+				return metrics, []datapoints.DataPoint{datapoints.NewExponentialHistogram(m, dp, datapoints.HistogramMappingExponential)}, elasticsearch.Index{}
 			},
 		},
 	} {

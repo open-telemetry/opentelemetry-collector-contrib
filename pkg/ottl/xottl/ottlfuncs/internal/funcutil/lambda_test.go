@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
-func activateTestLambda(t *testing.T, expr *ottl.LambdaExpression[any], arity int) *ottl.LambdaActivation[any] {
+func activateTestLambda(t *testing.T, expr *xottl.LambdaExpression[any], arity int) *xottl.LambdaActivation[any] {
 	t.Helper()
 	require.NoError(t, expr.ValidateArity(arity))
 	lb, err := expr.Activate(t.Context())
@@ -25,7 +25,7 @@ func activateTestLambda(t *testing.T, expr *ottl.LambdaExpression[any], arity in
 }
 
 func TestEvaluateBiPredicate(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		v := resolveBinding("v")
 		return k.(string) == "match" && v.(int64) > 0, nil
@@ -42,7 +42,7 @@ func TestEvaluateBiPredicate(t *testing.T) {
 }
 
 func TestEvaluateBiPredicate_normalizesPcommonValue(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		v := resolveBinding("v")
 		return k.(string) == "key" && v.(int64) == 7, nil
@@ -55,7 +55,7 @@ func TestEvaluateBiPredicate_normalizesPcommonValue(t *testing.T) {
 }
 
 func TestEvaluateBiFunction(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		v := resolveBinding("v")
 		return k.(string) + v.(string), nil
@@ -68,7 +68,7 @@ func TestEvaluateBiFunction(t *testing.T) {
 }
 
 func TestEvaluateBiFunction_unwrapsPcommonValueResult(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"_", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"_", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return pcommon.NewValueStr("from-value"), nil
 	})
 	lb := activateTestLambda(t, expr, 2)
@@ -79,7 +79,7 @@ func TestEvaluateBiFunction_unwrapsPcommonValueResult(t *testing.T) {
 }
 
 func TestEvaluateLambdaActivation_directType(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return int64(42), nil
 	})
 	lb := activateTestLambda(t, expr, 1)
@@ -91,7 +91,7 @@ func TestEvaluateLambdaActivation_directType(t *testing.T) {
 }
 
 func TestEvaluateLambdaActivation_evalError(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"a"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"a"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return nil, errors.New("eval failed")
 	})
 	lb := activateTestLambda(t, expr, 1)
@@ -103,7 +103,7 @@ func TestEvaluateLambdaActivation_evalError(t *testing.T) {
 }
 
 func TestEvaluateLambdaActivation_typeError(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return 123, nil
 	})
 	lb := activateTestLambda(t, expr, 1)
@@ -115,7 +115,7 @@ func TestEvaluateLambdaActivation_typeError(t *testing.T) {
 }
 
 func TestSetLambdaArgs_normalizesBoundArguments(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		v := resolveBinding("v")
 		return k.(string) + v.(string), nil
@@ -131,7 +131,7 @@ func TestSetLambdaArgs_normalizesBoundArguments(t *testing.T) {
 }
 
 func TestSetLambdaArgs_tooManyArgumentsPanics(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"a", "b"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"a", "b"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return nil, nil
 	})
 	lb := activateTestLambda(t, expr, 2)
@@ -142,7 +142,7 @@ func TestSetLambdaArgs_tooManyArgumentsPanics(t *testing.T) {
 }
 
 func TestEvaluateFunction(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		v := resolveBinding("v")
 		return k.(int64) + v.(int64), nil
@@ -155,7 +155,7 @@ func TestEvaluateFunction(t *testing.T) {
 }
 
 func TestEvaluateFunction_withUnboundArgument(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		acc := resolveBinding("k")
 		v := resolveBinding("v")
 		return acc.(string) + v.(string), nil
@@ -168,7 +168,7 @@ func TestEvaluateFunction_withUnboundArgument(t *testing.T) {
 }
 
 func TestEvaluateFunction_normalizesArguments(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		v := resolveBinding("v")
 		return k.(int64) + v.(int64), nil
@@ -181,7 +181,7 @@ func TestEvaluateFunction_normalizesArguments(t *testing.T) {
 }
 
 func TestEvaluateFunction_evalError(t *testing.T) {
-	expr := ottl.NewTestingLambdaExpression[any]([]string{"a"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	expr := xottl.NewTestingLambdaExpression[any]([]string{"a"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return nil, errors.New("eval failed")
 	})
 	lb := activateTestLambda(t, expr, 1)

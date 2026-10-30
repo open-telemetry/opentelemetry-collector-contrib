@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_openstack_nova
+
 package nova // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 
 import (
@@ -18,13 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova/internal/metadata"
 )
 
-const (
-	// TypeStr is the detector type id.
-	TypeStr = "nova"
-
-	// LabelPrefix is the attribute prefix for Nova metadata keys (user/tenant-provided).
-	LabelPrefix = "openstack.nova.meta."
-)
+// LabelPrefix is the attribute prefix for Nova metadata keys (user/tenant-provided).
+const LabelPrefix = "openstack.nova.meta."
 
 var _ internal.Detector = (*Detector)(nil)
 

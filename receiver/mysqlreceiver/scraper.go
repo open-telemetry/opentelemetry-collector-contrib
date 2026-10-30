@@ -1145,6 +1145,15 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			countStarVal = 0
 		}
 
+		cachedExamined, rowsExaminedVal := m.cacheAndDiff(q.schemaName, q.digest, "sum_rows_examined", q.sumRowsExamined)
+		if !cachedExamined {
+			rowsExaminedVal = 0
+		}
+		cachedSent, rowsSentVal := m.cacheAndDiff(q.schemaName, q.digest, "sum_rows_sent", q.sumRowsSent)
+		if !cachedSent {
+			rowsSentVal = 0
+		}
+
 		obfuscatedQuery, err := m.obfuscator.obfuscateSQLString(q.digestText)
 		if err != nil {
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
@@ -1176,6 +1185,8 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			q.digest,
 			countStarVal,
 			sumTimerWaitVal,
+			rowsExaminedVal,
+			rowsSentVal,
 		)
 
 		// A statement with no plan available gets no record rather than one carrying an empty plan.

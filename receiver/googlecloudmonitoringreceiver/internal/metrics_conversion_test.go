@@ -156,6 +156,118 @@ func TestConvertSumToMetrics(t *testing.T) {
 	assert.Equal(t, int64(100), sum.DataPoints().At(0).IntValue())
 }
 
+func TestConvertDeltaToMetrics(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	ts := &monitoringpb.TimeSeries{
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 10},
+					EndTime:   &timestamppb.Timestamp{Seconds: 20},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_Int64Value{Int64Value: 42},
+				},
+			},
+		},
+		Metric: &metric.Metric{
+			Type:   "custom.metric",
+			Labels: map[string]string{"key": "val"},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertDeltaToMetrics(ts, m)
+
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	sum := m.Sum()
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, sum.AggregationTemporality())
+	require.Equal(t, 1, sum.DataPoints().Len())
+	dp := sum.DataPoints().At(0)
+	assert.Equal(t, int64(42), dp.IntValue())
+	assert.Equal(t, "val", dp.Attributes().AsRaw()["key"])
+}
+
+func TestSortPointsChronologically(t *testing.T) {
+	t.Run("empty and single element", func(t *testing.T) {
+		SortPointsChronologically(nil)
+		single := []*monitoringpb.Point{{}}
+		SortPointsChronologically(single)
+		assert.Len(t, single, 1)
+	})
+
+	t.Run("reverse order by EndTime", func(t *testing.T) {
+		p1 := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				StartTime: &timestamppb.Timestamp{Seconds: 0},
+				EndTime:   &timestamppb.Timestamp{Seconds: 100},
+			},
+		}
+		p2 := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				StartTime: &timestamppb.Timestamp{Seconds: 100},
+				EndTime:   &timestamppb.Timestamp{Seconds: 200},
+			},
+		}
+		points := []*monitoringpb.Point{p2, p1}
+		SortPointsChronologically(points)
+		assert.Same(t, p1, points[0])
+		assert.Same(t, p2, points[1])
+	})
+
+	t.Run("equal EndTime ordered by StartTime", func(t *testing.T) {
+		p1 := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				StartTime: &timestamppb.Timestamp{Seconds: 50},
+				EndTime:   &timestamppb.Timestamp{Seconds: 200},
+			},
+		}
+		p2 := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				StartTime: &timestamppb.Timestamp{Seconds: 100},
+				EndTime:   &timestamppb.Timestamp{Seconds: 200},
+			},
+		}
+		points := []*monitoringpb.Point{p2, p1}
+		SortPointsChronologically(points)
+		assert.Same(t, p1, points[0])
+		assert.Same(t, p2, points[1])
+	})
+
+	t.Run("nanosecond precision comparison", func(t *testing.T) {
+		p1 := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				EndTime: &timestamppb.Timestamp{Seconds: 10, Nanos: 100},
+			},
+		}
+		p2 := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				EndTime: &timestamppb.Timestamp{Seconds: 10, Nanos: 500},
+			},
+		}
+		points := []*monitoringpb.Point{p2, p1}
+		SortPointsChronologically(points)
+		assert.Same(t, p1, points[0])
+		assert.Same(t, p2, points[1])
+	})
+
+	t.Run("nil intervals and nil points handled safely", func(t *testing.T) {
+		pValid := &monitoringpb.Point{
+			Interval: &monitoringpb.TimeInterval{
+				EndTime: &timestamppb.Timestamp{Seconds: 10},
+			},
+		}
+		pNilInterval := &monitoringpb.Point{}
+		var pNilPoint *monitoringpb.Point
+
+		points := []*monitoringpb.Point{pNilPoint, pNilInterval, pValid}
+		SortPointsChronologically(points)
+		assert.Same(t, pValid, points[0])
+	})
+}
+
 func TestConvertDistributionToMetrics_NoDataPoints(t *testing.T) {
 	logger := zap.NewNop()
 	mb := NewMetricsBuilder(logger)

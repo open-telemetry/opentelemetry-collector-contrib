@@ -8,6 +8,9 @@ status:
   distributions: [contrib]
   codeowners:
     active: [tigrannajaryan, dmitryax]
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: "http://localhost:0"

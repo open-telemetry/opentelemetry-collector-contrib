@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !omit_detector_azure
+
 package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 
 import (
@@ -18,11 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr   = "azure"
-	tagPrefix = "azure.tag."
-)
+const tagPrefix = "azure.tag."
 
 var _ internal.Detector = (*Detector)(nil)
 

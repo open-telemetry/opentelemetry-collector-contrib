@@ -12,13 +12,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_anyMatch(t *testing.T) {
 	tests := []struct {
 		name      string
 		source    ottl.Getter[any]
-		predicate *ottl.LambdaExpression[any]
+		predicate *xottl.LambdaExpression[any]
 		want      bool
 	}{
 		{
@@ -31,7 +32,7 @@ func Test_anyMatch(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(int64) == 2, nil
 			}),
@@ -47,7 +48,7 @@ func Test_anyMatch(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(int64) == 2, nil
 			}),
@@ -60,7 +61,7 @@ func Test_anyMatch(t *testing.T) {
 					return pcommon.NewMap(), nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 			want: false,
@@ -76,7 +77,7 @@ func Test_anyMatch(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(int64) == 2, nil
 			}),
@@ -96,7 +97,7 @@ func Test_anyMatch(t *testing.T) {
 }
 
 func Test_anyMatch_eval_error(t *testing.T) {
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return 123, nil
 	})
 
@@ -159,7 +160,7 @@ func Test_AnyFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		anyArgs.Predicate = ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		anyArgs.Predicate = xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return true, nil
 		})
 
@@ -184,7 +185,7 @@ func BenchmarkAnyMatch(b *testing.B) {
 			},
 		}
 	}()
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		v := resolveBinding("v")
 		return v.(int64)%2 == 0, nil
 	})

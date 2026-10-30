@@ -9,6 +9,9 @@ status:
   codeowners:
     active: [atoulme, pdelewski, Erog38]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     retry_on_failure:

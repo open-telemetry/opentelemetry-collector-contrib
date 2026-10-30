@@ -57,7 +57,8 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 
 	// 3. Configure gRPC Server with Security Interceptors
 	server, err := y.config.ServerConfig.ToServer(ctx, host.GetExtensions(), y.settings.TelemetrySettings,
-		configgrpc.WithGrpcServerOption(grpc.UnaryInterceptor(y.securityManager.CreateSecurityInterceptor())))
+		configgrpc.WithGrpcServerOption(grpc.ChainUnaryInterceptor(y.securityManager.CreateSecurityInterceptor())),
+		configgrpc.WithGrpcServerOption(grpc.ChainStreamInterceptor(y.securityManager.CreateStreamSecurityInterceptor())))
 	if err != nil {
 		return err
 	}

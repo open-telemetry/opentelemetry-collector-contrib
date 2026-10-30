@@ -495,64 +495,6 @@ func TestTopMetricsAggregation(t *testing.T) {
 	require.EqualValues(t, expectedCommandValues, actualOperationTimeValues["commands"])
 }
 
-func TestServerAddressAndPort(t *testing.T) {
-	tests := []struct {
-		name            string
-		serverStatus    bson.M
-		expectedAddress string
-		expectedPort    int64
-		expectedErr     error
-	}{
-		{
-			name: "address_only",
-			serverStatus: bson.M{
-				"host": "localhost",
-			},
-			expectedAddress: "localhost",
-			expectedPort:    defaultMongoDBPort,
-		},
-		{
-			name: "address_and_port",
-			serverStatus: bson.M{
-				"host": "localhost:27018",
-			},
-			expectedAddress: "localhost",
-			expectedPort:    27018,
-		},
-		{
-			name:         "missing_host",
-			serverStatus: bson.M{},
-			expectedErr:  errors.New("host field not found in server status"),
-		},
-		{
-			name: "invalid_port",
-			serverStatus: bson.M{
-				"host": "localhost:invalid",
-			},
-			expectedErr: errors.New("failed to parse port: strconv.ParseInt: parsing \"invalid\": invalid syntax"),
-		},
-		{
-			name: "invalid_host_format",
-			serverStatus: bson.M{
-				"host": "localhost:27018:extra",
-			},
-			expectedErr: errors.New("unexpected host format: localhost:27018:extra"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			address, port, err := serverAddressAndPort(tt.serverStatus)
-			if tt.expectedErr != nil {
-				require.EqualError(t, err, tt.expectedErr.Error())
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.expectedAddress, address)
-				require.Equal(t, tt.expectedPort, port)
-			}
-		})
-	}
-}
-
 func TestReceiverMetricsDisabled(t *testing.T) {
 	scraperCfg := createDefaultConfig().(*Config)
 

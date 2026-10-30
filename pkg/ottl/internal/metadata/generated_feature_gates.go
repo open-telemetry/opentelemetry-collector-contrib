@@ -22,3 +22,19 @@ var OttlSetAllowNilFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterFromVersion("v0.158.0"),
 	featuregate.WithRegisterToVersion("v1.0.0"),
 )
+
+var PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.ottl.functions.enableDynamicSliceArguments",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Allow slice arguments of stable OTTL functions, such as the values of Concat, to be paths or converters that resolve to a slice at runtime. When disabled, these arguments only accept list literals."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27821"),
+	featuregate.WithRegisterFromVersion("v0.163.0"),
+)
+
+var PkgOttlFunctionsEnableExperimentalFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.ottl.functions.enableExperimental",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Allow OTTL statements and conditions to use experimental functions. When disabled, experimental functions are rejected."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50927"),
+	featuregate.WithRegisterFromVersion("v0.163.0"),
+)

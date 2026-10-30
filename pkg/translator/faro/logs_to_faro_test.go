@@ -186,6 +186,53 @@ func Test_extractBrowserBrandsFromKeyVal(t *testing.T) {
 				return brands
 			}(t),
 		},
+		{
+			name: "brand key without field suffix",
+			kv: map[string]string{
+				"browser_brand_0": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brand key without index",
+			kv: map[string]string{
+				"browser_brand_brand": "foo",
+			},
+			wantErr: assert.Error,
+			wantBrands: func(_ *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				return brands
+			}(t),
+		},
+		{
+			name: "brands as array with non-contiguous indexes",
+			kv: map[string]string{
+				"browser_brand_3_brand":   "brand1",
+				"browser_brand_3_version": "0.1.0",
+				"browser_brand_7_brand":   "brand2",
+				"browser_brand_7_version": "0.2.0",
+			},
+			wantErr: assert.NoError,
+			wantBrands: func(t *testing.T) faroTypes.Browser_Brands {
+				var brands faroTypes.Browser_Brands
+				err := brands.FromBrandsArray(faroTypes.BrandsArray{
+					{
+						Brand:   "brand1",
+						Version: "0.1.0",
+					},
+					{
+						Brand:   "brand2",
+						Version: "0.2.0",
+					},
+				})
+				require.NoError(t, err)
+				return brands
+			}(t),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -827,13 +874,70 @@ func Test_parseIntegrationsFromString(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:               "Integration without a version separator is skipped",
+			integrationsString: "foo",
+			want:               []faroTypes.SDKIntegration{},
+		},
+		{
+			name:               "Malformed integration among valid ones is skipped",
+			integrationsString: "foo:1.2,bar,example:3.4.5",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2",
+				},
+				{
+					Name:    "example",
+					Version: "3.4.5",
+				},
+			},
+		},
+		{
+			name:               "Trailing comma is ignored",
+			integrationsString: "foo:1.2,",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2",
+				},
+			},
+		},
+		{
+			name:               "Version containing a colon is kept intact",
+			integrationsString: "foo:1.2:beta",
+			want: []faroTypes.SDKIntegration{
+				{
+					Name:    "foo",
+					Version: "1.2:beta",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseIntegrationsFromString(tt.integrationsString)
+			var got []faroTypes.SDKIntegration
+			require.NotPanics(t, func() {
+				got = parseIntegrationsFromString(tt.integrationsString)
+			})
 			assert.Equalf(t, tt.want, got, "parseIntegrationsFromString(%v)", tt.integrationsString)
 		})
 	}
+}
+
+func TestTranslateFromLogsMalformedSDKIntegrations(t *testing.T) {
+	logs := plog.NewLogs()
+	lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Body().SetStr("kind=log message=hello sdk_integrations=foo:1.2,bar,")
+
+	var payloads []faroTypes.Payload
+	var err error
+	require.NotPanics(t, func() {
+		payloads, err = TranslateFromLogs(t.Context(), logs)
+	})
+	require.NoError(t, err)
+	require.Len(t, payloads, 1)
+	assert.Equal(t, []faroTypes.SDKIntegration{{Name: "foo", Version: "1.2"}}, payloads[0].Meta.SDK.Integrations)
 }
 
 func Test_mergePayloads(t *testing.T) {

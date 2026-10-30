@@ -78,7 +78,8 @@ default: `[]`
 If true, the `Config.Hostname` field (if present) of the docker
 container will be used as the discovered host that is used to configure
 receivers.  If false or if no hostname is configured, the field
-`NetworkSettings.IPAddress` is used instead. These settings can be found
+`IPAddress` from the container's network settings is used, with
+`GlobalIPv6Address` as a fallback. These settings can be found
 in the output of the Docker API's [Container Inspect](https://docs.docker.com/engine/api/v1.41/#operation/ContainerInspect) json.
 
 default: `false`

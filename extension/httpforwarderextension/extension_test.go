@@ -19,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 type clientRequestArgs struct {
@@ -31,6 +29,8 @@ type clientRequestArgs struct {
 }
 
 func TestExtension(t *testing.T) {
+	const localEndpoint = "127.0.0.1:0"
+
 	tests := []struct {
 		name                        string
 		config                      func(listenAt string) *Config
@@ -195,12 +195,9 @@ func TestExtension(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			listenAt := testutil.GetAvailableLocalAddress(t)
+			listenAt := localEndpoint
 			cfg := test.config(listenAt)
 			var cra clientRequestArgs
-			if test.clientRequestArgs != nil {
-				cra = test.clientRequestArgs(listenAt)
-			}
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if test.httpErrorFromBackend {
 					http.Error(w, "", http.StatusInternalServerError)
@@ -233,7 +230,7 @@ func TestExtension(t *testing.T) {
 				_, err := w.Write(test.expectedBackendResponseBody)
 				assert.NoError(t, err)
 			}))
-			defer backend.Close()
+			t.Cleanup(backend.Close)
 
 			// Fill in final destination URL.
 			backendURL, _ := url.Parse(backend.URL)
@@ -241,7 +238,8 @@ func TestExtension(t *testing.T) {
 
 			// Setup forwarder with wrong final address to mock failures.
 			if test.requestErrorAtForwarder {
-				cfg.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+				// Port 0 is not a listening port when used as a destination.
+				cfg.Egress.Endpoint = "http://" + localEndpoint
 			}
 
 			hf, err := newHTTPForwarder(cfg, componenttest.NewNopTelemetrySettings())
@@ -258,6 +256,13 @@ func TestExtension(t *testing.T) {
 				return
 			}
 			require.NoError(t, hf.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, hf.Shutdown(ctx))
+			}()
+			listenAt = hf.(*httpForwarder).server.Addr
+			if test.clientRequestArgs != nil {
+				cra = test.clientRequestArgs(listenAt)
+			}
 
 			// Mock a client trying to talk to backend using the forwarder.
 			httpClient := http.Client{}
@@ -289,8 +294,6 @@ func TestExtension(t *testing.T) {
 				}
 				t.Error("unexpected header found in response: ", k)
 			}
-
-			require.NoError(t, hf.Shutdown(ctx))
 		})
 	}
 }
