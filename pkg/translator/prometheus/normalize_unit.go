@@ -6,6 +6,8 @@ package prometheus // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"strings"
 	"unicode"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus/internal/metadata"
 )
 
 // The map to translate OTLP units to Prometheus units
@@ -108,6 +110,16 @@ func buildCompliantPerUnit(unit string) string {
 // Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit
 // Returns the specified unit if not found in unitMap
 func unitMapGetOrDefault(unit string) string {
+	if metadata.PkgPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
+		switch unit {
+		case "TiBy":
+			return "tebibytes"
+		case "kBy":
+			return "kilobytes"
+		case "KBy":
+			return unit
+		}
+	}
 	if promUnit, ok := unitMap[unit]; ok {
 		return promUnit
 	}
@@ -117,6 +129,18 @@ func unitMapGetOrDefault(unit string) string {
 // Retrieve the Prometheus "per" unit corresponding to the specified "per" unit
 // Returns the specified unit if not found in perUnitMap
 func perUnitMapGetOrDefault(perUnit string) string {
+	if metadata.PkgPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
+		switch perUnit {
+		case "min":
+			return "minute"
+		case "wk":
+			return "week"
+		case "a":
+			return "year"
+		case "m", "w", "y":
+			return perUnit
+		}
+	}
 	if promPerUnit, ok := perUnitMap[perUnit]; ok {
 		return promPerUnit
 	}
