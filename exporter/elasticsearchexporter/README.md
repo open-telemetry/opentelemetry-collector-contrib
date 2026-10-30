@@ -461,8 +461,8 @@ The metric types supported are:
 
 - Gauge
 - Sum
-- Histogram (Delta temporality only)
-- Exponential histogram (Delta temporality only)
+- Histogram (Both Delta and Cumulative temporality supported)
+- Exponential histogram (Both Delta and Cumulative temporality supported)
 - Summary
 
 ### Histogram storage
@@ -487,6 +487,14 @@ Per-data-point mapping hints still apply and take precedence: `histogram:raw`
 stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
 stores a `{sum, value_count}` summary. The native `exponential_histogram` field
 is only used in OTel mapping mode.
+
+### Temporality
+
+In OTel mapping mode, metric documents for histograms and exponential histograms contain a `temporality` field,
+set to `delta` or `cumulative`. This matches the ES OTLP endpoint. This field is only written when the temporality is known.
+
+`temporality` is a time series dimension: cumulative and delta series with the same name and attributes are stored as **separate**
+time series. This allows aggregations to apply the correct semantics (sum for delta, and subtraction for cumulative).
 
 ### Metrics dynamic templates
 
@@ -794,27 +802,40 @@ This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the defaul
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.
 
-### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
+### "dropping cumulative temporality histogram" / "only supported when stored as exponential_histogram"
 
-Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
+Symptom: `elasticsearchexporter` logs a warning under `validation errors` similar to:
 
 ```
-warn    elasticsearchexporter@v0.132.0/exporter.go:340  validation errors
+warn    elasticsearchexporter/exporter.go:387  validation errors
 {
-  "resource": {
-    "service.instance.id": "33ffe7e8-e944-4f92-8fce-9094f4b61d1d",
-    "service.name": "./elastic-agent",
-    "service.version": "9.1.5"
-  },
   "otelcol.component.id": "elasticsearch/otel",
   "otelcol.component.kind": "exporter",
   "otelcol.signal": "metrics",
-  "error": "dropping cumulative temporality histogram \"http.client.request.duration\""
+  "error": "dropping cumulative temporality histogram \"http.client.request.duration\": requires Elasticsearch >= 9.5.0"
 }
 ```
 
-This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
-As a workaround, you can either:
+or:
+
+```
+  "error": "cumulative temporality histogram \"http.client.request.duration\" is only supported when stored as exponential_histogram"
+```
+
+Cumulative temporality histograms (both explicit bucket and exponential histograms) are
+supported only when **all** of the following are true:
+
+- The exporter uses `otel` mapping mode, so histograms are stored in the Elasticsearch
+  `exponential_histogram` field. Data points overridden to a lossy mapping via a mapping hint
+  (`aggregate_metric_double`, or `histogram:raw`) are not supported for cumulative temporality.
+- Elasticsearch is version 9.5.0 or later. (Delta temporality histograms are supported from
+  Elasticsearch 9.4.0 onwards.)
+
+When these conditions are not met, cumulative histogram data points are dropped with one of the
+warnings above. To resolve this, you can either:
+
+- Upgrade Elasticsearch to 9.5.0 or later and use `otel` mapping mode, or
 - Export histogram metrics using **delta temporality**, or
 - Apply a `cumulativetodelta` processor.
+
 For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).
