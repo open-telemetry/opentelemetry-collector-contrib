@@ -34,6 +34,7 @@ type rollingSpanLatencyProcessor struct {
 	nowFn            func() time.Time
 	cancelEvict      context.CancelFunc
 	config           *Config
+	spanKinds        map[ptrace.SpanKind]bool
 	droppedTotal     atomic.Int64
 	lastReportedDrop int64
 	statsMu          sync.RWMutex
@@ -68,11 +69,12 @@ func newRollingSpanLatencyProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	p := &rollingSpanLatencyProcessor{
-		config:   cfg,
-		logger:   set.Logger,
-		next:     nextConsumer,
-		statsMap: make(map[string]*spanStats),
-		nowFn:    time.Now,
+		config:    cfg,
+		logger:    set.Logger,
+		next:      nextConsumer,
+		statsMap:  make(map[string]*spanStats),
+		nowFn:     time.Now,
+		spanKinds: cfg.spanKindSet(),
 	}
 
 	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -197,7 +199,24 @@ func (p *rollingSpanLatencyProcessor) ConsumeTraces(ctx context.Context, td ptra
 	return p.next.ConsumeTraces(ctx, td)
 }
 
+// shouldEvaluate reports whether span passes the configured span_kinds /
+// always_include_root_spans filter. With neither option set (the zero
+// value), every span is evaluated — preserving the processor's
+// pre-filtering behavior for existing configs.
+func (p *rollingSpanLatencyProcessor) shouldEvaluate(span ptrace.Span) bool {
+	if len(p.spanKinds) == 0 && !p.config.AlwaysIncludeRootSpans {
+		return true
+	}
+	if p.spanKinds[span.Kind()] {
+		return true
+	}
+	return p.config.AlwaysIncludeRootSpans && span.ParentSpanID().IsEmpty()
+}
+
 func (p *rollingSpanLatencyProcessor) processSpan(span ptrace.Span, resourceVals []string) {
+	if !p.shouldEvaluate(span) {
+		return
+	}
 	// EndTimestamp/StartTimestamp are unsigned; comparing before subtracting
 	// avoids wrapping a malformed end-before-start span into a huge positive
 	// "duration".

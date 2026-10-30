@@ -6,8 +6,24 @@ package rollingspanlatencyprocessor // import "github.com/open-telemetry/opentel
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+// spanKindByName maps the accepted span_kinds config values (case-insensitive)
+// to their ptrace.SpanKind. ptrace.SpanKindUnspecified is deliberately
+// excluded: filtering on "unspecified" would select spans that failed to set
+// a kind at all, which is not a meaningful filtering criterion to expose.
+var spanKindByName = map[string]ptrace.SpanKind{
+	"INTERNAL": ptrace.SpanKindInternal,
+	"SERVER":   ptrace.SpanKindServer,
+	"CLIENT":   ptrace.SpanKindClient,
+	"PRODUCER": ptrace.SpanKindProducer,
+	"CONSUMER": ptrace.SpanKindConsumer,
+}
 
 // Config defines the user-facing configuration for the rolling_span_latency
 // processor. Every field maps directly to a key in the OpenTelemetry Collector
@@ -93,6 +109,43 @@ type Config struct {
 	//
 	// Must be greater than 0.
 	WarmupCount int `mapstructure:"warmup_count"`
+
+	// SpanKinds, if non-empty, restricts which spans the processor tracks and
+	// labels to those whose kind matches one of the listed values.
+	// Accepted values (case-insensitive): INTERNAL, SERVER, CLIENT, PRODUCER,
+	// CONSUMER.
+	//
+	// A span is evaluated if its kind is listed here, or if
+	// AlwaysIncludeRootSpans is true and the span is a root span (see
+	// AlwaysIncludeRootSpans). If SpanKinds is empty and
+	// AlwaysIncludeRootSpans is false, every span is evaluated — the
+	// processor's default, pre-filtering behavior.
+	SpanKinds []string `mapstructure:"span_kinds"`
+
+	// AlwaysIncludeRootSpans, when true, evaluates root spans — spans with
+	// no parent span ID — regardless of their kind, in addition to any
+	// spans matched by SpanKinds. It never excludes a span that would
+	// already be evaluated; a false value simply means root spans get no
+	// special treatment and are evaluated only via SpanKinds (or via the
+	// unfiltered default when SpanKinds is also empty).
+	//
+	// If set to true while SpanKinds is empty, only root spans are
+	// evaluated — SpanKinds contributes no matches of its own in that case.
+	AlwaysIncludeRootSpans bool `mapstructure:"always_include_root_spans"`
+}
+
+// spanKindSet returns the set of ptrace.SpanKind values selected by
+// SpanKinds, or nil if SpanKinds is empty. Validate must be called first to
+// guarantee every entry is a recognized span kind name.
+func (c *Config) spanKindSet() map[ptrace.SpanKind]bool {
+	if len(c.SpanKinds) == 0 {
+		return nil
+	}
+	set := make(map[ptrace.SpanKind]bool, len(c.SpanKinds))
+	for _, k := range c.SpanKinds {
+		set[spanKindByName[strings.ToUpper(k)]] = true
+	}
+	return set
 }
 
 // Validate checks that all required Config fields are within their
@@ -133,6 +186,11 @@ func (c *Config) Validate() error {
 	}
 	if c.WarmupCount <= 0 {
 		return errors.New("warmup_count must be greater than 0")
+	}
+	for _, k := range c.SpanKinds {
+		if _, ok := spanKindByName[strings.ToUpper(k)]; !ok {
+			return fmt.Errorf("span_kinds: %q is not a recognized span kind (expected one of INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER)", k)
+		}
 	}
 	return nil
 }
