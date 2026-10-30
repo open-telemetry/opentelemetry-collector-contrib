@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/pipeline v1.70.1-0.20261029175530-9afdf701f333 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect

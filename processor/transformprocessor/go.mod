@@ -39,7 +39,7 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 )
 
