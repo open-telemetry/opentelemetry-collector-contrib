@@ -4026,14 +4026,15 @@ func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) str
 	return vString
 }
 
-func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
+func TestExporterTimeout_RetriesDeadlineExceeded(t *testing.T) {
 	var count atomic.Int32
-	done := make(chan struct{}, 1)
+	// Block every attempt until the client gives up. Closing done from
+	// defer lets the server shut down after ConsumeLogs returns.
+	done := make(chan struct{})
 	defer close(done)
 	server := newESTestServerBulkHandlerFunc(t, "", func(w http.ResponseWriter, _ *http.Request) {
-		if count.Add(1) == 1 {
-			<-done
-		}
+		count.Add(1)
+		<-done
 		w.WriteHeader(http.StatusTeapot)
 	})
 
@@ -4052,7 +4053,7 @@ func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
 	logs.MarkReadOnly()
 	err := exporter.ConsumeLogs(t.Context(), logs)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	assert.Equal(t, int32(1), count.Load())
+	assert.Equal(t, int32(2), count.Load())
 }
 
 func TestExporterTimeout_Independent(t *testing.T) {
