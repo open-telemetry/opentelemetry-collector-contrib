@@ -1,0 +1,123 @@
+groups:
+  - id: db.server.query_plan
+    type: event
+    name: db.server.query_plan
+    stability: development
+    brief: The execution plan for a query.
+    attributes:
+      - ref: db.system.name
+      - ref: postgresql.queryid
+      - ref: db.namespace
+      - ref: postgresql.userid
+      - ref: postgresql.rolname
+      - ref: postgresql.query_plan
+    annotations:
+      scraper:
+        enabled: false
+        attribute_order:
+          - db.system.name
+          - postgresql.queryid
+          - db.namespace
+          - postgresql.userid
+          - postgresql.rolname
+          - postgresql.query_plan
+  - id: db.server.query_sample
+    type: event
+    name: db.server.query_sample
+    stability: development
+    brief: query sample
+    attributes:
+      - ref: db.system.name
+      - ref: db.namespace
+      - ref: db.query.text
+      - ref: user.name
+      - ref: postgresql.state
+      - ref: postgresql.pid
+      - ref: postgresql.backend.connection.start
+      - ref: postgresql.application_name
+      - ref: network.peer.address
+      - ref: network.peer.port
+      - ref: postgresql.client_hostname
+      - ref: postgresql.query_start
+      - ref: postgresql.wait_event
+      - ref: postgresql.wait_event_type
+      - ref: postgresql.query_id
+      - ref: postgresql.total_exec_time
+      - ref: postgresql.blocking.pids
+      - ref: postgresql.blocking.start_time
+      - ref: postgresql.blocking.wait_duration
+      - ref: postgresql.blocking.lock.mode
+      - ref: postgresql.blocking.lock.type
+      - ref: postgresql.blocking.lock.relation
+      - ref: postgresql.blocking.transaction.start_time
+    annotations:
+      scraper:
+        enabled: false
+        attribute_order:
+          - db.system.name
+          - db.namespace
+          - db.query.text
+          - user.name
+          - postgresql.state
+          - postgresql.pid
+          - postgresql.backend.connection.start
+          - postgresql.application_name
+          - network.peer.address
+          - network.peer.port
+          - postgresql.client_hostname
+          - postgresql.query_start
+          - postgresql.wait_event
+          - postgresql.wait_event_type
+          - postgresql.query_id
+          - postgresql.total_exec_time
+          - postgresql.blocking.pids
+          - postgresql.blocking.start_time
+          - postgresql.blocking.wait_duration
+          - postgresql.blocking.lock.mode
+          - postgresql.blocking.lock.type
+          - postgresql.blocking.lock.relation
+          - postgresql.blocking.transaction.start_time
+  - id: db.server.top_query
+    type: event
+    name: db.server.top_query
+    stability: development
+    brief: top query
+    attributes:
+      - ref: db.system.name
+      - ref: db.namespace
+      - ref: db.query.text
+      - ref: postgresql.calls
+      - ref: postgresql.rows
+      - ref: postgresql.shared_blks_dirtied
+      - ref: postgresql.shared_blks_hit
+      - ref: postgresql.shared_blks_read
+      - ref: postgresql.shared_blks_written
+      - ref: postgresql.temp_blks_read
+      - ref: postgresql.temp_blks_written
+      - ref: postgresql.queryid
+      - ref: postgresql.userid
+      - ref: postgresql.rolname
+      - ref: postgresql.total_exec_time
+      - ref: postgresql.total_plan_time
+      - ref: postgresql.query_plan
+    annotations:
+      scraper:
+        enabled: false
+        attribute_order:
+          - db.system.name
+          - db.namespace
+          - db.query.text
+          - postgresql.calls
+          - postgresql.rows
+          - postgresql.shared_blks_dirtied
+          - postgresql.shared_blks_hit
+          - postgresql.shared_blks_read
+          - postgresql.shared_blks_written
+          - postgresql.temp_blks_read
+          - postgresql.temp_blks_written
+          - postgresql.queryid
+          - postgresql.userid
+          - postgresql.rolname
+          - postgresql.total_exec_time
+          - postgresql.total_plan_time
+          - postgresql.query_plan
