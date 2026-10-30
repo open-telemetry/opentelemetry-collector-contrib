@@ -260,6 +260,8 @@ receivers:
   file_log:
     include:
     - /var/log/otelcol/collector.log
+    multiline:
+      line_start_pattern: '^(\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
     operators:
       - type: otelcol
 ```
@@ -268,6 +270,10 @@ The above configuration will tail the collector's own self-log file, so the logs
 metrics and traces. The [`otelcol` operator](../../pkg/stanza/docs/operators/otelcol.md) detects whether the collector wrote
 its self-logs in zap's `json` or `console` encoding, and promotes `ts`, `level`, `msg`, and the nested `resource` object onto
 the log record's Timestamp, Severity, Body, and Resource. Remaining fields become attributes.
+
+The `multiline` block is needed for `console` encoding, which writes stacktraces and multi-line messages over several lines.
+Without it, each of those lines becomes its own entry and fails to parse. The pattern matches the start of an entry in either
+encoding: `{` for `json` and the timestamp for `console`.
 
 An input line in `json` encoding:
 ```
