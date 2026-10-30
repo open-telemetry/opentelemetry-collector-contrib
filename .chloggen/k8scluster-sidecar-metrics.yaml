@@ -15,11 +15,7 @@ issues: [42571]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The receiver's default output is unchanged. Set `collect_sidecar_container_metrics: true` to collect
-  sidecar containers (init containers with `restartPolicy: Always`), `collect_all_init_container_metrics: true`
-  to collect all init containers, and `collect_ephemeral_container_metrics: true` to collect ephemeral
-  (debug) containers.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
