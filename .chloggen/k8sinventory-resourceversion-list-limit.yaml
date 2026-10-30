@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: internal/k8sinventory
+
+note: Add tests covering the bounded List used to fetch the watch resourceVersion.
+
+issues: [50600]
+
+change_logs: [user]
