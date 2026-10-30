@@ -566,21 +566,6 @@ func TestObserveGaugeNilSnapshot(t *testing.T) {
 	require.Equal(t, 0, observer.count)
 }
 
-func int64Sum(t *testing.T, telemetry *componenttest.Telemetry, metricName string) int64 {
-	t.Helper()
-	metric, err := telemetry.GetMetric(metricName)
-	if err != nil {
-		return 0
-	}
-	sum, ok := metric.Data.(metricdata.Sum[int64])
-	require.True(t, ok, "%s metric must be an int64 sum", metricName)
-	var total int64
-	for _, dp := range sum.DataPoints {
-		total += dp.Value
-	}
-	return total
-}
-
 func readGaugeSamples(t *testing.T, telemetry *componenttest.Telemetry, metricName string) []gaugeSample {
 	t.Helper()
 	metric, err := telemetry.GetMetric(metricName)
