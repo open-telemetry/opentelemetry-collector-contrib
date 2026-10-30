@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: Add opt-in `collect_full_query_text` and `allowed_comment_keys` options to `top_query_collection` and `query_sample_collection`, reporting the whole SQL batch in `db.query.text` and exporting allow-listed `key=value` pairs from its leading comment as `db.query.comment_tags`.
+
+issues: [48344]
+
+subtext: |
+  `collect_full_query_text` changes what `db.query.text` holds for that collection; no
+  separate attribute is added. On `db.server.top_query`, whose metrics are per statement,
+  it makes every record from a multi-statement batch report the same text, so group by
+  `sqlserver.query_hash` rather than by `db.query.text`. List only low-cardinality
+  `allowed_comment_keys`.
