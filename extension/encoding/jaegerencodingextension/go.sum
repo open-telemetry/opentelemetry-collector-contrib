@@ -53,12 +53,16 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
+go.opentelemetry.io/collector/client v1.70.1-0.20261029175530-9afdf701f333 h1:72yyKh1oT7COciNDmp9exb8Qhv3tqjEGyXSm7LnHrdM=
+go.opentelemetry.io/collector/client v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:ESd2c1+Jss0nRPjLgJE4/TNQI5ImUZSj7eFc1zXiZPc=
 go.opentelemetry.io/collector/component v1.70.1-0.20261029175530-9afdf701f333 h1:g6TQGFwTnVbtwIBQeDl4FAcci4Hma3SRAt+oDVr0JJk=
 go.opentelemetry.io/collector/component v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:EB3QDPl0ZUqMQUF/bZ4BxJPL5+ZBbTbymLPfKft0IsM=
 go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261029175530-9afdf701f333 h1:Kaogou0j5/1BG9+cHvV0+L0AtUcOav4ixF3zq84kOB8=
 go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:FeOeplkGn1GtIGfFxadiO7pdfy6U5QC0q2pqNNtRkS4=
 go.opentelemetry.io/collector/confmap v1.70.1-0.20261029175530-9afdf701f333 h1:cyNNUOhrd+YNj/NO/guPdwL8vihxog5QnFZ4At0MVPY=
 go.opentelemetry.io/collector/confmap v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:Gtn6cUl68M10GWQErISOEht+jH/jfAJDaETyXUhtuWA=
+go.opentelemetry.io/collector/consumer v1.70.1-0.20261029175530-9afdf701f333 h1:uV3uHP2SdQcHPQxa1NkTo6qx9AlYdyDg1fozcsV3iIc=
+go.opentelemetry.io/collector/consumer v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:fYvONGL5wXoHngVSn2xd2Zm83M/yaWl/eu4xxBQdS+U=
 go.opentelemetry.io/collector/extension v1.70.1-0.20261029175530-9afdf701f333 h1:sDuq38SMYjxG1iqEn8R4GO1G+f0XLXQVwAnYjDuy57A=
 go.opentelemetry.io/collector/extension v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:d71BbfPor6jcuh6UAGR6OW+0xNnCb4DnFbOQWk9l4jg=
 go.opentelemetry.io/collector/extension/extensiontest v0.164.1-0.20261029175530-9afdf701f333 h1:3X2iOv5V/W/V+pFR0iyW6cx8WxtSsxQhQPRRln4eaAw=
