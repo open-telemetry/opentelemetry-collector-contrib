@@ -5,8 +5,6 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"errors"
-	"net/url"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
@@ -43,24 +41,6 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	// InsertMetrics inserts each metric type concurrently, so scale the pool sized from the queue's
-	// number of consumers. Values set in the endpoint or connection params are left unchanged.
-	dsn, err := e.cfg.buildDSN()
-	if err != nil {
-		return err
-	}
-	dsnURL, err := url.Parse(dsn)
-	if err != nil {
-		return err
-	}
-	dsnParams := dsnURL.Query()
-	if !dsnParams.Has("max_open_conns") {
-		opt.MaxOpenConns *= metrics.MaxConcurrentInserts()
-	}
-	if !dsnParams.Has("max_idle_conns") {
-		opt.MaxIdleConns = min(opt.MaxIdleConns*metrics.MaxConcurrentInserts(), opt.MaxOpenConns)
-	}
-
 	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
 	if err != nil {
 		return err
@@ -68,12 +48,13 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 
 	if e.cfg.shouldCreateSchema() {
 		database := e.cfg.database()
-		if err := internal.CreateDatabase(ctx, e.db, database, e.cfg.clusterString(), e.cfg.databaseEngineString()); err != nil {
+		clusterStr := e.cfg.clusterString()
+		if err := internal.CreateDatabase(ctx, e.db, database, clusterStr); err != nil {
 			return err
 		}
 
 		ttlExpr := internal.GenerateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, e.cfg.tableClusterString(), e.cfg.tableEngineString(), ttlExpr, e.db)
+		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, clusterStr, e.cfg.tableEngineString(), ttlExpr, e.db)
 		if err != nil {
 			return err
 		}
@@ -103,6 +84,8 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	metricsMap := metrics.NewMetricsModel(e.tablesConfig, e.cfg.database())
+	var skippedCount int
+
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
@@ -113,15 +96,34 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				if r.Type() == pmetric.MetricTypeEmpty {
-					return errors.New("metrics type is unset")
+					e.logger.Debug(
+						"Skipping metric with unset type",
+						zap.String("metric_name", r.Name()),
+						zap.String("metric_type", r.Type().String()),
+					)
+					skippedCount++
+					continue
 				}
 				m, ok := metricsMap[r.Type()]
 				if !ok {
-					return errors.New("unsupported metrics type")
+					e.logger.Debug(
+						"Skipping metric with unsupported type",
+						zap.String("metric_name", r.Name()),
+						zap.String("metric_type", r.Type().String()),
+					)
+					skippedCount++
+					continue
 				}
 				m.Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r)
 			}
 		}
+	}
+
+	if skippedCount > 0 {
+		e.logger.Debug(
+			"Skipped metrics during export",
+			zap.Int("skipped_count", skippedCount),
+		)
 	}
 
 	return metrics.InsertMetrics(ctx, e.db, metricsMap)
