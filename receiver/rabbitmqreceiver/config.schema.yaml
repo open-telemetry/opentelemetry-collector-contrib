@@ -1,8 +1,40 @@
+$defs:
+  extract_config:
+    description: ExtractConfig defines rules for pulling arbitrary RabbitMQ metadata into resource attributes.
+    type: object
+    properties:
+      arguments:
+        description: Arguments are rules for copying entries from each queue's `arguments` into resource attributes, using the same rule format as k8sattributesprocessor's `extract` annotations and labels.
+        type: array
+        items:
+          $ref: field_extract_config
+  field_extract_config:
+    description: FieldExtractConfig allows specifying an extraction rule to pull a resource attribute out of a RabbitMQ queue's `arguments` map.
+    type: object
+    properties:
+      key:
+        description: Key is an exact queue argument key to extract. Exactly one of Key or KeyRegex must be set.
+        type: string
+      key_regex:
+        description: KeyRegex is a regular expression matched against queue argument keys. Supports backreferences in TagName (e.g. "$1") when KeyRegex contains capture groups.
+        type: string
+      tag_name:
+        description: TagName is the name of the resource attribute the extracted value will be stored under. When empty, the argument's own key is used as the attribute name. Extracted attributes never overwrite an attribute already set on the resource.
+        type: string
+  queues_config:
+    description: QueuesConfig configures queue-scoped scraping behavior.
+    type: object
+    properties:
+      extract:
+        description: Extract configures copying queue metadata into resource attributes.
+        $ref: extract_config
 description: Config defines the configuration for the various elements of the receiver agent.
 type: object
 properties:
   password:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
+  queues:
+    $ref: queues_config
   username:
     type: string
 allOf:
