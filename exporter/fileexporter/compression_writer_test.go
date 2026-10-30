@@ -6,6 +6,7 @@ package fileexporter
 import (
 	"bytes"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -210,4 +211,189 @@ func TestZstdEncoderLevelFromZstd(t *testing.T) {
 	for _, tt := range tests {
 		require.Equal(t, tt.expected, zstd.EncoderLevelFromZstd(tt.level), "level %d", tt.level)
 	}
+}
+
+// transientErrorWriteCloser fails writes when failNext is true, then succeeds.
+// If partialNext > 0, it writes partialNext bytes before returning error.
+type transientErrorWriteCloser struct {
+	failNext    bool
+	partialNext int
+	buf         bytes.Buffer
+	rotated     bool
+	files       []*bytes.Buffer
+}
+
+func (w *transientErrorWriteCloser) Write(p []byte) (int, error) {
+	if w.failNext {
+		w.failNext = false
+		if w.partialNext > 0 && len(p) > w.partialNext {
+			w.buf.Write(p[:w.partialNext])
+			return w.partialNext, errors.New("transient write error")
+		}
+		return 0, errors.New("transient write error")
+	}
+	return w.buf.Write(p)
+}
+
+func (w *transientErrorWriteCloser) Rotate() error {
+	w.rotated = true
+	old := w.buf
+	w.files = append(w.files, &old)
+	w.buf = bytes.Buffer{}
+	return nil
+}
+
+func (*transientErrorWriteCloser) Close() error { return nil }
+
+// nonRotatingTransientErrorWriteCloser does not implement Rotate().
+type nonRotatingTransientErrorWriteCloser struct {
+	failNext    bool
+	partialNext int
+	buf         bytes.Buffer
+}
+
+func (w *nonRotatingTransientErrorWriteCloser) Write(p []byte) (int, error) {
+	if w.failNext {
+		w.failNext = false
+		if w.partialNext > 0 && len(p) > w.partialNext {
+			w.buf.Write(p[:w.partialNext])
+			return w.partialNext, errors.New("transient write error")
+		}
+		return 0, errors.New("transient write error")
+	}
+	return w.buf.Write(p)
+}
+
+func (*nonRotatingTransientErrorWriteCloser) Close() error { return nil }
+
+func TestCompressingWriter_RotationRecoversAfterTransientError(t *testing.T) {
+	base := &transientErrorWriteCloser{failNext: true}
+
+	cw, err := newCompressingWriter(base, compressionZSTD, 3, &Rotation{MaxMegabytes: 1})
+	require.NoError(t, err)
+
+	// First write fails due to the transient error.
+	_, err = cw.Write([]byte("failed message\n"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transient write error")
+
+	// Next write should succeed and not be permanently rejected by a cached sticky error.
+	msg := "recovered message\n"
+	n, err := cw.Write([]byte(msg))
+	require.NoError(t, err)
+	require.Equal(t, len(msg), n)
+
+	require.NoError(t, cw.Close())
+
+	// Verify the recovered message was written as a valid, decodable zstd frame.
+	decoder, err := zstd.NewReader(&base.buf)
+	require.NoError(t, err)
+	defer decoder.Close()
+
+	decompressed, err := io.ReadAll(decoder)
+	require.NoError(t, err)
+	require.Equal(t, msg, string(decompressed))
+}
+
+func TestCompressingWriter_RotationChunkedRecoversAfterTransientError(t *testing.T) {
+	const maxBytes = 1 << 20
+	base := &transientErrorWriteCloser{failNext: true}
+
+	cw, err := newCompressingWriter(base, compressionZSTD, 3, &Rotation{MaxMegabytes: 1})
+	require.NoError(t, err)
+
+	oversized := make([]byte, 2*maxBytes)
+	_, err = rand.Read(oversized)
+	require.NoError(t, err)
+
+	// First chunked write fails on initial frame.
+	_, err = cw.Write(oversized)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transient write error")
+
+	// Subsequent write succeeds.
+	msg := "normal record after chunk failure\n"
+	_, err = cw.Write([]byte(msg))
+	require.NoError(t, err)
+	require.NoError(t, cw.Close())
+
+	decoder, err := zstd.NewReader(&base.buf)
+	require.NoError(t, err)
+	defer decoder.Close()
+
+	decompressed, err := io.ReadAll(decoder)
+	require.NoError(t, err)
+	require.Equal(t, msg, string(decompressed))
+}
+
+func TestCompressingWriter_NonRotationStickyError(t *testing.T) {
+	base := &transientErrorWriteCloser{failNext: true}
+
+	cw, err := newCompressingWriter(base, compressionZSTD, 3, nil)
+	require.NoError(t, err)
+
+	// Write enough random data to force zstd.Writer to flush compressed blocks to base.
+	data := make([]byte, 1<<20)
+	_, err = rand.Read(data)
+	require.NoError(t, err)
+
+	// First write fails when zstd flushes to base.
+	_, err = cw.Write(data)
+	require.Error(t, err)
+
+	// In non-rotation streaming mode, errors are sticky because the zstd stream is corrupted.
+	_, err = cw.Write([]byte("message 2\n"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transient write error")
+}
+
+func TestCompressingWriter_RotationPartialWriteRotates(t *testing.T) {
+	// A partial write writes part of a frame before failing, creating a torn frame.
+	base := &transientErrorWriteCloser{failNext: true, partialNext: 5}
+
+	cw, err := newCompressingWriter(base, compressionZSTD, 3, &Rotation{MaxMegabytes: 1})
+	require.NoError(t, err)
+
+	// First write fails partway through.
+	_, err = cw.Write([]byte("partial failed message\n"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transient write error")
+
+	// Because base implements Rotate(), it should have rotated to isolate the torn frame.
+	require.True(t, base.rotated)
+	require.Len(t, base.files, 1)
+
+	// Next write goes to the fresh rotated file and succeeds.
+	msg := "recovered message in new rotated file\n"
+	n, err := cw.Write([]byte(msg))
+	require.NoError(t, err)
+	require.Equal(t, len(msg), n)
+
+	require.NoError(t, cw.Close())
+
+	// Verify the recovered file decodes cleanly.
+	decoder, err := zstd.NewReader(&base.buf)
+	require.NoError(t, err)
+	defer decoder.Close()
+
+	decompressed, err := io.ReadAll(decoder)
+	require.NoError(t, err)
+	require.Equal(t, msg, string(decompressed))
+}
+
+func TestCompressingWriter_RotationPartialWriteStickyWithoutRotate(t *testing.T) {
+	// Base does not implement Rotate(). A partial write leaves a torn frame in the file.
+	base := &nonRotatingTransientErrorWriteCloser{failNext: true, partialNext: 5}
+
+	cw, err := newCompressingWriter(base, compressionZSTD, 3, &Rotation{MaxMegabytes: 1})
+	require.NoError(t, err)
+
+	_, err = cw.Write([]byte("partial failed message\n"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transient write error")
+
+	// Since base cannot rotate away from the torn frame, the error must be sticky.
+	_, err = cw.Write([]byte("next message\n"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transient write error")
 }
