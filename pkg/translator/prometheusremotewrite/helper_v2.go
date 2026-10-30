@@ -5,10 +5,10 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
+	promLabels "github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -118,7 +118,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		// Process quantiles
 		for i := 0; i < pt.QuantileValues().Len(); i++ {
 			qt := pt.QuantileValues().At(i)
-			percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
+			percentileStr := promLabels.FormatOpenMetricsFloat(qt.Quantile())
 			c.addSampleWithLabels(qt.Value(), timestamp, startTimestamp, noRecordedValue, baseName, baseLabels, quantileStr, percentileStr, metadata)
 		}
 	}
@@ -172,7 +172,7 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
 			bound := pt.ExplicitBounds().At(i)
 			cumulativeCount += pt.BucketCounts().At(i)
-			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
+			boundStr := promLabels.FormatOpenMetricsFloat(bound)
 			c.addSampleWithLabels(float64(cumulativeCount), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
 		}
 		// add le=+Inf bucket
