@@ -114,6 +114,7 @@ exporter/prometheusremotewriteexporter
 processor/deltatocumulativeprocessor
 receiver/prometheusreceiver
 exporter/prometheusexporter
+exporter/prometheusremotewriteexporter/compliance
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
@@ -210,6 +211,7 @@ internal/k8sinventory
 internal/k8sleaderelectortest
 internal/sqlquery
 internal/tools
+pkg/ottl/contexts/xspanlink
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki

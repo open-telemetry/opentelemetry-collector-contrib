@@ -230,11 +230,7 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/setup-go-tools
         with:
-          # Pinned to oldstable while github.com/cockroachdb/swiss does not
-          # build with Go 1.27; revert once
-          # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50382
-          # is resolved.
-          go-version: oldstable
+          go-version: stable
       - name: Run `govulncheck`
         run: GOMEMLIMIT=2GiB make -j2 gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
