@@ -16,6 +16,7 @@ const (
 	IntSliceValueType         ValueType = "int_slice"
 	ByteSliceValueType        ValueType = "byte_slice"
 	LockRequestSliceValueType ValueType = "lock_request_slice"
+	LockRequestJSONValueType  ValueType = "lock_request_json"
 	TimestampValueType        ValueType = "timestamp"
 	DateValueType             ValueType = "date"
 )

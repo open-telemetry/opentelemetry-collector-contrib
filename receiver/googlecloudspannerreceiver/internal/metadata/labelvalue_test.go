@@ -99,6 +99,18 @@ func TestLockRequestSliceLabelValueMetadata(t *testing.T) {
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
 
+func TestLockRequestJSONLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestJSONValueType)
+
+	assert.Equal(t, LockRequestJSONValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *string
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
 func TestUnknownLabelValueMetadata(t *testing.T) {
 	metadata, err := NewLabelValueMetadata(labelName, labelColumnName, UnknownValueType)
 
@@ -249,6 +261,26 @@ func TestLockRequestSliceLabelValue(t *testing.T) {
 	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
+func TestLockRequestJSONLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestJSONValueType)
+	labelValue := lockRequestJSONLabelValue{
+		metadata: metadata,
+		value:    stringValue,
+	}
+
+	assert.Equal(t, LockRequestJSONValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, stringValue, labelValue.Value())
+
+	attributes := pcommon.NewMap()
+
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, stringValue, attributeValue.Str())
+}
+
 func TestNewStringLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType)
 	value := stringValue
@@ -377,6 +409,105 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 
 	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, expectedValue, labelValue.Value())
+}
+
+func TestNewLockRequestJSONLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestJSONValueType)
+
+	testCases := []struct {
+		name          string
+		inputJSON     string
+		expectedValue string
+	}{
+		{
+			name:          "With transaction_tag",
+			inputJSON:     `[{"lock_mode":"lockMode1","column":"column1","transaction_tag":"tag1"}]`,
+			expectedValue: "{lockMode1,column1,tag1}",
+		},
+		{
+			name:          "Without transaction_tag (empty string and omitted)",
+			inputJSON:     `[{"lock_mode":"lockMode1","column":"column1","transaction_tag":""},{"lock_mode":"lockMode2","column":"column2"}]`,
+			expectedValue: "{lockMode1,column1},{lockMode2,column2}",
+		},
+		{
+			name:          "Null transaction_tag",
+			inputJSON:     `[{"lock_mode":"lockMode1","column":"column1","transaction_tag":null}]`,
+			expectedValue: "{lockMode1,column1}",
+		},
+		{
+			name: "Duplicates and unsorted order",
+			inputJSON: `[
+				{"lock_mode":"lockMode2","column":"column2","transaction_tag":"tag2"},
+				{"lock_mode":"lockMode1","column":"column1","transaction_tag":"tag1"},
+				{"lock_mode":"lockMode1","column":"column1","transaction_tag":"tag1"},
+				{"lock_mode":"lockMode2","column":"column2","transaction_tag":"tag2"},
+				{"lock_mode":"lockMode3","column":"column3","transaction_tag":""}
+			]`,
+			expectedValue: "{lockMode1,column1,tag1},{lockMode2,column2,tag2},{lockMode3,column3}",
+		},
+		{
+			name:          "Key-value transaction_tag",
+			inputJSON:     `[{"lock_mode":"ReaderShared","column":"Singers.SingerInfo","transaction_tag":"app=concert,env=dev"}]`,
+			expectedValue: "{ReaderShared,Singers.SingerInfo,app=concert,env=dev}",
+		},
+		{
+			name:          "Empty JSON array",
+			inputJSON:     "[]",
+			expectedValue: "",
+		},
+		{
+			name:          "Empty JSON object",
+			inputJSON:     "{}",
+			expectedValue: "",
+		},
+		{
+			name:          "Null JSON string",
+			inputJSON:     "null",
+			expectedValue: "",
+		},
+		{
+			name:          "Empty string",
+			inputJSON:     "",
+			expectedValue: "",
+		},
+		{
+			name:          "Invalid JSON",
+			inputJSON:     "invalid-json",
+			expectedValue: "",
+		},
+		{
+			name:          "Null element in JSON array",
+			inputJSON:     `[null, {"lock_mode":"lockMode1","column":"column1"}]`,
+			expectedValue: "{lockMode1,column1}",
+		},
+		{
+			name:          "Unknown fields in JSON object",
+			inputJSON:     `[{"lock_mode":"lockMode1","column":"column1","extra_field":"ignored"}]`,
+			expectedValue: "{lockMode1,column1}",
+		},
+		{
+			name:          "Wrong field type in JSON object",
+			inputJSON:     `[{"lock_mode":123,"column":"column1"}]`,
+			expectedValue: "",
+		},
+		{
+			name:          "Empty JSON object in array",
+			inputJSON:     `[{}]`,
+			expectedValue: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			value := tc.inputJSON
+			valueHolder := &value
+
+			labelValue := newLockRequestJSONLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, LockRequestJSONValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tc.expectedValue, labelValue.Value())
+		})
+	}
 }
 
 func TestTimestampLabelValueMetadata(t *testing.T) {
