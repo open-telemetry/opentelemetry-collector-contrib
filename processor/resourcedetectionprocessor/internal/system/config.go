@@ -9,6 +9,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
+var validHostnameSources = map[string]struct{}{
+	"os":     {},
+	"dns":    {},
+	"cname":  {},
+	"lookup": {},
+}
+
 // Config defines user-specified configurations unique to the system detector
 type Config struct {
 	// The HostnameSources is a priority list of sources from which hostname will be fetched.
@@ -22,7 +29,7 @@ type Config struct {
 // Validate config
 func (cfg *Config) Validate() error {
 	for _, hostnameSource := range cfg.HostnameSources {
-		_, exists := hostnameSourcesMap[hostnameSource]
+		_, exists := validHostnameSources[hostnameSource]
 		if !exists {
 			return fmt.Errorf("hostname_sources contains invalid value: %q", hostnameSource)
 		}

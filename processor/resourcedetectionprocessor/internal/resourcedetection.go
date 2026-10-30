@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -53,7 +55,13 @@ type ResourceProviderFactory struct {
 }
 
 func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourceProviderFactory {
-	return &ResourceProviderFactory{detectors: detectors}
+	available := make(map[DetectorType]DetectorFactory, len(detectors))
+	for detectorType, factory := range detectors {
+		if factory != nil {
+			available[detectorType] = factory
+		}
+	}
+	return &ResourceProviderFactory{detectors: available}
 }
 
 func (f *ResourceProviderFactory) CreateResourceProvider(
@@ -94,7 +102,8 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
 		if !ok {
-			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
+			return nil, fmt.Errorf("detector %q is not compiled into this binary; compiled detectors: [%s]",
+				detectorType, strings.Join(f.CompiledDetectorTypes(), ", "))
 		}
 
 		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType), failOnMissingMetadata)
@@ -106,6 +115,17 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 	}
 
 	return detectors, nil
+}
+
+// CompiledDetectorTypes returns the sorted names of detectors available in this build.
+func (f *ResourceProviderFactory) CompiledDetectorTypes() []string {
+	detectorTypes := make([]string, 0, len(f.detectors))
+	for detectorType := range f.detectors {
+		detectorTypes = append(detectorTypes, string(detectorType))
+	}
+
+	sort.Strings(detectorTypes)
+	return detectorTypes
 }
 
 type ResourceProvider struct {

@@ -31,14 +31,8 @@ func TestLoadConfig(t *testing.T) {
 		{Name: "otel_http_forwarder", Value: "dev"},
 	}
 	egressCfg.Timeout = 5 * time.Second
-	// max_idle_conns and idle_conn_timeout are deprecated keys; unmarshal them
-	// through confmap (rather than setting the fields directly) so that
-	// egressCfg picks up the same deprecation-warning bookkeeping that
-	// loading testdata/config.yaml produces below.
-	require.NoError(t, confmap.NewFromStringMap(map[string]any{
-		"max_idle_conns":    maxIdleConns,
-		"idle_conn_timeout": idleConnTimeout,
-	}).Unmarshal(&egressCfg))
+	egressCfg.Keepalive.Get().IdleConnTimeout = idleConnTimeout
+	egressCfg.Keepalive.Get().MaxIdleConns = maxIdleConns
 
 	ingressCfg := confighttp.NewDefaultServerConfig()
 	ingressCfg.NetAddr = confignet.AddrConfig{
