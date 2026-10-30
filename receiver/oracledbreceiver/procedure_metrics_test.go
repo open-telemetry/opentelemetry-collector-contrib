@@ -9,6 +9,7 @@ import (
 	"errors"
 	"maps"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,16 +93,20 @@ func newProcedureMetricsScraperWithSeeds(t *testing.T, dbclientFn clientProvider
 
 func procedureMetricsDbClientFn(t *testing.T) clientProviderFunc {
 	t.Helper()
-	return func(*sql.DB, string, *zap.Logger) dbClient {
-		var rows []metricRow
-		require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &rows))
-		return &fakeDbClient{Responses: [][]metricRow{rows}}
+	var metricsRows []metricRow
+	require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &metricsRows))
+	sourceRows := []metricRow{procedureSourceRow("")}
+	return func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Responses: [][]metricRow{sourceRows}}
+		}
+		return &fakeDbClient{Responses: [][]metricRow{metricsRows}}
 	}
 }
 
 func procedureRow(service string, overrides map[string]string) metricRow {
 	row := metricRow{
-		"SCHEMA_NAME": "ADMIN", "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
+		"SCHEMA_NAME": "ADMIN", "OBJECT_NAME": "MY_PROCEDURE", "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
 		"PROCEDURE_TYPE": "PROCEDURE", "PROGRAM_ID": "98765",
 		"DB_NAMESPACE": "ORCLPDB1", "SERVICE": service,
 		"EXECUTIONS": "300413", "CPU_TIME": "39736887", "ELAPSED_TIME": "99172810",
@@ -113,8 +118,26 @@ func procedureRow(service string, overrides map[string]string) metricRow {
 	return row
 }
 
-func staticProcedureRowsFn(rows []metricRow) clientProviderFunc {
-	return func(*sql.DB, string, *zap.Logger) dbClient {
+// procedureSourceRow returns a DBA_SOURCE row for the default test procedure.
+func procedureSourceRow(textOverride string) metricRow {
+	text := "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
+	if textOverride != "" {
+		text = textOverride
+	}
+	return metricRow{
+		"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": text,
+	}
+}
+
+func staticProcedureRowsFn(rows []metricRow, srcRows ...[]metricRow) clientProviderFunc {
+	var source []metricRow
+	if len(srcRows) > 0 {
+		source = srcRows[0]
+	}
+	return func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Responses: [][]metricRow{source}}
+		}
 		return &fakeDbClient{Responses: [][]metricRow{rows}}
 	}
 }
@@ -170,8 +193,12 @@ func TestBuildProcedureMetricsSQL(t *testing.T) {
 func TestProcedureMetricsSQLDoesNotRankInDatabase(t *testing.T) {
 	for _, useCDB := range []bool{true, false} {
 		scrpr := oracleScraper{useCDBProceduresView: useCDB}
+		sql := scrpr.buildProcedureMetricsSQL()
 
-		assert.NotContains(t, scrpr.buildProcedureMetricsSQL(), "ORDER BY",
+		// WITHIN GROUP (ORDER BY LINE) inside LISTAGG is an aggregate ordering, not a ranking clause — allowed.
+		// A top-level ORDER BY would push ranking into the database over cumulative totals rather than deltas.
+		sqlWithoutAggregateOrdering := strings.ReplaceAll(sql, "WITHIN GROUP (ORDER BY LINE)", "")
+		assert.NotContains(t, sqlWithoutAggregateOrdering, "ORDER BY",
 			"ranking must happen in the collector over deltas, not in SQL over cumulative totals")
 	}
 }
@@ -443,6 +470,82 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, scrpr.lastProcedureMetricsTimestamp.After(beforeOpen),
 		"procedure_metrics collection must run after the collection interval has elapsed")
+}
+
+func TestProcedureDefinitionEvent(t *testing.T) {
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	eventNames := make([]string, records.Len())
+	for i := range records.Len() {
+		eventNames[i] = records.At(i).EventName()
+	}
+	assert.Contains(t, eventNames, "db.server.top_procedure")
+	assert.Contains(t, eventNames, "db.server.procedure_definition")
+
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+			require.True(t, ok)
+			assert.Equal(t, "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;", def.Str())
+			return
+		}
+	}
+	t.Fatal("expected a db.server.procedure_definition event")
+}
+
+func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition must not be emitted when disabled")
+	}
+}
+
+func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
+	// Pass empty source rows so fetchProcedureDefinitions returns no results → empty definition.
+	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, []metricRow{}), procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+			require.True(t, ok)
+			assert.Empty(t, def.Str(), "empty definition should be emitted as empty string")
+			return
+		}
+	}
+	t.Fatal("expected a db.server.procedure_definition event")
+}
+
+func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
+	core, observed := observer.New(zapcore.WarnLevel)
+
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), nil)
+	scrpr.logger = zap.New(core)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.logsBuilderConfig.Events.DbServerTopProcedure.Enabled = false
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+	entries := observed.FilterMessage("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
+	require.Len(t, entries, 1)
 }
 
 // A discarded interval is otherwise indistinguishable from "the procedure did not run", and one child
