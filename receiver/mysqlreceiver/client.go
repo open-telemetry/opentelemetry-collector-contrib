@@ -371,6 +371,11 @@ type querySample struct {
 	// Connector/J" or "libmysql". Empty if the client reported no connect
 	// attributes.
 	clientName string
+	// statementTimerStart is TIMER_START from events_statements_current: an
+	// internal, monotonically increasing picosecond counter (not wall-clock
+	// time) that changes only when a new statement begins on this thread.
+	// Used as a stable per-execution key, MySQL's analog of query_start.
+	statementTimerStart int64
 }
 
 type topQuery struct {
@@ -1155,6 +1160,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.traceparent)
 			case "client_name":
 				dest = append(dest, &s.clientName)
+			case "statement_timer_start":
+				dest = append(dest, &s.statementTimerStart)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
