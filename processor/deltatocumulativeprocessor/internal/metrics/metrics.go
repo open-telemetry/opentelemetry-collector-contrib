@@ -13,13 +13,14 @@ import (
 type Ident = identity.Metric
 
 type Metric struct {
-	res   pcommon.Resource
-	scope pcommon.InstrumentationScope
+	res       pcommon.Resource
+	scope     pcommon.InstrumentationScope
+	schemaURL string
 	pmetric.Metric
 }
 
 func (m *Metric) Ident() Ident {
-	return identity.OfResourceMetric(m.res, m.scope, m.Metric)
+	return identity.OfResourceMetricWithSchema(m.res, m.scope, m.schemaURL, m.Metric)
 }
 
 func (m *Metric) Resource() pcommon.Resource {
@@ -31,7 +32,11 @@ func (m *Metric) Scope() pcommon.InstrumentationScope {
 }
 
 func From(res pcommon.Resource, scope pcommon.InstrumentationScope, metric pmetric.Metric) Metric {
-	return Metric{res: res, scope: scope, Metric: metric}
+	return FromWithSchema(res, scope, "", metric)
+}
+
+func FromWithSchema(res pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, metric pmetric.Metric) Metric {
+	return Metric{res: res, scope: scope, schemaURL: schemaURL, Metric: metric}
 }
 
 func (m Metric) AggregationTemporality() pmetric.AggregationTemporality {
