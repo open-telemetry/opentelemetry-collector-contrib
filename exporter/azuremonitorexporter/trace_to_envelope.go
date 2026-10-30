@@ -139,7 +139,7 @@ func spanToEnvelopes(
 	applyLinksToDataProperties(dataProperties, span.Links(), logger)
 
 	// Sanitize the base data, the envelope and envelope tags
-	sanitize(dataSanitizeFunc, logger)
+	sanitize(func() []string { return sanitizeKeepingGenAIContent(dataProperties, dataSanitizeFunc) }, logger)
 	sanitize(func() []string { return envelope.Sanitize() }, logger)
 	sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
 
@@ -187,7 +187,7 @@ func spanToEnvelopes(
 		applyInternalSdkVersionTagToEnvelope(spanEventEnvelope)
 
 		// Sanitize the base data, the envelope and envelope tags
-		sanitize(dataSanitizeFunc, logger)
+		sanitize(func() []string { return sanitizeKeepingGenAIContent(dataProperties, dataSanitizeFunc) }, logger)
 		sanitize(func() []string { return spanEventEnvelope.Sanitize() }, logger)
 		sanitize(func() []string { return contracts.SanitizeTags(spanEventEnvelope.Tags) }, logger)
 
