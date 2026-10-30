@@ -25,12 +25,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
+// ErrNack is the sentinel error the pushMessage callback returns to negatively
+// acknowledge a message (modify ack deadline to 0) instead of acknowledging it
+// or leaving it to expire.
+var ErrNack = errors.New("nack pubsub message")
+
+// ackIDBatchSize is the most ack IDs sent in one Acknowledge or ModifyAckDeadline
+// RPC, the same limit the Pub/Sub client libraries apply.
+const ackIDBatchSize = 1000
+
 type StreamHandler struct {
 	stream      pubsubpb.Subscriber_StreamingPullClient
 	pushMessage func(ctx context.Context, message *pubsubpb.ReceivedMessage) error
 	acks        []string
-	mutex       sync.Mutex
-	client      SubscriberClient
+	nacks       []string
+	// ackFlush signals the requestStream loop to flush pending acks/nacks early
+	ackFlush chan struct{}
+	mutex    sync.Mutex
+	client   SubscriberClient
 
 	clientID     string
 	subscription string
@@ -48,6 +60,7 @@ type StreamHandler struct {
 
 	isRunning    atomic.Bool
 	retryAttempt int
+	restartCount int
 }
 
 // ack adds the ackID to the list of message to be acknowledged asynchronously
@@ -55,6 +68,42 @@ func (handler *StreamHandler) ack(ackID string) {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
 	handler.acks = append(handler.acks, ackID)
+	handler.signalFlushIfFull()
+}
+
+// nack adds the ackID to the list of messages to be negatively acknowledged
+// (ack deadline modified to 0) asynchronously
+func (handler *StreamHandler) nack(ackID string) {
+	handler.mutex.Lock()
+	defer handler.mutex.Unlock()
+	handler.nacks = append(handler.nacks, ackID)
+	handler.signalFlushIfFull()
+}
+
+// signalFlushIfFull wakes the requestStream loop when enough acknowledgements
+// are pending, so a stream break doesn't redeliver a full timer window worth of
+// already processed messages. Callers must hold the mutex.
+func (handler *StreamHandler) signalFlushIfFull() {
+	batchSize := handler.flowControlConfig.TriggerAckBatchSize
+	if batchSize <= 0 {
+		// 0 (or negative) means the size trigger is disabled
+		return
+	}
+	if len(handler.acks)+len(handler.nacks) >= batchSize {
+		select {
+		case handler.ackFlush <- struct{}{}:
+		default:
+		}
+	}
+}
+
+// zeroDeadlines returns the ModifyDeadlineSeconds values (all 0, a nack) that
+// pair with n ModifyDeadlineAckIds.
+func zeroDeadlines(n int) []int32 {
+	if n == 0 {
+		return nil
+	}
+	return make([]int32, n)
 }
 
 func NewHandler(
@@ -78,6 +127,7 @@ func NewHandler(
 		subscription:      subscription,
 		pushMessage:       callback,
 		flowControlConfig: config,
+		ackFlush:          make(chan struct{}, 1),
 	}
 	return &handler, handler.initStream(ctx)
 }
@@ -92,6 +142,7 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 		return err
 	}
 
+	handler.mutex.Lock()
 	request := pubsubpb.StreamingPullRequest{
 		Subscription:             handler.subscription,
 		StreamAckDeadlineSeconds: int32(handler.flowControlConfig.StreamAckDeadline.Seconds()),
@@ -99,12 +150,17 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 		MaxOutstandingMessages:   handler.flowControlConfig.MaxOutstandingMessages,
 		MaxOutstandingBytes:      handler.flowControlConfig.MaxOutstandingBytes,
 		AckIds:                   handler.acks,
+		ModifyDeadlineAckIds:     handler.nacks,
+		ModifyDeadlineSeconds:    zeroDeadlines(len(handler.nacks)),
 	}
 	if err := handler.stream.Send(&request); err != nil {
+		handler.mutex.Unlock()
 		_ = handler.stream.CloseSend()
 		return err
 	}
 	handler.acks = nil
+	handler.nacks = nil
+	handler.mutex.Unlock()
 	handler.telemetryBuilder.ReceiverGooglecloudpubsubStreamRestarts.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("otelcol.component.kind", "receiver"),
@@ -143,11 +199,15 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 		if handler.isRunning.Load() {
 			err := handler.initStream(ctx)
 			if err != nil {
-				handler.settings.Logger.Error("Failed to recovery stream.")
+				handler.settings.Logger.Error("Failed to recover stream.", zap.Error(err))
 				handler.retryAttempt++
 			} else {
 				handler.retryAttempt = 0
 			}
+			handler.restartCount++
+			handler.settings.Logger.Info("Restarting Pub/Sub stream.",
+				zap.Int("restart_count", handler.restartCount),
+				zap.Int("retry_attempt", handler.retryAttempt))
 		}
 		handler.settings.Logger.Debug("End of recovery loop, restarting.")
 		time.Sleep(exponentialBackoff(handler.retryAttempt))
@@ -158,10 +218,65 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 
 func (handler *StreamHandler) CancelNow() {
 	handler.isRunning.Swap(false)
+	// Canceling makes the stream goroutines exit without sending anything on a
+	// stream whose context is going away. Once they are done nothing touches the
+	// pending lists anymore, so a single flush over the unary RPCs covers every
+	// message processed so far, including those handled during the shutdown.
 	if handler.cancel != nil {
 		handler.cancel()
 		handler.Wait()
 	}
+	handler.finalFlush()
+}
+
+// finalFlush acknowledges pending acks/nacks over the unary RPCs with a detached
+// context, as the stream (and its context) is going away at shutdown. The IDs
+// are sent in batches no larger than the client libraries use.
+func (handler *StreamHandler) finalFlush() {
+	handler.mutex.Lock()
+	acks := handler.acks
+	nacks := handler.nacks
+	handler.acks = nil
+	handler.nacks = nil
+	handler.mutex.Unlock()
+	if len(acks) == 0 && len(nacks) == 0 {
+		return
+	}
+	// detached context: the handler contexts are canceled (or canceling) at this point
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	for _, batch := range splitAckIDs(acks, ackIDBatchSize) {
+		if err := handler.client.Acknowledge(ctx, &pubsubpb.AcknowledgeRequest{
+			Subscription: handler.subscription,
+			AckIds:       batch,
+		}); err != nil {
+			handler.settings.Logger.Warn("failed to acknowledge messages on shutdown, they will be redelivered",
+				zap.Int("count", len(batch)), zap.Error(err))
+		}
+	}
+	for _, batch := range splitAckIDs(nacks, ackIDBatchSize) {
+		if err := handler.client.ModifyAckDeadline(ctx, &pubsubpb.ModifyAckDeadlineRequest{
+			Subscription:       handler.subscription,
+			AckIds:             batch,
+			AckDeadlineSeconds: 0,
+		}); err != nil {
+			handler.settings.Logger.Warn("failed to nack messages on shutdown, they will be redelivered after the ack deadline",
+				zap.Int("count", len(batch)), zap.Error(err))
+		}
+	}
+}
+
+// splitAckIDs cuts ids into consecutive batches of at most size elements.
+func splitAckIDs(ids []string, size int) [][]string {
+	var batches [][]string
+	for len(ids) > size {
+		batches = append(batches, ids[:size])
+		ids = ids[size:]
+	}
+	if len(ids) > 0 {
+		batches = append(batches, ids)
+	}
+	return batches
 }
 
 func (handler *StreamHandler) Wait() {
@@ -173,31 +288,39 @@ func (handler *StreamHandler) Wait() {
 func (handler *StreamHandler) acknowledgeMessages() error {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
-	if len(handler.acks) == 0 {
+	if len(handler.acks) == 0 && len(handler.nacks) == 0 {
 		return nil
 	}
 	request := pubsubpb.StreamingPullRequest{
-		AckIds: handler.acks,
+		AckIds:                handler.acks,
+		ModifyDeadlineAckIds:  handler.nacks,
+		ModifyDeadlineSeconds: zeroDeadlines(len(handler.nacks)),
 	}
 	err := handler.stream.Send(&request)
 	if err == nil {
 		handler.acks = nil
+		handler.nacks = nil
 	}
 	return err
 }
 
 // requestStream waits for triggers to acknowledge messages that have been processed by the collector. If
 // a stream got restarted, the messages that still needed to be acknowledged are acknowledged at the start
-// of the new stream, so we don't need to start with an acknowledgeMessages.
+// of the new stream, so we don't need to start with an acknowledgeMessages. When the context is cancelled
+// nothing is sent: the stream is going away, and whatever is pending is picked up by the next stream or,
+// at shutdown, by the final flush.
 func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.CancelFunc) {
 	timer := time.NewTimer(handler.flowControlConfig.TriggerAckBatchDuration)
+loop:
 	for {
 		select {
 		case <-ctx.Done():
 			handler.settings.Logger.Debug("requestStream <-ctx.Done()")
+			break loop
 		case <-timer.C:
+		case <-handler.ackFlush:
+			handler.settings.Logger.Debug("requestStream size-triggered acknowledge flush")
 		}
-		// whatever happens, we need to acknowledge the messages
 		if err := handler.acknowledgeMessages(); err != nil {
 			if errors.Is(err, io.EOF) {
 				handler.settings.Logger.Warn("EOF reached")
@@ -228,23 +351,33 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 			for _, message := range resp.ReceivedMessages {
 				// handle all the messages in the response, could be one or more
 				err = handler.pushMessage(context.Background(), message)
-				if err == nil {
-					// When sending a message though the pipeline fails, we ignore the error. We'll let Pubsub
-					// handle the flow control.
+				switch {
+				case err == nil:
 					handler.ack(message.AckId)
+				case errors.Is(err, context.Canceled):
+					// The collector is probably shutting down, don't ack nor nack so the
+					// message is redelivered and processed by a healthy subscriber.
+				case errors.Is(err, ErrNack):
+					handler.nack(message.AckId)
+				default:
+					// The message is neither acked nor nacked and will be redelivered
+					// after the ack deadline expires.
 				}
 			}
 		} else {
 			s, grpcStatus := status.FromError(err)
 			switch {
 			case errors.Is(err, io.EOF):
+				handler.settings.Logger.Info("response stream closed by the server (EOF), restarting stream",
+					zap.Error(err))
 				activeStreaming = false
 			case !grpcStatus:
 				handler.settings.Logger.Warn("response stream breaking on error",
 					zap.Error(err))
 				activeStreaming = false
 			case s.Code() == codes.Unavailable:
-				handler.settings.Logger.Debug("response stream breaking on gRPC s 'Unavailable'")
+				handler.settings.Logger.Info("response stream breaking on gRPC status 'Unavailable', restarting stream",
+					zap.Error(err))
 				activeStreaming = false
 			case s.Code() == codes.NotFound:
 				handler.settings.Logger.Error("resource doesn't exist, wait 60 seconds, and restarting stream")
