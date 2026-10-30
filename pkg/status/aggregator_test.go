@@ -4,6 +4,7 @@
 package status_test
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -334,12 +336,7 @@ func TestStreaming(t *testing.T) {
 
 	// Traces Pipeline RecoverableError
 	agg.RecordStatus(traces.ExporterID, componentstatus.NewRecoverableErrorEvent(assert.AnError))
-	assertErrorEventsRecvdMatch(t,
-		componentstatus.StatusRecoverableError,
-		assert.AnError,
-		traceEvents,
-		allEvents,
-	)
+	assertRecoverableErrorEventsRecvd(t, assert.AnError, traceEvents, allEvents)
 
 	// Traces Pipeline Recover
 	agg.RecordStatus(traces.ExporterID, componentstatus.NewEvent(componentstatus.StatusOK))
@@ -357,6 +354,59 @@ func TestStreaming(t *testing.T) {
 	assertEventsRecvdMatch(t, componentstatus.StatusStopped, traceEvents)
 	testhelpers.SeedAggregator(agg, metrics.InstanceIDs(), componentstatus.StatusStopped)
 	assertEventsRecvdMatch(t, componentstatus.StatusStopped, metricEvents, allEvents)
+}
+
+func TestStreamingChangeDetection(t *testing.T) {
+	agg := status.NewAggregator(status.PriorityPermanent)
+	defer agg.Close()
+
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), componentstatus.StatusOK)
+
+	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
+	defer traceUnsub()
+	allEvents, allUnsub := agg.Subscribe(status.ScopeAll, status.Concise)
+	defer allUnsub()
+
+	// Drain the current status delivered on subscribe.
+	<-traceEvents
+	<-allEvents
+
+	// Re-reporting the same status for a component is a no-op: nothing is emitted.
+	agg.RecordStatus(traces.ExporterID, componentstatus.NewEvent(componentstatus.StatusOK))
+	assertNoEventsRecvd(t, traceEvents, allEvents)
+
+	// A genuine status change is emitted.
+	agg.RecordStatus(traces.ExporterID, componentstatus.NewRecoverableErrorEvent(assert.AnError))
+	assertRecoverableErrorEventsRecvd(t, assert.AnError, traceEvents, allEvents)
+
+	// Re-reporting the same status and error is a no-op, even though the event
+	// carries a fresh timestamp.
+	agg.RecordStatus(traces.ExporterID, componentstatus.NewRecoverableErrorEvent(assert.AnError))
+	assertNoEventsRecvd(t, traceEvents, allEvents)
+
+	// A same-status event carrying a different error still propagates.
+	otherErr := errors.New("a different recoverable error")
+	agg.RecordStatus(traces.ExporterID, componentstatus.NewRecoverableErrorEvent(otherErr))
+	assertRecoverableErrorEventsRecvd(t, otherErr, traceEvents, allEvents)
+
+	// A same-status event carrying different attributes still propagates.
+	attrs := pcommon.NewMap()
+	attrs.PutStr("key", "value")
+	agg.RecordStatus(traces.ExporterID, componentstatus.NewEvent(
+		componentstatus.StatusRecoverableError,
+		componentstatus.WithError(otherErr),
+		componentstatus.WithAttributes(attrs),
+	))
+	assertRecoverableErrorEventsRecvd(t, otherErr, traceEvents, allEvents)
+
+	// Re-reporting the same attributes is a no-op.
+	agg.RecordStatus(traces.ExporterID, componentstatus.NewEvent(
+		componentstatus.StatusRecoverableError,
+		componentstatus.WithError(otherErr),
+		componentstatus.WithAttributes(attrs),
+	))
+	assertNoEventsRecvd(t, traceEvents, allEvents)
 }
 
 func TestStreamingVerbose(t *testing.T) {
@@ -508,16 +558,14 @@ func assertEventsRecvdMatch(t *testing.T,
 	}
 }
 
-func assertErrorEventsRecvdMatch(t *testing.T,
-	expectedStatus componentstatus.Status,
+func assertRecoverableErrorEventsRecvd(t *testing.T,
 	expectedErr error,
 	chans ...<-chan *status.AggregateStatus,
 ) {
-	assert.True(t, componentstatus.StatusIsError(expectedStatus))
 	for _, stCh := range chans {
 		st := <-stCh
 		ev := st.Event
-		assert.Equal(t, expectedStatus, ev.Status())
+		assert.Equal(t, componentstatus.StatusRecoverableError, ev.Status())
 		assert.Equal(t, expectedErr, ev.Err())
 	}
 }
