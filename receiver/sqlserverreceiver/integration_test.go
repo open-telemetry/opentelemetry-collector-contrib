@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -416,4 +417,191 @@ func TestSharedConnectionPool(t *testing.T) {
 	// One independent pool per scraper would not share this limit.
 	assert.LessOrEqual(t, shared.Stats().OpenConnections, len(scrapers),
 		"open connections must be bounded by the single shared pool")
+}
+
+// startWorkload runs query against database in a loop until the test ends,
+// simulating a client of that database.
+func startWorkload(t *testing.T, port, database, query string) {
+	connStr := fmt.Sprintf("Server=localhost,%s;Database=%s;User Id=myuser;Password=UserStrongPass1;", port, database)
+	db, err := sql.Open("sqlserver", connStr)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	t.Cleanup(func() {
+		cancel()
+		<-done
+		assert.NoError(t, db.Close())
+	})
+	go func() {
+		defer close(done)
+		for ctx.Err() == nil {
+			// Errors are expected once the context is canceled at the end of the test.
+			_, _ = db.ExecContext(ctx, query)
+		}
+	}()
+}
+
+// loggedDatabases returns the distinct db.namespace values of the log records.
+func loggedDatabases(logs plog.Logs) []string {
+	var names []string
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		scopeLogs := logs.ResourceLogs().At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			records := scopeLogs.At(j).LogRecords()
+			for k := 0; k < records.Len(); k++ {
+				if db, ok := records.At(k).Attributes().Get("db.namespace"); ok && !slices.Contains(names, db.AsString()) {
+					names = append(names, db.AsString())
+				}
+			}
+		}
+	}
+	return names
+}
+
+// TestDatabaseFilter checks that databases and exclude_databases filter the
+// metrics and events of a live SQL Server holding the user databases mydb and
+// otherdb, both running the same workload.
+func TestDatabaseFilter(t *testing.T) {
+	ci, err := setupContainer()
+	require.NoError(t, err)
+	require.NoError(t, ci.Start(t.Context()))
+	defer testcontainers.CleanupContainer(t, ci)
+
+	p, err := ci.MappedPort(t.Context(), "1433")
+	require.NoError(t, err)
+	portNumber, err := strconv.Atoi(p.Port())
+	require.NoError(t, err)
+
+	for _, database := range []string{"mydb", "otherdb"} {
+		startWorkload(t, p.Port(), database, "EXEC dbo.test_proc; WAITFOR DELAY '00:00:01'")
+	}
+
+	filters := []struct {
+		name      string
+		configure func(*Config)
+		check     func(tt *assert.CollectT, databases []string)
+	}{
+		{
+			name:      "databases",
+			configure: func(cfg *Config) { cfg.Databases = []string{"MYDB"} },
+			check: func(tt *assert.CollectT, databases []string) {
+				assert.Equal(tt, []string{"mydb"}, databases)
+			},
+		},
+		{
+			name:      "exclude_databases",
+			configure: func(cfg *Config) { cfg.ExcludeDatabases = []string{"mydb"} },
+			check: func(tt *assert.CollectT, databases []string) {
+				assert.Contains(tt, databases, "otherdb")
+				assert.NotContains(tt, databases, "mydb")
+			},
+		},
+	}
+
+	signals := []struct {
+		name      string
+		query     string
+		configure func(*Config)
+	}{
+		{
+			name:  "database io",
+			query: getSQLServerDatabaseIOQuery(),
+			configure: func(cfg *Config) {
+				cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+			},
+		},
+		{
+			name:  "index physical stats",
+			query: getSQLServerIndexPhysicalStatsQuery(),
+			configure: func(cfg *Config) {
+				cfg.MetricsBuilderConfig.Metrics.SqlserverIndexPageCount.Enabled = true
+			},
+		},
+		{
+			name:  "query sample",
+			query: getSQLServerQuerySamplesQuery(),
+			configure: func(cfg *Config) {
+				cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+			},
+		},
+		{
+			name:  "top query",
+			query: getSQLServerQueryTextAndPlanQuery(),
+			configure: func(cfg *Config) {
+				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+			},
+		},
+		{
+			name:  "top procedure",
+			query: getSQLServerTopProcedureQuery(),
+			configure: func(cfg *Config) {
+				cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled = true
+				cfg.TopProcedureCollection = TopProcedureCollection{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       250,
+					CollectionInterval:      time.Millisecond,
+				}
+			},
+		},
+	}
+
+	settings := receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.Must(zap.NewProduction()),
+		},
+	}
+
+	for _, filter := range filters {
+		for _, signal := range signals {
+			t.Run(filter.name+"/"+signal.name, func(t *testing.T) {
+				cfg := basicConfig(uint(portNumber))
+				signal.configure(cfg)
+				filter.configure(cfg)
+
+				scrapers, provider := setupSQLServerScrapers(settings, cfg)
+				logsScrapers, logsProvider := setupSQLServerLogsScrapers(settings, cfg)
+				scrapers = append(scrapers, logsScrapers...)
+				defer func() {
+					for _, p := range []*dbProvider{provider, logsProvider} {
+						assert.NoError(t, p.close())
+					}
+				}()
+
+				var scraper *sqlServerScraperHelper
+				for _, s := range scrapers {
+					if s.sqlQuery == signal.query {
+						scraper = s
+					}
+				}
+				require.NotNil(t, scraper)
+				require.NoError(t, scraper.Start(t.Context(), componenttest.NewNopHost()))
+				defer func() { assert.NoError(t, scraper.Shutdown(t.Context())) }()
+
+				// Every scrape adds its databases, so a database the filter lets
+				// through on any scrape fails the check from then on.
+				var databases []string
+				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+					var scraped []string
+					if slices.Contains(setupLogQueries(cfg), signal.query) {
+						logs, scrapeErr := scraper.ScrapeLogs(t.Context())
+						require.NoError(tt, scrapeErr)
+						scraped = loggedDatabases(logs)
+					} else {
+						metrics, scrapeErr := scraper.ScrapeMetrics(t.Context())
+						require.NoError(tt, scrapeErr)
+						scraped = reportedDatabases(metrics)
+					}
+					for _, db := range scraped {
+						if !slices.Contains(databases, db) {
+							databases = append(databases, db)
+						}
+					}
+					slices.Sort(databases)
+					filter.check(tt, databases)
+				}, time.Minute, time.Second)
+				t.Logf("reported databases: %v", databases)
+			})
+		}
+	}
 }

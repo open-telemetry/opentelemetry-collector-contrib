@@ -18,7 +18,7 @@ with qstats as (
 		SUM(qs.total_rows) AS total_rows,
 		SUM(qs.total_grant_kb) as total_grant_kb
 	FROM sys.dm_exec_query_stats AS qs
-	    CROSS APPLY sys.dm_exec_sql_text(qs.plan_handle) AS st1
+	    CROSS APPLY sys.dm_exec_sql_text(qs.plan_handle) AS st1{database_filter WHERE DB_NAME(st1.dbid)}
 	GROUP BY
 	    st1.objectid,
 		qs.query_hash,
