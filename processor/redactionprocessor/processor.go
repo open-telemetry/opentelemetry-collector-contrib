@@ -34,7 +34,9 @@ import (
 const attrValuesSeparator = ","
 
 // maskAllValuesRegex masks a whole value, for keys matching the blocked key patterns.
-var maskAllValuesRegex = regexp.MustCompile(".*")
+// (?s) makes '.' match newlines. Without it, ReplaceAll treats each line as its
+// own match, so a multi-line value is masked once per line and the line breaks remain.
+var maskAllValuesRegex = regexp.MustCompile("(?s).*")
 
 type redaction struct {
 	// Attribute keys allowed in a span
