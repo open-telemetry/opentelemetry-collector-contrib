@@ -141,7 +141,7 @@ See [issue-triaging.md](./issue-triaging.md) for more information on the issue t
 
 ### Adding Labels via Comments
 
-In order to facilitate proper label usage and to empower Code Owners, you are able to add labels to issues via comments. To add a label through a comment, post a new comment on an issue starting with `/label`, followed by a space-separated list of your desired labels. Supported labels come from the table below, or correspond to a component defined in the [CODEOWNERS file](.github/CODEOWNERS).
+In order to facilitate proper label usage and to empower Code Owners, you are able to add labels to issues and discussions via comments. To add a label through a comment, post a new comment on an issue or discussion starting with `/label`, followed by a space-separated list of your desired labels. Supported labels come from the table below, or correspond to a component defined in the [CODEOWNERS file](.github/CODEOWNERS).
 
 The following general labels are supported:
 
