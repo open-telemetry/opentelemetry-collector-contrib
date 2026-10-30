@@ -53,7 +53,7 @@ and allows you to configure a list of statements for the processor to execute. T
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
 > [!NOTE]
-> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is in development and requires the [`processor.transform.EnableProfileStatements`](#processortransformenableprofilestatements) feature gate.
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is in development and requires the [`processor.transform.enableProfileStatements`](#processortransformenableprofilestatements) feature gate.
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
@@ -1096,9 +1096,9 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 
 ## Feature Gate
 
-### `processor.transform.EnableProfileStatements`
+### `processor.transform.enableProfileStatements`
 
-The `processor.transform.EnableProfileStatements` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables support for the `profile` signal. While it is disabled, configuring `profile_statements` fails validation and the processor can't be used in a profiles pipeline.
+The `processor.transform.enableProfileStatements` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables support for the `profile` signal. While it is disabled, configuring `profile_statements` fails validation and the processor can't be used in a profiles pipeline.
 
 #### Example Usage
 
@@ -1110,7 +1110,7 @@ The `processor.transform.EnableProfileStatements` [feature gate](https://github.
       - set(profile.attributes["name"], "bear")
   ```
 
-  Run collector: `./otelcol --config config.yaml --feature-gates=processor.transform.EnableProfileStatements`
+  Run collector: `./otelcol --config config.yaml --feature-gates=processor.transform.enableProfileStatements`
 
 ### `transform.flatten.logs`
 

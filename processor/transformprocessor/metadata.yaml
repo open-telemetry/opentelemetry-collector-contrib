@@ -14,7 +14,7 @@ status:
     seeking_new: false
 
 feature_gates:
-  - id: "processor.transform.EnableProfileStatements"
+  - id: "processor.transform.enableProfileStatements"
     description: Enables support for the profiles signal, including the `profile_statements` configuration option.
     stage: alpha
     from_version: v0.165.0
