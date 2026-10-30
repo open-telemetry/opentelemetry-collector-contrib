@@ -1053,6 +1053,118 @@ func TestCumulativeToDeltaExponentialHistogramNaNSum(t *testing.T) {
 	require.NoError(t, mgp.Shutdown(t.Context()))
 }
 
+// TestCumulativeToDeltaHistogramUnsetSum checks that a data point without a sum is not read as a sum of 0,
+// which would make the next sum be diffed against 0 and repeat what was already emitted.
+func TestCumulativeToDeltaHistogramUnsetSum(t *testing.T) {
+	now := time.Now()
+	// sums are the cumulative sums of the points, nil for a point without a sum.
+	sums := []*float64{new(1000.0), nil, new(1200.0), new(1300.0)}
+	// expected are the delta sums, nil for a point that stays without a sum.
+	expected := []*float64{new(1000.0), nil, new(200.0), new(100.0)}
+
+	for _, tc := range []struct {
+		name    string
+		metrics func() pmetric.Metrics
+		sums    func(pmetric.Metric) []*float64
+	}{
+		{
+			name: "histogram",
+			metrics: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				m.SetName("metric_1")
+				h := m.SetEmptyHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				for i, sum := range sums {
+					count := uint64(10 * (i + 1))
+					dp := h.DataPoints().AppendEmpty()
+					dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Second)))
+					dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(i+2) * time.Second)))
+					dp.SetCount(count)
+					if sum != nil {
+						dp.SetSum(*sum)
+					}
+					dp.ExplicitBounds().FromRaw([]float64{1})
+					dp.BucketCounts().FromRaw([]uint64{count, 0})
+				}
+				return md
+			},
+			sums: func(m pmetric.Metric) []*float64 {
+				var out []*float64
+				dps := m.Histogram().DataPoints()
+				for i := range dps.Len() {
+					out = append(out, optionalSum(dps.At(i).HasSum(), dps.At(i).Sum()))
+				}
+				return out
+			},
+		},
+		{
+			name: "exponential_histogram",
+			metrics: func() pmetric.Metrics {
+				points := make([]testExponentialHistogramPoint, 0, len(sums))
+				for i, sum := range sums {
+					count := uint64(10 * (i + 1))
+					points = append(points, testExponentialHistogramPoint{
+						startTs:         1,
+						ts:              int64(i + 2),
+						count:           count,
+						sum:             sum,
+						positiveBuckets: []uint64{count},
+					})
+				}
+				return testExponentialHistogramMetrics{
+					metrics: []testExponentialHistogramMetric{{name: "metric_1", cumulative: true, points: points}},
+				}.generateMetrics(now)
+			},
+			sums: func(m pmetric.Metric) []*float64 {
+				var out []*float64
+				dps := m.ExponentialHistogram().DataPoints()
+				for i := range dps.Len() {
+					out = append(out, optionalSum(dps.At(i).HasSum(), dps.At(i).Sum()))
+				}
+				return out
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			next := new(consumertest.MetricsSink)
+			mgp, err := NewFactory().CreateMetrics(
+				t.Context(),
+				processortest.NewNopSettings(metadata.Type),
+				&Config{InitialValue: tracking.InitialValueKeep},
+				next,
+			)
+			require.NoError(t, err)
+			require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, mgp.ConsumeMetrics(t.Context(), tc.metrics()))
+
+			got := next.AllMetrics()
+			require.Len(t, got, 1)
+			actual := tc.sums(got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
+			require.Len(t, actual, len(expected))
+			for i := range expected {
+				if expected[i] == nil {
+					assert.Nil(t, actual[i], "point %d has no sum", i)
+					continue
+				}
+				if assert.NotNil(t, actual[i], "point %d has a sum", i) {
+					assert.InDelta(t, *expected[i], *actual[i], 1e-9, "point %d", i)
+				}
+			}
+
+			require.NoError(t, mgp.Shutdown(t.Context()))
+		})
+	}
+}
+
+// optionalSum returns the sum of a data point, or nil when it has none.
+func optionalSum(hasSum bool, sum float64) *float64 {
+	if !hasSum {
+		return nil
+	}
+	return &sum
+}
+
 func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()

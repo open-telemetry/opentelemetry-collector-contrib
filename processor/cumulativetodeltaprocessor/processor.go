@@ -237,6 +237,15 @@ func (ctdp *cumulativeToDeltaProcessor) recordDropped(ctx context.Context, id tr
 	}
 }
 
+// trackedSum returns the sum of a histogram data point as the tracker should see it. A point without
+// a sum reads as 0 in pdata, which would be diffed as a real sum, so it is reported as NaN instead.
+func trackedSum(hasSum bool, sum float64) float64 {
+	if !hasSum {
+		return math.NaN()
+	}
+	return sum
+}
+
 func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {
 	attrs := metricTypeAttrs[pmetric.MetricTypeSum]
 	dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
@@ -297,7 +306,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.C
 			ObservedTimestamp: dp.Timestamp(),
 			HistogramValue: &tracking.HistogramPoint{
 				Count:        dp.Count(),
-				Sum:          dp.Sum(),
+				Sum:          trackedSum(dp.HasSum(), dp.Sum()),
 				BucketBounds: dp.ExplicitBounds().AsRaw(),
 				BucketCounts: dp.BucketCounts().AsRaw(),
 			},
@@ -344,7 +353,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ct
 			ObservedTimestamp: dp.Timestamp(),
 			ExponentialHistogramValue: &tracking.ExponentialHistogramPoint{
 				Count:         dp.Count(),
-				Sum:           dp.Sum(),
+				Sum:           trackedSum(dp.HasSum(), dp.Sum()),
 				Scale:         dp.Scale(),
 				ZeroCount:     dp.ZeroCount(),
 				ZeroThreshold: dp.ZeroThreshold(),
