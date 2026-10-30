@@ -86,6 +86,13 @@ start. Use the options below to select other versions.
   passed to Weaver's `--registry` flag. The default is the pinned release.
   An empty string restores Weaver's own default: the unreleased registry on
   semantic-conventions main.
+- `WithSchemaURL(schemaURL string)`: select the semantic-conventions release
+  that matches an OpenTelemetry schema URL
+  (`https://opentelemetry.io/schemas/<version>`). Pass the component's own
+  schema URL constant (for example `semconv.SchemaURL`) so the check follows
+  the component's schema version. Other URLs fail the test; use
+  `WithRegistry` for a custom registry. Cannot be combined with
+  `WithRegistry`.
 
 ## Report types
 

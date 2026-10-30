@@ -169,3 +169,67 @@ func TestValidateWeaverVersion(t *testing.T) {
 		})
 	}
 }
+
+func TestRegistryForSchemaURL(t *testing.T) {
+	tests := []struct {
+		name      string
+		schemaURL string
+		want      string
+		wantErr   string
+	}{
+		{
+			name:      "release schema URL maps to its release registry",
+			schemaURL: "https://opentelemetry.io/schemas/1.34.0",
+			want:      "https://github.com/open-telemetry/semantic-conventions.git@v1.34.0[model]",
+		},
+		{
+			name:      "http scheme rejected",
+			schemaURL: "http://opentelemetry.io/schemas/1.34.0",
+			wantErr:   "use WithRegistry",
+		},
+		{
+			name:      "non-opentelemetry.io host rejected",
+			schemaURL: "https://example.com/schemas/1.34.0",
+			wantErr:   "use WithRegistry",
+		},
+		{
+			name:      "missing version rejected",
+			schemaURL: "https://opentelemetry.io/schemas/",
+			wantErr:   "valid semantic-conventions version",
+		},
+		{
+			name:      "non-semver version rejected",
+			schemaURL: "https://opentelemetry.io/schemas/latest",
+			wantErr:   "valid semantic-conventions version",
+		},
+		{
+			name:      "trailing slash rejected",
+			schemaURL: "https://opentelemetry.io/schemas/1.34.0/",
+			wantErr:   "valid semantic-conventions version",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := semconvtest.RegistryForSchemaURL(tt.schemaURL)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestWeaverMetricsWithSchemaURL(t *testing.T) {
+	metrics := pmetric.NewMetrics()
+	res := metrics.ResourceMetrics().AppendEmpty()
+	res.Resource().Attributes().PutStr("invalid.resource.attribute", "value")
+
+	rec := &recordingTB{TB: t}
+	violations := semconvtest.TestMetrics(rec, metrics, semconvtest.WithSchemaURL("https://opentelemetry.io/schemas/1.44.0"))
+
+	require.True(t, rec.failed, "expected TestMetrics to mark the test as failed")
+	resourceAttrViolation := findViolationByAttributeName(violations, "invalid.resource.attribute")
+	require.NotNil(t, resourceAttrViolation, "expected violation for invalid.resource.attribute")
+}

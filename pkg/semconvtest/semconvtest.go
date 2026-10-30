@@ -69,6 +69,10 @@ const (
 	// semantic-conventions Git repository, "model" sub-folder), pinned to a
 	// release tag with Weaver's @refspec syntax.
 	defaultRegistryTemplate = "https://github.com/open-telemetry/semantic-conventions.git@%s[model]"
+
+	// schemaURLPrefix is the prefix of OpenTelemetry schema URLs, which
+	// WithSchemaURL maps to semantic-conventions release registries.
+	schemaURLPrefix = "https://opentelemetry.io/schemas/"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
@@ -88,12 +92,27 @@ func WithVersion(version string) WeaverOption {
 // release pinned in defaultRegistryVersion. Pass an empty string to restore
 // Weaver's own default: the unreleased registry on semantic-conventions main.
 func WithRegistry(registry string) WeaverOption {
-	return func(o *weaverOptions) { o.registry = registry }
+	return func(o *weaverOptions) {
+		o.registry = registry
+		o.registrySet = true
+	}
+}
+
+// WithSchemaURL selects the semantic-conventions release registry that
+// matches the given OpenTelemetry schema URL, so the live-check validates
+// against the conventions version the component declares. Pass the
+// component's schema URL constant (for example semconv.SchemaURL). Only
+// https://opentelemetry.io/schemas/<version> URLs are supported; for any
+// other registry, use WithRegistry. Combining both options fails the test.
+func WithSchemaURL(schemaURL string) WeaverOption {
+	return func(o *weaverOptions) { o.schemaURL = schemaURL }
 }
 
 type weaverOptions struct {
-	version  string
-	registry string
+	version     string
+	registry    string
+	registrySet bool
+	schemaURL   string
 }
 
 // normalizeWeaverVersion converts a Docker tag into a "v"-prefixed string
@@ -122,6 +141,22 @@ func validateWeaverVersion(version string) error {
 		return fmt.Errorf("weaver version %q is not supported: this package relies on --output=http, which requires %s or newer", version, minWeaverVersion)
 	}
 	return nil
+}
+
+// registryForSchemaURL maps an OpenTelemetry schema URL (for example
+// https://opentelemetry.io/schemas/1.34.0) to the semantic-conventions
+// release registry for that version. Only opentelemetry.io schema URLs
+// have a corresponding release registry; anything else is an error, and
+// the caller should use WithRegistry instead.
+func registryForSchemaURL(schemaURL string) (string, error) {
+	version, ok := strings.CutPrefix(schemaURL, schemaURLPrefix)
+	if !ok {
+		return "", fmt.Errorf("schema URL %q is not an opentelemetry.io schema URL (%s<version>); use WithRegistry to select a custom registry", schemaURL, schemaURLPrefix)
+	}
+	if !semver.IsValid("v" + version) {
+		return "", fmt.Errorf("schema URL %q does not end in a valid semantic-conventions version", schemaURL)
+	}
+	return fmt.Sprintf(defaultRegistryTemplate, "v"+version), nil
 }
 
 // weaverUsesReportEndpoint reports whether version uses the GET /report +
@@ -192,6 +227,17 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 
 	if err := validateWeaverVersion(options.version); err != nil {
 		tb.Fatal(err)
+	}
+
+	if options.schemaURL != "" {
+		if options.registrySet {
+			tb.Fatal("WithSchemaURL and WithRegistry cannot be combined: pick one registry source")
+		}
+		registry, err := registryForSchemaURL(options.schemaURL)
+		if err != nil {
+			tb.Fatal(err)
+		}
+		options.registry = registry
 	}
 
 	ctx := tb.Context()

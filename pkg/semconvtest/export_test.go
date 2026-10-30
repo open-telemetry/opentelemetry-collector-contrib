@@ -9,4 +9,7 @@ package semconvtest
 // package. The shared Makefile's integration-test discovery only works with
 // a single *integration_test.go file per module root, so the version test
 // lives in semconvtest_integration_test.go instead of an internal test file.
-var ValidateWeaverVersion = validateWeaverVersion
+var (
+	ValidateWeaverVersion = validateWeaverVersion
+	RegistryForSchemaURL  = registryForSchemaURL
+)
