@@ -26,6 +26,10 @@ func TestExpoAdd(t *testing.T) {
 	maxBuckets = 8
 	defer func() { maxBuckets = prevMaxBuckets }()
 
+	// upper boundary of (8,16] as computed by Bounds. it rounds to
+	// 15.999999999999998, which Idx places in the next bucket
+	_, upper3 := expo.Scale(0).Bounds(3)
+
 	cases := []struct {
 		name            string
 		dp, in          expdp
@@ -68,15 +72,41 @@ func TestExpoAdd(t *testing.T) {
 		in:   expdp{PosNeg: bins{0, 1, 0}.Into(), Zt: 0, Zc: 2, Count: 3},
 		want: expdp{PosNeg: bins{ø, 2, 2, ø, ø, ø, ø, ø}.Into(), Zt: 0, Zc: 5, Count: 8},
 	}, {
-		name: "zero/diff",
+		name: "zero/diff", flip: true,
 		dp:   expdp{PosNeg: bins{ø, ø, 0, 1, 1, 1}.Into(), Zt: 0.0, Zc: 2},
 		in:   expdp{PosNeg: bins{ø, ø, ø, ø, 1, 1}.Into(), Zt: 2.0, Zc: 2},
 		want: expdp{PosNeg: bins{ø, ø, ø, ø, 2, 2, ø, ø}.Into(), Zt: 2.0, Zc: 4 + 2*1},
 	}, {
-		name: "zero/subzero",
+		name: "zero/subzero", flip: true,
 		dp:   expdp{PosNeg: bins{ø, 1, 1, 1, 1, 1}.Into(), Zt: 0.2, Zc: 2},
 		in:   expdp{PosNeg: bins{ø, ø, 1, 1, 1, 1}.Into(), Zt: 0.3, Zc: 2},
 		want: expdp{PosNeg: bins{ø, ø, 2, 2, 2, 2, ø, ø}.Into(), Zt: 0.5, Zc: 4 + 2*1},
+	}, {
+		// zt=1.5 is within populated bucket 0 of both. move it into zero for both
+		name: "zero/within-populated", flip: true,
+		dp:   expdp{PosNeg: bins{ø, ø, ø, 1, 1, ø, ø, ø}.Into(), Zt: 0.0, Zc: 0},
+		in:   expdp{PosNeg: bins{ø, ø, ø, 1, 1, ø, ø, ø}.Into(), Zt: 1.5, Zc: 0},
+		want: expdp{PosNeg: bins{ø, ø, ø, ø, 2, ø, ø, ø}.Into(), Zt: 2.0, Zc: 2*1 + 2*1},
+	}, {
+		// zt=10 is within bucket 3. widening in to the rounded upper boundary
+		// of bucket 3 must not also move bucket 4 into zero
+		name: "zero/rounded-boundary", flip: true,
+		dp:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, 1, 1, 1}.Into(), Zt: 0, Zc: 0},
+		in:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 10, Zc: 0},
+		want: expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 2}.Into(), Zt: upper3, Zc: 2*(1+1) + 2*1},
+	}, {
+		// zt=16 is the exact upper boundary of bucket 3. keep it, even though
+		// Bounds rounds that boundary down
+		name: "zero/power-of-two", flip: true,
+		dp:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 0, Zc: 0},
+		in:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 1}.Into(), Zt: 16, Zc: 2},
+		want: expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 2}.Into(), Zt: 16, Zc: 2*1 + 2},
+	}, {
+		// at scale -1, bucket 0 is (1,4]
+		name: "zero/negative-scale", flip: true,
+		dp:   expdp{Scale: -1, PosNeg: bins{ø, ø, ø, 1, 1, ø, ø, ø}.Into(), Zt: 0.0, Zc: 0},
+		in:   expdp{Scale: -1, PosNeg: bins{ø, ø, ø, 1, 1, ø, ø, ø}.Into(), Zt: 1.5, Zc: 0},
+		want: expdp{Scale: -1, PosNeg: bins{ø, ø, ø, ø, 2, ø, ø, ø}.Into(), Zt: 4.0, Zc: 2*1 + 2*1},
 	}, {
 		name: "negative-offset",
 		dp:   expdp{PosNeg: rawbs([]uint64{ /*   */ 1, 2}, -2)},
