@@ -200,6 +200,10 @@ func (*nopWithEndpointFactory) CreateDefaultConfig() component.Config {
 	}
 }
 
+func (*nopWithEndpointFactory) Type() component.Type {
+	return component.MustNewType("nopwithendpoint")
+}
+
 type mockComponent struct {
 	component.StartFunc
 	component.ShutdownFunc

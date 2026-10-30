@@ -219,9 +219,11 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
 		receiverConfig{
-			id:         template.receiverConfig.id,
-			config:     resolvedConfig,
-			endpointID: e.ID,
+			id:                 template.receiverConfig.id,
+			config:             resolvedConfig,
+			endpointID:         e.ID,
+			fromHints:          template.fromHints,
+			discoveredEndpoint: e.Target,
 		},
 		discoveredConfig,
 		consumer,
