@@ -274,6 +274,7 @@ receiver/faroreceiver receiver/faro
 receiver/filelogreceiver receiver/filelog
 receiver/filestatsreceiver receiver/filestats
 receiver/flinkmetricsreceiver receiver/flinkmetrics
+receiver/fluentforwardreceiver receiver/fluentforward
 receiver/githubreceiver receiver/github
 receiver/gitlabreceiver receiver/gitlab
 receiver/gnmireceiver receiver/gnmi
@@ -374,5 +375,4 @@ reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/logicmonitorexporter exporter/logicmonitor
-receiver/fluentforwardreceiver receiver/fluentforward
 receiver/riakreceiver receiver/riak
