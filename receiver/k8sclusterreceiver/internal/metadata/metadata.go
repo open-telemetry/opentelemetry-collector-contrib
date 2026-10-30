@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
