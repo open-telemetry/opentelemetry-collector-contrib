@@ -6,6 +6,7 @@ package traces
 import (
 	"testing"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -232,6 +233,38 @@ func TestSemconvSpanName(t *testing.T) {
 				attrs.PutStr("http.method", "GET")
 			},
 			want: "GET",
+		},
+		{
+			name:            "HTTP server span with _OTHER http.request.method and http.route",
+			currentSpanName: "FOO /users/123",
+			kind:            ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "_OTHER")
+				attrs.PutStr("http.request.method_original", "FOO")
+				attrs.PutStr("http.route", "/users/:id")
+			},
+			want: "HTTP /users/:id",
+		},
+		{
+			name:            "HTTP client span with _OTHER http.request.method and url.template",
+			currentSpanName: "FOO /users/123",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "_OTHER")
+				attrs.PutStr("http.request.method_original", "FOO")
+				attrs.PutStr("url.template", "/users/{id}")
+			},
+			want: "HTTP /users/{id}",
+		},
+		{
+			name:            "HTTP client span with just _OTHER http.request.method",
+			currentSpanName: "FOO /users/123",
+			kind:            ptrace.SpanKindClient,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("http.request.method", "_OTHER")
+				attrs.PutStr("http.request.method_original", "FOO")
+			},
+			want: "HTTP",
 		},
 		{
 			name:                   "HTTP client span with no semconv attributes",
@@ -648,6 +681,7 @@ func Test_messagingDestination(t *testing.T) {
 func Test_rpcSpanName(t *testing.T) {
 	tests := []struct {
 		name                   string
+		semconvVersion         string
 		spanName               string
 		instrumentationLibrary string
 		kind                   ptrace.SpanKind
@@ -732,11 +766,50 @@ func Test_rpcSpanName(t *testing.T) {
 			},
 			want: "oteldemo.AdService/a_method",
 		},
+		{
+			name:                   "fully qualified 'rpc.method' and deprecated 'rpc.grpc.service' - does not repeat the service",
+			spanName:               "a span name",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system.name", "grpc")
+				attrs.PutStr("rpc.method", "oteldemo.AdService/GetAds")
+				attrs.PutStr("rpc.grpc.service", "oteldemo.AdService")
+			},
+			want: "oteldemo.AdService/GetAds",
+		},
+		{
+			name:                   "semconv 1.39.0: '_OTHER' 'rpc.method' - uses 'rpc.system.name'",
+			semconvVersion:         "1.39.0",
+			spanName:               "oteldemo.AdService/unknownMethod",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system.name", "grpc")
+				attrs.PutStr("rpc.method", "_OTHER")
+				attrs.PutStr("rpc.method_original", "oteldemo.AdService/unknownMethod")
+			},
+			want: "grpc",
+		},
+		{
+			name:                   "semconv 1.38.0: '_OTHER' 'rpc.method' - not a special value before 1.39.0",
+			semconvVersion:         "1.38.0",
+			spanName:               "oteldemo.AdService/unknownMethod",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("rpc.method", "_OTHER")
+				attrs.PutStr("rpc.service", "oteldemo.AdService")
+			},
+			want: "oteldemo.AdService/_OTHER",
+		},
 		// Version-based priority: when both rpc.system.name and rpc.system are present
 		{
-			name:     "semconv 1.40.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
-			spanName: "a span name",
-			kind:     ptrace.SpanKindServer,
+			name:           "semconv 1.40.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
+			semconvVersion: "1.40.0",
+			spanName:       "a span name",
+			kind:           ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
 				attrs.PutStr("rpc.system", "other_rpc")
@@ -744,9 +817,10 @@ func Test_rpcSpanName(t *testing.T) {
 			want: "grpc",
 		},
 		{
-			name:     "semconv 1.39.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
-			spanName: "a span name",
-			kind:     ptrace.SpanKindServer,
+			name:           "semconv 1.39.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
+			semconvVersion: "1.39.0",
+			spanName:       "a span name",
+			kind:           ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
 				attrs.PutStr("rpc.system", "other_rpc")
@@ -761,7 +835,11 @@ func Test_rpcSpanName(t *testing.T) {
 			span.SetName(tt.spanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-			got := rpcSpanName(span)
+			semconvVersion := maxKnownSemConvVersion
+			if tt.semconvVersion != "" {
+				semconvVersion = semver.MustParse(tt.semconvVersion)
+			}
+			got := rpcSpanName(semconvVersion, span)
 			assert.Equalf(t, tt.want, got, "getRPCSpanName(%v)", span)
 		})
 	}
