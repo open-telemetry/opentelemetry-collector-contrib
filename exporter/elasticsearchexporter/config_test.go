@@ -609,6 +609,20 @@ func TestParseCloudID(t *testing.T) {
 	}
 }
 
+func TestDefaultRetryAtLeastOnce(t *testing.T) {
+	t.Parallel()
+
+	cfg := createDefaultConfig().(*Config)
+	assert.True(t, cfg.Retry.Enabled)
+	assert.Equal(t, []int{
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+	}, cfg.Retry.RetryOnStatus)
+}
+
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus

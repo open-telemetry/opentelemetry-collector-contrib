@@ -66,8 +66,14 @@ func createDefaultConfig() component.Config {
 			MaxRetries:      0, // default is set in exporter code
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
+			// At-least-once: retry rate limiting and transient server errors.
+			// 5xx retries can duplicate documents if Elasticsearch accepted the bulk request.
 			RetryOnStatus: []int{
 				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
 			},
 		},
 		Mapping: MappingsSettings{

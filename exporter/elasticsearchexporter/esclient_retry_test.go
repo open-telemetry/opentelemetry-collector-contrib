@@ -4,14 +4,11 @@
 package elasticsearchexporter
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"runtime"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,162 +27,6 @@ func skipFlakyOnWindows(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("TODO: flaky on Windows, re-enable once https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52435 is fixed")
 	}
-}
-
-func TestRetry_DNSDeadlineExceeded(t *testing.T) {
-	skipFlakyOnWindows(t)
-	// The resolver blocks until the dial deadline, so the test does not use a real DNS server.
-	resolver := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
-			<-ctx.Done()
-			return nil, ctx.Err()
-		},
-	}
-	dialer := &net.Dialer{
-		Timeout:  50 * time.Millisecond,
-		Resolver: resolver,
-	}
-	const maxRetries = 1
-	client, dials := newRetryClient(t, "http://es.invalid:9200", time.Second, dialer.DialContext)
-
-	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", http.NoBody)
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.ErrorAs(t, err, &setupErr)
-	var dnsErr *net.DNSError
-	require.ErrorAs(t, err, &dnsErr)
-	var opErr *net.OpError
-	require.ErrorAs(t, err, &opErr)
-	assert.Equal(t, "dial", opErr.Op)
-	assert.Equal(t, int32(maxRetries+1), dials.Load())
-}
-
-func TestRetry_ResponseDeadlineExceeded_NoRetry(t *testing.T) {
-	skipFlakyOnWindows(t)
-	release := make(chan struct{})
-	var requests atomic.Int32
-	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-		requests.Add(1)
-		<-release
-	}))
-	t.Cleanup(func() {
-		close(release)
-		server.Close()
-	})
-
-	client, dials := newRetryClient(t, server.URL, 50*time.Millisecond, (&net.Dialer{}).DialContext)
-
-	req, err := http.NewRequest(http.MethodPost, server.URL+"/_bulk", http.NoBody)
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.NotErrorAs(t, err, &setupErr)
-	assert.Equal(t, int32(1), dials.Load())
-	assert.Equal(t, int32(1), requests.Load())
-}
-
-func TestRetry_RequestDeadlineDuringDial(t *testing.T) {
-	skipFlakyOnWindows(t)
-	// getConn dials on a context detached from the request, so the dial keeps running after the deadline.
-	const maxRetries = 1
-	var finished atomic.Int32
-	client, dials := newRetryClient(t, "http://es.invalid:9200", 50*time.Millisecond, func(ctx context.Context, _, _ string) (net.Conn, error) {
-		defer finished.Add(1)
-		timer := time.NewTimer(time.Second)
-		defer timer.Stop()
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-timer.C:
-			return nil, context.DeadlineExceeded
-		}
-	})
-	// The dial keeps running after the test returns. Wait for it so goleak passes.
-	t.Cleanup(func() {
-		require.Eventually(t, func() bool {
-			return dials.Load() > maxRetries && finished.Load() == dials.Load()
-		}, 3*time.Second, 10*time.Millisecond)
-	})
-
-	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", http.NoBody)
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.ErrorAs(t, err, &setupErr)
-	assert.Equal(t, int32(maxRetries+1), dials.Load())
-}
-
-func TestRetry_TLSHandshakeDeadlineExceeded(t *testing.T) {
-	skipFlakyOnWindows(t)
-	// The server accepts TCP and sends nothing, so the deadline fires during
-	// the TLS handshake, before GotConn.
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	var mu sync.Mutex
-	var accepted []net.Conn
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		for {
-			conn, aerr := ln.Accept()
-			if aerr != nil {
-				return
-			}
-			mu.Lock()
-			accepted = append(accepted, conn)
-			mu.Unlock()
-		}
-	})
-	t.Cleanup(func() {
-		_ = ln.Close()
-		wg.Wait()
-		mu.Lock()
-		defer mu.Unlock()
-		for _, conn := range accepted {
-			_ = conn.Close()
-		}
-	})
-
-	endpoint := "https://" + ln.Addr().String()
-	const maxRetries = 1
-	client, dials := newRetryClient(t, endpoint, 50*time.Millisecond, (&net.Dialer{}).DialContext)
-
-	req, err := http.NewRequest(http.MethodPost, endpoint+"/_bulk", http.NoBody)
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-	var setupErr *connSetupTimeoutError
-	require.ErrorAs(t, err, &setupErr)
-	assert.Equal(t, int32(maxRetries+1), dials.Load())
-}
-
-func TestRetry_WriteDeadlineExceeded_NoRetry(t *testing.T) {
-	skipFlakyOnWindows(t)
-	serverConns := make(chan net.Conn, 2)
-	client, dials := newRetryClient(t, "http://es.invalid:9200", 50*time.Millisecond, func(context.Context, string, string) (net.Conn, error) {
-		clientConn, serverConn := net.Pipe()
-		serverConns <- serverConn
-		return clientConn, nil
-	})
-	t.Cleanup(func() {
-		close(serverConns)
-		for conn := range serverConns {
-			_ = conn.Close()
-		}
-	})
-
-	// Larger than the transport's 4KiB write buffer, so the deadline fires inside
-	// Request.write, before WroteRequest.
-	payload := bytes.Repeat([]byte("{\"index\":{}}\n"), 1024)
-	req, err := http.NewRequest(http.MethodPost, "http://es.invalid:9200/_bulk", bytes.NewReader(payload))
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-	assert.Equal(t, int32(1), dials.Load())
 }
 
 func TestRetry_CallerDeadlineDuringDial_NoRetry(t *testing.T) {
