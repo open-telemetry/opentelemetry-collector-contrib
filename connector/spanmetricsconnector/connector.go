@@ -647,7 +647,14 @@ func sortedKeys(attrs pcommon.Map) []string {
 func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map, f func(string, pcommon.Value)) {
 	spanAttrs := span.Attributes()
 	for _, d := range dimensions.nameDimensions {
-		if v, ok := dimensionValue(d, spanAttrs, resourceAttrs, eventAttrs); ok {
+		var v pcommon.Value
+		var ok bool
+		if eventAttrs != nil {
+			v, ok = utilattri.GetDimensionValue(d, spanAttrs, *eventAttrs, resourceAttrs)
+		} else {
+			v, ok = utilattri.GetDimensionValue(d, spanAttrs, resourceAttrs)
+		}
+		if ok {
 			f(d.Name, v)
 		}
 	}
@@ -713,25 +720,6 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 			}
 		}
 	}
-}
-
-func dimensionValue(d utilattri.Dimension, spanAttrs, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map) (pcommon.Value, bool) {
-	if attr, exists := spanAttrs.Get(d.Name); exists {
-		return attr, true
-	}
-	if eventAttrs != nil {
-		if attr, exists := eventAttrs.Get(d.Name); exists {
-			return attr, true
-		}
-	}
-	if attr, exists := resourceAttrs.Get(d.Name); exists {
-		return attr, true
-	}
-	if d.Value != nil {
-		return *d.Value, true
-	}
-	var v pcommon.Value
-	return v, false
 }
 
 func addResourceAttributes(attrs *pcommon.Map, dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map) {
