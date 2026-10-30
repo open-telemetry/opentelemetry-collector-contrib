@@ -18,7 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var (
@@ -61,7 +61,7 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -102,7 +102,7 @@ func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -143,7 +143,7 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -184,7 +184,7 @@ func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -438,7 +438,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -692,7 +692,7 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -709,12 +709,12 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 func Test_ProcessLogs_MixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td plog.Logs)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -736,7 +736,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -758,7 +758,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "log",
 					Statements: []string{
@@ -778,7 +778,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -826,12 +826,12 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td plog.Logs)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
 				},
@@ -847,7 +847,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(scope.attributes["test"], "pass")`},
 				},
@@ -863,7 +863,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
 				},
@@ -877,7 +877,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(scope.attributes["test"], "pass")`},
 				},
@@ -916,7 +916,7 @@ func Test_ProcessLogs_InferredMixContext(t *testing.T) {
 func Test_ProcessLogs_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
-		context   common.ContextID
+		context   transformconfig.ContextID
 	}{
 		{
 			context: "resource",
@@ -932,7 +932,7 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.context), func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessLogs(t.Context(), td)
@@ -945,14 +945,14 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		want          func(td plog.Logs)
 		wantErrorWith string
 	}{
 		{
 			name:      "log: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(log.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(log.attributes["test"], "pass") where log.body == "operationA"`}},
 			},
@@ -963,7 +963,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "log: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(log.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(log.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -972,7 +972,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
@@ -983,7 +983,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -992,7 +992,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
@@ -1003,7 +1003,7 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -1035,12 +1035,12 @@ func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
 func Test_ProcessLogs_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td plog.Logs)
 	}{
 		{
 			name: "resource:resource.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{
 						`set(resource.cache["test"], "pass")`,
@@ -1054,9 +1054,9 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "resource:cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context: common.Resource,
+					Context: transformconfig.Resource,
 					Statements: []string{
 						`set(cache["test"], "pass")`,
 						`set(attributes["test"], cache["test"])`,
@@ -1069,7 +1069,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:scope.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{
 						`set(scope.cache["test"], "pass")`,
@@ -1083,8 +1083,8 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Scope,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Scope,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -1096,7 +1096,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "log:log.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(log.cache["test"], "pass")`,
 					`set(log.attributes["test"], log.cache["test"])`,
@@ -1109,8 +1109,8 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "log:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Log,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Log,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -1123,7 +1123,7 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "log:log.cache multiple entries",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{
 						`set(log.cache["test"], log.body)`,
@@ -1158,12 +1158,12 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 func Test_ProcessLogs_SharedCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td plog.Logs)
 	}{
 		{
 			name: "resource cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
@@ -1173,7 +1173,7 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 		},
 		{
 			name: "scope cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -1183,7 +1183,7 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 		},
 		{
 			name: "log cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(log.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(log.attributes["result"], log.cache["k"])`}, SharedCache: true},
 			},
@@ -1194,7 +1194,7 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 		},
 		{
 			name: "cache not shared with groups where SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(log.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(log.attributes["result"], "pass") where log.cache["k"] == nil`}},
 			},
@@ -1205,9 +1205,9 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 		},
 		{
 			name: "explicit context cache shared across groups",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
 			},
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).Resource().Attributes().PutStr("result", "pass")
@@ -1215,7 +1215,7 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 		},
 		{
 			name: "higher-level cache is not visible from a lower-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(log.attributes["result"], "pass") where log.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -1226,7 +1226,7 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 		},
 		{
 			name: "lower-level cache is not visible from a higher-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(log.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -1256,12 +1256,12 @@ func Test_ProcessLogs_SharedCache(t *testing.T) {
 func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td plog.Logs)
 	}{
 		{
 			name: "resource cache persists across resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1273,7 +1273,7 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "scope cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1287,7 +1287,7 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "log cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(log.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and log.body == "operationA"`}, SharedCache: true},
 				{Statements: []string{`set(log.attributes["result"], "pass") where log.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1303,7 +1303,7 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "log cache persists across scopes and resources within a single group",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(log.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and log.body == "operationA"`,
 					`set(log.attributes["result"], "pass") where log.cache["k"] == "seen"`,
@@ -1321,7 +1321,7 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across log records when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(log.cache["k"], "seen") where log.body == "operationA"`,
 					`set(log.attributes["result"], "pass") where log.cache["k"] == "seen"`,
@@ -1337,7 +1337,7 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across resources when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
 					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
@@ -1349,7 +1349,7 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across scopes when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
 					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
@@ -1381,12 +1381,12 @@ func Test_ProcessLogs_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 func Test_ProcessLogs_SharedCacheCrossContextAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		wantErr    string
 	}{
 		{
 			name: "resource cache from an inferred log context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(log.attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
@@ -1394,7 +1394,7 @@ func Test_ProcessLogs_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "scope cache from an inferred log context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(log.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -1402,9 +1402,9 @@ func Test_ProcessLogs_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "resource cache from an explicit log context",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Log, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Log, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
 			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "log.cache[k]"`,
 		},
@@ -1419,7 +1419,7 @@ func Test_ProcessLogs_SharedCacheCrossContextAccess(t *testing.T) {
 }
 
 func Test_ProcessLogs_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
 			Statements:  []string{`set(log.cache["k"], "seen") where log.body == "operationA"`},
 			SharedCache: true,
@@ -1462,19 +1462,19 @@ func Test_ProcessLogs_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
 func Test_ProcessLogs_SharedCacheConcurrentCalls(t *testing.T) {
 	const numGoroutines = 10
 
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
-			Context:     common.Log,
+			Context:     transformconfig.Log,
 			Statements:  []string{`set(cache["k"], "cached-value")`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Log,
+			Context:     transformconfig.Log,
 			Statements:  []string{`set(attributes["result"], cache["k"])`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Log,
+			Context:     transformconfig.Log,
 			Statements:  []string{`delete_key(cache, "k")`},
 			SharedCache: true,
 		},
@@ -1518,12 +1518,12 @@ func Test_ProcessLogs_SharedCacheConcurrentCalls(t *testing.T) {
 func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td plog.Logs)
 	}{
 		{
 			name: "inferring from statements",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`resource.attributes["test"] == nil`},
 					Statements: []string{`set(log.attributes["test"], "pass")`},
@@ -1536,7 +1536,7 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 		},
 		{
 			name: "inferring from conditions",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`log.attributes["test"] == nil`},
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
@@ -1568,7 +1568,7 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		wantErrorWith string
 	}
 
@@ -1577,7 +1577,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		contextsTests[ctx] = []testCase{
 			{
 				name: "inferred: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
@@ -1586,7 +1586,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "inferred: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{`cache["test"] == ""`},
@@ -1596,9 +1596,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{`cache["test"] == ""`},
 					},
@@ -1606,9 +1606,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(attributes["test"], "pass")`},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
@@ -1651,7 +1651,7 @@ func NewTestLogFuncFactory[K any]() ottl.Factory[K] {
 func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name          string
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		wantErrorWith string
 		logFunctions  map[string]ottl.Factory[*ottllog.TransformContext]
 	}
@@ -1659,9 +1659,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "log funcs : statement with added log func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("log"),
+					Context:    transformconfig.ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
@@ -1672,9 +1672,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "log funcs : statement with missing log func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("log"),
+					Context:    transformconfig.ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},

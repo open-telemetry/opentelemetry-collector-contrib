@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type parsedContextStatements struct {
@@ -26,10 +27,10 @@ type parsedContextStatements struct {
 type Processor struct {
 	contexts            []parsedContextStatements
 	logger              *zap.Logger
-	sharedCacheContexts []common.ContextID
+	sharedCacheContexts []transformconfig.ContextID
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
+func NewProcessor(contextStatements []transformconfig.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
 	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, errors
 	}
 
-	var sharedCacheContexts []common.ContextID
+	var sharedCacheContexts []transformconfig.ContextID
 	for _, c := range contexts {
 		if !c.sharedCache || slices.Contains(sharedCacheContexts, c.Context()) {
 			continue

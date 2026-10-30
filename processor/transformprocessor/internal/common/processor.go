@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var _ baseContext = &resourceStatements{}
@@ -27,8 +28,8 @@ type resourceStatements struct {
 	expr.BoolExpr[*ottlresource.TransformContext]
 }
 
-func (resourceStatements) Context() ContextID {
-	return Resource
+func (resourceStatements) Context() transformconfig.ContextID {
+	return transformconfig.Resource
 }
 
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
@@ -118,8 +119,8 @@ type scopeStatements struct {
 	expr.BoolExpr[*ottlscope.TransformContext]
 }
 
-func (scopeStatements) Context() ContextID {
-	return Scope
+func (scopeStatements) Context() transformconfig.ContextID {
+	return transformconfig.Scope
 }
 
 func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {

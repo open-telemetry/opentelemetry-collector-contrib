@@ -14,10 +14,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type LogsConsumer interface {
-	Context() ContextID
+	Context() transformconfig.ContextID
 	ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error
 }
 
@@ -26,8 +27,8 @@ type logStatements struct {
 	expr.BoolExpr[*ottllog.TransformContext]
 }
 
-func (logStatements) Context() ContextID {
-	return Log
+func (logStatements) Context() transformconfig.ContextID {
+	return transformconfig.Log
 }
 
 func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error {
@@ -115,7 +116,7 @@ func convertLogStatements(pc *ottl.ParserCollection[LogsConsumer], statements ot
 	return logStatements{lStatements, globalExpr}, nil
 }
 
-func (lpc *LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (LogsConsumer, error) {
+func (lpc *LogParserCollection) ParseContextStatements(contextStatements transformconfig.ContextStatements) (LogsConsumer, error) {
 	pc := ottl.ParserCollection[LogsConsumer](*lpc)
 	if contextStatements.Context != "" {
 		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)

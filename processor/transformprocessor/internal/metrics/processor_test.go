@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var (
@@ -61,7 +61,7 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -102,7 +102,7 @@ func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -143,7 +143,7 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -184,7 +184,7 @@ func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -411,7 +411,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -608,9 +608,9 @@ func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
-			var contextStatements []common.ContextStatements
+			var contextStatements []transformconfig.ContextStatements
 			for _, statement := range tt.statements {
-				contextStatements = append(contextStatements, common.ContextStatements{Context: "", Statements: []string{statement}})
+				contextStatements = append(contextStatements, transformconfig.ContextStatements{Context: "", Statements: []string{statement}})
 			}
 
 			td := constructMetrics()
@@ -1057,7 +1057,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "datapoint", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -1082,7 +1082,7 @@ func Test_ProcessMetrics_MergeHistogramBucketsLimitBuckets(t *testing.T) {
 	dp.BucketCounts().FromRaw([]uint64{5, 8, 3, 1})
 
 	processor, err := NewProcessor(
-		[]common.ContextStatements{
+		[]transformconfig.ContextStatements{
 			{
 				Context:    "datapoint",
 				Statements: []string{`merge_histogram_buckets(3, method="limit_buckets") where metric.name == "test_histogram"`},
@@ -1107,7 +1107,7 @@ func Test_ProcessMetrics_MergeHistogramBucketsLimitBuckets(t *testing.T) {
 
 func Test_ProcessMetrics_MergeHistogramBucketsLimitBucketsInvalidLiteralTargetValue(t *testing.T) {
 	processor, err := NewProcessor(
-		[]common.ContextStatements{
+		[]transformconfig.ContextStatements{
 			{
 				Context:    "datapoint",
 				Statements: []string{`merge_histogram_buckets(2.5, method="limit_buckets") where metric.name == "test_histogram"`},
@@ -1553,9 +1553,9 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
-			var contextStatements []common.ContextStatements
+			var contextStatements []transformconfig.ContextStatements
 			for _, statement := range tt.statements {
-				contextStatements = append(contextStatements, common.ContextStatements{Context: "", Statements: []string{statement}})
+				contextStatements = append(contextStatements, transformconfig.ContextStatements{Context: "", Statements: []string{statement}})
 			}
 
 			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
@@ -1635,12 +1635,12 @@ func Test_ProcessMetrics_ExemplarContext(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(pmetric.Metrics)
 	}{
 		{
 			name: "sets exemplar timestamps",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context:    "exemplar",
 					Statements: []string{fmt.Sprintf(`set(time_unix_nano, %d)`, newTimestamp.AsTime().UnixNano())},
@@ -1654,7 +1654,7 @@ func Test_ProcessMetrics_ExemplarContext(t *testing.T) {
 		},
 		{
 			name: "uses parent metric path in condition",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context:    "exemplar",
 					Statements: []string{`set(filtered_attributes["exemplar.attr"], "updated") where metric.name == "gauge.with.exemplar"`},
@@ -1666,7 +1666,7 @@ func Test_ProcessMetrics_ExemplarContext(t *testing.T) {
 		},
 		{
 			name: "uses parent resource path in condition",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context:    "exemplar",
 					Statements: []string{`set(filtered_attributes["new.key"], "added") where resource.attributes["host.name"] == "myhost"`},
@@ -1680,7 +1680,7 @@ func Test_ProcessMetrics_ExemplarContext(t *testing.T) {
 		},
 		{
 			name: "sets trace id",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context:    "exemplar",
 					Statements: []string{`set(trace_id, TraceID(0x00000000000000000000000000000000))`},
@@ -1694,7 +1694,7 @@ func Test_ProcessMetrics_ExemplarContext(t *testing.T) {
 		},
 		{
 			name: "infers exemplar context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(exemplar.filtered_attributes["inferred"], "yes") where metric.name == "sum.with.exemplar"`},
 				},
@@ -1725,12 +1725,12 @@ func Test_ProcessMetrics_ExemplarContext(t *testing.T) {
 func Test_ProcessMetrics_MixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td pmetric.Metrics)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -1759,7 +1759,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -1788,7 +1788,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "datapoint",
 					Statements: []string{
@@ -1808,7 +1808,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context ",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -1863,7 +1863,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
-		context   common.ContextID
+		context   transformconfig.ContextID
 	}{
 		{
 			statement: `set(attributes["test"], ParseJSON("1"))`,
@@ -1886,7 +1886,7 @@ func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions, DefaultExemplarFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(t.Context(), td)
@@ -1899,14 +1899,14 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		want          func(td pmetric.Metrics)
 		wantErrorWith string
 	}{
 		{
 			name:      "metric: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.name, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(metric.name, "pass") where metric.name == "operationA" `}},
 			},
@@ -1917,7 +1917,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "metric: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.name, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(metric.name, ParseJSON("true"))`}},
 			},
@@ -1926,7 +1926,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "datapoint: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(datapoint.attributes["test"], "pass") where metric.name == "operationA" `}},
 			},
@@ -1938,7 +1938,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "datapoint: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON("true"))`}},
 			},
@@ -1947,7 +1947,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
@@ -1958,7 +1958,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -1967,7 +1967,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
@@ -1978,7 +1978,7 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -2010,13 +2010,13 @@ func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
 func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name           string
-		statements     []common.ContextStatements
+		statements     []transformconfig.ContextStatements
 		metricsFactory func() pmetric.Metrics
 		want           func(td pmetric.Metrics)
 	}{
 		{
 			name: "resource:resource.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["test"], "pass")`,
 					`set(resource.attributes["test"], resource.cache["test"])`,
@@ -2028,9 +2028,9 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "resource:cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context: common.Resource,
+					Context: transformconfig.Resource,
 					Statements: []string{
 						`set(cache["test"], "pass")`,
 						`set(attributes["test"], cache["test"])`,
@@ -2043,7 +2043,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:scope.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["test"], "pass")`,
 					`set(scope.attributes["test"], scope.cache["test"])`,
@@ -2055,8 +2055,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Scope,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Scope,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -2068,7 +2068,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "metric:metric.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.cache["test"], "pass")`, `set(metric.name, metric.cache["test"]) where metric.name == "operationB"`}},
 			},
 			want: func(td pmetric.Metrics) {
@@ -2077,8 +2077,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "metric:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Metric,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Metric,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(name, cache["test"]) where name == "operationB"`,
@@ -2090,7 +2090,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "metric:metric.cache multiple entries",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{
 						`set(metric.cache["test"], Concat([metric.name, "cache"], "-"))`,
@@ -2108,7 +2108,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "datapoint:datapoint.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(datapoint.cache["test"], "pass")`,
 					`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`,
@@ -2121,7 +2121,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "datapoint:datapoint.cache multiple entries",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{
 						`set(datapoint.cache["test"], datapoint.value_double)`,
@@ -2136,8 +2136,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "datapoint:cache",
-			statements: []common.ContextStatements{{
-				Context: common.DataPoint,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.DataPoint,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"]) where metric.name == "operationA"`,
@@ -2151,7 +2151,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name:           "exemplar:exemplar.cache",
 			metricsFactory: constructMetricsWithExemplars,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(exemplar.cache["test"], "pass")`,
 					`set(exemplar.filtered_attributes["test"], exemplar.cache["test"])`,
@@ -2166,8 +2166,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name:           "exemplar:cache",
 			metricsFactory: constructMetricsWithExemplars,
-			statements: []common.ContextStatements{{
-				Context: common.Exemplar,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Exemplar,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(filtered_attributes["test"], cache["test"])`,
@@ -2182,7 +2182,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name:           "exemplar:exemplar.cache multiple entries",
 			metricsFactory: constructMetricsWithExemplars,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{
 						`set(exemplar.cache["test"], exemplar.double_value)`,
@@ -2225,12 +2225,12 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 func Test_ProcessMetrics_SharedCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td pmetric.Metrics)
 	}{
 		{
 			name: "resource cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
@@ -2240,7 +2240,7 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "scope cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -2250,7 +2250,7 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "metric cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(metric.name, metric.cache["k"]) where metric.name == "operationA"`}, SharedCache: true},
 			},
@@ -2260,7 +2260,7 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "datapoint cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(datapoint.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(datapoint.attributes["result"], datapoint.cache["k"]) where metric.name == "operationA"`}, SharedCache: true},
 			},
@@ -2271,7 +2271,7 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "cache not shared with groups where SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(metric.name, "pass") where metric.name == "operationA" and metric.cache["k"] == nil`}},
 			},
@@ -2281,9 +2281,9 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "explicit context cache shared across groups",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("result", "pass")
@@ -2291,7 +2291,7 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "higher-level cache is not visible from a lower-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(metric.description, "pass") where metric.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -2303,7 +2303,7 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 		},
 		{
 			name: "lower-level cache is not visible from a higher-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -2333,12 +2333,12 @@ func Test_ProcessMetrics_SharedCache(t *testing.T) {
 func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td pmetric.Metrics)
 	}{
 		{
 			name: "resource cache persists across resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -2350,7 +2350,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "scope cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -2364,7 +2364,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "metric cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA"`}, SharedCache: true},
 				{Statements: []string{`set(metric.description, "pass") where metric.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -2376,7 +2376,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "datapoint cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(datapoint.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA" and datapoint.value_double == 1.0`}, SharedCache: true},
 				{Statements: []string{`set(datapoint.attributes["result"], "pass") where datapoint.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -2388,7 +2388,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "exemplar cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(exemplar.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA" and exemplar.double_value == 1.0`}, SharedCache: true},
 				{Statements: []string{`set(exemplar.filtered_attributes["result"], "pass") where exemplar.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -2402,7 +2402,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "datapoint cache persists across scopes and resources within a single group",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(datapoint.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and metric.name == "operationA" and datapoint.value_double == 1.0`,
 					`set(datapoint.attributes["result"], "pass") where datapoint.cache["k"] == "seen"`,
@@ -2416,7 +2416,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across datapoints when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(datapoint.cache["k"], "seen") where datapoint.value_double == 1.0`,
 					`set(datapoint.attributes["result"], "pass") where datapoint.cache["k"] == "seen"`,
@@ -2432,7 +2432,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across resources when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
 					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
@@ -2444,7 +2444,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across scopes when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
 					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
@@ -2456,7 +2456,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across metrics when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(metric.cache["k"], "seen") where metric.name == "operationA"`,
 					`set(metric.description, "pass") where metric.cache["k"] == "seen"`,
@@ -2472,7 +2472,7 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across exemplars when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(exemplar.cache["k"], "seen") where exemplar.double_value == 1.0`,
 					`set(exemplar.filtered_attributes["result"], "pass") where exemplar.cache["k"] == "seen"`,
@@ -2510,12 +2510,12 @@ func Test_ProcessMetrics_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		wantErr    string
 	}{
 		{
 			name: "resource cache from an inferred metric context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(metric.description, resource.cache["k"])`}, SharedCache: true},
 			},
@@ -2523,7 +2523,7 @@ func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "scope cache from an inferred datapoint context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(datapoint.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -2531,7 +2531,7 @@ func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "metric cache from an inferred datapoint context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(metric.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(datapoint.attributes["result"], metric.cache["k"])`}, SharedCache: true},
 			},
@@ -2539,7 +2539,7 @@ func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "datapoint cache from an inferred exemplar context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(datapoint.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(exemplar.filtered_attributes["result"], datapoint.cache["k"])`}, SharedCache: true},
 			},
@@ -2547,9 +2547,9 @@ func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "resource cache from an explicit datapoint context",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.DataPoint, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.DataPoint, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
 			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "datapoint.cache[k]"`,
 		},
@@ -2564,7 +2564,7 @@ func Test_ProcessMetrics_SharedCacheCrossContextAccess(t *testing.T) {
 }
 
 func Test_ProcessMetrics_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
 			Statements:  []string{`set(metric.cache["k"], "seen") where metric.name == "operationA"`},
 			SharedCache: true,
@@ -2602,19 +2602,19 @@ func Test_ProcessMetrics_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
 func Test_ProcessMetrics_SharedCacheConcurrentCalls(t *testing.T) {
 	const numGoroutines = 10
 
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
-			Context:     common.Metric,
+			Context:     transformconfig.Metric,
 			Statements:  []string{`set(cache["k"], "cached-value")`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Metric,
+			Context:     transformconfig.Metric,
 			Statements:  []string{`set(description, cache["k"])`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Metric,
+			Context:     transformconfig.Metric,
 			Statements:  []string{`delete_key(cache, "k")`},
 			SharedCache: true,
 		},
@@ -2654,12 +2654,12 @@ func Test_ProcessMetrics_SharedCacheConcurrentCalls(t *testing.T) {
 func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td pmetric.Metrics)
 	}{
 		{
 			name: "inferring from statements",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`resource.attributes["test"] == nil`},
 					Statements: []string{`set(metric.name, Concat([metric.name, "pass"], "-"))`},
@@ -2677,7 +2677,7 @@ func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
 		},
 		{
 			name: "inferring from conditions",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`metric.name != nil`},
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
@@ -2711,7 +2711,7 @@ func Test_ProcessMetrics_InferredContextFromConditions(t *testing.T) {
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		wantErrorWith string
 	}
 
@@ -2720,7 +2720,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		contextsTests[ctx] = []testCase{
 			{
 				name: "inferred: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
@@ -2729,7 +2729,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "inferred: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{`cache["test"] == ""`},
@@ -2739,9 +2739,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{`cache["test"] == ""`},
 					},
@@ -2749,9 +2749,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
@@ -2802,7 +2802,7 @@ func NewTestExemplarFuncFactory[K any]() ottl.Factory[K] {
 func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name               string
-		statements         []common.ContextStatements
+		statements         []transformconfig.ContextStatements
 		wantErrorWith      string
 		metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
 		dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
@@ -2812,9 +2812,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "metric functions : statement with added metric func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("metric"),
+					Context:    transformconfig.ContextID("metric"),
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
@@ -2827,9 +2827,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "metric functions : statement with missing metric func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("metric"),
+					Context:    transformconfig.ContextID("metric"),
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
@@ -2840,9 +2840,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "data point functions : statement with added data point func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("datapoint"),
+					Context:    transformconfig.ContextID("datapoint"),
 					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
 				},
 			},
@@ -2855,9 +2855,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "data point functions : statement with missing data point func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("datapoint"),
+					Context:    transformconfig.ContextID("datapoint"),
 					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
 				},
 			},
@@ -2868,9 +2868,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "exemplar functions : statement with added exemplar func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("exemplar"),
+					Context:    transformconfig.ContextID("exemplar"),
 					Statements: []string{`set(cache["attr"], TestExemplarFunc())`},
 				},
 			},
@@ -2883,9 +2883,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "exemplar functions : statement with missing exemplar func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("exemplar"),
+					Context:    transformconfig.ContextID("exemplar"),
 					Statements: []string{`set(cache["attr"], TestExemplarFunc())`},
 				},
 			},
@@ -2950,7 +2950,7 @@ func Test_ProcessMetrics_RelaxedMetricNames(t *testing.T) {
 			statement := fmt.Sprintf(`set(metric.name, %q) where metric.name == %q`, tt.renamed, tt.original)
 
 			processor, err := NewProcessor(
-				[]common.ContextStatements{{Context: "metric", Statements: []string{statement}}},
+				[]transformconfig.ContextStatements{{Context: "metric", Statements: []string{statement}}},
 				ottl.PropagateError,
 				componenttest.NewNopTelemetrySettings(),
 				DefaultMetricFunctions,

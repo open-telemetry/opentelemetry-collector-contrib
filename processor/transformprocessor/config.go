@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var errFlatLogsGateDisabled = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
@@ -36,13 +37,11 @@ type Config struct {
 	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
-	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
-	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
-	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
+	TraceStatements  []transformconfig.ContextStatements `mapstructure:"trace_statements"`
+	MetricStatements []transformconfig.ContextStatements `mapstructure:"metric_statements"`
+	LogStatements    []transformconfig.ContextStatements `mapstructure:"log_statements"`
 	// ProfileStatements configures the OTTL statements executed against profile data.
-	//
-	// Experimental: *NOTE* this API is subject to change or removal in the future.
-	ProfileStatements []common.ContextStatements `mapstructure:"profile_statements"`
+	ProfileStatements []transformconfig.ContextStatements `mapstructure:"profile_statements"`
 
 	Flatten FlattenConfig `mapstructure:"flatten"`
 	logger  *zap.Logger
@@ -65,8 +64,8 @@ type FlattenConfig struct {
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
 // adding support to structured and flat configuration styles.
-// When the flat configuration style is used, all statements are grouped into a common.ContextStatements
-// object, with empty [common.ContextStatements.Context] value.
+// When the flat configuration style is used, all statements are grouped into a transformconfig.ContextStatements
+// object, with empty [transformconfig.ContextStatements.Context] value.
 // On the other hand, structured configurations are parsed following the mapstructure Config format.
 //
 // Example of flat configuration:
@@ -87,7 +86,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
-	contextStatementsFields := map[string]*[]common.ContextStatements{
+	contextStatementsFields := map[string]*[]transformconfig.ContextStatements{
 		"trace_statements":   &c.TraceStatements,
 		"metric_statements":  &c.MetricStatements,
 		"log_statements":     &c.LogStatements,

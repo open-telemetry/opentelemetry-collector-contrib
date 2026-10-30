@@ -17,17 +17,17 @@ properties:
   log_statements:
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: ./transformconfig.context_statements
   metric_statements:
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: ./transformconfig.context_statements
   profile_statements:
-    description: 'ProfileStatements configures the OTTL statements executed against profile data. Experimental: *NOTE* this API is subject to change or removal in the future.'
+    description: ProfileStatements configures the OTTL statements executed against profile data.
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: ./transformconfig.context_statements
   trace_statements:
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: ./transformconfig.context_statements
