@@ -1,0 +1,7 @@
+change_type: enhancement
+component: receiver/rabbitmq
+note: Add disabled-by-default `rabbitmq.channel.count` and `rabbitmq.connection.count` metrics from the `/api/channels` and `/api/connections` endpoints, broken down by `rabbitmq.user.name` and `rabbitmq.vhost.name` attributes.
+issues: [51882]
+subtext: |
+  `rabbitmq.channel.count` also has opt-in `rabbitmq.channel.prefetch_count` and `rabbitmq.channel.consuming` attributes.
+change_logs: [user]
