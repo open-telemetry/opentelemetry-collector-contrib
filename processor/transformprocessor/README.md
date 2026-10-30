@@ -825,7 +825,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`. A set of older/deprecated semconv attributes are also supported for backward compatibility (see the table below). Versions `1.37.0` to `1.43.0` are supported.
+* `semconvVersion` is the version of the Semantic Conventions whose span name rules are used to generate the `span.name`. Versions `1.37.0` to `1.43.0` are supported. Span name rules introduced by a newer Semantic Conventions version only apply when `semconvVersion` is set to that version or later, so upgrading the Collector does not change the span names produced for a given `semconvVersion`. A set of older/deprecated semconv attributes are also supported for backward compatibility (see the table below).
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
@@ -866,6 +866,12 @@ Sanitization examples:
          ```
     * Span name after applying `set_semconv_span_name("1.43.0")`: `GET /api/v1/users/{id}`
 
+
+Version-specific span name rules:
+
+| Rule                                                       | Applies to `semconvVersion` |
+|------------------------------------------------------------|-----------------------------|
+| An `_OTHER` `rpc.method` produces `{rpc.system.name}`      | `1.39.0` and later          |
 
 Backward compatibility: `set_semconv_span_name` will also read the following deprecated attributes, mapping each to its current equivalent:
 
