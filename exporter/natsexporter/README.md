@@ -16,6 +16,14 @@ are published to NATS subjects using core NATS (fire-and-forget) or, optionally,
 [JetStream](https://docs.nats.io/nats-concepts/jetstream) for durable,
 acknowledged delivery.
 
+If the connection to NATS is lost, the exporter reconnects indefinitely. While
+it is disconnected, core NATS publishes are buffered in the client (up to
+8 MiB) and sent once it reconnects; publishes beyond that buffer are dropped.
+The connection state is reported as [component status](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-status.md):
+a recoverable error while reconnecting, and a permanent error if the client
+gives up (for example, when the server rejects the credentials twice in a
+row), so outages are visible to health checks.
+
 > [!NOTE]
 > This component is in development. The configuration surface described below is
 > stable, but the publishing implementation is being contributed incrementally.
