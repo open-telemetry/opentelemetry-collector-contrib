@@ -96,8 +96,8 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	defer response.Body.Close()
 
 	// Copy over response from the final destination.
-	for k := range response.Header {
-		writer.Header().Set(k, response.Header.Get(k))
+	for k, values := range response.Header {
+		writer.Header()[k] = append([]string(nil), values...)
 	}
 	addViaHeader(writer.Header(), response.Proto, request.Host)
 
