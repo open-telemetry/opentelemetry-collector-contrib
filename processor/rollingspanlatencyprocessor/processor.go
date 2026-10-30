@@ -200,17 +200,17 @@ func (p *rollingSpanLatencyProcessor) ConsumeTraces(ctx context.Context, td ptra
 }
 
 // shouldEvaluate reports whether span passes the configured span_kinds /
-// include_root_spans filter. With neither option set (the zero value), every
-// span is evaluated — preserving the processor's pre-filtering behavior for
-// existing configs.
+// always_include_root_spans filter. With neither option set (the zero
+// value), every span is evaluated — preserving the processor's
+// pre-filtering behavior for existing configs.
 func (p *rollingSpanLatencyProcessor) shouldEvaluate(span ptrace.Span) bool {
-	if len(p.spanKinds) == 0 && !p.config.IncludeRootSpans {
+	if len(p.spanKinds) == 0 && !p.config.AlwaysIncludeRootSpans {
 		return true
 	}
 	if p.spanKinds[span.Kind()] {
 		return true
 	}
-	return p.config.IncludeRootSpans && span.ParentSpanID().IsEmpty()
+	return p.config.AlwaysIncludeRootSpans && span.ParentSpanID().IsEmpty()
 }
 
 func (p *rollingSpanLatencyProcessor) processSpan(span ptrace.Span, resourceVals []string) {

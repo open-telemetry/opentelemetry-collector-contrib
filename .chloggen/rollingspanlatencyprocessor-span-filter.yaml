@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/rolling_span_latency
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `span_kinds` and `include_root_spans` options to scope which spans are tracked and labeled.
+note: Add `span_kinds` and `always_include_root_spans` options to scope which spans are tracked and labeled.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52061]

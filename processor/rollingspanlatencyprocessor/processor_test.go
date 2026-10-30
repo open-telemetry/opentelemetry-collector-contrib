@@ -868,7 +868,7 @@ func TestShouldEvaluate_SpanKindsRestrictsToListedKinds(t *testing.T) {
 		{ptrace.SpanKindServer, false, true},
 		{ptrace.SpanKindConsumer, false, true},
 		{ptrace.SpanKindClient, false, false},
-		// Root, but include_root_spans is not set, so kind alone must decide.
+		// Root, but always_include_root_spans is not set, so kind alone must decide.
 		{ptrace.SpanKindInternal, true, false},
 	}
 	for _, tt := range tests {
@@ -878,10 +878,10 @@ func TestShouldEvaluate_SpanKindsRestrictsToListedKinds(t *testing.T) {
 	}
 }
 
-func TestShouldEvaluate_IncludeRootSpansEvaluatesRootRegardlessOfKind(t *testing.T) {
+func TestShouldEvaluate_AlwaysIncludeRootSpansEvaluatesRootRegardlessOfKind(t *testing.T) {
 	cfg := defaultConfig()
 	cfg.SpanKinds = []string{"SERVER"}
-	cfg.IncludeRootSpans = true
+	cfg.AlwaysIncludeRootSpans = true
 	p, _ := newTestProcessor(t, cfg)
 
 	root := makeKindTraces(time.Unix(1_000_000, 0), ptrace.SpanKindInternal, true)
@@ -889,8 +889,33 @@ func TestShouldEvaluate_IncludeRootSpansEvaluatesRootRegardlessOfKind(t *testing
 	rootSpan := root.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	nonRootSpan := nonRoot.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	assert.True(t, p.shouldEvaluate(rootSpan), "root span must be evaluated via include_root_spans even with a non-matching kind")
+	assert.True(t, p.shouldEvaluate(rootSpan), "root span must be evaluated via always_include_root_spans even with a non-matching kind")
 	assert.False(t, p.shouldEvaluate(nonRootSpan), "non-root span with a non-matching kind must not be evaluated")
+}
+
+// TestShouldEvaluate_AlwaysIncludeRootSpansWithoutSpanKindsEvaluatesOnlyRoots
+// covers the case the name could be misread for: with no span_kinds
+// configured, always_include_root_spans: true does not fall back to
+// evaluating every span. It narrows tracking to root spans only, since
+// span_kinds (empty) matches nothing on its own.
+func TestShouldEvaluate_AlwaysIncludeRootSpansWithoutSpanKindsEvaluatesOnlyRoots(t *testing.T) {
+	cfg := defaultConfig()
+	cfg.AlwaysIncludeRootSpans = true
+	p, _ := newTestProcessor(t, cfg)
+
+	kinds := []ptrace.SpanKind{
+		ptrace.SpanKindUnspecified, ptrace.SpanKindInternal, ptrace.SpanKindServer,
+		ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindConsumer,
+	}
+	for _, kind := range kinds {
+		root := makeKindTraces(time.Unix(1_000_000, 0), kind, true)
+		nonRoot := makeKindTraces(time.Unix(1_000_000, 0), kind, false)
+		rootSpan := root.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		nonRootSpan := nonRoot.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+
+		assert.True(t, p.shouldEvaluate(rootSpan), "kind=%v: root span must be evaluated", kind)
+		assert.False(t, p.shouldEvaluate(nonRootSpan), "kind=%v: non-root span must not be evaluated when span_kinds is empty", kind)
+	}
 }
 
 // TestProcessor_FilteredOutSpanNotLabeledOrTracked verifies that spans

@@ -115,15 +115,23 @@ type Config struct {
 	// Accepted values (case-insensitive): INTERNAL, SERVER, CLIENT, PRODUCER,
 	// CONSUMER.
 	//
-	// A span is evaluated if its kind is listed here, or if IncludeRootSpans
-	// is true and the span is a root span (see IncludeRootSpans). If
-	// SpanKinds is empty and IncludeRootSpans is false, every span is
-	// evaluated — the processor's default, pre-filtering behavior.
+	// A span is evaluated if its kind is listed here, or if
+	// AlwaysIncludeRootSpans is true and the span is a root span (see
+	// AlwaysIncludeRootSpans). If SpanKinds is empty and
+	// AlwaysIncludeRootSpans is false, every span is evaluated — the
+	// processor's default, pre-filtering behavior.
 	SpanKinds []string `mapstructure:"span_kinds"`
 
-	// IncludeRootSpans, when true, evaluates root spans — spans with no
-	// parent span ID — in addition to any spans matched by SpanKinds.
-	IncludeRootSpans bool `mapstructure:"include_root_spans"`
+	// AlwaysIncludeRootSpans, when true, evaluates root spans — spans with
+	// no parent span ID — regardless of their kind, in addition to any
+	// spans matched by SpanKinds. It never excludes a span that would
+	// already be evaluated; a false value simply means root spans get no
+	// special treatment and are evaluated only via SpanKinds (or via the
+	// unfiltered default when SpanKinds is also empty).
+	//
+	// If set to true while SpanKinds is empty, only root spans are
+	// evaluated — SpanKinds contributes no matches of its own in that case.
+	AlwaysIncludeRootSpans bool `mapstructure:"always_include_root_spans"`
 }
 
 // spanKindSet returns the set of ptrace.SpanKind values selected by
