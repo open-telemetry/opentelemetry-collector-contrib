@@ -48,7 +48,7 @@ type errLogsConsumer struct {
 	err error
 }
 
-func (e errLogsConsumer) Capabilities() consumer.Capabilities {
+func (errLogsConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
 
