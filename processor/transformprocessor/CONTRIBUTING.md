@@ -10,6 +10,8 @@ All new functions must be added via a new file.  Function files must start with 
 
 New functions must update the appropriate registry.  For common functions, update the registry in `internal/common/functions.go`.  For pipeline-specific functions, update the registry in `internal/<pipeline>/functions.go`
 
+New functions must start as experimental by wrapping their factory with `common.NewExperimentalFactory` when adding it to the registry, and must be listed under "Experimental functions" in the README.  See [Function stability](README.md#function-stability) for how experimental functions are promoted.
+
 Unit tests must be added for all new functions.  Unit test files must start with `func_` and end in `_test`.  Unit tests must be placed in the same directory as the function.  Functions that are not specific to a pipeline should be tested independently of any specific pipeline. Functions that are specific to a pipeline should be tests against that pipeline.
 
 All new functions should have integration tests added to any usable pipeline's `processing_test.go` tests.  The purpose of these tests is not to test the function's logic, but its ability to be used within a specific pipeline.  
