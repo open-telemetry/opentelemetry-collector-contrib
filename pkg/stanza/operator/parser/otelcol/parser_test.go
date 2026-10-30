@@ -454,6 +454,33 @@ func TestProcessUninterpretableTimestampIsPreserved(t *testing.T) {
 	}
 }
 
+func TestSetSeverity(t *testing.T) {
+	cases := []struct {
+		level string
+		want  entry.Severity
+	}{
+		{"debug", entry.Debug},
+		{"info", entry.Info},
+		{"warn", entry.Warn},
+		{"error", entry.Error},
+		{"dpanic", entry.Fatal},
+		{"panic", entry.Fatal2},
+		{"fatal", entry.Fatal3},
+		{"unknown", entry.Default},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.level, func(t *testing.T) {
+			e := entry.New()
+			m := map[string]any{"level": tc.level}
+			setSeverity(e, m)
+			require.Equal(t, tc.want, e.Severity)
+			require.Equal(t, tc.level, e.SeverityText)
+			require.NotContains(t, m, "level")
+		})
+	}
+}
+
 func TestProcessBatch(t *testing.T) {
 	ctx := t.Context()
 	parser := newTestParser(t)

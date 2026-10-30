@@ -220,8 +220,14 @@ func setSeverity(e *entry.Entry, m map[string]any) {
 		e.Severity = entry.Warn
 	case "error":
 		e.Severity = entry.Error
-	case "dpanic", "panic", "fatal":
+	// Matches the otelzap bridge, so a self-log read from a file gets the same
+	// severity as its copy exported over OTLP.
+	case "dpanic":
 		e.Severity = entry.Fatal
+	case "panic":
+		e.Severity = entry.Fatal2
+	case "fatal":
+		e.Severity = entry.Fatal3
 	}
 }
 
