@@ -49,6 +49,10 @@ resource_attributes:
     description: "The name of the docker image in use by the container."
     type: string
     enabled: true
+  container.labels:
+    description: "The labels attached to the container."
+    type: map
+    enabled: false
   container.name:
     description: "The name of the container."
     type: string

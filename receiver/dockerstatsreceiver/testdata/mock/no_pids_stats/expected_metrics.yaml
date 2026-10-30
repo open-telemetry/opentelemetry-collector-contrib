@@ -33,6 +33,13 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
+        - key: container.labels
+          value:
+            kvlistValue:
+              values:
+                - key: container.label
+                  value:
+                    stringValue: container-label
         - key: container.name
           value:
             stringValue: bold_sinoussi
@@ -838,7 +845,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.2987038633110473e+08
+                - asDouble: 1.3441341480627087e+08
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
