@@ -54,17 +54,9 @@ type Metadata struct {
 	DecompressedBytesToSkip int64
 
 	// incompleteGzipSize is the size of a gzip compressed file when its last gzip member was last found to be
-	// incomplete, and incompleteGzipSince is when the file stopped growing. They are used to avoid decompressing
-	// the file again while it has not grown, and to warn about a gzip member that stays incomplete.
-	// They are not persisted.
-	incompleteGzipSize   int64
-	incompleteGzipSince  time.Time
-	incompleteGzipWarned bool
+	// incomplete. It is used to avoid decompressing the file again while it has not grown. Not persisted.
+	incompleteGzipSize int64
 }
-
-// incompleteGzipWarnAfter is how long a gzip member can stay incomplete, without its file growing,
-// before a warning is logged.
-const incompleteGzipWarnAfter = time.Minute
 
 // Reader manages a single file
 type Reader struct {
@@ -156,7 +148,6 @@ func (r *Reader) createGzipReader() error {
 
 	if r.incompleteGzipSize > 0 && r.incompleteGzipSize == currentEOF {
 		// The file has not grown since its last gzip member was found to be incomplete, so there is nothing new to read.
-		r.handleUnchangedIncompleteGzip()
 		return io.ErrUnexpectedEOF
 	}
 
@@ -207,7 +198,7 @@ func (r *Reader) updateGzipOffset(g *gzipMembersReader) {
 			zap.Error(g.err), zap.Int64("last_complete_gzip_member_end", validEnd),
 			zap.Int64("skipped_bytes", g.eof-validEnd), zap.Int64("file_size", g.eof))
 		r.Offset, r.DecompressedBytesToSkip = g.eof, 0
-		r.incompleteGzipSize, r.incompleteGzipSince, r.incompleteGzipWarned = 0, time.Time{}, false
+		r.incompleteGzipSize = 0
 		return
 	}
 
@@ -224,7 +215,7 @@ func (r *Reader) updateGzipOffset(g *gzipMembersReader) {
 	if errors.Is(g.err, io.ErrUnexpectedEOF) {
 		r.setIncompleteGzip(g.eof)
 	} else {
-		r.incompleteGzipSize, r.incompleteGzipSince, r.incompleteGzipWarned = 0, time.Time{}, false
+		r.incompleteGzipSize = 0
 	}
 }
 
@@ -241,7 +232,7 @@ func (r *Reader) recoverGzipOffset(fileSize int64) {
 		r.Offset, r.DecompressedBytesToSkip = fileSize, 0
 		return
 	}
-	r.set.Logger.Warn("gzip offset is not at the start of a gzip member, continuing from the start of the gzip member",
+	r.set.Logger.Debug("gzip offset is not at the start of a gzip member, continuing from the start of the gzip member",
 		zap.Int64("offset", oldOffset), zap.Int64("gzip_member_start", start), zap.Int64("decompressed_bytes_to_skip", skip))
 	r.Offset, r.DecompressedBytesToSkip = start, skip
 }
@@ -290,17 +281,10 @@ func gzipPositionAt(rd io.Reader) (start, skip int64, ok bool) {
 
 func (r *Reader) setIncompleteGzip(size int64) {
 	if r.incompleteGzipSize != size {
-		r.incompleteGzipSize, r.incompleteGzipSince, r.incompleteGzipWarned = size, time.Now(), false
-	}
-}
-
-func (r *Reader) handleUnchangedIncompleteGzip() {
-	unchangedFor := time.Since(r.incompleteGzipSince)
-	if !r.incompleteGzipWarned && unchangedFor >= incompleteGzipWarnAfter {
-		r.set.Logger.Warn("gzip member is incomplete and the file has not grown, the rest of it will be read once it is written",
-			zap.Duration("unchanged_for", unchangedFor), zap.Int64("offset", r.Offset),
-			zap.Int64("decompressed_bytes_read", r.DecompressedBytesToSkip), zap.Int64("file_size", r.incompleteGzipSize))
-		r.incompleteGzipWarned = true
+		r.set.Logger.Debug("gzip member is incomplete, the rest of it will be read once it is written",
+			zap.Int64("offset", r.Offset), zap.Int64("decompressed_bytes_read", r.DecompressedBytesToSkip),
+			zap.Int64("file_size", size))
+		r.incompleteGzipSize = size
 	}
 }
 
@@ -400,11 +384,10 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 
 		ok := s.Scan()
 		if !ok {
-			if err := s.Error(); errors.Is(err, io.ErrUnexpectedEOF) {
-				r.set.Logger.Debug("gzip member is not complete yet, the rest of it will be read once it is written")
-			} else if err != nil {
+			err := s.Error()
+			if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 				r.set.Logger.Error("failed during header scan", zap.Error(err))
-			} else {
+			} else if err == nil {
 				r.set.Logger.Debug("end of file reached", zap.Bool("delete_at_eof", r.deleteAtEOF))
 				if r.deleteAtEOF {
 					r.delete()
@@ -482,11 +465,10 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		ok := s.Scan()
 		if !ok {
-			if err := s.Error(); errors.Is(err, io.ErrUnexpectedEOF) {
-				r.set.Logger.Debug("gzip member is not complete yet, the rest of it will be read once it is written")
-			} else if err != nil {
+			err := s.Error()
+			if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 				r.set.Logger.Error("failed during scan", zap.Error(err))
-			} else if r.deleteAtEOF {
+			} else if err == nil && r.deleteAtEOF {
 				r.delete()
 			}
 

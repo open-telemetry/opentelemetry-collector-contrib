@@ -373,7 +373,7 @@ func TestReadGzipIncompleteStream(t *testing.T) {
 
 	const flushPeriod = 100 * time.Millisecond
 	f, sink := testFactory(t, withCompression("gzip"), withFlushPeriod(flushPeriod))
-	core, logs := observer.New(zap.WarnLevel)
+	core, logs := observer.New(zap.DebugLevel)
 	f.Logger = zap.New(core)
 
 	temp := filetest.OpenTemp(t, t.TempDir())
@@ -398,10 +398,9 @@ func TestReadGzipIncompleteStream(t *testing.T) {
 	info, err := temp.Stat()
 	require.NoError(t, err)
 	require.Equal(t, info.Size(), reader.incompleteGzipSize)
-	require.Zero(t, logs.Len())
+	require.Equal(t, 1, logs.FilterMessageSnippet("gzip member is incomplete").Len())
 
-	// While the file does not grow, it is not read again, and a warning is logged only once.
-	reader.incompleteGzipSince = time.Now().Add(-incompleteGzipWarnAfter)
+	// While the file does not grow, it is not read again and no additional log is emitted.
 	reader.ReadToEnd(t.Context())
 	reader.ReadToEnd(t.Context())
 	sink.ExpectNoCalls(t)
