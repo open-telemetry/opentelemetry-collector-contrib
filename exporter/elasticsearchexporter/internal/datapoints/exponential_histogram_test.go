@@ -14,6 +14,83 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
+func TestExponentialHistogramValidate(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		hm            HistogramMapping
+		at            pmetric.AggregationTemporality
+		expectedError bool
+	}{
+		{
+			name:          "Validate returns no error when exponential_histogram has cumulative temporality and mapping is exponential_histogram",
+			hm:            HistogramMappingExponential,
+			at:            pmetric.AggregationTemporalityCumulative,
+			expectedError: false,
+		},
+		{
+			name:          "Validate returns error when exponential_histogram has cumulative temporality and mapping is not exponential_histogram",
+			hm:            HistogramMappingRaw,
+			at:            pmetric.AggregationTemporalityCumulative,
+			expectedError: true,
+		},
+		{
+			name:          "Validate returns error when exponential_histogram has cumulative temporality and mapping is TDigest",
+			hm:            HistogramMappingTDigest,
+			at:            pmetric.AggregationTemporalityCumulative,
+			expectedError: true,
+		},
+		{
+			name:          "Validate returns error when exponential_histogram has cumulative temporality and mapping is double",
+			hm:            HistogramMappingAggregateMetricDouble,
+			at:            pmetric.AggregationTemporalityCumulative,
+			expectedError: true,
+		},
+		{
+			name: "Validate returns nil when exponential_histogram mapping is TDigest and has delta temporality",
+			hm:   HistogramMappingTDigest,
+			at:   pmetric.AggregationTemporalityDelta,
+		},
+		{
+			name: "Validate returns nil when exponential_histogram mapping is raw and has delta temporality",
+			hm:   HistogramMappingRaw,
+			at:   pmetric.AggregationTemporalityDelta,
+		},
+		{
+			name: "Validate returns nil when exponential_histogram mapping is exponential and has delta temporality",
+			hm:   HistogramMappingExponential,
+			at:   pmetric.AggregationTemporalityDelta,
+		},
+		{
+			name: "Validate returns nil when exponential_histogram mapping is double and has delta temporality",
+			hm:   HistogramMappingAggregateMetricDouble,
+			at:   pmetric.AggregationTemporalityDelta,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := pmetric.NewMetric()
+			m.SetName("test")
+			dp := pmetric.NewExponentialHistogramDataPoint()
+			dp.SetScale(0)
+			dp.Positive().SetOffset(3)
+			dp.Positive().BucketCounts().FromRaw([]uint64{1, 4, 6, 15})
+			dp.SetSum(14513)
+			dp.SetMin(8)
+			dp.SetMax(1024)
+			dp.MoveTo(m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty())
+			m.ExponentialHistogram().SetAggregationTemporality(tc.at)
+
+			esHist := NewExponentialHistogram(m, m.ExponentialHistogram().DataPoints().At(0), tc.hm)
+
+			err := esHist.Validate()
+			if tc.expectedError {
+				assert.ErrorContains(t, err, "cumulative temporality exponential histogram \"test\" is only supported when stored as exponential_histogram")
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestExponentialHistogramValue(t *testing.T) {
 	for _, tc := range []struct {
 		name     string

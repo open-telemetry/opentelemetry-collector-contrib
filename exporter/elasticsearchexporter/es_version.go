@@ -138,3 +138,13 @@ func supportsExponentialHistograms(v *semver.Version) bool {
 	core := semver.New(v.Major(), v.Minor(), v.Patch(), "", "")
 	return !core.LessThan(minExponentialHistogramVersion)
 }
+
+var minCumulativeHistogramVersion = semver.New(9, 5, 0, "", "")
+
+func supportsCumulativeHistograms(v *semver.Version) bool {
+	if v == nil {
+		return false
+	}
+	core := semver.New(v.Major(), v.Minor(), v.Patch(), "", "")
+	return !core.LessThan(minCumulativeHistogramVersion)
+}
