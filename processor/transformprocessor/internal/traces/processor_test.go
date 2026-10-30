@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var (
@@ -64,7 +64,7 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -105,7 +105,7 @@ func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -146,7 +146,7 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -187,7 +187,7 @@ func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -487,7 +487,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -787,7 +787,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -817,7 +817,7 @@ func Test_ProcessTraces_SpanEventContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -847,7 +847,7 @@ func Test_ProcessTraces_InferredSpanEventContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -864,12 +864,12 @@ func Test_ProcessTraces_InferredSpanEventContext(t *testing.T) {
 func Test_ProcessTraces_MixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td ptrace.Traces)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -891,7 +891,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -913,7 +913,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "span",
 					Statements: []string{
@@ -933,7 +933,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -981,7 +981,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 func Test_ProcessTraces_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
-		context   common.ContextID
+		context   transformconfig.ContextID
 	}{
 		{
 			context: "resource",
@@ -1000,7 +1000,7 @@ func Test_ProcessTraces_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.context), func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: tt.context, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessTraces(t.Context(), td)
@@ -1013,14 +1013,14 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		want          func(td ptrace.Traces)
 		wantErrorWith string
 	}{
 		{
 			name:      "span: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(span.attributes["test"], "pass") where span.name == "operationA" `}},
 			},
@@ -1031,7 +1031,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "span: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(span.attributes["test"], ParseJSON("true"))`}},
 			},
@@ -1040,7 +1040,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "spanevent: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(spanevent.attributes["test"], "pass") where spanevent.name == "eventA" `}},
 			},
@@ -1051,7 +1051,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "spanevent: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON("true"))`}},
 			},
@@ -1060,7 +1060,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
@@ -1071,7 +1071,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -1080,7 +1080,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
@@ -1091,7 +1091,7 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -1123,12 +1123,12 @@ func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
 func Test_ProcessTraces_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td ptrace.Traces)
 	}{
 		{
 			name: "resource:resource.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["test"], "pass")`,
 					`set(resource.attributes["test"], resource.cache["test"])`,
@@ -1140,9 +1140,9 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "resource:cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context: common.Resource,
+					Context: transformconfig.Resource,
 					Statements: []string{
 						`set(cache["test"], "pass")`,
 						`set(attributes["test"], cache["test"])`,
@@ -1155,7 +1155,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:scope.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["test"], "pass")`,
 					`set(scope.attributes["test"], scope.cache["test"])`,
@@ -1167,8 +1167,8 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Scope,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Scope,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -1180,7 +1180,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "span:span.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(span.cache["test"], "pass")`,
 					`set(span.attributes["test"], span.cache["test"]) where span.name == "operationA"`,
@@ -1192,7 +1192,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "span:span.cache multiple entries",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(span.cache["test"], Concat([span.name, "cache"], "-"))`,
 					`set(span.attributes["test"], span.cache["test"])`,
@@ -1205,8 +1205,8 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "span:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Span,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Span,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"]) where name == "operationA"`,
@@ -1218,7 +1218,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "spanevent:spanevent.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(spanevent.cache["test"], "pass")`,
 					`set(spanevent.attributes["test"], spanevent.cache["test"]) where spanevent.name == "eventA"`,
@@ -1230,7 +1230,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "spanevent:spanevent.cache multiple entries",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(spanevent.cache["test"], Concat([spanevent.name, "cache"], "-"))`,
 					`set(spanevent.attributes["test"], spanevent.cache["test"]) where span.name == "operationB"`,
@@ -1243,8 +1243,8 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "spanevent:cache",
-			statements: []common.ContextStatements{{
-				Context: common.SpanEvent,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.SpanEvent,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"]) where name == "eventA"`,
@@ -1276,12 +1276,12 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 func Test_ProcessTraces_SharedCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td ptrace.Traces)
 	}{
 		{
 			name: "resource cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
@@ -1291,7 +1291,7 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "scope cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -1301,7 +1301,7 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "span cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(span.attributes["result"], span.cache["k"]) where span.name == "operationA"`}, SharedCache: true},
 			},
@@ -1311,7 +1311,7 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "cache not shared with groups where SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == nil`}},
 			},
@@ -1322,9 +1322,9 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "explicit context cache shared across groups",
-			statements: []common.ContextStatements{
-				{Context: common.Span, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Span, Statements: []string{`set(attributes["result"], cache["k"]) where name == "operationA"`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Span, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Span, Statements: []string{`set(attributes["result"], cache["k"]) where name == "operationA"`}, SharedCache: true},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("result", "pass")
@@ -1332,7 +1332,7 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "span event cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(spanevent.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(spanevent.attributes["result"], spanevent.cache["k"])`}, SharedCache: true},
 			},
@@ -1346,7 +1346,7 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "higher-level cache is not visible from a lower-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -1357,7 +1357,7 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 		},
 		{
 			name: "lower-level cache is not visible from a higher-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -1387,12 +1387,12 @@ func Test_ProcessTraces_SharedCache(t *testing.T) {
 func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td ptrace.Traces)
 	}{
 		{
 			name: "resource cache persists across resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1404,7 +1404,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "scope cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1418,7 +1418,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "span cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and span.name == "operationA"`}, SharedCache: true},
 				{Statements: []string{`set(span.attributes["result"], "pass") where span.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1434,7 +1434,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "span event cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(spanevent.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and spanevent.name == "eventA"`}, SharedCache: true},
 				{Statements: []string{`set(spanevent.attributes["result"], "pass") where spanevent.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1452,7 +1452,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "span cache persists across scopes and resources within a single group",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(span.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and span.name == "operationA"`,
 					`set(span.attributes["result"], "pass") where span.cache["k"] == "seen"`,
@@ -1470,7 +1470,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across spans when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(span.cache["k"], "seen") where span.name == "operationA"`,
 					`set(span.attributes["result"], "pass") where span.cache["k"] == "seen"`,
@@ -1486,7 +1486,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across resources when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
 					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
@@ -1498,7 +1498,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across scopes when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
 					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
@@ -1510,7 +1510,7 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across span events when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(spanevent.cache["k"], "seen") where spanevent.name == "eventA"`,
 					`set(spanevent.attributes["result"], "pass") where spanevent.cache["k"] == "seen"`,
@@ -1552,12 +1552,12 @@ func Test_ProcessTraces_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 func Test_ProcessTraces_SharedCacheCrossContextAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		wantErr    string
 	}{
 		{
 			name: "resource cache from an inferred span context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(span.attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
@@ -1565,7 +1565,7 @@ func Test_ProcessTraces_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "scope cache from an inferred span context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(span.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -1573,7 +1573,7 @@ func Test_ProcessTraces_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "span cache from an inferred span event context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(span.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(spanevent.attributes["result"], span.cache["k"])`}, SharedCache: true},
 			},
@@ -1581,9 +1581,9 @@ func Test_ProcessTraces_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "resource cache from an explicit span context",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Span, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Span, Statements: []string{`set(attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
 			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "span.cache[k]"`,
 		},
@@ -1602,7 +1602,7 @@ func Test_ProcessTraces_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
 	// Group 2 marks any span that sees the cached value.
 	// If the cache carries over between calls, operationB in the second call
 	// (which has no operationA) would incorrectly see a non-nil cache entry.
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
 			Statements:  []string{`set(span.cache["k"], "seen") where span.name == "operationA"`},
 			SharedCache: true,
@@ -1648,19 +1648,19 @@ func Test_ProcessTraces_SharedCacheConcurrentCalls(t *testing.T) {
 	const numGoroutines = 10
 
 	// Each call: set a value in the shared cache, copy it to a span attribute, then delete it.
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
-			Context:     common.Span,
+			Context:     transformconfig.Span,
 			Statements:  []string{`set(cache["k"], "cached-value")`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Span,
+			Context:     transformconfig.Span,
 			Statements:  []string{`set(attributes["result"], cache["k"])`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Span,
+			Context:     transformconfig.Span,
 			Statements:  []string{`delete_key(cache, "k")`},
 			SharedCache: true,
 		},
@@ -1706,7 +1706,7 @@ func Test_ProcessTraces_SharedCacheAfterError(t *testing.T) {
 	// Group 2 errors for operationA only, propagating the error and aborting
 	// the call before group 3 ever runs.
 	// Group 3 marks any span that sees a non-nil cached value.
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
 			Statements:  []string{`set(span.cache["k"], "seen") where span.name == "operationA"`},
 			SharedCache: true,
@@ -1748,12 +1748,12 @@ func Test_ProcessTraces_SharedCacheAfterError(t *testing.T) {
 func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td ptrace.Traces)
 	}{
 		{
 			name: "inferring from statements",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`resource.attributes["test"] == nil`},
 					Statements: []string{`set(span.name, Concat([span.name, "pass"], "-"))`},
@@ -1771,7 +1771,7 @@ func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
 		},
 		{
 			name: "inferring from conditions",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`span.name != nil`},
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
@@ -1805,7 +1805,7 @@ func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		wantErrorWith string
 	}
 
@@ -1814,7 +1814,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		contextsTests[ctx] = []testCase{
 			{
 				name: "inferred: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
@@ -1823,7 +1823,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "inferred: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{`cache["test"] == ""`},
@@ -1833,9 +1833,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{`cache["test"] == ""`},
 					},
@@ -1843,9 +1843,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
@@ -1892,7 +1892,7 @@ func NewTestSpanEventFuncFactory[K any]() ottl.Factory[K] {
 func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name               string
-		statements         []common.ContextStatements
+		statements         []transformconfig.ContextStatements
 		wantErrorWith      string
 		spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
 		spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
@@ -1901,9 +1901,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "span functions : statement with added span func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("span"),
+					Context:    transformconfig.ContextID("span"),
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
@@ -1915,9 +1915,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "span functions : statement with missing span func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("span"),
+					Context:    transformconfig.ContextID("span"),
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
@@ -1927,9 +1927,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "span event functions : statement with added span event func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("spanevent"),
+					Context:    transformconfig.ContextID("spanevent"),
 					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
 				},
 			},
@@ -1941,9 +1941,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "span event functions : statement with missing span event func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("spanevent"),
+					Context:    transformconfig.ContextID("spanevent"),
 					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
 				},
 			},
@@ -2006,7 +2006,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(b, err)
 			b.ResetTimer()
 			for b.Loop() {
@@ -2048,7 +2048,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(b, err)
 			b.ResetTimer()
 			for b.Loop() {
@@ -2062,7 +2062,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 
 // Benchmark that do not re-allocate data and does not change data to measure only overhead of calling the ottl framework.
 func BenchmarkSetName(b *testing.B) {
-	processor, err := NewProcessor([]common.ContextStatements{{
+	processor, err := NewProcessor([]transformconfig.ContextStatements{{
 		Context:    "span",
 		Statements: []string{`set(name, "operationA") where name == "operationA"`},
 	}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)

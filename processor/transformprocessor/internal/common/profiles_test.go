@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 func newProfileParserCollection(t *testing.T) *ProfileParserCollection {
@@ -29,18 +30,18 @@ func newProfileParserCollection(t *testing.T) *ProfileParserCollection {
 func TestProfileParserCollection_ConsumeProfiles(t *testing.T) {
 	tests := []struct {
 		name string
-		cs   ContextStatements
+		cs   transformconfig.ContextStatements
 	}{
-		{"profile context", ContextStatements{Context: Profile, Statements: []string{`set(original_payload_format, "pass")`}}},
-		{"profile context with condition", ContextStatements{Context: Profile, Conditions: []string{`original_payload_format == "operationA"`}, Statements: []string{`set(original_payload_format, "pass")`}}},
-		{"inferred context", ContextStatements{Statements: []string{`set(profile.original_payload_format, "pass")`}}},
+		{"profile context", transformconfig.ContextStatements{Context: transformconfig.Profile, Statements: []string{`set(original_payload_format, "pass")`}}},
+		{"profile context with condition", transformconfig.ContextStatements{Context: transformconfig.Profile, Conditions: []string{`original_payload_format == "operationA"`}, Statements: []string{`set(original_payload_format, "pass")`}}},
+		{"inferred context", transformconfig.ContextStatements{Statements: []string{`set(profile.original_payload_format, "pass")`}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := newProfileParserCollection(t)
 			consumer, err := pc.ParseContextStatements(tt.cs)
 			require.NoError(t, err)
-			assert.Equal(t, Profile, consumer.Context())
+			assert.Equal(t, transformconfig.Profile, consumer.Context())
 
 			pd := newTestProfiles()
 			require.NoError(t, consumer.ConsumeProfiles(t.Context(), pd, nil))
@@ -53,13 +54,13 @@ func TestProfileParserCollection_ConsumeProfiles(t *testing.T) {
 
 func TestProfileParserCollection_ConsumeProfiles_PropagatesError(t *testing.T) {
 	pc := newProfileParserCollection(t)
-	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Profile, Statements: []string{`set(original_payload_format, ParseJSON("1"))`}})
+	consumer, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Profile, Statements: []string{`set(original_payload_format, ParseJSON("1"))`}})
 	require.NoError(t, err)
 	require.Error(t, consumer.ConsumeProfiles(t.Context(), newTestProfiles(), nil))
 }
 
 func TestProfileParserCollection_ParseContextStatements_Error(t *testing.T) {
 	pc := newProfileParserCollection(t)
-	_, err := pc.ParseContextStatements(ContextStatements{Context: Profile, Statements: []string{`not a valid statement`}})
+	_, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Profile, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

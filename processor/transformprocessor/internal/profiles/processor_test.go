@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var (
@@ -61,7 +61,7 @@ func Test_ProcessProfiles_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -102,7 +102,7 @@ func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -143,7 +143,7 @@ func Test_ProcessProfiles_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -184,7 +184,7 @@ func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -399,7 +399,7 @@ func Test_ProcessProfiles_ProfileContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "profile", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "profile", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -607,7 +607,7 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -624,12 +624,12 @@ func Test_ProcessProfiles_InferredProfileContext(t *testing.T) {
 func Test_ProcessProfiles_MixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td pprofile.Profiles)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -651,7 +651,7 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -673,7 +673,7 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "profile",
 					Statements: []string{
@@ -693,7 +693,7 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -741,12 +741,12 @@ func Test_ProcessProfiles_MixContext(t *testing.T) {
 func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td pprofile.Profiles)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
 				},
@@ -762,7 +762,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(scope.attributes["test"], "pass")`},
 				},
@@ -778,7 +778,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(profile.original_payload_format, "pass") where instrumentation_scope.attributes["test"] == "pass"`},
 				},
@@ -792,7 +792,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(scope.attributes["test"], "pass")`},
 				},
@@ -831,7 +831,7 @@ func Test_ProcessProfiles_InferredMixContext(t *testing.T) {
 func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
-		context   common.ContextID
+		context   transformconfig.ContextID
 	}{
 		{
 			context:   "resource",
@@ -850,7 +850,7 @@ func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.context), func(t *testing.T) {
 			td := constructProfiles()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			processor, err := NewProcessor([]transformconfig.ContextStatements{{Context: tt.context, Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.NoError(t, err)
 
 			_, err = processor.ProcessProfiles(t.Context(), td)
@@ -863,14 +863,14 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		statements    []common.ContextStatements
+		statements    []transformconfig.ContextStatements
 		want          func(td pprofile.Profiles)
 		wantErrorWith string
 	}{
 		{
 			name:      "profile: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(profile.original_payload_format, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.dropped_attributes_count == 1`}},
 			},
@@ -882,7 +882,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "profile: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(profile.original_payload_format, ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(profile.original_payload_format, ParseJSON("true"))`}},
 			},
@@ -891,7 +891,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
 			},
@@ -902,7 +902,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "resource: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(resource.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -911,7 +911,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group with error mode",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
 			},
@@ -922,7 +922,7 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 		{
 			name:      "scope: statements group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("1"))`}, ErrorMode: ottl.IgnoreError},
 				{Statements: []string{`set(scope.attributes["pass"], ParseJSON("true"))`}},
 			},
@@ -956,12 +956,12 @@ func Test_ProcessProfiles_StatementsErrorMode(t *testing.T) {
 func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td pprofile.Profiles)
 	}{
 		{
 			name: "resource:resource.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["test"], "pass")`,
 					`set(resource.attributes["test"], resource.cache["test"])`,
@@ -973,9 +973,9 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "resource:cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context: common.Resource,
+					Context: transformconfig.Resource,
 					Statements: []string{
 						`set(cache["test"], "pass")`,
 						`set(attributes["test"], cache["test"])`,
@@ -988,7 +988,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:scope.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["test"], "pass")`,
 					`set(scope.attributes["test"], scope.cache["test"])`,
@@ -1000,8 +1000,8 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "scope:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Scope,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Scope,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(attributes["test"], cache["test"])`,
@@ -1013,7 +1013,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "profile:profile.cache",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(profile.cache["test"], "pass")`,
 					`set(profile.original_payload_format, profile.cache["test"])`,
@@ -1026,8 +1026,8 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "profile:cache",
-			statements: []common.ContextStatements{{
-				Context: common.Profile,
+			statements: []transformconfig.ContextStatements{{
+				Context: transformconfig.Profile,
 				Statements: []string{
 					`set(cache["test"], "pass")`,
 					`set(original_payload_format, cache["test"])`,
@@ -1040,7 +1040,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 		},
 		{
 			name: "cache isolation",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
 					Statements: []string{`set(profile.cache["shared"], "fail")`},
 				},
@@ -1052,7 +1052,7 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 					},
 				},
 				{
-					Context: common.Profile,
+					Context: transformconfig.Profile,
 					Statements: []string{
 						`set(cache["test"], "pass")`,
 						`set(original_payload_format, cache["test"])`,
@@ -1091,12 +1091,12 @@ func Test_ProcessProfiles_CacheAccess(t *testing.T) {
 func Test_ProcessProfiles_SharedCache(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td pprofile.Profiles)
 	}{
 		{
 			name: "resource cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], resource.cache["k"])`}, SharedCache: true},
 			},
@@ -1106,7 +1106,7 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 		},
 		{
 			name: "scope cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], scope.cache["k"])`}, SharedCache: true},
 			},
@@ -1116,7 +1116,7 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 		},
 		{
 			name: "profile cache shared across groups",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(profile.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(profile.original_payload_format, profile.cache["k"])`}, SharedCache: true},
 			},
@@ -1127,7 +1127,7 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 		},
 		{
 			name: "cache not shared with groups where SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(profile.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == nil`}},
 			},
@@ -1138,9 +1138,9 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 		},
 		{
 			name: "explicit context cache shared across groups",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Resource, Statements: []string{`set(attributes["result"], cache["k"])`}, SharedCache: true},
 			},
 			want: func(td pprofile.Profiles) {
 				td.ResourceProfiles().At(0).Resource().Attributes().PutStr("result", "pass")
@@ -1148,7 +1148,7 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 		},
 		{
 			name: "higher-level cache is not visible from a lower-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -1159,7 +1159,7 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 		},
 		{
 			name: "lower-level cache is not visible from a higher-level context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(profile.cache["k"], "fail")`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == nil`}, SharedCache: true},
 			},
@@ -1189,12 +1189,12 @@ func Test_ProcessProfiles_SharedCache(t *testing.T) {
 func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		want       func(td pprofile.Profiles)
 	}{
 		{
 			name: "resource cache persists across resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`}, SharedCache: true},
 				{Statements: []string{`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1206,7 +1206,7 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "scope cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`}, SharedCache: true},
 				{Statements: []string{`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1220,7 +1220,7 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "profile cache persists across scopes and resources",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(profile.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and profile.original_payload_format == "operationA"`}, SharedCache: true},
 				{Statements: []string{`set(profile.original_payload_format, "pass") where profile.cache["k"] == "seen"`}, SharedCache: true},
 			},
@@ -1232,7 +1232,7 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "profile cache persists across scopes and resources within a single group",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(profile.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1" and profile.original_payload_format == "operationA"`,
 					`set(profile.original_payload_format, "pass") where profile.cache["k"] == "seen"`,
@@ -1246,7 +1246,7 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across profiles when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(profile.cache["k"], "seen") where profile.original_payload_format == "operationA"`,
 					`set(profile.original_payload_format, "pass") where profile.cache["k"] == "seen"`,
@@ -1262,7 +1262,7 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across resources when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(resource.cache["k"], "seen") where resource.attributes["host.name"] == "host1"`,
 					`set(resource.attributes["result"], "pass") where resource.cache["k"] == "seen"`,
@@ -1274,7 +1274,7 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 		},
 		{
 			name: "cache does not persist across scopes when SharedCache is false",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{
 					`set(scope.cache["k"], "seen") where resource.attributes["host.name"] == "host1" and scope.name == "scope1"`,
 					`set(scope.attributes["result"], "pass") where scope.cache["k"] == "seen"`,
@@ -1306,12 +1306,12 @@ func Test_ProcessProfiles_SharedCacheAcrossResourcesAndScopes(t *testing.T) {
 func Test_ProcessProfiles_SharedCacheCrossContextAccess(t *testing.T) {
 	tests := []struct {
 		name       string
-		statements []common.ContextStatements
+		statements []transformconfig.ContextStatements
 		wantErr    string
 	}{
 		{
 			name: "resource cache from an inferred profile context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(resource.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(profile.original_payload_format, resource.cache["k"])`}, SharedCache: true},
 			},
@@ -1319,7 +1319,7 @@ func Test_ProcessProfiles_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "scope cache from an inferred profile context",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{Statements: []string{`set(scope.cache["k"], "pass")`}, SharedCache: true},
 				{Statements: []string{`set(profile.original_payload_format, scope.cache["k"])`}, SharedCache: true},
 			},
@@ -1327,9 +1327,9 @@ func Test_ProcessProfiles_SharedCacheCrossContextAccess(t *testing.T) {
 		},
 		{
 			name: "resource cache from an explicit profile context",
-			statements: []common.ContextStatements{
-				{Context: common.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
-				{Context: common.Profile, Statements: []string{`set(original_payload_format, resource.cache["k"])`}, SharedCache: true},
+			statements: []transformconfig.ContextStatements{
+				{Context: transformconfig.Resource, Statements: []string{`set(cache["k"], "pass")`}, SharedCache: true},
+				{Context: transformconfig.Profile, Statements: []string{`set(original_payload_format, resource.cache["k"])`}, SharedCache: true},
 			},
 			wantErr: `access to cache must be performed using the same context, please replace "resource.cache[k]" with "profile.cache[k]"`,
 		},
@@ -1344,7 +1344,7 @@ func Test_ProcessProfiles_SharedCacheCrossContextAccess(t *testing.T) {
 }
 
 func Test_ProcessProfiles_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
 			Statements:  []string{`set(profile.cache["k"], "seen") where profile.original_payload_format == "operationA"`},
 			SharedCache: true,
@@ -1394,19 +1394,19 @@ func Test_ProcessProfiles_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
 func Test_ProcessProfiles_SharedCacheConcurrentCalls(t *testing.T) {
 	const numGoroutines = 10
 
-	statements := []common.ContextStatements{
+	statements := []transformconfig.ContextStatements{
 		{
-			Context:     common.Profile,
+			Context:     transformconfig.Profile,
 			Statements:  []string{`set(cache["k"], "cached-value")`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Profile,
+			Context:     transformconfig.Profile,
 			Statements:  []string{`set(original_payload_format, cache["k"])`},
 			SharedCache: true,
 		},
 		{
-			Context:     common.Profile,
+			Context:     transformconfig.Profile,
 			Statements:  []string{`delete_key(cache, "k")`},
 			SharedCache: true,
 		},
@@ -1446,8 +1446,8 @@ func Test_ProcessProfiles_SharedCacheConcurrentCalls(t *testing.T) {
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name              string
-		statements        []common.ContextStatements
-		profileStatements []common.ContextStatements
+		statements        []transformconfig.ContextStatements
+		profileStatements []transformconfig.ContextStatements
 		wantErrorWith     string
 	}
 
@@ -1456,7 +1456,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		contextsTests[ctx] = []testCase{
 			{
 				name: "inferred: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
@@ -1465,7 +1465,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "inferred: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
 						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
 						Conditions: []string{`cache["test"] == ""`},
@@ -1475,9 +1475,9 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition without context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(cache["test"], "pass")`},
 						Conditions: []string{`cache["test"] == ""`},
 					},
@@ -1485,17 +1485,17 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 			},
 			{
 				name: "context defined: condition with context",
-				statements: []common.ContextStatements{
+				statements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(attributes["test"], "pass")`},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
 				},
 				// remove after merging https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39681
-				profileStatements: []common.ContextStatements{
+				profileStatements: []transformconfig.ContextStatements{
 					{
-						Context:    common.ContextID(ctx),
+						Context:    transformconfig.ContextID(ctx),
 						Statements: []string{`set(original_payload_format, "pass")`},
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
@@ -1530,12 +1530,12 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextStatements []common.ContextStatements
+		contextStatements []transformconfig.ContextStatements
 		want              func(td pprofile.Profiles)
 	}{
 		{
 			name: "inferring from statements",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`resource.attributes["test"] == nil`},
 					Statements: []string{`set(profile.original_payload_format, Concat([profile.original_payload_format, "pass"], "-"))`},
@@ -1553,7 +1553,7 @@ func Test_ProcessProfiles_InferredContextFromConditions(t *testing.T) {
 		},
 		{
 			name: "inferring from conditions",
-			contextStatements: []common.ContextStatements{
+			contextStatements: []transformconfig.ContextStatements{
 				{
 					Conditions: []string{`profile.original_payload_format != nil`},
 					Statements: []string{`set(resource.attributes["test"], "pass")`},
@@ -1599,7 +1599,7 @@ func NewTestProfileFuncFactory[K any]() ottl.Factory[K] {
 func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name             string
-		statements       []common.ContextStatements
+		statements       []transformconfig.ContextStatements
 		wantErrorWith    string
 		profileFunctions map[string]ottl.Factory[*ottlprofile.TransformContext]
 	}
@@ -1607,9 +1607,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "profile funcs : statement with added profile func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    transformconfig.ContextID("profile"),
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -1620,9 +1620,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "profile funcs : statement with missing profile func",
-			statements: []common.ContextStatements{
+			statements: []transformconfig.ContextStatements{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    transformconfig.ContextID("profile"),
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},

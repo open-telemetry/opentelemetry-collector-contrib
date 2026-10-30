@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 func newLogParserCollection(t *testing.T) *LogParserCollection {
@@ -29,18 +30,18 @@ func newLogParserCollection(t *testing.T) *LogParserCollection {
 func TestLogParserCollection_ConsumeLogs(t *testing.T) {
 	tests := []struct {
 		name string
-		cs   ContextStatements
+		cs   transformconfig.ContextStatements
 	}{
-		{"log context", ContextStatements{Context: Log, Statements: []string{`set(attributes["test"], "pass")`}}},
-		{"log context with condition", ContextStatements{Context: Log, Conditions: []string{`body == "body"`}, Statements: []string{`set(attributes["test"], "pass")`}}},
-		{"inferred context", ContextStatements{Statements: []string{`set(log.attributes["test"], "pass")`}}},
+		{"log context", transformconfig.ContextStatements{Context: transformconfig.Log, Statements: []string{`set(attributes["test"], "pass")`}}},
+		{"log context with condition", transformconfig.ContextStatements{Context: transformconfig.Log, Conditions: []string{`body == "body"`}, Statements: []string{`set(attributes["test"], "pass")`}}},
+		{"inferred context", transformconfig.ContextStatements{Statements: []string{`set(log.attributes["test"], "pass")`}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := newLogParserCollection(t)
 			consumer, err := pc.ParseContextStatements(tt.cs)
 			require.NoError(t, err)
-			assert.Equal(t, Log, consumer.Context())
+			assert.Equal(t, transformconfig.Log, consumer.Context())
 
 			ld := newTestLogs()
 			require.NoError(t, consumer.ConsumeLogs(t.Context(), ld, nil))
@@ -54,13 +55,13 @@ func TestLogParserCollection_ConsumeLogs(t *testing.T) {
 
 func TestLogParserCollection_ConsumeLogs_PropagatesError(t *testing.T) {
 	pc := newLogParserCollection(t)
-	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Log, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}})
+	consumer, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Log, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}})
 	require.NoError(t, err)
 	require.Error(t, consumer.ConsumeLogs(t.Context(), newTestLogs(), nil))
 }
 
 func TestLogParserCollection_ParseContextStatements_Error(t *testing.T) {
 	pc := newLogParserCollection(t)
-	_, err := pc.ParseContextStatements(ContextStatements{Context: Log, Statements: []string{`not a valid statement`}})
+	_, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Log, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }
