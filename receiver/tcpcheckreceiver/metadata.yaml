@@ -20,7 +20,7 @@ attributes:
     description: Error code recorded during check
     requirement_level: recommended
     type: string
-    enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
+    enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error, expect_mismatch, step_timeout]
   tcpcheck.endpoint:
     description: TCP endpoint
     requirement_level: required
@@ -28,7 +28,7 @@ attributes:
 
 metrics:
   tcpcheck.duration:
-    description: Measures the duration of TCP connection.
+    description: Measures the duration of a successful TCP check, including query_response operations.
     enabled: true
     stability: alpha
     gauge:
@@ -46,7 +46,7 @@ metrics:
     unit: "{error}"
     attributes: [tcpcheck.endpoint, error.code]
   tcpcheck.status:
-    description: 1 if the TCP client successfully connected, otherwise 0.
+    description: 1 if the TCP connection and all query_response operations succeeded, otherwise 0.
     enabled: true
     stability: alpha
     gauge:

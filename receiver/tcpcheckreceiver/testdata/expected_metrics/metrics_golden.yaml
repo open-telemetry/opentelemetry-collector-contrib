@@ -1,28 +1,50 @@
+# Successful metrics for the first two targets in ../query_response.yaml.
+# Case 1: mail.example.com:25 uses expect: '^220'.
+# Case 2: localhost:6379 sends "PING\r\n", then expects '^\+PONG\r\n'.
+# Both cases emit tcpcheck.status = 1 and a duration for the entire check.
 resourceMetrics:
   - resource: {}
     scopeMetrics:
       - metrics:
-          - description: Measures the duration of TCP connection.
+          - description: Measures the duration of a successful TCP check, including query_response operations.
             gauge:
               dataPoints:
+                # Case 1: expect only.
                 - asInt: "36"
                   attributes:
                     - key: tcpcheck.endpoint
                       value:
-                        stringValue: 127.0.0.1:8080
+                        stringValue: mail.example.com:25
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                # Case 2: send, then expect.
+                - asInt: "12"
+                  attributes:
+                    - key: tcpcheck.endpoint
+                      value:
+                        stringValue: localhost:6379
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: tcpcheck.duration
             unit: ms
-          - description: 1 if the TCP client successfully connected, otherwise 0.
+          - description: 1 if the TCP connection and all query_response operations succeeded, otherwise 0.
             name: tcpcheck.status
             gauge:
               dataPoints:
+                # Case 1: the greeting matched.
                 - asInt: "1"
                   attributes:
                     - key: tcpcheck.endpoint
                       value:
-                        stringValue: 127.0.0.1:8080
+                        stringValue: mail.example.com:25
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                # Case 2: the response to PING matched.
+                - asInt: "1"
+                  attributes:
+                    - key: tcpcheck.endpoint
+                      value:
+                        stringValue: localhost:6379
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
