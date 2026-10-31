@@ -54,6 +54,7 @@ func TestNewCurrentStatsReader(t *testing.T) {
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		HideSplitStatsKeys:     true,
 		HideClientIPAddress:    true,
+		TruncateText:           true,
 	}
 
 	reader := newCurrentStatsReader(logger, database, metricsMetadata, config)
@@ -64,6 +65,7 @@ func TestNewCurrentStatsReader(t *testing.T) {
 	assert.Equal(t, topMetricsQueryMaxRows, reader.topMetricsQueryMaxRows)
 	assert.True(t, reader.hideSplitStatsKeys)
 	assert.True(t, reader.hideClientIPAddress)
+	assert.True(t, reader.truncateText)
 }
 
 func TestCurrentStatsReader_NewPullStatement(t *testing.T) {

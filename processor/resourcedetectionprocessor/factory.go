@@ -60,6 +60,7 @@ var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 type factory struct {
 	resourceProviderFactory *internal.ResourceProviderFactory
+	compiledDetectors       []string
 
 	// providers stores a provider for each named processor that
 	// may a different set of detectors configured.
@@ -69,44 +70,10 @@ type factory struct {
 
 // NewFactory creates a new factory for ResourceDetection processor.
 func NewFactory() processor.Factory {
-	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
-		akamai.TypeStr:           akamai.NewDetector,
-		alibabaecs.TypeStr:       alibabaecs.NewDetector,
-		aks.TypeStr:              aks.NewDetector,
-		azure.TypeStr:            azure.NewDetector,
-		appservice.TypeStr:       appservice.NewDetector,
-		containerapps.TypeStr:    containerapps.NewDetector,
-		functions.TypeStr:        functions.NewDetector,
-		consul.TypeStr:           consul.NewDetector,
-		digitalocean.TypeStr:     digitalocean.NewDetector,
-		docker.TypeStr:           docker.NewDetector,
-		ec2.TypeStr:              ec2.NewDetector,
-		ecs.TypeStr:              ecs.NewDetector,
-		eks.TypeStr:              eks.NewDetector,
-		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
-		lambda.TypeStr:           lambda.NewDetector,
-		env.TypeStr:              env.NewDetector,
-		gcp.TypeStr:              gcp.NewDetector,
-		heroku.TypeStr:           heroku.NewDetector,
-		hetzner.TypeStr:          hetzner.NewDetector,
-		ibmcloudclassic.TypeStr:  ibmcloudclassic.NewDetector,
-		ibmcloudvpc.TypeStr:      ibmcloudvpc.NewDetector,
-		scaleway.TypeStr:         scaleway.NewDetector,
-		system.TypeStr:           system.NewDetector,
-		openshift.TypeStr:        openshift.NewDetector,
-		nova.TypeStr:             nova.NewDetector,
-		oraclecloud.TypeStr:      oraclecloud.NewDetector,
-		k8sapi.TypeStr:           k8sapi.NewDetector,
-		k8sapi.TypeStrAlias:      k8sapi.NewDeprecatedDetector,
-		kubeadm.TypeStr:          kubeadm.NewDetector,
-		dynatrace.TypeStr:        dynatrace.NewDetector,
-		tencentcvm.TypeStr:       tencentcvm.NewDetector,
-		upcloud.TypeStr:          upcloud.NewDetector,
-		vultr.TypeStr:            vultr.NewDetector,
-	})
-
+	providerFactory := internal.NewProviderFactory(detectorFactories())
 	f := &factory{
-		resourceProviderFactory: resourceProviderFactory,
+		resourceProviderFactory: providerFactory,
+		compiledDetectors:       providerFactory.CompiledDetectorTypes(),
 		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
@@ -317,9 +284,16 @@ func (f *factory) getResourceProvider(
 	}
 
 	detectorTypes := make([]internal.DetectorType, 0, len(configuredDetectors))
+	configuredDetectorTypes := make([]string, 0, len(configuredDetectors))
 	for _, key := range configuredDetectors {
-		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
+		detectorType := strings.TrimSpace(key)
+		detectorTypes = append(detectorTypes, internal.DetectorType(detectorType))
+		configuredDetectorTypes = append(configuredDetectorTypes, detectorType)
 	}
+
+	params.Logger.Debug("resource detection processor detector configuration",
+		zap.Strings("compiled_detectors", f.compiledDetectors),
+		zap.Strings("configured_detectors", configuredDetectorTypes))
 
 	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, backoffConfig, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
 	if err != nil {
@@ -328,4 +302,42 @@ func (f *factory) getResourceProvider(
 
 	f.providers[params.ID] = provider
 	return provider, nil
+}
+
+func detectorFactories() map[internal.DetectorType]internal.DetectorFactory {
+	return map[internal.DetectorType]internal.DetectorFactory{
+		akamai.TypeStr:           akamai.NewDetector,
+		alibabaecs.TypeStr:       alibabaecs.NewDetector,
+		aks.TypeStr:              aks.NewDetector,
+		azure.TypeStr:            azure.NewDetector,
+		appservice.TypeStr:       appservice.NewDetector,
+		containerapps.TypeStr:    containerapps.NewDetector,
+		functions.TypeStr:        functions.NewDetector,
+		consul.TypeStr:           consul.NewDetector,
+		digitalocean.TypeStr:     digitalocean.NewDetector,
+		docker.TypeStr:           docker.NewDetector,
+		ec2.TypeStr:              ec2.NewDetector,
+		ecs.TypeStr:              ecs.NewDetector,
+		eks.TypeStr:              eks.NewDetector,
+		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
+		lambda.TypeStr:           lambda.NewDetector,
+		env.TypeStr:              env.NewDetector,
+		gcp.TypeStr:              gcp.NewDetector,
+		heroku.TypeStr:           heroku.NewDetector,
+		hetzner.TypeStr:          hetzner.NewDetector,
+		ibmcloudclassic.TypeStr:  ibmcloudclassic.NewDetector,
+		ibmcloudvpc.TypeStr:      ibmcloudvpc.NewDetector,
+		scaleway.TypeStr:         scaleway.NewDetector,
+		system.TypeStr:           system.NewDetector,
+		openshift.TypeStr:        openshift.NewDetector,
+		nova.TypeStr:             nova.NewDetector,
+		oraclecloud.TypeStr:      oraclecloud.NewDetector,
+		k8sapi.TypeStr:           k8sapi.NewDetector,
+		k8sapi.TypeStrAlias:      k8sapi.NewDeprecatedDetector,
+		kubeadm.TypeStr:          kubeadm.NewDetector,
+		dynatrace.TypeStr:        dynatrace.NewDetector,
+		tencentcvm.TypeStr:       tencentcvm.NewDetector,
+		upcloud.TypeStr:          upcloud.NewDetector,
+		vultr.TypeStr:            vultr.NewDetector,
+	}
 }

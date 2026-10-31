@@ -57,6 +57,10 @@ exclusions:
     lifecycle_test:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+    feature_gates:
+      - name: exporter.xray.allowDot
+        validation:
+          enabled: false
     goleak:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
@@ -358,9 +362,6 @@ exclusions:
       - name: ottl.functions.enableLambda
         validation:
           enabled: false
-      - name: ottl.set.allowNil
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
     feature_gates:
       - name: logs.assignKeys
@@ -655,10 +656,6 @@ exclusions:
     lifecycle_test:
       enabled: false
     shutdown_test:
-      enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
-    # TODO: Update the exporter to pass the tests
-    lifecycle_test:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
     lifecycle_test:

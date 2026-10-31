@@ -73,12 +73,32 @@ func getElasticsearchVersions(ctx context.Context, cfg *Config, set exporter.Set
 		if cfg.Retry.MaxRetries != 0 {
 			maxRetries = cfg.Retry.MaxRetries
 		}
+
+		username := cfg.Authentication.User
+		password := string(cfg.Authentication.Password)
+		if user := u.User; user != nil {
+			username = user.Username()
+			password, _ = user.Password()
+		}
+
+		var retryOnStatus []int
+		// Do not retry on 401 or 403 as creds wont change between retries
+		for _, v := range cfg.Retry.RetryOnStatus {
+			if v == http.StatusUnauthorized || v == http.StatusForbidden {
+				continue
+			}
+			retryOnStatus = append(retryOnStatus, v)
+		}
+
 		tp, err := elastictransport.New(elastictransport.Config{
+			APIKey:        string(cfg.Authentication.APIKey),
 			URLs:          []*url.URL{u},
+			Username:      username,
+			Password:      password,
 			Transport:     httpClient.Transport,
 			DisableRetry:  !cfg.Retry.Enabled,
 			MaxRetries:    maxRetries,
-			RetryOnStatus: cfg.Retry.RetryOnStatus,
+			RetryOnStatus: retryOnStatus,
 			RetryBackoff:  createElasticsearchBackoffFunc(&cfg.Retry),
 		})
 		if err != nil {
