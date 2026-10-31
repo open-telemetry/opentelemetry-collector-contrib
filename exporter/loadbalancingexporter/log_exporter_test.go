@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 func TestNewLogsExporter(t *testing.T) {
@@ -627,15 +628,16 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		require.Contains(t, batches, "svc-2")
 	})
 
-	t.Run("missing service name routes to empty key", func(t *testing.T) {
+	t.Run("missing service name routes by resource identity", func(t *testing.T) {
 		ld := plog.NewLogs()
 		rl := ld.ResourceLogs().AppendEmpty()
 		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
 
 		batches := splitLogsByServiceName(ld)
 		require.Len(t, batches, 1)
-		require.Contains(t, batches, "")
-		assert.Equal(t, 1, batches[""].ResourceLogs().Len())
+		key := identity.OfResource(rl.Resource()).String()
+		require.Contains(t, batches, key)
+		assert.Equal(t, 1, batches[key].ResourceLogs().Len())
 	})
 
 	t.Run("duplicate service names merged", func(t *testing.T) {
@@ -664,7 +666,7 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		rl1 := ld.ResourceLogs().AppendEmpty()
 		rl1.Resource().Attributes().PutStr("service.name", "svc-1")
 		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
-		// no service.name on this resource — routed to empty key
+		// no service.name on this resource — routed by resource identity
 		rl2 := ld.ResourceLogs().AppendEmpty()
 		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
 		rl3 := ld.ResourceLogs().AppendEmpty()
@@ -672,10 +674,10 @@ func TestSplitLogsByServiceName(t *testing.T) {
 		rl3.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
 
 		batches := splitLogsByServiceName(ld)
-		require.Len(t, batches, 3) // svc-1, svc-2, and empty key
+		require.Len(t, batches, 3) // svc-1, svc-2, and the unnamed resource
 		require.Contains(t, batches, "svc-1")
 		require.Contains(t, batches, "svc-2")
-		require.Contains(t, batches, "")
+		require.Contains(t, batches, identity.OfResource(rl2.Resource()).String())
 	})
 
 	t.Run("preserves log record data", func(t *testing.T) {
