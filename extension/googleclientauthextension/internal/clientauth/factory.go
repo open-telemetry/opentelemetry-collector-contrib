@@ -7,8 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
+	"cloud.google.com/go/compute/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"golang.org/x/oauth2"
@@ -32,6 +34,7 @@ func CreateExtension(_ context.Context, _ extension.Settings, cfg component.Conf
 	ca := &clientAuthenticator{
 		config:           config,
 		newIDTokenSource: idtoken.NewTokenSource,
+		getDefaultEmail:  defaultServiceAccountEmail,
 	}
 	return ca, nil
 }
@@ -41,7 +44,11 @@ type clientAuthenticator struct {
 	*oauth.TokenSource
 	config *Config
 
+	// principal is the subject of google_managed_kafka tokens, resolved on Start.
+	principal string
+
 	newIDTokenSource func(ctx context.Context, audience string, opts ...idtoken.ClientOption) (oauth2.TokenSource, error)
+	getDefaultEmail  func(ctx context.Context) (string, error)
 }
 
 func (ca *clientAuthenticator) Start(ctx context.Context, _ component.Host) error {
@@ -63,12 +70,44 @@ func (ca *clientAuthenticator) Start(ctx context.Context, _ component.Host) erro
 	if config.QuotaProject == "" {
 		config.QuotaProject = quotaProjectFromCreds(creds)
 	}
+	if config.TokenType == googleManagedKafka {
+		ca.principal, err = ca.resolvePrincipal(ctx, creds)
+		if err != nil {
+			return err
+		}
+	}
 	source, err := ca.newTokenSource(ctx, creds)
 	if err != nil {
 		return err
 	}
 	ca.TokenSource = &oauth.TokenSource{TokenSource: source}
 	return nil
+}
+
+// resolvePrincipal returns the principal from the config, else the client_email of a service
+// account key, else the default service account email from the metadata server.
+func (ca *clientAuthenticator) resolvePrincipal(ctx context.Context, creds *google.Credentials) (string, error) {
+	if ca.config.Principal != "" {
+		return ca.config.Principal, nil
+	}
+	if len(creds.JSON) == 0 {
+		email, err := ca.getDefaultEmail(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get the default service account email from the metadata server, set principal in the config: %w", err)
+		}
+		return email, nil
+	}
+	var v struct {
+		ClientEmail string `json:"client_email"`
+	}
+	if err := json.Unmarshal(creds.JSON, &v); err == nil && v.ClientEmail != "" {
+		return v.ClientEmail, nil
+	}
+	return "", errors.New("no principal found in application default credentials, set principal in the config")
+}
+
+func defaultServiceAccountEmail(ctx context.Context) (string, error) {
+	return metadata.EmailWithContext(ctx, "default")
 }
 
 func (ca *clientAuthenticator) newTokenSource(ctx context.Context, creds *google.Credentials) (oauth2.TokenSource, error) {

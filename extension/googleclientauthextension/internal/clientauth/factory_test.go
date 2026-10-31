@@ -116,7 +116,7 @@ func TestStart_idtoken(t *testing.T) {
 	err := ca.Start(t.Context(), nil)
 	assert.NoError(t, err)
 
-	token, err := ca.Token()
+	token, err := ca.Token(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, "dummy token", token.AccessToken)
 }

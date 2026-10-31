@@ -51,5 +51,31 @@ The following optional config fields are available:
 - `token_type` - The type of generated token. Default: `access_token`
   - `access_token`: [OAuth 2.0 access token](https://cloud.google.com/docs/authentication/token-types#access) will be generated.
   - `id_token`: Google-signed [ID token](https://cloud.google.com/docs/authentication/token-types#id) will be generated.
+  - `google_managed_kafka`: An OAuth 2.0 access token wrapped in the format expected by [Google Cloud Managed Service for Apache Kafka](https://cloud.google.com/managed-service-apache-kafka/docs) for SASL/OAUTHBEARER. See [Google Cloud Managed Service for Apache Kafka](#google-cloud-managed-service-for-apache-kafka).
 - `audience` - The audience claim used for generating ID token
 - `token_header` - Controls which HTTP header carries the token. Options: `authorization` (default) or `proxy-authorization` (for IAP-protected endpoints).
+- `principal` - The email of the principal the `google_managed_kafka` token is issued for. Only valid with `token_type: google_managed_kafka`. If unspecified, it is the `client_email` of the service account key, or, when running on Google Cloud (e.g. GKE with Workload Identity), the email of the default service account reported by the metadata server.
+
+## Google Cloud Managed Service for Apache Kafka
+
+With `token_type: google_managed_kafka`, the extension can be used as the `oauthbearer_token_source` of the Kafka receiver and exporter. Credentials come from application default credentials, so on GKE the collector can authenticate with Workload Identity instead of a service account key.
+
+```yaml
+extensions:
+  googleclientauth/kafka:
+    token_type: google_managed_kafka
+
+exporters:
+  kafka:
+    brokers: ["bootstrap.<cluster>.<region>.managedkafka.<project>.cloud.goog:9092"]
+    tls: {}
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: googleclientauth/kafka
+
+service:
+  extensions: [googleclientauth/kafka]
+```
+
+The `scopes` must include `https://www.googleapis.com/auth/cloud-platform`, which the default scopes do. This token type is intended for Kafka: when the extension is used as an HTTP or gRPC authenticator, it sends the plain access token.
