@@ -305,9 +305,10 @@ type ProducerConfig struct {
 	// CompressionParams defines compression parameters for the producer.
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
-	// The maximum number of messages the producer will send in a single
-	// broker request. Defaults to 10000 (franz-go default). Similar to
-	// `queue.buffering.max.messages` in the JVM producer.
+	// The maximum number of records the producer buffers across all
+	// partitions before Produce blocks waiting for broker acknowledgements.
+	// Defaults to 10000 (franz-go default). Similar to
+	// `queue.buffering.max.messages` in librdkafka.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
 
 	// Whether or not to allow automatic topic creation.

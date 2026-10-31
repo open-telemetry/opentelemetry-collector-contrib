@@ -31,6 +31,7 @@ func TestLabel_ToLabelValueMetadata(t *testing.T) {
 		"Value type is lock request slice": {metadata.LockRequestSliceValueType, false},
 		"Value type is timestamp":          {metadata.TimestampValueType, false},
 		"Value type is date":               {metadata.DateValueType, false},
+		"Value type is table ops json":     {metadata.OperationsByTableJSONValueType, false},
 		"Value type is unknown":            {metadata.UnknownValueType, true},
 	}
 
