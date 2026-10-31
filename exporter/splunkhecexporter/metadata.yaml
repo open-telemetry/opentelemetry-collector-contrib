@@ -12,6 +12,14 @@ status:
 
 telemetry:
   metrics:
+    exporter_dropped_unsupported_profile_records:
+      enabled: true
+      stability: development
+      description: Number of eBPF profile records dropped during conversion because their measurement type is unsupported or ambiguous.
+      unit: "{record}"
+      sum:
+        value_type: int
+        monotonic: true
     exporter_splunkhec_heartbeats_failed:
       enabled: true
       stability: development
