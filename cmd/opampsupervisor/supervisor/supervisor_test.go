@@ -3394,6 +3394,43 @@ service:
 	})
 }
 
+func TestSupervisorReportRawConfig(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		setting string
+		want    any
+	}{
+		{name: "default"},
+		{name: "disabled", setting: "  report_raw_config: false\n"},
+		{name: "enabled", setting: "  report_raw_config: true\n", want: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := setupSupervisorConfig(t, configTemplate+tt.setting)
+			s := Supervisor{
+				config:            cfg,
+				persistentState:   &persistentState{},
+				pidProvider:       staticPIDProvider(1234),
+				telemetrySettings: newNopTelemetrySettings(),
+			}
+			require.NoError(t, s.createTemplates())
+
+			agentConfig, err := s.composeAgentConfigFiles(nil, []string{string(config.SpecialConfigFileOpAMPExtension)})
+			require.NoError(t, err)
+			bootstrapConfig, err := s.composeNoopConfig()
+			require.NoError(t, err)
+
+			for name, body := range map[string][]byte{"agent": agentConfig, "bootstrap": bootstrapConfig} {
+				t.Run(name, func(t *testing.T) {
+					conf, err := config.NewConfFromYAML(body)
+					require.NoError(t, err)
+					assert.Equal(t, tt.want, conf.Get("extensions::opamp::reports_raw_config"))
+					assert.Equal(t, []any{"opamp"}, conf.Get("service::extensions"))
+				})
+			}
+		})
+	}
+}
+
 func TestSupervisor_composeNoopConfig(t *testing.T) {
 	const expectedConfig = `exporters:
     nop: null
