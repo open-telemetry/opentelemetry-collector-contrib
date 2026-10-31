@@ -78,6 +78,8 @@ type franzConsumer struct {
 
 	pollMu     sync.Mutex
 	pollCancel context.CancelFunc
+	// pollsReturned counts PollRecords calls that have returned.
+	pollsReturned atomic.Uint64
 
 	// brokerReadOpts caches MeasurementOptions for OnBrokerRead, which fires on
 	// every fetch request. Entries are evicted in OnBrokerDisconnect; growth is
@@ -416,6 +418,7 @@ func (c *franzConsumer) pollRecords(ctx context.Context, size int) kgo.Fetches {
 	c.pollMu.Unlock()
 
 	fetch := c.client.PollRecords(pollCtx, size)
+	c.pollsReturned.Add(1)
 
 	c.pollMu.Lock()
 	c.pollCancel = nil
