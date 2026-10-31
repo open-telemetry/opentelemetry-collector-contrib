@@ -670,9 +670,9 @@ processors:
 
 Azure Functions Flex Consumption plans do not expose `WEBSITE_RESOURCE_GROUP`, so `azure.resource_group.name` and `cloud.resource_id` will be absent.
 
-`deployment.environment.name` is disabled by default. Azure sets `WEBSITE_SLOT_NAME` to `Production` on apps without deployment slots regardless of the actual user's intent. Users should enable this attribute if they are using deployment slots, want the Production label, or are setting their own value for the environment. 
+`deployment.environment.name` is disabled by default. Azure sets `WEBSITE_SLOT_NAME` to `Production` on apps without deployment slots regardless of the actual user's intent. Users should enable this attribute if they are using deployment slots, want the Production label, or are setting their own value for the environment.
 
-If this detector is deployed as a sidecar, consider setting `override` to `false` to prevent overwriting values such as `service.name`. 
+If this detector is deployed as a sidecar, consider setting `override` to `false` to prevent overwriting values such as `service.name`.
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if neither `FUNCTIONS_WORKER_RUNTIME` nor `FUNCTIONS_EXTENSION_VERSION` is set (not running on Azure Functions), instead of silently returning an empty resource.
 
@@ -871,9 +871,18 @@ and add this to your workload:
 
 ### OpenShift
 
-Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
+Queries the OpenShift API to retrieve related resource attributes. Detection is delegated to
+[go.opentelemetry.io/contrib/detectors/openshift](https://pkg.go.dev/go.opentelemetry.io/contrib/detectors/openshift).
 
 The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
+AWS, Google Cloud and IBM Cloud clusters report `cloud.provider`, `cloud.platform` and `cloud.region`.
+Azure clusters report `cloud.provider` and `cloud.platform`, and OpenStack clusters report no cloud attributes.
+For backwards compatibility, Azure and OpenStack clusters also report `cloud.region` set to the `cloudName` of the platform
+(the Azure cloud environment, e.g. `azurepubliccloud`, or the OpenStack `clouds.yaml` entry), which is not a region.
+Enable the `processor.resourcedetection.openshift.removeCloudNameRegion` feature gate to stop reporting it.
+Clusters not running on a cloud provider report no cloud attributes.
+When not running in a cluster, or when the API server does not serve the OpenShift config API, no attributes are reported,
+or detection fails if `fail_on_missing_metadata` is enabled.
 
 The following permissions are required:
 ```yaml
@@ -882,8 +891,9 @@ metadata:
   name: otel-collector
 rules:
 - apiGroups: ["config.openshift.io"]
-  resources: ["infrastructures", "infrastructures/status"]
-  verbs: ["get", "watch", "list"]
+  resources: ["infrastructures/status"]
+  resourceNames: ["cluster"]
+  verbs: ["get"]
 ```
 
 By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
@@ -1155,6 +1165,76 @@ retry: <configretry.BackOffConfig>
 ```
 
 The processor also accepts the [`confighttp` client settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) at the top level (for example `tls` or `headers`). `timeout` applies to every detector; the other HTTP client settings are currently used only by the `ec2` detector.
+
+### Building with selected detectors
+
+Default builds compile every detector and require no build tags. Custom Collector
+distributions can reduce their reachable dependency and linked-binary surface by first
+excluding all detector implementations and then opting selected detectors back in:
+
+```sh
+go build -tags 'remove_all_resourcedetection_detectors,enable_detector_env,enable_detector_system' ./...
+```
+
+Use `remove_all_resourcedetection_detectors` together with one or more tags from this
+table. Positive tags without the removal tag do not trim the default build. Existing `omit_detector_<name>` tags remain supported and take precedence over an opt-in tag. For example, `omit_detector_aws_ec2` excludes EC2 even if `enable_detector_aws_ec2` is set. Opt-in suffixes match the existing omit-tag suffixes.
+
+| Detector in `detectors` | Opt-in build tag |
+| --- | --- |
+| `akamai` | `enable_detector_akamai` |
+| `aks` | `enable_detector_azure_aks` |
+| `alibaba_ecs` | `enable_detector_alibaba_ecs` |
+| `azure` | `enable_detector_azure` |
+| `azureappservice` | `enable_detector_azure_appservice` |
+| `azurecontainerapps` | `enable_detector_azure_containerapps` |
+| `azurefunctions` | `enable_detector_azure_functions` |
+| `consul` | `enable_detector_consul` |
+| `digitalocean` | `enable_detector_digitalocean` |
+| `docker` | `enable_detector_docker` |
+| `dynatrace` | `enable_detector_dynatrace` |
+| `ec2` | `enable_detector_aws_ec2` |
+| `ecs` | `enable_detector_aws_ecs` |
+| `eks` | `enable_detector_aws_eks` |
+| `elastic_beanstalk` | `enable_detector_aws_elastic_beanstalk` |
+| `env` | `enable_detector_env` |
+| `gcp` | `enable_detector_gcp` |
+| `heroku` | `enable_detector_heroku` |
+| `hetzner` | `enable_detector_hetzner` |
+| `ibmcloud_classic` | `enable_detector_ibmcloud_classic` |
+| `ibmcloud_vpc` | `enable_detector_ibmcloud_vpc` |
+| `k8s_api` | `enable_detector_k8s_api` |
+| `kubeadm` | `enable_detector_kubeadm` |
+| `lambda` | `enable_detector_aws_lambda` |
+| `nova` | `enable_detector_openstack_nova` |
+| `openshift` | `enable_detector_openshift` |
+| `oraclecloud` | `enable_detector_oraclecloud` |
+| `scaleway` | `enable_detector_scaleway` |
+| `system` | `enable_detector_system` |
+| `tencent_cvm` | `enable_detector_tencent_cvm` |
+| `upcloud` | `enable_detector_upcloud` |
+| `vultr` | `enable_detector_vultr` |
+
+The deprecated `k8snode` detector alias is compiled by
+`enable_detector_k8s_api`; it has no separate opt-in tag. The
+`elastic_beanstalk` detector uses the `elasticbeanstalk` configuration block.
+
+The factory default is `detectors: [env]`. A trimmed build that does not include the
+`env` tag must explicitly configure its compiled detector list. A binary built with only
+the removal tag compiles, but the resource detection processor must not be configured
+unless at least one detector is compiled and selected. Per-detector configuration blocks
+still decode and validate even when that detector is not compiled, which allows shared
+configuration files; naming an unavailable detector in `detectors` fails startup and
+reports the detectors compiled into that binary. The typed configuration stays in each detector package; implementation and omitted-factory files carry the build conditions.
+
+Go silently ignores unknown build tags,
+so verify tag spelling when a detector is unexpectedly unavailable.
+
+For an EC2-only distribution, build the Collector with
+`remove_all_resourcedetection_detectors,enable_detector_aws_ec2` and
+configure `detectors: [ec2]`. This excludes the EKS and Kubernetes detector
+implementations. Other enabled Collector components can still require Kubernetes
+dependencies. Build tags select compiled implementation files; they do not remove requirements
+from `go.mod` or isolate dependency versions selected by Go module tooling.
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 

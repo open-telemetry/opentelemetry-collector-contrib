@@ -5,6 +5,8 @@ package redactionprocessor
 
 import (
 	"context"
+	"crypto/fips140"
+	"crypto/sha3"
 	"errors"
 	"fmt"
 	"sort"
@@ -572,7 +574,7 @@ func TestHMACDifferentKeys(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       configopaque.String("key-one"),
+		HMACKey:       configopaque.String("key-one-aaaaaaaaaaaaaaaaaaaaaaaa"), // 32 bytes, the minimum Validate accepts
 		Summary:       "silent",
 	}
 
@@ -580,7 +582,7 @@ func TestHMACDifferentKeys(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       configopaque.String("key-two"),
+		HMACKey:       configopaque.String("key-two-bbbbbbbbbbbbbbbbbbbbbbbb"), // 32 bytes, the minimum Validate accepts
 		Summary:       "silent",
 	}
 
@@ -611,6 +613,9 @@ func TestHMACDifferentKeys(t *testing.T) {
 }
 
 func TestRedactSummaryDebugHashMD5(t *testing.T) {
+	if fips140.Enabled() {
+		t.Skip("md5 is rejected by Config.Validate in FIPS 140-3 mode and panics under GODEBUG=fips140=only")
+	}
 	tc := testConfig{
 		config: &Config{
 			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
@@ -1682,6 +1687,49 @@ func TestSpanEventRedacted(t *testing.T) {
 	require.Equal(t, "foobar", val.Str())
 }
 
+func TestLogBodyAllowedStringValue(t *testing.T) {
+	for _, summary := range []string{debug, info} {
+		t.Run(summary, func(t *testing.T) {
+			body := pcommon.NewValueStr("user@mycompany.com")
+			tc := testConfig{
+				config: &Config{
+					AllowAllKeys:  true,
+					AllowedValues: []string{`.+@mycompany\.com`},
+					BlockedValues: []string{`[a-z]+@[a-z]+\.com`},
+					Summary:       summary,
+				},
+				logBody: &body,
+			}
+
+			outLogs := runLogsTest(t, tc)
+			outLogBody := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+			outLogAttrs := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			assert.Equal(t, pcommon.ValueTypeStr, outLogBody.Type())
+			assert.Equal(t, "user@mycompany.com", outLogBody.Str())
+
+			val, found := outLogAttrs.Get(redactionBodyAllowedCount)
+			require.True(t, found)
+			assert.Equal(t, int64(1), val.Int())
+
+			// The keys list is a debug-only detail; the count is emitted at
+			// both levels.
+			if summary == debug {
+				val, found = outLogAttrs.Get(redactionBodyAllowedKeys)
+				require.True(t, found)
+				assert.Equal(t, "body", val.Str())
+			} else {
+				_, found = outLogAttrs.Get(redactionBodyAllowedKeys)
+				assert.False(t, found)
+			}
+
+			_, found = outLogAttrs.Get(redactionBodyMaskedKeys)
+			assert.False(t, found)
+			_, found = outLogAttrs.Get(redactionBodyRedactedKeys)
+			assert.False(t, found)
+		})
+	}
+}
+
 func TestLogBodyRedactionDifferentTypes(t *testing.T) {
 	stringBody := pcommon.NewValueStr("placeholder 4111111111111111")
 	tc := testConfig{
@@ -1827,6 +1875,73 @@ func TestLogBodyMaskBlockedKeyPatterns(t *testing.T) {
 	val, found = outLogAttrs.Get(redactionBodyMaskedCount)
 	require.True(t, found)
 	assert.Equal(t, int64(2), val.Int())
+}
+
+// TestBlockedKeyPatternMasksMultilineValueWhole validates that a value whose key
+// matches blocked_key_patterns is replaced once, including when it spans lines.
+// A blank line is included because ".*" matches the empty string, so the old
+// pattern inserted an extra mask there as well as one per line.
+func TestBlockedKeyPatternMasksMultilineValueWhole(t *testing.T) {
+	const multiline = "-----BEGIN PRIVATE KEY-----\nsecret\n\n-----END PRIVATE KEY-----"
+
+	t.Run("attributes", func(t *testing.T) {
+		processor := newMultilineMaskProcessor(t, None)
+		attrs := pcommon.NewMap()
+		attrs.PutStr("private_key", multiline)
+		attrs.PutStr("name", "kept")
+		processor.processAttrs(t.Context(), attrs)
+
+		val, found := attrs.Get("private_key")
+		require.True(t, found)
+		assert.Equal(t, "****", val.Str())
+		name, found := attrs.Get("name")
+		require.True(t, found)
+		assert.Equal(t, "kept", name.Str())
+	})
+
+	t.Run("log body", func(t *testing.T) {
+		processor := newMultilineMaskProcessor(t, None)
+		body := pcommon.NewValueMap()
+		body.Map().PutStr("private_key", multiline)
+		nested := body.Map().PutEmptyMap("nested")
+		nested.PutStr("private_key", multiline)
+		nested.PutStr("id", "user123")
+		processor.processLogBody(t.Context(), body, pcommon.NewMap())
+
+		masked, ok := body.Map().Get("private_key")
+		require.True(t, ok)
+		assert.Equal(t, "****", masked.Str())
+		nestedVal, ok := body.Map().Get("nested")
+		require.True(t, ok)
+		masked, ok = nestedVal.Map().Get("private_key")
+		require.True(t, ok)
+		assert.Equal(t, "****", masked.Str())
+		id, ok := nestedVal.Map().Get("id")
+		require.True(t, ok)
+		assert.Equal(t, "user123", id.Str())
+	})
+
+	t.Run("hash", func(t *testing.T) {
+		processor := newMultilineMaskProcessor(t, SHA3)
+		attrs := pcommon.NewMap()
+		attrs.PutStr("private_key", multiline)
+		processor.processAttrs(t.Context(), attrs)
+
+		val, found := attrs.Get("private_key")
+		require.True(t, found)
+		assert.Equal(t, hashString(multiline, sha3.New256()), val.Str())
+	})
+}
+
+func newMultilineMaskProcessor(t *testing.T, hash HashFunction) *redaction {
+	t.Helper()
+	processor, err := newRedaction(t.Context(), &Config{
+		AllowAllKeys:       true,
+		BlockedKeyPatterns: []string{".*private_key.*"},
+		HashFunction:       hash,
+	}, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	return processor
 }
 
 // runTest transforms the test input data and passes it through the processor
@@ -2946,4 +3061,99 @@ func TestDBObfuscationErrorInAttribute(t *testing.T) {
 	val, ok := outSpan.Attributes().Get("db.statement")
 	require.True(t, ok)
 	assert.Equal(t, "SELECT * FROM users WHERE id = ?", val.Str())
+}
+
+func TestMaskingStringIsAppliedToLogs(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys:  true,
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	ils := rl.ScopeLogs().AppendEmpty()
+	logRecord := ils.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("credit card 4111111111111111")
+	logRecord.Attributes().PutStr("credit.card", "4111111111111111")
+
+	logRecordWithMap := ils.LogRecords().AppendEmpty()
+	lrMap := logRecordWithMap.Body().SetEmptyMap()
+	lrMap.PutStr("cc", "4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outLogs, err := processor.processLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "credit card [REDACTED]", outLog.Body().Str())
+	creditCardAttr, ok := outLog.Attributes().Get("credit.card")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", creditCardAttr.AsString())
+
+	outLogWithMap := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+	ccFromBodyMap, ok := outLogWithMap.Body().Map().Get("cc")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", ccFromBodyMap.Str())
+}
+
+func TestMaskingStringIsAppliedToSpanAttributesAndEvents(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys:  true,
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
+	span.SetName("test-span")
+
+	span.Attributes().PutStr("credit.card", "4111111111111111")
+
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.SetName("test-event")
+	spanEvent.Attributes().PutStr("cc", "4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outTraces, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	outTrace := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	creditCardAttr, ok := outTrace.Attributes().Get("credit.card")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", creditCardAttr.Str())
+	outSpanEvent := outTrace.Events().At(0)
+	ccFromSpanEvent, ok := outSpanEvent.Attributes().Get("cc")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", ccFromSpanEvent.Str())
+}
+
+func TestMaskingStringIsAppliedToMetrics(t *testing.T) {
+	cfg := &Config{
+		AllowAllKeys:  true,
+		MaskingString: "[REDACTED]",
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("request")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("credit.card", "4111111111111111")
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t))
+	require.NoError(t, err)
+	outMetrics, err := processor.processMetrics(t.Context(), metrics)
+	require.NoError(t, err)
+	outAttrs := outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes()
+	creditCardAttr, ok := outAttrs.Get("credit.card")
+	assert.True(t, ok)
+	assert.Equal(t, "[REDACTED]", creditCardAttr.Str())
 }

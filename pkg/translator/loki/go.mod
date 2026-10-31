@@ -5,13 +5,13 @@ go 1.26.0
 require (
 	github.com/go-logfmt/logfmt v0.6.1
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.163.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
 	github.com/prometheus/common v0.72.1
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.315.0
+	github.com/prometheus/prometheus v0.315.1
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/pdata v1.69.1-0.20261023190401-82148555675e
+	go.opentelemetry.io/collector/pdata v1.70.1-0.20261029175530-9afdf701f333
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 )
@@ -30,8 +30,8 @@ require (
 	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.69.1-0.20261023190401-82148555675e // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.163.1-0.20261023190401-82148555675e // indirect
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261029175530-9afdf701f333 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
@@ -40,7 +40,7 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260825221802-da73d73af1c5 // indirect
-	google.golang.org/grpc v1.84.0 // indirect
+	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 

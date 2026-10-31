@@ -33,7 +33,9 @@ import (
 const attrValuesSeparator = ","
 
 // maskAllValuesRegex masks a whole value, for keys matching the blocked key patterns.
-var maskAllValuesRegex = regexp.MustCompile(".*")
+// (?s) makes '.' match newlines. Without it, ReplaceAll treats each line as its
+// own match, so a multi-line value is masked once per line and the line breaks remain.
+var maskAllValuesRegex = regexp.MustCompile("(?s).*")
 
 type redaction struct {
 	// Attribute keys allowed in a span
@@ -58,6 +60,8 @@ type redaction struct {
 	urlSanitizer *url.URLSanitizer
 	// Database obfuscator
 	dbObfuscator *db.Obfuscator
+	// Masking string used to replace masked values
+	maskingString string
 }
 
 // newRedaction creates a new instance of the redaction processor
@@ -95,6 +99,11 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	}
 	dbObfuscator := db.NewObfuscator(config.DBSanitizer, logger)
 
+	maskingString := "****"
+	if config.MaskingString != "" {
+		maskingString = config.MaskingString
+	}
+
 	return &redaction{
 		allowList:          allowList,
 		ignoreList:         ignoreList,
@@ -107,6 +116,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		logger:             logger,
 		urlSanitizer:       urlSanitizer,
 		dbObfuscator:       dbObfuscator,
+		maskingString:      maskingString,
 	}, nil
 }
 
@@ -222,16 +232,13 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 	default:
 		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
-			// TODO: this is assigned here, but return makes the assignment useless. Open an issue
-			// to investigate the correct behavior
-			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50417
-			allowedKeys = append(allowedKeys, "body") //nolint:staticcheck
-			return
-		}
-		processedValue := s.processStringValueForLogBody(strVal)
-		if strVal != processedValue {
-			maskedKeys = append(maskedKeys, "body")
-			body.SetStr(processedValue)
+			allowedKeys = append(allowedKeys, "body")
+		} else {
+			processedValue := s.processStringValueForLogBody(strVal)
+			if strVal != processedValue {
+				maskedKeys = append(maskedKeys, "body")
+				body.SetStr(processedValue)
+			}
 		}
 	}
 
@@ -417,7 +424,7 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 		case HMACSHA512:
 			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
-			return "****"
+			return s.maskingString
 		}
 	}
 	return regex.ReplaceAllStringFunc(val, hashFunc)

@@ -34,6 +34,8 @@ type prwWalTelemetry interface {
 	recordWALBytesWritten(ctx context.Context, bytes int)
 	recordWALBytesRead(ctx context.Context, bytes int)
 	recordWALLag(ctx context.Context, lag int64)
+	recordWALSendFailedBatches(ctx context.Context, batches int)
+	recordWALSendFailedSamples(ctx context.Context, samples int)
 }
 
 type prwWalTelemetryOTel struct {
@@ -75,6 +77,14 @@ func (p *prwWalTelemetryOTel) recordWALBytesRead(ctx context.Context, bytes int)
 
 func (p *prwWalTelemetryOTel) recordWALLag(ctx context.Context, lag int64) {
 	p.telemetryBuilder.ExporterPrometheusremotewriteWalLag.Record(ctx, lag, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALSendFailedBatches(ctx context.Context, batches int) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalSendFailedBatches.Add(ctx, int64(batches), metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALSendFailedSamples(ctx context.Context, samples int) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalSendFailedSamples.Add(ctx, int64(samples), metric.WithAttributes(p.otelAttrs...))
 }
 
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
@@ -423,6 +433,47 @@ func (prweWAL *prweWAL) syncAndTruncateFront() error {
 	return nil
 }
 
+// allPayloadRejections reports whether every error in err is a rejection of
+// the request's content by the remote endpoint. The export path aggregates one
+// error per write request with multierr, so a single other failure anywhere
+// means the batch must be kept and retried as a whole.
+func allPayloadRejections(err error) bool {
+	rejected, _, others := walkRejections(err)
+	return rejected > 0 && others == 0
+}
+
+// rejectedTotals reports how many write requests in err the endpoint rejected
+// and how many samples they carried. Requests the endpoint accepted add no error,
+// so they are not counted.
+func rejectedTotals(err error) (requests, samples int) {
+	requests, samples, _ = walkRejections(err)
+	return requests, samples
+}
+
+// walkRejections counts the rejections in err, the samples they carried, and
+// every other error. It follows the chain one link at a time, so a wrapper such
+// as a permanent error cannot hide a multierr that mixes in another failure.
+func walkRejections(err error) (rejected, samples, others int) {
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		if r, ok := e.(*payloadRejectionError); ok { //nolint:errorlint // The chain is walked one link at a time.
+			return 1, r.sampleCount, 0
+		}
+		if joined, ok := e.(interface{ Unwrap() []error }); ok {
+			for _, j := range joined.Unwrap() {
+				r, s, o := walkRejections(j)
+				rejected += r
+				samples += s
+				others += o
+			}
+			return rejected, samples, others
+		}
+	}
+	if err == nil {
+		return 0, 0, 0
+	}
+	return 0, 0, 1
+}
+
 func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*prompb.WriteRequest) error {
 	if len(reqL) == 0 {
 		return nil
@@ -432,7 +483,27 @@ func (prweWAL *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*
 	}
 
 	if errL := prweWAL.exportSink(ctx, reqL); errL != nil {
-		return errL
+		if !allPayloadRejections(errL) {
+			// Keep the batch so a recovered endpoint can still receive it.
+			return errL
+		}
+		if ctx.Err() != nil {
+			// A cancelled export can skip requests without an error, so keep the batch.
+			return errL
+		}
+		// The endpoint will reject this payload again, so truncate past it;
+		// otherwise it blocks the head of the WAL and nothing drains behind it.
+		requests, samples := rejectedTotals(errL)
+		prweWAL.telemetry.recordWALSendFailedBatches(ctx, requests)
+		prweWAL.telemetry.recordWALSendFailedSamples(ctx, samples)
+		if logger, lErr := loggerFromContext(ctx); lErr == nil {
+			logger.Error("dropping write-ahead log batch rejected by the remote endpoint",
+				zap.Int("rejected_request_count", requests),
+				zap.Int("rejected_sample_count", samples),
+				zap.Int("batch_request_count", len(reqL)),
+				zap.Error(errL),
+			)
+		}
 	}
 	if err := prweWAL.syncAndTruncateFront(); err != nil {
 		return err
