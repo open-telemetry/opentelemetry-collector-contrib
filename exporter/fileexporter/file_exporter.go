@@ -84,6 +84,7 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
+	writer.logger = e.logger
 	e.writer = writer
 	e.writer.start()
 	return nil

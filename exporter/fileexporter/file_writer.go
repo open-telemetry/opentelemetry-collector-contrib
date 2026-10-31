@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
@@ -16,9 +18,10 @@ import (
 type exportFunc func(e *fileWriter, buf []byte) error
 
 type fileWriter struct {
-	path  string
-	file  io.WriteCloser
-	mutex sync.Mutex
+	path   string
+	file   io.WriteCloser
+	logger *zap.Logger
+	mutex  sync.Mutex
 
 	exporter exportFunc
 
@@ -26,8 +29,9 @@ type fileWriter struct {
 	stopTicker    chan struct{}
 	wg            sync.WaitGroup
 	// Protected by mutex
-	refs    int  // number of active references to this writer
-	evicted bool // true if the writer has been evicted from the LRU
+	refs             int  // number of active references to this writer
+	evicted          bool // true if the writer has been evicted from the LRU
+	flushErrorLogged bool
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -88,7 +92,10 @@ func (w *fileWriter) startFlusher() {
 			select {
 			case <-ticker.C:
 				w.mutex.Lock()
-				ff.flush()
+				if err := ff.flush(); err != nil && !w.flushErrorLogged {
+					w.flushErrorLogged = true
+					w.logger.Error("Failed to flush file", zap.String("path", w.path), zap.Error(err))
+				}
 				w.mutex.Unlock()
 			case <-stop:
 				ticker.Stop()
