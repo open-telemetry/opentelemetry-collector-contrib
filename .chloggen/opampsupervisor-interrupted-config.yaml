@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: cmd/opampsupervisor
+note: Report an interrupted remote configuration application as FAILED with its original hash after a Supervisor restart.
+issues: [52300]
+subtext: With automatic_config_rollback enabled, a last working configuration is used on restart if available.
+change_logs: [user]
