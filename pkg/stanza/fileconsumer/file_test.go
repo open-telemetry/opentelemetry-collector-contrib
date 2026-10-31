@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -1296,6 +1297,101 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.FileExists(t, longFile.Name())
 }
 
+// TestHeaderWithGzip tests that every line of a gzip file with a header config is emitted exactly once. The
+// header scanner reads ahead of the header into its own buffer, by an amount that depends on the buffer size, and
+// reading must continue right after the header regardless.
+func TestHeaderWithGzip(t *testing.T) {
+	t.Parallel()
+
+	for name, bufferSize := range map[string]helper.ByteSize{
+		"small buffer":   16,
+		"default buffer": helper.ByteSize(scanner.DefaultBufferSize),
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir).withGzip()
+			cfg.StartAt = "beginning"
+			cfg.InitialBufferSize = bufferSize
+			cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
+
+			op, sink := testManager(t, cfg)
+
+			temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+			writer := gzip.NewWriter(temp)
+			_, err := writer.Write([]byte("#headerField: headerValue\nline1\nline2\nline3\n"))
+			require.NoError(t, err)
+			require.NoError(t, writer.Close())
+
+			attributes := map[string]any{
+				"header_key":      "headerField",
+				"header_value":    "headerValue",
+				attrs.LogFileName: filepath.Base(temp.Name()),
+			}
+			op.poll(t.Context())
+			sink.ExpectCall(t, []byte("line1"), attributes)
+			sink.ExpectCall(t, []byte("line2"), attributes)
+			sink.ExpectCall(t, []byte("line3"), attributes)
+
+			// The file has not changed, so nothing is read again.
+			op.poll(t.Context())
+			sink.ExpectNoCalls(t)
+		})
+	}
+}
+
+// TestHeaderWithGzipBeingWritten tests a gzip file with a header config that is read while it is still being
+// written, with the header finished in one poll and lines arriving over later polls. Every line must be emitted
+// exactly once.
+func TestHeaderWithGzipBeingWritten(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "beginning"
+	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
+
+	op, sink := testManager(t, cfg)
+
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	attributes := map[string]any{
+		"header_key":      "headerField",
+		"header_value":    "headerValue",
+		attrs.LogFileName: filepath.Base(temp.Name()),
+	}
+	writer := gzip.NewWriter(temp)
+
+	// Only the header is written so far, and the gzip member is not finished.
+	_, err := writer.Write([]byte("#headerField: headerValue\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	op.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	_, err = writer.Write([]byte("line1\nline2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	op.poll(t.Context())
+	sink.ExpectCall(t, []byte("line1"), attributes)
+	sink.ExpectCall(t, []byte("line2"), attributes)
+
+	_, err = writer.Write([]byte("line3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	op.poll(t.Context())
+	sink.ExpectCall(t, []byte("line3"), attributes)
+
+	_, err = writer.Write([]byte("line4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	op.poll(t.Context())
+	sink.ExpectCall(t, []byte("line4"), attributes)
+
+	op.poll(t.Context())
+	sink.ExpectNoCalls(t)
+}
+
 func TestHeaderPersistance(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
@@ -1637,6 +1733,92 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	sink.ExpectToken(t, []byte("testlog4"))
 }
 
+// TestReadGzipCompressedLogsWhileBeingWritten tests that the lines of a gzip compressed file are read while
+// it is still being written, without errors and without reading any line twice.
+func TestReadGzipCompressedLogsWhileBeingWritten(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	writer := gzip.NewWriter(temp)
+
+	// The first line is flushed to disk, but the gzip member is not finished yet.
+	_, err := writer.Write([]byte("testlog1\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog1"))
+
+	_, err = writer.Write([]byte("testlog2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog2"))
+
+	_, err = writer.Write([]byte("testlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog3"))
+
+	// A complete gzip member and a gzip member that is still being written are appended.
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog5\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectTokens(t, []byte("testlog4"), []byte("testlog5"))
+
+	_, err = writer.Write([]byte("testlog6\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog6"))
+	sink.ExpectNoCalls(t)
+}
+
+// TestReadGzipCompressedLogsAfterRotationWhileBeingWritten tests that when a partially read plaintext file is
+// rotated into a gzip file that is still being written, already read lines are not emitted again.
+func TestReadGzipCompressedLogsAfterRotationWhileBeingWritten(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.Compression = "auto"
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	plainPath := filepath.Join(tempDir, "test.log")
+	require.NoError(t, os.WriteFile(plainPath, []byte("testlog1\ntestlog2\n"), 0o600))
+	operator.poll(t.Context())
+	sink.ExpectTokens(t, []byte("testlog1"), []byte("testlog2"))
+
+	// Rotate: the plaintext file is replaced by a gzip file whose gzip member is not finished yet.
+	require.NoError(t, os.Remove(plainPath))
+	gzFile := filetest.OpenFile(t, plainPath+".gz")
+	writer := gzip.NewWriter(gzFile)
+	_, err := writer.Write([]byte("testlog1\ntestlog2\ntestlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog3"))
+
+	_, err = writer.Write([]byte("testlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog4"))
+	sink.ExpectNoCalls(t)
+}
+
 func TestArchive(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
@@ -1693,6 +1875,70 @@ func TestArchive(t *testing.T) {
 	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
 
 	sink.ExpectCalls(t, log3, log4)
+}
+
+// TestTruncateResetsDecompressedBytesToSkip tests that when a gzip file's stored offset exceeds the current
+// file size (it was truncated and rewritten with new, shorter content), the decompressed-bytes-to-skip count is
+// reset along with the offset, so the new content is not missing its first bytes.
+func TestTruncateResetsDecompressedBytesToSkip(t *testing.T) {
+	t.Parallel()
+
+	// A prefix identical before and after truncation, so the file's fingerprint still matches and it is
+	// recognized as the same tracked file.
+	const commonPrefix = "identicalprefix\n"
+
+	tempDir := t.TempDir()
+	log := filetest.OpenTemp(t, tempDir)
+
+	cfg := NewConfig().withGzip()
+	cfg.Include = append(cfg.Include, log.Name())
+	cfg.StartAt = "beginning"
+	cfg.FingerprintSize = helper.ByteSize(len(commonPrefix))
+	cfg.OnTruncate = OnTruncateReadWholeFile
+
+	op1, sink1 := testManager(t, cfg)
+	op1.persister = testutil.NewUnscopedMockPersister()
+
+	// A complete gzip member with 2 lines, followed by a member that is not finished yet. The stored offset
+	// will point to the start of the second member, with its one line counted as decompressed bytes to skip.
+	writer := gzip.NewWriter(log)
+	_, err := writer.Write([]byte(commonPrefix + "second\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	writer = gzip.NewWriter(log)
+	_, err = writer.Write([]byte("third\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+
+	op1.poll(t.Context())
+	sink1.ExpectTokens(t, []byte("identicalprefix"), []byte("second"), []byte("third"))
+
+	metadata := op1.tracker.GetMetadata()
+	require.NotEmpty(t, metadata)
+	require.NotZero(t, metadata[0].DecompressedBytesToSkip)
+
+	// The file is truncated and rewritten with new, shorter content starting with the same prefix, so its
+	// fingerprint still matches, but the stored offset (which pointed past the longer first member) now
+	// exceeds the file size.
+	require.NoError(t, log.Truncate(0))
+	_, err = log.Seek(0, 0)
+	require.NoError(t, err)
+	writer = gzip.NewWriter(log)
+	_, err = writer.Write([]byte(commonPrefix))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	info, err := log.Stat()
+	require.NoError(t, err)
+	require.Less(t, info.Size(), metadata[0].Offset)
+
+	op2, sink2 := testManager(t, cfg)
+	op2.persister = testutil.NewUnscopedMockPersister()
+	op2.tracker.LoadMetadata(metadata)
+
+	// With read_whole_file, the offset resets to 0. The decompressed-bytes-to-skip count must reset too, or the
+	// new content would have its only line skipped as if it were already read.
+	op2.poll(t.Context())
+	sink2.ExpectToken(t, []byte("identicalprefix"))
 }
 
 func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
