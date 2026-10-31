@@ -7,6 +7,7 @@ package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
@@ -73,10 +74,24 @@ type OAuth2 struct {
 	Scope      string `mapstructure:"scope"`
 }
 
+var (
+	errMissingSubscription = errors.New("subscription cannot be empty")
+	errUnsupportedEncoding = errors.New("unsupported encoding")
+)
+
 var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
-func (*Config) Validate() error {
+func (cfg *Config) Validate() error {
+	if cfg.Subscription == "" {
+		return errMissingSubscription
+	}
+	switch cfg.Encoding {
+	case defaultEncoding, "jaeger_proto", "jaeger_json", "zipkin_proto", "zipkin_json", "zipkin_thrift":
+	default:
+		return fmt.Errorf("%w: %q", errUnsupportedEncoding, cfg.Encoding)
+	}
+
 	return nil
 }
 
