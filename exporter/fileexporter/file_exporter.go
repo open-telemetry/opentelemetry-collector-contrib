@@ -95,7 +95,5 @@ func (e *fileExporter) Shutdown(context.Context) error {
 	if e.writer == nil {
 		return nil
 	}
-	w := e.writer
-	e.writer = nil
-	return w.shutdown()
+	return e.writer.shutdown()
 }
