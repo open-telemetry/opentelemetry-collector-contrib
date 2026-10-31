@@ -3,7 +3,7 @@
 go 1.26.0
 
 require (
-	github.com/goccy/go-json v0.10.6
+	github.com/goccy/go-json v0.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
 	github.com/relvacode/iso8601 v1.8.2
 	github.com/stretchr/testify v1.12.1
