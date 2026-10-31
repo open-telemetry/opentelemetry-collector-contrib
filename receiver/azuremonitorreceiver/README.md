@@ -258,6 +258,30 @@ receivers:
 
 Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
 
+## Metric Units
+
+The Azure metric units ([ARM API](https://learn.microsoft.com/en-us/rest/api/monitor/metrics/list?view=rest-monitor-2023-10-01&tabs=HTTP#metricunit), [Batch API](https://learn.microsoft.com/en-us/rest/api/monitor/metrics-batch/batch?view=rest-monitor-2023-10-01&tabs=HTTP#metricunit)) are mapped to the [UCUM](https://ucum.org/ucum) values expected by OpenTelemetry.
+
+| Azure unit | UCUM |
+|---|---|
+| `Count` | `{count}` |
+| `CountPerSecond` | `{count}/s` |
+| `Bytes` | `By` |
+| `BytesPerSecond` | `By/s` |
+| `ByteSeconds` | `By.s` |
+| `BitsPerSecond` | `bit/s` |
+| `Percent` | `%` |
+| `Seconds` | `s` |
+| `MilliSeconds` | `ms` |
+| `Cores` | `{cpu}` |
+| `MilliCores` | `10^-3{cpu}` |
+| `NanoCores` | `10^-9{cpu}` |
+| `Unspecified` | `""` (empty) |
+
+Any Azure unit not in this list is passed through unchanged.
+
+Values of the metrics are not rescaled.
+
 ## Azure API calls summary
 At each collection interval, here are the different Azure API that can be called.
 It can be useful to know that, in order to configure the client permission in Azure or to choose the 
