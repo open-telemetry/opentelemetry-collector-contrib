@@ -260,6 +260,18 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		internal.SortPointsChronologically(timeSeries.Points)
 	}
 
+	// Skip value type / metric kind combinations we cannot convert before appending anything to the output.
+	// Appending a metric without populating its data would leave the metric type unset and break downstream
+	// consumers (see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39600).
+	if !isSupportedMetricKind(timeSeries.GetValueType(), timeSeries.GetMetricKind()) {
+		mr.logger.Warn("Skipping time series with unsupported value type and metric kind combination",
+			zap.String("value_type", timeSeries.GetValueType().String()),
+			zap.String("metric_kind", timeSeries.GetMetricKind().String()),
+			zap.String("metric_type", timeSeries.GetMetric().GetType()),
+		)
+		return
+	}
+
 	// Map to track existing ResourceMetrics by resource attributes
 	resourceMetricsMap := make(map[string]pmetric.ResourceMetrics)
 
@@ -317,10 +329,9 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 	case metric.MetricDescriptor_DISTRIBUTION:
 		switch timeSeries.GetMetricKind() {
 		case metric.MetricDescriptor_DELTA:
-			mr.metricsBuilder.ConvertDistributionToMetrics(timeSeries, m)
-		default:
-			metricError := fmt.Sprintf("\n Unsupported distribution metric kind: %v\n", timeSeries.GetMetricKind())
-			mr.logger.Warn(metricError)
+			mr.metricsBuilder.ConvertDistributionToMetrics(timeSeries, m, pmetric.AggregationTemporalityDelta)
+		case metric.MetricDescriptor_CUMULATIVE:
+			mr.metricsBuilder.ConvertDistributionToMetrics(timeSeries, m, pmetric.AggregationTemporalityCumulative)
 		}
 	default:
 		// Convert the TimeSeries to the appropriate metric type
@@ -331,10 +342,20 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 			mr.metricsBuilder.ConvertSumToMetrics(timeSeries, m)
 		case metric.MetricDescriptor_DELTA:
 			mr.metricsBuilder.ConvertDeltaToMetrics(timeSeries, m)
-		default:
-			metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
-			mr.logger.Warn(metricError)
 		}
+	}
+}
+
+// isSupportedMetricKind reports whether the given value type and metric kind combination can be converted
+// to an OpenTelemetry metric. All other combinations are skipped.
+func isSupportedMetricKind(valueType metric.MetricDescriptor_ValueType, metricKind metric.MetricDescriptor_MetricKind) bool {
+	switch valueType {
+	case metric.MetricDescriptor_DISTRIBUTION:
+		return metricKind == metric.MetricDescriptor_DELTA || metricKind == metric.MetricDescriptor_CUMULATIVE
+	default:
+		return metricKind == metric.MetricDescriptor_GAUGE ||
+			metricKind == metric.MetricDescriptor_CUMULATIVE ||
+			metricKind == metric.MetricDescriptor_DELTA
 	}
 }
 

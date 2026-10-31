@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/googlecloudmonitoring
+note: Add support for GCP metrics with value type `DISTRIBUTION` and metric kind `CUMULATIVE`, converted to histograms with cumulative aggregation temporality.
+issues: [39600]
+change_logs: [user]
