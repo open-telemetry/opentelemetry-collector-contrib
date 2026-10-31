@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestBuildCompliantPrometheusUnit(t *testing.T) {
@@ -48,13 +49,43 @@ func TestBuildCompliantPerUnit(t *testing.T) {
 func TestUnitMapGetOrDefault(t *testing.T) {
 	require.Empty(t, unitMapGetOrDefault(""))
 	require.Equal(t, "seconds", unitMapGetOrDefault("s"))
+	require.Equal(t, "tibibytes", unitMapGetOrDefault("TiBy"))
+	require.Equal(t, "kilobytes", unitMapGetOrDefault("KBy"))
+	require.Equal(t, "kBy", unitMapGetOrDefault("kBy"))
 	require.Equal(t, "invalid", unitMapGetOrDefault("invalid"))
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(SpecCompliantUCUMUnitsGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(SpecCompliantUCUMUnitsGate.ID(), false))
+	}()
+
+	require.Equal(t, "tebibytes", unitMapGetOrDefault("TiBy"))
+	require.Equal(t, "kilobytes", unitMapGetOrDefault("kBy"))
+	require.Equal(t, "kilobytes", unitMapGetOrDefault("KBy"))
 }
 
 func TestPerUnitMapGetOrDefault(t *testing.T) {
 	require.Empty(t, perUnitMapGetOrDefault(""))
 	require.Equal(t, "second", perUnitMapGetOrDefault("s"))
+	require.Equal(t, "minute", perUnitMapGetOrDefault("m"))
+	require.Equal(t, "week", perUnitMapGetOrDefault("w"))
+	require.Equal(t, "year", perUnitMapGetOrDefault("y"))
+	require.Equal(t, "min", perUnitMapGetOrDefault("min"))
+	require.Equal(t, "wk", perUnitMapGetOrDefault("wk"))
+	require.Equal(t, "a", perUnitMapGetOrDefault("a"))
 	require.Equal(t, "invalid", perUnitMapGetOrDefault("invalid"))
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(SpecCompliantUCUMUnitsGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(SpecCompliantUCUMUnitsGate.ID(), false))
+	}()
+
+	require.Equal(t, "minute", perUnitMapGetOrDefault("min"))
+	require.Equal(t, "week", perUnitMapGetOrDefault("wk"))
+	require.Equal(t, "year", perUnitMapGetOrDefault("a"))
+	require.Equal(t, "minute", perUnitMapGetOrDefault("m"))
+	require.Equal(t, "week", perUnitMapGetOrDefault("w"))
+	require.Equal(t, "year", perUnitMapGetOrDefault("y"))
 }
 
 func TestCleanUpString(t *testing.T) {

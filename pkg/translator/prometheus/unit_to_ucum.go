@@ -73,7 +73,13 @@ func UnitWordToUCUM(unit string) string {
 // the specified "basic" unit. Returns the specified unit if not found in
 // wordToUCUM.
 func wordToUCUMOrDefault(unit string) string {
+	if SpecCompliantUCUMUnitsGate.IsEnabled() && unit == "tebibytes" {
+		return "TiBy"
+	}
 	if promUnit, ok := wordToUCUM[unit]; ok {
+		if SpecCompliantUCUMUnitsGate.IsEnabled() && unit == "kilobytes" {
+			return "kBy"
+		}
 		return promUnit
 	}
 	return unit
@@ -82,6 +88,16 @@ func wordToUCUMOrDefault(unit string) string {
 // perWordToUCUMOrDefault retrieve the Prometheus "per" unit corresponding to
 // the specified "per" unit. Returns the specified unit if not found in perWordToUCUM.
 func perWordToUCUMOrDefault(perUnit string) string {
+	if SpecCompliantUCUMUnitsGate.IsEnabled() {
+		switch perUnit {
+		case "minute":
+			return "min"
+		case "week":
+			return "wk"
+		case "year":
+			return "a"
+		}
+	}
 	if promPerUnit, ok := perWordToUCUM[perUnit]; ok {
 		return promPerUnit
 	}

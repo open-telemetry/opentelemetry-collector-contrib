@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestUnitWordToUCUM(t *testing.T) {
@@ -50,6 +52,72 @@ func TestUnitWordToUCUM(t *testing.T) {
 		{
 			input:    "percent",
 			expected: "%",
+		},
+		{
+			input:    "requests_per_minute",
+			expected: "requests/m",
+		},
+		{
+			input:    "requests_per_week",
+			expected: "requests/w",
+		},
+		{
+			input:    "requests_per_year",
+			expected: "requests/y",
+		},
+		{
+			input:    "tibibytes",
+			expected: "TiBy",
+		},
+		{
+			input:    "tebibytes",
+			expected: "tebibytes",
+		},
+		{
+			input:    "kilobytes",
+			expected: "KBy",
+		},
+	} {
+		t.Run(fmt.Sprintf("input: \"%v\"", tc.input), func(t *testing.T) {
+			got := UnitWordToUCUM(tc.input)
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+func TestUnitWordToUCUM_SpecCompliant(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(SpecCompliantUCUMUnitsGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(SpecCompliantUCUMUnitsGate.ID(), false))
+	}()
+
+	for _, tc := range []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "requests_per_minute",
+			expected: "requests/min",
+		},
+		{
+			input:    "requests_per_week",
+			expected: "requests/wk",
+		},
+		{
+			input:    "requests_per_year",
+			expected: "requests/a",
+		},
+		{
+			input:    "tebibytes",
+			expected: "TiBy",
+		},
+		{
+			input:    "tibibytes",
+			expected: "TiBy",
+		},
+		{
+			input:    "kilobytes",
+			expected: "kBy",
 		},
 	} {
 		t.Run(fmt.Sprintf("input: \"%v\"", tc.input), func(t *testing.T) {

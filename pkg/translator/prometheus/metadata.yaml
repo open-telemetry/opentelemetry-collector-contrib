@@ -7,6 +7,12 @@ status:
     active: [dashpole, bertysentry, ArthurSens]
 
 feature_gates:
+  - id: pkg.prometheus.SpecCompliantUCUMUnits
+    description: Controls whether to use spec-compliant UCUM unit codes for time rates (min, wk, a) and byte units (tebibytes, kBy).
+    stage: alpha
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52480
+
   - id: pkg.translator.prometheus.PermissiveLabelSanitization
     description: Controls whether to change labels starting with '_' to 'key_'.
     stage: stable

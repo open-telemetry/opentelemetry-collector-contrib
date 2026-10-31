@@ -8,6 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `pkg.prometheus.SpecCompliantUCUMUnits` | alpha | Controls whether to use spec-compliant UCUM unit codes for time rates (min, wk, a) and byte units (tebibytes, kBy). | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52480) |
 | `pkg.translator.prometheus.PermissiveLabelSanitization` | stable | Controls whether to change labels starting with '_' to 'key_'. | v0.55.0 | v0.166.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var PkgPrometheusSpecCompliantUCUMUnitsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.prometheus.SpecCompliantUCUMUnits",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Controls whether to use spec-compliant UCUM unit codes for time rates (min, wk, a) and byte units (tebibytes, kBy)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52480"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.PermissiveLabelSanitization",
 	featuregate.StageStable,

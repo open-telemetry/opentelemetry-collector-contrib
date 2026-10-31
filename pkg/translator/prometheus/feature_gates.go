@@ -9,3 +9,6 @@ import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 //
 // Deprecated: Permissive label sanitization is permanently enabled.
 var DropSanitizationGate = metadata.PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate
+
+// SpecCompliantUCUMUnitsGate controls whether to use spec-compliant UCUM unit codes.
+var SpecCompliantUCUMUnitsGate = metadata.PkgPrometheusSpecCompliantUCUMUnitsFeatureGate
