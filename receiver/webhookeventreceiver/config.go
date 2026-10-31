@@ -4,6 +4,7 @@
 package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 
 import (
+	"crypto/fips140"
 	"errors"
 	"regexp"
 	"strings"
@@ -23,9 +24,14 @@ var (
 	errHMACMissingSecret           = errors.New("hmac_signature.secret is required when hmac_signature is configured")
 	errHMACMissingHeader           = errors.New("hmac_signature.header is required when hmac_signature is configured")
 	errHMACMissingPrefix           = errors.New("hmac_signature.prefix is required when hmac_signature is configured")
+	errHMACSecretTooShortFIPS      = errors.New("hmac_signature.secret must be at least 14 bytes when the collector runs in FIPS 140-3 mode")
 	errPathMissingLeadingSlash     = errors.New("path must begin with a leading '/'")
 	errHealthPathMissingSlash      = errors.New("health_path must begin with a leading '/'")
 )
+
+// minHMACSecretLenFIPS is the shortest HMAC key FIPS 140-3 allows (112 bits, NIST SP 800-131A).
+// Go enforces it under GODEBUG=fips140=only and records a shorter key as non-approved under fips140=on.
+const minHMACSecretLenFIPS = 14
 
 // Config defines configuration for the Generic Webhook receiver.
 type Config struct {
@@ -51,7 +57,7 @@ type RequiredHeader struct {
 // This is compatible with webhook signature schemes used by GitHub (X-Hub-Signature-256: sha256=<hex>)
 // and Fingerprint (fpjs-event-signature: v1=<hex>).
 type HMACSignature struct {
-	// Secret is the shared secret used to compute the HMAC.
+	// Secret is the shared secret used to compute the HMAC. It must be at least 14 bytes when the collector runs in FIPS 140-3 mode.
 	Secret configopaque.String `mapstructure:"secret"`
 	// Header is the HTTP header name containing the signature (e.g. "X-Hub-Signature-256").
 	Header string `mapstructure:"header"`
@@ -125,6 +131,7 @@ func (cfg *Config) Validate() error {
 		if cfg.HMACSignature.Prefix == "" {
 			errs = multierr.Append(errs, errHMACMissingPrefix)
 		}
+		errs = multierr.Append(errs, validateHMACSecretLength(cfg.HMACSignature.Secret, fips140.Enabled()))
 	}
 
 	if cfg.HeaderAttributeRegex != "" {
@@ -140,4 +147,17 @@ func (cfg *Config) Validate() error {
 
 func (cfg *Config) ShouldSplitLogsAtJSONBoundary() bool {
 	return cfg.SplitLogsAtJSONBoundary
+}
+
+// validateHMACSecretLength rejects HMAC secrets shorter than FIPS 140-3 allows
+// when the collector runs in FIPS mode (GODEBUG=fips140=on or only). Outside
+// FIPS mode any non-empty secret is accepted.
+func validateHMACSecretLength(secret configopaque.String, fipsEnabled bool) error {
+	if !fipsEnabled || secret == "" {
+		return nil
+	}
+	if len(secret) < minHMACSecretLenFIPS {
+		return errHMACSecretTooShortFIPS
+	}
+	return nil
 }
