@@ -75,11 +75,11 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 			},
 		})
 
-		// Create endpoint for each named container port.
+		// Create endpoint for each container port.
 		for _, port := range container.Ports {
 			endpointID = observer.EndpointID(
 				fmt.Sprintf(
-					"%s/%s(%d)", podID, port.Name, port.ContainerPort,
+					"%s/%s/%s(%d)", podID, container.Name, port.Name, port.ContainerPort,
 				),
 			)
 			endpoints = append(endpoints, observer.Endpoint{

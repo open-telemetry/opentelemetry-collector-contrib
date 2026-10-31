@@ -53,7 +53,7 @@ func TestPodEndpointsAdded(t *testing.T) {
 			},
 		},
 		{
-			ID:     "test-1/pod-2-UID/https(443)",
+			ID:     "test-1/pod-2-UID/container-2/https(443)",
 			Target: "1.2.3.4:443",
 			Details: &observer.Port{
 				Name: "https",
@@ -93,7 +93,7 @@ func TestPodEndpointsChanged(t *testing.T) {
 
 	endpoints := th.ListEndpoints()
 	require.ElementsMatch(t,
-		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/container-2", "test-1/pod-2-UID/https(443)"},
+		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/container-2", "test-1/pod-2-UID/container-2/https(443)"},
 		[]observer.EndpointID{endpoints[0].ID, endpoints[1].ID, endpoints[2].ID},
 	)
 
@@ -128,7 +128,7 @@ func TestPodEndpointsChanged(t *testing.T) {
 			},
 		},
 		{
-			ID:     "test-1/pod-2-UID/https(443)",
+			ID:     "test-1/pod-2-UID/container-2/https(443)",
 			Target: "1.2.3.4:443",
 			Details: &observer.Port{
 				Name: "https", Pod: observer.Pod{
