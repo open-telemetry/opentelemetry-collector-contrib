@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/googlecloudmonitoring
+note: Skip metrics with unsupported value type and metric kind combinations instead of forwarding metrics with no data, which broke downstream exporters with errors like "metrics type is unset".
+issues: [39600]
+change_logs: [user]
