@@ -1080,3 +1080,58 @@ func TestFileAppendLogsExporter(t *testing.T) {
 		})
 	}
 }
+
+func TestFileExporterShutdown(t *testing.T) {
+	tests := []struct {
+		name          string
+		flushInterval time.Duration
+	}{
+		{
+			name: "without flush interval",
+		},
+		{
+			name:          "with flush interval",
+			flushInterval: 10 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Path:          tempFileName(t),
+				FormatType:    formatTypeJSON,
+				FlushInterval: tt.flushInterval,
+			}
+			feI := newFileExporter(cfg, zap.NewNop())
+			require.IsType(t, &fileExporter{}, feI)
+			fe := feI.(*fileExporter)
+
+			require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+
+			td := testdata.GenerateTracesTwoSpansSameResource()
+			require.NoError(t, fe.consumeTraces(t.Context(), td))
+
+			require.NoError(t, fe.Shutdown(t.Context()))
+
+			assert.NoError(t, fe.Shutdown(t.Context()))
+
+			// Export after shutdown returns io.ErrClosedPipe.
+			assert.ErrorIs(t, fe.consumeTraces(t.Context(), td), io.ErrClosedPipe)
+			assert.ErrorIs(t, fe.consumeMetrics(t.Context(), testdata.GenerateMetricsTwoMetrics()), io.ErrClosedPipe)
+			assert.ErrorIs(t, fe.consumeLogs(t.Context(), testdata.GenerateLogsTwoLogRecordsSameResource()), io.ErrClosedPipe)
+			assert.ErrorIs(t, fe.consumeProfiles(t.Context(), testdata.GenerateProfilesTwoProfilesSameResource()), io.ErrClosedPipe)
+		})
+	}
+}
+
+func TestFileExporterShutdownBeforeStart(t *testing.T) {
+	cfg := &Config{
+		Path:       tempFileName(t),
+		FormatType: formatTypeJSON,
+	}
+	feI := newFileExporter(cfg, zap.NewNop())
+	require.IsType(t, &fileExporter{}, feI)
+	fe := feI.(*fileExporter)
+
+	assert.NoError(t, fe.Shutdown(t.Context()))
+}
