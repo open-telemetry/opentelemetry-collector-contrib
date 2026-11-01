@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/ottl
+note: Use substring matching for quoted literal replacement patterns without changing replacement semantics.
+issues: []
+change_logs: [user, api]
