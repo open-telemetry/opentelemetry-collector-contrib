@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/featuregate v1.68.0
+	go.opentelemetry.io/collector/featuregate v1.69.0
 	go.uber.org/goleak v1.3.0
 )
 

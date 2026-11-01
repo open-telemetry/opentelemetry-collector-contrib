@@ -139,18 +139,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(ts, 1, "sqlserver.availability_group.name-val", "sqlserver.replica.name-val", AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueRateDataPoint(ts+1, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+				assert.Equal(t, 2, mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(ts, 1, "sqlserver.availability_group.name-val", "sqlserver.replica.name-val", AttributeSqlserverAvailabilityGroupQueueTypeLogSend)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSizeDataPoint(ts+1, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2", AttributeSqlserverAvailabilityGroupQueueTypeRedo)
+				assert.Equal(t, 2, mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts, 1, "sqlserver.availability_group.name-val", "sqlserver.replica.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts+1, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -187,6 +196,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverCursorCountDataPoint(ts, 1, AttributeCursorStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverCursorCountDataPoint(ts, 3, AttributeCursorStateCached)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverCursorCountDataPoint(ts+1, 3, AttributeCursorStateCached)
+				assert.Equal(t, 2, mb.metricSqlserverCursorCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -205,6 +217,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDatabaseCountDataPoint(ts, "1", AttributeDatabaseStatusOnline)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseCountDataPoint(ts, "3", AttributeDatabaseStatusRestoring)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseCountDataPoint(ts+1, "3", AttributeDatabaseStatusRestoring)
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -214,6 +229,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDatabaseFileSizeDataPoint(ts, "1", "file_type-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseFileSizeDataPoint(ts, "3", "file_type-val-2", "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseFileSizeDataPoint(ts+1, "3", "file_type-val-2", "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseFileSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -223,24 +241,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDatabaseIoDataPoint(ts, "1", "physical_filename-val", "logical_filename-val", "file_type-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseIoDataPoint(ts, "3", "physical_filename-val-2", "logical_filename-val-2", "file_type-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseIoDataPoint(ts+1, "3", "physical_filename-val-2", "logical_filename-val-2", "file_type-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverDatabaseLatencyDataPoint(ts, 1, "physical_filename-val", "logical_filename-val", "file_type-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseLatencyDataPoint(ts, 3, "physical_filename-val-2", "logical_filename-val-2", "file_type-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseLatencyDataPoint(ts+1, 3, "physical_filename-val-2", "logical_filename-val-2", "file_type-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseLatency.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverDatabaseOperationsDataPoint(ts, "1", "physical_filename-val", "logical_filename-val", "file_type-val", AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseOperationsDataPoint(ts, "3", "physical_filename-val-2", "logical_filename-val-2", "file_type-val-2", AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseOperationsDataPoint(ts+1, "3", "physical_filename-val-2", "logical_filename-val-2", "file_type-val-2", AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(ts, 1, AttributeTempdbStateFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(ts, 3, AttributeTempdbStateUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(ts+1, 3, AttributeTempdbStateUsed)
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseTempdbSpace.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -250,6 +280,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDatabaseTransactionsActiveDataPoint(ts, "1", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDatabaseTransactionsActiveDataPoint(ts, "3", "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDatabaseTransactionsActiveDataPoint(ts+1, "3", "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverDatabaseTransactionsActive.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -259,12 +292,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDiskIoDataPoint(ts, 1, AttributeDiskIoDirectionRead, "sqlserver.file.path.prefix-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDiskIoDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "sqlserver.file.path.prefix-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDiskIoDataPoint(ts+1, 3, AttributeDiskIoDirectionWrite, "sqlserver.file.path.prefix-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverDiskIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverDiskOperationsDataPoint(ts, 1, AttributeDiskIoDirectionRead, "sqlserver.file.path.prefix-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverDiskOperationsDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "sqlserver.file.path.prefix-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverDiskOperationsDataPoint(ts+1, 3, AttributeDiskIoDirectionWrite, "sqlserver.file.path.prefix-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverDiskOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -277,36 +316,54 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverFailoverClusterAgClusterTypeDataPoint(ts, "1", "ag.name-val", AttributeAgClusterTypeWsfc)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterAgClusterTypeDataPoint(ts, "3", "ag.name-val-2", AttributeAgClusterTypeExternal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterAgClusterTypeDataPoint(ts+1, "3", "ag.name-val-2", AttributeAgClusterTypeExternal)
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterAgClusterType.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverFailoverClusterAgFailureConditionLevelDataPoint(ts, "1", "ag.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterAgFailureConditionLevelDataPoint(ts, "3", "ag.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterAgFailureConditionLevelDataPoint(ts+1, "3", "ag.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterAgFailureConditionLevel.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverFailoverClusterAgHealthCheckTimeoutDataPoint(ts, "1", "ag.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterAgHealthCheckTimeoutDataPoint(ts, "3", "ag.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterAgHealthCheckTimeoutDataPoint(ts+1, "3", "ag.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterAgHealthCheckTimeout.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverFailoverClusterAgRequiredSyncSecondariesDataPoint(ts, "1", "ag.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterAgRequiredSyncSecondariesDataPoint(ts, "3", "ag.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterAgRequiredSyncSecondariesDataPoint(ts+1, "3", "ag.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterAgRequiredSyncSecondaries.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverFailoverClusterReplicaDatabaseQueueSizeDataPoint(ts, "1", "ag.name-val", "replica.server_name-val", "db.namespace-val", AttributeReplicaQueueKindLogSend)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterReplicaDatabaseQueueSizeDataPoint(ts, "3", "ag.name-val-2", "replica.server_name-val-2", "db.namespace-val-2", AttributeReplicaQueueKindRedo)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterReplicaDatabaseQueueSizeDataPoint(ts+1, "3", "ag.name-val-2", "replica.server_name-val-2", "db.namespace-val-2", AttributeReplicaQueueKindRedo)
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterReplicaDatabaseQueueSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverFailoverClusterReplicaDatabaseRedoRateDataPoint(ts, 1, "ag.name-val", "replica.server_name-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterReplicaDatabaseRedoRateDataPoint(ts, 3, "ag.name-val-2", "replica.server_name-val-2", "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterReplicaDatabaseRedoRateDataPoint(ts+1, 3, "ag.name-val-2", "replica.server_name-val-2", "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterReplicaDatabaseRedoRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -316,12 +373,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverFailoverClusterReplicaRoleDataPoint(ts, "1", "ag.name-val", "replica.server_name-val", AttributeReplicaRolePrimary)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterReplicaRoleDataPoint(ts, "3", "ag.name-val-2", "replica.server_name-val-2", AttributeReplicaRoleSecondary)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterReplicaRoleDataPoint(ts+1, "3", "ag.name-val-2", "replica.server_name-val-2", AttributeReplicaRoleSecondary)
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterReplicaRole.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverFailoverClusterReplicaSynchronizationHealthDataPoint(ts, "1", "ag.name-val", "replica.server_name-val", AttributeReplicaSyncHealthHealthy)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverFailoverClusterReplicaSynchronizationHealthDataPoint(ts, "3", "ag.name-val-2", "replica.server_name-val-2", AttributeReplicaSyncHealthPartiallyHealthy)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverFailoverClusterReplicaSynchronizationHealthDataPoint(ts+1, "3", "ag.name-val-2", "replica.server_name-val-2", AttributeReplicaSyncHealthPartiallyHealthy)
+				assert.Equal(t, 2, mb.metricSqlserverFailoverClusterReplicaSynchronizationHealth.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -334,30 +397,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverHostMemoryUsageDataPoint(ts, 1, AttributeSystemMemoryStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverHostMemoryUsageDataPoint(ts, 3, AttributeSystemMemoryStateFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverHostMemoryUsageDataPoint(ts+1, 3, AttributeSystemMemoryStateFree)
+				assert.Equal(t, 2, mb.metricSqlserverHostMemoryUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexFragmentationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexFragmentationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverIndexFragmentationDataPoint(ts+1, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverIndexFragmentation.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexPageCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexPageCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverIndexPageCountDataPoint(ts+1, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverIndexPageCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexPageUtilizationDataPoint(ts, 1, "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexPageUtilizationDataPoint(ts, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverIndexPageUtilizationDataPoint(ts+1, 3, "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverIndexPageUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverIndexRecordCountDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexRecordCountDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverIndexRecordCountDataPoint(ts+1, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverIndexRecordCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -367,6 +445,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverIndexSizeDataPoint(ts, "1", "db.namespace-val", 18, "sqlserver.object.name-val", "sqlserver.schema.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverIndexSizeDataPoint(ts, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverIndexSizeDataPoint(ts+1, "3", "db.namespace-val-2", 19, "sqlserver.object.name-val-2", "sqlserver.schema.name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverIndexSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -376,6 +457,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(ts, 1, AttributeTransitionDirectionPromotion)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(ts, 3, AttributeTransitionDirectionDemotion)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverLatchSuperlatchTransitionRateDataPoint(ts+1, 3, AttributeTransitionDirectionDemotion)
+				assert.Equal(t, 2, mb.metricSqlserverLatchSuperlatchTransitionRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -406,6 +490,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1, AttributeWorkloadGroupNameDefault)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverLockWaitCountDataPoint(ts, 3, AttributeWorkloadGroupNameInternal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverLockWaitCountDataPoint(ts+1, 3, AttributeWorkloadGroupNameInternal)
+				assert.Equal(t, 2, mb.metricSqlserverLockWaitCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -427,12 +514,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverMemoryAreaDataPoint(ts, 1, AttributeMemoryPoolTarget)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverMemoryAreaDataPoint(ts, 3, AttributeMemoryPoolTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverMemoryAreaDataPoint(ts+1, 3, AttributeMemoryPoolTotal)
+				assert.Equal(t, 2, mb.metricSqlserverMemoryArea.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverMemoryCacheObjectCountDataPoint(ts, 1, AttributeCacheStateInUse)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverMemoryCacheObjectCountDataPoint(ts, 3, AttributeCacheStateTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverMemoryCacheObjectCountDataPoint(ts+1, 3, AttributeCacheStateTotal)
+				assert.Equal(t, 2, mb.metricSqlserverMemoryCacheObjectCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -442,12 +535,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverMemoryPageCountDataPoint(ts, 1, AttributePagePoolCache)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverMemoryPageCountDataPoint(ts, 3, AttributePagePoolTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverMemoryPageCountDataPoint(ts+1, 3, AttributePagePoolTotal)
+				assert.Equal(t, 2, mb.metricSqlserverMemoryPageCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverMemoryUsageDataPoint(ts, 1, AttributeWorkloadGroupNameDefault)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverMemoryUsageDataPoint(ts, 3, AttributeWorkloadGroupNameInternal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverMemoryUsageDataPoint(ts+1, 3, AttributeWorkloadGroupNameInternal)
+				assert.Equal(t, 2, mb.metricSqlserverMemoryUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -457,6 +556,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverOsMemoryUsageDataPoint(ts, "1", AttributeMemoryStateAvailable)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverOsMemoryUsageDataPoint(ts, "3", AttributeMemoryStateTotal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverOsMemoryUsageDataPoint(ts+1, "3", AttributeMemoryStateTotal)
+				assert.Equal(t, 2, mb.metricSqlserverOsMemoryUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -469,12 +571,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverOsWaitDurationDataPoint(ts, 1, "wait.category-val", "wait.type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverOsWaitDurationDataPoint(ts, 3, "wait.category-val-2", "wait.type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverOsWaitDurationDataPoint(ts+1, 3, "wait.category-val-2", "wait.type-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverOsWaitDuration.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverOsWaitTasksCountDataPoint(ts, "1", "wait.category-val", "wait.type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverOsWaitTasksCountDataPoint(ts, "3", "wait.category-val-2", "wait.type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverOsWaitTasksCountDataPoint(ts+1, "3", "wait.category-val-2", "wait.type-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverOsWaitTasksCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -499,6 +607,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1, "performance_counter.object_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 3, "performance_counter.object_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverPageLifeExpectancyDataPoint(ts+1, 3, "performance_counter.object_name-val-2")
+				assert.Equal(t, 2, mb.metricSqlserverPageLifeExpectancy.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -508,6 +619,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperationsRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverPageOperationRateDataPoint(ts, 3, AttributePageOperationsWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverPageOperationRateDataPoint(ts+1, 3, AttributePageOperationsWrite)
+				assert.Equal(t, 2, mb.metricSqlserverPageOperationRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -520,18 +634,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverParameterizationRateDataPoint(ts, 1, AttributeSqlserverParameterizationResultAutoAttempted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverParameterizationRateDataPoint(ts, 3, AttributeSqlserverParameterizationResultSafe)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverParameterizationRateDataPoint(ts+1, 3, AttributeSqlserverParameterizationResultSafe)
+				assert.Equal(t, 2, mb.metricSqlserverParameterizationRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverPlanExecutionRateDataPoint(ts, 1, AttributeSqlserverPlanGuidanceResultGuided)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverPlanExecutionRateDataPoint(ts, 3, AttributeSqlserverPlanGuidanceResultMisguided)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverPlanExecutionRateDataPoint(ts+1, 3, AttributeSqlserverPlanGuidanceResultMisguided)
+				assert.Equal(t, 2, mb.metricSqlserverPlanExecutionRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverProcessCountDataPoint(ts, "1", AttributeProcessStatusBackground)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverProcessCountDataPoint(ts, "3", AttributeProcessStatusDormant)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverProcessCountDataPoint(ts+1, "3", AttributeProcessStatusDormant)
+				assert.Equal(t, 2, mb.metricSqlserverProcessCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -544,12 +667,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverReplicaDataRateDataPoint(ts, 1, AttributeReplicaDirectionTransmit)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverReplicaDataRateDataPoint(ts, 3, AttributeReplicaDirectionReceive)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverReplicaDataRateDataPoint(ts+1, 3, AttributeReplicaDirectionReceive)
+				assert.Equal(t, 2, mb.metricSqlserverReplicaDataRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(ts, 3, AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(ts+1, 3, AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricSqlserverResourcePoolDiskOperations.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -568,24 +697,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverTableCountDataPoint(ts, 1, AttributeTableStateActive, AttributeTableStatusTemporary)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTableCountDataPoint(ts, 3, AttributeTableStateInactive, AttributeTableStatusPermanent)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTableCountDataPoint(ts+1, 3, AttributeTableStateInactive, AttributeTableStatusPermanent)
+				assert.Equal(t, 2, mb.metricSqlserverTableCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverTaskCountDataPoint(ts, 1, AttributeTaskStateCurrent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTaskCountDataPoint(ts, 3, AttributeTaskStateQueued)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTaskCountDataPoint(ts+1, 3, AttributeTaskStateQueued)
+				assert.Equal(t, 2, mb.metricSqlserverTaskCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverTaskRateDataPoint(ts, 1, AttributeTaskResultStarted)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTaskRateDataPoint(ts, 3, AttributeTaskResultAborted)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTaskRateDataPoint(ts+1, 3, AttributeTaskResultAborted)
+				assert.Equal(t, 2, mb.metricSqlserverTaskRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts, 1, AttributeAllocationPageTypeGam)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts, 3, AttributeAllocationPageTypeSgam)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTempdbAllocationWaitTimeTotalDataPoint(ts+1, 3, AttributeAllocationPageTypeSgam)
+				assert.Equal(t, 2, mb.metricSqlserverTempdbAllocationWaitTimeTotal.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -598,24 +739,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverTempdbFileSizeDataPoint(ts, "1", "file_type-val", 14)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTempdbFileSizeDataPoint(ts, "3", "file_type-val-2", 15)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTempdbFileSizeDataPoint(ts+1, "3", "file_type-val-2", 15)
+				assert.Equal(t, 2, mb.metricSqlserverTempdbFileSize.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverTempdbSpaceUsageDataPoint(ts, "1", AttributeTempdbSpaceKindUserObjects)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverTempdbSpaceUsageDataPoint(ts, "3", AttributeTempdbSpaceKindInternalObjects)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverTempdbSpaceUsageDataPoint(ts+1, "3", AttributeTempdbSpaceKindInternalObjects)
+				assert.Equal(t, 2, mb.metricSqlserverTempdbSpaceUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverThreadPoolTasksCountDataPoint(ts, "1", AttributeTaskStateCurrent)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverThreadPoolTasksCountDataPoint(ts, "3", AttributeTaskStateQueued)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverThreadPoolTasksCountDataPoint(ts+1, "3", AttributeTaskStateQueued)
+				assert.Equal(t, 2, mb.metricSqlserverThreadPoolTasksCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverThreadPoolWorkersCountDataPoint(ts, "1", AttributeWorkerStateRunning)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverThreadPoolWorkersCountDataPoint(ts, "3", AttributeWorkerStateSuspendedOrSleeping)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverThreadPoolWorkersCountDataPoint(ts+1, "3", AttributeWorkerStateSuspendedOrSleeping)
+				assert.Equal(t, 2, mb.metricSqlserverThreadPoolWorkersCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -670,12 +823,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 1, AttributeRequestStateWaiting)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverWorkerRequestCountDataPoint(ts, 3, AttributeRequestStateWaiting)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverWorkerRequestCountDataPoint(ts+1, 3, AttributeRequestStateWaiting)
+				assert.Equal(t, 2, mb.metricSqlserverWorkerRequestCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 1, AttributeWorkerStateRunning)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSqlserverWorkerThreadCountDataPoint(ts, 3, AttributeWorkerStateSuspendedOrSleeping)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSqlserverWorkerThreadCountDataPoint(ts+1, 3, AttributeWorkerStateSuspendedOrSleeping)
+				assert.Equal(t, 2, mb.metricSqlserverWorkerThreadCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -830,7 +989,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.queue.rate")
 						validatedMetrics["sqlserver.availability_group.database_replica.queue.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate at which log data is being sent or redone on a database replica, broken down by queue type (log_send for primary-to-secondary transmission, redo for applying log records on the secondary).", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -880,7 +1041,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.queue.size"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.queue.size")
 						validatedMetrics["sqlserver.availability_group.database_replica.queue.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of log data waiting to be processed on a database replica, broken down by queue type (log_send for data not yet sent to the secondary, redo for data received but not yet applied).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -927,7 +1090,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.availability_group.database_replica.secondary_lag"], "Found a duplicate in the metrics slice: sqlserver.availability_group.database_replica.secondary_lag")
 						validatedMetrics["sqlserver.availability_group.database_replica.secondary_lag"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of seconds the secondary replica is lagging behind the primary replica, measured as the time between the most recent hardened log block on the primary and on the secondary.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1091,7 +1256,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.cursor.count"], "Found a duplicate in the metrics slice: sqlserver.cursor.count")
 						validatedMetrics["sqlserver.cursor.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of cursors by state.", mi.Description())
 						assert.Equal(t, "{cursor}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1179,7 +1346,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.count"], "Found a duplicate in the metrics slice: sqlserver.database.count")
 						validatedMetrics["sqlserver.database.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of databases", mi.Description())
 						assert.Equal(t, "{databases}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1234,7 +1403,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.file.size"], "Found a duplicate in the metrics slice: sqlserver.database.file.size")
 						validatedMetrics["sqlserver.database.file.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of database files.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1299,7 +1470,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.io"], "Found a duplicate in the metrics slice: sqlserver.database.io")
 						validatedMetrics["sqlserver.database.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of bytes of I/O on this file.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1358,7 +1531,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.latency"], "Found a duplicate in the metrics slice: sqlserver.database.latency")
 						validatedMetrics["sqlserver.database.latency"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total time that the users waited for I/O issued on this file.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1417,7 +1592,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.operations"], "Found a duplicate in the metrics slice: sqlserver.database.operations")
 						validatedMetrics["sqlserver.database.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations issued on the file.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1467,7 +1644,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.tempdb.space"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.space")
 						validatedMetrics["sqlserver.database.tempdb.space"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total free space in temporary DB.", mi.Description())
 						assert.Equal(t, "kBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1521,7 +1700,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.database.transactions.active"], "Found a duplicate in the metrics slice: sqlserver.database.transactions.active")
 						validatedMetrics["sqlserver.database.transactions.active"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of active transactions in the database.", mi.Description())
 						assert.Equal(t, "{transactions}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1578,7 +1759,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.disk.io"], "Found a duplicate in the metrics slice: sqlserver.disk.io")
 						validatedMetrics["sqlserver.disk.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative bytes transferred to or from files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1627,7 +1810,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.disk.operations"], "Found a duplicate in the metrics slice: sqlserver.disk.operations")
 						validatedMetrics["sqlserver.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative I/O operation count on files backing SQL Server databases, per I/O direction. Counters reset when the file becomes unavailable (detached, taken offline, or database restart).", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1704,7 +1889,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.ag.cluster_type"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.ag.cluster_type")
 						validatedMetrics["sqlserver.failover_cluster.ag.cluster_type"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cluster type of the Always-On Availability Group.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1746,7 +1933,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.ag.failure_condition_level"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.ag.failure_condition_level")
 						validatedMetrics["sqlserver.failover_cluster.ag.failure_condition_level"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Failure condition level configured for the Availability Group (1-5).", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1786,7 +1975,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.ag.health_check_timeout"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.ag.health_check_timeout")
 						validatedMetrics["sqlserver.failover_cluster.ag.health_check_timeout"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Health-check timeout configured for the Availability Group.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1826,7 +2017,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.ag.required_sync_secondaries"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.ag.required_sync_secondaries")
 						validatedMetrics["sqlserver.failover_cluster.ag.required_sync_secondaries"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of synchronized secondary replicas required to commit on the Availability Group.", mi.Description())
 						assert.Equal(t, "{secondaries}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1875,7 +2068,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.replica.database.queue_size"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.replica.database.queue_size")
 						validatedMetrics["sqlserver.failover_cluster.replica.database.queue_size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of the log-send or redo queue for an AG database replica.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1927,7 +2122,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.replica.database.redo.rate"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.replica.database.redo.rate")
 						validatedMetrics["sqlserver.failover_cluster.replica.database.redo.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Redo rate for an AG database replica.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1989,7 +2186,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.replica.role"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.replica.role")
 						validatedMetrics["sqlserver.failover_cluster.replica.role"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Role of the availability replica.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2039,7 +2238,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.failover_cluster.replica.synchronization_health"], "Found a duplicate in the metrics slice: sqlserver.failover_cluster.replica.synchronization_health")
 						validatedMetrics["sqlserver.failover_cluster.replica.synchronization_health"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Synchronization health of the availability replica.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2107,7 +2308,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.host.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.host.memory.usage")
 						validatedMetrics["sqlserver.host.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Physical memory usage available to SQL Server on the host, broken down by state.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2156,7 +2359,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.index.fragmentation"], "Found a duplicate in the metrics slice: sqlserver.index.fragmentation")
 						validatedMetrics["sqlserver.index.fragmentation"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average fragmentation percentage of the index.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2211,7 +2416,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.index.page.count"], "Found a duplicate in the metrics slice: sqlserver.index.page.count")
 						validatedMetrics["sqlserver.index.page.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of pages in the index.", mi.Description())
 						assert.Equal(t, "{page}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2266,7 +2473,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.index.page.utilization"], "Found a duplicate in the metrics slice: sqlserver.index.page.utilization")
 						validatedMetrics["sqlserver.index.page.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average percentage of available data storage space used in all pages of the index.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2321,7 +2530,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.index.record.count"], "Found a duplicate in the metrics slice: sqlserver.index.record.count")
 						validatedMetrics["sqlserver.index.record.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of records in the index.", mi.Description())
 						assert.Equal(t, "{record}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2388,7 +2599,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.index.size"], "Found a duplicate in the metrics slice: sqlserver.index.size")
 						validatedMetrics["sqlserver.index.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total size of the index.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2446,7 +2659,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.latch.superlatch.transition.rate"], "Found a duplicate in the metrics slice: sqlserver.latch.superlatch.transition.rate")
 						validatedMetrics["sqlserver.latch.superlatch.transition.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of superlatch promotions or demotions.", mi.Description())
 						assert.Equal(t, "{transition}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2592,7 +2807,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.lock.wait.count"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.count")
 						validatedMetrics["sqlserver.lock.wait.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative count of lock waits that occurred.", mi.Description())
 						assert.Equal(t, "{wait}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2696,7 +2913,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.memory.area"], "Found a duplicate in the metrics slice: sqlserver.memory.area")
 						validatedMetrics["sqlserver.memory.area"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of memory used by the SQL Server memory pool.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2736,7 +2955,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.memory.cache.object.count"], "Found a duplicate in the metrics slice: sqlserver.memory.cache.object.count")
 						validatedMetrics["sqlserver.memory.cache.object.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of cache objects in the SQL Server cache.", mi.Description())
 						assert.Equal(t, "{object}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2790,7 +3011,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.memory.page.count"], "Found a duplicate in the metrics slice: sqlserver.memory.page.count")
 						validatedMetrics["sqlserver.memory.page.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of pages in the SQL Server buffer pool.", mi.Description())
 						assert.Equal(t, "{page}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2832,7 +3055,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.memory.usage")
 						validatedMetrics["sqlserver.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total memory in use.", mi.Description())
 						assert.Equal(t, "kBy", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2886,7 +3111,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.os.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.os.memory.usage")
 						validatedMetrics["sqlserver.os.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Amount of system physical memory observed by SQL Server.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2955,7 +3182,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.os.wait.duration"], "Found a duplicate in the metrics slice: sqlserver.os.wait.duration")
 						validatedMetrics["sqlserver.os.wait.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total wait time for this wait type", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3004,7 +3233,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.os.wait.tasks.count"], "Found a duplicate in the metrics slice: sqlserver.os.wait.tasks.count")
 						validatedMetrics["sqlserver.os.wait.tasks.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative number of tasks that have waited on this wait type since SQL Server startup.", mi.Description())
 						assert.Equal(t, "{tasks}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3126,7 +3357,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.page.life_expectancy"], "Found a duplicate in the metrics slice: sqlserver.page.life_expectancy")
 						validatedMetrics["sqlserver.page.life_expectancy"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time a page will stay in the buffer pool.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3178,7 +3411,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.page.operation.rate"], "Found a duplicate in the metrics slice: sqlserver.page.operation.rate")
 						validatedMetrics["sqlserver.page.operation.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of physical database page operations issued.", mi.Description())
 						assert.Equal(t, "{operations}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3242,7 +3477,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.parameterization.rate"], "Found a duplicate in the metrics slice: sqlserver.parameterization.rate")
 						validatedMetrics["sqlserver.parameterization.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of auto-parameterization activity, broken down by result.", mi.Description())
 						assert.Equal(t, "{params}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3282,7 +3519,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.plan.execution.rate"], "Found a duplicate in the metrics slice: sqlserver.plan.execution.rate")
 						validatedMetrics["sqlserver.plan.execution.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of plan executions, classified by plan guide result.", mi.Description())
 						assert.Equal(t, "{executions}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3322,7 +3561,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.process.count"], "Found a duplicate in the metrics slice: sqlserver.process.count")
 						validatedMetrics["sqlserver.process.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of SQL Server processes (user sessions), broken down by status.", mi.Description())
 						assert.Equal(t, "{processes}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3386,7 +3627,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.replica.data.rate"], "Found a duplicate in the metrics slice: sqlserver.replica.data.rate")
 						validatedMetrics["sqlserver.replica.data.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Throughput rate of replica data.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3426,7 +3669,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.resource_pool.disk.operations"], "Found a duplicate in the metrics slice: sqlserver.resource_pool.disk.operations")
 						validatedMetrics["sqlserver.resource_pool.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The rate of operations issued.", mi.Description())
 						assert.Equal(t, "{operations}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3519,7 +3764,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.table.count"], "Found a duplicate in the metrics slice: sqlserver.table.count")
 						validatedMetrics["sqlserver.table.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of tables.", mi.Description())
 						assert.Equal(t, "{tables}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -3563,7 +3810,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.task.count"], "Found a duplicate in the metrics slice: sqlserver.task.count")
 						validatedMetrics["sqlserver.task.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of Service Broker activation tasks by state.", mi.Description())
 						assert.Equal(t, "{task}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3603,7 +3852,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.task.rate"], "Found a duplicate in the metrics slice: sqlserver.task.rate")
 						validatedMetrics["sqlserver.task.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of Service Broker activation tasks by type per second.", mi.Description())
 						assert.Equal(t, "{task}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3645,7 +3896,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.tempdb.allocation.wait_time.total"], "Found a duplicate in the metrics slice: sqlserver.tempdb.allocation.wait_time.total")
 						validatedMetrics["sqlserver.tempdb.allocation.wait_time.total"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative wait time on tempdb allocation pages, broken down by page type.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3714,7 +3967,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.tempdb.file.size"], "Found a duplicate in the metrics slice: sqlserver.tempdb.file.size")
 						validatedMetrics["sqlserver.tempdb.file.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of each tempdb data or log file.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3756,7 +4011,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.tempdb.space.usage"], "Found a duplicate in the metrics slice: sqlserver.tempdb.space.usage")
 						validatedMetrics["sqlserver.tempdb.space.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Space used by tempdb, broken down by allocation category.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3796,7 +4053,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.thread_pool.tasks.count"], "Found a duplicate in the metrics slice: sqlserver.thread_pool.tasks.count")
 						validatedMetrics["sqlserver.thread_pool.tasks.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of SQL Server tasks broken down by state.", mi.Description())
 						assert.Equal(t, "{tasks}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3836,7 +4095,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.thread_pool.workers.count"], "Found a duplicate in the metrics slice: sqlserver.thread_pool.workers.count")
 						validatedMetrics["sqlserver.thread_pool.workers.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of SQL Server worker threads broken down by state.", mi.Description())
 						assert.Equal(t, "{workers}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4078,7 +4339,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.worker.request.count"], "Found a duplicate in the metrics slice: sqlserver.worker.request.count")
 						validatedMetrics["sqlserver.worker.request.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of worker requests by state.", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4118,7 +4381,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["sqlserver.worker.thread.count"], "Found a duplicate in the metrics slice: sqlserver.worker.thread.count")
 						validatedMetrics["sqlserver.worker.thread.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of worker threads by state.", mi.Description())
 						assert.Equal(t, "{thread}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
