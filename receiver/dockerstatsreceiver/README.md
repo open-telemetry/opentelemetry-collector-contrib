@@ -45,6 +45,7 @@ only unmatched container image names should be excluded.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
 - `api_version` (default = auto-negotiate): The Docker client API version (must be 1.25+). When not specified, the client automatically negotiates the highest mutually supported API version with the Docker daemon. To pin a specific version, set it as a string, not a float (e.g. `"1.44"` instead of `1.44`). [Docker API versions](https://docs.docker.com/engine/api/).
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
+  - Note on `container.state.status`: Enabling this metric adds a full `ContainerList(All: true)` call per scrape to count containers across all states (including paused and non-running). On hosts with very high container counts, this may have a non-trivial performance cost.
 
 Example:
 
