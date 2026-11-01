@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,6 +74,8 @@ func TestToLabelValue(t *testing.T) {
 		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
 		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
 		"Timestamp label value metadata":          {TimestampValueType, timestampLabelValue{}, spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true}, "2023-10-01T12:00:00Z"},
+		"Date label value metadata":               {DateValueType, dateLabelValue{}, spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true}, "2023-10-01"},
+		"Table ops json label value metadata":     {OperationsByTableJSONValueType, operationsByTableJSONLabelValue{}, `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`, "{table1,1,10}"},
 	}
 
 	for name, testCase := range testCases {
@@ -103,6 +106,8 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
 	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
 	timestampLabelValueMetadata, _ := NewLabelValueMetadata("timestampLabelName", "timestampLabelColumnName", TimestampValueType)
+	dateLabelValueMetadata, _ := NewLabelValueMetadata("dateLabelName", "dateLabelColumnName", DateValueType)
+	operationsByTableJSONLabelValueMetadata, _ := NewLabelValueMetadata("operationsByTableJSONLabelName", "operationsByTableJSONLabelColumnName", OperationsByTableJSONValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{
 		stringLabelValueMetadata,
 		boolLabelValueMetadata,
@@ -112,6 +117,8 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		byteSliceLabelValueMetadata,
 		lockRequestSliceLabelValueMetadata,
 		timestampLabelValueMetadata,
+		dateLabelValueMetadata,
+		operationsByTableJSONLabelValueMetadata,
 	}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
 	row, _ := spanner.NewRow(
@@ -124,6 +131,8 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			byteSliceLabelValueMetadata.ColumnName(),
 			lockRequestSliceLabelValueMetadata.ColumnName(),
 			timestampLabelValueMetadata.ColumnName(),
+			dateLabelValueMetadata.ColumnName(),
+			operationsByTableJSONLabelValueMetadata.ColumnName(),
 		},
 		[]any{
 			stringValue,
@@ -134,6 +143,8 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			[]byte(stringValue),
 			[]*lockRequest{{}},
 			spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true},
+			spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true},
+			`[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
 		},
 	)
 
@@ -150,6 +161,8 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		byteSliceLabelValue{},
 		lockRequestSliceLabelValue{},
 		timestampLabelValue{},
+		dateLabelValue{},
+		operationsByTableJSONLabelValue{},
 	}
 
 	for i, expectedType := range expectedTypes {

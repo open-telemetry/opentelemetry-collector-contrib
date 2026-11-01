@@ -1,0 +1,87 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Size of each tempdb data or log file.
+            gauge:
+              dataPoints:
+                - asInt: "67108864"
+                  attributes:
+                    - key: file_type
+                      value:
+                        stringValue: data
+                    - key: sqlserver.tempdb.file.id
+                      value:
+                        intValue: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.tempdb.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Size of each tempdb data or log file.
+            gauge:
+              dataPoints:
+                - asInt: "33554432"
+                  attributes:
+                    - key: file_type
+                      value:
+                        stringValue: log
+                    - key: sqlserver.tempdb.file.id
+                      value:
+                        intValue: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.tempdb.file.size
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

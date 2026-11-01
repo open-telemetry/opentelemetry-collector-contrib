@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
@@ -704,6 +705,18 @@ func TestNewDetectorOutsideCluster(t *testing.T) {
 	assert.Nil(t, d)
 }
 
+func TestNewDetectorWithAPIConfig(t *testing.T) {
+	isolateAWSConfig(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	assert.NotNil(t, d)
+}
+
 func TestIsIMDSAccessible(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -739,7 +752,10 @@ func TestIsIMDSAccessible(t *testing.T) {
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	assert.Equal(t, Config{ResourceAttributes: metadata.DefaultResourceAttributesConfig()}, CreateDefaultConfig())
+	assert.Equal(t, Config{
+		APIConfig:          k8sconfigtypes.APIConfig{AuthType: k8sconfigtypes.AuthTypeServiceAccount},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}, CreateDefaultConfig())
 }
 
 // isolateAWSConfig keeps the AWS SDK from reading the host's shared config and credentials.

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/civil"
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -94,6 +95,18 @@ func TestLockRequestSliceLabelValueMetadata(t *testing.T) {
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
 
 	var expectedType *[]*lockRequest
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
+func TestOperationsByTableJSONLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, OperationsByTableJSONValueType)
+
+	assert.Equal(t, OperationsByTableJSONValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *string
 
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
@@ -248,6 +261,26 @@ func TestLockRequestSliceLabelValue(t *testing.T) {
 	assert.Equal(t, stringValue, attributeValue.Str())
 }
 
+func TestOperationsByTableJSONLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, OperationsByTableJSONValueType)
+	labelValue := operationsByTableJSONLabelValue{
+		metadata: metadata,
+		value:    stringValue,
+	}
+
+	assert.Equal(t, OperationsByTableJSONValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, stringValue, labelValue.Value())
+
+	attributes := pcommon.NewMap()
+
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, stringValue, attributeValue.Str())
+}
+
 func TestNewStringLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType)
 	value := stringValue
@@ -378,6 +411,101 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 	assert.Equal(t, expectedValue, labelValue.Value())
 }
 
+func TestNewOperationsByTableJSONLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, OperationsByTableJSONValueType)
+
+	testCases := []struct {
+		name          string
+		inputJSON     string
+		expectedValue string
+	}{
+		{
+			name:          "Single table operation",
+			inputJSON:     `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "Uppercase JSON keys from Spanner",
+			inputJSON:     `[{"INSERT_OR_UPDATE_BYTES":10,"INSERT_OR_UPDATE_COUNT":1,"TABLE_NAME":"table1"},{"INSERT_OR_UPDATE_BYTES":20,"INSERT_OR_UPDATE_COUNT":2,"TABLE_NAME":"table2"}]`,
+			expectedValue: "{table1,1,10},{table2,2,20}",
+		},
+		{
+			name: "Duplicates, unsorted order, and case-sensitive table names",
+			inputJSON: `[
+				{"table_name":"table2","insert_or_update_count":2,"insert_or_update_bytes":20},
+				{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10},
+				{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10},
+				{"table_name":"Table1","insert_or_update_count":1,"insert_or_update_bytes":10},
+				{"table_name":"table2","insert_or_update_count":2,"insert_or_update_bytes":20},
+				{"table_name":"table3","insert_or_update_count":0,"insert_or_update_bytes":0}
+			]`,
+			expectedValue: "{Table1,1,10},{table1,1,10},{table2,2,20},{table3,0,0}",
+		},
+		{
+			name:          "Valid table_name only (count and bytes omitted or null)",
+			inputJSON:     `[{"table_name":"table1"},{"table_name":"table2","insert_or_update_count":null,"insert_or_update_bytes":null}]`,
+			expectedValue: "{table1,0,0},{table2,0,0}",
+		},
+		{
+			name:          "Mixed valid and skipped elements (null, empty object, empty or null table_name)",
+			inputJSON:     `[null, {}, {"table_name":null}, {"table_name":""}, {"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "Unknown fields in JSON object",
+			inputJSON:     `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10,"extra_field":"ignored"}]`,
+			expectedValue: "{table1,1,10}",
+		},
+		{
+			name:          "All elements skipped (no valid table_name)",
+			inputJSON:     `[null, {}, {"table_name":null}, {"table_name":""}]`,
+			expectedValue: "",
+		},
+		{
+			name:          "Empty JSON array",
+			inputJSON:     "[]",
+			expectedValue: "",
+		},
+		{
+			name:          "Null JSON string",
+			inputJSON:     "null",
+			expectedValue: "",
+		},
+		{
+			name:          "Empty string",
+			inputJSON:     "",
+			expectedValue: "",
+		},
+		{
+			name:          "Invalid JSON",
+			inputJSON:     "invalid-json",
+			expectedValue: "",
+		},
+		{
+			name:          "Empty JSON object",
+			inputJSON:     "{}",
+			expectedValue: "",
+		},
+		{
+			name:          "Wrong field type in JSON object",
+			inputJSON:     `[{"table_name":123,"insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			expectedValue: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			value := tc.inputJSON
+			valueHolder := &value
+
+			labelValue := newOperationsByTableJSONLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, OperationsByTableJSONValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tc.expectedValue, labelValue.Value())
+		})
+	}
+}
+
 func TestTimestampLabelValueMetadata(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, TimestampValueType)
 
@@ -468,6 +596,178 @@ func TestNewTimestampLabelValue(t *testing.T) {
 			labelValue := newTimestampLabelValue(metadata, valueHolder)
 
 			assert.Equal(t, TimestampValueType, labelValue.Metadata().ValueType())
+			assert.Equal(t, tt.expectedValue, labelValue.Value())
+		})
+	}
+}
+
+func TestDateLabelValueMetadata(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+
+	assert.Equal(t, DateValueType, metadata.ValueType())
+	assert.Equal(t, labelName, metadata.Name())
+	assert.Equal(t, labelColumnName, metadata.ColumnName())
+
+	var expectedType *spanner.NullDate
+
+	assert.IsType(t, expectedType, metadata.ValueHolder())
+}
+
+func TestDateLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+	labelValue := dateLabelValue{
+		metadata: metadata,
+		value:    "2023-10-01",
+	}
+
+	assert.Equal(t, DateValueType, labelValue.Metadata().ValueType())
+	assert.Equal(t, "2023-10-01", labelValue.Value())
+
+	attributes := pcommon.NewMap()
+	labelValue.SetValueTo(attributes)
+
+	attributeValue, exists := attributes.Get(labelName)
+
+	assert.True(t, exists)
+	assert.Equal(t, "2023-10-01", attributeValue.Str())
+
+	labelValue.ModifyValue("2023-10-02")
+	assert.Equal(t, "2023-10-02", labelValue.Value())
+}
+
+func TestNewDateLabelValue(t *testing.T) {
+	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, DateValueType)
+
+	tests := []struct {
+		name          string
+		value         spanner.NullDate
+		expectedValue string
+	}{
+		{
+			name: "Valid standard date 2026-09-10",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2026, Month: 9, Day: 10},
+				Valid: true,
+			},
+			expectedValue: "2026-09-10",
+		},
+		{
+			name: "Valid standard date 2023-10-01",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 10, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "2023-10-01",
+		},
+		{
+			name: "Valid leap year date 2024-02-29",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2024, Month: 2, Day: 29},
+				Valid: true,
+			},
+			expectedValue: "2024-02-29",
+		},
+		{
+			name: "Valid century leap year date 2000-02-29",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2000, Month: 2, Day: 29},
+				Valid: true,
+			},
+			expectedValue: "2000-02-29",
+		},
+		{
+			name: "Valid minimum boundary date 0001-01-01",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 1, Month: 1, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "0001-01-01",
+		},
+		{
+			name: "Valid maximum boundary date 9999-12-31",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 9999, Month: 12, Day: 31},
+				Valid: true,
+			},
+			expectedValue: "9999-12-31",
+		},
+		{
+			name: "Valid Unix epoch date 1970-01-01",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 1970, Month: 1, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "1970-01-01",
+		},
+		{
+			name: "Valid zero-padded single-digit month and day 2026-01-05",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2026, Month: 1, Day: 5},
+				Valid: true,
+			},
+			expectedValue: "2026-01-05",
+		},
+		{
+			name: "Valid zero-padded year under 1000 (0099-03-07)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 99, Month: 3, Day: 7},
+				Valid: true,
+			},
+			expectedValue: "0099-03-07",
+		},
+		{
+			name:          "Null date (Valid=false)",
+			value:         spanner.NullDate{Valid: false},
+			expectedValue: "",
+		},
+		{
+			name: "Null date with non-zero Date struct (Valid=false)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2026, Month: 9, Day: 10},
+				Valid: false,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Empty zero civil.Date with Valid=true",
+			value: spanner.NullDate{
+				Date:  civil.Date{},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Invalid calendar date (non-leap year Feb 29)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 2, Day: 29},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Invalid calendar date (month out of range)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 13, Day: 1},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+		{
+			name: "Invalid calendar date (day out of range)",
+			value: spanner.NullDate{
+				Date:  civil.Date{Year: 2023, Month: 4, Day: 31},
+				Valid: true,
+			},
+			expectedValue: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			valueHolder := &tt.value
+			labelValue := newDateLabelValue(metadata, valueHolder)
+
+			assert.Equal(t, DateValueType, labelValue.Metadata().ValueType())
 			assert.Equal(t, tt.expectedValue, labelValue.Value())
 		})
 	}

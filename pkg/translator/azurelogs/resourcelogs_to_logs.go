@@ -16,7 +16,7 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs/internal/metadata"
@@ -68,7 +68,36 @@ const (
 	identityClaimEmailAddress          = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
 )
 
-var errMissingTimestamp = errors.New("missing timestamp")
+var (
+	errMissingTimestamp    = errors.New("missing timestamp")
+	errInvalidFeatureGates = errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
+)
+
+// CheckFeatureGates returns an error if the semantic conventions migration
+// feature gates are set to an unsupported combination, and logs a warning
+// while the deprecated v0 attributes are still emitted. Components using
+// ResourceLogsUnmarshaler should call it once at startup.
+func CheckFeatureGates(logger *zap.Logger) error {
+	if err := validateFeatureGates(); err != nil {
+		return err
+	}
+	if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+		logger.Warn(
+			"Azure resource logs emit deprecated semconv attributes (code.function, code.filepath). " +
+				"They will no longer be emitted once the pkg.translator.azurelogs.EmitV1LogConventions and " +
+				"pkg.translator.azurelogs.DontEmitV0LogConventions feature gates become stable.",
+		)
+	}
+	return nil
+}
+
+func validateFeatureGates() error {
+	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
+		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+		return errInvalidFeatureGates
+	}
+	return nil
+}
 
 // as exported via an Azure Event Hub
 type azureRecords struct {
@@ -159,11 +188,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
-		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
-		return plog.Logs{}, errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
-	}
-
 	var rawRecordMap map[int]json.RawMessage
 	getRawRecord := func(index int) json.RawMessage {
 		if rawRecordMap == nil {
@@ -213,9 +237,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
 		lr.SetObservedTimestamp(observedTimestamp)
-		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
-			lr.SetEventName("az.resource.log")
-		}
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
@@ -259,11 +280,9 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
 		// NOTE: event.name semantically belongs on each LogRecord (not the Resource).
-		// Legacy behavior incorrectly placed it on the Resource for all records.
-		// Use pkg.translator.azurelogs.EmitV1LogConventions to migrate to SetEventName().
-		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
-			rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
-		}
+		// It is not migrated by the semconv feature gates because semantic conventions
+		// renamed this event to azure.resource.log, which is still in development.
+		rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 

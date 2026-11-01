@@ -1230,7 +1230,7 @@ func blockingConsume(consumer *franzConsumer, n int) (entered chan int64, releas
 // startPartitionWorker runs the real worker loop for partition 0.
 func startPartitionWorker(t *testing.T, consumer *franzConsumer, partitionConsumer *pc) *partitionMailbox {
 	t.Helper()
-	partitionConsumer.mailbox = newPartitionMailbox(partitionConsumer.ctx, 4)
+	partitionConsumer.mailbox = newPartitionMailbox(partitionConsumer.ctx, 4, 0)
 	require.True(t, partitionConsumer.add())
 	go consumer.runPartitionWorker(partitionConsumer, topicPartition{topic: "test", partition: 0})
 	return partitionConsumer.mailbox

@@ -55,20 +55,6 @@ func TestGenerateTracesIsReproducible(t *testing.T) {
 	assert.Equal(t, first, collectIDs(t))
 }
 
-func TestGenerateTracesInvalidRPCFeatureGateCombination(t *testing.T) {
-	prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled()
-	prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.ID(), true))
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.ID(), false))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.ID(), prevDontEmit))
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.ID(), prevEmitV1))
-	})
-
-	_, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt", "testdata/generated_pict_pairs_spans.txt")
-	require.ErrorContains(t, err, "internal.coreinternal.goldendataset.DontEmitV0RPCConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1RPCConventions")
-}
-
 func TestGenerateTracesInvalidHTTPFeatureGateCombination(t *testing.T) {
 	prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled()
 	prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled()

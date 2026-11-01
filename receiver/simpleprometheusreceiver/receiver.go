@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -90,10 +91,30 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 			KeyFile:            cfg.ClientConfig.TLS.KeyFile,
 			ServerName:         cfg.ClientConfig.TLS.ServerName,
 			InsecureSkipVerify: cfg.ClientConfig.TLS.InsecureSkipVerify,
+			// Forward the resolved versions so the defaults match other collector
+			// HTTP clients. An unset max_version stays 0, meaning the newest version.
+			MinVersion: configutil.TLSVersion(tlsConfig.MinVersion),
+			MaxVersion: configutil.TLSVersion(tlsConfig.MaxVersion),
 		}
 	}
 
 	httpConfig.BearerToken = configutil.Secret(bearerToken)
+
+	if len(cfg.ClientConfig.Headers) > 0 {
+		headers := make(map[string]configutil.Header, len(cfg.ClientConfig.Headers))
+		for _, header := range cfg.ClientConfig.Headers {
+			headers[header.Name] = configutil.Header{Secrets: []configutil.Secret{configutil.Secret(header.Value)}}
+		}
+		httpConfig.HTTPHeaders = &configutil.Headers{Headers: headers}
+	}
+
+	if cfg.ClientConfig.ProxyURL != "" {
+		proxyURL, err := url.ParseRequestURI(cfg.ClientConfig.ProxyURL)
+		if err != nil {
+			return nil, fmt.Errorf("proxy_url is not valid: %w", err)
+		}
+		httpConfig.ProxyURL = configutil.URL{URL: proxyURL}
+	}
 
 	labels := make(model.LabelSet, len(cfg.Labels)+1)
 	for k, v := range cfg.Labels {

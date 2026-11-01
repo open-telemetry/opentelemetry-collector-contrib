@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -148,6 +147,19 @@ type prwExporter struct {
 	// fight over the same batchState object. To avoid this, we use a pool
 	// to provide each goroutine with its own state.
 	batchStatePool sync.Pool
+
+	// timeout bounds every individual attempt to send a request, not the whole retry loop.
+	// A value of 0 disables the per-attempt timeout; the HTTP client timeout still applies.
+	timeout time.Duration
+
+	// retryStopCh is closed when the exporter is shutting down. From that point on requests are
+	// attempted once without retrying, so that the exporterhelper queue can be flushed promptly.
+	retryStopCh  chan struct{}
+	shutdownOnce sync.Once
+	// shutdownCtx is canceled once the context of the shutdown is done, so that the attempts in
+	// flight and the ones of the requests still queued give up.
+	shutdownCtx       context.Context
+	cancelShutdownCtx context.CancelFunc
 }
 
 func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
@@ -203,16 +215,21 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
+	shutdownCtx, cancelShutdownCtx := context.WithCancel(context.Background())
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,
 		wg:                  new(sync.WaitGroup),
 		closeChan:           make(chan struct{}),
+		shutdownCtx:         shutdownCtx,
+		cancelShutdownCtx:   cancelShutdownCtx,
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
 		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
+		timeout:             cfg.TimeoutSettings.Timeout,
+		retryStopCh:         make(chan struct{}),
 		retryOnHTTP429:      metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		includeMetadataKeys: cfg.IncludeMetadataKeys,
@@ -258,7 +275,8 @@ func (prwe *prwExporter) shutdownWALIfEnabled() error {
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *prwExporter) Shutdown(context.Context) error {
+func (prwe *prwExporter) Shutdown(ctx context.Context) error {
+	prwe.startShutdown(ctx)
 	select {
 	case <-prwe.closeChan:
 	default:
@@ -266,6 +284,88 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 	}
 	err := prwe.shutdownWALIfEnabled()
 	prwe.wg.Wait()
+	if prwe.cancelShutdownCtx != nil {
+		prwe.cancelShutdownCtx()
+	}
+	return err
+}
+
+// startShutdown makes in-flight and future requests give up retrying, and makes their attempts
+// give up once ctx, the context of the shutdown, is done. It is called before the exporterhelper
+// queue is flushed on shutdown, so that a backend outage cannot block the shutdown for the duration
+// of retry_on_failure.max_elapsed_time, and so that the flush respects the deadline of the shutdown.
+// It is safe to call more than once; only the context of the first call is used.
+func (prwe *prwExporter) startShutdown(ctx context.Context) {
+	prwe.shutdownOnce.Do(func() {
+		if prwe.retryStopCh != nil {
+			close(prwe.retryStopCh)
+		}
+		if prwe.cancelShutdownCtx != nil {
+			context.AfterFunc(ctx, prwe.cancelShutdownCtx)
+		}
+	})
+}
+
+// retriesStopped reports whether startShutdown has been called.
+func (prwe *prwExporter) retriesStopped() bool {
+	select {
+	case <-prwe.retryStopCh:
+		return true
+	default:
+		return false
+	}
+}
+
+// attemptContext returns the context of one attempt to send a request. It is bounded by the
+// timeout, and it is canceled once the deadline of the shutdown passed.
+func (prwe *prwExporter) attemptContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	var cancel context.CancelFunc
+	if prwe.timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, prwe.timeout)
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
+	}
+	if prwe.shutdownCtx == nil {
+		return ctx, cancel
+	}
+	if prwe.shutdownCtx.Err() != nil {
+		cancel()
+		return ctx, cancel
+	}
+	stop := context.AfterFunc(prwe.shutdownCtx, cancel)
+	return ctx, func() {
+		stop()
+		cancel()
+	}
+}
+
+// exportContext bounds the export of a batch of metrics with retry_on_failure.max_elapsed_time, so
+// that it limits the export as a whole, and not the retries of each of the requests the batch is
+// split into.
+func (prwe *prwExporter) exportContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if !prwe.retrySettings.Enabled || prwe.retrySettings.MaxElapsedTime <= 0 {
+		return context.WithCancel(ctx)
+	}
+	return context.WithTimeoutCause(ctx, prwe.retrySettings.MaxElapsedTime,
+		fmt.Errorf("retry_on_failure.max_elapsed_time (%s) exceeded", prwe.retrySettings.MaxElapsedTime))
+}
+
+// appendUnsentRequestsError adds to errs, the errors of the requests that were sent, an error for
+// the unsent requests left in the input channel when the export stopped, so that the export does
+// not succeed with data that was never sent. A permanent errs stays permanent: the combined error
+// does not unwrap to the errors it holds.
+func appendUnsentRequestsError(ctx context.Context, errs error, unsent, total int) error {
+	if unsent == 0 {
+		return errs
+	}
+	err := fmt.Errorf("%d of %d requests were not sent", unsent, total)
+	if cause := context.Cause(ctx); cause != nil {
+		err = fmt.Errorf("%w: %w", err, cause)
+	}
+	err = multierr.Append(errs, err)
+	if consumererror.IsPermanent(errs) {
+		return consumererror.NewPermanent(err)
+	}
 	return err
 }
 
@@ -319,13 +419,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	utf8Allowed := cfg.TranslationStrategy == noUTF8EscapingWithSuffixes || cfg.TranslationStrategy == noTranslation
-	permissiveSanitization := prometheustranslator.DropSanitizationGate.IsEnabled()
 	namer := otlptranslator.LabelNamer{
-		UTF8Allowed: utf8Allowed,
-		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
-		UnderscoreLabelSanitization: !permissiveSanitization, //nolint:staticcheck
-		PreserveMultipleUnderscores: permissiveSanitization,
+		UTF8Allowed:                 utf8Allowed,
+		PreserveMultipleUnderscores: true,
 	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
@@ -375,6 +471,9 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
+	ctx, cancel := prwe.exportContext(ctx)
+	defer cancel()
+
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -403,7 +502,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	}
 	wg.Wait()
 
-	return errs
+	return appendUnsentRequestsError(ctx, errs, len(input), len(requests))
 }
 
 func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.WriteRequest) error {
@@ -411,25 +510,69 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 	buf := bufferPool.Get().(*buffer)
 	defer bufferPool.Put(buf)
 	for {
-		select {
-		case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
+		// Stop as soon as the context is done. The input channel is closed once it was filled, so
+		// receiving from it never blocks.
+		if ctx.Err() != nil {
 			return errs
+		}
+		request, ok := <-input
+		if !ok {
+			return errs
+		}
 
-		case request, ok := <-input:
-			if !ok {
-				return errs
-			}
+		reqBuf, errMarshal := buf.MarshalAndEncode(request)
+		if errMarshal != nil {
+			return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+		}
 
-			reqBuf, errMarshal := buf.MarshalAndEncode(request)
-			if errMarshal != nil {
-				return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+		if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+			if rejected, ok := errors.AsType[*payloadRejectionError](errExecute); ok {
+				rejected.sampleCount = writeRequestSampleCount(request)
 			}
-
-			if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
-				errs = multierr.Append(errs, errExecute)
-			}
+			errs = multierr.Append(errs, errExecute)
 		}
 	}
+}
+
+// payloadRejectionError reports that the remote endpoint rejected the content
+// of a write request, so the identical payload will be rejected again and no
+// amount of retrying can make it succeed. It is distinct from a permanent error,
+// which also covers a retryable failure that merely ran out of retry budget, and
+// from a status such as 401 that rejects every request regardless of content.
+type payloadRejectionError struct {
+	StatusCode int
+	// sampleCount is the number of samples the rejected request carried.
+	sampleCount int
+	err         error
+}
+
+func (e *payloadRejectionError) Error() string {
+	return fmt.Sprintf("%s (http status %d)", e.err.Error(), e.StatusCode)
+}
+
+func (e *payloadRejectionError) Unwrap() error { return e.err }
+
+// isPayloadRejection reports whether status rejects the content of the request rather than every request.
+func isPayloadRejection(status int) bool {
+	switch status {
+	case http.StatusBadRequest, http.StatusConflict, http.StatusRequestEntityTooLarge, http.StatusUnprocessableEntity:
+		return true
+	default:
+		return false
+	}
+}
+
+// writeRequestSampleCount reports how many samples a write request carries. A
+// native histogram is one sample in Prometheus terms, so it is counted here;
+// exemplars are accounted for separately by the backend and are not.
+func writeRequestSampleCount(req *prompb.WriteRequest) int {
+	n := 0
+	// Indexed rather than ranged by value: a TimeSeries is large enough that
+	// copying one per iteration shows up in the linter.
+	for i := range req.Timeseries {
+		n += len(req.Timeseries[i].Samples) + len(req.Timeseries[i].Histograms)
+	}
+	return n
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
@@ -437,17 +580,22 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() (int, error) {
 		retryCount++
-		// check there was no timeout in the component level to avoid retries
-		// to continue to run after a timeout
-		select {
-		case <-ctx.Done():
-			return http.StatusGatewayTimeout, backoff.Permanent(ctx.Err())
-		default:
-			// continue
+		// The timeout applies to each attempt, so that the time spent retrying is bounded by
+		// retry_on_failure.max_elapsed_time instead of by the timeout.
+		// The cancel function is deferred before the response body is drained below, so that the
+		// body is drained first and the connection can be reused.
+		attemptCtx, cancel := prwe.attemptContext(ctx)
+		defer cancel()
+
+		// Give up without a request when the context is already done, for example because the
+		// export was canceled or because the deadline of the shutdown passed, to avoid retries
+		// continuing to run after that.
+		if attemptCtx.Err() != nil {
+			return http.StatusGatewayTimeout, backoff.Permanent(context.Cause(attemptCtx))
 		}
 
 		// Create the HTTP POST request to send to the endpoint
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(buf))
+		req, err := http.NewRequestWithContext(attemptCtx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(buf))
 		if err != nil {
 			return http.StatusBadRequest, backoff.Permanent(consumererror.NewPermanent(err))
 		}
@@ -530,17 +678,50 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return resp.StatusCode, rerr
 		}
 
-		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		// Only a rejection of this payload is tagged; any other status rejects every request, so the WAL keeps the batch.
+		if !isPayloadRejection(resp.StatusCode) {
+			return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		}
+
+		rejected := &payloadRejectionError{StatusCode: resp.StatusCode, err: rerr}
+		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rejected))
 	}
 
 	var err error
-	if prwe.retrySettings.Enabled {
+	if prwe.retrySettings.Enabled && !prwe.retriesStopped() {
 		// Use the BackOff instance to retry the func with exponential backoff.
-		_, err = backoff.Retry(ctx, executeFunc, backoff.WithBackOff(&backoff.ExponentialBackOff{
+		// Retrying stops when the exporter is shutting down, see stopRetries.
+		retryCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		go func() {
+			select {
+			case <-prwe.retryStopCh:
+				cancel()
+			case <-retryCtx.Done():
+			}
+		}()
+
+		var lastErr error
+		_, err = backoff.Retry(retryCtx, func() (int, error) {
+			status, errAttempt := executeFunc()
+			lastErr = errAttempt
+			return status, errAttempt
+		}, backoff.WithBackOff(&backoff.ExponentialBackOff{
 			InitialInterval:     prwe.retrySettings.InitialInterval,
 			RandomizationFactor: prwe.retrySettings.RandomizationFactor,
 			Multiplier:          prwe.retrySettings.Multiplier,
-		}), backoff.WithMaxElapsedTime(prwe.retrySettings.MaxElapsedTime))
+			MaxInterval:         prwe.retrySettings.MaxInterval,
+		}), backoff.WithMaxElapsedTime(prwe.retrySettings.MaxElapsedTime), backoff.WithNotify(func(errAttempt error, next time.Duration) {
+			prwe.settings.Logger.Debug("remote write request failed, retrying",
+				zap.Error(errAttempt),
+				zap.Duration("retry_in", next),
+			)
+		}))
+		// If the retries were interrupted by the shutdown, report the error of the last attempt
+		// instead of the cancellation of the retry context.
+		if err != nil && ctx.Err() == nil && retryCtx.Err() != nil && lastErr != nil {
+			err = lastErr
+		}
 	} else {
 		_, err = executeFunc()
 	}
