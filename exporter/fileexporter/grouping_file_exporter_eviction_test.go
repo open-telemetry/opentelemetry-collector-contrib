@@ -22,7 +22,7 @@ import (
 type failingDisk struct{ err error }
 
 func (f failingDisk) Write([]byte) (int, error) { return 0, f.err }
-func (f failingDisk) Close() error              { return nil }
+func (failingDisk) Close() error                { return nil }
 
 func TestGroupingFileExporterShutdownReportsFlushErrors(t *testing.T) {
 	conf := newEvictionTestConfig(t.TempDir())
