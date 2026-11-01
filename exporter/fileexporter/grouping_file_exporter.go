@@ -330,7 +330,6 @@ func (e *groupingFileExporter) Shutdown(context.Context) error {
 	var errs error
 	for _, writer := range e.writers.Values() {
 		if err := writer.evict(); err != nil {
-			e.logger.Warn("Failed to close file", zap.Error(err), zap.String("path", writer.path))
 			errs = errors.Join(errs, fmt.Errorf("close %s: %w", writer.path, err))
 		}
 	}
