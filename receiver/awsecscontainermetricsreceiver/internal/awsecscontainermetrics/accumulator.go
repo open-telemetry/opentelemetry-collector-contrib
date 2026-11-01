@@ -15,7 +15,8 @@ import (
 
 // metricDataAccumulator defines the accumulator
 type metricDataAccumulator struct {
-	mds []pmetric.Metrics
+	mds     []pmetric.Metrics
+	tracker *TaskResetTracker
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
@@ -53,7 +54,10 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		taskMetrics.EphemeralStorageReserved = metadata.EphemeralStorageMetrics.Reserved
 	}
 	taskStartTime := getTaskStartTime(metadata)
-	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp, taskStartTime))
+	acc.accumulate(convertToOTLPMetrics(taskPrefix, taskMetrics, taskResource, timestamp, taskStartTime, acc.tracker))
+	if acc.tracker != nil {
+		acc.tracker.FinishScrape(timestamp)
+	}
 }
 
 func (acc *metricDataAccumulator) accumulate(md pmetric.Metrics) {

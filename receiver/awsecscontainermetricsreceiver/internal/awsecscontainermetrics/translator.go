@@ -9,7 +9,12 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
-func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, timestamp pcommon.Timestamp, startTimestamp pcommon.Timestamp) pmetric.Metrics {
+func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, timestamp, startTimestamp pcommon.Timestamp, trackers ...*TaskResetTracker) pmetric.Metrics {
+	var tracker *TaskResetTracker
+	if len(trackers) > 0 {
+		tracker = trackers[0]
+	}
+
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
@@ -17,18 +22,26 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 
 	ilms := rm.ScopeMetrics()
 
+	appendSum := func(metricName, unit string, value int64) {
+		ts := startTimestamp
+		if tracker != nil {
+			ts = tracker.Adjust(metricName, value, timestamp, startTimestamp)
+		}
+		appendIntSum(metricName, unit, value, timestamp, ts, ilms.AppendEmpty())
+	}
+
 	appendIntGauge(prefix+attributeMemoryUsage, unitBytes, int64(m.MemoryUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryMaxUsage, unitBytes, int64(m.MemoryMaxUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryLimit, unitBytes, int64(m.MemoryLimit), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryUtilized, unitMiB, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryReserved, unitMiB, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
 
-	appendIntSum(prefix+attributeCPUTotalUsage, unitNanoSecond, int64(m.CPUTotalUsage), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeCPUKernelModeUsage, unitNanoSecond, int64(m.CPUUsageInKernelmode), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeCPUUserModeUsage, unitNanoSecond, int64(m.CPUUsageInUserMode), timestamp, startTimestamp, ilms.AppendEmpty())
+	appendSum(prefix+attributeCPUTotalUsage, unitNanoSecond, int64(m.CPUTotalUsage))
+	appendSum(prefix+attributeCPUKernelModeUsage, unitNanoSecond, int64(m.CPUUsageInKernelmode))
+	appendSum(prefix+attributeCPUUserModeUsage, unitNanoSecond, int64(m.CPUUsageInUserMode))
 	appendIntGauge(prefix+attributeCPUCores, unitCount, int64(m.NumOfCPUCores), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeCPUOnlines, unitCount, int64(m.CPUOnlineCpus), timestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeCPUSystemUsage, unitNanoSecond, int64(m.SystemCPUUsage), timestamp, startTimestamp, ilms.AppendEmpty())
+	appendSum(prefix+attributeCPUSystemUsage, unitNanoSecond, int64(m.SystemCPUUsage))
 	appendDoubleGauge(prefix+attributeCPUUtilized, unitNone, m.CPUUtilized, timestamp, ilms.AppendEmpty())
 	appendDoubleGauge(prefix+attributeCPUReserved, unitNone, m.CPUReserved, timestamp, ilms.AppendEmpty())
 	appendDoubleGauge(prefix+attributeCPUUsageInVCPU, unitVCpu, m.CPUUsageInVCPU, timestamp, ilms.AppendEmpty())
@@ -36,17 +49,17 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pcommon.Resource, times
 	appendDoubleGauge(prefix+attributeNetworkRateRx, unitBytesPerSec, m.NetworkRateRxBytesPerSecond, timestamp, ilms.AppendEmpty())
 	appendDoubleGauge(prefix+attributeNetworkRateTx, unitBytesPerSec, m.NetworkRateTxBytesPerSecond, timestamp, ilms.AppendEmpty())
 
-	appendIntSum(prefix+attributeNetworkRxBytes, unitBytes, int64(m.NetworkRxBytes), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkRxPackets, unitCount, int64(m.NetworkRxPackets), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkRxErrors, unitCount, int64(m.NetworkRxErrors), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkRxDropped, unitCount, int64(m.NetworkRxDropped), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkTxBytes, unitBytes, int64(m.NetworkTxBytes), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkTxPackets, unitCount, int64(m.NetworkTxPackets), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkTxErrors, unitCount, int64(m.NetworkTxErrors), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeNetworkTxDropped, unitCount, int64(m.NetworkTxDropped), timestamp, startTimestamp, ilms.AppendEmpty())
+	appendSum(prefix+attributeNetworkRxBytes, unitBytes, int64(m.NetworkRxBytes))
+	appendSum(prefix+attributeNetworkRxPackets, unitCount, int64(m.NetworkRxPackets))
+	appendSum(prefix+attributeNetworkRxErrors, unitCount, int64(m.NetworkRxErrors))
+	appendSum(prefix+attributeNetworkRxDropped, unitCount, int64(m.NetworkRxDropped))
+	appendSum(prefix+attributeNetworkTxBytes, unitBytes, int64(m.NetworkTxBytes))
+	appendSum(prefix+attributeNetworkTxPackets, unitCount, int64(m.NetworkTxPackets))
+	appendSum(prefix+attributeNetworkTxErrors, unitCount, int64(m.NetworkTxErrors))
+	appendSum(prefix+attributeNetworkTxDropped, unitCount, int64(m.NetworkTxDropped))
 
-	appendIntSum(prefix+attributeStorageRead, unitBytes, int64(m.StorageReadBytes), timestamp, startTimestamp, ilms.AppendEmpty())
-	appendIntSum(prefix+attributeStorageWrite, unitBytes, int64(m.StorageWriteBytes), timestamp, startTimestamp, ilms.AppendEmpty())
+	appendSum(prefix+attributeStorageRead, unitBytes, int64(m.StorageReadBytes))
+	appendSum(prefix+attributeStorageWrite, unitBytes, int64(m.StorageWriteBytes))
 
 	// Ephemeral storage metrics are only available at the task level.
 	// They represent the shared ephemeral storage for the entire Fargate task.

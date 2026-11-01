@@ -373,5 +373,165 @@ func TestGetMetricsDataCumulativeSumsWithStartTimestampAndMonotonic(t *testing.T
 			}
 		}
 	}
-	assert.Greater(t, sumCount, 0)
+	assert.Positive(t, sumCount)
+}
+
+func TestTaskResetTracker(t *testing.T) {
+	tracker := NewTaskResetTracker()
+	t0 := pcommon.NewTimestampFromTime(time.Unix(100, 0))
+	t1 := pcommon.NewTimestampFromTime(time.Unix(110, 0))
+	t2 := pcommon.NewTimestampFromTime(time.Unix(120, 0))
+	t3 := pcommon.NewTimestampFromTime(time.Unix(130, 0))
+
+	// Scrape 1: first observation
+	start := tracker.Adjust("ecs.task.cpu.usage.total", 100, t1, t0)
+	assert.Equal(t, t0, start)
+	tracker.FinishScrape(t1)
+
+	// Scrape 2: normal increase
+	start = tracker.Adjust("ecs.task.cpu.usage.total", 150, t2, t0)
+	assert.Equal(t, t0, start)
+	tracker.FinishScrape(t2)
+
+	// Scrape 3: counter reset (drop from 150 to 50)
+	start = tracker.Adjust("ecs.task.cpu.usage.total", 50, t3, t0)
+	assert.Equal(t, t2, start, "expected start time to move forward to previous scrape time t2")
+	tracker.FinishScrape(t3)
+
+	// Scrape 4: increase after reset
+	t4 := pcommon.NewTimestampFromTime(time.Unix(140, 0))
+	start = tracker.Adjust("ecs.task.cpu.usage.total", 75, t4, t0)
+	assert.Equal(t, t2, start, "expected start time to remain t2")
+}
+
+func TestTaskLevelResetOnContainerRestart(t *testing.T) {
+	tracker := NewTaskResetTracker()
+
+	startedAt1 := "2020-07-29T21:40:00.000000000Z"
+	taskMeta := ecsutil.TaskMetadata{
+		Containers: []ecsutil.ContainerMetadata{
+			{
+				ContainerName: "c1",
+				DockerID:      "id1",
+				StartedAt:     startedAt1,
+			},
+			{
+				ContainerName: "c2",
+				DockerID:      "id2",
+				StartedAt:     startedAt1,
+			},
+		},
+	}
+
+	cpu100 := uint64(100)
+	cpu200 := uint64(200)
+	cstatsScrape1 := map[string]*ContainerStats{
+		"id1": {
+			ID: "id1",
+			CPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu100,
+				},
+			},
+			PreviousCPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu100,
+				},
+			},
+		},
+		"id2": {
+			ID: "id2",
+			CPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu200,
+				},
+			},
+			PreviousCPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu200,
+				},
+			},
+		},
+	}
+
+	// Scrape 1: total = 300
+	acc1 := &metricDataAccumulator{tracker: tracker}
+	acc1.getMetricsData(cstatsScrape1, taskMeta, logger)
+
+	var taskCPUStartScrape1 pcommon.Timestamp
+	for _, md := range acc1.mds {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				metrics := sms.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					m := metrics.At(k)
+					if m.Name() == "ecs.task.cpu.usage.total" {
+						require.Equal(t, int64(300), m.Sum().DataPoints().At(0).IntValue())
+						taskCPUStartScrape1 = m.Sum().DataPoints().At(0).StartTimestamp()
+						assert.NotZero(t, taskCPUStartScrape1)
+					}
+				}
+			}
+		}
+	}
+
+	// Scrape 2: container 2 restarted! Its usage resets to 10, total drops from 300 to 120.
+	cpu110 := uint64(110)
+	cpu10 := uint64(10)
+	cstatsScrape2 := map[string]*ContainerStats{
+		"id1": {
+			ID: "id1",
+			CPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu110,
+				},
+			},
+			PreviousCPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu100,
+				},
+			},
+		},
+		"id2": {
+			ID: "id2",
+			CPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu10,
+				},
+			},
+			PreviousCPU: &CPUStats{
+				CPUUsage: &CPUUsage{
+					TotalUsage: &cpu200,
+				},
+			},
+		},
+	}
+
+	acc2 := &metricDataAccumulator{tracker: tracker}
+	acc2.getMetricsData(cstatsScrape2, taskMeta, logger)
+
+	var taskCPUStartScrape2 pcommon.Timestamp
+	for _, md := range acc2.mds {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				metrics := sms.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					m := metrics.At(k)
+					if m.Name() == "ecs.task.cpu.usage.total" {
+						require.Equal(t, int64(120), m.Sum().DataPoints().At(0).IntValue())
+						taskCPUStartScrape2 = m.Sum().DataPoints().At(0).StartTimestamp()
+						assert.NotZero(t, taskCPUStartScrape2)
+						assert.True(t, m.Sum().IsMonotonic())
+					}
+				}
+			}
+		}
+	}
+
+	// Since usage dropped from 300 to 120, a reset was detected and start time moved forward!
+	assert.Greater(t, taskCPUStartScrape2, taskCPUStartScrape1)
 }

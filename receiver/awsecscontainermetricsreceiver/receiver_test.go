@@ -87,7 +87,7 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 						sumCount++
 						assert.True(t, metric.Sum().IsMonotonic(), "expected sum metric %s to be monotonic", metric.Name())
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
-						require.Greater(t, metric.Sum().DataPoints().Len(), 0)
+						require.Positive(t, metric.Sum().DataPoints().Len())
 						dp := metric.Sum().DataPoints().At(0)
 						assert.NotZero(t, dp.StartTimestamp(), "expected start timestamp on metric %s to be non-zero", metric.Name())
 						assert.LessOrEqual(t, dp.StartTimestamp(), dp.Timestamp())
@@ -96,7 +96,57 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 			}
 		}
 	}
-	assert.Greater(t, sumCount, 0)
+	assert.Positive(t, sumCount)
+}
+
+func TestCollectDataFromEndpointMultiScrape(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	sink := new(consumertest.MetricsSink)
+	metricsReceiver, err := newAWSECSContainermetrics(
+		zap.NewNop(),
+		cfg,
+		sink,
+		&fakeRestClient{t},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := t.Context()
+
+	// Scrape 1
+	err = r.collectDataFromEndpoint(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, sink.AllMetrics())
+
+	// Scrape 2
+	sink.Reset()
+	err = r.collectDataFromEndpoint(ctx)
+	require.NoError(t, err)
+	allMetrics := sink.AllMetrics()
+	require.NotEmpty(t, allMetrics)
+
+	for _, md := range allMetrics {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			sms := rms.At(i).ScopeMetrics()
+			for j := 0; j < sms.Len(); j++ {
+				metrics := sms.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					metric := metrics.At(k)
+					if metric.Type() == pmetric.MetricTypeSum {
+						assert.True(t, metric.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+						require.Positive(t, metric.Sum().DataPoints().Len())
+						dp := metric.Sum().DataPoints().At(0)
+						assert.NotZero(t, dp.StartTimestamp())
+						assert.LessOrEqual(t, dp.StartTimestamp(), dp.Timestamp())
+					}
+				}
+			}
+		}
+	}
 }
 
 func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
