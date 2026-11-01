@@ -50,15 +50,17 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	if err != nil {
 		return nil, err
 	}
+
+	config := cfg.(*Config)
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
+		oCfg := buildExporterConfig(config, endpoint)
 		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
-		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
+		return exporterFactory.CreateLogs(ctx, oParams, oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry, defaultGRPCPort)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +72,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		logger:       params.Logger,
 	}
 
-	switch cfg.(*Config).RoutingKey {
+	switch config.RoutingKey {
 	case svcRoutingStr, "":
 		logExporter.routingKey = svcRouting
 	case traceIDRoutingStr:
@@ -79,9 +81,9 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		logExporter.routingKey = resourceRouting
 	case attrRoutingStr:
 		logExporter.routingKey = attrRouting
-		logExporter.routingAttrs = cfg.(*Config).RoutingAttributes
+		logExporter.routingAttrs = config.RoutingAttributes
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: %q", config.RoutingKey)
 	}
 
 	return &logExporter, nil

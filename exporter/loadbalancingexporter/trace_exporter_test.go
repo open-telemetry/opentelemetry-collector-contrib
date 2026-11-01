@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -81,7 +82,7 @@ func TestTracesExporterStart(t *testing.T) {
 			"error",
 			func() *traceExporterImp {
 				ts, tb := getTelemetryAssets(t)
-				lb, _ := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
+				lb, _ := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb, "4317")
 				p, _ := newTracesExporter(ts, simpleConfig())
 
 				lb.res = &mockResolver{
@@ -128,7 +129,7 @@ func TestConsumeTraces(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -190,7 +191,7 @@ func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
 		},
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newTracesExporter(ts, cfg)
@@ -259,7 +260,7 @@ func TestConsumeTracesByID_MultipleTraceIDs(t *testing.T) {
 
 					// span landed on the backend selected for its trace ID
 					tid := span.TraceID()
-					assert.Equal(t, endpointWithPort(lb.ring.endpointFor(tid[:])), endpoint)
+					assert.Equal(t, lb.endpointWithPort(lb.ring.endpointFor(tid[:])), endpoint)
 
 					// the span's source resource and scope traveled with it
 					originRes, _ := span.Attributes().Get("origin-res")
@@ -389,7 +390,7 @@ func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
 		Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newTracesExporter(ts, cfg)
@@ -433,8 +434,8 @@ func TestConsumeTracesByRandomness_SharedRVCoLocates(t *testing.T) {
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), td))
 
-	groupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sharedRV)))
-	ungroupedEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(sampling.TraceIDToRandomness(ungrouped).RValue())))
+	groupedEndpoint := lb.endpointWithPort(lb.ring.endpointFor([]byte(sharedRV)))
+	ungroupedEndpoint := lb.endpointWithPort(lb.ring.endpointFor([]byte(sampling.TraceIDToRandomness(ungrouped).RValue())))
 	// The endpoints must differ for the assertions below to distinguish rv routing
 	// from trace ID fallback; pick a different ungrouped suffix if this ever fails.
 	require.NotEqual(t, groupedEndpoint, ungroupedEndpoint)
@@ -488,7 +489,7 @@ func TestConsumeTracesByRandomness_FirstSpanWins(t *testing.T) {
 		Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newTracesExporter(ts, cfg)
@@ -523,8 +524,8 @@ func TestConsumeTracesByRandomness_FirstSpanWins(t *testing.T) {
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), td))
 
-	firstEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(firstRV)))
-	conflictingEndpoint := endpointWithPort(lb.ring.endpointFor([]byte(conflictingRV)))
+	firstEndpoint := lb.endpointWithPort(lb.ring.endpointFor([]byte(firstRV)))
+	conflictingEndpoint := lb.endpointWithPort(lb.ring.endpointFor([]byte(conflictingRV)))
 	// The endpoints must differ for the assertion below to detect a span routed by the
 	// conflicting rv; pick a different conflicting value if this ever fails.
 	require.NotEqual(t, firstEndpoint, conflictingEndpoint)
@@ -552,7 +553,7 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 		}
 		return te, nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -595,7 +596,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, serviceBasedRoutingConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, serviceBasedRoutingConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -862,7 +863,7 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -897,7 +898,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -935,7 +936,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1063,7 +1064,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1165,7 +1166,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 		},
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb, "4317")
 	require.NotNil(b, lb)
 	require.NoError(b, err)
 
@@ -1282,7 +1283,14 @@ func appendSimpleTraceWithID(dest ptrace.ResourceSpans, id pcommon.TraceID) {
 }
 
 func simpleConfig() *Config {
+	otlpFactory := otlpexporter.NewFactory()
+	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
+	otlpDefaultCfg.ClientConfig.Endpoint = "placeholder:4317"
+
 	return &Config{
+		Protocol: Protocol{
+			OTLP: configoptional.Some(*otlpDefaultCfg),
+		},
 		Resolver: ResolverSettings{
 			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
@@ -1377,11 +1385,12 @@ func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
 
 	// The ring knows two endpoints, but only "good" has a resolved exporter, so a
 	// trace ID routed to "missing" makes exporterAndEndpoint return an error.
-	good := newWrappedExporter(newNopMockTracesExporter(), endpointWithPort("good"))
 	lb := &loadBalancer{
 		ring:      newHashRing([]string{"good", "missing"}),
-		exporters: map[string]*wrappedExporter{endpointWithPort("good"): good},
+		exporters: map[string]*wrappedExporter{},
 	}
+	good := newWrappedExporter(newNopMockTracesExporter(), lb.endpointWithPort("good"))
+	lb.exporters[lb.endpointWithPort("good")] = good
 	e := &traceExporterImp{
 		loadBalancer: lb,
 		routingKey:   traceIDRouting,
