@@ -93,6 +93,9 @@ $defs:
   telemetry_settings:
     type: object
     properties:
+      include_destination_index:
+        description: IncludeDestinationIndex adds the destination index, as reported by Elasticsearch, as an attribute to the `otelcol.elasticsearch.docs.processed` metric. It can have high cardinality, so it is disabled by default.
+        type: boolean
       log_failed_docs_input:
         type: boolean
       log_failed_docs_input_rate_limit:

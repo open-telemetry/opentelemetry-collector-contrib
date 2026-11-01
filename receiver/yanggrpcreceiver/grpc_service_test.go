@@ -31,7 +31,7 @@ func TestGrpcService_ProcessTelemetryData(t *testing.T) {
 	ctr := createMetricsReceiver(t.Context(), settings, config, mockConsumer)
 
 	// Create gRPC service with YANG parser
-	yangParser := internal.NewYANGParser()
+	yangParser := internal.NewYANGParser(settings.Logger)
 	yangParser.LoadBuiltinModules()
 	service := &grpcService{
 		receiver:   ctr.(*yangReceiver),
@@ -196,7 +196,7 @@ func TestKvGPBDataParsing(t *testing.T) {
 
 			ctr := createMetricsReceiver(t.Context(), settings, config, mockConsumer)
 
-			yangParser := internal.NewYANGParser()
+			yangParser := internal.NewYANGParser(settings.Logger)
 			yangParser.LoadBuiltinModules()
 			service := &grpcService{
 				receiver:   ctr.(*yangReceiver),

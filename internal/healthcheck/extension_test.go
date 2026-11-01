@@ -30,8 +30,11 @@ import (
 
 func TestComponentStatus(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	// Use port 0 so the OS assigns a free port when the servers start. The
+	// test never reads the endpoint back, so there is no need to pick a port
+	// up front and risk another process taking it before Start.
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
@@ -171,8 +174,11 @@ func TestNotifyConfigSnapshot(t *testing.T) {
 // test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47591.
 func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	// Use port 0 so the OS assigns a free port when the servers start. The
+	// test never reads the endpoint back, so there is no need to pick a port
+	// up front and risk another process taking it before Start.
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 

@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: receiver/googlecloudmonitoring
+note: Preserve distribution sums when converting Google Cloud Monitoring distributions to histograms.
+issues: [49409]

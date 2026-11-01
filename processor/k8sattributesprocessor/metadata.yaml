@@ -5,7 +5,7 @@ deprecated_type: k8sattributes
 description: |
   The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-sem_conv_version: 1.42.0
+sem_conv_version: 1.43.0
 
 status:
   class: processor
@@ -247,6 +247,12 @@ feature_gates:
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.EnableKubeletPodSource
+    stage: alpha
+    description: >-
+      When enabled, k8sattributesprocessor can use kubelet /pods polling as the pod metadata source.
+    from_version: v0.164.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14475
   - id: processor.k8sattributes.ShareProcessorBetweenPipelines
     stage: alpha
     description: >-

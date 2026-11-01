@@ -133,6 +133,22 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_prometheusremotewrite_wal_send_failed_batches:
+      enabled: true
+      stability: development
+      description: Number of remote write request batches dropped from the WAL because the remote endpoint rejected their content (HTTP 400, 409, 413 or 422). Any other failure keeps the batch in the WAL and is not counted here.
+      unit: "{batch}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_prometheusremotewrite_wal_send_failed_samples:
+      enabled: true
+      stability: development
+      description: Number of samples and native histograms in the batches counted by exporter_prometheusremotewrite_wal_send_failed_batches. This is an upper bound on the samples lost, because the endpoint may have stored part of a rejected batch.
+      unit: "{sample}"
+      sum:
+        value_type: int
+        monotonic: true
     exporter_prometheusremotewrite_wal_write_latency:
       enabled: true
       stability: development

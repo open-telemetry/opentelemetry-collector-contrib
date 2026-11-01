@@ -12,7 +12,7 @@ services:
       - ./certs/ca.crt:/etc/ca.crt
       - ./envoy-config.yaml:/etc/envoy-config.yaml
   otel-collector:
-    image: otel/opentelemetry-collector:0.162.0@sha256:310a800ad69ee430e7c541796852a242c9c7db97aaad4daa5ccf843c525fbdb2
+    image: otel/opentelemetry-collector:0.163.2@sha256:63e5e8eccf4268be02388ba9f2dc36b80b5e47721291293411c0e83152d75bda
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./certs/otel-collector.crt:/etc/otel-collector.crt

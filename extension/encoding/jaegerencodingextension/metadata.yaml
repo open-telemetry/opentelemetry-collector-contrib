@@ -1,6 +1,8 @@
 display_name: Jaeger Encoding Extension
 type: jaeger_encoding
 
+description: This extension supports unmarshaling Jaeger data representing traces.
+
 status:
   disable_codecov_badge: true
   class: extension
