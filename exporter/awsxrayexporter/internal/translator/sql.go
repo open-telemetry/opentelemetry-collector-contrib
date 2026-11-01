@@ -53,7 +53,7 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 				filtered[key] = value
 			}
 		case string(conventions.UserNameKey):
-			if metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+			if metadata.ExporterAwsxrayEmitV1DBUserConventionsFeatureGate.IsEnabled() {
 				dbUser = value.Str()
 			} else {
 				filtered[key] = value
@@ -85,7 +85,7 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 				filtered[key] = value
 			}
 		case "db.user":
-			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+			if !metadata.ExporterAwsxrayDontEmitV0DBUserConventionsFeatureGate.IsEnabled() {
 				legacyUser = value.Str()
 			} else {
 				filtered[key] = value

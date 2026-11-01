@@ -89,6 +89,10 @@ func newTracesExporterWithClient(ctx context.Context, cfg *Config, set exporter.
 				!metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
 				return errors.New("feature gate exporter.awsxray.DontEmitV0DBConventions requires exporter.awsxray.EmitV1DBConventions to also be enabled")
 			}
+			if metadata.ExporterAwsxrayDontEmitV0DBUserConventionsFeatureGate.IsEnabled() &&
+				!metadata.ExporterAwsxrayEmitV1DBUserConventionsFeatureGate.IsEnabled() {
+				return errors.New("feature gate exporter.awsxray.DontEmitV0DBUserConventions requires exporter.awsxray.EmitV1DBUserConventions to also be enabled")
+			}
 			sender.Start(ctx)
 			return nil
 		}),

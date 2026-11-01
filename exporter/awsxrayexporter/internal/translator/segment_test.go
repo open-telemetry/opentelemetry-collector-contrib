@@ -235,6 +235,7 @@ func TestSpanWithNoStatus(t *testing.T) {
 
 func TestClientSpanDBSegmentNameWithEmitV1DB(t *testing.T) {
 	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
+	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
 
 	tests := []struct {
 		name       string
@@ -276,6 +277,8 @@ func TestClientSpanDBSegmentNameWithEmitV1DB(t *testing.T) {
 }
 
 func TestClientSpanWithDbComponent(t *testing.T) {
+	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
+
 	spanName := "call update_user_preference( ?, ?, ? )"
 	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
