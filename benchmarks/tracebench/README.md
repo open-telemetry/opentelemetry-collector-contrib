@@ -22,6 +22,8 @@ GOWORK=off go test -run '^$' -bench '^BenchmarkTracePipeline$' -benchmem -bencht
 Dependencies are pinned to Collector v0.164.1 components and official pdata,
 with the local OTTL implementation.
 This avoids confounding an implementation comparison with a distribution upgrade.
+The standalone benchmark module is excluded from release module sets to retain
+those comparison pins; the repository's module discovery still includes it.
 
 ## Private configuration and validation
 
