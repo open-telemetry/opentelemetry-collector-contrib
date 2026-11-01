@@ -17,8 +17,8 @@ issues: [52463]
 # Use pipe (|) for multiline entries.
 subtext: |
   The gates are now enabled by default: the X-Ray receiver emits the stable semconv HTTP attributes
-  (e.g. `http.request.method`, `url.full`, `http.response.status_code`) and no longer emits the
-  deprecated v0 attributes. The migration remains reversible by disabling the gates.
+  `http.request.method`, `url.full`, `client.address`, and `http.response.status_code` instead of the
+  deprecated v0 equivalents. The migration remains reversible by disabling the gates.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
