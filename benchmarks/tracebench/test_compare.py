@@ -29,6 +29,10 @@ class CompareTests(unittest.TestCase):
         self.assertGreater(result["less_cpu_percent"], 0)
         self.assertEqual(result["conditional_ci95_percent"][0], result["conditional_ci95_percent"][1])
 
+    def test_interval_rejects_degenerate_block_count(self):
+        with self.assertRaisesRegex(ValueError, "At least eight"):
+            compare.interval([-0.1, 0.2, -0.3, 0.4])
+
 
 if __name__ == "__main__":
     unittest.main()

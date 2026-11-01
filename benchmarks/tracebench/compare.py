@@ -43,6 +43,8 @@ def run(command, cwd, env, log):
 
 
 def interval(ratios):
+    if len(ratios) < 8:
+        raise ValueError("At least eight blocks are required for the length-four bootstrap")
     mean = statistics.mean(ratios)
     rng = random.Random(1)
     draws = []
@@ -102,8 +104,8 @@ def main():
     parser.add_argument("--iterations", type=int, default=256)
     parser.add_argument("--pgo", action="store_true")
     args = parser.parse_args()
-    if args.blocks < 4 or args.iterations < 1:
-        parser.error("use at least four blocks and a positive whole-bank iteration count")
+    if args.blocks < 8 or args.iterations < 1:
+        parser.error("use at least eight blocks and a positive whole-bank iteration count")
     root = Path(__file__).resolve().parent
     output = args.output.resolve()
     if output == root or root in output.parents:
