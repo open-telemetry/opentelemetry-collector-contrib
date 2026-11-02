@@ -22,8 +22,8 @@ import (
 var (
 	minKnownSemConvVersion = semver.MustParse("1.37.0")
 	maxKnownSemConvVersion = semver.MustParse("1.43.0")
-	// Semconv 1.39.0 introduced the `_OTHER` rpc.method and the `{rpc.system.name}` fallback span name.
-	rpcMethodOtherSemConvVersion = semver.MustParse("1.39.0")
+	// Semconv 1.39.0 introduced the `{rpc.system.name}` span name when rpc.method is missing or `_OTHER`.
+	rpcSystemNameFallbackSemConvVersion = semver.MustParse("1.39.0")
 )
 
 const otherValue = "_OTHER"
@@ -143,7 +143,9 @@ func rpcSpanName(semconvVersion *semver.Version, span ptrace.Span) string {
 		method, okMethod := attributeValue(span, conventions.RPCMethodKey, "rpc.grpc.method")
 		service, okService := attributeValue(span, "rpc.service", "rpc.grpc.service")
 
-		if okMethod && method.AsString() == otherValue && !semconvVersion.LessThan(rpcMethodOtherSemConvVersion) {
+		systemNameFallback := !semconvVersion.LessThan(rpcSystemNameFallbackSemConvVersion)
+
+		if okMethod && method.AsString() == otherValue && systemNameFallback {
 			return system.AsString()
 		}
 		// A fully-qualified rpc.method (semconv 1.39.0+) already contains the service.
@@ -153,7 +155,7 @@ func rpcSpanName(semconvVersion *semver.Version, span ptrace.Span) string {
 		if okMethod {
 			return method.AsString()
 		}
-		if okService {
+		if okService && !systemNameFallback {
 			return service.AsString() + "/*"
 		}
 		return system.AsString()

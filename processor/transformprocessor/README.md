@@ -872,6 +872,7 @@ Version-specific span name rules:
 | Rule                                                       | Applies to `semconvVersion` |
 |------------------------------------------------------------|-----------------------------|
 | An `_OTHER` `rpc.method` produces `{rpc.system.name}`      | `1.39.0` and later          |
+| A missing `rpc.method` produces `{rpc.system.name}`        | `1.39.0` and later          |
 
 Backward compatibility: `set_semconv_span_name` will also read the following deprecated attributes, mapping each to its current equivalent:
 

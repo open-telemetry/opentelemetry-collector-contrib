@@ -17,7 +17,7 @@ issues: [52567]
 # Use pipe (|) for multiline entries.
 subtext: |
   An `_OTHER` `http.request.method` now produces the `HTTP` method in the span name.
-  For `semconvVersion` `1.39.0` and later, an `_OTHER` `rpc.method` now produces `{rpc.system.name}` as the span name.
+  For `semconvVersion` `1.39.0` and later, an `_OTHER` or missing `rpc.method` now produces `{rpc.system.name}` as the span name.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

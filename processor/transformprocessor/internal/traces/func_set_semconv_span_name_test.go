@@ -731,7 +731,8 @@ func Test_rpcSpanName(t *testing.T) {
 			want: "GetAds",
 		},
 		{
-			name:                   "only 'rpc.grpc.service', no 'rpc.grpc.method'",
+			name:                   "semconv 1.38.0: only 'rpc.grpc.service', no 'rpc.grpc.method'",
+			semconvVersion:         "1.38.0",
 			spanName:               "oteldemo.AdService/a_method",
 			instrumentationLibrary: "hand crafted",
 			kind:                   ptrace.SpanKindServer,
@@ -742,6 +743,20 @@ func Test_rpcSpanName(t *testing.T) {
 				attrs.PutStr("server.address", "ad")
 			},
 			want: "oteldemo.AdService/*",
+		},
+		{
+			name:                   "semconv 1.39.0: only 'rpc.grpc.service', no 'rpc.grpc.method' - uses 'rpc.system'",
+			semconvVersion:         "1.39.0",
+			spanName:               "oteldemo.AdService/a_method",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutInt("rpc.grpc.status_code", 0)
+				attrs.PutStr("rpc.grpc.service", "oteldemo.AdService")
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("server.address", "ad")
+			},
+			want: "grpc",
 		},
 		{
 			name:                   "only 'rpc.system', no 'rpc.grpc.service', no 'rpc.grpc.method'",
