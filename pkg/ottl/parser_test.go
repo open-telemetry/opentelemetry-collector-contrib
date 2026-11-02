@@ -3509,7 +3509,7 @@ func Test_Statements_Execute_FailureCounter(t *testing.T) {
 				tt.statements,
 				componenttest.NewNopTelemetrySettings(),
 				WithStatementSequenceErrorMode[any](tt.errorMode),
-				WithStatementSequenceFailureCounter[any](counter),
+				WithStatementSequenceTelemetry[any](SequenceTelemetry{FailureCounter: counter}),
 			)
 			err := seq.Execute(t.Context(), nil)
 			if tt.errorMode == PropagateError {
@@ -3814,7 +3814,7 @@ func Test_ConditionSequence_Eval_FailureCounter(t *testing.T) {
 				componenttest.NewNopTelemetrySettings(),
 				WithConditionSequenceErrorMode[any](tt.errorMode),
 				WithLogicOperation[any](tt.logicOp),
-				WithConditionSequenceFailureCounter[any](counter),
+				WithConditionSequenceTelemetry[any](SequenceTelemetry{FailureCounter: counter}),
 			)
 			_, err := seq.Eval(t.Context(), nil)
 			if tt.errorMode == PropagateError {

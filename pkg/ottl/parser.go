@@ -475,13 +475,25 @@ func newParser[G any]() *participle.Parser[G] {
 	return parser
 }
 
+// SequenceTelemetry holds the optional metrics recorded by a StatementSequence or a ConditionSequence.
+// Metrics left unset are not recorded. Fields may be added over time, so always use keyed fields.
+type SequenceTelemetry struct {
+	// FailureCounter is incremented by 1 each time a call to StatementSequence.Execute or
+	// ConditionSequence.Eval encounters at least one error, regardless of the ErrorMode.
+	// A call in which several statements or conditions fail is counted once.
+	// The counter measures OTTL executions only, not records: Execute and Eval are called once per
+	// item of the OTTL context being processed (e.g. per span, per resource), so the rate depends
+	// on that context.
+	FailureCounter metric.Int64Counter
+}
+
 // StatementSequence represents a list of statements that will be executed sequentially for a TransformContext
 // and will handle errors based on an ErrorMode.
 type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
-	failureCounter    metric.Int64Counter
+	telemetry         SequenceTelemetry
 }
 
 // StatementSequenceOption is an option for a StatementSequence
@@ -494,14 +506,10 @@ func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenc
 	}
 }
 
-// WithStatementSequenceFailureCounter sets a counter that is incremented by 1 each time a call to Execute
-// encounters at least one statement error, regardless of the ErrorMode.
-// A call to Execute in which several statements fail is counted once.
-// The counter measures OTTL executions only, not records: Execute is called once per item of the
-// OTTL context being processed (e.g. per span, per resource), so the rate depends on that context.
-func WithStatementSequenceFailureCounter[K any](counter metric.Int64Counter) StatementSequenceOption[K] {
+// WithStatementSequenceTelemetry sets the metrics recorded by a StatementSequence.
+func WithStatementSequenceTelemetry[K any](telemetry SequenceTelemetry) StatementSequenceOption[K] {
 	return func(s *StatementSequence[K]) {
-		s.failureCounter = counter
+		s.telemetry = telemetry
 	}
 }
 
@@ -524,16 +532,16 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
-// When a failure counter is set (see WithStatementSequenceFailureCounter), the counter is incremented once per call that had at least one error.
+// When SequenceTelemetry.FailureCounter is set, the counter is incremented once per call that had at least one error.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	}
 	var failed bool
-	if s.failureCounter != nil {
+	if s.telemetry.FailureCounter != nil {
 		defer func() {
 			if failed {
-				s.failureCounter.Add(ctx, 1)
+				s.telemetry.FailureCounter.Add(ctx, 1)
 			}
 		}()
 	}
@@ -561,7 +569,7 @@ type ConditionSequence[K any] struct {
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 	logicOp           LogicOperation
-	failureCounter    metric.Int64Counter
+	telemetry         SequenceTelemetry
 }
 
 // ConditionSequenceOption is an option for a ConditionSequence
@@ -583,14 +591,10 @@ func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K
 	}
 }
 
-// WithConditionSequenceFailureCounter sets a counter that is incremented by 1 each time a call to Eval
-// encounters at least one condition error, regardless of the ErrorMode.
-// A call to Eval in which several conditions fail is counted once.
-// The counter measures OTTL evaluations only, not records: Eval is called once per item of the
-// OTTL context being processed (e.g. per span, per resource), so the rate depends on that context.
-func WithConditionSequenceFailureCounter[K any](counter metric.Int64Counter) ConditionSequenceOption[K] {
+// WithConditionSequenceTelemetry sets the metrics recorded by a ConditionSequence.
+func WithConditionSequenceTelemetry[K any](telemetry SequenceTelemetry) ConditionSequenceOption[K] {
 	return func(c *ConditionSequence[K]) {
-		c.failureCounter = counter
+		c.telemetry = telemetry
 	}
 }
 
@@ -618,14 +622,14 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
 // When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
-// When a failure counter is set (see WithConditionSequenceFailureCounter), the counter is incremented once per call that had at least one error.
+// When SequenceTelemetry.FailureCounter is set, the counter is incremented once per call that had at least one error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	var failed bool
-	if c.failureCounter != nil {
+	if c.telemetry.FailureCounter != nil {
 		defer func() {
 			if failed {
-				c.failureCounter.Add(ctx, 1)
+				c.telemetry.FailureCounter.Add(ctx, 1)
 			}
 		}()
 	}
