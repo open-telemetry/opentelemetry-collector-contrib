@@ -1748,7 +1748,7 @@ func TestTLSAPIConnection(t *testing.T) {
 				},
 			)
 			dimClient.Start()
-			defer func() { dimClient.Shutdown() }()
+			defer func() { dimClient.Shutdown(t.Context()) }()
 
 			se := &signalfxExporter{
 				dimClient: dimClient,

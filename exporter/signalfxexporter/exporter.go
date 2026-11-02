@@ -325,9 +325,9 @@ func (se *signalfxExporter) logDeprecatedMetricsWarnings() {
 	}
 }
 
-func (se *signalfxExporter) shutdown(_ context.Context) error {
+func (se *signalfxExporter) shutdown(ctx context.Context) error {
 	if se.dimClient != nil {
-		se.dimClient.Shutdown()
+		se.dimClient.Shutdown(ctx)
 	}
 
 	if se.converter != nil {

@@ -32,7 +32,12 @@ import (
 // updates are currently not done by this port.
 type DimensionClient struct {
 	sync.RWMutex
-	cancel        context.CancelFunc
+	cancel context.CancelFunc
+	// flush is closed on Shutdown to send the queued updates without waiting for the send delay.
+	flush chan struct{}
+	// done is closed when the processing queue exits.
+	done          chan struct{}
+	shutdownOnce  sync.Once
 	Token         configopaque.String
 	APIURL        *url.URL
 	client        *http.Client
@@ -141,13 +146,26 @@ func (dc *DimensionClient) Start() {
 	// The collector spec states that for long-running operations, components should
 	// use the background context, rather than the passed in context.
 	ctx, dc.cancel = context.WithCancel(context.Background())
+	dc.flush = make(chan struct{})
+	dc.done = make(chan struct{})
 	go dc.processQueue(ctx)
 }
 
-func (dc *DimensionClient) Shutdown() {
-	if dc.cancel != nil {
-		dc.cancel()
+// Shutdown sends the queued dimension updates without waiting for the send delay
+// and stops the client once they are sent or ctx is done.
+func (dc *DimensionClient) Shutdown(ctx context.Context) {
+	if dc.cancel == nil {
+		return
 	}
+	dc.shutdownOnce.Do(func() {
+		close(dc.flush)
+		select {
+		case <-dc.done:
+			dc.requestSender.Wait(ctx)
+		case <-ctx.Done():
+		}
+		dc.cancel()
+	})
 }
 
 // AcceptDimension to be sent to the API.  This will return fairly quickly and
@@ -206,29 +224,60 @@ func mergeTags(tagSets ...map[string]bool) map[string]bool {
 }
 
 func (dc *DimensionClient) processQueue(ctx context.Context) {
+	defer close(dc.done)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-dc.flush:
+			dc.flushQueue(ctx)
+			return
+		case delayedDimUpdate := <-dc.delayedQueue:
+			// dims are always in the channel in order of TimeToSend
+			if wait := delayedDimUpdate.TimeToSend.Sub(dc.now()); wait > 0 {
+				timer := time.NewTimer(wait)
+				select {
+				case <-timer.C:
+				case <-ctx.Done():
+					timer.Stop()
+					return
+				case <-dc.flush:
+					timer.Stop()
+					dc.sendQueued(ctx, delayedDimUpdate)
+					dc.flushQueue(ctx)
+					return
+				}
+			}
+			dc.sendQueued(ctx, delayedDimUpdate)
+		}
+	}
+}
+
+// flushQueue sends all queued dimension updates without waiting for the send delay.
+func (dc *DimensionClient) flushQueue(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case delayedDimUpdate := <-dc.delayedQueue:
-			now := dc.now()
-			if now.Before(delayedDimUpdate.TimeToSend) {
-				// dims are always in the channel in order of TimeToSend
-				time.Sleep(delayedDimUpdate.TimeToSend.Sub(now))
-			}
-
-			dc.Lock()
-			delete(dc.delayedSet, delayedDimUpdate.Key())
-			dc.Unlock()
-
-			if err := dc.handleDimensionUpdate(ctx, delayedDimUpdate.DimensionUpdate); err != nil {
-				dc.logger.Error(
-					"Could not send dimension update",
-					zap.Error(err),
-					zap.String("dimensionUpdate", delayedDimUpdate.String()),
-				)
-			}
+			dc.sendQueued(ctx, delayedDimUpdate)
+		default:
+			return
 		}
+	}
+}
+
+func (dc *DimensionClient) sendQueued(ctx context.Context, delayedDimUpdate *queuedDimension) {
+	dc.Lock()
+	delete(dc.delayedSet, delayedDimUpdate.Key())
+	dc.Unlock()
+
+	if err := dc.handleDimensionUpdate(ctx, delayedDimUpdate.DimensionUpdate); err != nil {
+		dc.logger.Error(
+			"Could not send dimension update",
+			zap.Error(err),
+			zap.String("dimensionUpdate", delayedDimUpdate.String()),
+		)
 	}
 }
 

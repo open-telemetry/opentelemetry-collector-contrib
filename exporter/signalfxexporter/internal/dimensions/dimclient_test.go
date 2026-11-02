@@ -4,6 +4,7 @@
 package dimensions
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -161,7 +162,7 @@ func setupTestClientServer(t *testing.T) (*DimensionClient, *testServer) {
 func TestDimensionClient(t *testing.T) {
 	client, server := setupTestClientServer(t)
 	defer server.shutdown()
-	defer client.Shutdown()
+	defer client.Shutdown(t.Context())
 
 	t.Run("send dimension update with properties and tags", func(t *testing.T) {
 		server.reset()
@@ -600,7 +601,7 @@ func TestDimensionClient(t *testing.T) {
 func TestFlappyUpdates(t *testing.T) {
 	client, server := setupTestClientServer(t)
 	defer server.shutdown()
-	defer client.Shutdown()
+	defer client.Shutdown(t.Context())
 
 	// Do some flappy updates
 	for i := range 5 {
@@ -645,7 +646,7 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 	t.Skip("This test causes data race because empty dimension key or value result in 404s which causes infinite retries")
 	client, server := setupTestClientServer(t)
 	defer server.shutdown()
-	defer client.Shutdown()
+	defer client.Shutdown(t.Context())
 	require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 		Name:  "host",
 		Value: "",
@@ -679,4 +680,72 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 func newString(s string) *string {
 	out := s
 	return &out
+}
+
+func TestDimensionClientShutdownFlushesQueue(t *testing.T) {
+	var received atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		received.Add(1)
+		rw.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	client := NewDimensionClient(DimensionClientOptions{
+		APIURL:      serverURL,
+		Logger:      zap.NewNop(),
+		SendDelay:   time.Hour,
+		MaxBuffered: 10,
+	})
+	client.Start()
+
+	for _, value := range []string{"pod-1", "pod-2"} {
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+			Name:       "k8s.pod.uid",
+			Value:      value,
+			Properties: map[string]*string{"k8s.pod.name": newString(value)},
+			Replace:    true,
+		}))
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	client.Shutdown(ctx)
+
+	require.Equal(t, int32(2), received.Load(), "queued updates must be sent on shutdown")
+}
+
+func TestDimensionClientShutdownRespectsContext(t *testing.T) {
+	block := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		<-block
+		rw.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	defer close(block)
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	client := NewDimensionClient(DimensionClientOptions{
+		APIURL:      serverURL,
+		Logger:      zap.NewNop(),
+		SendDelay:   time.Hour,
+		MaxBuffered: 10,
+	})
+	client.Start()
+	require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+		Name:       "k8s.pod.uid",
+		Value:      "pod-1",
+		Properties: map[string]*string{"k8s.pod.name": newString("pod-1")},
+		Replace:    true,
+	}))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	client.Shutdown(ctx)
+	require.Less(t, time.Since(start), 5*time.Second, "shutdown must not block past its context")
 }

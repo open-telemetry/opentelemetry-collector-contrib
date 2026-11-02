@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"sync/atomic"
 )
 
@@ -19,6 +20,8 @@ type ReqSender struct {
 	workerCount          uint
 	additionalDimensions map[string]string
 	runningWorkers       *atomic.Int64
+	// inFlight tracks requests handed to the workers that haven't completed yet.
+	inFlight sync.WaitGroup
 }
 
 func NewReqSender(client *http.Client,
@@ -36,11 +39,13 @@ func NewReqSender(client *http.Client,
 
 // Send sends the request. Not thread-safe.
 func (rs *ReqSender) Send(ctx context.Context, req *http.Request) {
+	rs.inFlight.Add(1)
 	// Slight optimization to avoid spinning up unnecessary workers if there
 	// aren't ever that many dim updates. Once workers start, they remain for the
 	// duration of the agent.
 	select {
 	case <-ctx.Done():
+		rs.inFlight.Done()
 		return
 	case rs.requests <- req:
 		return
@@ -52,6 +57,7 @@ func (rs *ReqSender) Send(ctx context.Context, req *http.Request) {
 		// Block until we can get through a request, unless context has been cancelled.
 		select {
 		case <-ctx.Done():
+			rs.inFlight.Done()
 			return
 		case rs.requests <- req:
 		}
@@ -67,10 +73,22 @@ func (rs *ReqSender) processRequests(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case req := <-rs.requests:
-			if err := rs.sendRequest(req); err != nil {
-				continue
-			}
+			_ = rs.sendRequest(req)
+			rs.inFlight.Done()
 		}
+	}
+}
+
+// Wait blocks until all requests passed to Send are completed or ctx is done.
+func (rs *ReqSender) Wait(ctx context.Context) {
+	done := make(chan struct{})
+	go func() {
+		rs.inFlight.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-ctx.Done():
 	}
 }
 
