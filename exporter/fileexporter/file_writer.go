@@ -31,7 +31,7 @@ type fileWriter struct {
 	// Protected by mutex
 	refs             int  // number of active references to this writer
 	evicted          bool // true if the writer has been evicted from the LRU
-	flushErrorLogged bool
+	flushErrorLogged bool // true once a periodic flush error has been logged
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
