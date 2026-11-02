@@ -57,7 +57,7 @@ func (rdp *resourceDetectionProcessor) processTraces(ctx context.Context, td ptr
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
-		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeResourceAndEntities(rss.Resource(), res, rdp.override)
 	}
 	return td, nil
 }
@@ -69,7 +69,7 @@ func (rdp *resourceDetectionProcessor) processMetrics(ctx context.Context, md pm
 	for i := 0; i < rm.Len(); i++ {
 		rss := rm.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
-		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeResourceAndEntities(rss.Resource(), res, rdp.override)
 	}
 	return md, nil
 }
@@ -81,7 +81,7 @@ func (rdp *resourceDetectionProcessor) processLogs(ctx context.Context, ld plog.
 	for i := 0; i < rl.Len(); i++ {
 		rss := rl.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
-		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeResourceAndEntities(rss.Resource(), res, rdp.override)
 	}
 	return ld, nil
 }
@@ -93,7 +93,7 @@ func (rdp *resourceDetectionProcessor) processProfiles(ctx context.Context, ld p
 	for i := 0; i < rl.Len(); i++ {
 		rss := rl.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
-		internal.MergeResource(rss.Resource(), res, rdp.override)
+		internal.MergeResourceAndEntities(rss.Resource(), res, rdp.override)
 	}
 	return ld, nil
 }

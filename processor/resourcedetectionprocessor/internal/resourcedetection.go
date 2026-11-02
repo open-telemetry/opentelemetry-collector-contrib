@@ -230,7 +230,16 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 		}(entry, ch)
 	}
 
-	for _, ch := range resultsChan {
+	// Attributes are merged first, in configured detector order, so that entity
+	// declarations are attached against the final attribute values: an entity
+	// whose identifying attribute lost precedence to an earlier detector must
+	// not be attached. See attachDetectedEntities.
+	type detected struct {
+		entry    detectorEntry
+		resource pcommon.Resource
+	}
+	var successful []detected
+	for i, ch := range resultsChan {
 		result := <-ch
 		if result.err != nil {
 			joinedErr = errors.Join(joinedErr, result.err)
@@ -239,6 +248,14 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 		successes++
 		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
 		MergeResource(res, result.resource, false)
+		successful = append(successful, detected{entry: p.detectors[i], resource: result.resource})
+	}
+	for _, d := range successful {
+		ed, ok := d.entry.detector.(EntityDetector)
+		if !ok || IsEmptyResource(d.resource) {
+			continue
+		}
+		attachDetectedEntities(res, d.resource, ed.Entities(d.resource), p.logger.With(zap.String("detector", string(d.entry.detectorType))))
 	}
 
 	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
