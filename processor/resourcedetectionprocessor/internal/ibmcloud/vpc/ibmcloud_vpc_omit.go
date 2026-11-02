@@ -1,16 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build omit_detector_ibmcloud_vpc
+//go:build (remove_all_resourcedetection_detectors && !enable_detector_ibmcloud_vpc) || omit_detector_ibmcloud_vpc
 
 package vpc // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
 
-import (
-	"go.opentelemetry.io/collector/processor"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-)
-
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
-	return nil, nil
-}
+// NewDetector is unavailable when this detector is excluded at build time.
+var NewDetector internal.DetectorFactory
