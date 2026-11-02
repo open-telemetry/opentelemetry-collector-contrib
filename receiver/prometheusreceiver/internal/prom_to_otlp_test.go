@@ -6,9 +6,9 @@ package internal
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -286,17 +286,17 @@ func TestCreateResourceWithTargetURL(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name, job string
-		instance  string
+		name, job     string
+		instance      string
 		targetAddress string
-		sdLabels  labels.Labels
-		want      pcommon.Resource
+		sdLabels      labels.Labels
+		want          pcommon.Resource
 	}{
 		{
 			name: "Host with port",
 			job:  "job", instance: "example.com:8080",
 			targetAddress: "example.com:8080",
-			sdLabels: labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "example.com:8080", "example.com", "http", "8080",
 			}, true),
@@ -305,7 +305,7 @@ func TestCreateResourceWithTargetURL(t *testing.T) {
 			name: "IPv6 with port",
 			job:  "job", instance: "[2001:db8::1]:9090",
 			targetAddress: "[2001:db8::1]:9090",
-			sdLabels: labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "[2001:db8::1]:9090", "2001:db8::1", "http", "9090",
 			}, true),
@@ -314,7 +314,7 @@ func TestCreateResourceWithTargetURL(t *testing.T) {
 			name: "IPv6 without port",
 			job:  "job", instance: "[2001:db8::1]",
 			targetAddress: "[2001:db8::1]",
-			sdLabels: labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
 			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
 				"job", "[2001:db8::1]", "2001:db8::1", "http", "",
 			}, true),

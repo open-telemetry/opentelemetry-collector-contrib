@@ -11,7 +11,7 @@ var ReceiverPrometheusUseTargetURLForServerAddressFeatureGate = featuregate.Glob
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, server.address and server.port are populated from the scraped target's URL (model.AddressLabel) instead of parsing the instance label."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565"),
-	featuregate.WithRegisterFromVersion("v0.115.0"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
 )
 
 var ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate = featuregate.GlobalRegistry().MustRegister(
