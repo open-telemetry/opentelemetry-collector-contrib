@@ -216,6 +216,7 @@ The following configuration options are supported:
     - `prefix`: Match resource keys by prefix.
     - `regex`: Match resource keys by regex.
 - `sending_queue` (optional): Configuration for how to buffer data before sending. Note: The `sending_queue` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#sending-queue)
+- `retry_on_failure` (optional, logs only, default `enabled: false`): Configuration for how to handle retryable errors when sending logs. Note: `retry_on_failure` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#retry-on-failure)
 
 Beyond standard YAML configuration as outlined in the section above,
 exporters that leverage the net/http package (all do today) also respect the
