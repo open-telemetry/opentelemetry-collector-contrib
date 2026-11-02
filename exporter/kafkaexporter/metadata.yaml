@@ -21,6 +21,9 @@ feature_gates:
     from_version: v0.157.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48090
 
+sending_queue:
+  support: default
+
 tests:
   config: {}
   goleak:

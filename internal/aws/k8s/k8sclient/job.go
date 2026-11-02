@@ -151,16 +151,11 @@ func transformFuncJob(obj any) (any, error) {
 }
 
 func createJobListWatch(client kubernetes.Interface, ns string) cache.ListerWatcher {
-	ctx := context.Background()
 	return &cache.ListWatch{
-		// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).ListFunc is deprecated: use ListWithContext instead.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) { //nolint:staticcheck
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			return client.BatchV1().Jobs(ns).List(ctx, opts)
 		},
-		// TODO: SA1019: (k8s.io/client-go/tools/cache.ListWatch).WatchFunc is deprecated: use WatchWithContext instead.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50424
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) { //nolint:staticcheck
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			return client.BatchV1().Jobs(ns).Watch(ctx, opts)
 		},
 	}

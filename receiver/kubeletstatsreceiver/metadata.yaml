@@ -14,42 +14,13 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth, ChrsMark]
 
+sem_conv_version: 1.43.0
+
 resource_attributes:
-  aws.volume.id:
-    description: "[DEPRECATED] The id of the AWS Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   container.id:
     description: "Container id used to identify container"
     enabled: true
     type: string
-  fs.type:
-    description: "[DEPRECATED] The filesystem type of the Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  gce.pd.name:
-    description: "[DEPRECATED] The name of the persistent disk in GCE"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  glusterfs.endpoints.name:
-    description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-  glusterfs.path:
-    description: "[DEPRECATED] Glusterfs volume path"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
-
   k8s.container.name:
     description: "Container name used by container runtime"
     enabled: true
@@ -86,12 +57,6 @@ resource_attributes:
     description: "The type of the Volume"
     enabled: true
     type: string
-  partition:
-    description: "[DEPRECATED] The partition in the Volume"
-    enabled: false
-    type: string
-    warnings:
-      if_enabled: "This resource_attribute is deprecated and will be removed soon"
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
@@ -112,7 +77,9 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability: development
+    stability: beta
+    semantic_convention:
+      ref: system/container-metrics.md#metric-containercputime
     sum:
       value_type: double
       monotonic: true
@@ -400,6 +367,33 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.node.pid.limit:
+    enabled: false
+    description: >-
+      Total number of processes/threads allowed by the operating system on the node.
+      Derived from the Kubelet Summary API (NodeStats.Rlimit.MaxPID), representing the system-wide task limit
+      (the lower of kernel.pid_max and kernel.threads-max).
+    unit: "{thread}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  k8s.node.pid.usage:
+    enabled: false
+    description: >-
+      Total number of existing processes and threads on the node.
+      Derived from the Kubelet Summary API (NodeStats.Rlimit.NumOfRunningProcesses), which reads the total count
+      of scheduling entities (threads/processes across all states) from /proc/loadavg. Unlike system.processes.count
+      in hostmetricsreceiver, this is an aggregate count collected via Kubelet without requiring host-level privileges.
+    unit: "{thread}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
   k8s.node.system_container.cpu.time:
     enabled: false
     description: "Total cumulative CPU time (sum of all cores) spent by the system container since its creation"

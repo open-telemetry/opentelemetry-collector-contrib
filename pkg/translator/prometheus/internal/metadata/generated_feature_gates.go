@@ -8,8 +8,9 @@ import (
 
 var PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.PermissiveLabelSanitization",
-	featuregate.StageAlpha,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 	featuregate.WithRegisterFromVersion("v0.55.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )
