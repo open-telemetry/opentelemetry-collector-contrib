@@ -34,6 +34,10 @@ func (t *EntityEventTransformer) TransformEntityEvent(event metadata.EntityEvent
 	if err != nil {
 		return nil, err
 	}
+	// Entities without an ID value can't be mapped to a dimension, e.g. containers that haven't started yet.
+	if dimValue == "" {
+		return nil, nil
+	}
 
 	properties, tags := t.extractPropertiesAndTags(state.Attributes())
 

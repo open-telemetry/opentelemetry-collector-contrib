@@ -399,3 +399,30 @@ func TestEntityEventTransformer_MissingEntityID(t *testing.T) {
 	assert.Nil(t, dimUpdate)
 	assert.Contains(t, err.Error(), "entity ID not found")
 }
+
+func TestEntityEventTransformer_EmptyEntityID(t *testing.T) {
+	transformer := NewEntityEventTransformer(nil)
+
+	tests := []struct {
+		entityType  string
+		entityIDKey string
+	}{
+		{entityType: "container", entityIDKey: "container.id"},
+		{entityType: "k8s.pod", entityIDKey: "k8s.pod.uid"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.entityType, func(t *testing.T) {
+			entityEvents := metadata.NewEntityEventsSlice()
+			entityEvent := entityEvents.AppendEmpty()
+			entityEvent.ID().PutStr(tt.entityIDKey, "")
+			state := entityEvent.SetEntityState()
+			state.SetEntityType(tt.entityType)
+			state.Attributes().PutStr("container.status", "waiting")
+
+			dimUpdate, err := transformer.TransformEntityEvent(entityEvent)
+			require.NoError(t, err)
+			assert.Nil(t, dimUpdate, "entities with an empty ID should be skipped")
+		})
+	}
+}
