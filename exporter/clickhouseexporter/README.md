@@ -412,7 +412,7 @@ Processing:
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `enabled` (default = true)
-    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`.
+    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`. Also used to size the ClickHouse client's connection pool unless they are set in the `endpoint` or `connection_params`.
     - `queue_size` (default = 1000): Maximum size of the queue, measured in `sizer` units. Data is dropped when the queue is full unless `block_on_overflow` is enabled.
     - `sizer` (default = `requests`): How `queue_size` is measured. One of `requests`, `items`, or `bytes`.
     - `block_on_overflow` (default = false): If `true`, waits for space when the queue is full instead of dropping data (applies backpressure to the pipeline).

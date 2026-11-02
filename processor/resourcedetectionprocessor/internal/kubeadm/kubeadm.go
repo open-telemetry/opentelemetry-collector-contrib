@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_kubeadm
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_kubeadm) && !omit_detector_kubeadm
 
 package kubeadm // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 
@@ -42,7 +42,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 
 	// The client is built here rather than by the SDK detector so that the configured
 	// auth_type and kubeconfig keep applying.
-	client, err := makeClient(cfg.APIConfig)
+	client, err := makeClient(k8sconfig.FromConfigTypes(cfg.APIConfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed creating Kubernetes client: %w", err)
 	}

@@ -1,4 +1,4 @@
-description: Config can contain user-specified inputs to overwrite default values. See `openshift.go#NewDetector` for more information.
+description: Config can contain user-specified inputs to overwrite default values. Unset fields are resolved by the SDK detector from the pod environment.
 type: object
 properties:
   address:

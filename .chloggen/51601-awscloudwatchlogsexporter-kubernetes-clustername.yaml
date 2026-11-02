@@ -1,4 +1,0 @@
-change_type: enhancement
-component: exporter/awscloudwatchlogs
-note: resolve {ClusterName} placeholder via k8s.cluster.name attribute
-issues: [51601]

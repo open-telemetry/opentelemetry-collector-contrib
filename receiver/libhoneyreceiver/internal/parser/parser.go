@@ -181,7 +181,9 @@ func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, a
 			// Use current time if timestamp is not available
 			newEvent.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
 		}
-		newEvent.SetName(spe.Data["name"].(string))
+		if name, ok := spe.Data["name"].(string); ok {
+			newEvent.SetName(name)
+		}
 		for lkey, lval := range spe.Data {
 			if slices.Contains(alreadyUsedFields, lkey) {
 				continue
@@ -194,9 +196,12 @@ func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, a
 				newEvent.Attributes().PutStr(lkey, lval)
 			case int:
 				newEvent.Attributes().PutInt(lkey, int64(lval))
-			case int64, int16, int32:
-				intv := lval.(int64)
-				newEvent.Attributes().PutInt(lkey, intv)
+			case int64:
+				newEvent.Attributes().PutInt(lkey, lval)
+			case int32:
+				newEvent.Attributes().PutInt(lkey, int64(lval))
+			case int16:
+				newEvent.Attributes().PutInt(lkey, int64(lval))
 			case uint64:
 				newEvent.Attributes().PutInt(lkey, int64(lval))
 			case float64:
@@ -217,8 +222,8 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 	for _, spl := range links {
 		newLink := sp.Links().AppendEmpty()
 
-		if linkTraceStr, ok := spl.Data["trace.link.trace_id"]; ok {
-			tidByteArray, err := hex.DecodeString(linkTraceStr.(string))
+		if linkTraceStr, ok := spl.Data["trace.link.trace_id"].(string); ok {
+			tidByteArray, err := hex.DecodeString(linkTraceStr)
 			if err != nil {
 				logger.Debug("span link invalid",
 					zap.String("missing.attribute", "trace.link.trace_id"),
@@ -242,8 +247,8 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 			continue
 		}
 
-		if linkSpanStr, ok := spl.Data["trace.link.span_id"]; ok {
-			sidByteArray, err := hex.DecodeString(linkSpanStr.(string))
+		if linkSpanStr, ok := spl.Data["trace.link.span_id"].(string); ok {
+			sidByteArray, err := hex.DecodeString(linkSpanStr)
 			if err != nil {
 				logger.Debug("span link invalid",
 					zap.String("missing.attribute", "trace.link.span_id"),
@@ -282,9 +287,12 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 				newLink.Attributes().PutStr(lkey, lval)
 			case int:
 				newLink.Attributes().PutInt(lkey, int64(lval))
-			case int64, int16, int32:
-				intv := lval.(int64)
-				newLink.Attributes().PutInt(lkey, intv)
+			case int64:
+				newLink.Attributes().PutInt(lkey, lval)
+			case int32:
+				newLink.Attributes().PutInt(lkey, int64(lval))
+			case int16:
+				newLink.Attributes().PutInt(lkey, int64(lval))
 			case uint64:
 				newLink.Attributes().PutInt(lkey, int64(lval))
 			case float64:

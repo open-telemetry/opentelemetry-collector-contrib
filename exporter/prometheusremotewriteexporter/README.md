@@ -73,6 +73,7 @@ The following settings can be optionally configured:
   - `buffer_size` (default = `300`): Count of elements to be read from the WAL before truncating.
   - `truncate_frequency` (default = `1m`): Frequency for how often the WAL should be truncated. 
   - `lag_record_frequency` (default = `15s`): Frequency for how often the exporter will record the lag of the WAL. 
+  - When the remote endpoint rejects the content of a batch read from the WAL (HTTP `400`, `409`, `413` or `422`), the batch is dropped so it does not block the batches behind it, and `otelcol_exporter_prometheusremotewrite_wal_send_failed_batches` is incremented. Any other failure keeps the batch in the WAL to be sent again.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
 - `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version` and `otel_scope_...` attributes) will not be exported.
