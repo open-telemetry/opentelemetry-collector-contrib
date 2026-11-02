@@ -29,7 +29,9 @@ func (cfg *Config) openClickHouse(ctx context.Context, host component.Host) (dri
 	return internal.NewClickhouseClientFromOptions(opt, cfg.shouldCreateSchema())
 }
 
-// applyAuth attaches the configured authenticator. HTTP uses TransportFunc; native uses GetJWT.
+// applyAuth attaches GetJWT from the configured authenticator for both native and HTTPS.
+// GetJWT is used for HTTPS as well so the driver does not combine bearer auth with
+// X-ClickHouse-User / X-ClickHouse-SSL-Certificate-Auth headers.
 func (cfg *Config) applyAuth(ctx context.Context, opt *clickhouse.Options, host component.Host) error {
 	if !cfg.Auth.HasValue() {
 		return nil
@@ -46,15 +48,13 @@ func (cfg *Config) applyAuth(ctx context.Context, opt *clickhouse.Options, host 
 		return fmt.Errorf("failed to resolve auth extension: %w", err)
 	}
 
-	if opt.Protocol == clickhouse.HTTP {
-		opt.TransportFunc = func(base *http.Transport) (http.RoundTripper, error) {
-			return httpAuth.RoundTripper(base)
-		}
-		return nil
-	}
-
 	opt.GetJWT = func(ctx context.Context) (string, error) {
 		return tokenFromHTTPAuth(ctx, httpAuth)
+	}
+
+	// Fail at Start if the authenticator cannot produce a Bearer JWT.
+	if _, err := opt.GetJWT(ctx); err != nil {
+		return err
 	}
 	return nil
 }
@@ -71,7 +71,7 @@ func tokenFromHTTPAuth(ctx context.Context, auth extensionauth.HTTPClient) (stri
 		return "", fmt.Errorf("failed to build auth request: %w", err)
 	}
 
-	if _, err := rt.RoundTrip(req); err != nil && capture.authorization == "" {
+	if _, err := rt.RoundTrip(req); err != nil {
 		return "", fmt.Errorf("failed to obtain auth token: %w", err)
 	}
 
@@ -92,11 +92,9 @@ func jwtFromAuthorization(header string) (string, error) {
 		return "", errors.New("authenticator did not return an authorization token")
 	}
 
-	token := header
-	if after, ok := strings.CutPrefix(header, "Bearer "); ok {
-		token = after
-	} else if after, ok := strings.CutPrefix(header, "bearer "); ok {
-		token = after
+	scheme, token, ok := strings.Cut(header, " ")
+	if !ok || !strings.EqualFold(scheme, "Bearer") {
+		return "", fmt.Errorf("authorization header must use Bearer scheme, got %q", scheme)
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {

@@ -4,6 +4,7 @@
 package clickhouseexporter
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -29,7 +30,7 @@ func TestApplyAuth_NoAuth(t *testing.T) {
 	assert.Nil(t, opt.TransportFunc)
 }
 
-func TestApplyAuth_HTTPUsesTransportFunc(t *testing.T) {
+func TestApplyAuth_HTTPUsesGetJWT(t *testing.T) {
 	authID := component.MustNewID("authtest")
 	cfg := withDefaultConfig(func(c *Config) {
 		c.Endpoint = "https://127.0.0.1:8443"
@@ -42,12 +43,12 @@ func TestApplyAuth_HTTPUsesTransportFunc(t *testing.T) {
 	require.NotNil(t, opt.TLS)
 
 	require.NoError(t, cfg.applyAuth(t.Context(), opt, newAuthHost(authID, "test-jwt")))
-	assert.Nil(t, opt.GetJWT)
-	require.NotNil(t, opt.TransportFunc)
+	assert.Nil(t, opt.TransportFunc)
+	require.NotNil(t, opt.GetJWT)
 
-	rt, err := opt.TransportFunc(&http.Transport{})
+	token, err := opt.GetJWT(t.Context())
 	require.NoError(t, err)
-	require.NotNil(t, rt)
+	assert.Equal(t, "test-jwt", token)
 }
 
 func TestApplyAuth_NativeUsesGetJWT(t *testing.T) {
@@ -114,6 +115,50 @@ func TestApplyAuth_MissingExtension(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to resolve auth extension")
 }
 
+func TestApplyAuth_RejectsNonBearerAtStart(t *testing.T) {
+	authID := component.MustNewID("authtest")
+	cfg := withDefaultConfig(func(c *Config) {
+		c.Endpoint = "https://127.0.0.1:8443"
+		c.Auth = configoptional.Some(configauth.Config{AuthenticatorID: authID})
+	})
+
+	opt, err := cfg.buildClickHouseOptions()
+	require.NoError(t, err)
+
+	host := &authHost{
+		extensions: map[component.ID]component.Component{
+			authID: &mockAuthClient{header: "Basic dXNlcjpwYXNz"},
+		},
+	}
+	err = cfg.applyAuth(t.Context(), opt, host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Bearer scheme")
+}
+
+func TestApplyAuth_SurfacesRoundTripErrorAtStart(t *testing.T) {
+	authID := component.MustNewID("authtest")
+	cfg := withDefaultConfig(func(c *Config) {
+		c.Endpoint = "https://127.0.0.1:8443"
+		c.Auth = configoptional.Some(configauth.Config{AuthenticatorID: authID})
+	})
+
+	opt, err := cfg.buildClickHouseOptions()
+	require.NoError(t, err)
+
+	host := &authHost{
+		extensions: map[component.ID]component.Component{
+			authID: &mockAuthClient{
+				header:       "Bearer leaked-token",
+				roundTripErr: errors.New("token endpoint unavailable"),
+			},
+		},
+	}
+	err = cfg.applyAuth(t.Context(), opt, host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to obtain auth token")
+	assert.Contains(t, err.Error(), "token endpoint unavailable")
+}
+
 func TestTokenFromHTTPAuth(t *testing.T) {
 	token, err := tokenFromHTTPAuth(t.Context(), &mockAuthClient{token: "from-http"})
 	require.NoError(t, err)
@@ -134,6 +179,14 @@ func TestJwtFromAuthorization(t *testing.T) {
 
 	_, err = jwtFromAuthorization("Bearer ")
 	require.Error(t, err)
+
+	_, err = jwtFromAuthorization("Basic dXNlcjpwYXNz")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Bearer scheme")
+
+	_, err = jwtFromAuthorization("Token abc")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Bearer scheme")
 }
 
 type authHost struct {
@@ -157,20 +210,33 @@ var _ extensionauth.HTTPClient = (*mockAuthClient)(nil)
 type mockAuthClient struct {
 	component.StartFunc
 	component.ShutdownFunc
-	token string
+	token        string
+	header       string
+	roundTripErr error
 }
 
 func (m *mockAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	return &bearerRoundTripper{base: base, token: m.token}, nil
+	return &authRoundTripper{base: base, client: m}, nil
 }
 
-type bearerRoundTripper struct {
-	base  http.RoundTripper
-	token string
+type authRoundTripper struct {
+	base   http.RoundTripper
+	client *mockAuthClient
 }
 
-func (b *bearerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (b *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := req.Clone(req.Context())
-	req2.Header.Set("Authorization", "Bearer "+b.token)
+	switch {
+	case b.client.header != "":
+		req2.Header.Set("Authorization", b.client.header)
+	default:
+		req2.Header.Set("Authorization", "Bearer "+b.client.token)
+	}
+	if b.client.roundTripErr != nil {
+		// Still call the base so any captured Authorization header matches production
+		// authenticators that may set headers before returning an error.
+		_, _ = b.base.RoundTrip(req2)
+		return nil, b.client.roundTripErr
+	}
 	return b.base.RoundTrip(req2)
 }
