@@ -296,7 +296,7 @@ This metric requires WAL to be enabled with at least one replica.
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Int | Development |
 
-### postgresql.wal.lag
+### postgresql.wal.delay
 
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
@@ -304,7 +304,7 @@ This metric requires WAL to be enabled with at least one replica.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | Development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -629,23 +629,6 @@ additionally require pgvector 0.7.0 or later.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
-
-### postgresql.wal.delay
-
-Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
-
-This metric requires WAL to be enabled with at least one replica.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` | Recommended | - |
-| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | Recommended | - |
 
 ## Default Events
 

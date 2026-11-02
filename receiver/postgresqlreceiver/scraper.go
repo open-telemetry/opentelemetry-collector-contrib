@@ -1207,8 +1207,7 @@ func (p *postgreSQLScraper) collectMaxConnections(
 func (p *postgreSQLScraper) replicationMetricsEnabled() bool {
 	m := p.config.MetricsBuilderConfig.Metrics
 	return m.PostgresqlReplicationDataDelay.Enabled ||
-		m.PostgresqlWalDelay.Enabled ||
-		m.PostgresqlWalLag.Enabled
+		m.PostgresqlWalDelay.Enabled
 }
 
 func (p *postgreSQLScraper) collectReplicationStats(

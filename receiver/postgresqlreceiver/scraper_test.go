@@ -96,7 +96,6 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Equal(t, []metadata.PostgresqlRowsMetricAttributeKey{metadata.PostgresqlRowsMetricAttributeKeyState}, legacyConfig.Metrics.PostgresqlRows.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlReplicationDataDelay.EnabledAttributes)
 	assert.Equal(t, cfg.Metrics.PostgresqlWalDelay.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalDelay.EnabledAttributes)
-	assert.Equal(t, cfg.Metrics.PostgresqlWalLag.EnabledAttributes, legacyConfig.Metrics.PostgresqlWalLag.EnabledAttributes)
 	assert.NotEmpty(t, cfg.Metrics.PostgresqlBackends.EnabledAttributes)
 	assert.Contains(t, cfg.Metrics.PostgresqlQueryConflicts.EnabledAttributes, metadata.PostgresqlQueryConflictsMetricAttributeKeyDbNamespace)
 	assert.Equal(t, metadata.NewDefaultMetricsBuilderConfig(), cfg)
@@ -355,8 +354,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.True(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -439,8 +437,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.True(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -500,8 +497,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.True(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -555,8 +551,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 
 		// Validate expected default config values and then enable all metrics
-		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
-		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		require.True(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -2851,7 +2846,6 @@ func TestScraperSkipsServerWideQueriesForDisabledMetrics(t *testing.T) {
 			disableMetrics: func(cfg *Config) {
 				cfg.MetricsBuilderConfig.Metrics.PostgresqlReplicationDataDelay.Enabled = false
 				cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = false
-				cfg.MetricsBuilderConfig.Metrics.PostgresqlWalLag.Enabled = false
 			},
 			mockMethod: "getReplicationStats",
 		},
@@ -3040,7 +3034,7 @@ var queryGuards = []queryGuard{
 		"PostgresqlBgwriterCheckpointCount", "PostgresqlBgwriterDuration", "PostgresqlBgwriterMaxwritten",
 	}},
 	{"replicationMetricsEnabled", (*postgreSQLScraper).replicationMetricsEnabled, []string{
-		"PostgresqlReplicationDataDelay", "PostgresqlWalDelay", "PostgresqlWalLag",
+		"PostgresqlReplicationDataDelay", "PostgresqlWalDelay",
 	}},
 }
 

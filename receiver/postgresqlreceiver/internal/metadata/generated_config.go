@@ -1908,55 +1908,6 @@ func (ms *PostgresqlWalDelayMetricConfig) Validate() error {
 	return nil
 }
 
-// PostgresqlWalLagMetricAttributeKey specifies the key of an attribute for the postgresql.wal.lag metric.
-type PostgresqlWalLagMetricAttributeKey string
-
-const (
-	PostgresqlWalLagMetricAttributeKeyWalOperationLag   PostgresqlWalLagMetricAttributeKey = "operation"
-	PostgresqlWalLagMetricAttributeKeyReplicationClient PostgresqlWalLagMetricAttributeKey = "replication_client"
-)
-
-// PostgresqlWalLagMetricConfig provides config for the postgresql.wal.lag metric.
-type PostgresqlWalLagMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-
-	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []PostgresqlWalLagMetricAttributeKey `mapstructure:"attributes"`
-}
-
-func (ms *PostgresqlWalLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *PostgresqlWalLagMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case PostgresqlWalLagMetricAttributeKeyWalOperationLag, PostgresqlWalLagMetricAttributeKeyReplicationClient:
-		default:
-			return fmt.Errorf("metric postgresql.wal.lag doesn't have an attribute %v, valid attributes: [operation, replication_client]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
-	return nil
-}
-
 // MetricsConfig provides config for postgresql metrics.
 type MetricsConfig struct {
 	PostgresqlBackends                 PostgresqlBackendsMetricConfig                 `mapstructure:"postgresql.backends"`
@@ -2001,7 +1952,6 @@ type MetricsConfig struct {
 	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows_returned"`
 	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
-	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -2202,14 +2152,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		PostgresqlWalDelay: PostgresqlWalDelayMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []PostgresqlWalDelayMetricAttributeKey{PostgresqlWalDelayMetricAttributeKeyWalOperationLag, PostgresqlWalDelayMetricAttributeKeyReplicationClient},
-		},
-		PostgresqlWalLag: PostgresqlWalLagMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []PostgresqlWalLagMetricAttributeKey{PostgresqlWalLagMetricAttributeKeyWalOperationLag, PostgresqlWalLagMetricAttributeKeyReplicationClient},
+			EnabledAttributes:   []PostgresqlWalDelayMetricAttributeKey{PostgresqlWalDelayMetricAttributeKeyWalOperationLag, PostgresqlWalDelayMetricAttributeKeyReplicationClient},
 		},
 	}
 }
