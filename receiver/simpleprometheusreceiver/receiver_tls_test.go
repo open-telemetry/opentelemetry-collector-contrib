@@ -244,6 +244,25 @@ func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
 			},
 		},
 		{
+			name: "reload_interval is covered by prometheus file reloads",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAPem: configopaque.String(caPem), ReloadInterval: time.Minute},
+			},
+		},
+		{
+			name: "insecure cipher suites without cipher_suites",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAPem: configopaque.String(caPem), IncludeInsecureCipherSuites: true},
+			},
+		},
+		{
+			name: "tpm",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAPem: configopaque.String(caPem), TPMConfig: configtls.TPMConfig{Enabled: true}},
+			},
+			wantKeys: []any{"tpm"},
+		},
+		{
 			name: "every unsupported setting",
 			tls: configtls.ClientConfig{
 				Config: configtls.Config{
@@ -253,11 +272,12 @@ func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
 					CurvePreferences:            []string{"X25519"},
 					IncludeSystemCACertsPool:    true,
 					ReloadInterval:              time.Minute,
+					TPMConfig:                   configtls.TPMConfig{Enabled: true},
 				},
 			},
 			wantKeys: []any{
 				"cipher_suites", "include_insecure_cipher_suites", "curve_preferences",
-				"include_system_ca_certs_pool", "reload_interval",
+				"include_system_ca_certs_pool", "tpm",
 			},
 		},
 	}

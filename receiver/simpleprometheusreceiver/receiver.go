@@ -180,7 +180,8 @@ func unsupportedTLSSettings(tls configtls.ClientConfig) []string {
 	if len(tls.CipherSuites) > 0 {
 		keys = append(keys, "cipher_suites")
 	}
-	if tls.IncludeInsecureCipherSuites {
+	// include_insecure_cipher_suites only widens the cipher_suites choices.
+	if tls.IncludeInsecureCipherSuites && len(tls.CipherSuites) > 0 {
 		keys = append(keys, "include_insecure_cipher_suites")
 	}
 	if len(tls.CurvePreferences) > 0 {
@@ -190,8 +191,10 @@ func unsupportedTLSSettings(tls configtls.ClientConfig) []string {
 	if tls.IncludeSystemCACertsPool && (tls.CAFile != "" || len(tls.CAPem) > 0) {
 		keys = append(keys, "include_system_ca_certs_pool")
 	}
-	if tls.ReloadInterval > 0 {
-		keys = append(keys, "reload_interval")
+	// The prometheus client cannot use a TPM-backed key. reload_interval is not
+	// listed because the prometheus client re-reads changed files on its own.
+	if tls.TPMConfig.Enabled {
+		keys = append(keys, "tpm")
 	}
 	return keys
 }
