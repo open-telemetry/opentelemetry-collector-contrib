@@ -16,6 +16,7 @@ import (
 
 func TestReplacePatternPrefixMatchesRegexp(t *testing.T) {
 	for _, pattern := range []string{
+		`worker`, `worker\.name`,
 		`worker-\d+`, `^worker-\d+$`, `(?i)worker-\d+`, `世界\d+`, `\.`,
 		`a*`, `(?:worker|task)-\d+`, `worker-(\d+)`, ``,
 	} {
@@ -75,23 +76,30 @@ func TestReplacePatternPrefixPreservesReplacementError(t *testing.T) {
 	require.ErrorIs(t, err, expected)
 }
 
-func BenchmarkReplacePatternLiteralPrefix(b *testing.B) {
-	for _, input := range []string{"no matching prefix", "worker-no-number", "worker-42"} {
-		b.Run(input, func(b *testing.B) {
+func BenchmarkReplacePatternLiteral(b *testing.B) {
+	for _, tc := range []struct {
+		name  string
+		input string
+	}{
+		{name: "no-match", input: "no matching literal"},
+		{name: "near-miss", input: "workeX-42"},
+		{name: "match", input: "worker-42"},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
 			pattern, err := ottl.NewTestingLiteralGetter[any, string](true,
 				ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) {
-					return `worker-\d+`, nil
+					return "worker", nil
 				}})
 			if err != nil {
 				b.Fatal(err)
 			}
 			function, err := replacePattern[any](
 				ottl.StandardGetSetter[any]{
-					Getter: func(context.Context, any) (any, error) { return input, nil },
+					Getter: func(context.Context, any) (any, error) { return tc.input, nil },
 					Setter: func(context.Context, any, any) error { return nil },
 				}, pattern,
 				ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) {
-					return "worker", nil
+					return "redacted", nil
 				}}, ottl.Optional[ottl.FunctionGetter[any]]{}, ottl.Optional[ottl.StringGetter[any]]{},
 			)
 			if err != nil {
