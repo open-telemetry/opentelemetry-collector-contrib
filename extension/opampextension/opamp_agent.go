@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -32,10 +33,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
@@ -163,6 +165,16 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			OnMessage: o.onMessage,
 			OnCommand: o.onCommand,
 		},
+	}
+
+	// When configured with a local IPC socket (Unix domain socket or Windows
+	// named pipe), dial it instead of TCP. Both OpAMP transports honor
+	// DialContext. The OpAMPServerURL endpoint then only supplies the URL
+	// scheme, request path, and Host header; its host:port is ignored.
+	if socket := o.cfg.Server.GetSocket(); socket != nil {
+		settings.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return socket.Dial(ctx)
+		}
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -707,11 +719,9 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		o.statusSubscriptionWg.Done()
 	}()
 
-	var (
-		lastStatus componentstatus.Status
-		lastErr    string
-		currentErr string
-	)
+	// lastHealth is the last reported health with all timestamps cleared, used
+	// to deduplicate updates which only differ in their timestamps.
+	var lastHealth *protobufs.ComponentHealth
 
 	for {
 		select {
@@ -726,21 +736,14 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 				continue
 			}
 
-			currentStatus := statusUpdate.Status()
-			if statusUpdate.Err() != nil {
-				currentErr = statusUpdate.Err().Error()
-			}
-
-			if currentStatus == lastStatus && currentErr == lastErr {
+			currentHealth := convertComponentHealth(statusUpdate)
+			clearHealthTimestamps(currentHealth)
+			if proto.Equal(currentHealth, lastHealth) {
 				continue
 			}
+			lastHealth = currentHealth
 
-			lastStatus = currentStatus
-			lastErr = currentErr
-
-			componentHealth := convertComponentHealth(statusUpdate)
-
-			o.setHealth(componentHealth)
+			o.setHealth(convertComponentHealth(statusUpdate))
 		}
 	}
 }
@@ -763,6 +766,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 		componentHealth.LastError = statusUpdate.Err().Error()
 	}
 
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
+	}
+
 	if len(statusUpdate.ComponentStatusMap) > 0 {
 		componentHealth.ComponentHealthMap = map[string]*protobufs.ComponentHealth{}
 		for comp, compState := range statusUpdate.ComponentStatusMap {
@@ -771,4 +778,14 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 	}
 
 	return componentHealth
+}
+
+// clearHealthTimestamps recursively zeroes all timestamp fields of the given
+// ComponentHealth, so that it can be compared with another ignoring timestamps.
+func clearHealthTimestamps(ch *protobufs.ComponentHealth) {
+	ch.StartTimeUnixNano = 0
+	ch.StatusTimeUnixNano = 0
+	for _, child := range ch.ComponentHealthMap {
+		clearHealthTimestamps(child)
+	}
 }

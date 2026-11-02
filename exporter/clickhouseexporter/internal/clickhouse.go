@@ -59,20 +59,22 @@ func GenerateTTLExpr(ttl time.Duration, timeField string) string {
 	return ""
 }
 
-// CreateDatabase runs the DDL for creating a database, with optional cluster string
-func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr string) error {
+// CreateDatabase runs the DDL for creating a database, with optional cluster and engine strings
+func CreateDatabase(ctx context.Context, db driver.Conn, database, clusterStr, engineStr string) error {
 	if database == DefaultDatabase {
 		return nil
 	}
 
-	ddl := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %q %s", database, clusterStr)
-
-	err := db.Exec(ctx, ddl)
+	err := db.Exec(ctx, createDatabaseDDL(database, clusterStr, engineStr))
 	if err != nil {
 		return fmt.Errorf("create database: %w", err)
 	}
 
 	return nil
+}
+
+func createDatabaseDDL(database, clusterStr, engineStr string) string {
+	return fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %q %s %s", database, clusterStr, engineStr)
 }
 
 // GetTableColumns returns the column names on a table for schema detection

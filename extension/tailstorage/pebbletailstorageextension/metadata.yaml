@@ -15,6 +15,7 @@ status:
   stability:
     alpha: [extension]
   distributions: [contrib]
+  unsupported_platforms: [aix, solaris]
   codeowners:
     active: [carsonip, jmacd, lahsivjar]
     emeritus: [axw]
@@ -37,6 +38,24 @@ telemetry:
       unit: "{operations}"
       enabled: true
       attributes: [operation, outcome]
+      sum:
+        value_type: int
+        monotonic: true
+
+    extension_pebble_tail_storage_read_error_partial_returns:
+      description: Count of traces returned with partial data by Take because of a read-path error while on_read_error is return_partial
+      stability: development
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+
+    extension_pebble_tail_storage_read_error_trace_drops:
+      description: Count of traces dropped by Take because of a read-path error while on_read_error is drop_trace
+      stability: development
+      unit: "{traces}"
+      enabled: true
       sum:
         value_type: int
         monotonic: true

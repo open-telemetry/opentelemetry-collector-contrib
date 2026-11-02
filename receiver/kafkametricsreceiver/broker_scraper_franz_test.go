@@ -41,7 +41,7 @@ func TestBrokerScraperFranz_CreateStartScrapeShutdown(t *testing.T) {
 	var s scraper.Metrics
 	var err error
 
-	s, err = createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err = createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -79,7 +79,7 @@ func TestBrokerScraperFranz_EmptyClusterAlias(t *testing.T) {
 	cfg := franzTestConfig(t)
 	cfg.ClusterAlias = "" // ensure empty alias behaves like Sarama test
 
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -99,14 +99,14 @@ func TestBrokerScraperFranz_EmptyClusterAlias(t *testing.T) {
 
 func TestBrokerScraperFranz_Create(t *testing.T) {
 	cfg := franzTestConfig(t)
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 }
 
 func TestBrokerScraperFranz_Start(t *testing.T) {
 	cfg := franzTestConfig(t)
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -133,7 +133,7 @@ func TestBrokerScraperFranz_ScrapeMetricValues(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -187,7 +187,7 @@ func TestBrokerScraperFranz_EmptyClusterID(t *testing.T) {
 	}
 	cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterID.Enabled = true
 
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -216,7 +216,7 @@ func TestBrokerScraperFranz_ScrapePartialError_UnparseableRetention(t *testing.T
 	}
 	cfg.MetricsBuilderConfig.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -249,7 +249,7 @@ func TestBrokerScraperFranz_ScrapeUnreachable(t *testing.T) {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, s.Shutdown(t.Context())) })
@@ -267,7 +267,7 @@ func TestBrokerScraperFranz_ShutdownWithoutStart_OK(t *testing.T) {
 	_, _ = kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
 	cfg := franzTestConfig(t)
 
-	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	s, err := createBrokerScraperFranz(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 	require.NoError(t, err)
 	require.NotNil(t, s)
 

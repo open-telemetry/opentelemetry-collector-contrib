@@ -511,7 +511,7 @@ func (s *azureBatchScraper) collectMetricDefinitionsByType(
 				continue
 			}
 
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			timeGrain := getMetricTimeGrain(metricNamespace, metricName, s.cfg.TimeGrainOverrides, *v.MetricAvailabilities[0].TimeGrain)
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
 			compositeKey := metricsCompositeKey{
 				namespace:    metricNamespace,

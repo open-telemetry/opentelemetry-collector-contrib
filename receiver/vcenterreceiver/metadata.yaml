@@ -18,7 +18,7 @@ feature_gates:
     description: >-
       Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric
     stage: beta
-    from_version: "v0.153.0"
+    from_version: "v0.105.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741
 
 resource_attributes:

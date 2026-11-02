@@ -37,6 +37,38 @@ func AssertEqualExtensionPebbleTailStorageOperations(t *testing.T, tt *component
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExtensionPebbleTailStorageReadErrorPartialReturns(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_extension_pebble_tail_storage_read_error_partial_returns",
+		Description: "Count of traces returned with partial data by Take because of a read-path error while on_read_error is return_partial [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_read_error_partial_returns")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExtensionPebbleTailStorageReadErrorTraceDrops(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_extension_pebble_tail_storage_read_error_trace_drops",
+		Description: "Count of traces dropped by Take because of a read-path error while on_read_error is drop_trace [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_extension_pebble_tail_storage_read_error_trace_drops")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExtensionPebbleTailStorageReadErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_extension_pebble_tail_storage_read_errors",

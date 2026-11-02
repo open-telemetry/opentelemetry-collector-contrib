@@ -275,18 +275,54 @@ func verifyAttributeMap(t *testing.T, expected map[string]any, found pcommon.Map
 }
 
 func TestGetResourceFromARN(t *testing.T) {
-	region, accountID, taskID := getResourceFromARN("arn:aws:ecs:us-west-2:803860917211:task/test200/d22aaa11bf0e4ab19c2c940a1cbabbee")
-	require.Equal(t, "us-west-2", region)
-	require.Equal(t, "803860917211", accountID)
-	require.Equal(t, "d22aaa11bf0e4ab19c2c940a1cbabbee", taskID)
-	region, accountID, taskID = getResourceFromARN("")
-	require.Empty(t, region)
-	require.Empty(t, accountID)
-	require.Empty(t, taskID)
-	region, accountID, taskID = getResourceFromARN("notarn:aws:ecs:us-west-2:803860917211:task/test2")
-	require.Empty(t, region)
-	require.Empty(t, accountID)
-	require.Empty(t, taskID)
+	tests := []struct {
+		name            string
+		arn             string
+		expectedRegion  string
+		expectedAccount string
+		expectedTaskID  string
+	}{
+		{
+			name:            "new task arn format",
+			arn:             "arn:aws:ecs:us-west-2:803860917211:task/test200/d22aaa11bf0e4ab19c2c940a1cbabbee",
+			expectedRegion:  "us-west-2",
+			expectedAccount: "803860917211",
+			expectedTaskID:  "d22aaa11bf0e4ab19c2c940a1cbabbee",
+		},
+		{
+			name:            "old task arn format",
+			arn:             "arn:aws:ecs:us-west-2:803860917211:task/d22aaa11bf0e4ab19c2c940a1cbabbee",
+			expectedRegion:  "us-west-2",
+			expectedAccount: "803860917211",
+			expectedTaskID:  "d22aaa11bf0e4ab19c2c940a1cbabbee",
+		},
+		{
+			name: "empty arn",
+			arn:  "",
+		},
+		{
+			name: "non-ecs arn",
+			arn:  "notarn:aws:ecs:us-west-2:803860917211:task/test2",
+		},
+		{
+			// Regression test for #51810: an ARN with fewer than 5
+			// colon-separated segments must not panic.
+			name: "malformed arn with too few segments",
+			arn:  "arn:aws:ecs:us-east-1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var region, accountID, taskID string
+			require.NotPanics(t, func() {
+				region, accountID, taskID = getResourceFromARN(tt.arn)
+			})
+			require.Equal(t, tt.expectedRegion, region)
+			require.Equal(t, tt.expectedAccount, accountID)
+			require.Equal(t, tt.expectedTaskID, taskID)
+		})
+	}
 }
 
 func TestGetNameFromCluster(t *testing.T) {

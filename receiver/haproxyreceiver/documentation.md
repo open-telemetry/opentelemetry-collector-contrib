@@ -18,7 +18,7 @@ Bytes in. Corresponds to HAProxy's `bin` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.bytes.output
 
@@ -26,7 +26,7 @@ Bytes out. Corresponds to HAProxy's `bout` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.connections.errors
 
@@ -34,7 +34,7 @@ Number of requests that encountered an error trying to connect to a backend serv
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | Development |
+| {error} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.connections.rate
 
@@ -42,7 +42,7 @@ Number of connections over the last elapsed second (frontend). Corresponds to HA
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {connections} | Gauge | Int | Development |
+| {connection} | Gauge | Int | Beta |
 
 ### haproxy.connections.retries
 
@@ -50,7 +50,7 @@ Number of times a connection to a server was retried. Corresponds to HAProxy's `
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {retries} | Sum | Int | Cumulative | true | Development |
+| {retry} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.requests.denied
 
@@ -58,7 +58,7 @@ Requests denied because of security concerns. Corresponds to HAProxy's `dreq` me
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.requests.errors
 
@@ -66,7 +66,7 @@ Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | Development |
+| {error} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.requests.queued
 
@@ -74,7 +74,7 @@ Current queued requests. For the backend this reports the number queued without 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.requests.rate
 
@@ -82,7 +82,7 @@ HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {requests} | Gauge | Double | Development |
+| {request} | Gauge | Double | Beta |
 
 ### haproxy.requests.redispatched
 
@@ -90,7 +90,7 @@ Number of times a request was redispatched to another server. Corresponds to HAP
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.requests.total
 
@@ -98,7 +98,7 @@ Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrs
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Beta |
 
 #### Attributes
 
@@ -112,7 +112,7 @@ Responses denied because of security concerns. Corresponds to HAProxy's `dresp` 
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {responses} | Sum | Int | Cumulative | true | Development |
+| {response} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.responses.errors
 
@@ -120,7 +120,7 @@ Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {errors} | Sum | Int | Cumulative | true | Development |
+| {error} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.server_selected.total
 
@@ -128,7 +128,7 @@ Number of times a server was selected, either for new sessions or when re-dispat
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {selections} | Sum | Int | Cumulative | true | Development |
+| {selection} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.sessions.average
 
@@ -136,7 +136,7 @@ Average total session time in ms over the last 1024 requests. Corresponds to HAP
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
+| ms | Gauge | Double | Beta |
 
 ### haproxy.sessions.count
 
@@ -144,7 +144,7 @@ Current sessions. Corresponds to HAProxy's `scur` metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Int | Development |
+| {session} | Gauge | Int | Beta |
 
 ### haproxy.sessions.rate
 
@@ -152,7 +152,7 @@ Number of sessions per second over last elapsed second. Corresponds to HAProxy's
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Double | Development |
+| {session} | Gauge | Double | Beta |
 
 ## Optional Metrics
 
@@ -170,7 +170,7 @@ Number of active servers (backend) or server is active (server). Corresponds to 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {servers} | Gauge | Int | Development |
+| {server} | Gauge | Int | Beta |
 
 ### haproxy.backup
 
@@ -178,7 +178,7 @@ Number of backup servers (backend) or server is backup (server). Corresponds to 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {servers} | Gauge | Int | Development |
+| {server} | Gauge | Int | Beta |
 
 ### haproxy.clients.canceled
 
@@ -186,7 +186,7 @@ Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_ab
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {cancellations} | Sum | Int | Cumulative | true | Development |
+| {cancellation} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.compression.bypass
 
@@ -194,7 +194,7 @@ Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.compression.count
 
@@ -202,7 +202,7 @@ Number of HTTP responses that were compressed. Corresponds to HAProxy's `comp_rs
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {responses} | Sum | Int | Cumulative | true | Development |
+| {response} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.compression.input
 
@@ -210,7 +210,7 @@ Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `c
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.compression.output
 
@@ -218,7 +218,7 @@ Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy'
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | true | Development |
+| By | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.connections.average_time
 
@@ -226,7 +226,7 @@ Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
+| ms | Gauge | Double | Beta |
 
 ### haproxy.connections.total
 
@@ -234,7 +234,7 @@ Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot`
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | true | Development |
+| {connection} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.downtime
 
@@ -242,7 +242,7 @@ Total downtime (in seconds). The value for the backend is the downtime for the w
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | Development |
+| s | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.failed_checks
 
@@ -250,7 +250,7 @@ Number of failed checks. (Only counts checks failed when the server is up). Corr
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {checks} | Sum | Int | Cumulative | true | Development |
+| {check} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.requests.average_time
 
@@ -258,7 +258,7 @@ Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
+| ms | Gauge | Double | Beta |
 
 ### haproxy.responses.average_time
 
@@ -266,7 +266,7 @@ Average response time in ms over the 1024 last requests. Corresponds to HAProxy'
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Double | Development |
+| ms | Gauge | Double | Beta |
 
 ### haproxy.sessions.limit
 
@@ -274,7 +274,7 @@ Configured session limit. Corresponds to HAProxy's `slim` metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {sessions} | Gauge | Int | Development |
+| {session} | Gauge | Int | Beta |
 
 ### haproxy.sessions.total
 
@@ -282,7 +282,7 @@ Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {sessions} | Sum | Int | Cumulative | true | Development |
+| {session} | Sum | Int | Cumulative | true | Beta |
 
 ### haproxy.weight
 
@@ -290,7 +290,7 @@ Total effective weight (backend) or effective weight (server). Corresponds to HA
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| 1 | Gauge | Int | Beta |
 
 ## Resource Attributes
 

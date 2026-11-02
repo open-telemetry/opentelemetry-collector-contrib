@@ -35,6 +35,9 @@ const (
 	ErrPasswordAndDBAuth = "invalid config: set either 'password' or 'db_auth', not both"
 	// #nosec G101 - not hardcoded credentials
 	ErrDBAuthRequiresTLS = "invalid config: 'db_auth' requires TLS; set 'tls.insecure' to false"
+	// db.server.query_plan reports the plans collected for the statements the other two events report,
+	// so on its own it reports nothing.
+	ErrQueryPlanWithoutSource = "invalid config: 'db.server.query_plan' requires 'db.server.top_query' or 'db.server.query_sample' to be enabled"
 )
 
 type Config struct {
@@ -112,6 +115,11 @@ func (cfg *Config) Validate() error {
 		}
 	default:
 		err = multierr.Append(err, errors.New(ErrTransportsSupported))
+	}
+
+	events := cfg.LogsBuilderConfig.Events
+	if events.DbServerQueryPlan.Enabled && !events.DbServerTopQuery.Enabled && !events.DbServerQuerySample.Enabled {
+		err = multierr.Append(err, errors.New(ErrQueryPlanWithoutSource))
 	}
 
 	return err

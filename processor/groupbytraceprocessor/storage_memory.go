@@ -23,7 +23,7 @@ type memoryStorage struct {
 	metricsCollectionInterval time.Duration
 }
 
-var _ storage = (*memoryStorage)(nil)
+var _ traceStorage = (*memoryStorage)(nil)
 
 func newMemoryStorage(telemetry *metadata.TelemetryBuilder) *memoryStorage {
 	return &memoryStorage{
