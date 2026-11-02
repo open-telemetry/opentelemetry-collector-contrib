@@ -172,7 +172,10 @@ func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 	}
 }
 
-func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc, compression string, compressionLevel int) (*fileWriter, error) {
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc, compression string, compressionLevel int, logger *zap.Logger) (*fileWriter, error) {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
 	var baseWriter io.WriteCloser
 	var wc io.WriteCloser
 
@@ -219,6 +222,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		file:          wc,
 		exporter:      export,
 		flushInterval: flushInterval,
+		logger:        logger,
 	}, nil
 }
 

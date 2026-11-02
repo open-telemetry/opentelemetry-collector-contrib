@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/file
+note: Log periodic flush errors once per writer instead of silently ignoring them.
+issues: [52579]
+change_logs: [user]
