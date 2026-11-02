@@ -45,7 +45,8 @@ func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 			exampleFactory,
 			component.MustNewIDWithName("nop", "1/receiver_creator/1{endpoint=\"localhost:12345\"}/endpoint.id"),
 			loadedConfig,
-			nil)
+			nil,
+		)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
 		assert.IsType(t, &nopWithEndpointReceiver{}, recvr)

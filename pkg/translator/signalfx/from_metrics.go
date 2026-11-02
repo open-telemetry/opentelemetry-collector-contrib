@@ -288,14 +288,15 @@ func newDpsBuilder(capacity int) dpsBuilder {
 }
 
 func (dp *dpsBuilder) appendPoint(name string, mt *sfxpb.MetricType, ts int64, dims []*sfxpb.Dimension) *sfxpb.DataPoint {
-	base := dp.baseOut[dp.pos]
+	// Taking the address of a copied element allocates once per point.
+	base := &dp.baseOut[dp.pos]
 	dp.pos++
-	dp.out = append(dp.out, &base)
+	dp.out = append(dp.out, base)
 	base.Metric = name
 	base.Timestamp = ts
 	base.MetricType = mt
 	base.Dimensions = dims
-	return &base
+	return base
 }
 
 // Is equivalent to strconv.FormatFloat(f, 'g', -1, 64), but hard-codes a few common cases for increased efficiency.

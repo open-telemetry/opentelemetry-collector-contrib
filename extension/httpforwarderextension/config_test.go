@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension/internal/metadata"
 )
@@ -30,9 +30,15 @@ func TestLoadConfig(t *testing.T) {
 	egressCfg.Headers = configopaque.MapList{
 		{Name: "otel_http_forwarder", Value: "dev"},
 	}
-	egressCfg.MaxIdleConns = maxIdleConns
-	egressCfg.IdleConnTimeout = idleConnTimeout
 	egressCfg.Timeout = 5 * time.Second
+	egressCfg.Keepalive.Get().IdleConnTimeout = idleConnTimeout
+	egressCfg.Keepalive.Get().MaxIdleConns = maxIdleConns
+
+	ingressCfg := confighttp.NewDefaultServerConfig()
+	ingressCfg.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "http://localhost:7070",
+	}
 
 	tests := []struct {
 		id       component.ID
@@ -45,13 +51,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				Ingress: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "http://localhost:7070",
-					},
-				},
-				Egress: egressCfg,
+				Ingress: ingressCfg,
+				Egress:  egressCfg,
 			},
 		},
 	}
@@ -64,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

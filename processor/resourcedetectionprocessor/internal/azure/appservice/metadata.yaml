@@ -1,0 +1,58 @@
+type: resourcedetectionprocessor/azureappservice
+sem_conv_version: 1.43.0
+
+parent: resourcedetection
+
+resource_attributes:
+  azure.app_service.instance.id:
+    description: The identifier of the Azure App Service instance running the app
+    type: string
+    enabled: true
+  azure.resource_group.name:
+    semantic_convention:
+      ref: azure.md#azure-resource-group-name
+    description: The name of the Azure resource group the App Service belongs to
+    type: string
+    enabled: true
+  cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
+    description: The Azure subscription ID
+    type: string
+    enabled: true
+  cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
+    description: The Azure region the App Service runs in
+    type: string
+    enabled: true
+  cloud.resource_id:
+    semantic_convention:
+      ref: cloud.md#cloud-resource-id
+    description: The fully qualified Azure Resource Manager ID of the App Service
+    type: string
+    enabled: true
+  deployment.environment.name:
+    semantic_convention:
+      ref: deployment.md#deployment-environment-name
+    description: The name of the App Service deployment slot
+    type: string
+    enabled: true
+  service.name:
+    semantic_convention:
+      ref: service.md#service-name
+    description: The name of the Azure App Service site
+    type: string
+    enabled: true

@@ -12,7 +12,38 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
+
+// Bounds are only validated when the event is enabled, so these tests must turn it on.
+func procedureMetricsEnabledLogsConfig() metadata.LogsBuilderConfig {
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.Events.DbServerTopProcedure.Enabled = true
+	return logsCfg
+}
+
+func queryPlanOnlyLogsConfig() metadata.LogsBuilderConfig {
+	logsCfg := metadata.DefaultLogsBuilderConfig()
+	logsCfg.Events.DbServerQueryPlan.Enabled = true
+	return logsCfg
+}
+
+// A deployment that never enables the event must not be held to bounds it does not use.
+func TestProcedureMetricsBoundsOnlyValidatedWhenEnabled(t *testing.T) {
+	cfg := &Config{
+		DataSource:         "oracle://otel:password@localhost:1521/XE",
+		ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+		LogsBuilderConfig:  metadata.DefaultLogsBuilderConfig(),
+		TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+		ProcedureMetrics:   ProcedureMetrics{MaxProcedureSampleCount: 0, TopProcedureCount: 0},
+	}
+
+	require.NoError(t, cfg.Validate(), "out-of-range procedure bounds must not fail validation while the event is disabled")
+
+	cfg.LogsBuilderConfig = procedureMetricsEnabledLogsConfig()
+	require.Error(t, cfg.Validate(), "the same bounds must fail once the event is enabled")
+}
 
 func TestValidateInvalidConfigs(t *testing.T) {
 	testCases := []struct {
@@ -105,6 +136,270 @@ func TestValidateInvalidConfigs(t *testing.T) {
 			},
 			expected: errBadDataSource,
 		},
+		{
+			name: "Invalid auth_type",
+			config: &Config{
+				Endpoint:         "localhost:3000",
+				Service:          "XE",
+				AuthType:         "oauth",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errInvalidAuthType,
+		},
+		{
+			name: "Kerberos auth_type without kerberos block",
+			config: &Config{
+				Endpoint:         "localhost:3000",
+				Service:          "XE",
+				AuthType:         AuthTypeKerberos,
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errMissingKerberosBlock,
+		},
+		{
+			name: "Kerberos block set without kerberos auth_type",
+			config: &Config{
+				Endpoint:         "localhost:3000",
+				Service:          "XE",
+				Username:         "otel",
+				Password:         "secret",
+				Kerberos:         &KerberosConfig{CredentialType: KerberosCredentialKeytab},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errUnexpectedKerberosBlock,
+		},
+		{
+			name: "Kerberos missing realm",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errEmptyKerberosRealm,
+		},
+		{
+			name: "Kerberos missing principal",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errEmptyKerberosPrincipal,
+		},
+		{
+			name: "Kerberos principal includes realm",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel@EXAMPLE.COM",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errKerberosPrincipalRealm,
+		},
+		{
+			name: "Kerberos missing config_file",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errEmptyKerberosConfigFile,
+		},
+		{
+			name: "Kerberos keytab credential missing keytab_file",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errEmptyKerberosKeytab,
+		},
+		{
+			name: "Kerberos ccache credential missing credential_cache",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					// realm and principal intentionally omitted: the ccache
+					// credential type reads them from the cache file and must
+					// not require them.
+					CredentialType: KerberosCredentialCache,
+					ConfigFile:     "/etc/krb5.conf",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errEmptyKerberosCredCache,
+		},
+		{
+			name: "Kerberos password credential missing password",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialPassword,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errEmptyKerberosPassword,
+		},
+		{
+			name: "Kerberos invalid credential_type",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Service:  "XE",
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: "smartcard",
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errInvalidCredentialType,
+		},
+		{
+			name: "Kerberos data source with username",
+			config: &Config{
+				DataSource: "oracle://otel@host:1521/XE",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errKerberosDataSourceCreds,
+		},
+		{
+			name: "Kerberos data source with username and password",
+			config: &Config{
+				DataSource: "oracle://otel:secret@host:1521/XE",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errKerberosDataSourceCreds,
+		},
+		{
+			name: "Kerberos data source with AUTH TYPE",
+			config: &Config{
+				DataSource: "oracle://host:1521/XE?AUTH+TYPE=TCPS",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expected: errKerberosDataSourceCreds,
+		},
+		{
+			name: "Top procedure count below range",
+			config: &Config{
+				DataSource:         "oracle://otel:password@localhost:1521/XE",
+				ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:  procedureMetricsEnabledLogsConfig(),
+				TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+				ProcedureMetrics:   ProcedureMetrics{MaxProcedureSampleCount: 1000, TopProcedureCount: 0},
+			},
+			expected: errTopProcedureCount,
+		},
+		{
+			name: "Top procedure count above range",
+			config: &Config{
+				DataSource:         "oracle://otel:password@localhost:1521/XE",
+				ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:  procedureMetricsEnabledLogsConfig(),
+				TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+				ProcedureMetrics:   ProcedureMetrics{MaxProcedureSampleCount: 1000, TopProcedureCount: 1001},
+			},
+			expected: errTopProcedureCount,
+		},
+		{
+			name: "Top procedure count above max procedure sample count",
+			config: &Config{
+				DataSource:         "oracle://otel:password@localhost:1521/XE",
+				ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:  procedureMetricsEnabledLogsConfig(),
+				TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+				ProcedureMetrics:   ProcedureMetrics{MaxProcedureSampleCount: 100, TopProcedureCount: 250},
+			},
+			expected: errTopProcedureCount,
+		},
+		{
+			name: "Max procedure sample count above range",
+			config: &Config{
+				DataSource:         "oracle://otel:password@localhost:1521/XE",
+				ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:  procedureMetricsEnabledLogsConfig(),
+				TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+				ProcedureMetrics:   ProcedureMetrics{MaxProcedureSampleCount: 10001, TopProcedureCount: 250},
+			},
+			expected: errMaxProcedureSampleCount,
+		},
+		{
+			name: "Query plan event without top query event",
+			config: &Config{
+				DataSource:         "oracle://otel:password@localhost:1521/XE",
+				ControllerConfig:   scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:  queryPlanOnlyLogsConfig(),
+				TopQueryCollection: TopQueryCollection{MaxQuerySampleCount: 1000, TopQueryCount: 200},
+			},
+			expected: errQueryPlanWithoutTopQuery,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -115,9 +410,90 @@ func TestValidateInvalidConfigs(t *testing.T) {
 	}
 }
 
+func TestValidateValidKerberosConfigs(t *testing.T) {
+	base := func(k *KerberosConfig) *Config {
+		return &Config{
+			Endpoint:         "localhost:3000",
+			Service:          "XE",
+			AuthType:         AuthTypeKerberos,
+			Kerberos:         k,
+			ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			TopQueryCollection: TopQueryCollection{
+				MaxQuerySampleCount: 1000,
+				TopQueryCount:       200,
+			},
+		}
+	}
+
+	testCases := []struct {
+		name   string
+		config *Config
+	}{
+		{
+			name: "keytab",
+			config: base(&KerberosConfig{
+				CredentialType: KerberosCredentialKeytab,
+				Realm:          "EXAMPLE.COM",
+				Principal:      "otel",
+				ConfigFile:     "/etc/krb5.conf",
+				KeytabFile:     "/etc/otel.keytab",
+			}),
+		},
+		{
+			// realm and principal are omitted on purpose: the ccache credential
+			// type derives them from the cache file, so a config without them is
+			// valid.
+			name: "ccache",
+			config: base(&KerberosConfig{
+				CredentialType:  KerberosCredentialCache,
+				ConfigFile:      "/etc/krb5.conf",
+				CredentialCache: "/tmp/krb5cc_1000",
+			}),
+		},
+		{
+			name: "password",
+			config: base(&KerberosConfig{
+				CredentialType: KerberosCredentialPassword,
+				Realm:          "EXAMPLE.COM",
+				Principal:      "otel",
+				ConfigFile:     "/etc/krb5.conf",
+				Password:       "s3cret",
+			}),
+		},
+		{
+			name: "data source without credentials or auth type",
+			config: &Config{
+				DataSource:       "oracle://host:1521/XE?SSL=true",
+				AuthType:         AuthTypeKerberos,
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				TopQueryCollection: TopQueryCollection{
+					MaxQuerySampleCount: 1000,
+					TopQueryCount:       200,
+				},
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.config.Validate())
+		})
+	}
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, 10*time.Second, cfg.ControllerConfig.CollectionInterval)
+	assert.Equal(t, uint(1000), cfg.ProcedureMetrics.MaxProcedureSampleCount)
+	assert.Equal(t, uint(250), cfg.ProcedureMetrics.TopProcedureCount)
+	assert.Equal(t, time.Minute, cfg.ProcedureMetrics.CollectionInterval)
 }
 
 func TestParseConfig(t *testing.T) {
@@ -134,7 +510,10 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, "password", cfg.Password)
 	assert.Equal(t, "localhost:51521", cfg.Endpoint)
 	assert.Equal(t, "XE", cfg.Service)
-	settings := cfg.Metrics
+	settings := cfg.MetricsBuilderConfig.Metrics
 	assert.False(t, settings.OracledbTablespaceSizeUsage.Enabled)
 	assert.False(t, settings.OracledbExchangeDeadlocks.Enabled)
+	assert.Equal(t, uint(555), cfg.ProcedureMetrics.MaxProcedureSampleCount)
+	assert.Equal(t, uint(111), cfg.ProcedureMetrics.TopProcedureCount)
+	assert.True(t, cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled)
 }

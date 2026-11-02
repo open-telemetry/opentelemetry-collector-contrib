@@ -95,7 +95,7 @@ func TestSharedComponentSingleton(t *testing.T) {
 		OrgSlug:   "test-org",
 		AuthToken: "test-token",
 	}
-	cfg.ForceAttemptHTTP2 = false
+	cfg.ClientConfig.ForceAttemptHTTP2 = false
 
 	factory := NewFactory()
 	set := exportertest.NewNopSettings(factory.Type())

@@ -12,7 +12,9 @@ import (
 )
 
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
@@ -21,7 +23,7 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-	if cfg.NetAddr.Endpoint == "" {
+	if cfg.ServerConfig.NetAddr.Endpoint == "" {
 		return errors.New("must specify endpoint")
 	}
 	return nil

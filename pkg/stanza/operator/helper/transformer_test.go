@@ -741,3 +741,141 @@ func TestTransformerIf(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestHandleEntryErrorWithWrite(t *testing.T) {
+	// Contract for HandleEntryErrorWithWrite:
+	//   - In quiet modes (drop_quiet / send_quiet) the processing error is
+	//     swallowed, but a downstream write error from send_quiet is still
+	//     returned (wrapped as "failed to send entry after error").
+	//   - drop_quiet never calls write so it always returns nil.
+	//   - In non-quiet mode (drop / send) the method returns either the
+	//     original processing error or, if a SendOnError write also failed,
+	//     a wrapped "failed to send entry after error" error.
+	testCases := []struct {
+		name              string
+		onError           string
+		expectNil         bool
+		expectWriteWrap   bool
+		expectOriginalErr bool
+	}{
+		{
+			name:            "SendOnError_WriteFailure_ReturnsWrappedWriteErr",
+			onError:         SendOnError,
+			expectWriteWrap: true,
+		},
+		{
+			name:            "SendOnErrorQuiet_WriteFailure_ReturnsWrappedWriteErr",
+			onError:         SendOnErrorQuiet,
+			expectWriteWrap: true,
+		},
+		{
+			name:              "DropOnError_WriteNotCalled_ReturnsOriginalError",
+			onError:           DropOnError,
+			expectOriginalErr: true,
+		},
+		{
+			name:      "DropOnErrorQuiet_WriteNotCalled_ReturnsNil",
+			onError:   DropOnErrorQuiet,
+			expectNil: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+
+			transformer := TransformerOperator{
+				OnError: tc.onError,
+				WriterOperator: WriterOperator{
+					BasicOperator: BasicOperator{
+						OperatorID:   "test-id",
+						OperatorType: "test-type",
+						set:          set,
+					},
+				},
+			}
+
+			testEntry := entry.New()
+			failingWrite := func(_ context.Context, _ *entry.Entry) error {
+				return errors.New("downstream write failure")
+			}
+
+			err := transformer.HandleEntryErrorWithWrite(t.Context(), testEntry, errors.New("processing error"), failingWrite)
+
+			switch {
+			case tc.expectNil:
+				require.NoError(t, err, "quiet modes must swallow errors entirely")
+			case tc.expectWriteWrap:
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to send entry after error")
+				require.Contains(t, err.Error(), "downstream write failure")
+			case tc.expectOriginalErr:
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "processing error")
+			}
+		})
+	}
+}
+
+func TestProcessWith_QuietMode(t *testing.T) {
+	// Quiet mode swallows processing errors, but send_quiet still surfaces
+	// downstream write failures so the pipeline can react to delivery errors.
+	// drop_quiet never calls write so its transform failure is fully suppressed.
+	testCases := []struct {
+		name            string
+		onError         string
+		expectWriteWrap bool
+	}{
+		{
+			name:            "SendOnErrorQuiet_WriteFailure_PropagatesWriteError",
+			onError:         SendOnErrorQuiet,
+			expectWriteWrap: true,
+		},
+		{
+			name:    "DropOnErrorQuiet_TransformFailure_Suppressed",
+			onError: DropOnErrorQuiet,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := &testutil.Operator{}
+			output.On("ID").Return("test-output")
+			output.On("CanProcess").Return(true)
+			// Make the downstream write fail so we exercise the write path.
+			output.On("Process", mock.Anything, mock.Anything).Return(errors.New("downstream failure"))
+
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+
+			transformer := TransformerOperator{
+				OnError: tc.onError,
+				WriterOperator: WriterOperator{
+					BasicOperator: BasicOperator{
+						OperatorID:   "test-id",
+						OperatorType: "test-type",
+						set:          set,
+					},
+					OutputOperators: []operator.Operator{output},
+					OutputIDs:       []string{"test-output"},
+				},
+			}
+
+			ctx := t.Context()
+			testEntry := entry.New()
+			transform := func(_ *entry.Entry) error {
+				return errors.New("transform failure")
+			}
+
+			err := transformer.ProcessWith(ctx, testEntry, transform)
+			if tc.expectWriteWrap {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to send entry after error")
+				require.Contains(t, err.Error(), "downstream failure")
+			} else {
+				require.NoError(t, err, "quiet mode must not propagate the processing error")
+			}
+		})
+	}
+}

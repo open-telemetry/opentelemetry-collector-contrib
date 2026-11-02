@@ -7,3 +7,12 @@ kafka:
       sizer: bytes
   logs:
     topic_from_metadata_key: missing_metadata_key
+kafka/missing_message_key_batch_partition:
+  brokers:
+    - "foo:123"
+  sending_queue:
+    enabled: true
+    batch:
+      sizer: bytes
+  logs:
+    message_key_from_metadata_key: missing_metadata_key

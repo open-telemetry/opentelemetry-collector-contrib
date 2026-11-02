@@ -6,7 +6,6 @@ via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitor
 as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/)
 and events from [events APIs](https://www.mongodb.com/docs/atlas/reference/api/events/).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics, logs   |

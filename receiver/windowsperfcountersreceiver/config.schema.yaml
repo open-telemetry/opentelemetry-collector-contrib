@@ -34,6 +34,9 @@ $defs:
     description: ObjectConfig defines configuration for a perf counter object.
     type: object
     properties:
+      aggregation_name:
+        description: AggregationName identifies the instance that aggregates the values of all other instances. It defaults to "_Total".
+        type: string
       counters:
         type: array
         items:

@@ -8,9 +8,21 @@ status:
     development: [profiles]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [atingchen]
+    active: [paulojmdias]
+    emeritus: [atingchen]
+    seeking_new: true
 
 tests:
   config:
     path: testdata/log.json
   expect_consumer_error: true
+
+feature_gates:
+  - id: exporter.file.nativeCompression
+    stage: alpha
+    description: >-
+      Use native file-level compression (zstd) instead of
+      message-level compression. Creates standard .zst files compatible
+      with standard decompression tools
+    from_version: v0.154.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44077

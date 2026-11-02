@@ -1,4 +1,4 @@
-kafkametrics:
+kafka_metrics:
   cluster_alias: kafka-test
   brokers: 10.10.10.10:9092
   scrapers:

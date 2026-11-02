@@ -193,7 +193,7 @@ Number of queries which ran more than query untracked_time (default 1 sec), Aero
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| aerospike.namespace | Name of the Aerospike namespace | Any Str | true | - |
-| aerospike.node.name | Name of the Aerospike node collected from | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| aerospike.namespace | Name of the Aerospike namespace | Any Str | true | - | - |
+| aerospike.node.name | Name of the Aerospike node collected from | Any Str | true | - | - |

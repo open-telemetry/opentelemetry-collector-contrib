@@ -6,6 +6,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
@@ -42,20 +43,37 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClientFromOptions(opt)
+	// InsertMetrics inserts each metric type concurrently, so scale the pool sized from the queue's
+	// number of consumers. Values set in the endpoint or connection params are left unchanged.
+	dsn, err := e.cfg.buildDSN()
+	if err != nil {
+		return err
+	}
+	dsnURL, err := url.Parse(dsn)
+	if err != nil {
+		return err
+	}
+	dsnParams := dsnURL.Query()
+	if !dsnParams.Has("max_open_conns") {
+		opt.MaxOpenConns *= metrics.MaxConcurrentInserts()
+	}
+	if !dsnParams.Has("max_idle_conns") {
+		opt.MaxIdleConns = min(opt.MaxIdleConns*metrics.MaxConcurrentInserts(), opt.MaxOpenConns)
+	}
+
+	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
 	if err != nil {
 		return err
 	}
 
 	if e.cfg.shouldCreateSchema() {
 		database := e.cfg.database()
-		clusterStr := e.cfg.clusterString()
-		if err := internal.CreateDatabase(ctx, e.db, database, clusterStr); err != nil {
+		if err := internal.CreateDatabase(ctx, e.db, database, e.cfg.clusterString(), e.cfg.databaseEngineString()); err != nil {
 			return err
 		}
 
 		ttlExpr := internal.GenerateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, clusterStr, e.cfg.tableEngineString(), ttlExpr, e.db)
+		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, e.cfg.tableClusterString(), e.cfg.tableEngineString(), ttlExpr, e.db)
 		if err != nil {
 			return err
 		}

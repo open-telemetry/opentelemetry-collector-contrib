@@ -4,14 +4,14 @@
 This extension provides Sigv4 authentication for making requests to AWS services. You can read about the
 [Sigv4 process](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fsigv4auth%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fsigv4auth) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fsigv4auth%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fsigv4auth) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_sigv4auth)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_sigv4auth&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@erichsueh3](https://www.github.com/erichsueh3) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9) |
+| Emeritus      | [@erichsueh3](https://www.github.com/erichsueh3) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -52,7 +52,7 @@ receivers:
       memory:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     auth:
       authenticator: sigv4auth
@@ -63,7 +63,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 ## Notes
@@ -94,7 +94,7 @@ receivers:
       memory:
 
 exporters:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     auth:
       authenticator: sigv4auth
@@ -105,7 +105,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [prometheusremotewrite]
+      exporters: [prometheus_remote_write]
 ```
 
 ## Assume Role with External ID

@@ -69,6 +69,24 @@ func TestGenerateClientOptions(t *testing.T) {
 		assert.Equal(t, option.WithUserAgent("test-user-agent 1234"), gotOptions[0])
 		assert.IsType(t, option.WithGRPCConn(nil), gotOptions[1])
 	})
+
+	t.Run("universe domain", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.ProjectID = "my-sovereign-project"
+		cfg.Subscription = "projects/my-sovereign-project/subscriptions/otlp-subscription"
+		cfg.UniverseDomain = "apis.example.com"
+
+		require.NoError(t, cfg.validate())
+
+		gotOptions, closeConnFn, err := generateClientOptions(cfg, "")
+		assert.NoError(t, err)
+		assert.Empty(t, closeConnFn)
+
+		expectedOptions := []option.ClientOption{
+			option.WithUniverseDomain("apis.example.com"),
+		}
+		assert.ElementsMatch(t, expectedOptions, gotOptions)
+	})
 }
 
 func TestNewSubscriberClient(t *testing.T) {

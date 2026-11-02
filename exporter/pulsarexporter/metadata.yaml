@@ -6,14 +6,15 @@ status:
   stability:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
-  unsupported_platforms: [aix]
+  unsupported_platforms: [aix, solaris]
   codeowners:
     active: [dao-jun]
     emeritus: [dmitryax]
 
-# Update the exporter to pass the tests
+sending_queue:
+  support: default
+
 tests:
-  skip_lifecycle: true
   goleak:
     ignore:
       any:

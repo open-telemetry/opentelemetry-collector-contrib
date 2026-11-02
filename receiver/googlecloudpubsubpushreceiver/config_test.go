@@ -10,19 +10,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
 )
-
-func componentIDPtr(id component.ID) *component.ID {
-	return &id
-}
 
 func TestCreateDefaultConfigRoundTrip(t *testing.T) {
 	cfg := createDefaultConfig()
 	cm := confmap.New()
 	require.NoError(t, cm.Marshal(cfg))
+	// Unmarshal back into cfg itself so that unexported bookkeeping fields
+	// (e.g. confighttp.ServerConfig's deprecation warnings, which are only
+	// populated by Unmarshal) settle into the same state as roundTrip below.
+	require.NoError(t, cm.Unmarshal(cfg))
 
 	roundTrip := createDefaultConfig()
 	require.NoError(t, cm.Unmarshal(roundTrip))
@@ -42,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Encoding = componentIDPtr(component.MustNewID("test"))
+				cfg.Encoding = new(component.MustNewID("test"))
 				return cfg
 			}(),
 		},
@@ -67,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = xconfmap.Validate(cfg)
+			err = confmap.Validate(cfg)
 			if tt.expectedErr != "" {
 				require.ErrorContains(t, err, tt.expectedErr)
 				return

@@ -107,6 +107,65 @@ func TestMetricsBuilderConfig(t *testing.T) {
 		})
 	}
 }
+func TestNtpFrequencyOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpFrequencyOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpFrequencyOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.frequency.offset doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpFrequencyOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeCorrectionMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeCorrection
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeCorrectionMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.correction doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeCorrection
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeLastOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeLastOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeLastOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.last_offset doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeLastOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeRmsOffsetMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeRmsOffset
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeRmsOffsetMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.rms_offset doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeRmsOffset
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestNtpTimeRootDelayMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().NtpTimeRootDelay
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []NtpTimeRootDelayMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric ntp.time.root_delay doesn't have an attribute invalid, valid attributes: [leap.status]")
+
+	cfg = DefaultMetricsConfig().NtpTimeRootDelay
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

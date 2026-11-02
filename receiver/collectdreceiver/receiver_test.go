@@ -38,6 +38,12 @@ func TestNewReceiver(t *testing.T) {
 		attrsPrefix  string
 		nextConsumer consumer.Metrics
 	}
+	happyPathServerConfig := confighttp.NewDefaultServerConfig()
+	happyPathServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  ":0",
+	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -47,12 +53,7 @@ func TestNewReceiver(t *testing.T) {
 			name: "happy path",
 			args: args{
 				config: &Config{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: "tcp",
-							Endpoint:  ":0",
-						},
-					},
+					ServerConfig: happyPathServerConfig,
 				},
 				attrsPrefix:  "default_attr_",
 				nextConsumer: consumertest.NewNop(),
@@ -79,13 +80,13 @@ func TestCollectDServer(t *testing.T) {
 		WantData     []pmetric.Metrics
 	}
 
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8081",
+	}
 	config := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  "localhost:8081",
-			},
-		},
+		ServerConfig: serverConfig,
 	}
 	defaultAttrsPrefix := "dap_"
 
@@ -172,7 +173,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.NetAddr.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.ServerConfig.NetAddr.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)

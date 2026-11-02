@@ -95,10 +95,9 @@ func (mt *MetricsTranslator) TranslateSketches(sketches []gogen.SketchPayload_Sk
 				continue
 			}
 			stream := identity.OfStream(metricID, dp)
-			if ts, ok := mt.streamHasTimestamp(stream); ok {
-				dp.SetStartTimestamp(ts)
+			if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
+				dp.SetStartTimestamp(startTs)
 			}
-			mt.updateLastTsForStream(stream, dp.Timestamp())
 		}
 	}
 

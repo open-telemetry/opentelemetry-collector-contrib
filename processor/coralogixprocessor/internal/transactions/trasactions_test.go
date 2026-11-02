@@ -10,23 +10,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/traceutil"
 )
 
 func TestApplyTransactionsAttributes_EmptyTrace(t *testing.T) {
-	logger := zap.NewNop()
 	traces := ptrace.NewTraces()
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 	assert.Equal(t, int(0), result.SpanCount())
 }
 
 func TestApplyTransactionsAttributes_SingleSpan(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(1, ptrace.SpanKindServer)
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Get the first span
 	rspan := result.ResourceSpans().At(0)
@@ -44,7 +42,6 @@ func TestApplyTransactionsAttributes_SingleSpan(t *testing.T) {
 }
 
 func TestApplyTransactionsAttributes_MultipleSpans(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(3, ptrace.SpanKindClient)
 
 	// Set the first span as Server kind
@@ -53,8 +50,7 @@ func TestApplyTransactionsAttributes_MultipleSpans(t *testing.T) {
 	span := sspan.Spans().At(0)
 	span.SetKind(ptrace.SpanKindServer)
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Check first span (server)
 	rspan = result.ResourceSpans().At(0)
@@ -82,7 +78,6 @@ func TestApplyTransactionsAttributes_MultipleSpans(t *testing.T) {
 }
 
 func TestApplyTransactionsAttributes_ConsumerSpan(t *testing.T) {
-	logger := zap.NewNop()
 	traces := createTestTraces(3, ptrace.SpanKindClient)
 
 	// Set the first span as Consumer kind
@@ -91,8 +86,7 @@ func TestApplyTransactionsAttributes_ConsumerSpan(t *testing.T) {
 	span := sspan.Spans().At(0)
 	span.SetKind(ptrace.SpanKindConsumer)
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
 	// Check first span (consumer)
 	rspan = result.ResourceSpans().At(0)
@@ -119,8 +113,7 @@ func TestApplyTransactionsAttributes_ConsumerSpan(t *testing.T) {
 	}
 }
 
-func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
-	logger := zap.NewNop()
+func TestApplyTransactionsAttributes_ServerRootThenSameServiceConsumerChild(t *testing.T) {
 	traces := createTestTraces(4, ptrace.SpanKindClient)
 
 	// Set the first span as Server kind
@@ -130,15 +123,14 @@ func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetName("server-span")
 
-	// Set the second span as Consumer kind
+	// Set the second span as Consumer kind, same resource/service as the parent
 	span = sspan.Spans().At(1)
 	span.SetKind(ptrace.SpanKindConsumer)
 	span.SetName("consumer-span")
 
-	result, err := ApplyTransactionsAttributes(traces, logger)
-	assert.NoError(t, err)
+	result := applyTransactionsAttributes(traces)
 
-	// Check first span (server)
+	// Check first span (server) — the trace root, always a transaction root
 	rspan = result.ResourceSpans().At(0)
 	sspan = rspan.ScopeSpans().At(0)
 	span = sspan.Spans().At(0)
@@ -151,15 +143,14 @@ func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
 	assert.True(t, ok)
 	assert.True(t, val.Bool())
 
-	// Check second span (consumer)
+	// Check second span (consumer, same service) — must NOT become a new root
 	span = sspan.Spans().At(1)
 	val, ok = span.Attributes().Get(TransactionIdentifier)
 	assert.True(t, ok)
-	assert.Equal(t, "consumer-span", val.Str())
+	assert.Equal(t, "server-span", val.Str())
 
-	val, ok = span.Attributes().Get(TransactionIdentifierRoot)
-	assert.True(t, ok)
-	assert.True(t, val.Bool())
+	_, ok = span.Attributes().Get(TransactionIdentifierRoot)
+	assert.False(t, ok)
 
 	// Check other spans (clients)
 	for i := 2; i < 4; i++ {
@@ -173,10 +164,108 @@ func TestApplyTransactionsAttributes_ServerAndConsumerSpans(t *testing.T) {
 	}
 }
 
+func TestApplyTransactionsAttributes_ConsumerChildFromDifferentServiceStartsNewTransaction(t *testing.T) {
+	logger := zap.NewNop()
+	traces := ptrace.NewTraces()
+	traceID := pcommon.TraceID([16]byte{1})
+
+	producerRes := traces.ResourceSpans().AppendEmpty()
+	producerRes.Resource().Attributes().PutStr("service.name", "producer-svc")
+	producerSpan := producerRes.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	producerSpan.SetTraceID(traceID)
+	producerSpan.SetSpanID(pcommon.SpanID([8]byte{1}))
+	producerSpan.SetName("http-server")
+	producerSpan.SetKind(ptrace.SpanKindServer)
+
+	consumerRes := traces.ResourceSpans().AppendEmpty()
+	consumerRes.Resource().Attributes().PutStr("service.name", "consumer-svc")
+	consumerSpan := consumerRes.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	consumerSpan.SetTraceID(traceID)
+	consumerSpan.SetSpanID(pcommon.SpanID([8]byte{2}))
+	consumerSpan.SetParentSpanID(producerSpan.SpanID())
+	consumerSpan.SetName("queue-consume")
+	consumerSpan.SetKind(ptrace.SpanKindConsumer)
+
+	ApplyTransactionsAttributesByTraceID(traceutil.GroupSpansByTraceID(traces), traceutil.ServiceNamesBySpanID(traces), logger)
+
+	val, ok := producerSpan.Attributes().Get(TransactionIdentifierRoot)
+	assert.True(t, ok)
+	assert.True(t, val.Bool())
+
+	val, ok = consumerSpan.Attributes().Get(TransactionIdentifierRoot)
+	assert.True(t, ok)
+	assert.True(t, val.Bool())
+
+	val, ok = consumerSpan.Attributes().Get(TransactionIdentifier)
+	assert.True(t, ok)
+	assert.Equal(t, "queue-consume", val.Str())
+}
+
+func TestApplyTransactionsAttributesByTraceID(t *testing.T) {
+	logger := zap.NewNop()
+	traces := createTestTraces(2, ptrace.SpanKindClient)
+	root := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	root.SetKind(ptrace.SpanKindServer)
+
+	ApplyTransactionsAttributesByTraceID(traceutil.GroupSpansByTraceID(traces), traceutil.ServiceNamesBySpanID(traces), logger)
+
+	val, ok := root.Attributes().Get(TransactionIdentifier)
+	assert.True(t, ok)
+	assert.Equal(t, "test-span-0", val.Str())
+}
+
+func TestApplyTransactionsAttributesByTraceID_EmptySpanGroup(t *testing.T) {
+	logger := zap.NewNop()
+	traceID := pcommon.TraceID([16]byte{7})
+
+	assert.NotPanics(t, func() {
+		ApplyTransactionsAttributesByTraceID(map[pcommon.TraceID][]ptrace.Span{
+			traceID: {},
+		}, traceutil.ServiceNameIndex{}, logger)
+	})
+}
+
+func TestApplyTransactionAttributesToTree(t *testing.T) {
+	logger := zap.NewNop()
+	traces := ptrace.NewTraces()
+	spans := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+	traceID := pcommon.TraceID([16]byte{9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9})
+
+	root := spans.AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(pcommon.SpanID([8]byte{1}))
+	root.SetName("root")
+	root.SetKind(ptrace.SpanKindServer)
+	child := spans.AppendEmpty()
+	child.SetTraceID(traceID)
+	child.SetSpanID(pcommon.SpanID([8]byte{2}))
+	child.SetParentSpanID(root.SpanID())
+	child.SetName("child-root")
+	child.Attributes().PutBool(TransactionIdentifierRoot, true)
+	grandchild := spans.AppendEmpty()
+	grandchild.SetTraceID(traceID)
+	grandchild.SetSpanID(pcommon.SpanID([8]byte{3}))
+	grandchild.SetParentSpanID(child.SpanID())
+	grandchild.SetName("grandchild")
+
+	ApplyTransactionAttributesToTree(traceutil.BuildTraceTree([]ptrace.Span{
+		root,
+		child,
+		grandchild,
+	}), traceutil.ServiceNamesBySpanID(traces), logger)
+
+	_, ok := child.Attributes().Get(TransactionIdentifier)
+	assert.False(t, ok)
+
+	val, ok := grandchild.Attributes().Get(TransactionIdentifier)
+	assert.True(t, ok)
+	assert.Equal(t, "child-root", val.Str())
+}
+
 func TestGroupSpansByTraceID(t *testing.T) {
 	traces := createTestTraces(3, ptrace.SpanKindClient)
 
-	result := groupSpansByTraceID(traces)
+	result := traceutil.GroupSpansByTraceID(traces)
 	assert.Len(t, result, 1) // All spans should have the same trace ID
 
 	for traceID, spans := range result {
@@ -185,6 +274,11 @@ func TestGroupSpansByTraceID(t *testing.T) {
 			assert.Equal(t, traceID, span.TraceID())
 		}
 	}
+}
+
+func applyTransactionsAttributes(traces ptrace.Traces) ptrace.Traces {
+	ApplyTransactionsAttributesByTraceID(traceutil.GroupSpansByTraceID(traces), traceutil.ServiceNamesBySpanID(traces), zap.NewNop())
+	return traces
 }
 
 // Helper function to create test traces

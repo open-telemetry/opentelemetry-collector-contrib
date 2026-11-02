@@ -51,13 +51,13 @@ func (e *logsJSONExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClientFromOptions(opt)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
 	if err != nil {
 		return err
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString()); createDBErr != nil {
+		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); createDBErr != nil {
 			return createDBErr
 		}
 
@@ -282,7 +282,7 @@ func renderCreateLogsJSONTableSQL(cfg *Config) (string, error) {
 	data := sqltemplates.CreateTableData{
 		Database:      cfg.database(),
 		TableName:     cfg.LogsTableName,
-		ClusterString: cfg.clusterString(),
+		ClusterString: cfg.tableClusterString(),
 		Engine:        cfg.tableEngineString(),
 		TTL:           ttlExpr,
 	}

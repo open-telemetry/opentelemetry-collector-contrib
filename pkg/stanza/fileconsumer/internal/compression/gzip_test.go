@@ -38,7 +38,8 @@ func TestIsGzipFile(t *testing.T) {
 		defer tempFile.Close()
 
 		_, err = tempFile.WriteString(
-			"this is test data and the header should prove this is not gzip compressed")
+			"this is test data and the header should prove this is not gzip compressed",
+		)
 		require.NoError(t, err)
 
 		_, err = tempFile.Seek(0, io.SeekStart)

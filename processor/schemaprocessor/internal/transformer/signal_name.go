@@ -26,6 +26,20 @@ func (c SpanEventSignalNameChange) Do(ss migrate.StateSelector, span ptrace.Span
 	return nil
 }
 
+// SpanSignalNameChange renames the span's own name. v1.1 schema files do
+// not express span renames, but v2 resolved registries (OTEP #4815) do via
+// `deprecated.renamed_to` entries in registry.spans.
+type SpanSignalNameChange struct {
+	SignalNameChange migrate.SignalNameChange
+}
+
+func (SpanSignalNameChange) IsMigrator() {}
+
+func (c SpanSignalNameChange) Do(ss migrate.StateSelector, span ptrace.Span) error {
+	c.SignalNameChange.Do(ss, span)
+	return nil
+}
+
 // MetricSignalNameChange is an transformer that powers the [Metric's rename_metrics] change.
 // [Metric's rename_metrics]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_metrics-transformation
 type MetricSignalNameChange struct {

@@ -10,11 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// int64Ptr returns a pointer to the given int64 value
-func int64Ptr(v int64) *int64 {
-	return &v
-}
-
 func TestHandleConnection(t *testing.T) {
 	tests := map[string]struct {
 		connection   *connection
@@ -22,11 +17,11 @@ func TestHandleConnection(t *testing.T) {
 	}{
 		"tcp connection": {
 			connection: &connection{
-				Protocol: int64Ptr(6),
+				Protocol: new(int64(6)),
 				SrcIP:    "192.0.2.1",
 				DestIP:   "203.0.113.1",
-				SrcPort:  int64Ptr(443),
-				DestPort: int64Ptr(40708),
+				SrcPort:  new(int64(443)),
+				DestPort: new(int64(40708)),
 			},
 			expectedAttr: map[string]any{
 				"network.transport":   "tcp",
@@ -38,7 +33,7 @@ func TestHandleConnection(t *testing.T) {
 		},
 		"icmp connection": {
 			connection: &connection{
-				Protocol: int64Ptr(1),
+				Protocol: new(int64(1)),
 				SrcIP:    "203.0.113.3",
 				DestIP:   "192.0.2.3",
 			},
@@ -50,11 +45,11 @@ func TestHandleConnection(t *testing.T) {
 		},
 		"udp connection": {
 			connection: &connection{
-				Protocol: int64Ptr(17),
+				Protocol: new(int64(17)),
 				SrcIP:    "192.168.1.1",
 				DestIP:   "192.168.1.2",
-				SrcPort:  int64Ptr(53),
-				DestPort: int64Ptr(53),
+				SrcPort:  new(int64(53)),
+				DestPort: new(int64(53)),
 			},
 			expectedAttr: map[string]any{
 				"network.transport":   "udp",
@@ -66,7 +61,7 @@ func TestHandleConnection(t *testing.T) {
 		},
 		"unknown protocol": {
 			connection: &connection{
-				Protocol: int64Ptr(250),
+				Protocol: new(int64(250)),
 				SrcIP:    "10.0.0.1",
 				DestIP:   "10.0.0.2",
 			},
@@ -100,7 +95,7 @@ func TestHandleNetworkService(t *testing.T) {
 	}{
 		"with dscp": {
 			networkService: &networkService{
-				DSCP: int64Ptr(32),
+				DSCP: new(int64(32)),
 			},
 			expectedAttr: map[string]any{
 				gcpVPCFlowNetworkServiceDSCP: int64(32),
@@ -272,7 +267,7 @@ func TestHandleLocation(t *testing.T) {
 	}{
 		"source location": {
 			location: &location{
-				ASN:       int64Ptr(14618),
+				ASN:       new(int64(14618)),
 				City:      "Ashburn",
 				Continent: "America",
 				Country:   "usa",
@@ -289,7 +284,7 @@ func TestHandleLocation(t *testing.T) {
 		},
 		"destination location": {
 			location: &location{
-				ASN:       int64Ptr(137718),
+				ASN:       new(int64(137718)),
 				Continent: "Asia",
 				Country:   "chn",
 			},
@@ -307,7 +302,7 @@ func TestHandleLocation(t *testing.T) {
 		},
 		"invalid side": {
 			location: &location{
-				ASN:       int64Ptr(12345),
+				ASN:       new(int64(12345)),
 				City:      "Test City",
 				Continent: "Test Continent",
 				Country:   "test",
@@ -420,10 +415,10 @@ func TestHandleInternetRoutingDetails(t *testing.T) {
 				EgressASPath: []egressASPath{
 					{
 						ASDetails: []asDetails{
-							{ASN: int64Ptr(58453)},
-							{ASN: int64Ptr(9808)},
-							{ASN: int64Ptr(38019)},
-							{ASN: int64Ptr(137718)},
+							{ASN: new(int64(58453))},
+							{ASN: new(int64(9808))},
+							{ASN: new(int64(38019))},
+							{ASN: new(int64(137718))},
 						},
 					},
 				},

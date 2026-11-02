@@ -29,12 +29,12 @@ func FuzzHandleReq(f *testing.F) {
 		}
 
 		consumer := consumertest.NewNop()
-		receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), Config{ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "localhost:8080",
-			},
-		}}, consumer)
+		serverConfig := confighttp.NewDefaultServerConfig()
+		serverConfig.NetAddr = confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "localhost:8080",
+		}
+		receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), Config{ServerConfig: serverConfig}, consumer)
 		if err != nil {
 			t.Fatal(err)
 		}

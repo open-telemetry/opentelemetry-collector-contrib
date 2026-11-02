@@ -28,15 +28,18 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultBindEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr = netAddr
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
+		ServerConfig: serverConfig,
 		Timeout:      30 * time.Second,
 		Encoding:     defaultEncodingFormat,
 	}

@@ -11,12 +11,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
 
 func Test_SpanFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()
-	expected["IsRootSpan"] = ottlfuncs.NewIsRootSpanFactoryNew()
+	expected := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()))
+	expected["IsRootSpan"] = ottlfuncs.NewIsRootSpanFactory()
 	expected["set_semconv_span_name"] = NewSetSemconvSpanNameFactory()
 
 	actual := SpanFunctions()
@@ -27,7 +29,7 @@ func Test_SpanFunctions(t *testing.T) {
 }
 
 func Test_SpanEventFunctions(t *testing.T) {
-	expected := ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()
+	expected := xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()))
 	actual := SpanEventFunctions()
 	require.Len(t, actual, len(expected))
 	for k := range actual {

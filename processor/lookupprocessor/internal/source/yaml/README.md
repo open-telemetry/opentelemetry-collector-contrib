@@ -1,12 +1,13 @@
 # yaml Source
 
-Looks up keys from a YAML file loaded at startup. Supports both scalar values (1:1 mapping) and nested maps (1:N mapping). The file is read once during `Start` and kept in memory.
+Looks up keys from a YAML file loaded at startup. Supports both scalar values (1:1 mapping) and nested maps (1:N mapping). The file is loaded during `Start` and kept in memory; set `reload_interval` to re-read it periodically without restarting the collector.
 
 ## Configuration
 
 | Field | Description | Default |
 | ----- | ----------- | ------- |
 | `path` | Path to the YAML file containing key-value mappings (required) | - |
+| `reload_interval` | If `> 0`, re-read the file on this interval so changes take effect without a collector restart. `0` disables reloading. On a failed reload the previously loaded data is kept and a warning is logged. | `0` |
 
 ## Examples
 

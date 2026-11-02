@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetKafkaClusterAlias(val string) {
 	}
 }
 
+// SetKafkaClusterID sets provided value as "kafka.cluster.id" attribute.
+func (rb *ResourceBuilder) SetKafkaClusterID(val string) {
+	if rb.config.KafkaClusterID.Enabled {
+		rb.res.Attributes().PutStr("kafka.cluster.id", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

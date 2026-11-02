@@ -3,6 +3,10 @@ all_set:
   metrics:
     rabbitmq.consumer.count:
       enabled: true
+    rabbitmq.exchange.messages.published_in:
+      enabled: true
+    rabbitmq.exchange.messages.published_out:
+      enabled: true
     rabbitmq.message.acknowledged:
       enabled: true
     rabbitmq.message.current:
@@ -163,6 +167,12 @@ all_set:
     rabbitmq.node.uptime:
       enabled: true
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
+    rabbitmq.exchange.name:
+      enabled: true
+    rabbitmq.exchange.type:
+      enabled: true
     rabbitmq.node.name:
       enabled: true
     rabbitmq.queue.name:
@@ -172,6 +182,10 @@ all_set:
 reaggregate_set:
   metrics:
     rabbitmq.consumer.count:
+      enabled: true
+    rabbitmq.exchange.messages.published_in:
+      enabled: true
+    rabbitmq.exchange.messages.published_out:
       enabled: true
     rabbitmq.message.acknowledged:
       enabled: true
@@ -333,6 +347,12 @@ reaggregate_set:
     rabbitmq.node.uptime:
       enabled: true
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
+    rabbitmq.exchange.name:
+      enabled: true
+    rabbitmq.exchange.type:
+      enabled: true
     rabbitmq.node.name:
       enabled: true
     rabbitmq.queue.name:
@@ -342,6 +362,10 @@ reaggregate_set:
 none_set:
   metrics:
     rabbitmq.consumer.count:
+      enabled: false
+    rabbitmq.exchange.messages.published_in:
+      enabled: false
+    rabbitmq.exchange.messages.published_out:
       enabled: false
     rabbitmq.message.acknowledged:
       enabled: false
@@ -503,6 +527,12 @@ none_set:
     rabbitmq.node.uptime:
       enabled: false
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: false
+    rabbitmq.exchange.name:
+      enabled: false
+    rabbitmq.exchange.type:
+      enabled: false
     rabbitmq.node.name:
       enabled: false
     rabbitmq.queue.name:
@@ -511,6 +541,18 @@ none_set:
       enabled: false
 filter_set_include:
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.exchange.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.exchange.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     rabbitmq.node.name:
       enabled: true
       metrics_include:
@@ -525,6 +567,18 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    rabbitmq.cluster.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.cluster.name-val"
+    rabbitmq.exchange.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.exchange.name-val"
+    rabbitmq.exchange.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.exchange.type-val"
     rabbitmq.node.name:
       enabled: true
       metrics_exclude:

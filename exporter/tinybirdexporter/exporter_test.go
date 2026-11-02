@@ -25,6 +25,8 @@ import (
 )
 
 func TestNewExporter(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost:8080"
 	tests := []struct {
 		name   string
 		config *Config
@@ -33,10 +35,8 @@ func TestNewExporter(t *testing.T) {
 		{
 			name: "build exporter",
 			config: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost:8080",
-				},
-				Token: "test-token",
+				ClientConfig: clientConfig,
+				Token:        "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
 					MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
@@ -74,6 +74,8 @@ func TestExportTraces(t *testing.T) {
 		requests []wantRequest
 		err      error
 	}
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	clientConfig2 := confighttp.NewDefaultClientConfig()
 	tests := []struct {
 		name string
 		args args
@@ -89,7 +91,7 @@ func TestExportTraces(t *testing.T) {
 					return traces
 				}(),
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig1,
 					Token:        "test-token",
 					Traces:       SignalConfig{Datasource: "traces_test"},
 					Wait:         false,
@@ -111,7 +113,7 @@ func TestExportTraces(t *testing.T) {
 			args: args{
 				opts: []option{},
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig2,
 					Token:        "test-token",
 					Traces:       SignalConfig{Datasource: "traces_test"},
 					Wait:         false,
@@ -224,6 +226,11 @@ func TestExportMetrics(t *testing.T) {
 		requests []wantRequest
 		err      error
 	}
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	clientConfig2 := confighttp.NewDefaultClientConfig()
+	clientConfig3 := confighttp.NewDefaultClientConfig()
+	clientConfig4 := confighttp.NewDefaultClientConfig()
+	clientConfig5 := confighttp.NewDefaultClientConfig()
 	tests := []struct {
 		name string
 		args args
@@ -233,7 +240,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export without metrics",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig1,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
@@ -301,7 +308,7 @@ func TestExportMetrics(t *testing.T) {
 					return metrics
 				}(),
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig2,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
@@ -325,7 +332,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export with sum metric",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig3,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsGauge: SignalConfig{Datasource: "metrics_gauge"},
@@ -381,7 +388,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export with histogram metric",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig4,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsHistogram: SignalConfig{Datasource: "metrics_histogram"},
@@ -440,7 +447,7 @@ func TestExportMetrics(t *testing.T) {
 			name: "export with exponential histogram metric",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig5,
 					Token:        "test-token",
 					Metrics: metricSignalConfigs{
 						MetricsExponentialHistogram: SignalConfig{Datasource: "metrics_exponential_histogram"},
@@ -550,6 +557,9 @@ func TestExportLogs(t *testing.T) {
 		requests []wantRequest
 		err      error
 	}
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	clientConfig2 := confighttp.NewDefaultClientConfig()
+	clientConfig3 := confighttp.NewDefaultClientConfig()
 	tests := []struct {
 		name string
 		args args
@@ -559,7 +569,7 @@ func TestExportLogs(t *testing.T) {
 			name: "export without logs",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig1,
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
@@ -587,7 +597,7 @@ func TestExportLogs(t *testing.T) {
 			name: "export with full log",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig2,
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
@@ -637,7 +647,7 @@ func TestExportLogs(t *testing.T) {
 			name: "export with multiple requests",
 			args: args{
 				config: Config{
-					ClientConfig: confighttp.ClientConfig{},
+					ClientConfig: clientConfig3,
 					Token:        "test-token",
 					Logs:         SignalConfig{Datasource: "logs_test"},
 					Wait:         false,
@@ -783,11 +793,11 @@ func TestExportErrorHandling(t *testing.T) {
 			}))
 			defer server.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = server.URL
 			config := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: server.URL,
-				},
-				Token: "test-token",
+				ClientConfig: clientConfig,
+				Token:        "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "metrics_gauge"},
 					MetricsSum:                  SignalConfig{Datasource: "metrics_sum"},
@@ -903,12 +913,12 @@ func TestExportBuffers(t *testing.T) {
 			defer server.Close()
 
 			// Create exporter with test server
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = server.URL
 			config := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: server.URL,
-				},
-				Token: "test-token",
-				Wait:  false,
+				ClientConfig: clientConfig,
+				Token:        "test-token",
+				Wait:         false,
 			}
 			exp := newExporter(config, exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))

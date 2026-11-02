@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
@@ -22,10 +23,12 @@ var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics transform processor.
 func NewFactory() processor.Factory {
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
+		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -55,7 +58,8 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(consumerCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities),
+	)
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
@@ -84,6 +88,14 @@ func validateConfiguration(config *Config) error {
 
 		if transform.Action == Insert && transform.NewName == "" {
 			return fmt.Errorf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Insert)
+		}
+
+		if transform.Action == Combine && transform.NewName == "" {
+			return fmt.Errorf("missing required field %q while %q is %v", newNameFieldName, actionFieldName, Combine)
+		}
+
+		if transform.Action == Combine && transform.AggregationType == "" {
+			return fmt.Errorf("missing required field %q while %q is %v", aggregationTypeFieldName, actionFieldName, Combine)
 		}
 
 		if transform.Action == Group && transform.GroupResourceLabels == nil {
@@ -145,6 +157,7 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 			NewName:             t.NewName,
 			GroupResourceLabels: t.GroupResourceLabels,
 			AggregationType:     t.AggregationType,
+			SubmatchCase:        t.SubmatchCase,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
 

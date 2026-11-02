@@ -129,7 +129,7 @@ func TestScrape(t *testing.T) {
 			name: "Connections metrics is disabled",
 			config: func() *Config {
 				cfg := Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
-				cfg.Metrics.SystemNetworkConnections.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),
 			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
@@ -229,9 +229,11 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.Equal(t, "system.network.connections", metric.Name())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
-		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
+		pcommon.NewValueStr(metadata.AttributeProtocolTCP.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
-	// Flaky test gives 12 or 13, so bound it
-	assert.LessOrEqual(t, 12, metric.Sum().DataPoints().Len())
+	// allTCPStates has 11 entries on Linux (network_linux.go) and 12 on other
+	// platforms (network_others.go); flakiness can add one extra auto-vivified
+	// state on top of that, so bound to [11, 13].
+	assert.LessOrEqual(t, 11, metric.Sum().DataPoints().Len())
 	assert.GreaterOrEqual(t, 13, metric.Sum().DataPoints().Len())
 }

@@ -11,6 +11,8 @@ $defs:
         type: boolean
       encoding:
         type: string
+      file_cache_advise:
+        type: boolean
       fingerprint_size:
         $ref: /pkg/stanza/operator/helper.byte_size
       force_flush_period:
@@ -42,6 +44,8 @@ $defs:
         format: duration
       polls_to_archive:
         type: integer
+      skip_unmodified_files:
+        type: boolean
       start_at:
         type: string
     allOf:

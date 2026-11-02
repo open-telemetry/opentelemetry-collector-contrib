@@ -40,7 +40,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, cfg co
 
 func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 	// 1. Setup Network Listener
-	listener, err := y.config.NetAddr.Listen(ctx)
+	listener, err := y.config.ServerConfig.NetAddr.Listen(ctx)
 	if err != nil {
 		return err
 	}
@@ -56,8 +56,9 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 	)
 
 	// 3. Configure gRPC Server with Security Interceptors
-	server, err := y.config.ToServer(ctx, host.GetExtensions(), y.settings.TelemetrySettings,
-		configgrpc.WithGrpcServerOption(grpc.UnaryInterceptor(y.securityManager.CreateSecurityInterceptor())))
+	server, err := y.config.ServerConfig.ToServer(ctx, host.GetExtensions(), y.settings.TelemetrySettings,
+		configgrpc.WithGrpcServerOption(grpc.ChainUnaryInterceptor(y.securityManager.CreateSecurityInterceptor())),
+		configgrpc.WithGrpcServerOption(grpc.ChainStreamInterceptor(y.securityManager.CreateStreamSecurityInterceptor())))
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 
 	// 4. Initialize YANG Parsers
 	// Standard Parser for structural analysis
-	yangParser := internal.NewYANGParser()
+	yangParser := internal.NewYANGParser(y.settings.Logger)
 	yangParser.LoadBuiltinModules()
 
 	// Load external Cisco/IETF modules from configured paths
@@ -87,7 +88,7 @@ func (y *yangReceiver) Start(ctx context.Context, host component.Host) error {
 	// 6. Start Serving
 	y.wg.Go(func() {
 		y.settings.Logger.Info("Starting YANG gRPC receiver",
-			zap.String("endpoint", y.config.NetAddr.Endpoint))
+			zap.String("endpoint", y.config.ServerConfig.NetAddr.Endpoint))
 		if err := y.server.Serve(listener); err != nil {
 			y.settings.Logger.Error("gRPC server error", zap.Error(err))
 		}

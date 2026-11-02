@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
 )
@@ -23,6 +23,18 @@ func TestLoadConfig(t *testing.T) {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
+
+	customNameServerConfig := confighttp.NewDefaultServerConfig()
+	customNameServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8765",
+	}
+
+	parseStringsServerConfig := confighttp.NewDefaultServerConfig()
+	parseStringsServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  defaultHTTPEndpoint,
+	}
 
 	tests := []struct {
 		id       component.ID
@@ -35,24 +47,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:8765",
-					},
-				},
+				ServerConfig:    customNameServerConfig,
 				ParseStringTags: false,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "parse_strings"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  defaultHTTPEndpoint,
-					},
-				},
+				ServerConfig:    parseStringsServerConfig,
 				ParseStringTags: true,
 			},
 		},
@@ -67,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

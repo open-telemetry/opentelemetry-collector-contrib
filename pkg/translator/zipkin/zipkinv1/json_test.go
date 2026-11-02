@@ -15,6 +15,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -188,6 +189,16 @@ func TestMultipleJSONV1BatchesToTraces(t *testing.T) {
 }
 
 func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
+	// These cases assert the v0 (http.status_code) attribute is emitted, so pin the
+	// HTTP semantic-convention gates to their pre-Beta (disabled) state and restore
+	// the Beta default afterwards.
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", false))
+	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.DontEmitV0HttpConventions", true))
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.zipkin.EmitV1HttpConventions", true))
+	})
+
 	type test struct {
 		name           string
 		haveTags       []*binaryAnnotation
@@ -256,6 +267,32 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
 				ret.PutInt("http.status_code", 404)
+				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
+				return ret
+			}(),
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
+				ret.SetCode(ptrace.StatusCodeError)
+				ret.SetMessage("NotFound")
+				return ret
+			}(),
+		},
+
+		{
+			name: "http.response otel.status_code",
+			haveTags: []*binaryAnnotation{
+				{
+					Key:   "http.response.status_code",
+					Value: "404",
+				},
+				{
+					Key:   "http.status_message",
+					Value: "NotFound",
+				},
+			},
+			wantAttributes: func() pcommon.Map {
+				ret := pcommon.NewMap()
+				ret.PutInt("http.response.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -503,23 +540,26 @@ func TestSpanWithTimestamp(t *testing.T) {
 func TestJSONHTTPToStatusCode(t *testing.T) {
 	fakeTraceID := "00000000000000010000000000000002"
 	fakeSpanID := "0000000000000001"
-	for i := int32(100); i <= 600; i++ {
-		wantStatus := statusCodeFromHTTP(i)
-		zBytes, err := json.Marshal([]*jsonSpan{{
-			ID:      fakeSpanID,
-			TraceID: fakeTraceID,
-			BinaryAnnotations: []*binaryAnnotation{
-				{
-					Key:   "http.status_code",
-					Value: strconv.Itoa(int(i)),
+	keys := []string{"http.status_code", "http.response.status_code"}
+	for _, key := range keys {
+		for i := int32(100); i <= 600; i++ {
+			wantStatus := statusCodeFromHTTP(i)
+			zBytes, err := json.Marshal([]*jsonSpan{{
+				ID:      fakeSpanID,
+				TraceID: fakeTraceID,
+				BinaryAnnotations: []*binaryAnnotation{
+					{
+						Key:   key,
+						Value: strconv.Itoa(int(i)),
+					},
 				},
-			},
-		}})
-		require.NoError(t, err)
-		td, err := jsonBatchToTraces(zBytes, false)
-		require.NoError(t, err)
-		gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		require.Equal(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
+			}})
+			require.NoError(t, err)
+			td, err := jsonBatchToTraces(zBytes, false)
+			require.NoError(t, err)
+			gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			require.Equal(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
+		}
 	}
 }
 

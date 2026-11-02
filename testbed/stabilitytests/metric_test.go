@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	scenarios "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/tests"
 )
@@ -21,23 +19,6 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      50,
 			ExpectedMaxRAM:      80,
-			ResourceCheckPeriod: resourceCheckPeriod,
-		},
-		contribPerfResultsSummary,
-		nil,
-		nil,
-		nil,
-	)
-}
-
-func TestStabilityMetricsSignalFx(t *testing.T) {
-	scenarios.Scenario10kItemsPerSecond(
-		t,
-		datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
-		datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
-		testbed.ResourceSpec{
-			ExpectedMaxCPU:      120,
-			ExpectedMaxRAM:      95,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,

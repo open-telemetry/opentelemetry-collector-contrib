@@ -11,8 +11,8 @@ import (
 
 // Config defines configuration for STEF receiver.
 type Config struct {
-	configgrpc.ServerConfig `mapstructure:",squash"`
-	AckInterval             time.Duration `mapstructure:"ack_interval"`
+	ServerConfig configgrpc.ServerConfig `mapstructure:",squash"`
+	AckInterval  time.Duration           `mapstructure:"ack_interval"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

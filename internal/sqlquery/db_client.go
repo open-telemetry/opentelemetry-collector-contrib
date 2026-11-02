@@ -39,6 +39,7 @@ func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, 
 	if err != nil {
 		return nil, err
 	}
+	defer sqlRows.Close()
 	var out []StringMap
 	colTypes, err := sqlRows.ColumnTypes()
 	if err != nil {

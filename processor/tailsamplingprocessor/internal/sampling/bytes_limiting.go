@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"golang.org/x/time/rate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -30,7 +31,11 @@ func NewBytesLimiting(settings component.TelemetrySettings, bytesPerSecond int64
 
 // NewBytesLimitingWithBurstCapacity creates a policy evaluator with custom burst capacity.
 // Uses golang.org/x/time/rate.Limiter for efficient, thread-safe token bucket implementation.
-func NewBytesLimitingWithBurstCapacity(_ component.TelemetrySettings, bytesPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
+func NewBytesLimitingWithBurstCapacity(settings component.TelemetrySettings, bytesPerSecond, burstCapacity int64) samplingpolicy.Evaluator {
+	if metadata.ProcessorTailsamplingprocessorUsetracestateFeatureGate.IsEnabled() {
+		return newBudgetLimiter(settings, bytesPerSecond, burstCapacity, calculateTraceSize)
+	}
+
 	// Create rate limiter with specified rate and burst capacity
 	// rate.Limit is tokens per second (bytes per second in our case)
 	// burst capacity is the maximum number of tokens (bytes) that can be consumed in a single request

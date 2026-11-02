@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -20,27 +20,12 @@ import (
 
 var (
 	minKnownSemConvVersion = semver.MustParse("1.37.0")
-	maxKnownSemConvVersion = semver.MustParse("1.40.0")
+	maxKnownSemConvVersion = semver.MustParse("1.43.0")
 )
 
 type setSemconvSpanNameArguments struct {
 	SemconvVersion            string
 	OriginalSpanNameAttribute ottl.Optional[string]
-}
-
-func NewSetSemconvSpanNameFactoryLegacy() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("set_semconv_span_name", &setSemconvSpanNameArguments{}, createSetSemconvSpanNameFunctionLegacy)
-}
-
-func createSetSemconvSpanNameFunctionLegacy(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
-	args, err := parseSemconvSpanNameArguments(oArgs)
-	if err != nil {
-		return nil, err
-	}
-	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
-		return nil, nil
-	}, nil
 }
 
 func NewSetSemconvSpanNameFactory() ottl.Factory[*ottlspan.TransformContext] {

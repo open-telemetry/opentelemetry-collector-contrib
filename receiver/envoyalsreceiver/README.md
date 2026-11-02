@@ -4,7 +4,6 @@
 This is a receiver for the [Envoy gRPC ALS](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/grpc/v3/als.proto#envoy-v3-api-msg-extensions-access-loggers-grpc-v3-httpgrpcaccesslogconfig)
 sink.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
@@ -28,6 +27,9 @@ This is particularly useful in distributed systems where centralized logging is 
 
 ## Getting Started
 
+> **Note:** This receiver was renamed from `envoyals` to `envoy_als` to match the snake_case naming convention.
+> The deprecated component type `envoyals` is still accepted as an alias and will log a deprecation warning.
+
 The settings are:
 
 - `endpoint` (required, default = localhost:19001 gRPC protocol): host:port to which the receiver is going to receive data. See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
@@ -35,7 +37,7 @@ The settings are:
 Example:
 ```yaml
 receivers:
-  envoyals:
+  envoy_als:
     endpoint: 0.0.0.0:3500
 ```
 

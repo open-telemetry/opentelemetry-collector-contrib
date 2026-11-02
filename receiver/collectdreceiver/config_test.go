@@ -14,14 +14,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
+
+	oneServerConfig := confighttp.NewDefaultServerConfig()
+	oneServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:12345",
+	}
 
 	tests := []struct {
 		id       component.ID
@@ -35,12 +41,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:12345",
-					},
-				},
+				ServerConfig:     oneServerConfig,
 				Timeout:          50 * time.Second,
 				AttributesPrefix: "dap_",
 				Encoding:         "command",
@@ -62,9 +63,9 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.wantErr == nil {
-				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.NoError(t, confmap.Validate(cfg))
 			} else {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.wantErr.Error())
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.wantErr.Error())
 			}
 			assert.Equal(t, tt.expected, cfg)
 		})

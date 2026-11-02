@@ -4,6 +4,7 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: minikube
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation

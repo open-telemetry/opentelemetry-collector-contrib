@@ -4,7 +4,8 @@
 package exceptionsconnector
 
 import (
-	"bytes"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,12 +15,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
@@ -33,10 +36,6 @@ type metricID struct {
 
 type metricDataPoint interface {
 	Attributes() pcommon.Map
-}
-
-func stringp(str string) *string {
-	return &str
 }
 
 func TestConnectorConsumeTraces(t *testing.T) {
@@ -69,7 +68,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msink := &consumertest.MetricsSink{}
 
-			p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
+			p := newTestMetricsConnector(msink, new("defaultNullValue"), zaptest.NewLogger(t))
 
 			ctx := metadata.NewIncomingContext(t.Context(), nil)
 			err := p.Start(ctx, componenttest.NewNopHost())
@@ -89,7 +88,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 	t.Run("Test without exemplars", func(t *testing.T) {
 		msink := &consumertest.MetricsSink{}
 
-		p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
+		p := newTestMetricsConnector(msink, new("defaultNullValue"), zaptest.NewLogger(t))
 		p.config.Exemplars.Enabled = false
 
 		ctx := metadata.NewIncomingContext(t.Context(), nil)
@@ -109,7 +108,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	msink := &consumertest.MetricsSink{}
 
-	conn := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(b))
+	conn := newTestMetricsConnector(msink, new("defaultNullValue"), zaptest.NewLogger(b))
 	traces := buildSampleTrace()
 
 	// Test
@@ -131,7 +130,7 @@ func newTestMetricsConnector(mcon consumer.Metrics, defaultNullValue *string, lo
 			{Name: arrayAttrName},
 			{Name: nullAttrName, Default: defaultNullValue},
 			// Add a default value for an attribute that doesn't exist in a span
-			{Name: notInSpanAttrName0, Default: stringp("defaultNotInSpanAttrVal")},
+			{Name: notInSpanAttrName0, Default: new("defaultNotInSpanAttrVal")},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{Name: notInSpanAttrName1},
 
@@ -242,6 +241,87 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 	seenMetricIDs[mID] = true
 }
 
+func TestConnectorConsumeLogs(t *testing.T) {
+	msink := &consumertest.MetricsSink{}
+	cfg := &Config{Dimensions: []Dimension{{Name: exceptionTypeKey}}}
+	c := newMetricsConnector(zaptest.NewLogger(t), cfg)
+	c.metricsConsumer = msink
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr(serviceNameKey, "service-a")
+	sl := rl.ScopeLogs().AppendEmpty()
+
+	exc := sl.LogRecords().AppendEmpty()
+	exc.SetEventName(eventNameExc)
+	exc.Attributes().PutStr(exceptionTypeKey, "java.lang.NullPointerException")
+	exc.SetTraceID(pcommon.TraceID{0x1})
+	exc.SetSpanID(pcommon.SpanID{0x1})
+
+	// Non-exception log record: must not be aggregated.
+	other := sl.LogRecords().AppendEmpty()
+	other.Body().SetStr("just a regular log line")
+
+	require.NoError(t, c.ConsumeLogs(t.Context(), logs))
+
+	metrics := msink.AllMetrics()
+	require.Len(t, metrics, 1)
+	m := metrics[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "exceptions", m.Name())
+	dps := m.Sum().DataPoints()
+	require.Equal(t, 1, dps.Len())
+	assert.Equal(t, int64(1), dps.At(0).IntValue())
+	v, ok := dps.At(0).Attributes().Get(serviceNameKey)
+	require.True(t, ok)
+	assert.Equal(t, "service-a", v.Str())
+	// span.name/span.kind/status.code are unavailable for logs-sourced exceptions.
+	_, ok = dps.At(0).Attributes().Get(spanNameKey)
+	assert.False(t, ok)
+}
+
+// TestConnectorConsumeTracesAndLogsConcurrently guards c.exceptions against concurrent Consume*
+// calls. Run with -race.
+func TestConnectorConsumeTracesAndLogsConcurrently(t *testing.T) {
+	msink := &consumertest.MetricsSink{}
+	cfg := &Config{Dimensions: []Dimension{{Name: exceptionTypeKey}}}
+	c := newMetricsConnector(zaptest.NewLogger(t), cfg)
+	c.metricsConsumer = msink
+
+	buildLogs := func() plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr(serviceNameKey, "service-a")
+		sl := rl.ScopeLogs().AppendEmpty()
+		exc := sl.LogRecords().AppendEmpty()
+		exc.SetEventName(eventNameExc)
+		exc.Attributes().PutStr(exceptionTypeKey, "java.lang.NullPointerException")
+		return logs
+	}
+
+	const iterations = 200
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			assert.NoError(t, c.ConsumeTraces(t.Context(), buildSampleTrace()))
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			assert.NoError(t, c.ConsumeTraces(t.Context(), buildSampleTrace()))
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			assert.NoError(t, c.ConsumeLogs(t.Context(), buildLogs()))
+		}
+	}()
+	wg.Wait()
+}
+
 func buildBadSampleTrace() ptrace.Traces {
 	badTrace := buildSampleTrace()
 	span := badTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
@@ -255,17 +335,33 @@ func buildBadSampleTrace() ptrace.Traces {
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	buf := &bytes.Buffer{}
-	buildKey(buf, "ab", span0, nil, pcommon.NewMap(), pcommon.NewMap())
+	buf := &strings.Builder{}
+	buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), true, nil, span0.Attributes(), pcommon.NewMap(), pcommon.NewMap())
 	k0 := buf.String()
 	buf.Reset()
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	buildKey(buf, "a", span1, nil, pcommon.NewMap(), pcommon.NewMap())
+	buildKey(buf, "a", span1.Name(), traceutil.SpanKindStr(span1.Kind()), traceutil.StatusCodeStr(span1.Status().Code()), true, nil, span1.Attributes(), pcommon.NewMap(), pcommon.NewMap())
 	k1 := buf.String()
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k0)
 	assert.Equal(t, "a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET", k1)
+}
+
+// hasSpan distinguishes no-span from an empty field: SpanKindStr/StatusCodeStr can also render
+// as "" for values outside their known enum, not just span.Name().
+func TestBuildKeyRealEmptySpanFieldsAreKept(t *testing.T) {
+	buf := &strings.Builder{}
+	buildKey(buf, "svc", "", "", "", true, nil, pcommon.NewMap(), pcommon.NewMap())
+	want := "svc" + metricKeySeparator + metricKeySeparator + metricKeySeparator
+	assert.Equal(t, want, buf.String(), "empty span.name/kind/status.code must still each occupy their own key segment")
+
+	dims := buildDimensionKVs(nil, "svc", "", "", "", true, pcommon.NewMap(), pcommon.NewMap())
+	for _, key := range []string{spanNameKey, spanKindKey, statusCodeKey} {
+		v, ok := dims.Get(key)
+		require.True(t, ok, "%s must be present (as empty) for a real span, not omitted", key)
+		assert.Empty(t, v.Str())
+	}
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
@@ -335,8 +431,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := ptrace.NewSpan()
 			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			buf := &bytes.Buffer{}
-			buildKey(buf, "ab", span0, tc.optionalDims, pcommon.NewMap(), resAttr)
+			buf := &strings.Builder{}
+			buildKey(buf, "ab", span0.Name(), traceutil.SpanKindStr(span0.Kind()), traceutil.StatusCodeStr(span0.Status().Code()), true, tc.optionalDims, span0.Attributes(), pcommon.NewMap(), resAttr)
 			assert.Equal(t, tc.wantKey, buf.String())
 		})
 	}

@@ -4,7 +4,6 @@
 This receiver can fetch stats from a SAP HANA instance. It leverages the [driver](https://github.com/SAP/go-hdb)
 written by SAP for connecting to SAP HANA with the golang sql module to execute several monitoring queries.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |

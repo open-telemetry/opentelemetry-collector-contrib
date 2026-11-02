@@ -103,8 +103,8 @@ The number of packets dropped
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled | Semantic Convention |
-| ---- | ----------- | ------ | ------- | ------------------- |
-| host.ip | The IP address of the Cisco network device | Any Str | true | - |
-| hw.type | Type of the physical hardware component | Any Str | true | - |
-| os.name | The operating system type of the Cisco device | Any Str | true | - |
+| Name | Description | Values | Enabled | Semantic Convention | Stability |
+| ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| host.ip | The IP address of the Cisco network device | Any Str | true | - | - |
+| hw.type | Type of the physical hardware component | Any Str | true | - | - |
+| os.name | The operating system type of the Cisco device | Any Str | true | - | - |

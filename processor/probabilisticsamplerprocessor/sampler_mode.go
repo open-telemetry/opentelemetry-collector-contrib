@@ -475,7 +475,7 @@ func commonShouldSampleLogic[T any](
 	priorityFunc priorityFunc[T],
 	description string,
 	logger *zap.Logger,
-	counter metric.Int64Counter,
+	counters ...metric.Int64Counter,
 ) bool {
 	rnd, carrier, err := randFunc(item)
 
@@ -484,8 +484,7 @@ func commonShouldSampleLogic[T any](
 	}
 	var threshold sampling.Threshold
 	if err != nil {
-		var se samplerError
-		if errors.As(err, &se) {
+		if _, ok := errors.AsType[samplerError](err); ok {
 			logger.Debug(description, zap.Error(err))
 		} else {
 			logger.Info(description, zap.Error(err))
@@ -521,7 +520,11 @@ func commonShouldSampleLogic[T any](
 		}
 	}
 
-	counter.Add(ctx, 1, metric.WithAttributes(attribute.String("policy", rnd.policyName()), attribute.String("sampled", strconv.FormatBool(sampled))))
-
+	for _, counter := range counters {
+		counter.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("policy", rnd.policyName()),
+			attribute.String("sampled", strconv.FormatBool(sampled)),
+		))
+	}
 	return sampled
 }

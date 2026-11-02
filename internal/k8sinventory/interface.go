@@ -9,5 +9,5 @@ import (
 )
 
 type Observer interface {
-	Start(ctx context.Context, wg *sync.WaitGroup) chan struct{}
+	Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}, error)
 }

@@ -33,12 +33,11 @@ func Test_MD5(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := MD5HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := md5HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,14 +69,64 @@ func Test_MD5Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := MD5HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := md5HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
+	}
+}
+
+func Test_MD5Factory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewMD5Factory[any]()
+		assert.Equal(t, "MD5", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewMD5Factory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &mD5Arguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewMD5Factory[any]()
+		args := factory.CreateDefaultArguments()
+		md5Args, ok := args.(*mD5Arguments[any])
+		require.True(t, ok)
+		md5Args.Target = ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "hello world", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createMD5Function[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "MD5Factory args must be of type *mD5Arguments[K]")
+	})
+}
+
+func BenchmarkMD5(b *testing.B) {
+	exprFunc := md5HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

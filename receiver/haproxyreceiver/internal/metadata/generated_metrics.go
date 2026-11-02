@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -21,6 +22,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 // AttributeStatusCode specifies the value status_code attribute.
 type AttributeStatusCode int
@@ -132,7 +142,8 @@ var MetricsInfo = metricsInfo{
 		Name: "haproxy.requests.redispatched",
 	},
 	HaproxyRequestsTotal: metricInfo{
-		Name: "haproxy.requests.total",
+		Name:       "haproxy.requests.total",
+		Attributes: []string{"status_code"},
 	},
 	HaproxyResponsesAverageTime: metricInfo{
 		Name: "haproxy.responses.average_time",
@@ -203,7 +214,8 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricHaproxyActive struct {
@@ -216,7 +228,7 @@ type metricHaproxyActive struct {
 func (m *metricHaproxyActive) init() {
 	m.data.SetName("haproxy.active")
 	m.data.SetDescription("Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.")
-	m.data.SetUnit("{servers}")
+	m.data.SetUnit("{server}")
 	m.data.SetEmptyGauge()
 }
 
@@ -266,7 +278,7 @@ type metricHaproxyBackup struct {
 func (m *metricHaproxyBackup) init() {
 	m.data.SetName("haproxy.backup")
 	m.data.SetDescription("Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.")
-	m.data.SetUnit("{servers}")
+	m.data.SetUnit("{server}")
 	m.data.SetEmptyGauge()
 }
 
@@ -316,7 +328,7 @@ type metricHaproxyBytesInput struct {
 func (m *metricHaproxyBytesInput) init() {
 	m.data.SetName("haproxy.bytes.input")
 	m.data.SetDescription("Bytes in. Corresponds to HAProxy's `bin` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -368,7 +380,7 @@ type metricHaproxyBytesOutput struct {
 func (m *metricHaproxyBytesOutput) init() {
 	m.data.SetName("haproxy.bytes.output")
 	m.data.SetDescription("Bytes out. Corresponds to HAProxy's `bout` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -420,7 +432,7 @@ type metricHaproxyClientsCanceled struct {
 func (m *metricHaproxyClientsCanceled) init() {
 	m.data.SetName("haproxy.clients.canceled")
 	m.data.SetDescription("Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_abrt` metric")
-	m.data.SetUnit("{cancellations}")
+	m.data.SetUnit("{cancellation}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -472,7 +484,7 @@ type metricHaproxyCompressionBypass struct {
 func (m *metricHaproxyCompressionBypass) init() {
 	m.data.SetName("haproxy.compression.bypass")
 	m.data.SetDescription("Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to HAProxy's `comp_byp` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -524,7 +536,7 @@ type metricHaproxyCompressionCount struct {
 func (m *metricHaproxyCompressionCount) init() {
 	m.data.SetName("haproxy.compression.count")
 	m.data.SetDescription("Number of HTTP responses that were compressed. Corresponds to HAProxy's `comp_rsp` metric.")
-	m.data.SetUnit("{responses}")
+	m.data.SetUnit("{response}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -576,7 +588,7 @@ type metricHaproxyCompressionInput struct {
 func (m *metricHaproxyCompressionInput) init() {
 	m.data.SetName("haproxy.compression.input")
 	m.data.SetDescription("Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `comp_in` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -628,7 +640,7 @@ type metricHaproxyCompressionOutput struct {
 func (m *metricHaproxyCompressionOutput) init() {
 	m.data.SetName("haproxy.compression.output")
 	m.data.SetDescription("Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy's `comp_out` metric.")
-	m.data.SetUnit("by")
+	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -730,7 +742,7 @@ type metricHaproxyConnectionsErrors struct {
 func (m *metricHaproxyConnectionsErrors) init() {
 	m.data.SetName("haproxy.connections.errors")
 	m.data.SetDescription("Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric")
-	m.data.SetUnit("{errors}")
+	m.data.SetUnit("{error}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -782,7 +794,7 @@ type metricHaproxyConnectionsRate struct {
 func (m *metricHaproxyConnectionsRate) init() {
 	m.data.SetName("haproxy.connections.rate")
 	m.data.SetDescription("Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptyGauge()
 }
 
@@ -832,7 +844,7 @@ type metricHaproxyConnectionsRetries struct {
 func (m *metricHaproxyConnectionsRetries) init() {
 	m.data.SetName("haproxy.connections.retries")
 	m.data.SetDescription("Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.")
-	m.data.SetUnit("{retries}")
+	m.data.SetUnit("{retry}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -884,7 +896,7 @@ type metricHaproxyConnectionsTotal struct {
 func (m *metricHaproxyConnectionsTotal) init() {
 	m.data.SetName("haproxy.connections.total")
 	m.data.SetDescription("Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot` metric.")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -988,7 +1000,7 @@ type metricHaproxyFailedChecks struct {
 func (m *metricHaproxyFailedChecks) init() {
 	m.data.SetName("haproxy.failed_checks")
 	m.data.SetDescription("Number of failed checks. (Only counts checks failed when the server is up). Corresponds to HAProxy's `chkfail` metric.")
-	m.data.SetUnit("{checks}")
+	m.data.SetUnit("{check}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1090,7 +1102,7 @@ type metricHaproxyRequestsDenied struct {
 func (m *metricHaproxyRequestsDenied) init() {
 	m.data.SetName("haproxy.requests.denied")
 	m.data.SetDescription("Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1142,7 +1154,7 @@ type metricHaproxyRequestsErrors struct {
 func (m *metricHaproxyRequestsErrors) init() {
 	m.data.SetName("haproxy.requests.errors")
 	m.data.SetDescription("Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.")
-	m.data.SetUnit("{errors}")
+	m.data.SetUnit("{error}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1194,7 +1206,7 @@ type metricHaproxyRequestsQueued struct {
 func (m *metricHaproxyRequestsQueued) init() {
 	m.data.SetName("haproxy.requests.queued")
 	m.data.SetDescription("Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1246,7 +1258,7 @@ type metricHaproxyRequestsRate struct {
 func (m *metricHaproxyRequestsRate) init() {
 	m.data.SetName("haproxy.requests.rate")
 	m.data.SetDescription("HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req_rate` metric.")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1296,7 +1308,7 @@ type metricHaproxyRequestsRedispatched struct {
 func (m *metricHaproxyRequestsRedispatched) init() {
 	m.data.SetName("haproxy.requests.redispatched")
 	m.data.SetDescription("Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1343,18 +1355,20 @@ type metricHaproxyRequestsTotal struct {
 	config        HaproxyRequestsTotalMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills haproxy.requests.total metric with initial data.
 func (m *metricHaproxyRequestsTotal) init() {
 	m.data.SetName("haproxy.requests.total")
 	m.data.SetDescription("Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricHaproxyRequestsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusCodeAttributeValue string) {
@@ -1370,31 +1384,31 @@ func (m *metricHaproxyRequestsTotal) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1489,7 +1503,7 @@ type metricHaproxyResponsesDenied struct {
 func (m *metricHaproxyResponsesDenied) init() {
 	m.data.SetName("haproxy.responses.denied")
 	m.data.SetDescription("Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric")
-	m.data.SetUnit("{responses}")
+	m.data.SetUnit("{response}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1541,7 +1555,7 @@ type metricHaproxyResponsesErrors struct {
 func (m *metricHaproxyResponsesErrors) init() {
 	m.data.SetName("haproxy.responses.errors")
 	m.data.SetDescription("Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.")
-	m.data.SetUnit("{errors}")
+	m.data.SetUnit("{error}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1593,7 +1607,7 @@ type metricHaproxyServerSelectedTotal struct {
 func (m *metricHaproxyServerSelectedTotal) init() {
 	m.data.SetName("haproxy.server_selected.total")
 	m.data.SetDescription("Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.")
-	m.data.SetUnit("{selections}")
+	m.data.SetUnit("{selection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1695,7 +1709,7 @@ type metricHaproxySessionsCount struct {
 func (m *metricHaproxySessionsCount) init() {
 	m.data.SetName("haproxy.sessions.count")
 	m.data.SetDescription("Current sessions. Corresponds to HAProxy's `scur` metric.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1745,7 +1759,7 @@ type metricHaproxySessionsLimit struct {
 func (m *metricHaproxySessionsLimit) init() {
 	m.data.SetName("haproxy.sessions.limit")
 	m.data.SetDescription("Configured session limit. Corresponds to HAProxy's `slim` metric.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1795,7 +1809,7 @@ type metricHaproxySessionsRate struct {
 func (m *metricHaproxySessionsRate) init() {
 	m.data.SetName("haproxy.sessions.rate")
 	m.data.SetDescription("Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1845,7 +1859,7 @@ type metricHaproxySessionsTotal struct {
 func (m *metricHaproxySessionsTotal) init() {
 	m.data.SetName("haproxy.sessions.total")
 	m.data.SetDescription("Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.")
-	m.data.SetUnit("{sessions}")
+	m.data.SetUnit("{session}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

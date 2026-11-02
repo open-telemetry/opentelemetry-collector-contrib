@@ -11,7 +11,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [fatsheep9146]
+    active: [s3onghyun]
+    emeritus: [fatsheep9146]
 
 tests:
   config:

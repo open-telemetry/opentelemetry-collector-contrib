@@ -105,7 +105,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	clientConfig.WriteBufferSize = 512 * 1024
 	cfg := &Config{
 		Namespace:         "",
-		ClientConfig:      clientConfig,
+		HTTP:              clientConfig,
 		MaxBatchSizeBytes: 3000000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 		TargetInfo: TargetInfo{

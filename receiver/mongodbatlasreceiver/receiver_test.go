@@ -19,7 +19,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.Equal(t, 3*time.Minute, cfg.(*Config).CollectionInterval)
+	require.Equal(t, 3*time.Minute, cfg.(*Config).ControllerConfig.CollectionInterval)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -52,7 +52,7 @@ func TestTimeConstraints(t *testing.T) {
 				now := time.Now()
 				tc := recv.timeConstraints(now)
 				require.NotNil(t, tc)
-				require.Equal(t, tc.start, now.Add(cfg.CollectionInterval*-1).UTC().Format(time.RFC3339))
+				require.Equal(t, tc.start, now.Add(cfg.ControllerConfig.CollectionInterval*-1).UTC().Format(time.RFC3339))
 			},
 		},
 		{
@@ -64,7 +64,7 @@ func TestTimeConstraints(t *testing.T) {
 				recv := mongodbatlasreceiver{
 					cfg: cfg,
 					// set last run to 1 collection ago
-					lastRun: now.Add(cfg.CollectionInterval * -1),
+					lastRun: now.Add(cfg.ControllerConfig.CollectionInterval * -1),
 				}
 				tc := recv.timeConstraints(now)
 				require.NotNil(t, tc)
@@ -142,4 +142,34 @@ func TestShouldProcessCluster(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestNewMongoDBAtlasReceiverPopulatesClusterFilters verifies that include/exclude
+// cluster filters are applied to the original ProjectConfig elements after receiver creation.
+func TestNewMongoDBAtlasReceiverPopulatesClusterFilters(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Projects = []ProjectConfig{
+		{
+			Name:            "proj-include",
+			IncludeClusters: []string{"ClusterA", "ClusterB"},
+		},
+		{
+			Name:            "proj-exclude",
+			ExcludeClusters: []string{"ClusterX"},
+		},
+	}
+
+	recv, err := newMongoDBAtlasReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+
+	// After receiver creation the include/exclude maps must be populated on the
+	// original ProjectConfig values (not on ephemeral range-loop copies).
+	require.True(t, shouldProcessCluster(&recv.cfg.Projects[0], "ClusterA"),
+		"ClusterA should be included for proj-include")
+	require.False(t, shouldProcessCluster(&recv.cfg.Projects[0], "ClusterC"),
+		"ClusterC should not be included for proj-include (not in include list)")
+	require.True(t, shouldProcessCluster(&recv.cfg.Projects[1], "ClusterA"),
+		"ClusterA should be processed for proj-exclude (not in exclude list)")
+	require.False(t, shouldProcessCluster(&recv.cfg.Projects[1], "ClusterX"),
+		"ClusterX should be excluded for proj-exclude")
 }

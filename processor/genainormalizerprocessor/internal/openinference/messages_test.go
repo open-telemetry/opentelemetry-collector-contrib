@@ -1,0 +1,807 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package openinference
+
+import (
+	"encoding/json"
+	"maps"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
+)
+
+func newAttrs(kvs map[string]string) pcommon.Map {
+	m := pcommon.NewMap()
+	for k, v := range kvs {
+		m.PutStr(k, v)
+	}
+	return m
+}
+
+func parseJSON(t *testing.T, s string) []any {
+	t.Helper()
+	var out []any
+	require.NoError(t, json.Unmarshal([]byte(s), &out))
+	return out
+}
+
+func TestReconstructMessages_BasicInputMessages(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "system",
+		"llm.input_messages.0.message.content": "You are helpful.",
+		"llm.input_messages.1.message.role":    "user",
+		"llm.input_messages.1.message.content": "Hello",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, ok := attrs.Get(otelsemconv.GenAIInputMessages)
+	require.True(t, ok)
+
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 2)
+
+	msg0 := msgs[0].(map[string]any)
+	assert.Equal(t, "system", msg0["role"])
+	parts0 := msg0["parts"].([]any)
+	require.Len(t, parts0, 1)
+	part0 := parts0[0].(map[string]any)
+	assert.Equal(t, "text", part0["type"])
+	assert.Equal(t, "You are helpful.", part0["content"])
+
+	msg1 := msgs[1].(map[string]any)
+	assert.Equal(t, "user", msg1["role"])
+
+	_, exists := attrs.Get("llm.input_messages.0.message.role")
+	assert.False(t, exists, "originals should be removed")
+}
+
+func TestReconstructMessages_OutputMessages(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":    "assistant",
+		"llm.output_messages.0.message.content": "Hi there!",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, "assistant", msg["role"])
+	// finish_reason is required by the GenAI output-messages schema; emitted as ""
+	// because OpenInference does not carry per-message finish reasons.
+	assert.Empty(t, msg["finish_reason"])
+}
+
+func TestReconstructMessages_ToolCalls(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":                                      "assistant",
+		"llm.output_messages.0.message.tool_calls.0.tool_call.id":                 "call_abc",
+		"llm.output_messages.0.message.tool_calls.0.tool_call.function.name":      "get_weather",
+		"llm.output_messages.0.message.tool_calls.0.tool_call.function.arguments": `{"city":"Berlin"}`,
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, "assistant", msg["role"])
+	parts := msg["parts"].([]any)
+	require.Len(t, parts, 1)
+
+	tc := parts[0].(map[string]any)
+	assert.Equal(t, "tool_call", tc["type"])
+	assert.Equal(t, "call_abc", tc["id"])
+	assert.Equal(t, "get_weather", tc["name"])
+	args := tc["arguments"].(map[string]any)
+	assert.Equal(t, "Berlin", args["city"])
+}
+
+func TestReconstructMessages_ToolResponse(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.2.message.role":         "user",
+		"llm.input_messages.2.message.content":      "sunny, 22C",
+		"llm.input_messages.2.message.tool_call_id": "call_abc",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, ok := attrs.Get(otelsemconv.GenAIInputMessages)
+	require.True(t, ok)
+
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, "tool", msg["role"], "role should be inferred as tool when tool_call_id present")
+
+	parts := msg["parts"].([]any)
+	require.Len(t, parts, 1)
+	part := parts[0].(map[string]any)
+	assert.Equal(t, "tool_call_response", part["type"])
+	assert.Equal(t, "call_abc", part["id"])
+	assert.Equal(t, "sunny, 22C", part["response"])
+}
+
+func TestReconstructMessages_ToolResponseExplicitRole(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":         "tool",
+		"llm.input_messages.0.message.content":      "result data",
+		"llm.input_messages.0.message.tool_call_id": "call_xyz",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, "tool", msgs[0].(map[string]any)["role"])
+}
+
+func TestReconstructMessages_InferredRoles(t *testing.T) {
+	tests := []struct {
+		name         string
+		attrs        map[string]string
+		expectedRole string
+	}{
+		{
+			name: "plain content defaults to user",
+			attrs: map[string]string{
+				"llm.input_messages.0.message.content": "hello",
+			},
+			expectedRole: "user",
+		},
+		{
+			name: "tool_calls without role defaults to assistant",
+			attrs: map[string]string{
+				"llm.output_messages.0.message.tool_calls.0.tool_call.function.name": "fn",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.id":            "c1",
+			},
+			expectedRole: "assistant",
+		},
+		{
+			name: "tool_call_id without role defaults to tool",
+			attrs: map[string]string{
+				"llm.input_messages.0.message.content":      "res",
+				"llm.input_messages.0.message.tool_call_id": "c1",
+			},
+			expectedRole: "tool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := newAttrs(tt.attrs)
+			wrote := ReconstructMessages(a, true, false)
+			require.True(t, wrote)
+
+			var target string
+			if _, ok := a.Get(otelsemconv.GenAIInputMessages); ok {
+				target = otelsemconv.GenAIInputMessages
+			} else {
+				target = otelsemconv.GenAIOutputMessages
+			}
+			val, _ := a.Get(target)
+			msgs := parseJSON(t, val.AsString())
+			require.Len(t, msgs, 1)
+			assert.Equal(t, tt.expectedRole, msgs[0].(map[string]any)["role"])
+		})
+	}
+}
+
+func TestReconstructMessages_MessageName(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "assistant",
+		"llm.input_messages.0.message.name":    "helper_bot",
+		"llm.input_messages.0.message.content": "Hi",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, "assistant", msg["role"])
+	assert.Equal(t, "helper_bot", msg["name"], "name field must appear in the JSON output")
+
+	_, exists := attrs.Get("llm.input_messages.0.message.name")
+	assert.False(t, exists, "name attr should be consumed")
+}
+
+func TestReconstructMessages_MessageNameOutput(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":    "assistant",
+		"llm.output_messages.0.message.name":    "my_agent",
+		"llm.output_messages.0.message.content": "Done",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIOutputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, "my_agent", msg["name"])
+	assert.Empty(t, msg["finish_reason"])
+}
+
+func TestReconstructMessages_MessageNameOmittedWhenEmpty(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "user",
+		"llm.input_messages.0.message.content": "Hi",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	_, hasName := msgs[0].(map[string]any)["name"]
+	assert.False(t, hasName, "name must be omitted when not present in source")
+}
+
+func TestReconstructMessages_NoOverwrite(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "user",
+		"llm.input_messages.0.message.content": "hello",
+	})
+	attrs.PutStr(otelsemconv.GenAIInputMessages, "existing")
+
+	wrote := ReconstructMessages(attrs, true, false)
+	assert.False(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	assert.Equal(t, "existing", val.AsString())
+}
+
+func TestReconstructMessages_Overwrite(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "user",
+		"llm.input_messages.0.message.content": "hello",
+	})
+	attrs.PutStr(otelsemconv.GenAIInputMessages, "existing")
+
+	wrote := ReconstructMessages(attrs, true, true)
+	assert.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	assert.NotEqual(t, "existing", val.AsString())
+}
+
+func TestReconstructMessages_KeepOriginals(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "user",
+		"llm.input_messages.0.message.content": "hello",
+	})
+
+	wrote := ReconstructMessages(attrs, false, false)
+	require.True(t, wrote)
+
+	_, ok := attrs.Get("llm.input_messages.0.message.role")
+	assert.True(t, ok, "originals should be kept when removeOriginals=false")
+}
+
+func TestReconstructMessages_NoFlattenedAttrs(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.model_name": "gpt-4",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	assert.False(t, wrote)
+}
+
+func TestReconstructMessages_InvalidIndex(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.abc.message.role": "user",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	assert.False(t, wrote)
+}
+
+func TestReconstructMessages_NonStringValue(t *testing.T) {
+	m := pcommon.NewMap()
+	m.PutStr("llm.input_messages.0.message.role", "user")
+	m.PutInt("llm.input_messages.0.message.content", 42)
+
+	wrote := ReconstructMessages(m, true, false)
+	require.True(t, wrote)
+
+	val, _ := m.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	parts := msgs[0].(map[string]any)["parts"].([]any)
+	require.Len(t, parts, 1)
+	assert.Equal(t, "42", parts[0].(map[string]any)["content"])
+}
+
+func TestReconstructMessages_MultipleToolCalls(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":                                      "assistant",
+		"llm.output_messages.0.message.tool_calls.0.tool_call.id":                 "c1",
+		"llm.output_messages.0.message.tool_calls.0.tool_call.function.name":      "fn1",
+		"llm.output_messages.0.message.tool_calls.0.tool_call.function.arguments": `{"a":1}`,
+		"llm.output_messages.0.message.tool_calls.1.tool_call.id":                 "c2",
+		"llm.output_messages.0.message.tool_calls.1.tool_call.function.name":      "fn2",
+		"llm.output_messages.0.message.tool_calls.1.tool_call.function.arguments": `invalid json`,
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIOutputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+
+	parts := msgs[0].(map[string]any)["parts"].([]any)
+	require.Len(t, parts, 2)
+
+	tc0 := parts[0].(map[string]any)
+	assert.Equal(t, "fn1", tc0["name"])
+	assert.Equal(t, float64(1), tc0["arguments"].(map[string]any)["a"])
+
+	tc1 := parts[1].(map[string]any)
+	assert.Equal(t, "fn2", tc1["name"])
+	assert.Equal(t, "invalid json", tc1["arguments"])
+}
+
+func TestReconstructMessages_OrderingByIndex(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.2.message.role":    "assistant",
+		"llm.input_messages.2.message.content": "third",
+		"llm.input_messages.0.message.role":    "system",
+		"llm.input_messages.0.message.content": "first",
+		"llm.input_messages.1.message.role":    "user",
+		"llm.input_messages.1.message.content": "second",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 3)
+	assert.Equal(t, "system", msgs[0].(map[string]any)["role"])
+	assert.Equal(t, "user", msgs[1].(map[string]any)["role"])
+	assert.Equal(t, "assistant", msgs[2].(map[string]any)["role"])
+}
+
+func TestReconstructMessages_EmptyContent(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role": "user",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	parts := msgs[0].(map[string]any)["parts"].([]any)
+	assert.Empty(t, parts)
+}
+
+func TestReconstructMessages_ContentsArray(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "system",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "text",
+		"llm.input_messages.0.message.contents.0.message_content.text":  "You are a haiku poet.",
+		"llm.input_messages.1.message.role":                             "user",
+		"llm.input_messages.1.message.contents.0.message_content.type":  "text",
+		"llm.input_messages.1.message.contents.0.message_content.text":  "Topic: e2e test",
+		"llm.output_messages.0.message.role":                            "assistant",
+		"llm.output_messages.0.message.contents.0.message_content.type": "text",
+		"llm.output_messages.0.message.contents.0.message_content.text": "haiku here",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 2)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "You are a haiku poet."}},
+		msgs[0].(map[string]any)["parts"])
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "Topic: e2e test"}},
+		msgs[1].(map[string]any)["parts"])
+
+	out, _ := attrs.Get(otelsemconv.GenAIOutputMessages)
+	outMsgs := parseJSON(t, out.AsString())
+	require.Len(t, outMsgs, 1)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "haiku here"}},
+		outMsgs[0].(map[string]any)["parts"])
+
+	// removeOriginals must strip the indexed keys too, not just the flat ones.
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.False(t, ok)
+}
+
+func TestReconstructMessages_ContentsArrayMultipleParts(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "first",
+		"llm.input_messages.0.message.contents.1.message_content.type": "text",
+		"llm.input_messages.0.message.contents.1.message_content.text": "second",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{
+		map[string]any{"type": "text", "content": "first"},
+		map[string]any{"type": "text", "content": "second"},
+	}, msgs[0].(map[string]any)["parts"])
+}
+
+func TestReconstructMessages_ContentsArrayNonTextSkipped(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "user",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "image",
+		"llm.input_messages.0.message.contents.0.message_content.image": "http://example.com/a.png",
+		"llm.input_messages.0.message.contents.1.message_content.type":  "text",
+		"llm.input_messages.0.message.contents.1.message_content.text":  "describe this",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "describe this"}},
+		msgs[0].(map[string]any)["parts"])
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.1.message_content.text")
+	assert.False(t, ok, "reconstructed text attr should be removed")
+	_, ok = attrs.Get("llm.input_messages.0.message.contents.0.message_content.image")
+	assert.True(t, ok, "skipped image attr must survive")
+}
+
+func TestReconstructMessages_ContentsArrayNonTextOnly(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "user",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "image",
+		"llm.input_messages.0.message.contents.0.message_content.image": "http://example.com/a.png",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{}, msgs[0].(map[string]any)["parts"],
+		"non-text-only message must produce empty parts")
+
+	_, imageAttrOk := attrs.Get("llm.input_messages.0.message.contents.0.message_content.image")
+	assert.True(t, imageAttrOk, "image attr must not be removed when content was not reconstructed")
+	_, typeAttrOk := attrs.Get("llm.input_messages.0.message.contents.0.message_content.type")
+	assert.True(t, typeAttrOk, "type attr must not be removed when content was not reconstructed")
+}
+
+// Attributes this processor does not map into the reconstructed message must
+// survive remove_originals, otherwise the payload is lost with nothing emitted
+// in its place. These are all fields defined by the OpenInference semantic
+// conventions that the reconstruction does not yet understand.
+func TestReconstructMessages_UnmappedFieldsSurvive(t *testing.T) {
+	tests := []struct {
+		name string
+		key  string
+		with map[string]string
+	}{
+		{
+			name: "legacy function_call_name",
+			key:  "llm.output_messages.0.message.function_call_name",
+			with: map[string]string{"llm.output_messages.0.message.function_call_name": "get_weather"},
+		},
+		{
+			name: "legacy function_call_arguments_json",
+			key:  "llm.output_messages.0.message.function_call_arguments_json",
+			with: map[string]string{"llm.output_messages.0.message.function_call_arguments_json": `{"city":"Berlin"}`},
+		},
+		{
+			name: "tool_call reasoning_signature",
+			key:  "llm.output_messages.0.message.tool_calls.0.tool_call.reasoning_signature",
+			with: map[string]string{
+				"llm.output_messages.0.message.tool_calls.0.tool_call.id":                  "c1",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.function.name":       "fn",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.reasoning_signature": "sig123",
+			},
+		},
+		{
+			name: "unknown future message field",
+			key:  "llm.output_messages.0.message.some_future_field",
+			with: map[string]string{"llm.output_messages.0.message.some_future_field": "payload"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kvs := map[string]string{"llm.output_messages.0.message.role": "assistant"}
+			maps.Copy(kvs, tt.with)
+			attrs := newAttrs(kvs)
+
+			require.True(t, ReconstructMessages(attrs, true, false))
+
+			_, ok := attrs.Get(tt.key)
+			assert.True(t, ok, "unmapped attr %q must survive remove_originals", tt.key)
+
+			// Recognized siblings are still consumed and removed.
+			_, roleOK := attrs.Get("llm.output_messages.0.message.role")
+			assert.False(t, roleOK, "mapped role attr should still be removed")
+		})
+	}
+}
+
+// Removal is per content entry, not per message: an entry that is reconstructed
+// loses its source attrs while an entry that is skipped keeps them, even when
+// both live under the same prefix.
+func TestReconstructMessages_ContentsRemovalIsPerMessage(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                             "user",
+		"llm.input_messages.0.message.contents.0.message_content.type":  "text",
+		"llm.input_messages.0.message.contents.0.message_content.text":  "hello",
+		"llm.input_messages.1.message.role":                             "user",
+		"llm.input_messages.1.message.contents.0.message_content.type":  "image",
+		"llm.input_messages.1.message.contents.0.message_content.image": "http://example.com/a.png",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 2)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "hello"}},
+		msgs[0].(map[string]any)["parts"])
+	assert.Equal(t, []any{}, msgs[1].(map[string]any)["parts"])
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.False(t, ok, "reconstructed message 0 should lose its content attrs")
+	_, ok = attrs.Get("llm.input_messages.1.message.contents.0.message_content.image")
+	assert.True(t, ok, "skipped message 1 must keep its content attrs")
+}
+
+// A reconstructed text entry may still carry fields the processor does not map.
+// Only the mapped ones are removed.
+func TestReconstructMessages_UnmappedSiblingOnTextEntrySurvives(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "hello",
+		"llm.input_messages.0.message.contents.0.message_content.id":   "content-123",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.False(t, ok, "mapped text attr should be removed")
+	_, ok = attrs.Get("llm.input_messages.0.message.contents.0.message_content.id")
+	assert.True(t, ok, "unmapped id attr on a text entry must survive")
+}
+
+// type=text with an empty text value yields no part, so nothing was consumed and
+// the source attrs must stay.
+func TestReconstructMessages_ContentsEmptyTextNotConsumed(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{}, msgs[0].(map[string]any)["parts"])
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.type")
+	assert.True(t, ok, "empty text entry was not reconstructed, attrs must survive")
+}
+
+func TestReconstructMessages_ContentsArrayOutputMessages(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.role":                             "assistant",
+		"llm.output_messages.0.message.contents.0.message_content.type":  "text",
+		"llm.output_messages.0.message.contents.0.message_content.text":  "the answer",
+		"llm.output_messages.0.message.contents.1.message_content.type":  "image",
+		"llm.output_messages.0.message.contents.1.message_content.image": "http://example.com/b.png",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+	msgs := parseJSON(t, val.AsString())
+	msg := msgs[0].(map[string]any)
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "the answer"}}, msg["parts"])
+	assert.Empty(t, msg["finish_reason"])
+
+	_, ok = attrs.Get("llm.output_messages.0.message.contents.1.message_content.image")
+	assert.True(t, ok, "skipped image attr must survive on output messages too")
+}
+
+func TestReconstructMessages_ContentsKeepOriginals(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "hello",
+	})
+
+	require.True(t, ReconstructMessages(attrs, false, false))
+
+	_, ok := attrs.Get("llm.input_messages.0.message.contents.0.message_content.text")
+	assert.True(t, ok, "contents attrs must be kept when removeOriginals=false")
+}
+
+// buildParts emits exactly one part source per message. Fields belonging to a
+// source that lost the precedence chain are not represented in the output, so
+// their source attributes must survive.
+func TestReconstructMessages_LosingPartSourceSurvives(t *testing.T) {
+	tests := []struct {
+		name    string
+		attrs   map[string]string
+		kept    string
+		removed string
+	}{
+		{
+			name: "flat content wins over indexed contents",
+			attrs: map[string]string{
+				"llm.input_messages.0.message.role":                            "user",
+				"llm.input_messages.0.message.content":                         "flat",
+				"llm.input_messages.0.message.contents.0.message_content.type": "text",
+				"llm.input_messages.0.message.contents.0.message_content.text": "indexed",
+			},
+			kept:    "llm.input_messages.0.message.contents.0.message_content.text",
+			removed: "llm.input_messages.0.message.content",
+		},
+		{
+			name: "tool_calls win over flat content",
+			attrs: map[string]string{
+				"llm.output_messages.0.message.role":                                 "assistant",
+				"llm.output_messages.0.message.content":                              "let me check the weather",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.id":            "c1",
+				"llm.output_messages.0.message.tool_calls.0.tool_call.function.name": "get_weather",
+			},
+			kept:    "llm.output_messages.0.message.content",
+			removed: "llm.output_messages.0.message.tool_calls.0.tool_call.id",
+		},
+		{
+			name: "tool_call_id wins over indexed contents",
+			attrs: map[string]string{
+				"llm.input_messages.0.message.role":                            "tool",
+				"llm.input_messages.0.message.tool_call_id":                    "c1",
+				"llm.input_messages.0.message.contents.0.message_content.type": "text",
+				"llm.input_messages.0.message.contents.0.message_content.text": "tool result",
+			},
+			kept:    "llm.input_messages.0.message.contents.0.message_content.text",
+			removed: "llm.input_messages.0.message.tool_call_id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attrs := newAttrs(tt.attrs)
+			require.True(t, ReconstructMessages(attrs, true, false))
+
+			_, ok := attrs.Get(tt.kept)
+			assert.True(t, ok, "%q was not emitted, so it must survive", tt.kept)
+			_, ok = attrs.Get(tt.removed)
+			assert.False(t, ok, "%q was emitted, so it should be removed", tt.removed)
+		})
+	}
+}
+
+func TestReconstructMessages_FlatContentTakesPrecedence(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":                            "user",
+		"llm.input_messages.0.message.content":                         "flat",
+		"llm.input_messages.0.message.contents.0.message_content.type": "text",
+		"llm.input_messages.0.message.contents.0.message_content.text": "indexed",
+	})
+
+	require.True(t, ReconstructMessages(attrs, true, false))
+
+	val, _ := attrs.Get(otelsemconv.GenAIInputMessages)
+	msgs := parseJSON(t, val.AsString())
+	assert.Equal(t, []any{map[string]any{"type": "text", "content": "flat"}},
+		msgs[0].(map[string]any)["parts"])
+}
+
+func TestReconstructMessages_BothInputAndOutput(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":     "user",
+		"llm.input_messages.0.message.content":  "question",
+		"llm.output_messages.0.message.role":    "assistant",
+		"llm.output_messages.0.message.content": "answer",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	inVal, ok := attrs.Get(otelsemconv.GenAIInputMessages)
+	require.True(t, ok)
+	outVal, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+
+	inMsgs := parseJSON(t, inVal.AsString())
+	outMsgs := parseJSON(t, outVal.AsString())
+	require.Len(t, inMsgs, 1)
+	require.Len(t, outMsgs, 1)
+
+	inMsg := inMsgs[0].(map[string]any)
+	_, hasFinishReason := inMsg["finish_reason"]
+	assert.False(t, hasFinishReason, "input messages must not have finish_reason")
+
+	outMsg := outMsgs[0].(map[string]any)
+	assert.Empty(t, outMsg["finish_reason"], "output messages must have finish_reason (empty string)")
+}
+
+func TestReconstructMessages_TrailingDotKey(t *testing.T) {
+	// A key ending exactly at "message." (empty fieldPath) must not inject a
+	// phantom {"role":"user","parts":[]} entry into the output.
+	m := pcommon.NewMap()
+	m.PutStr("llm.input_messages.0.message.", "orphan") // trailing-dot key
+	m.PutStr("llm.input_messages.1.message.role", "user")
+	m.PutStr("llm.input_messages.1.message.content", "hello")
+
+	wrote := ReconstructMessages(m, true, false)
+	require.True(t, wrote)
+
+	val, ok := m.Get(otelsemconv.GenAIInputMessages)
+	require.True(t, ok)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1, "trailing-dot key must not produce a phantom message")
+	assert.Equal(t, "user", msgs[0].(map[string]any)["role"])
+}
+
+func TestReconstructMessages_ToolCallIDOnOutputMessage(t *testing.T) {
+	// A malformed span that puts tool_call_id on an output message must not
+	// produce role:"tool", which is invalid per the GenAI output-messages schema.
+	attrs := newAttrs(map[string]string{
+		"llm.output_messages.0.message.content":      "result",
+		"llm.output_messages.0.message.tool_call_id": "call_1",
+	})
+
+	wrote := ReconstructMessages(attrs, true, false)
+	require.True(t, wrote)
+
+	val, ok := attrs.Get(otelsemconv.GenAIOutputMessages)
+	require.True(t, ok)
+	msgs := parseJSON(t, val.AsString())
+	require.Len(t, msgs, 1)
+	role := msgs[0].(map[string]any)["role"]
+	assert.NotEqual(t, "tool", role, "output messages must not have role:tool")
+}
+
+func TestMessageAggregator_Interface(t *testing.T) {
+	attrs := newAttrs(map[string]string{
+		"llm.input_messages.0.message.role":    "user",
+		"llm.input_messages.0.message.content": "hi",
+	})
+
+	agg := MessageAggregator{}
+	wrote := agg.AggregateAttributes(attrs, true, false)
+	require.True(t, wrote)
+
+	_, ok := attrs.Get(otelsemconv.GenAIInputMessages)
+	assert.True(t, ok)
+}

@@ -7,7 +7,7 @@ The File Storage Extension can persist state to the local file system.
 | ------------- |-----------|
 | Stability     | [beta]  |
 | Distributions | [contrib], [k8s] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Ffilestorage%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Ffilestorage) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Ffilestorage%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Ffilestorage) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fstorage%2Ffilestorage%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fstorage%2Ffilestorage) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fstorage%2Ffilestorage%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fstorage%2Ffilestorage) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_filestorage)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_filestorage&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@swiatekm](https://www.github.com/swiatekm), [@VihasMakwana](https://www.github.com/VihasMakwana) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
@@ -26,6 +26,13 @@ The default directory is `%ProgramData%\Otelcol\FileStorage` on Windows and `/va
 
 `timeout` is the maximum time to wait for a file lock. This value does not need to be modified in most circumstances.
 The default timeout is `1s`.
+
+`max_size` sets the maximum on-disk size of each bbolt database file in bytes.
+When a write would need the file to grow past this limit, the write is rejected with a storage-full error.
+A value of `0` means unlimited size.
+Writes that fit into already-allocated free space are still allowed, even when the file is already at the configured limit.
+When rebound compaction is enabled, `max_size` must be greater than or equal to both
+`compaction.rebound_needed_threshold_mib * 1,048,576` and `compaction.rebound_trigger_threshold_mib * 1,048,576`.
 
 `fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
@@ -55,6 +62,9 @@ A value of zero will ignore transaction sizes.
 `compaction.cleanup_on_start` (default: false) - specifies if removal of compaction temporary files is performed on start.
 It will remove all temporary files in the compaction directory (those which start with `tempdb`),
 temp files will be left if a previous run of the process is killed while compacting.
+
+If `max_size` is set, both `compaction.rebound_needed_threshold_mib` and `compaction.rebound_trigger_threshold_mib`
+must be less than or equal to that limit after converting MiB to bytes.
 
 ### Rebound (online) compaction
 
@@ -94,6 +104,7 @@ extensions:
   file_storage/all_settings:
     directory: /var/lib/otelcol/mydir
     timeout: 1s
+    max_size: 268435456
     recreate: true
     compaction:
       on_start: true

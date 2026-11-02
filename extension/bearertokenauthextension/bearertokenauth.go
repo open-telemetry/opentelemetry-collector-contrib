@@ -4,15 +4,19 @@
 package bearertokenauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/subtle"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
@@ -53,13 +57,25 @@ type bearerTokenAuth struct {
 
 	tokenResolver credentialsfile.ValueResolver
 	logger        *zap.Logger
+
+	// waitForTokenFile makes Start block until the token file is read
+	// successfully (respecting the retry budget) instead of retrying in the
+	// background. See Config.WaitForTokenFile.
+	waitForTokenFile bool
+
+	// startOnce guards Start so the resolver is started at most once.
+	startOnce sync.Once
+	// startWG tracks the background resolver Start goroutine. Shutdown waits on
+	// it so it does not race the resolver's own start-up.
+	startWG sync.WaitGroup
 }
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 	a := &bearerTokenAuth{
-		header: cfg.Header,
-		scheme: cfg.Scheme,
-		logger: logger,
+		header:           cfg.Header,
+		scheme:           cfg.Scheme,
+		logger:           logger,
+		waitForTokenFile: cfg.WaitForTokenFile,
 	}
 
 	var inlineToken string
@@ -91,6 +107,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 				}
 				a.updateAuthorizationValues()
 			}),
+			credentialsfile.WithRetry(cfg.RetryOnFailure),
 		)
 		if err != nil {
 			logger.Error("failed to create token resolver", zap.Error(err))
@@ -107,23 +124,56 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
-	if b.tokenResolver != nil {
-		return b.tokenResolver.Start(ctx)
+//
+// When WaitForTokenFile is enabled, Start blocks until the token file is read
+// successfully (respecting the retry budget) and returns an error if it cannot
+// be read, so collector startup fails. Otherwise the resolver is started in the
+// background and read failures are reported asynchronously as a component
+// status event.
+func (b *bearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+	if b.tokenResolver == nil {
+		return nil
 	}
-	return nil
+
+	var startErr error
+	b.startOnce.Do(func() {
+		if b.waitForTokenFile {
+			// Block until the token file is read or the retry budget is exhausted.
+			startErr = b.tokenResolver.Start(ctx)
+			return
+		}
+		b.startWG.Go(func() {
+			if err := b.tokenResolver.Start(ctx); err != nil {
+				b.logger.Error("failed to start token resolver", zap.Error(err))
+				componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
+			}
+		})
+	})
+
+	return startErr
 }
 
 func (b *bearerTokenAuth) updateAuthorizationValues() {
 	if b.tokenResolver == nil {
 		return
 	}
+
 	tokenData := b.tokenResolver.Value()
-	tokens := strings.Split(tokenData, "\n")
-	for i, token := range tokens {
-		tokens[i] = strings.TrimSpace(token)
+	var validTokens []string
+	scanner := bufio.NewScanner(bytes.NewReader([]byte(tokenData)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Split by whitespace (spaces, tabs, etc.)
+		// strings.Fields handles leading/trailing whitespace and multiple spaces automatically.
+		parts := strings.Fields(line)
+
+		// If the line has at least one part, the first part is the token.
+		// Everything else is treated as a comment/ignored.
+		if len(parts) > 0 {
+			validTokens = append(validTokens, parts[0])
+		}
 	}
-	b.setAuthorizationValues(tokens)
+	b.setAuthorizationValues(validTokens)
 }
 
 func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {
@@ -156,6 +206,9 @@ func (b *bearerTokenAuth) authorizationValue() string {
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *bearerTokenAuth) Shutdown(_ context.Context) error {
+	// Wait for the background Start goroutine to finish so we don't race the
+	// resolver's own start-up when tearing it down.
+	b.startWG.Wait()
 	if b.tokenResolver != nil {
 		return b.tokenResolver.Shutdown()
 	}

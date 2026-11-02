@@ -53,7 +53,8 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 
 	// Setup metadata exporters before initializing watchers to avoid concurrent access
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters); err != nil {
+		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters,
+	); err != nil {
 		return err
 	}
 

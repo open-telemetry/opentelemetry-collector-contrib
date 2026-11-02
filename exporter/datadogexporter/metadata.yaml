@@ -6,7 +6,7 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib]
-  unsupported_platforms: [aix]
+  unsupported_platforms: [aix, freebsd, solaris]
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, jade-guiton-dd, IbraheemA]
     emeritus: [gbbr, jackgopack4, ankitpatel96]
@@ -33,6 +33,9 @@ feature_gates:
     from_version: v0.122.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/37930
 
+sending_queue:
+  support: default
+
 tests:
   config:
     hostname: customhostname
@@ -46,4 +49,3 @@ tests:
   expect_consumer_error: true
   goleak:
     setup: "setupTestMain(m)"
-    skip: true

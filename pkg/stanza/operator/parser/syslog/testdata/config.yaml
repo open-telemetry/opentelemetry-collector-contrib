@@ -6,6 +6,9 @@ rfc3164:
 rfc5424:
   type: syslog_parser
   protocol: rfc5424
+none:
+  type: syslog_parser
+  protocol: none
 location:
   type: syslog_parser
   protocol: rfc5424

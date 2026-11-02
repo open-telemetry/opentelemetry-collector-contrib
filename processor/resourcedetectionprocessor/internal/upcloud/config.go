@@ -8,8 +8,10 @@ import (
 )
 
 type Config struct {
-	ResourceAttributes    metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
-	FailOnMissingMetadata bool                              `mapstructure:"fail_on_missing_metadata"`
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	// Deprecated: Use the top-level fail_on_missing_metadata in the processor config instead.
+	// This field will be removed in a future release.
+	FailOnMissingMetadata bool `mapstructure:"fail_on_missing_metadata"`
 }
 
 func CreateDefaultConfig() Config {

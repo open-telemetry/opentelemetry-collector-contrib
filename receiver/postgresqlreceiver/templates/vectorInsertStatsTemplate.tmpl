@@ -1,0 +1,53 @@
+-- Performance note: the insert_statements CTE evaluates two regexp_match calls per row in
+-- pg_stat_statements. On instances with a very large statement cache (a high
+-- pg_stat_statements.max, e.g. tens of thousands of entries) this scan can become costly.
+-- It only runs when the opt-in vector insert metrics are enabled and pgvector is present;
+-- tune pg_stat_statements.max accordingly if the statement cache is unusually large.
+WITH vector_tables AS (
+    SELECT DISTINCT
+        n.nspname AS schema_name,
+        c.relname AS table_name
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0 AND NOT a.attisdropped
+    JOIN pg_type t ON t.oid = a.atttypid
+    WHERE t.typname IN ('vector', 'halfvec', 'sparsevec')
+        AND c.relkind IN ('r', 'p')
+),
+insert_statements AS (
+    SELECT
+        pg_stat_statements.rows AS rows,
+        pg_stat_statements.total_exec_time AS total_exec_time,
+        CASE WHEN extracted.target[1] LIKE '"%'
+             THEN replace(extracted.target[1], '"', '')
+             ELSE lower(extracted.target[1]) END AS part1,
+        CASE WHEN extracted.target[2] LIKE '"%'
+             THEN replace(extracted.target[2], '"', '')
+             ELSE lower(extracted.target[2]) END AS part2
+    FROM pg_stat_statements
+    JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
+    CROSS JOIN LATERAL (
+        SELECT COALESCE(
+            regexp_match(pg_stat_statements.query, '(?i)^\s*INSERT\s+INTO\s+(?:ONLY\s+)?("[^"]+"|[^\s(.]+)(?:\.("[^"]+"|[^\s(.]+))?'),
+            regexp_match(pg_stat_statements.query, '(?i)^\s*COPY\s+("[^"]+"|[^\s(.]+)(?:\.("[^"]+"|[^\s(.]+))?(?:\s*\([^)]*\))?\s+FROM\M')
+        ) AS target
+    ) AS extracted
+    WHERE pg_database.datname = current_database()
+        AND pg_stat_statements.query != '<insufficient privilege>'
+        AND pg_stat_statements.query NOT LIKE '/* otel-collector-ignore */%'
+        AND EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')
+        AND extracted.target IS NOT NULL
+)
+SELECT
+    COALESCE(SUM(insert_statements.rows), 0) AS rows,
+    COALESCE(SUM(insert_statements.total_exec_time), 0) AS total_exec_time
+FROM insert_statements
+WHERE EXISTS (
+    SELECT 1 FROM vector_tables
+    WHERE (insert_statements.part2 IS NOT NULL
+              AND vector_tables.schema_name = insert_statements.part1
+              AND vector_tables.table_name = insert_statements.part2)
+       OR (insert_statements.part2 IS NULL
+              AND vector_tables.table_name = insert_statements.part1)
+)
+HAVING COUNT(*) > 0;

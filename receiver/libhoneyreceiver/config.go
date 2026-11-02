@@ -30,7 +30,7 @@ type Config struct {
 
 // HTTPConfig defines the configuration for the HTTP server receiving traces.
 type HTTPConfig struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/" will be used.
 	TracesURLPaths []string `mapstructure:"traces_url_paths,omitempty"`

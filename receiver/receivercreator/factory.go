@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -36,6 +36,13 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		Discovery: DiscoveryConfig{
+			DefaultFileLogConfig: userConfigMap{
+				"include_file_path": true,
+				"include_file_name": false,
+				"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+			},
+		},
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
 				string(conventions.K8SPodNameKey):       "`name`",
@@ -72,7 +79,6 @@ func createDefaultConfig() component.Config {
 				string(conventions.K8SNodeNameKey): "`name`",
 				string(conventions.K8SNodeUIDKey):  "`uid`",
 			},
-			observer.KafkaTopicType: map[string]string{},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}

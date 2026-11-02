@@ -50,6 +50,12 @@ func generateMetricData(resourceName string, attrs map[string]any) pmetric.Metri
 	return md
 }
 
+func generateMetricsOneEmptyMetric() pmetric.Metrics {
+	md := testdata.GenerateMetricsOneEmptyInstrumentationLibrary()
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+	return md
+}
+
 // TestMetricProcessor_Values tests all possible value types.
 func TestMetricProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyMetricTestCase struct {
@@ -57,7 +63,6 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		input  pmetric.Metrics
 		output pmetric.Metrics
 	}
-	// TODO: Add test for "nil" Metric/Attributes. This needs support from data slices to allow to construct that.
 	metricTestCases := []nilEmptyMetricTestCase{
 		{
 			name:   "empty",
@@ -79,11 +84,31 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 			input:  testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 			output: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
 		},
+		{
+			name:   "one-empty-metric",
+			input:  generateMetricsOneEmptyMetric(),
+			output: generateMetricsOneEmptyMetric(),
+		},
+		{
+			name:   "one-metric-no-attributes",
+			input:  testdata.GenerateMetricsOneMetricNoAttributes(),
+			output: testdata.GenerateMetricsOneMetricNoAttributes(),
+		},
+		{
+			name:   "all-types-no-data-points",
+			input:  testdata.GenerateMetricsAllTypesNoDataPoints(),
+			output: testdata.GenerateMetricsAllTypesNoDataPoints(),
+		},
+		{
+			name:   "all-types-empty-data-point",
+			input:  testdata.GenerateMetricsAllTypesEmptyDataPoint(),
+			output: testdata.GenerateMetricsAllTypesEmptyDataPoint(),
+		},
 	}
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
@@ -95,7 +120,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		tc := metricTestCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.NoError(t, mp.ConsumeMetrics(t.Context(), tc.input))
-			assert.Equal(t, tc.output, tc.input)
+			assert.NoError(t, pmetrictest.CompareMetrics(tc.output, tc.input))
 		})
 	}
 }
@@ -139,14 +164,14 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Attributes: []filterconfig.Attribute{
 			{Key: "NoModification", Value: true},
 		},
@@ -205,14 +230,14 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
@@ -269,14 +294,14 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	oCfg.Exclude = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Exclude = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
@@ -332,7 +357,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "user.email", Action: attraction.HASH},
 		{Key: "user.id", Action: attraction.HASH},
 		{Key: "user.balance", Action: attraction.HASH},
@@ -391,7 +416,7 @@ func TestMetricAttributes_Convert(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "to.int", Action: attraction.CONVERT, ConvertedType: "int"},
 		{Key: "to.double", Action: attraction.CONVERT, ConvertedType: "double"},
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
@@ -403,6 +428,118 @@ func TestMetricAttributes_Convert(t *testing.T) {
 
 	for _, tt := range testCases {
 		runIndividualMetricTestCase(t, tt, tp)
+	}
+}
+
+func TestMetricProcessor_WithDefaultValue(t *testing.T) {
+	testCases := []struct {
+		name               string
+		config             *Config
+		inputAttributes    map[string]any
+		expectedAttributes map[string]any
+	}{
+		{
+			name: "default_value_used_when_from_attribute_missing",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: attraction.INSERT},
+					},
+				},
+			},
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
+				"env": "production",
+			},
+		},
+		{
+			name: "default_value_not_used_when_from_attribute_exists",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: attraction.INSERT},
+					},
+				},
+			},
+			inputAttributes: map[string]any{
+				"environment": "staging",
+			},
+			expectedAttributes: map[string]any{
+				"environment": "staging",
+				"env":         "staging",
+			},
+		},
+		{
+			name: "default_value_with_upsert_creates_new_attribute",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+					},
+				},
+			},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{"region": "us-east-1"},
+		},
+		{
+			name: "default_value_with_update_does_not_create_new",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.UPDATE},
+					},
+				},
+			},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
+		},
+		{
+			name: "default_value_with_update_modifies_existing",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.UPDATE},
+					},
+				},
+			},
+			inputAttributes: map[string]any{
+				"service.namespace": "old",
+			},
+			expectedAttributes: map[string]any{
+				"service.namespace": "default",
+			},
+		},
+		{
+			name: "default_value_with_different_types",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "string_attr", FromAttribute: "missing", DefaultValue: "default_string", Action: attraction.INSERT},
+						{Key: "int_attr", FromAttribute: "missing", DefaultValue: 42, Action: attraction.INSERT},
+						{Key: "bool_attr", FromAttribute: "missing", DefaultValue: true, Action: attraction.INSERT},
+					},
+				},
+			},
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
+				"string_attr": "default_string",
+				"int_attr":    int64(42),
+				"bool_attr":   true,
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, consumertest.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, mp)
+
+			md := generateMetricData(tt.name, tt.inputAttributes)
+			assert.NoError(t, mp.ConsumeMetrics(t.Context(), md))
+			require.NoError(t, pmetrictest.CompareMetrics(generateMetricData(tt.name, tt.expectedAttributes), md))
+		})
 	}
 }
 
@@ -435,10 +572,10 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Actions = []attraction.ActionKeyValue{
+	oCfg.Settings.Actions = []attraction.ActionKeyValue{
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
-	oCfg.Include = &filterconfig.MatchProperties{
+	oCfg.MatchConfig.Include = &filterconfig.MatchProperties{
 		Config:    *createConfig(filterset.Regexp),
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}

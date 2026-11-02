@@ -9,16 +9,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
 // NewFactory returns the component factory for the awscloudwatchreceiver
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
@@ -33,7 +38,29 @@ func createLogsReceiver(
 	return rcvr, nil
 }
 
+func createMetricsReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	rConf component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	cfg := rConf.(*Config)
+	scr := newCloudWatchMetricsScraper(cfg, settings)
+	ms, err := scraper.NewMetrics(scr.scrape, scraper.WithStart(scr.start))
+	if err != nil {
+		return nil, err
+	}
+	return scraperhelper.NewMetricsController(
+		&cfg.Metrics.ControllerConfig,
+		settings,
+		consumer,
+		scraperhelper.AddMetricsScraper(metadata.Type, ms),
+	)
+}
+
 func createDefaultConfig() component.Config {
+	metricsCtrl := scraperhelper.NewDefaultControllerConfig()
+	metricsCtrl.CollectionInterval = defaultMetricsCollectionInt
 	return &Config{
 		Logs: LogsConfig{
 			PollInterval:        defaultPollInterval,
@@ -43,6 +70,11 @@ func createDefaultConfig() component.Config {
 					Limit: defaultLogGroupLimit,
 				},
 			},
+		},
+		Metrics: MetricsConfig{
+			ControllerConfig: metricsCtrl,
+			Period:           defaultMetricsPeriod,
+			Delay:            defaultMetricsDelay,
 		},
 	}
 }

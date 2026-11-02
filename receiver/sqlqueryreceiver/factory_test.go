@@ -4,8 +4,10 @@
 package sqlqueryreceiver
 
 import (
+	"database/sql"
 	"testing"
 
+	"github.com/microsoft/go-mssqldb/azuread"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +19,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Driver = "postgres"
+	cfg.Config.Driver = "postgres"
 	_, err := factory.CreateMetrics(
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
@@ -34,17 +36,27 @@ func TestNewFactory(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestAzureSQLDriverRegistered(t *testing.T) {
+	t.Parallel()
+	require.Contains(t, sql.Drivers(), "azuresql")
+	_, err := azuread.NewConnector("server=sql.example.database.windows.net;fedauth=ActiveDirectoryManagedIdentity")
+	require.NoError(t, err)
+	db, err := sql.Open("azuresql", "server=sql.example.database.windows.net;fedauth=ActiveDirectoryManagedIdentity")
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+}
+
 func TestNewFactoryDataSourceFields(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Driver = "postgres"
-	cfg.Host = "localhost"
-	cfg.Port = 5432
-	cfg.Database = "test"
-	cfg.Username = "test"
-	cfg.Password = "test"
+	cfg.Config.Driver = "postgres"
+	cfg.Config.Host = "localhost"
+	cfg.Config.Port = 5432
+	cfg.Config.Database = "test"
+	cfg.Config.Username = "test"
+	cfg.Config.Password = "test"
 
-	cfg.Queries = []sqlquery.Query{
+	cfg.Config.Queries = []sqlquery.Query{
 		{
 			SQL: "SELECT 1",
 			Metrics: []sqlquery.MetricCfg{

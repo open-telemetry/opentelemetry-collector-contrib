@@ -6,7 +6,7 @@ components:
         - file
         - kafka
         - prometheus
-        - prometheusremotewrite
+        - prometheus_remote_write
         - zipkin
     extension:
         - health_check

@@ -9,10 +9,11 @@ description: |
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    beta: [logs]
   distributions: [contrib]
   codeowners:
-    active: [armstrmi, pjanotti]
+    active: [mrsillydog, pjanotti]
+    emeritus: [armstrmi]
   unsupported_platforms: [darwin, linux]
 
 tests:

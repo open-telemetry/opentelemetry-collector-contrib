@@ -4,14 +4,13 @@
 The primary objective of the Google Cloud Monitoring Receiver is to gather time series metrics data from all Google
 services and convert this data into a pipeline format that facilitates further use.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglecloudmonitoring%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglecloudmonitoring) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglecloudmonitoring%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglecloudmonitoring) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_googlecloudmonitoring)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_googlecloudmonitoring&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole) |
 | Emeritus      | [@abhishek-at-cloudwerx](https://www.github.com/abhishek-at-cloudwerx) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -41,6 +40,7 @@ receivers:
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `timeout`: (default = `1m`) The timeout of running commands against the GCP Monitoring REST API.
 - `project_id` (Required): The GCP project ID.
+- `endpoint` (Optional): Overrides the default `monitoring.googleapis.com:443` endpoint. Use this when targeting non-standard universe domains.
 - `metrics_list` (Required): A list of services metrics to monitor.
 
 Each single metric can have the following configuration:

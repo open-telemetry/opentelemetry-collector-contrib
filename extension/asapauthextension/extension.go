@@ -48,7 +48,8 @@ func createASAPClientAuthenticator(cfg *Config) (*asapAuthExtension, error) {
 
 	// Caching provisioner will only issue a new token after the current token's expiry (determined by TTL).
 	p := asap.NewCachingProvisioner(asap.NewProvisioner(
-		cfg.KeyID, cfg.TTL, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
+		cfg.KeyID, cfg.TTL, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256,
+	))
 
 	return &asapAuthExtension{
 		provisioner: p,

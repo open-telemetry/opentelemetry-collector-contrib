@@ -8,7 +8,7 @@ basicauth/indexer:
     username: admin
     password: securityFirst1!
 
-splunkenterprise:
+splunk_enterprise:
   indexer:
     auth:
       authenticator: basicauth/indexer

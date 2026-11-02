@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [beta]  |
 | Distributions | [contrib] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fdockerobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fdockerobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fdockerobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fdockerobserver) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fobserver%2Fdockerobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fobserver%2Fdockerobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fobserver%2Fdockerobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fobserver%2Fdockerobserver) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_dockerobserver)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_dockerobserver&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
@@ -77,9 +77,16 @@ default: `[]`
 
 If true, the `Config.Hostname` field (if present) of the docker
 container will be used as the discovered host that is used to configure
-receivers.  If false or if no hostname is configured, the field
-`NetworkSettings.IPAddress` is used instead. These settings can be found
-in the output of the Docker API's [Container Inspect](https://docs.docker.com/engine/api/v1.41/#operation/ContainerInspect) json.
+receivers. If false or if no hostname is configured, the field
+`IPAddress` from the container's network settings is used, with
+`GlobalIPv6Address` as a fallback. When a container is attached to
+multiple networks, the network with the highest `GwPriority` (falling
+back to alphabetical order by network name) is selected to deterministically
+choose a stable IP address. Note that `GwPriority` requires Docker Engine 28.0+;
+on older Docker daemon versions where `GwPriority` is not available (or is 0
+for all networks), the observer deterministically falls back to alphabetical
+order by network name to prevent endpoint flapping. These settings can be
+found in the output of the Docker API's [Container Inspect](https://docs.docker.com/engine/api/v1.41/#operation/ContainerInspect) json.
 
 default: `false`
 
@@ -96,6 +103,18 @@ default: `false`
 If true, the observer will ignore discovered container endpoints that are not bound
 to host ports.  This is useful if containers exist that are not accessible
 to an instance of the collector running outside of the docker network stack.
+
+default: `false`
+
+### `include_all_containers`
+
+If true, the observer emits a port-less endpoint for every running container,
+alongside any per-port endpoints. This makes every container, including those
+without exposed ports, discoverable by `receiver_creator` rules of
+`type == "container"`. The port-less endpoint has no port information
+(`port` and `alternate_port` are `0`, `transport` is `unknown`). To get exactly
+one logging receiver per container, scope with 
+`rule: type == "container" and port == 0`.
 
 default: `false`
 

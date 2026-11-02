@@ -12,3 +12,7 @@ googlecloudpubsub/customname:
     enabled: true
     from_resource_attribute: ordering_key
     remove_resource_attribute: true
+googlecloudpubsub/sovereign:
+  project: my-sovereign-project
+  topic: projects/my-sovereign-project/topics/otlp-topic
+  universe_domain: apis.example.com

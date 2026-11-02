@@ -133,7 +133,7 @@ func newSentryClientImpl(baseURL, authToken string, httpClient *http.Client) *se
 
 // GetAllProjects fetches all projects for a given organization.
 func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]projectInfo, error) {
-	baseURL := fmt.Sprintf("%s/api/0/organizations/%s/projects/", c.baseURL, orgSlug)
+	baseURL := fmt.Sprintf("%s/api/0/organizations/%s/projects/", c.baseURL, url.PathEscape(orgSlug))
 	cursor := ""
 	var projects []projectInfo
 
@@ -189,7 +189,7 @@ func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]pr
 
 // GetProjectKeys fetches the project keys for a given organization and project.
 func (c *sentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug string) ([]projectKey, error) {
-	baseURL := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, orgSlug, projectSlug)
+	baseURL := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, url.PathEscape(orgSlug), url.PathEscape(projectSlug))
 	cursor := ""
 	var keys []projectKey
 
@@ -245,7 +245,7 @@ func (c *sentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug 
 
 // GetOrgProjectKeys fetches all project keys for an organization.
 func (c *sentryClient) GetOrgProjectKeys(ctx context.Context, orgSlug string) ([]projectKey, error) {
-	url := fmt.Sprintf("%s/api/0/organizations/%s/project-keys/", c.baseURL, orgSlug)
+	url := fmt.Sprintf("%s/api/0/organizations/%s/project-keys/", c.baseURL, url.PathEscape(orgSlug))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -280,7 +280,7 @@ func (c *sentryClient) GetOrgProjectKeys(ctx context.Context, orgSlug string) ([
 
 // CreateProject creates a new project in the given organization and team.
 func (c *sentryClient) CreateProject(ctx context.Context, orgSlug, teamSlug, projectSlug, projectName, platform string) (*projectInfo, error) {
-	url := fmt.Sprintf("%s/api/0/teams/%s/%s/projects/", c.baseURL, orgSlug, teamSlug)
+	url := fmt.Sprintf("%s/api/0/teams/%s/%s/projects/", c.baseURL, url.PathEscape(orgSlug), url.PathEscape(teamSlug))
 
 	payload := map[string]string{
 		"name":     projectName,

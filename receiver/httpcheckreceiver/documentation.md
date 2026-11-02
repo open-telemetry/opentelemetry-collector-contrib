@@ -74,7 +74,7 @@ Time spent establishing TCP connection to the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ns | Gauge | Int | Development |
 
 #### Attributes
 
@@ -89,7 +89,7 @@ Time spent sending the HTTP request to the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ns | Gauge | Int | Development |
 
 #### Attributes
 
@@ -103,7 +103,7 @@ Time spent performing DNS lookup for the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ns | Gauge | Int | Development |
 
 #### Attributes
 
@@ -117,7 +117,7 @@ Time spent receiving the HTTP response from the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ns | Gauge | Int | Development |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ Time spent performing TLS handshake with the endpoint.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | Development |
+| ns | Gauge | Int | Development |
 
 #### Attributes
 

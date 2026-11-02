@@ -21,7 +21,9 @@ func NewCluster(tb testing.TB, opts ...kfake.Opt) (*kfake.Cluster, configkafka.C
 
 	cfg := configkafka.NewDefaultClientConfig()
 	cfg.Brokers = cluster.ListenAddrs()
-	// We need to set the protocol version to 2.3.0 to make Sarama happy.
+	// Cap the protocol version to one that uses topic names rather than topic IDs
+	// in Produce requests, so tests that inspect produced records by topic name
+	// continue to work against kfake.
 	cfg.ProtocolVersion = "2.3.0"
 	return cluster, cfg
 }

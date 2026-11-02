@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
@@ -57,7 +57,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.Endpoint = "open-telemetry"
+				cfg.AddrConfig.Endpoint = "open-telemetry"
 			},
 			expected: []error{
 				errors.New(ErrHostPort),
@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.Transport = "udp"
+				cfg.AddrConfig.Transport = "udp"
 			},
 			expected: []error{
 				errors.New(ErrTransportsSupported),
@@ -79,14 +79,56 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.ServerName = "notlocalhost"
-				cfg.MinVersion = "1.0"
-				cfg.MaxVersion = "1.0"
+				cfg.ClientConfig.ServerName = "notlocalhost"
+				cfg.ClientConfig.MinVersion = "1.0"
+				cfg.ClientConfig.MaxVersion = "1.0"
 			},
 			expected: []error{
 				fmt.Errorf(ErrNotSupported, "ServerName"),
 				fmt.Errorf(ErrNotSupported, "MaxVersion"),
 				fmt.Errorf(ErrNotSupported, "MinVersion"),
+			},
+		},
+		{
+			desc: "exclude_databases covering every listed database is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Databases = []string{"otel", "rdsadmin"}
+				cfg.ExcludeDatabases = []string{"rdsadmin", "otel", "template0"}
+			},
+			expected: nil,
+		},
+		{
+			desc: "connect_database outside databases is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "monitoring"
+				cfg.Databases = []string{"mydb"}
+			},
+			expected: nil,
+		},
+		{
+			desc: "empty connect_database is a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = ""
+			},
+			expected: []error{
+				errors.New(ErrEmptyConnectDatabase),
+			},
+		},
+		{
+			desc: "whitespace-only connect_database is a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "   "
+			},
+			expected: []error{
+				errors.New(ErrEmptyConnectDatabase),
 			},
 		},
 		{
@@ -97,17 +139,30 @@ func TestValidate(t *testing.T) {
 			},
 			expected: nil,
 		},
+		{
+			desc: "query plan event without top query event",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled = true
+			},
+			expected: []error{
+				errQueryPlanWithoutTopQuery,
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := xconfmap.Validate(cfg)
+			actual := confmap.Validate(cfg)
 			if len(tC.expected) > 0 {
 				for _, err := range tC.expected {
 					require.ErrorContains(t, actual, err.Error())
 				}
+			} else {
+				require.NoError(t, actual)
 			}
 		})
 	}
@@ -126,11 +181,11 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
-		expected.Endpoint = "localhost:5432"
+		expected.AddrConfig.Endpoint = "localhost:5432"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
-		expected.TopNQuery = 1234
-		expected.QueryPlanCacheTTL = time.Second * 123
+		expected.TopQueryCollection.TopNQuery = 1234
+		expected.TopQueryCollection.QueryPlanCacheTTL = time.Second * 123
 		require.Equal(t, expected, cfg)
 	})
 
@@ -142,13 +197,13 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
-		expected.Endpoint = "localhost:5432"
-		expected.Transport = confignet.TransportTypeTCP
+		expected.AddrConfig.Endpoint = "localhost:5432"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
 			MaxIdleTime: ptr(30 * time.Second),
-			MaxIdle:     ptr(5),
+			MaxIdle:     new(5),
 		}
 
 		require.Equal(t, expected, cfg)
@@ -162,12 +217,13 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
-		expected.Endpoint = "localhost:5432"
-		expected.Transport = confignet.TransportTypeTCP
+		expected.AddrConfig.Endpoint = "localhost:5432"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
+		expected.ConnectDatabase = "monitoring"
 		expected.ControllerConfig.CollectionInterval = 10 * time.Second
 		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,
@@ -181,8 +237,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.ConnectionPool = ConnectionPool{
 			MaxIdleTime: ptr(30 * time.Second),
 			MaxLifetime: ptr(time.Minute),
-			MaxIdle:     ptr(5),
-			MaxOpen:     ptr(10),
+			MaxIdle:     new(5),
+			MaxOpen:     new(10),
 		}
 
 		require.Equal(t, expected, cfg)
@@ -190,5 +246,25 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func ptr[T any](value T) *T {
-	return &value
+	return new(value)
+}
+
+func TestTimeoutConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		values map[string]any
+		want   time.Duration
+	}{
+		{name: "default", values: map[string]any{}, want: time.Minute},
+		{name: "shorter", values: map[string]any{"timeout": "5s"}, want: 5 * time.Second},
+		{name: "longer", values: map[string]any{"timeout": "2m"}, want: 2 * time.Minute},
+		{name: "disabled", values: map[string]any{"timeout": "0s"}},
+		{name: "independent interval", values: map[string]any{"collection_interval": "1s"}, want: time.Minute},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(tc.values).Unmarshal(cfg))
+			require.Equal(t, tc.want, cfg.ControllerConfig.Timeout)
+		})
+	}
 }

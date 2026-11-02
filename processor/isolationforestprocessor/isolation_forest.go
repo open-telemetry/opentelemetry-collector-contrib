@@ -16,9 +16,11 @@ import (
 // this implementation updates its models continuously as new data arrives.
 type onlineIsolationForest struct {
 	// Core configuration
-	numTrees   int // Number of trees in the forest
-	maxDepth   int // Maximum depth for trees
-	windowSize int // Size of sliding window for recent data
+	numTrees          int     // Number of trees in the forest
+	maxDepth          int     // Maximum depth for trees
+	windowSize        int     // Size of sliding window for recent data
+	contaminationRate float64 // Expected fraction of anomalies (0.0-1.0)
+	minNodeSamples    int     // Samples a leaf must accumulate before splitting
 
 	// Trees and their associated data
 	trees      []*onlineIsolationTree // Collection of online isolation trees
@@ -124,20 +126,28 @@ type onlineForestStatistics struct {
 }
 
 // newOnlineIsolationForest creates a new online isolation forest with the specified parameters.
-func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolationForest {
+func newOnlineIsolationForest(numTrees, windowSize, maxDepth int, contaminationRate float64, minNodeSamples int) *onlineIsolationForest {
 	if maxDepth <= 0 {
 		maxDepth = int(math.Ceil(math.Log2(float64(windowSize))))
 	}
+	if contaminationRate <= 0 || contaminationRate >= 1 {
+		contaminationRate = 0.1 // sensible default
+	}
+	if minNodeSamples <= 0 {
+		minNodeSamples = 10 // sensible default
+	}
 	seed := uint64(time.Now().UnixNano())
 	forest := &onlineIsolationForest{
-		numTrees:     numTrees,
-		maxDepth:     maxDepth,
-		windowSize:   windowSize,
-		trees:        make([]*onlineIsolationTree, numTrees),
-		dataWindow:   make([][]float64, windowSize),
-		scoreHistory: make([]float64, 0, windowSize),
-		threshold:    0.5, // Initial threshold, will adapt based on data
-		rng:          rand.New(rand.NewPCG(seed, seed^0x9e3779e97f4c7c15)),
+		numTrees:          numTrees,
+		maxDepth:          maxDepth,
+		windowSize:        windowSize,
+		contaminationRate: contaminationRate,
+		minNodeSamples:    minNodeSamples,
+		trees:             make([]*onlineIsolationTree, numTrees),
+		dataWindow:        make([][]float64, windowSize),
+		scoreHistory:      make([]float64, 0, windowSize),
+		threshold:         0.5, // Initial threshold, will adapt based on data
+		rng:               rand.New(rand.NewPCG(seed, seed^0x9e3779e97f4c7c15)),
 	}
 
 	// Initialize trees with minimal structure
@@ -151,8 +161,8 @@ func newOnlineIsolationForest(numTrees, windowSize, maxDepth int) *onlineIsolati
 }
 
 // newOnlineIsolationForestWithAdaptive creates a forest with adaptive window sizing
-func newOnlineIsolationForestWithAdaptive(numTrees, windowSize, maxDepth int, adaptiveConfig *AdaptiveWindowConfig) *onlineIsolationForest {
-	forest := newOnlineIsolationForest(numTrees, windowSize, maxDepth)
+func newOnlineIsolationForestWithAdaptive(numTrees, windowSize, maxDepth int, adaptiveConfig *AdaptiveWindowConfig, contaminationRate float64, minNodeSamples int) *onlineIsolationForest {
+	forest := newOnlineIsolationForest(numTrees, windowSize, maxDepth, contaminationRate, minNodeSamples)
 
 	if adaptiveConfig != nil && adaptiveConfig.Enabled {
 		forest.adaptiveConfig = adaptiveConfig
@@ -348,8 +358,10 @@ func (oif *onlineIsolationForest) updateAdaptiveThreshold(score float64) {
 			sortedScores[j+1] = key
 		}
 
-		// Use 90th percentile as threshold
-		thresholdIndex := int(0.9 * float64(len(sortedScores)))
+		// Use (1 - contamination_rate) percentile as threshold.
+		// e.g. contamination_rate=0.05 → flag top 5% → 95th percentile.
+		percentile := 1.0 - oif.contaminationRate
+		thresholdIndex := int(percentile * float64(len(sortedScores)))
 		if thresholdIndex >= len(sortedScores) {
 			thresholdIndex = len(sortedScores) - 1
 		}
@@ -403,18 +415,24 @@ func (oif *onlineIsolationForest) updateTree(tree *onlineIsolationTree, sample [
 func (oif *onlineIsolationForest) updateNodePath(node *onlineTreeNode, sample []float64, depth, maxDepth int) {
 	node.sampleCount++
 
-	// If this is a leaf or we've reached max depth, stop here
-	if node.isLeaf || depth >= maxDepth {
+	// Hard stop at max depth
+	if depth >= maxDepth {
 		return
 	}
 
-	// If this node needs to be split (has seen enough samples and is currently a leaf)
-	if node.left == nil && node.right == nil && node.sampleCount > 10 {
+	// If this leaf has accumulated enough samples, split it now.
+	// This check MUST come before the isLeaf early-return so nodes can grow.
+	if node.isLeaf && node.sampleCount > oif.minNodeSamples {
 		oif.splitNode(node, sample, depth, maxDepth)
 		return
 	}
 
-	// Navigate to appropriate child if splits exist
+	// Leaf without enough samples yet — nothing more to do
+	if node.isLeaf {
+		return
+	}
+
+	// Navigate to appropriate child
 	if node.left != nil && node.right != nil {
 		if len(sample) > node.featureIndex && sample[node.featureIndex] < node.splitValue {
 			oif.updateNodePath(node.left, sample, depth+1, maxDepth)

@@ -4,14 +4,14 @@
 The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or metric by appending information about
 the geographical location of an IP address.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fgeoip%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fgeoip) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fgeoip%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fgeoip) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_geoip)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_geoip&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel), [@michalpristas](https://www.github.com/michalpristas), [@rogercoll](https://www.github.com/rogercoll) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel), [@rogercoll](https://www.github.com/rogercoll) |
+| Emeritus      | [@michalpristas](https://www.github.com/michalpristas) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -47,6 +47,11 @@ The following settings can be configured:
   - `resource`: Resource attributes.
   - `record`: Attributes within a data point, log record or a span.
 - `attributes` (default: `[client.address, source.address]`): An array of attribute names, which are used for the IP address lookup.
+
+- `error_mode` (default: `propagate`): Determines how the processor reacts to errors that occur while looking up geolocation data for an IP address. Available values:
+  - `propagate`: Log the error and return it, halting processing of the telemetry item.
+  - `ignore`: Log the error and continue processing (the geolocation attributes are simply not added).
+  - `silent`: Continue processing without logging the error.
 
 ## Examples
 

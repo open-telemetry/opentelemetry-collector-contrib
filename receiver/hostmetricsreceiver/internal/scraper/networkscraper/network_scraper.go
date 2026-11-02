@@ -154,7 +154,7 @@ func (s *networkScraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCounters
 }
 
 func (s *networkScraper) recordNetworkConnectionsMetrics(ctx context.Context) error {
-	if !s.config.Metrics.SystemNetworkConnections.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled {
 		return nil
 	}
 
@@ -185,7 +185,7 @@ func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]i
 
 func (s *networkScraper) recordNetworkConnectionsMetric(now pcommon.Timestamp, connectionStateCounts map[string]int64) {
 	for connectionState, count := range connectionStateCounts {
-		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTcp, connectionState)
+		s.mb.RecordSystemNetworkConnectionsDataPoint(now, count, metadata.AttributeProtocolTCP, connectionState)
 	}
 }
 

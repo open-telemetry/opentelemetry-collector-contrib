@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cachetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				N: "cache",
 				KeySlice: []ottl.Key[*TransformContext]{
 					&pathtest.Key[*TransformContext]{
-						S: ottltest.Strp("temp"),
+						S: new("temp"),
 					},
 				},
 			},
@@ -81,7 +81,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					N: "metadata",
 					KeySlice: []ottl.Key[*TransformContext]{
 						&pathtest.Key[*TransformContext]{
-							S: ottltest.Strp("key"),
+							S: new("key"),
 						},
 					},
 				},
@@ -115,7 +115,7 @@ func Test_newPathGetSetter(t *testing.T) {
 						N: "attributes",
 						KeySlice: []ottl.Key[*TransformContext]{
 							&pathtest.Key[*TransformContext]{
-								S: ottltest.Strp("key"),
+								S: new("key"),
 							},
 						},
 					},
@@ -145,7 +145,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					N: "metadata",
 					KeySlice: []ottl.Key[*TransformContext]{
 						&pathtest.Key[*TransformContext]{
-							S: ottltest.Strp("key"),
+							S: new("key"),
 						},
 					},
 				},
@@ -173,7 +173,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
-			tCtx := NewTransformContextPtr()
+			tCtx := NewTransformContext()
 			defer tCtx.Close()
 			got, err := accessor.Get(t.Context(), tCtx)
 			assert.NoError(t, err)
@@ -187,4 +187,19 @@ func Test_newPathGetSetter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_WithCache(t *testing.T) {
+	cachetest.TestWithCache(t, cachetest.Context[*TransformContext, TransformContextOption]{
+		Name:                 ContextName,
+		PathExpressionParser: pathExpressionParser(getCache),
+		NewTransformContext:  NewTransformContext,
+		WithCache:            WithCache,
+		LocalCache: func(tCtx *TransformContext) pcommon.Map {
+			return tCtx.cache
+		},
+		ExternalCache: func(tCtx *TransformContext) *pcommon.Map {
+			return tCtx.externalCache
+		},
+	})
 }

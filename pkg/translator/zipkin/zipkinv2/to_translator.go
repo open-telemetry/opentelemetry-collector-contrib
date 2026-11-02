@@ -22,8 +22,7 @@ import (
 	conventionsv121 "go.opentelemetry.io/otel/semconv/v1.21.0"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -114,6 +113,7 @@ func getResourceSemanticConventionAttributeNames() []string {
 		string(conventions.DeviceManufacturerKey),
 		string(conventions.FaaSNameKey),
 		string(conventionsv118.FaaSIDKey),
+		string(conventions.CloudResourceIDKey),
 		string(conventions.FaaSVersionKey),
 		string(conventions.FaaSInstanceKey),
 		string(conventions.FaaSMaxMemoryKey),
@@ -180,6 +180,8 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
 	attrs[string(conventionsv125.OTelLibraryNameKey)] = struct{}{}
 	attrs[string(conventionsv125.OTelLibraryVersionKey)] = struct{}{}
+	attrs[string(conventions.OTelScopeNameKey)] = struct{}{}
+	attrs[string(conventions.OTelScopeVersionKey)] = struct{}{}
 	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
 	attrs[occonventions.AttributeExporterVersion] = struct{}{}
 	attrs[string(conventions.ProcessPIDKey)] = struct{}{}
@@ -395,20 +397,10 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
-			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr("net.host.ip", zspan.LocalEndpoint.IPv4.String())
-			}
-			if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr(string(conventions.NetworkLocalAddressKey), zspan.LocalEndpoint.IPv4.String())
-			}
+			dest.PutStr(string(conventions.NetworkLocalAddressKey), zspan.LocalEndpoint.IPv4.String())
 		}
 		if zspan.LocalEndpoint.IPv6 != nil {
-			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr("net.host.ip", zspan.LocalEndpoint.IPv6.String())
-			}
-			if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr(string(conventions.NetworkLocalAddressKey), zspan.LocalEndpoint.IPv6.String())
-			}
+			dest.PutStr(string(conventions.NetworkLocalAddressKey), zspan.LocalEndpoint.IPv6.String())
 		}
 		if zspan.LocalEndpoint.Port > 0 {
 			dest.PutInt(string(conventionsv125.NetHostPortKey), int64(zspan.LocalEndpoint.Port))
@@ -416,28 +408,13 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr(string(conventionsv138.PeerServiceKey), zspan.RemoteEndpoint.ServiceName)
-			}
-			if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr(string(conventions.ServicePeerNameKey), zspan.RemoteEndpoint.ServiceName)
-			}
+			dest.PutStr(string(conventions.ServicePeerNameKey), zspan.RemoteEndpoint.ServiceName)
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
-			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr("net.peer.ip", zspan.RemoteEndpoint.IPv4.String())
-			}
-			if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr(string(conventions.NetworkPeerAddressKey), zspan.RemoteEndpoint.IPv4.String())
-			}
+			dest.PutStr(string(conventions.NetworkPeerAddressKey), zspan.RemoteEndpoint.IPv4.String())
 		}
 		if zspan.RemoteEndpoint.IPv6 != nil {
-			if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr("net.peer.ip", zspan.RemoteEndpoint.IPv6.String())
-			}
-			if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-				dest.PutStr(string(conventions.NetworkPeerAddressKey), zspan.RemoteEndpoint.IPv6.String())
-			}
+			dest.PutStr(string(conventions.NetworkPeerAddressKey), zspan.RemoteEndpoint.IPv6.String())
 		}
 		if zspan.RemoteEndpoint.Port > 0 {
 			dest.PutInt(string(conventionsv125.NetPeerPortKey), int64(zspan.RemoteEndpoint.Port))
@@ -453,22 +430,35 @@ func tagsToAttributeMap(tags map[string]string, dest pcommon.Map, parseStringTag
 			continue
 		}
 
-		if parseStringTags {
-			switch zipkin.DetermineValueType(val) {
-			case pcommon.ValueTypeInt:
-				iValue, _ := strconv.ParseInt(val, 10, 64)
-				dest.PutInt(key, iValue)
-			case pcommon.ValueTypeDouble:
-				fValue, _ := strconv.ParseFloat(val, 64)
-				dest.PutDouble(key, fValue)
-			case pcommon.ValueTypeBool:
-				bValue, _ := strconv.ParseBool(val)
-				dest.PutBool(key, bValue)
-			default:
-				dest.PutStr(key, val)
+		keys := []string{key}
+		if key == string(conventionsv125.HTTPStatusCodeKey) {
+			keys = nil
+			if !metadata.PkgTranslatorZipkinDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, key)
 			}
-		} else {
-			dest.PutStr(key, val)
+			if metadata.PkgTranslatorZipkinEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+				keys = append(keys, string(conventions.HTTPResponseStatusCodeKey))
+			}
+		}
+
+		for _, k := range keys {
+			if parseStringTags {
+				switch zipkin.DetermineValueType(val) {
+				case pcommon.ValueTypeInt:
+					iValue, _ := strconv.ParseInt(val, 10, 64)
+					dest.PutInt(k, iValue)
+				case pcommon.ValueTypeDouble:
+					fValue, _ := strconv.ParseFloat(val, 64)
+					dest.PutDouble(k, fValue)
+				case pcommon.ValueTypeBool:
+					bValue, _ := strconv.ParseBool(val)
+					dest.PutBool(k, bValue)
+				default:
+					dest.PutStr(k, val)
+				}
+			} else {
+				dest.PutStr(k, val)
+			}
 		}
 	}
 	return parseErr
@@ -493,11 +483,25 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	delete(tags, zipkin.TagServiceNameSource)
 
 	for key := range nonSpanAttributes {
-		if key == string(conventionsv125.OTelLibraryNameKey) || key == string(conventionsv125.OTelLibraryVersionKey) {
+		if key == string(conventionsv125.OTelLibraryNameKey) || key == string(conventionsv125.OTelLibraryVersionKey) ||
+			key == string(conventions.OTelScopeNameKey) || key == string(conventions.OTelScopeVersionKey) {
 			continue
 		}
 		if value, ok := tags[key]; ok {
-			resource.Attributes().PutStr(key, value)
+			keys := []string{key}
+			if key == string(conventionsv118.FaaSIDKey) {
+				keys = nil
+				if !metadata.PkgTranslatorZipkinDontEmitV0CloudResourceConventionsFeatureGate.IsEnabled() {
+					keys = append(keys, key)
+				}
+				if metadata.PkgTranslatorZipkinEmitV1CloudResourceConventionsFeatureGate.IsEnabled() {
+					keys = append(keys, string(conventions.CloudResourceIDKey))
+				}
+			}
+
+			for _, k := range keys {
+				resource.Attributes().PutStr(k, value)
+			}
 			delete(tags, key)
 		}
 	}
@@ -511,9 +515,17 @@ func populateILFromZipkinSpan(tags map[string]string, instrLibName string, libra
 		library.SetName(value)
 		delete(tags, string(conventionsv125.OTelLibraryNameKey))
 	}
+	if value, ok := tags[string(conventions.OTelScopeNameKey)]; ok {
+		library.SetName(value)
+		delete(tags, string(conventions.OTelScopeNameKey))
+	}
 	if value, ok := tags[string(conventionsv125.OTelLibraryVersionKey)]; ok {
 		library.SetVersion(value)
 		delete(tags, string(conventionsv125.OTelLibraryVersionKey))
+	}
+	if value, ok := tags[string(conventions.OTelScopeVersionKey)]; ok {
+		library.SetVersion(value)
+		delete(tags, string(conventions.OTelScopeVersionKey))
 	}
 }
 
@@ -533,6 +545,9 @@ func extractLocalServiceName(zspan *zipkinmodel.SpanModel) string {
 func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	if zspan == nil || len(zspan.Tags) == 0 {
 		return ""
+	}
+	if val, ok := zspan.Tags[string(conventions.OTelScopeNameKey)]; ok {
+		return val
 	}
 	return zspan.Tags[string(conventionsv125.OTelLibraryNameKey)]
 }

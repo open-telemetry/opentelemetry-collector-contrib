@@ -34,12 +34,9 @@ resourceLogs:
               - key: gcp.audit.resource.name
                 value:
                   stringValue: projects/elastic-siem
-              - key: rpc.jsonrpc.error_code
+              - key: rpc.response.status_code
                 value:
-                  intValue: "7"
-              - key: rpc.jsonrpc.error_message
-                value:
-                  stringValue: PERMISSION_DENIED
+                  stringValue: "7"
               - key: client.address
                 value:
                   stringValue: 192.168.1.1

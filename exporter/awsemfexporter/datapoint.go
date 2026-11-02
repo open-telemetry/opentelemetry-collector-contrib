@@ -5,6 +5,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"strconv"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )

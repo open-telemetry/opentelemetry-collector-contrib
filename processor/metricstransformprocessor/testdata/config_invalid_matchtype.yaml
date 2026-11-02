@@ -1,4 +1,4 @@
-metricstransform:
+metrics_transform:
   transforms:
     - include: metric_name
       match_type: invalid

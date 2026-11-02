@@ -16,6 +16,8 @@ $defs:
 description: Config defines configuration for the Splunk HEC receiver.
 type: object
 properties:
+  ack:
+    $ref: ack
   health_path:
     description: HealthPath for health API, default is '/services/collector/health'
     type: string
@@ -31,4 +33,3 @@ properties:
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
   - $ref: /internal/splunk.access_token_passthrough_config
-  - $ref: ack

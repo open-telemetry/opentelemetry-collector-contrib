@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: "Update `operations_by_table_json_string` label in top minute transaction stats from raw `string` to `operations_by_table_json` `value_type` so table operations are parsed and formatted as `{table_name,insert_or_update_count,insert_or_update_bytes}`."
+issues: [52267]
+subtext: ""
+change_logs: []

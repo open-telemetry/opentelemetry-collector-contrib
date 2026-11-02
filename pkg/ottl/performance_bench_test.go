@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -422,7 +423,7 @@ func newBenchmarkMetricContext(attributeCount int) *ottlmetric.TransformContext 
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
-	return ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
+	return ottlmetric.NewTransformContext(resourceMetrics, scopeMetrics, metric)
 }
 
 func buildLogStatements(count int) []string {
@@ -504,7 +505,7 @@ func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
 
 	logRecord.Body().SetStr("benchmark log record")
 
-	return ottllog.NewTransformContextPtr(resourceLogs, scopeLogs, logRecord)
+	return ottllog.NewTransformContext(resourceLogs, scopeLogs, logRecord)
 }
 
 func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
@@ -534,7 +535,7 @@ func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
+	return ottlspan.NewTransformContext(resourceSpans, scopeSpans, span)
 }
 
 func BenchmarkSliceToMap(b *testing.B) {
@@ -643,7 +644,7 @@ func newSliceContextWithPrimitiveArr(arrSize int) *ottllog.TransformContext {
 		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContextPtr(rl, sl, lr)
+	return ottllog.NewTransformContext(rl, sl, lr)
 }
 
 func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
@@ -666,5 +667,194 @@ func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
 		nm.PutStr("k", "v_"+strconv.Itoa(i))
 	}
 
-	return ottllog.NewTransformContextPtr(rl, sl, lr)
+	return ottllog.NewTransformContext(rl, sl, lr)
+}
+
+func BenchmarkStringifyAll(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create log parser: %v", err)
+	}
+
+	stmt := `stringify_all(log.attributes)`
+	parsed, err := parser.ParseStatements([]string{stmt})
+	if err != nil {
+		b.Fatalf("failed to parse statement: %v", err)
+	}
+	sequence := ottllog.NewStatementSequence(parsed, settings)
+
+	scenarios := []struct {
+		name     string
+		template pcommon.Map
+	}{
+		{"all_strings_20", newAllStringsMap(20)},
+		{"mixed_types_20", newMixedTypesMap(20)},
+		{"mixed_types_50", newMixedTypesMap(50)},
+	}
+
+	for _, scenario := range scenarios {
+		b.Run(scenario.name, func(b *testing.B) {
+			ctx := b.Context()
+			logs := plog.NewLogs()
+			rl := logs.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("service.name", "bench")
+			sl := rl.ScopeLogs().AppendEmpty()
+			lr := sl.LogRecords().AppendEmpty()
+			lr.Body().SetStr("benchmark")
+			scenario.template.CopyTo(lr.Attributes())
+			tCtx := ottllog.NewTransformContext(rl, sl, lr)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				scenario.template.CopyTo(lr.Attributes())
+				if err := sequence.Execute(ctx, tCtx); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+			tCtx.Close()
+		})
+	}
+}
+
+func newAllStringsMap(n int) pcommon.Map {
+	m := pcommon.NewMap()
+	m.EnsureCapacity(n)
+	for i := range n {
+		m.PutStr(fmt.Sprintf("key_%d", i), fmt.Sprintf("value_%d", i))
+	}
+	return m
+}
+
+func newMixedTypesMap(n int) pcommon.Map {
+	m := pcommon.NewMap()
+	m.EnsureCapacity(n)
+
+	// Distribution: 40% string, 25% int, 15% bool, 10% map, 10% slice
+	strCount := n * 40 / 100
+	intCount := n * 25 / 100
+	boolCount := n * 15 / 100
+	mapCount := n * 10 / 100
+	sliceCount := n - strCount - intCount - boolCount - mapCount
+
+	for i := range strCount {
+		m.PutStr(fmt.Sprintf("str_%d", i), fmt.Sprintf("value_%d", i))
+	}
+	for i := range intCount {
+		m.PutInt(fmt.Sprintf("int_%d", i), int64(i*100))
+	}
+	for i := range boolCount {
+		m.PutBool(fmt.Sprintf("bool_%d", i), i%2 == 0)
+	}
+	for i := range mapCount {
+		nested := m.PutEmptyMap(fmt.Sprintf("map_%d", i))
+		nested.PutStr("k1", "v1")
+		nested.PutInt("k2", int64(i))
+		nested.PutStr("k3", "v3")
+	}
+	for i := range sliceCount {
+		s := m.PutEmptySlice(fmt.Sprintf("slice_%d", i))
+		s.AppendEmpty().SetStr("a")
+		s.AppendEmpty().SetInt(int64(i))
+		s.AppendEmpty().SetStr("c")
+	}
+	return m
+}
+
+// Recommended CLI invocation:
+//
+//	go test -run '^$' -bench '^BenchmarkDataPointPMapAccess$' -benchtime 500ms -count 6 -cpu 2 -timeout 999m -benchmem | tee bench.txt
+func BenchmarkDataPointPMapAccess(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottldatapoint.NewParser(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext](), settings, ottldatapoint.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create datapoint parser: %v", err)
+	}
+
+	statements := []string{
+		`delete_key(datapoint.attributes, "missing_key")`,
+		`keep_matching_keys(datapoint.attributes, ".*")`,
+		`replace_all_patterns(datapoint.attributes, "value", "^nonexistent_", "")`,
+		`merge_maps(datapoint.attributes, resource.attributes, "update")`,
+	}
+	parsed, err := parser.ParseStatements(statements)
+	if err != nil {
+		b.Fatalf("failed to parse datapoint statements: %v", err)
+	}
+	sequence := ottldatapoint.NewStatementSequence(parsed, settings)
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "benchmark-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("service.name", "old-service")
+	for i := range 10 {
+		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
+	}
+
+	tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
+	b.Cleanup(tCtx.Close)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if err := sequence.Execute(ctx, tCtx); err != nil {
+			b.Fatalf("failed to execute datapoint statements: %v", err)
+		}
+	}
+}
+
+// Recommended CLI invocation:
+//
+//	go test -run '^$' -bench '^BenchmarkDataPointPMapInsertAndReplaceKey$' -benchtime 500ms -count 6 -cpu 2 -timeout 999m -benchmem | tee bench.txt
+func BenchmarkDataPointPMapInsertAndReplaceKey(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottldatapoint.NewParser(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext](), settings, ottldatapoint.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create datapoint parser: %v", err)
+	}
+
+	statements := []string{
+		`replace_all_patterns(datapoint.attributes, "key", "^nonexistent_", "")`,
+		`set(datapoint.attributes["exported_job"], datapoint.attributes["label_0"])`,
+		`delete_key(datapoint.attributes, "exported_job")`,
+		`merge_maps(datapoint.attributes, resource.attributes, "insert")`,
+		`delete_key(datapoint.attributes, "service.name")`,
+	}
+	parsed, err := parser.ParseStatements(statements)
+	if err != nil {
+		b.Fatalf("failed to parse datapoint statements: %v", err)
+	}
+	sequence := ottldatapoint.NewStatementSequence(parsed, settings)
+
+	for _, attrCount := range []int{10, 50} {
+		b.Run(fmt.Sprintf("attrs=%d", attrCount), func(b *testing.B) {
+			metrics := pmetric.NewMetrics()
+			rm := metrics.ResourceMetrics().AppendEmpty()
+			rm.Resource().Attributes().PutStr("service.name", "benchmark-service")
+			sm := rm.ScopeMetrics().AppendEmpty()
+			metric := sm.Metrics().AppendEmpty()
+			dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+			dp.Attributes().EnsureCapacity(attrCount + 2)
+			for i := range attrCount {
+				dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
+			}
+
+			tCtx := ottldatapoint.NewTransformContext(rm, sm, metric, dp)
+			b.Cleanup(tCtx.Close)
+
+			ctx := b.Context()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if err := sequence.Execute(ctx, tCtx); err != nil {
+					b.Fatalf("failed to execute datapoint statements: %v", err)
+				}
+			}
+		})
+	}
 }

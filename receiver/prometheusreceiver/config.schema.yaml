@@ -1,25 +1,722 @@
 $defs:
-  api_server:
-    type: object
+  prom_authorization:
+    description: HTTP Authorization header credentials.
     properties:
-      enabled:
-        type: boolean
-      server_config:
-        $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+      credentials:
+        description: Credentials value (mutually exclusive with credentials_file/credentials_ref).
+        type: string
+      credentials_file:
+        description: File containing credentials.
+        type: string
+      credentials_ref:
+        description: Reference to credentials in the credential store.
+        type: string
+      type:
+        description: Authorization type. Default is "Bearer".
+        type: string
+    type: object
+  prom_basic_auth:
+    description: HTTP Basic authentication credentials.
+    properties:
+      password:
+        type: string
+      password_file:
+        description: File containing the password.
+        type: string
+      password_ref:
+        description: Reference to a password in the credential store.
+        type: string
+      username:
+        type: string
+      username_file:
+        description: File containing the username.
+        type: string
+      username_ref:
+        description: Reference to a username in the credential store.
+        type: string
+    type: object
   prom_config:
     description: PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling as prometheus "config" uses `yaml` tags.
+    properties:
+      global:
+        $ref: prom_global_config
+      otlp:
+        $ref: prom_otlp_config
+      runtime:
+        $ref: prom_runtime_config
+      scrape_configs:
+        items:
+          $ref: prom_scrape_config
+        type: array
+      storage:
+        $ref: prom_storage_config
+      tracing:
+        $ref: prom_tracing_config
+    type: object
     x-customType: github.com/prometheus/prometheus/config.config
+  prom_exemplars_config:
+    description: Exemplar storage configuration.
+    properties:
+      max_exemplars:
+        description: Maximum number of exemplars stored in memory. 0 disables exemplar storage.
+        type: integer
+    type: object
+  prom_global_config:
+    description: Default values applied to all scrape jobs.
+    properties:
+      always_scrape_classic_histograms:
+        description: Whether to always scrape classic histograms alongside native histograms.
+        type: boolean
+      body_size_limit:
+        description: Maximum size of uncompressed response body. E.g. "100MB". 0 means no limit.
+        type: string
+      convert_classic_histograms_to_nhcb:
+        description: Whether to convert classic histograms to native histogram custom buckets.
+        type: boolean
+      evaluation_interval:
+        description: How frequently to evaluate rules. Default is 1m.
+        format: duration
+        type: string
+      external_labels:
+        additionalProperties:
+          type: string
+        description: Labels added to all time series and alerts when communicating with external systems.
+        type: object
+      extra_scrape_metrics:
+        description: Whether to add extra metrics to each scrape result (scrape_body_size_bytes, etc.).
+        type: boolean
+      keep_dropped_targets:
+        description: How many dropped targets to keep for UI purposes. 0 means no limit.
+        type: integer
+      label_limit:
+        description: Per-scrape limit on number of labels per sample. 0 means no limit.
+        type: integer
+      label_name_length_limit:
+        description: Per-scrape limit on label name length. 0 means no limit.
+        type: integer
+      label_value_length_limit:
+        description: Per-scrape limit on label value length. 0 means no limit.
+        type: integer
+      metric_name_escaping_scheme:
+        description: Escaping scheme for non-standard metric names.
+        enum:
+          - allow-utf-8
+          - underscore
+          - dots
+          - values
+        type: string
+      metric_name_validation_scheme:
+        description: Validation scheme for metric names.
+        enum:
+          - utf8
+          - legacy
+        type: string
+      query_log_file:
+        description: File to which PromQL queries are logged.
+        type: string
+      rule_query_offset:
+        description: Delay rule evaluation relative to the query timestamp.
+        format: duration
+        type: string
+      sample_limit:
+        description: Per-scrape limit on number of accepted samples. 0 means no limit.
+        type: integer
+      scrape_failure_log_file:
+        description: File to which scrape failures are logged.
+        type: string
+      scrape_interval:
+        description: How frequently to scrape targets. Default is 1m.
+        format: duration
+        type: string
+      scrape_native_histograms:
+        description: Whether to scrape native histograms.
+        type: boolean
+      scrape_protocols:
+        description: Accepted content-type negotiation protocols in preference order.
+        items:
+          $ref: prom_scrape_protocol
+        type: array
+      scrape_timeout:
+        description: Timeout per scrape request. Default is 10s.
+        format: duration
+        type: string
+      target_limit:
+        description: Per-scrape limit on number of targets. 0 means no limit.
+        type: integer
+    type: object
+  prom_oauth2:
+    description: OAuth 2.0 authentication configuration.
+    properties:
+      audience:
+        description: JWT audience.
+        type: string
+      claims:
+        description: Additional JWT claims.
+        type: object
+      client_certificate_key:
+        type: string
+      client_certificate_key_file:
+        type: string
+      client_certificate_key_id:
+        type: string
+      client_certificate_key_ref:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      client_secret_file:
+        type: string
+      client_secret_ref:
+        type: string
+      endpoint_params:
+        additionalProperties:
+          type: string
+        description: Additional parameters for the token endpoint.
+        type: object
+      grant_type:
+        description: OAuth2 grant type. Default is "client_credentials".
+        type: string
+      iss:
+        description: JWT issuer.
+        type: string
+      no_proxy:
+        type: string
+      proxy_connect_header:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      proxy_from_environment:
+        type: boolean
+      proxy_url:
+        type: string
+      scopes:
+        description: OAuth2 scopes.
+        items:
+          type: string
+        type: array
+      signature_algorithm:
+        type: string
+      tls_config:
+        $ref: prom_tls_config
+      token_url:
+        description: URL for fetching the access token.
+        type: string
+    type: object
+  prom_otlp_config:
+    description: Configuration for OTLP metric translation.
+    properties:
+      convert_histograms_to_nhcb:
+        description: Whether to convert OTLP histograms to native histogram custom buckets.
+        type: boolean
+      ignore_resource_attributes:
+        description: Resource attributes to exclude from promotion.
+        items:
+          type: string
+        type: array
+      keep_identifying_resource_attributes:
+        description: Whether to keep identifying resource attributes.
+        type: boolean
+      label_name_preserve_multiple_underscores:
+        description: Whether to preserve multiple consecutive underscores in label names.
+        type: boolean
+      label_name_underscore_sanitization:
+        description: Whether to sanitize label names by replacing non-alphanumeric characters with underscores.
+        type: boolean
+      promote_all_resource_attributes:
+        description: Promote all resource attributes to metric labels.
+        type: boolean
+      promote_resource_attributes:
+        description: Specific resource attributes to promote to metric labels.
+        items:
+          type: string
+        type: array
+      promote_scope_metadata:
+        description: Whether to promote instrumentation scope metadata to metric labels.
+        type: boolean
+      translation_strategy:
+        description: Strategy for translating OTLP metrics to Prometheus format.
+        type: string
+    type: object
+  prom_relabel_config:
+    description: Relabeling rule applied to labels or samples.
+    properties:
+      action:
+        description: Action to perform. Default is "replace".
+        enum:
+          - replace
+          - lowercase
+          - uppercase
+          - keep
+          - drop
+          - keepequal
+          - dropequal
+          - hashmod
+          - labelmap
+          - labeldrop
+          - labelkeep
+          - templatereplace
+        type: string
+      if:
+        description: PromQL metric selector used as a pre-filter (native histograms only).
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        description: Labels to set for the labelkeep/labeldrop/labelmap actions.
+        type: object
+      modulus:
+        description: Modulus for the hashmod action.
+        type: integer
+      regex:
+        description: Regular expression matched against the concatenated source label values. Default is "(.*)".
+        type: string
+      replacement:
+        description: Replacement value for the target label. Default is "$1".
+        type: string
+      separator:
+        description: Separator between source label values. Default is ";".
+        type: string
+      source_labels:
+        description: Labels whose values are concatenated to form the input to the regex.
+        items:
+          type: string
+        type: array
+      target_label:
+        description: Label to write the replacement value into.
+        type: string
+    type: object
+  prom_runtime_config:
+    description: Runtime configuration.
+    properties:
+      gogc:
+        description: Target percentage for Go GC. Default is 75.
+        type: integer
+    type: object
+  prom_scrape_config:
+    description: Configuration for a scrape job.
+    properties:
+      always_scrape_classic_histograms:
+        type: boolean
+      authorization:
+        $ref: prom_authorization
+      azure_sd_configs:
+        description: Azure service discovery configurations.
+        items:
+          type: object
+        type: array
+      basic_auth:
+        $ref: prom_basic_auth
+      bearer_token:
+        description: Bearer token for authentication (mutually exclusive with bearer_token_file).
+        type: string
+      bearer_token_file:
+        description: File containing bearer token (mutually exclusive with bearer_token).
+        type: string
+      body_size_limit:
+        description: Maximum response body size. E.g. "100MB". 0 means no limit.
+        type: string
+      consul_sd_configs:
+        description: HashiCorp Consul service discovery configurations.
+        items:
+          type: object
+        type: array
+      convert_classic_histograms_to_nhcb:
+        type: boolean
+      digitalocean_sd_configs:
+        items:
+          type: object
+        type: array
+      dns_sd_configs:
+        description: DNS SRV record service discovery configurations.
+        items:
+          type: object
+        type: array
+      ec2_sd_configs:
+        description: AWS EC2 service discovery configurations.
+        items:
+          type: object
+        type: array
+      enable_compression:
+        description: Whether to request compressed responses. Default is true.
+        type: boolean
+      enable_http2:
+        description: Whether to use HTTP/2. Default is true.
+        type: boolean
+      eureka_sd_configs:
+        items:
+          type: object
+        type: array
+      extra_scrape_metrics:
+        type: boolean
+      fallback_scrape_protocol:
+        $ref: prom_scrape_protocol
+        description: Fallback protocol if negotiation fails.
+      file_sd_configs:
+        description: File-based service discovery configurations.
+        items:
+          type: object
+        type: array
+      follow_redirects:
+        description: Whether to follow HTTP redirects. Default is true.
+        type: boolean
+      gce_sd_configs:
+        description: Google Compute Engine service discovery configurations.
+        items:
+          type: object
+        type: array
+      hetzner_sd_configs:
+        items:
+          type: object
+        type: array
+      honor_labels:
+        description: Whether to honor labels from the scraped target over Prometheus-set labels.
+        type: boolean
+      honor_timestamps:
+        description: Whether to honor timestamps from the scraped target.
+        type: boolean
+      http_headers:
+        description: Custom HTTP headers sent during scraping.
+        type: object
+      http_sd_configs:
+        description: HTTP endpoint service discovery configurations.
+        items:
+          type: object
+        type: array
+      ionos_sd_configs:
+        items:
+          type: object
+        type: array
+      job_name:
+        description: Name of the scrape job. Must be unique across all scrape configs.
+        type: string
+      keep_dropped_targets:
+        type: integer
+      kubernetes_sd_configs:
+        description: Kubernetes service discovery configurations.
+        items:
+          type: object
+        type: array
+      label_limit:
+        type: integer
+      label_name_length_limit:
+        type: integer
+      label_value_length_limit:
+        type: integer
+      linode_sd_configs:
+        items:
+          type: object
+        type: array
+      marathon_sd_configs:
+        items:
+          type: object
+        type: array
+      metric_name_escaping_scheme:
+        enum:
+          - allow-utf-8
+          - underscore
+          - dots
+          - values
+        type: string
+      metric_name_validation_scheme:
+        enum:
+          - utf8
+          - legacy
+        type: string
+      metric_relabel_configs:
+        description: List of relabel configs applied to scraped samples.
+        items:
+          $ref: prom_relabel_config
+        type: array
+      metrics_path:
+        description: HTTP path for scraping. Default is /metrics.
+        type: string
+      moby_sd_configs:
+        description: Docker/Moby service discovery configurations.
+        items:
+          type: object
+        type: array
+      native_histogram_bucket_limit:
+        description: Maximum number of buckets per native histogram sample.
+        type: integer
+      native_histogram_min_bucket_factor:
+        description: Minimum bucket factor for native histograms.
+        type: number
+      no_proxy:
+        description: Comma-separated list of hosts to bypass the proxy.
+        type: string
+      nomad_sd_configs:
+        items:
+          type: object
+        type: array
+      oauth2:
+        $ref: prom_oauth2
+      openstack_sd_configs:
+        items:
+          type: object
+        type: array
+      outscale_sd_configs:
+        items:
+          type: object
+        type: array
+      ovhcloud_sd_configs:
+        items:
+          type: object
+        type: array
+      params:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: HTTP URL query parameters added to every scrape.
+        type: object
+      proxy_connect_header:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Headers sent to the proxy during CONNECT requests.
+        type: object
+      proxy_from_environment:
+        description: Whether to use proxy settings from environment variables.
+        type: boolean
+      proxy_url:
+        description: HTTP proxy URL.
+        type: string
+      puppetdb_sd_configs:
+        items:
+          type: object
+        type: array
+      relabel_configs:
+        description: List of relabel configs applied to target labels before scraping.
+        items:
+          $ref: prom_relabel_config
+        type: array
+      sample_limit:
+        type: integer
+      scaleway_sd_configs:
+        items:
+          type: object
+        type: array
+      scheme:
+        description: HTTP scheme for scraping. Default is http.
+        enum:
+          - http
+          - https
+        type: string
+      scrape_failure_log_file:
+        type: string
+      scrape_interval:
+        description: Override for global scrape_interval.
+        format: duration
+        type: string
+      scrape_native_histograms:
+        type: boolean
+      scrape_protocols:
+        items:
+          $ref: prom_scrape_protocol
+        type: array
+      scrape_timeout:
+        description: Override for global scrape_timeout.
+        format: duration
+        type: string
+      stackit_sd_configs:
+        items:
+          type: object
+        type: array
+      static_configs:
+        description: List of statically configured targets.
+        items:
+          $ref: prom_static_config
+        type: array
+      target_limit:
+        type: integer
+      tls_config:
+        $ref: prom_tls_config
+      track_timestamps_staleness:
+        description: Whether to track staleness of scraped timestamps.
+        type: boolean
+      triton_sd_configs:
+        items:
+          type: object
+        type: array
+      uyuni_sd_configs:
+        items:
+          type: object
+        type: array
+      vultr_sd_configs:
+        items:
+          type: object
+        type: array
+      xds_sd_configs:
+        description: xDS (Envoy) service discovery configurations.
+        items:
+          type: object
+        type: array
+      zookeeper_sd_configs:
+        items:
+          type: object
+        type: array
+    type: object
+  prom_scrape_protocol:
+    description: Content-type negotiation protocol.
+    enum:
+      - PrometheusProto
+      - PrometheusText0.0.4
+      - PrometheusText1.0.0
+      - OpenMetricsText0.0.1
+      - OpenMetricsText1.0.0
+    type: string
+  prom_static_config:
+    description: Statically configured scrape targets.
+    properties:
+      labels:
+        additionalProperties:
+          type: string
+        description: Labels assigned to all metrics scraped from these targets.
+        type: object
+      targets:
+        description: Targets in host:port format (scheme and path from the job config are used).
+        items:
+          type: string
+        type: array
+    type: object
+  prom_storage_config:
+    description: Storage configuration.
+    properties:
+      exemplars:
+        $ref: prom_exemplars_config
+      tsdb:
+        $ref: prom_tsdb_config
+    type: object
+  prom_tls_config:
+    description: TLS client configuration.
+    properties:
+      ca:
+        description: CA certificate as a string (mutually exclusive with ca_file/ca_ref).
+        type: string
+      ca_file:
+        description: Path to the CA certificate file.
+        type: string
+      ca_ref:
+        description: Reference to a CA certificate in the credential store.
+        type: string
+      cert:
+        description: Client certificate as a string (mutually exclusive with cert_file/cert_ref).
+        type: string
+      cert_file:
+        description: Path to the client certificate file.
+        type: string
+      cert_ref:
+        description: Reference to a client certificate in the credential store.
+        type: string
+      insecure_skip_verify:
+        description: Whether to skip TLS certificate verification.
+        type: boolean
+      key:
+        description: Client private key as a string (mutually exclusive with key_file/key_ref).
+        type: string
+      key_file:
+        description: Path to the client private key file.
+        type: string
+      key_ref:
+        description: Reference to a client private key in the credential store.
+        type: string
+      max_version:
+        description: Maximum TLS version. E.g. "TLS13".
+        type: string
+      min_version:
+        description: Minimum TLS version. E.g. "TLS12".
+        type: string
+      server_name:
+        description: Server name for SNI verification (overrides the hostname in the URL).
+        type: string
+    type: object
+  prom_tracing_config:
+    description: OTLP tracing configuration for Prometheus internal traces.
+    properties:
+      client_type:
+        description: Transport protocol for trace export. Default is grpc.
+        enum:
+          - http
+          - grpc
+        type: string
+      compression:
+        description: Compression for trace export.
+        enum:
+          - gzip
+        type: string
+      endpoint:
+        description: OTLP endpoint to send traces to.
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        description: HTTP headers sent with trace requests.
+        type: object
+      insecure:
+        description: Whether to skip TLS for the trace endpoint.
+        type: boolean
+      sampling_fraction:
+        description: Fraction of traces to sample. 0 disables tracing. 1 enables full tracing.
+        type: number
+      timeout:
+        description: Timeout for trace export requests.
+        format: duration
+        type: string
+      tls_config:
+        $ref: prom_tls_config
+    type: object
+  prom_tsdb_config:
+    description: TSDB storage configuration.
+    properties:
+      out_of_order_time_window:
+        description: Time window for accepting out-of-order samples.
+        format: duration
+        type: string
+      retention:
+        $ref: prom_tsdb_retention_config
+      stale_series_compaction_threshold:
+        description: Fraction of chunks that must be stale to trigger compaction.
+        type: number
+    type: object
+  prom_tsdb_retention_config:
+    description: TSDB data retention configuration.
+    properties:
+      percentage:
+        description: Maximum storage usage as a percentage of available disk. 0 means no limit.
+        type: number
+      size:
+        description: Maximum storage size. E.g. "10GB". 0 means no limit.
+        type: string
+      time:
+        description: Retention duration. Default is 15d.
+        format: duration
+        type: string
+    type: object
 description: Config defines configuration for Prometheus receiver.
-type: object
 properties:
   api_server:
+    $ref: ./internal/apiserver.config
     description: APIServer has the settings to enable the receiver to host the Prometheus API server in agent mode. This allows the user to call the endpoint to get the config, service discovery, and targets for debugging purposes.
-    $ref: api_server
   config:
-    x-pointer: true
     $ref: prom_config
+    x-pointer: true
+  discovery_reload_on_startup:
+    description: DiscoveryReloadOnStartup enables discovering targets immediately on start up as opposed to waiting for the configured interval before initializing the scrape pools.
+    type: boolean
+  initial_scrape_offset:
+    description: InitialScrapeOffset adds a fixed delay before the initial scrape of targets. This duration is applied on top of the receiver's internal load balancing offset. It avoids readiness races and backend rate limits immediately after startup.
+    format: duration
+    type: string
+  scrape_on_shutdown:
+    description: 'ScrapeOnShutdown enables a final scrape before the receiver closes. NOTE: This final scrape ignores the configured scrape interval.'
+    type: boolean
   target_allocator:
-    x-optional: true
     $ref: ./internal/targetallocator.config
+    x-optional: true
   trim_metric_suffixes:
     type: boolean
+type: object

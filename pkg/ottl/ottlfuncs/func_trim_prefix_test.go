@@ -45,14 +45,15 @@ func Test_TrimPrefix(t *testing.T) {
 			factory := NewTrimPrefixFactory[any]()
 			exprFunc, err := factory.CreateFunction(
 				ottl.FunctionContext{},
-				&TrimPrefixArguments[any]{
+				&trimPrefixArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.target, nil
 						},
 					},
 					Prefix: tt.prefix,
-				})
+				},
+			)
 			require.NoError(t, err)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
@@ -91,4 +92,59 @@ func Test_TrimPrefix_Error_prefix(t *testing.T) {
 	exprFunc := trimPrefix[any](target, prefix)
 	_, err := exprFunc(t.Context(), nil)
 	require.Error(t, err)
+}
+
+func Test_TrimPrefixFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewTrimPrefixFactory[any]()
+		assert.Equal(t, "TrimPrefix", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewTrimPrefixFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &trimPrefixArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Prefix"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewTrimPrefixFactory[any]()
+		args := factory.CreateDefaultArguments()
+		trimPrefixArgs, ok := args.(*trimPrefixArguments[any])
+		require.True(t, ok)
+		trimPrefixArgs.Target = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "prefix-hello", nil
+			},
+		}
+		trimPrefixArgs.Prefix = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "prefix-", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createTrimPrefixFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "TrimFactory args must be of type *trimPrefixArguments[K]")
+	})
+}
+
+func BenchmarkTrimPrefix(b *testing.B) {
+	exprFunc := trimPrefix[any](
+		&ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello world", nil }},
+		&ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) { return "hello ", nil }},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

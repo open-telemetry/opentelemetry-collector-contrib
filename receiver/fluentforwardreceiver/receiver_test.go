@@ -5,11 +5,13 @@ package fluentforwardreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -59,6 +62,40 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	}()
 
 	return connect, next, logObserver, cancel, receiver
+}
+
+func setupServerWithConsumer(t *testing.T, next consumer.Logs, configure func(*fluentReceiver)) (func() net.Conn, context.CancelFunc, receiver.Logs) {
+	ctx, cancel := context.WithCancel(t.Context())
+
+	logCore, _ := observer.New(zap.DebugLevel)
+	logger := zap.New(logCore)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.Logger = logger
+
+	conf := &Config{
+		ListenAddress: "127.0.0.1:0",
+	}
+
+	recv, err := newFluentReceiver(set, conf, next)
+	require.NoError(t, err)
+	if configure != nil {
+		configure(recv.(*fluentReceiver))
+	}
+	require.NoError(t, recv.Start(ctx, componenttest.NewNopHost()))
+
+	connect := func() net.Conn {
+		conn, err := net.Dial("tcp", recv.(*fluentReceiver).listener.Addr().String())
+		require.NoError(t, err)
+		return conn
+	}
+
+	go func() {
+		<-ctx.Done()
+		assert.NoError(t, recv.Shutdown(ctx))
+	}()
+
+	return connect, cancel, recv
 }
 
 func waitForConnectionClose(t *testing.T, conn net.Conn) {
@@ -201,6 +238,194 @@ func TestEventAcknowledgment(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, chunkValue, resp["ack"])
+}
+
+func TestEventAcknowledgmentWaitsForConsumerSuccess(t *testing.T) {
+	release := make(chan struct{})
+	next := newGatedLogsConsumer(release, nil)
+	connect, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+		r.collector.ackWaitTimeout = 5 * time.Second
+		r.server.ackWaitTimeout = 5 * time.Second
+	})
+	defer cancel()
+
+	const chunkValue = "chunk-success"
+	conn := connect()
+	n, err := conn.Write(makeSampleEventWithChunk(chunkValue))
+	require.NoError(t, err)
+	require.Positive(t, n)
+
+	require.Eventually(t, next.called, 5*time.Second, 10*time.Millisecond)
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
+	_, err = conn.Read(make([]byte, 1))
+	require.Error(t, err)
+	require.True(t, isTimeout(err), "expected no ACK before ConsumeLogs returned, got: %v", err)
+
+	close(release)
+	resp := readACKResponse(t, conn)
+	require.Equal(t, chunkValue, resp["ack"])
+}
+
+func TestEventAcknowledgmentDownstreamErrorClosesWithoutACK(t *testing.T) {
+	next := newErrLogsConsumer(errors.New("pipeline full"))
+	connect, cancel, _ := setupServerWithConsumer(t, next, nil)
+	defer cancel()
+
+	conn := connect()
+	n, err := conn.Write(makeSampleEventWithChunk("chunk-error"))
+	require.NoError(t, err)
+	require.Positive(t, n)
+
+	require.Eventually(t, next.called, 5*time.Second, 10*time.Millisecond)
+	waitForConnectionClose(t, conn)
+}
+
+func TestEventAcknowledgmentTimeoutClosesWithoutACK(t *testing.T) {
+	release := make(chan struct{})
+	next := newGatedLogsConsumer(release, nil)
+	connect, cancel, _ := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+		r.collector.ackWaitTimeout = 50 * time.Millisecond
+		r.server.ackWaitTimeout = 50 * time.Millisecond
+	})
+	defer cancel()
+
+	conn := connect()
+	n, err := conn.Write(makeSampleEventWithChunk("chunk-timeout"))
+	require.NoError(t, err)
+	require.Positive(t, n)
+
+	require.Eventually(t, next.called, 5*time.Second, 10*time.Millisecond)
+	waitForConnectionClose(t, conn)
+}
+
+func TestEventAcknowledgmentEnqueueTimeoutClosesWithoutACK(t *testing.T) {
+	set := receivertest.NewNopSettings(metadata.Type)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
+	defer telemetryBuilder.Shutdown()
+
+	eventCh := make(chan eventWithACK)
+	srv := newServer(eventCh, 50*time.Millisecond, zap.NewNop(), telemetryBuilder)
+	clientConn, serverConn := net.Pipe()
+	defer clientConn.Close()
+
+	serverDone := make(chan error, 1)
+	go func() {
+		handleErr := srv.handleConn(t.Context(), serverConn)
+		_ = serverConn.Close()
+		serverDone <- handleErr
+	}()
+
+	writeDone := make(chan error, 1)
+	go func() {
+		_, writeErr := clientConn.Write(makeSampleEventWithChunk("chunk-enqueue-timeout"))
+		writeDone <- writeErr
+	}()
+	if writeErr := <-writeDone; writeErr != nil {
+		require.ErrorIs(t, writeErr, io.ErrClosedPipe)
+	}
+
+	select {
+	case runErr := <-serverDone:
+		require.ErrorIs(t, runErr, context.DeadlineExceeded)
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "timed out waiting for server enqueue timeout")
+	}
+	_, readErr := clientConn.Read(make([]byte, 1))
+	require.True(t, errors.Is(readErr, io.ErrClosedPipe) || errors.Is(readErr, io.EOF), "expected closed connection, got: %v", readErr)
+}
+
+func TestConnectionsBoundedByLimitListener(t *testing.T) {
+	next := new(consumertest.LogsSink)
+	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+		r.maxConnections = 1
+	})
+	defer cancel()
+
+	srv := recv.(*fluentReceiver).server
+
+	// The first connection takes the only slot. It sends nothing, so its
+	// handler parks reading and keeps the connection (and the LimitListener
+	// slot) open.
+	firstConn := connect()
+	defer firstConn.Close()
+	require.Eventually(t, func() bool { return connCount(srv) == 1 }, 5*time.Second, 10*time.Millisecond)
+
+	// The second connection is accepted by the kernel, but LimitListener will
+	// not hand it to the server until the slot frees, so it is never processed.
+	secondConn := connect()
+	defer secondConn.Close()
+	n, err := secondConn.Write(makeSampleEventWithChunk("chunk-limited"))
+	require.NoError(t, err)
+	require.Positive(t, n)
+
+	// While the first connection holds the slot the server never accepts the
+	// second one (conn count stays at 1) and it receives no acknowledgment.
+	require.Never(t, func() bool { return connCount(srv) > 1 }, 300*time.Millisecond, 20*time.Millisecond)
+	require.NoError(t, secondConn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
+	_, err = secondConn.Read(make([]byte, 1))
+	require.True(t, isTimeout(err), "expected no ACK while the connection limit is saturated, got: %v", err)
+
+	// Free the slot; the second connection is now accepted and its chunk is
+	// acknowledged.
+	require.NoError(t, firstConn.Close())
+	require.NoError(t, secondConn.SetReadDeadline(time.Time{}))
+	resp := readACKResponse(t, secondConn)
+	require.Equal(t, "chunk-limited", resp["ack"])
+}
+
+func connCount(s *server) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.conns)
+}
+
+func TestForwardEventAcknowledgment(t *testing.T) {
+	connect, _, _, cancel, _ := setupServer(t)
+	defer cancel()
+
+	const chunkValue = "chunk-forward"
+	conn := connect()
+	n, err := conn.Write(makeSampleForwardEventWithChunk(chunkValue))
+	require.NoError(t, err)
+	require.Positive(t, n)
+
+	resp := readACKResponse(t, conn)
+	require.Equal(t, chunkValue, resp["ack"])
+}
+
+func TestPackedForwardEventAcknowledgment(t *testing.T) {
+	connect, _, _, cancel, _ := setupServer(t)
+	defer cancel()
+
+	const chunkValue = "chunk-packed-forward"
+	conn := connect()
+	n, err := conn.Write(makeSamplePackedForwardEventWithChunk(chunkValue))
+	require.NoError(t, err)
+	require.Positive(t, n)
+
+	resp := readACKResponse(t, conn)
+	require.Equal(t, chunkValue, resp["ack"])
+}
+
+func TestEventAcknowledgmentShutdownWhileWaiting(t *testing.T) {
+	release := make(chan struct{})
+	next := newGatedLogsConsumer(release, nil)
+	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+		r.collector.ackWaitTimeout = 5 * time.Second
+		r.server.ackWaitTimeout = 5 * time.Second
+	})
+	defer cancel()
+	defer close(release)
+
+	conn := connect()
+	n, err := conn.Write(makeSampleEventWithChunk("chunk-shutdown"))
+	require.NoError(t, err)
+	require.Positive(t, n)
+	require.Eventually(t, next.called, 5*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, recv.Shutdown(t.Context()))
+	waitForConnectionClose(t, conn)
 }
 
 func TestForwardPackedEvent(t *testing.T) {
@@ -370,6 +595,51 @@ func makeSampleEvent(tag string) []byte {
 	return b
 }
 
+func makeSampleEventWithChunk(chunk string) []byte {
+	var b []byte
+
+	b = msgp.AppendArrayHeader(b, 4)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "a")
+	b = msgp.AppendFloat64(b, 5.0)
+	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunk})
+	return b
+}
+
+func makeSampleForwardEventWithChunk(chunk string) []byte {
+	var b []byte
+
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendArrayHeader(b, 1)
+	b = appendSampleEntry(b)
+	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunk})
+	return b
+}
+
+func makeSamplePackedForwardEventWithChunk(chunk string) []byte {
+	var entries []byte
+	entries = appendSampleEntry(entries)
+
+	var b []byte
+	b = msgp.AppendArrayHeader(b, 3)
+	b = msgp.AppendString(b, "my-tag")
+	b = msgp.AppendBytes(b, entries)
+	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunk})
+	return b
+}
+
+func appendSampleEntry(b []byte) []byte {
+	b = msgp.AppendArrayHeader(b, 2)
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "a")
+	b = msgp.AppendFloat64(b, 5.0)
+	return b
+}
+
 func TestHighVolume(t *testing.T) {
 	connect, next, _, cancel, _ := setupServer(t)
 	defer cancel()
@@ -461,4 +731,69 @@ func TestReceiverShutdownClosesExistingConnections(t *testing.T) {
 		_, err := conn.Write(eventBytes)
 		return err != nil
 	}, 5*time.Second, 1*time.Second)
+}
+
+type gatedLogsConsumer struct {
+	release chan struct{}
+	err     error
+	seen    atomic.Bool
+}
+
+func newGatedLogsConsumer(release chan struct{}, err error) *gatedLogsConsumer {
+	return &gatedLogsConsumer{
+		release: release,
+		err:     err,
+	}
+}
+
+func (c *gatedLogsConsumer) ConsumeLogs(ctx context.Context, _ plog.Logs) error {
+	c.seen.Store(true)
+	select {
+	case <-c.release:
+		return c.err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (*gatedLogsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *gatedLogsConsumer) called() bool {
+	return c.seen.Load()
+}
+
+type errLogsConsumer struct {
+	err  error
+	seen atomic.Bool
+}
+
+func newErrLogsConsumer(err error) *errLogsConsumer {
+	return &errLogsConsumer{err: err}
+}
+
+func (c *errLogsConsumer) ConsumeLogs(context.Context, plog.Logs) error {
+	c.seen.Store(true)
+	return c.err
+}
+
+func (*errLogsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *errLogsConsumer) called() bool {
+	return c.seen.Load()
+}
+
+func readACKResponse(t *testing.T, conn net.Conn) map[string]any {
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
+	resp := map[string]any{}
+	require.NoError(t, msgp.NewReader(conn).ReadMapStrIntf(resp))
+	return resp
+}
+
+func isTimeout(err error) bool {
+	var netErr net.Error
+	return errors.As(err, &netErr) && netErr.Timeout()
 }

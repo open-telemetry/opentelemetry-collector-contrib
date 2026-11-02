@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
@@ -28,6 +28,28 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	allSettingsServerConfig := confighttp.NewDefaultServerConfig()
+	allSettingsServerConfig.WriteTimeout = defaultServerTimeout
+	allSettingsServerConfig.ReadHeaderTimeout = defaultServerTimeout
+	allSettingsServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8088",
+	}
+
+	tlsServerConfig := confighttp.NewDefaultServerConfig()
+	tlsServerConfig.WriteTimeout = defaultServerTimeout
+	tlsServerConfig.ReadHeaderTimeout = defaultServerTimeout
+	tlsServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: "tcp",
+		Endpoint:  "localhost:8088",
+	}
+	tlsServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "/test.crt",
+			KeyFile:  "/test.key",
+		},
+	})
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -39,12 +61,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:8088",
-					},
-				},
+				ServerConfig: allSettingsServerConfig,
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
@@ -63,18 +80,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: "tcp",
-						Endpoint:  "localhost:8088",
-					},
-					TLS: configoptional.Some(configtls.ServerConfig{
-						Config: configtls.Config{
-							CertFile: "/test.crt",
-							KeyFile:  "/test.key",
-						},
-					}),
-				},
+				ServerConfig: tlsServerConfig,
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},
@@ -101,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

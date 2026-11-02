@@ -36,7 +36,7 @@ func TestDefaultS3LogsDecoder_NewLogsDecoder(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			decoder := NewDefaultS3LogsDecoder()
+			decoder := NewDefaultBlobDecoder()
 			logsDecoder, err := decoder.NewLogsDecoder(tt.input())
 			require.NoError(t, err)
 			require.NotNil(t, logsDecoder)
@@ -74,6 +74,13 @@ func TestDefaultCWLogsDecoder_NewLogsDecoder(t *testing.T) {
 				return bytes.NewReader([]byte(`{"owner":"111222333444","logGroup":"/test/log-group","logStream":"test-stream","messageType":"DATA_MESSAGE","logEvents":[{"id":"1","timestamp":1700000000000,"message":"some text"}]}`))
 			},
 			expectedPath: filepath.Join("testdata", "default_cw_decoder_expected.yaml"),
+		},
+		{
+			name: "CloudWatch logs JSON with subscription filters",
+			input: func() io.Reader {
+				return bytes.NewReader([]byte(`{"owner":"111222333444","logGroup":"/test/log-group","logStream":"test-stream","messageType":"DATA_MESSAGE","subscriptionFilters":["otel-sd-v1__orders-api"],"logEvents":[{"id":"1","timestamp":1700000000000,"message":"some text"}]}`))
+			},
+			expectedPath: filepath.Join("testdata", "default_cw_decoder_subscription_filters_expected.yaml"),
 		},
 	}
 

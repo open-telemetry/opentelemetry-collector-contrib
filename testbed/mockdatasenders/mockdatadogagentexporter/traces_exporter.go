@@ -27,7 +27,7 @@ type ddExporter struct {
 
 func createExporter(c *Config) *ddExporter {
 	dd := &ddExporter{
-		endpoint:       c.Endpoint,
+		endpoint:       c.ClientConfig.Endpoint,
 		clientSettings: &c.ClientConfig,
 		client:         nil,
 	}

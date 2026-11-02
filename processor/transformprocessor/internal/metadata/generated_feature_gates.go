@@ -6,12 +6,12 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ProcessorTransformDefaultErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.defaultErrorModeIgnore",
+var ProcessorTransformEnableExperimentalFunctionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.transform.enableExperimentalFunctions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Changes the default error_mode of the transform processor from propagate to ignore"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47231"),
-	featuregate.WithRegisterFromVersion("v0.150.0"),
+	featuregate.WithRegisterDescription("Allow the transform processor's experimental functions to be used in statements and conditions. When disabled, experimental functions are rejected."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47306"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
 )
 
 var TransformFlattenLogsFeatureGate = featuregate.GlobalRegistry().MustRegister(

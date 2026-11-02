@@ -4,7 +4,6 @@
 The Kubernetes Events Receiver collects events from the Kubernetes
 API server. It collects all the new or updated events that come in.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
@@ -35,18 +34,73 @@ new events.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
+- `storage` (default: none): specifies the storage extension to use for persisting the latest resourceVersion. When configured, the receiver persists the resourceVersion after processing each watch event. On restart, the receiver resumes from the persisted resourceVersion, preventing duplicate events.
+  > **Important storage considerations:**
+  > - **Local or node-pinned volumes** (`hostPath`, local PV): the collector pod becomes tied to a specific node. If that node fails or the pod is rescheduled elsewhere, the persisted data will not be accessible and persistence will not work correctly.
+  > - **Network-attached volumes** (`ReadWriteMany`): the volume is accessible from any node, so the collector pod can be freely rescheduled or fail over to a different node while still resuming from the correct resourceVersion. This is the recommended approach, especially when used with `k8s_leader_elector`.
+  > - **Block volumes** (`ReadWriteOnce`): supported for single-replica deployments where restarts are graceful. Not recommended with leader election across multiple nodes, as Kubernetes may take 30–90 seconds to detach and reattach the volume after a node failure.
+- `dedup_interval` (default = `0`): Throttles MODIFIED watch events per Event UID.
+See [Event Deduplication](#event-deduplication).
 
 Examples:
 
 ```yaml
   k8s_events:
     auth_type: kubeConfig
+    storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     namespaces: [default, my_namespace]
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Event Deduplication
+
+`dedup_interval` is opt-in (default `0` preserves existing behavior). It throttles
+MODIFIED watch notifications per Event UID, useful when recurring events
+(`CrashLoopBackOff`, failing readiness probes, etc.) inflate log volume without adding
+new information.
+
+Recurrence count is preserved on each emitted record via the `k8s.event.count` attribute.
+
+### Configuration
+
+| `dedup_interval` | Behavior |
+|---|---|
+| `0` (default) | No throttling — emit every MODIFIED |
+| Positive (e.g. `5m`) | Emit the first MODIFIED per UID, then drop until the interval elapses |
+| Negative (e.g. `-1s`) | Drop all MODIFIED events |
+
+ADDED events are always emitted and DELETED watch events are excluded. The dedup
+cache only tracks UIDs that have produced a MODIFIED, so single-fire Events do
+not consume cache space.
+
+```yaml
+k8s_events:
+  dedup_interval: 5m   # MODIFIED at most once per 5 min per Event UID
+```
+
+### Dedup state retention
+
+Per-UID dedup state lives in an in-memory cache so it does not grow unbounded.
+The entry TTL is derived automatically as `dedup_interval + 5m` and is not
+configurable. The TTL is reset on every emit, so an entry persists for as long
+as that UID is being actively emitted (at most once per `dedup_interval`); once
+emissions stop, the entry is evicted after the TTL elapses. The `5m` buffer
+keeps state alive slightly longer than the throttle window so a UID that is
+still being throttled is never evicted mid-window.
+
+> **Note:** Dedup state is in-memory and is not persisted. On a collector restart
+> or a leader election change, the cache starts empty, so the first MODIFIED seen
+> afterward for each still-recurring Event UID is re-emitted before throttling
+> resumes — throttling is best-effort across restarts.
+
+### Internal telemetry
+
+When `dedup_interval` is set, the counter `otelcol.k8s.events.modified.filtered`
+reports how many MODIFIED watch notifications were dropped. See
+[documentation.md](./documentation.md) for the metric definition.
 
 ## Example
 
@@ -70,9 +124,16 @@ metadata:
     app: otelcontribcol
 data:
   config.yaml: |
+    extensions:
+      file_storage:
+        directory: /var/lib/otelcol/storage
+
     receivers:
       k8s_events:
+        auth_type: serviceAccount
+        storage: file_storage
         namespaces: [default, my_namespace]
+
     exporters:
       otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
@@ -80,6 +141,7 @@ data:
           insecure: true
 
     service:
+      extensions: [file_storage]
       pipelines:
         logs:
           receivers: [k8s_events]
@@ -106,6 +168,8 @@ EOF
 
 Use the below commands to create a `ClusterRole` with required permissions and a
 `ClusterRoleBinding` to grant the role to the service account created above.
+Alternatively, a namespace-scoped `Role` and `RoleBinding` can be used when the receiver
+is configured to watch specific namespaces via the `namespaces` option.
 
 ```bash
 <<EOF | kubectl apply -f -
@@ -116,62 +180,9 @@ metadata:
   labels:
     app: otelcontribcol
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - events
-  - namespaces
-  - namespaces/status
-  - nodes
-  - nodes/spec
-  - pods
-  - pods/status
-  - replicationcontrollers
-  - replicationcontrollers/status
-  - resourcequotas
-  - services
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - daemonsets
-  - deployments
-  - replicasets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - batch
-  resources:
-  - jobs
-  - cronjobs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-    - autoscaling
-  resources:
-    - horizontalpodautoscalers
-  verbs:
-    - get
-    - list
-    - watch
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
 EOF
 ```
 
@@ -200,6 +211,17 @@ Create a [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: otelcontribcol-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -226,11 +248,16 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/config
+        - name: storage
+          mountPath: /var/lib/otelcol/storage
         imagePullPolicy: IfNotPresent
       volumes:
         - name: config
           configMap:
             name: otelcontribcol
+        - name: storage
+          persistentVolumeClaim:
+            claimName: otelcontribcol-storage
 EOF
 ```
 
@@ -307,6 +334,8 @@ will be converted to the following log
             "k8s.event.name": "bad-pod.18633a5aeb89ba21",
             "k8s.event.uid": "86bc5e70-a921-4fbc-8b64-fa1316289423",
             "k8s.namespace.name": "default",
+            "k8s.event.reporting_controller": "kubelet",
+            "k8s.event.reporting_instance": "kind-control-plane",
             "k8s.event.count": 4
           },
           "TraceID": "",

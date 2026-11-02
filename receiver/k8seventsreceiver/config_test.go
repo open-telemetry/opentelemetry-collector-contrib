@@ -6,12 +6,13 @@ package k8seventsreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
@@ -43,6 +44,20 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 			desc: "custom qps and burst are valid",
 			cfg: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 100, KubeAPIBurst: 200},
+			},
+		},
+		{
+			desc: "negative dedup_interval is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: -1 * time.Second,
+			},
+		},
+		{
+			desc: "positive dedup_interval is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: 5 * time.Minute,
 			},
 		},
 	}
@@ -85,6 +100,17 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_dedup"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
+				},
+				DedupInterval: 5 * time.Minute,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -96,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

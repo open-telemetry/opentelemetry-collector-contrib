@@ -18,10 +18,17 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	ProjectID   string         `mapstructure:"project_id"`
-	MetricsList []MetricConfig `mapstructure:"metrics_list"`
+	ProjectID string `mapstructure:"project_id"`
+	// Overrides the default monitoring.googleapis.com:443 endpoint.
+	// Use this when targeting non-standard universe domains.
+	Endpoint string `mapstructure:"endpoint"`
+	// UniverseDomain is the universe domain for the Google Cloud Monitoring service.
+	// Defaults to "googleapis.com". Set to support Sovereign Cloud regions.
+	// See https://pkg.go.dev/google.golang.org/api/option#WithUniverseDomain
+	UniverseDomain string         `mapstructure:"universe_domain"`
+	MetricsList    []MetricConfig `mapstructure:"metrics_list"`
 }
 
 type MetricConfig struct {
@@ -32,8 +39,8 @@ type MetricConfig struct {
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval < minCollectionInterval {
-		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", minCollectionInterval, config.CollectionInterval)
+	if config.ControllerConfig.CollectionInterval < minCollectionInterval {
+		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", minCollectionInterval, config.ControllerConfig.CollectionInterval)
 	}
 
 	if len(config.MetricsList) == 0 {

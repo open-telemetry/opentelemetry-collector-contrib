@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings(receivertest.NopType)
-	set.ID = component.NewID(component.MustNewType("fluentforward"))
+	set.ID = component.NewID(component.MustNewType("fluent_forward"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

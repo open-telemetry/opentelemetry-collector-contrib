@@ -91,7 +91,12 @@ func (cfg *Config) getProviderConfigs() []ProviderCfg {
 
 func (cfg *Config) Validate() (errs error) {
 	seenIssuers := make(map[string]struct{})
-	for _, provider := range cfg.getProviderConfigs() {
+	providerConfigs := cfg.getProviderConfigs()
+
+	for _, provider := range providerConfigs {
+		if len(providerConfigs) > 1 && provider.IgnoreIssuer {
+			errs = multierr.Append(errs, errIgnoreIssuerMultiProvider)
+		}
 		if _, exists := seenIssuers[provider.IssuerURL]; exists {
 			errs = multierr.Append(errs, fmt.Errorf("duplicate issuer URL found: %s", provider.IssuerURL))
 			continue
@@ -115,6 +120,10 @@ type ProviderCfg struct {
 	// When true, this skips validating the audience field.
 	// Optional.
 	IgnoreAudience bool `mapstructure:"ignore_audience"`
+
+	// When true, this skips validating the issuer field.
+	// Optional.
+	IgnoreIssuer bool `mapstructure:"ignore_issuer"`
 
 	// The local path for the issuer CA's TLS server cert.
 	// Optional.

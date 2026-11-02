@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
@@ -27,6 +28,8 @@ type baseFailoverRouter[C any] struct {
 	errTryLock  *state.TryLock
 	notifyRetry chan struct{}
 	done        chan struct{}
+	conditions  Condition
+	logger      *zap.Logger
 }
 
 // getCurrentConsumer returns the consumer for the current healthy level
@@ -45,8 +48,20 @@ func (f *baseFailoverRouter[C]) getConsumerAtIndex(idx int) C {
 }
 
 // reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
-func (f *baseFailoverRouter[C]) reportConsumerError(idx int) {
+func (f *baseFailoverRouter[C]) reportConsumerError(idx int, err error) {
+	if f.conditions != nil {
+		f.logger.Debug("Downstream error matched failover condition; moving to the next pipeline level", zap.Error(err), zap.Int("pipeline_level", idx))
+	}
 	f.errTryLock.TryExecute(f.pS.HandleError, idx)
+}
+
+// shouldFailoverOnError goes through the user defined condition
+// to check if given error should cause failover
+func (f *baseFailoverRouter[C]) shouldFailoverOnError(err error) bool {
+	if f.conditions != nil {
+		return f.conditions.ShouldFailover(err)
+	}
+	return true
 }
 
 func (f *baseFailoverRouter[C]) Shutdown() {
@@ -57,13 +72,11 @@ func (f *baseFailoverRouter[C]) Shutdown() {
 	}
 }
 
-func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*baseFailoverRouter[C], error) {
+func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config, logger *zap.Logger) (*baseFailoverRouter[C], error) {
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
 	pSConstants := state.PSConstants{
 		RetryInterval: cfg.RetryInterval,
-		RetryGap:      cfg.RetryGap,
-		MaxRetries:    cfg.MaxRetries,
 	}
 
 	consumers := make([]C, 0)
@@ -83,6 +96,8 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 		errTryLock:  state.NewTryLock(),
 		done:        done,
 		notifyRetry: notifyRetry,
+		conditions:  buildCondition(cfg.Condition.Get()),
+		logger:      logger,
 	}, nil
 }
 

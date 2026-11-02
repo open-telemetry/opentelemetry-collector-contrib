@@ -1,8 +1,8 @@
 # default configuration
-slowsql/default:
+slow_sql/default:
 
 # configuration with all possible parameters
-slowsql/full:
+slow_sql/full:
   threshold: 600ms
   db_system:
     - h2

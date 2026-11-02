@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
@@ -368,6 +369,7 @@ func TestSumMetrics_IsCardinalityLimitReached(t *testing.T) {
 }
 
 func TestSumMetrics_GetOrCreate(t *testing.T) {
+	now := time.Unix(123, 0)
 	tests := []struct {
 		name               string
 		metrics            map[Key]*Sum
@@ -446,7 +448,7 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 			attributesFun := func() pcommon.Map {
 				return tt.attributes
 			}
-			sum, limitReached := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0))
+			sum, limitReached := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0), now)
 			sum.Add(1)
 			assert.Equal(t, tt.limitReached, limitReached)
 			assert.Len(t, sm.metrics, tt.expectedMetricsLen)
@@ -458,6 +460,53 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSumMetrics_ExpireSeries(t *testing.T) {
+	now := time.Unix(123, 0)
+	sm := SumMetrics{
+		metrics: map[Key]*Sum{
+			"active":    {lastSeen: now},
+			"stale":     {lastSeen: now.Add(-2 * time.Second)},
+			overflowKey: {lastSeen: now.Add(-2 * time.Second)},
+		},
+	}
+
+	sm.ExpireSeries(time.Second, now)
+
+	assert.Contains(t, sm.metrics, Key("active"))
+	assert.NotContains(t, sm.metrics, Key("stale"))
+	assert.NotContains(t, sm.metrics, Key(overflowKey))
+}
+
+func TestExplicitHistogramMetrics_ExpireSeries(t *testing.T) {
+	now := time.Unix(123, 0)
+	hm := &explicitHistogramMetrics{
+		metrics: map[Key]*explicitHistogram{
+			"active": {lastSeen: now},
+			"stale":  {lastSeen: now.Add(-2 * time.Second)},
+		},
+	}
+
+	hm.ExpireSeries(time.Second, now)
+
+	assert.Contains(t, hm.metrics, Key("active"))
+	assert.NotContains(t, hm.metrics, Key("stale"))
+}
+
+func TestExponentialHistogramMetrics_ExpireSeries(t *testing.T) {
+	now := time.Unix(123, 0)
+	hm := &exponentialHistogramMetrics{
+		metrics: map[Key]*exponentialHistogram{
+			"active": {lastSeen: now},
+			"stale":  {lastSeen: now.Add(-2 * time.Second)},
+		},
+	}
+
+	hm.ExpireSeries(time.Second, now)
+
+	assert.Contains(t, hm.metrics, Key("active"))
+	assert.NotContains(t, hm.metrics, Key("stale"))
 }
 
 func TestSumMetrics_BuildMetrics(t *testing.T) {

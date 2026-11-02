@@ -8,6 +8,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -60,6 +61,33 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *ms[0].Resources[0].Name)
 	// Assert no other tags are set
 	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
+}
+
+func TestWorkloadMetrics(t *testing.T) {
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+		Command: "otelcontribcol",
+	}
+
+	ms := WorkloadMetrics("fargate", uint64(2e9), TagsFromBuildInfo(buildInfo))
+
+	assert.Equal(t, "otel.datadog_exporter.metrics.running.fargate", ms[0].Metric)
+	assert.Len(t, ms, 1)
+	assert.Equal(t, int64(2), *ms[0].Points[0].Timestamp)
+	assert.Equal(t, 1.0, *ms[0].Points[0].Value)
+	// Assert hostname tag is empty
+	assert.Empty(t, *ms[0].Resources[0].Name)
+	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
+}
+
+func TestAzureContainerAppsMetrics(t *testing.T) {
+	ts := uint64(1e9)
+	tags := []string{"version:0.1", "replica:replica-1", "name:my-app", "subscription_id:abc", "resource_group:my-rg"}
+	series := WorkloadMetrics("azurecontainerapps", ts, tags)
+	require.Len(t, series, 1)
+	assert.Equal(t, "otel.datadog_exporter.metrics.running.azurecontainerapps", series[0].Metric)
+	assert.Equal(t, tags, series[0].Tags)
+	assert.Empty(t, *series[0].Resources[0].Name)
 }
 
 func TestDefaultMetricsWithRuntimeMetrics(t *testing.T) {

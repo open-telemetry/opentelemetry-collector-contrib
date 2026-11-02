@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -41,12 +42,17 @@ func NewFactory() exporter.Factory {
 
 // Create default configurations
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *queueSettings.Batch.GetOrInsertDefault()
+	queueSettings.Batch = configoptional.Default(batchCfg)
+
 	return &Config{
 		Database:      otelDb,
 		MetricTable:   defaultMetricTable,
 		LogTable:      defaultLogTable,
 		TraceTable:    defaultTraceTable,
 		IngestionType: queuedIngestTest,
+		QueueSettings: configoptional.Default(queueSettings),
 	}
 }
 
@@ -76,7 +82,8 @@ func createMetricsExporter(
 		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
 		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
-		exporterhelper.WithShutdown(adp.Close))
+		exporterhelper.WithShutdown(adp.Close),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +113,8 @@ func createTracesExporter(
 		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
 		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
-		exporterhelper.WithShutdown(adp.Close))
+		exporterhelper.WithShutdown(adp.Close),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +144,8 @@ func createLogsExporter(
 		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
 		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
-		exporterhelper.WithShutdown(adp.Close))
+		exporterhelper.WithShutdown(adp.Close),
+	)
 	if err != nil {
 		return nil, err
 	}

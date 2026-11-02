@@ -4,8 +4,6 @@ type: aerospike
 description: |
   The Aerospike receiver is designed to collect performance metrics from one or more Aerospike nodes.
 
-reaggregation_enabled: true
-
 status:
   class: receiver
   stability:

@@ -25,7 +25,7 @@ const (
 )
 
 func mockServiceHost(tb testing.TB, c *Config) {
-	c.AuthType = k8sconfig.AuthTypeNone
+	c.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	tb.Setenv(serviceHostEnv, "mock")
 	tb.Setenv(servicePortEnv, "12345")
 }

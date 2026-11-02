@@ -16,6 +16,9 @@ import (
 
 func SetValue(value pcommon.Value, val any) error {
 	if val == nil {
+		// A pcommon.Value can represent nil, so the most meaningful outcome is an
+		// empty value (ValueTypeEmpty) rather than an error.
+		pcommon.NewValueEmpty().CopyTo(value)
 		return nil
 	}
 	var err error
@@ -130,12 +133,7 @@ func SetIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 			if err != nil {
 				return err
 			}
-			potentialValue, ok := currentValue.Map().Get(*s)
-			if !ok {
-				currentValue = currentValue.Map().PutEmpty(*s)
-			} else {
-				currentValue = potentialValue
-			}
+			currentValue, _ = currentValue.Map().GetOrPutEmpty(*s)
 		case pcommon.ValueTypeSlice:
 			i, err := keys[index].Int(ctx, tCtx)
 			if err != nil {

@@ -6,9 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
-
-reaggregation_enabled: true
+    active: [dmitryax, braydonk, rogercoll]
 
 sem_conv_version: 1.9.0
 

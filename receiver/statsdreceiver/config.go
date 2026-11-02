@@ -32,6 +32,9 @@ type Config struct {
 	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 	// Will only be used when transport set to 'unixgram'.
 	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
+	// SocketBufferSize sets SO_RCVBUF on the listening socket (bytes).
+	// Only used when transport is 'unixgram'. 0 = OS default.
+	SocketBufferSize int `mapstructure:"socket_buffer_size"`
 }
 
 func (c *Config) Validate() error {

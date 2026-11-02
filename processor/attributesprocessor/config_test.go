@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -200,6 +200,17 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_defaults"),
+			expected: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.INSERT},
+						{Key: "cloud.region", FromContext: "metadata.region", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -214,7 +225,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -232,7 +243,7 @@ func TestSpanConfigUsedWithmetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	assert.NoError(t, confmap.Validate(cfg))
 
 	sink := consumertest.MetricsSink{}
 

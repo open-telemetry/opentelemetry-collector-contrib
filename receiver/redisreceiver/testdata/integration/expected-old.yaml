@@ -221,6 +221,32 @@ resourceMetrics:
                   timeUnixNano: "1687339332739210000"
               isMonotonic: true
             unit: By
+          - description: Number of pub/sub channels
+            name: redis.pubsub.channel.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: redis.pubsub.channel.state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            unit: '{channel}'
+          - description: Number of pub/sub patterns
+            name: redis.pubsub.pattern.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: redis.pubsub.pattern.state
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            unit: '{pattern}'
           - description: Number of changes since the last dump
             name: redis.rdb.changes_since_last_save
             sum:

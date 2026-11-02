@@ -5,7 +5,9 @@
 #
 # Adds code owners without write access as reviewers on a PR. Note that
 # the code owners must still be a member of the `open-telemetry`
-# organization.
+# organization. Reviewers are requested one at a time so that a single
+# code owner who cannot be requested does not prevent the rest from being
+# requested.
 #
 # Note that since this script is considered a requirement for PRs,
 # it should never fail.
@@ -16,6 +18,70 @@ if [[ -z "${REPO:-}" || -z "${PR:-}" ]]; then
     echo "One or more of REPO and PR have not been set, please ensure each is set."
     exit 0
 fi
+
+request_review () {
+    # We have to use the GitHub API directly due to an issue with how the CLI
+    # handles PR updates that causes it require access to organization teams,
+    # and the GitHub token doesn't provide that permission.
+    # For more: https://github.com/cli/cli/issues/4844
+    local reviewer="$1"
+    local response
+    local message
+
+    echo "Requesting review from ${reviewer}"
+    response=$(curl -s \
+        -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
+        -d "{\"reviewers\":[\"${reviewer}\"]}")
+    message=$(echo "${response}" | jq -r '.message // empty' 2>/dev/null || true)
+    if [[ -n "${message}" ]]; then
+        echo "Could not request a review from ${reviewer}: ${message}"
+    fi
+}
+
+# Helper files pull in "testing" without being named *_test.go. Match the import
+# whether it is grouped, single-line, or aliased.
+imports_testing () {
+    grep -qE '^[[:space:]]*(import[[:space:]]+)?([A-Za-z0-9_.]+[[:space:]]+)?"testing"$' "$1"
+}
+
+# A component "targets" a platform if it ships non-test source constrained to
+# that platform. Go expresses this two ways and both must be handled:
+#   * implicitly, via the name_GOOS.go filename suffix. A name_GOOS_GOARCH.go
+#     file is deliberately NOT matched here: validating GOARCH would mean
+#     hardcoding Go's architecture list, and every such file in this repo also
+#     carries an explicit //go:build line, so the second loop catches it.
+#   * explicitly, via //go:build, where the platform may sit inside a compound
+#     expression ("darwin || freebsd") and where negation -- either a bare
+#     "!windows" or a negated group "!(windows && arm64)" -- must not count.
+# Derived at runtime so the set cannot drift as components are added or removed.
+component_targets_platform () {
+    local dir="$1" plat="$2" file line expr
+    [[ -d "${dir}" ]] || return 1
+
+    while IFS= read -r file; do
+        [[ "${file}" == *_test.go ]] && continue
+        imports_testing "${file}" && continue
+        [[ "$(basename "${file}" .go)" == *_"${plat}" ]] && return 0
+    done < <(find "${dir}" -type f -name "*_${plat}.go" 2>/dev/null)
+
+    while IFS= read -r file; do
+        [[ "${file}" == *_test.go ]] && continue
+        imports_testing "${file}" && continue
+        line=$(grep -m1 '^//go:build ' "${file}") || continue
+        expr="${line#//go:build }"
+        # Nested negations like "!((linux) || windows)" defeat any regex, so
+        # treat a negated directive as no evidence: this can miss a label,
+        # never invent one.
+        case "${expr}" in *'!'*) continue;; esac
+        expr=" $(printf '%s' "${expr}" | sed -E 's/[^a-zA-Z0-9_]/ /g') "
+        [[ "${expr}" == *" ${plat} "* ]] && return 0
+    done < <(grep -rl --include='*.go' "^//go:build .*${plat}" "${dir}" 2>/dev/null)
+
+    return 1
+}
 
 main () {
     CUR_DIRECTORY=$(dirname "$0")
@@ -33,10 +99,12 @@ main () {
     FILES=$(echo -n "${JSON}"| jq -r '.files[].path')
     REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh" | tac) # Reversed so we visit subdirectories first
-    REVIEWERS=""
     LABELS=""
+    NEEDS_WINDOWS=""
+    NEEDS_DARWIN=""
     declare -A PROCESSED_COMPONENTS
     declare -A REVIEWED
+    declare -A REVIEWER_SET
 
     for REVIEWER in ${REVIEW_LOGINS}; do
         # GitHub adds "app/" in front of user logins. The API docs don't make
@@ -74,6 +142,14 @@ main () {
 
             PROCESSED_COMPONENTS["${COMPONENT}"]=true
 
+            if [[ -z "${NEEDS_WINDOWS}" ]] && component_targets_platform "${COMPONENT}" windows; then
+                NEEDS_WINDOWS=1
+            fi
+
+            if [[ -z "${NEEDS_DARWIN}" ]] && component_targets_platform "${COMPONENT}" darwin; then
+                NEEDS_DARWIN=1
+            fi
+
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
             for OWNER in ${OWNERS}; do
@@ -84,10 +160,7 @@ main () {
                     continue
                 fi
 
-                if [[ -n "${REVIEWERS}" ]]; then
-                    REVIEWERS+=","
-                fi
-                REVIEWERS+=$(echo -n "${OWNER}" | sed -E 's/@(.+)/"\1"/')
+                REVIEWER_SET["${OWNER#@}"]=true
             done
 
             LABEL_NAME="$(awk -v path="${COMPONENT}" '$1 == path {print $2}' .github/component_labels.txt)"
@@ -104,8 +177,12 @@ main () {
         done
     done
 
-    if [[ $LABELS =~ "receiver/sqlserver" ]]; then
-      LABELS+=",Run Windows"
+    if [[ -n "${NEEDS_WINDOWS}" ]]; then
+        LABELS+=",Run Windows"
+    fi
+
+    if [[ -n "${NEEDS_DARWIN}" ]]; then
+        LABELS+=",Run Darwin"
     fi
 
     if [[ -n "${LABELS}" ]]; then
@@ -118,23 +195,12 @@ main () {
     # Note that adding the labels above will not trigger any other workflows to
     # add code owners, so we have to do it here.
     #
-    # We have to use the GitHub API directly due to an issue with how the CLI
-    # handles PR updates that causes it require access to organization teams,
-    # and the GitHub token doesn't provide that permission.
-    # For more: https://github.com/cli/cli/issues/4844
-    #
-    # The GitHub API validates that authors are not requested to review, but
-    # accepts duplicate logins and logins that are already reviewers.
-    if [[ -n "${REVIEWERS}" ]]; then
-        echo "Requesting review from ${REVIEWERS}"
-        curl \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
-            -d "{\"reviewers\":[${REVIEWERS}]}" \
-            | jq ".message" \
-            || echo "jq was unable to parse GitHub's response"
+    # Reviewers are requested one at a time so a single invalid reviewer
+    # doesn't drop the rest of the requests.
+    if [[ -n "${!REVIEWER_SET[*]}" ]]; then
+        for REVIEWER in "${!REVIEWER_SET[@]}"; do
+            request_review "${REVIEWER}"
+        done
     else
         echo "No code owners found"
     fi

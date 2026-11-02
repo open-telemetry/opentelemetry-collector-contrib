@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
@@ -37,7 +38,9 @@ func createDefaultConfig() component.Config {
 		return nil
 	}
 
+	clientConfig := confighttp.NewDefaultClientConfig()
 	return &Config{
+		ClientConfig:                  clientConfig,
 		APIBaseURL:                    DefaultAPIBaseURL,
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		CollectorCredentialsDirectory: defaultCredsPath,

@@ -92,12 +92,22 @@ func (ts *testServer) queue(method, path string, resp testServerResponse) {
 	ts.scripts[key] = append(ts.scripts[key], resp)
 }
 
-func (ts *testServer) recorded(method, path string) []testServerRequest {
+func (ts *testServer) recordedPosts(path string) []testServerRequest {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	key := method + " " + path
+	key := http.MethodPost + " " + path
 	out := append([]testServerRequest(nil), ts.requests[key]...)
 	return out
+}
+
+func (ts *testServer) recordedCount() int {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	n := 0
+	for _, reqs := range ts.requests {
+		n += len(reqs)
+	}
+	return n
 }
 
 func mustJSON(v any) []byte {

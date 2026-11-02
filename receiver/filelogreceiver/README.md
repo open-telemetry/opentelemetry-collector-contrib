@@ -3,7 +3,6 @@
 
 This receiver tails and parses logs from files.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -41,7 +40,7 @@ This receiver tails and parses logs from files.
 | `include_file_record_number`          | `false`                              | Whether to add the record number in the file as the attribute `log.file.record_number`.                                                                                                                                                                         |
 | `include_file_record_offset`          | `false`                              | Whether to add the record offset in the file as the attribute `log.file.record_offset`                                                                                                                                                                          |
 | `poll_interval`                       | 200ms                                | The [duration](#time-parameters) between filesystem polls.                                                                                                                                                                                                      |
-| `fingerprint_size`                    | `1kb`                                | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
+| `fingerprint_size`                    | `1000`                               | The number of bytes, read from the start of a file, used to uniquely identify it. Must be at least `16`. Decreasing this value will trigger re-ingestion of files larger than the new fingerprint size.                                                         |
 | `initial_buffer_size`                 | `16KiB`                              | The initial size of the to read buffer for headers and logs, the buffer will be grown as necessary. Larger values may lead to unnecessary large buffer allocations, and smaller values may lead to lots of copies while growing the buffer.                     |
 | `max_log_size`                        | `1MiB`                               | The maximum size of a log entry to read. The behavior for oversized log entries is controlled by `max_log_size_behavior`. Protects against reading large amounts of data into memory.                                                                            |
 | `max_log_size_behavior`               | `split`                              | Behavior when a log entry exceeds `max_log_size`. Options are `split` (default) which splits oversized entries into multiple log entries, or `truncate` which truncates the entry and drops the remainder.                                                       |
@@ -49,8 +48,10 @@ This receiver tails and parses logs from files.
 | `max_batches`                         | 0                                    | Only applicable when files must be batched in order to respect `max_concurrent_files`. This value limits the number of batches that will be processed during a single poll interval. A value of 0 indicates no limit.                                           |
 | `delete_after_read`                   | `false`                              | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. Must be `false` when `start_at` is set to `end`.                                                                     |
 | `acquire_fs_lock`                     | `false`                              | Whether to attempt to acquire a filesystem lock before reading a file (Unix only).                                                                                                                                                                              |
-| `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                                   |
-| `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
+| `file_cache_advise`                   | `false`                              | Hints the operating system to release cached file pages after they are read, helping reduce page cache usage for large sequential workloads.  (Linux only).                                                                                                                                                                              |
+| `skip_unmodified_files`               | `false`                              | If `true`, a file whose path and mtime are unchanged since the previous poll is skipped without being opened, fingerprinted, or read. This trades pure fingerprint-based identification for a faster path+mtime check; enable it only in environments where an unchanged mtime reliably means unchanged content.                          |
+| `attributes`                          | {}                                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                               |
+| `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string.                                                                 |
 | `operators`                           | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
 | `storage`                             | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.              |
 | `header`                              | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must not be set when `start_at` is set to `end`.                                                          |
@@ -171,7 +172,7 @@ receivers:
 
 - Use `ignore` when you want to avoid duplicate logs and your log rotation strategy ensures that rotated files are properly renamed or moved.
 - Use `read_whole_file` when data completeness is critical and you can tolerate duplicate logs, or when you have deduplication logic downstream.
-- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point. 
+- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point.
 
 ## Example - Tailing a simple json file
 
@@ -251,6 +252,53 @@ When this option is set, all files ending with that suffix are scanned using a g
 before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
 compressed file, rather than recompressing the whole content and overwriting the previous file.
 
+## Example - Collector self-monitoring
+
+Receiver Configuration
+```yaml
+receivers:
+  file_log:
+    include:
+    - /var/log/otelcol/collector.log
+    multiline:
+      line_start_pattern: '^(\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    operators:
+      - type: otelcol
+```
+
+The above configuration will tail the collector's own self-log file, so the logs can be correlated with the collector's own
+metrics and traces. The [`otelcol` operator](../../pkg/stanza/docs/operators/otelcol.md) detects whether the collector wrote
+its self-logs in zap's `json` or `console` encoding, and promotes `ts`, `level`, `msg`, and the nested `resource` object onto
+the log record's Timestamp, Severity, Body, and Resource. Remaining fields become attributes.
+
+The `multiline` block is needed for `console` encoding, which writes stacktraces and multi-line messages over several lines.
+Without it, each of those lines becomes its own entry and fails to parse. The pattern matches the start of an entry in either
+encoding: `{` for `json` and the timestamp for `console`.
+
+An input line in `json` encoding:
+```
+{"ts":"2026-07-06T22:56:21.989Z","level":"warn","msg":"Failed to scrape Prometheus endpoint","resource":{"k8s.pod.name":"otel-agent-qkvqj","service.name":"otel-agent"},"otelcol.component.id":"receiver_creator"}
+```
+
+The same event in `console` encoding produces the same entry, with the caller added as an attribute:
+```
+2026-07-06T22:56:21.989Z	warn	internal/transaction.go:127	Failed to scrape Prometheus endpoint	{"resource":{"k8s.pod.name":"otel-agent-qkvqj","service.name":"otel-agent"},"otelcol.component.id":"receiver_creator"}
+```
+
+Emitted log record:
+```
+Timestamp: 2026-07-06 22:56:21.989 +0000 UTC
+SeverityText: warn
+SeverityNumber: Warn(13)
+Body: Str(Failed to scrape Prometheus endpoint)
+Resource:
+  -> k8s.pod.name: Str(otel-agent-qkvqj)
+  -> service.name: Str(otel-agent)
+Attributes:
+  -> otelcol.component.id: Str(receiver_creator)
+  -> log.file.name: Str(collector.log)
+```
+
 ## Offset tracking
 
 The `storage` setting allows you to define the proper storage extension for storing file offsets.
@@ -292,27 +340,28 @@ are provided.
 
 ### `filelog.protobufCheckpointEncoding`
 
-When this feature gate is enabled, the receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
+The receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
 
-The feature includes full backward compatibility:
-- The receiver can always read both protobuf and JSON checkpoints regardless of the feature gate setting
-- When the feature gate is enabled, new checkpoints are written in protobuf format
-- When the feature gate is disabled, new checkpoints are written in JSON format
-
-To enable this feature gate, use the flag: `--feature-gates=filelog.protobufCheckpointEncoding`
+Checkpoints are always written in protobuf format. Existing JSON checkpoints are still read and are rewritten as protobuf on the next save.
 
 Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.148.0`
+- Promoted to `Beta` (enabled by default) in `v0.156.0`
+- Promoted to `Stable` (cannot be disabled) in `v0.164.0`
+- Removed in `v0.165.0`
 
-### `filelog.decompressFingerprint`
+### List
 
-When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
+This component has the following feature gates:
 
-This can cause existing gzip files to be re-ingested because of changes in how fingerprints are computed.
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `filelog.allowFileDeletion` | beta | When enabled, allows usage of the `delete_after_read` setting. | v0.70.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314) |
+| `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
+| `filelog.mtimeSortType` | beta | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
+| `filelog.protobufCheckpointEncoding` | stable | Use protobuf encoding for checkpoint storage instead of JSON. | v0.148.0 | v0.165.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266) |
+| `filelog.requireExplicitTopN` | alpha | When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444) |
+| `filelog.windows.caseInsensitive` | beta | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
 
-Schedule for this feature gate is:
-
-- Introduce as `Alpha` (disabled by default) in `v0.128.0`
-- Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0`
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

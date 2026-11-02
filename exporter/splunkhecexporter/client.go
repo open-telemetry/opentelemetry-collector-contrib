@@ -6,19 +6,24 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
@@ -26,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
@@ -58,6 +64,7 @@ type client struct {
 	bufferPool        bufferPool
 	exporterName      string
 	meter             metric.Meter
+	telemetryBuilder  *metadata.TelemetryBuilder
 }
 
 func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
@@ -84,6 +91,21 @@ func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
+func newProfilesClient(set exporter.Settings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthLogs)
+}
+
+// accessTokenForResources returns the first HEC access token found by iterating through resources
+// using the provided accessor function. Returns empty string if none is found.
+func accessTokenForResources(count int, attrsFn func(i int) pcommon.Map) string {
+	for i := range count {
+		if token, found := attrsFn(i).Get(splunk.HecTokenLabel); found {
+			return token.Str()
+		}
+	}
+	return ""
+}
+
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md pmetric.Metrics,
@@ -92,11 +114,10 @@ func (c *client) pushMetricsData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if md.ResourceMetrics().Len() != 0 {
-		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
-		}
+	if token := accessTokenForResources(md.ResourceMetrics().Len(), func(i int) pcommon.Map {
+		return md.ResourceMetrics().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	if c.config.UseMultiMetricFormat {
@@ -113,11 +134,10 @@ func (c *client) pushTraceData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if td.ResourceSpans().Len() != 0 {
-		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
-		}
+	if token := accessTokenForResources(td.ResourceSpans().Len(), func(i int) pcommon.Map {
+		return td.ResourceSpans().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	return c.pushTracesDataInBatches(ctx, td, localHeaders)
@@ -132,11 +152,10 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 
 	localHeaders := map[string]string{}
-
-	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
-	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-	if found {
-		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+	if token := accessTokenForResources(ld.ResourceLogs().Len(), func(i int) pcommon.Map {
+		return ld.ResourceLogs().At(i).Resource().Attributes()
+	}); token != "" {
+		localHeaders["Authorization"] = splunk.BuildHECAuthHeader(token)
 	}
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
@@ -154,12 +173,299 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return c.pushLogDataInBatches(ctx, ld, localHeaders)
 }
 
+func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) error {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	if pp.ResourceProfiles().Len() == 0 {
+		return nil
+	}
+
+	localHeaders := map[string]string{}
+	localHeaders[libraryHeaderName] = profilingLibraryName
+	getResourceAttrs := func(i int) pcommon.Map {
+		return pp.ResourceProfiles().At(i).Resource().Attributes()
+	}
+	if token := accessTokenForResources(pp.ResourceProfiles().Len(), getResourceAttrs); token != "" {
+		localHeaders[authorizationHeaderName] = splunk.BuildHECAuthHeader(token)
+	}
+
+	ld, permanentErrors, convertedProfiles := buildProfilesLogsWithProfileRefs(pp)
+	var droppedUnsupported int64
+	for _, err := range permanentErrors {
+		if _, ok := errors.AsType[*unsupportedProfileError](err); ok {
+			droppedUnsupported++
+		}
+	}
+	if c.telemetryBuilder != nil {
+		c.telemetryBuilder.ExporterDroppedUnsupportedProfileRecords.Add(ctx, droppedUnsupported)
+	}
+
+	sendErr := c.pushLogDataInBatches(ctx, ld, localHeaders)
+	// The profiles that were converted successfully share the HEC request. If that
+	// request fails transiently, keep the send error retryable even when other
+	// profiles in the batch were permanently rejected during conversion.
+	if sendErr != nil && !consumererror.IsPermanent(sendErr) {
+		logErr := multierr.Combine(permanentErrors...)
+		if logErr != nil {
+			c.logger.Warn("Profiles were dropped during conversion while retrying the remaining profiles", zap.Error(logErr))
+		}
+		logsErr, ok := errors.AsType[consumererror.Logs](sendErr)
+		if !ok {
+			return sendErr
+		}
+		failedProfileCount := logsErr.Data().LogRecordCount()
+		if failedProfileCount == 0 || failedProfileCount > len(convertedProfiles) {
+			return sendErr
+		}
+		retryProfiles := profilesFromLogSuffix(pp, convertedProfiles, failedProfileCount)
+		return xconsumererror.NewProfiles(sendErr, retryProfiles)
+	}
+	return multierr.Combine(append(permanentErrors, sendErr)...)
+}
+
+// buildProfilesLogs converts pprofile.Profiles into a plog.Logs payload for the Splunk HEC profiling endpoint.
+// It returns permanent errors for individual profiles that fail translation or encoding.
+func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
+	ld, permanentErrors, _ := buildProfilesLogsWithProfileRefs(pp)
+	return ld, permanentErrors
+}
+
+type profileReference struct {
+	resource int
+	scope    int
+	profile  int
+}
+
+func buildProfilesLogsWithProfileRefs(pp pprofile.Profiles) (plog.Logs, []error, []profileReference) {
+	ld := plog.NewLogs()
+	var permanentErrors []error
+	var convertedProfiles []profileReference
+
+	for resourceIndex, rp := range pp.ResourceProfiles().All() {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rp.Resource().Attributes().CopyTo(rl.Resource().Attributes())
+
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(profilingLibraryName)
+		sl.Scope().SetVersion(profilingLibraryVersion)
+
+		for scopeIndex, sp := range rp.ScopeProfiles().All() {
+			for profileIndex, prof := range sp.Profiles().All() {
+				lr, err := profileToLogRecord(pp, rp, sp, prof)
+				if err != nil {
+					permanentErrors = append(permanentErrors, err)
+					continue
+				}
+				lr.MoveTo(sl.LogRecords().AppendEmpty())
+				convertedProfiles = append(convertedProfiles, profileReference{
+					resource: resourceIndex,
+					scope:    scopeIndex,
+					profile:  profileIndex,
+				})
+			}
+		}
+	}
+
+	return ld, permanentErrors, convertedProfiles
+}
+
+// profilesFromLogSuffix returns the profiles corresponding to the failed and
+// not-yet-sent log records. HEC batches are emitted in the same order as these
+// references, and a failed Logs error carries the remaining log suffix.
+func profilesFromLogSuffix(pp pprofile.Profiles, refs []profileReference, count int) pprofile.Profiles {
+	result := pprofile.NewProfiles()
+	pp.Dictionary().CopyTo(result.Dictionary())
+
+	start := len(refs) - count
+	lastResource, lastScope := -1, -1
+	var dstRP pprofile.ResourceProfiles
+	var dstSP pprofile.ScopeProfiles
+	for _, ref := range refs[start:] {
+		srcRP := pp.ResourceProfiles().At(ref.resource)
+		if ref.resource != lastResource {
+			dstRP = result.ResourceProfiles().AppendEmpty()
+			srcRP.Resource().CopyTo(dstRP.Resource())
+			dstRP.SetSchemaUrl(srcRP.SchemaUrl())
+			lastResource, lastScope = ref.resource, -1
+		}
+		if ref.scope != lastScope {
+			srcSP := srcRP.ScopeProfiles().At(ref.scope)
+			dstSP = dstRP.ScopeProfiles().AppendEmpty()
+			srcSP.Scope().CopyTo(dstSP.Scope())
+			dstSP.SetSchemaUrl(srcSP.SchemaUrl())
+			lastScope = ref.scope
+		}
+		srcRP.ScopeProfiles().At(ref.scope).Profiles().At(ref.profile).CopyTo(dstSP.Profiles().AppendEmpty())
+	}
+	return result
+}
+
+// profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord.
+// Returns a permanent error if translation or encoding fails; on error the returned record is unset.
+func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (plog.LogRecord, error) {
+	typeIdx := int(prof.SampleType().TypeStrindex())
+	stringTable := pp.Dictionary().StringTable()
+	if typeIdx < 0 || typeIdx >= stringTable.Len() {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
+	}
+
+	dataType, ok := normalizeProfilingDataType(pp.Dictionary(), prof)
+	if !ok {
+		unitIdx := int(prof.SampleType().UnitStrindex())
+		unit := ""
+		if unitIdx >= 0 && unitIdx < stringTable.Len() {
+			unit = stringTable.At(unitIdx)
+		}
+		return plog.LogRecord{}, consumererror.NewPermanent(&unsupportedProfileError{
+			sampleType: stringTable.At(typeIdx),
+			unit:       unit,
+		})
+	}
+
+	expanded := prepareProfilesForPprofConversion(pp, rp, scope, prof)
+	p, err := pprof.ConvertPprofileToPprof(&expanded)
+	if err != nil {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to convert profile: %w", err))
+	}
+	translator.AddProfilingPprofSampleLabels(p, pp.Dictionary(), scope.Scope(), prof)
+
+	var buf bytes.Buffer
+	// The Write method encodes the profile to a gzipped protobuf
+	if err := p.Write(&buf); err != nil {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("failed to write profile: %w", err))
+	}
+
+	lr := plog.NewLogRecord()
+	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	lr.SetTimestamp(prof.Time())
+	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
+	lr.Attributes().PutStr(profilingDataTypeKey, dataType)
+	lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
+	var totalFrameCount int64
+	for _, s := range prof.Samples().All() {
+		totalFrameCount += int64(pp.Dictionary().StackTable().At(int(s.StackIndex())).LocationIndices().Len())
+	}
+	lr.Attributes().PutInt(profilingDataTotalFrameCountKey, totalFrameCount)
+	// TODO find whether it is continuous or snapshot
+	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
+	return lr, nil
+}
+
+type unsupportedProfileError struct {
+	sampleType string
+	unit       string
+}
+
+func (e *unsupportedProfileError) Error() string {
+	return fmt.Sprintf("unsupported profile sample type %q with unit %q", e.sampleType, e.unit)
+}
+
+// normalizeProfilingDataType maps known eBPF profile measurements to the profile types accepted by
+// Splunk AlwaysOn Profiling. The pprof sample type, unit, and values remain unchanged.
+func normalizeProfilingDataType(dict pprofile.ProfilesDictionary, prof pprofile.Profile) (string, bool) {
+	stringTable := dict.StringTable()
+	getString := func(index int32) string {
+		if index < 0 || int(index) >= stringTable.Len() {
+			return ""
+		}
+		return strings.ToLower(strings.TrimSpace(stringTable.At(int(index))))
+	}
+
+	sampleType := getString(prof.SampleType().TypeStrindex())
+	sampleUnit := getString(prof.SampleType().UnitStrindex())
+	periodType := getString(prof.PeriodType().TypeStrindex())
+	periodUnit := getString(prof.PeriodType().UnitStrindex())
+	if (sampleType == "cpu" || sampleType == "cpu_time") && isTimeUnit(sampleUnit) {
+		return profilingDataTypeCPU, true
+	}
+	if sampleType == "samples" && sampleUnit == "count" && periodType == "cpu" && isTimeUnit(periodUnit) {
+		return profilingDataTypeCPU, true
+	}
+
+	switch sampleType {
+	case "allocation":
+		if isByteUnit(sampleUnit) || isCountUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	case "alloc_space", "alloc_bytes", "allocation_bytes", "allocation_size", "allocated_bytes":
+		if isByteUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	case "alloc_objects", "alloc_count", "allocation_count", "allocated_objects":
+		if isCountUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	default:
+	}
+	return "", false
+}
+
+func isTimeUnit(unit string) bool {
+	switch unit {
+	case "ns", "nanosecond", "nanoseconds", "us", "µs", "microsecond", "microseconds",
+		"ms", "millisecond", "milliseconds", "s", "sec", "second", "seconds":
+		return true
+	default:
+		return false
+	}
+}
+
+func isByteUnit(unit string) bool {
+	switch unit {
+	case "b", "byte", "bytes":
+		return true
+	default:
+		return false
+	}
+}
+
+func isCountUnit(unit string) bool {
+	switch unit {
+	case "count", "counts", "object", "objects":
+		return true
+	default:
+		return false
+	}
+}
+
+// prepareProfilesForPprofConversion wraps a single OTel pprofile.Profile into a pprofile.Profiles
+// holding exactly one ResourceProfiles / ScopeProfiles / Profile, as required by ConvertPprofileToPprof.
+// Samples are copied as-is; shape validation and per-observation expansion are handled by the converter.
+func prepareProfilesForPprofConversion(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) pprofile.Profiles {
+	profiles := pprofile.NewProfiles()
+	pp.Dictionary().CopyTo(profiles.Dictionary())
+
+	dstRP := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().CopyTo(dstRP.Resource())
+	dstRP.SetSchemaUrl(rp.SchemaUrl())
+
+	dstScope := dstRP.ScopeProfiles().AppendEmpty()
+	scope.Scope().CopyTo(dstScope.Scope())
+	dstScope.SetSchemaUrl(scope.SchemaUrl())
+
+	dstProfile := dstScope.Profiles().AppendEmpty()
+	prof.CopyTo(dstProfile)
+
+	return profiles
+}
+
 // A guesstimated value > length of bytes of a single event.
 // Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
 const (
-	bufCapPadding        = uint(4096)
-	libraryHeaderName    = "X-Splunk-Instrumentation-Library"
-	profilingLibraryName = "otel.profiling"
+	bufCapPadding                            = uint(4096)
+	libraryHeaderName                        = "X-Splunk-Instrumentation-Library"
+	authorizationHeaderName                  = "Authorization"
+	profilingLibraryName                     = "otel.profiling"
+	profilingLibraryVersion                  = "0.1.0"
+	profilingDataTypeKey                     = "profiling.data.type"
+	profilingDataTypeCPU                     = "cpu"
+	profilingDataTypeAllocation              = "allocation"
+	profilingDataFormatKey                   = "profiling.data.format"
+	profilingDataFormatPprofGzipBase64       = "pprof-gzip-base64"
+	profilingDataTotalFrameCountKey          = "profiling.data.total.frame.count"
+	profilingInstrumentationSourceKey        = "profiling.instrumentation.source"
+	profilingInstrumentationSourceContinuous = "continuous"
 )
 
 func isProfilingData(sl plog.ScopeLogs) bool {
@@ -181,6 +487,9 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
 			if err := c.postEvents(ctx, buf, headers); err != nil {
+				if permanentErr := multierr.Combine(permanentErrors...); permanentErr != nil {
+					c.logger.Warn("Log records were dropped while sending a batch", zap.Error(permanentErr))
+				}
 				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
 		}
@@ -234,7 +543,8 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors,
@@ -281,11 +591,13 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-					"error writing the event: %w", err)))
+					"error writing the event: %w", err,
+				)))
 			}
 		}
 	}
@@ -313,14 +625,16 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 			}
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
+					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics),
+			))
 			return iterState{
 				record: i + 1,
-				done:   i+1 != len(events),
+				done:   i+1 == len(events),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-				"error writing the event: %w", err)))
+				"error writing the event: %w", err,
+			)))
 		}
 	}
 
@@ -359,11 +673,13 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces),
+					))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-					"error writing the event: %w", err)))
+					"error writing the event: %w", err,
+				)))
 			}
 		}
 	}
@@ -605,6 +921,9 @@ func (c *client) stop(context.Context) error {
 	if c.heartbeater != nil {
 		c.heartbeater.shutdown()
 	}
+	if c.telemetryBuilder != nil {
+		c.telemetryBuilder.Shutdown()
+	}
 	return nil
 }
 
@@ -623,7 +942,12 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.meter)
+	telemetryBuilder, tbErr := metadata.NewTelemetryBuilder(c.telemetrySettings)
+	if tbErr != nil {
+		return tbErr
+	}
+	c.telemetryBuilder = telemetryBuilder
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)
@@ -654,8 +978,8 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.Compression = ""
-	return config.ToClient(ctx, host.GetExtensions(), telemetrySettings)
+	config.ClientConfig.Compression = ""
+	return config.ClientConfig.ToClient(ctx, host.GetExtensions(), telemetrySettings)
 }
 
 func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
@@ -667,9 +991,9 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"Connection":           "keep-alive",
 		"Content-Type":         "application/json",
 		"User-Agent":           config.SplunkAppName + "/" + appVersion,
-		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
+		"Authorization":        splunk.BuildHECAuthHeader(string(config.Token)),
 		"__splunk_app_name":    config.SplunkAppName,
-		"__splunk_app_version": config.SplunkAppVersion,
+		"__splunk_app_version": appVersion,
 	}
 }
 

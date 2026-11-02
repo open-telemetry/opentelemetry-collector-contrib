@@ -83,6 +83,54 @@ func TestEvaluate_OTTL(t *testing.T) {
 			false,
 			samplingpolicy.NotSampled,
 		},
+		{
+			"OTTL conditions with span context prefix",
+			[]string{"span.attributes[\"attr_k_1\"] == \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions inverse match with span context prefix",
+			[]string{"span.attributes[\"attr_k_1\"] != \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_2"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions with spanevent context prefix on attributes",
+			[]string{},
+			[]string{"spanevent.attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
+			[]spanWithAttributes{{SpanEventAttributes: map[string]string{"event_attr_k_1": "event_attr_v_1"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions with spanevent context prefix on name",
+			[]string{},
+			[]string{"spanevent.name != \"incorrect event name\""},
+			[]spanWithAttributes{{SpanEventAttributes: nil}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions mixed prefixed and unprefixed in same span list",
+			[]string{"attributes[\"attr_k_1\"] == \"attr_v_1\"", "span.attributes[\"attr_k_2\"] == \"attr_v_2\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_2": "attr_v_2"}}},
+			false,
+			samplingpolicy.Sampled,
+		},
+		{
+			"OTTL conditions with invalid context prefix",
+			[]string{"badcontext.attributes[\"x\"] == \"y\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_1"}}},
+			true,
+			samplingpolicy.NotSampled,
+		},
 	}
 
 	for _, c := range cases {
@@ -99,6 +147,64 @@ func TestEvaluate_OTTL(t *testing.T) {
 	}
 }
 
+func TestEvaluate_OTTL_PathContextNames(t *testing.T) {
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	cases := []struct {
+		Desc                string
+		SpanConditions      []string
+		SpanEventConditions []string
+		ResourceAttributes  map[string]string
+		ScopeName           string
+		ScopeAttributes     map[string]string
+		Spans               []spanWithAttributes
+		WantErr             bool
+		Decision            samplingpolicy.Decision
+	}{
+		{
+			Desc:               "Resource attribute match using resource context prefix on span",
+			SpanConditions:     []string{"resource.attributes[\"service.name\"] == \"checkout\""},
+			ResourceAttributes: map[string]string{"service.name": "checkout"},
+			Spans:              []spanWithAttributes{{}},
+			Decision:           samplingpolicy.Sampled,
+		},
+		{
+			Desc:                "Resource attribute match using resource context prefix on spanevent",
+			SpanEventConditions: []string{"resource.attributes[\"service.name\"] == \"checkout\""},
+			ResourceAttributes:  map[string]string{"service.name": "checkout"},
+			Spans:               []spanWithAttributes{{}},
+			Decision:            samplingpolicy.Sampled,
+		},
+		{
+			Desc:           "Scope name match using scope context prefix on span",
+			SpanConditions: []string{"scope.name == \"my-scope\""},
+			ScopeName:      "my-scope",
+			Spans:          []spanWithAttributes{{}},
+			Decision:       samplingpolicy.Sampled,
+		},
+		{
+			Desc:           "Scope name match using instrumentation_scope context prefix on span",
+			SpanConditions: []string{"instrumentation_scope.name == \"my-scope\""},
+			ScopeName:      "my-scope",
+			Spans:          []spanWithAttributes{{}},
+			Decision:       samplingpolicy.Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			filter, err := NewOTTLConditionFilter(componenttest.NewNopTelemetrySettings(), c.SpanConditions, c.SpanEventConditions, ottl.IgnoreError)
+			assert.Equal(t, err != nil, c.WantErr)
+
+			if err == nil {
+				decision, err := filter.Evaluate(t.Context(), traceID, newTraceWithResourceAndScope(c.ResourceAttributes, c.ScopeName, c.ScopeAttributes, c.Spans))
+				assert.Equal(t, err != nil, c.WantErr)
+				assert.Equal(t, decision, c.Decision)
+			}
+		})
+	}
+}
+
 type spanWithAttributes struct {
 	SpanAttributes      map[string]string
 	SpanEventAttributes map[string]string
@@ -108,6 +214,39 @@ func newTraceWithSpansAttributes(spans []spanWithAttributes) *samplingpolicy.Tra
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
+
+	for _, s := range spans {
+		span := ils.Spans().AppendEmpty()
+		span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+		span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		for k, v := range s.SpanAttributes {
+			span.Attributes().PutStr(k, v)
+		}
+		spanEvent := span.Events().AppendEmpty()
+		spanEvent.SetName("test event")
+		for k, v := range s.SpanEventAttributes {
+			spanEvent.Attributes().PutStr(k, v)
+		}
+	}
+
+	return &samplingpolicy.TraceData{
+		ReceivedBatches: traces,
+	}
+}
+
+func newTraceWithResourceAndScope(resourceAttrs map[string]string, scopeName string, scopeAttrs map[string]string, spans []spanWithAttributes) *samplingpolicy.TraceData {
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	for k, v := range resourceAttrs {
+		rs.Resource().Attributes().PutStr(k, v)
+	}
+	ils := rs.ScopeSpans().AppendEmpty()
+	if scopeName != "" {
+		ils.Scope().SetName(scopeName)
+	}
+	for k, v := range scopeAttrs {
+		ils.Scope().Attributes().PutStr(k, v)
+	}
 
 	for _, s := range spans {
 		span := ils.Spans().AppendEmpty()

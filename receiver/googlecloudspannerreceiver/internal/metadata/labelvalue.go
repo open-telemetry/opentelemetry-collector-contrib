@@ -4,10 +4,15 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
+	"cloud.google.com/go/spanner"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -65,12 +70,22 @@ type stringSliceLabelValue struct {
 	value    string
 }
 
+type intSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
 type byteSliceLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
 }
 
 type lockRequestSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+type operationsByTableJSONLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
 }
@@ -165,6 +180,46 @@ func newStringSliceLabelValue(metadata LabelValueMetadata, valueHolder any) Labe
 	}
 }
 
+func (v intSliceLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v intSliceLabelValue) Value() any {
+	return v.value
+}
+
+func (v intSliceLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *intSliceLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newIntSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	value := *valueHolder.(*[]int64)
+
+	sortedValue := make([]int64, len(value))
+	copy(sortedValue, value)
+	slices.Sort(sortedValue)
+
+	var stringSlice []string
+	var lastVal *int64
+	for _, v := range sortedValue {
+		if lastVal == nil || *lastVal != v {
+			stringSlice = append(stringSlice, strconv.FormatInt(v, 10))
+			val := v
+			lastVal = &val
+		}
+	}
+	sortedAndConstructedValue := strings.Join(stringSlice, ",")
+
+	return intSliceLabelValue{
+		metadata: metadata,
+		value:    sortedAndConstructedValue,
+	}
+}
+
 func (v byteSliceLabelValue) Metadata() LabelValueMetadata {
 	return v.metadata
 }
@@ -244,6 +299,59 @@ func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any)
 	}
 }
 
+func (v operationsByTableJSONLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v operationsByTableJSONLabelValue) Value() any {
+	return v.value
+}
+
+func (v operationsByTableJSONLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+type operationsByTableJSON struct {
+	TableName           string `json:"table_name"`
+	InsertOrUpdateCount int64  `json:"insert_or_update_count"`
+	InsertOrUpdateBytes int64  `json:"insert_or_update_bytes"`
+}
+
+func newOperationsByTableJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	rawJSON := *valueHolder.(*string)
+	var value []*operationsByTableJSON
+	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
+		return operationsByTableJSONLabelValue{
+			metadata: metadata,
+			value:    "",
+		}
+	}
+
+	uniqueValueItems := make(map[string]struct{})
+	var convertedValue []string
+
+	for _, valueItem := range value {
+		if valueItem == nil || valueItem.TableName == "" {
+			continue
+		}
+		valueItemString := fmt.Sprintf("{%v,%v,%v}", valueItem.TableName, valueItem.InsertOrUpdateCount, valueItem.InsertOrUpdateBytes)
+
+		if _, contains := uniqueValueItems[valueItemString]; !contains {
+			uniqueValueItems[valueItemString] = struct{}{}
+			convertedValue = append(convertedValue, valueItemString)
+		}
+	}
+
+	sort.Strings(convertedValue)
+
+	constructedValue := strings.Join(convertedValue, ",")
+
+	return operationsByTableJSONLabelValue{
+		metadata: metadata,
+		value:    constructedValue,
+	}
+}
+
 func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelValueMetadata, error) {
 	var newLabelValueFunc newLabelValueFunction
 	var valueHolderFunc valueHolderFunction
@@ -273,6 +381,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 			var valueHolder []string
 			return &valueHolder
 		}
+	case IntSliceValueType:
+		newLabelValueFunc = newIntSliceLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder []int64
+			return &valueHolder
+		}
 	case ByteSliceValueType:
 		newLabelValueFunc = newByteSliceLabelValue
 		valueHolderFunc = func() any {
@@ -283,6 +397,24 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc = newLockRequestSliceLabelValue
 		valueHolderFunc = func() any {
 			var valueHolder []*lockRequest
+			return &valueHolder
+		}
+	case OperationsByTableJSONValueType:
+		newLabelValueFunc = newOperationsByTableJSONLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder string
+			return &valueHolder
+		}
+	case TimestampValueType:
+		newLabelValueFunc = newTimestampLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullTime
+			return &valueHolder
+		}
+	case DateValueType:
+		newLabelValueFunc = newDateLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullDate
 			return &valueHolder
 		}
 	default:
@@ -296,4 +428,70 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc: newLabelValueFunc,
 		valueHolderFunc:   valueHolderFunc,
 	}, nil
+}
+
+type timestampLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+func (v timestampLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v timestampLabelValue) Value() any {
+	return v.value
+}
+
+func (v timestampLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *timestampLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newTimestampLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullTime := *valueHolder.(*spanner.NullTime)
+	var val string
+	if nullTime.Valid {
+		val = nullTime.Time.UTC().Format(time.RFC3339)
+	}
+	return timestampLabelValue{
+		metadata: metadata,
+		value:    val,
+	}
+}
+
+type dateLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+func (v dateLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v dateLabelValue) Value() any {
+	return v.value
+}
+
+func (v dateLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *dateLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newDateLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullDate := *valueHolder.(*spanner.NullDate)
+	var val string
+	if nullDate.Valid && nullDate.Date.IsValid() {
+		val = nullDate.Date.String()
+	}
+	return dateLabelValue{
+		metadata: metadata,
+		value:    val,
+	}
 }

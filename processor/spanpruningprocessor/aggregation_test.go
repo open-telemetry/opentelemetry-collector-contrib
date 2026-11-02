@@ -103,6 +103,70 @@ func TestFindLongestDurationNode_ManyNodes(t *testing.T) {
 	assert.Equal(t, nodes[50], result, "should return node at index 50 with longest duration")
 }
 
+func TestCreateSummarySpanWithParent_AddsAttributeLossAnnotations(t *testing.T) {
+	nodes := createSpanNodesWithDurations(t, []int64{100, 200, 300})
+	processor := &spanPruningProcessor{
+		config: &Config{
+			AggregationAttributePrefix: "aggregation.",
+		},
+	}
+	data := processor.calculateAggregationData(nodes)
+
+	group := aggregationGroup{
+		nodes:         nodes,
+		depth:         0,
+		summarySpanID: pcommon.SpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		lossInfo: attributeLossSummary{
+			diverse: []attributeCardinality{{key: "db.operation", uniqueValues: 2}},
+			missing: []attributeCardinality{{key: "db.statement", uniqueValues: 1}},
+		},
+		templateNode: nodes[1],
+	}
+
+	summary := processor.createSummarySpanWithParent(
+		group,
+		data,
+		pcommon.SpanID([8]byte{7, 7, 7, 7, 7, 7, 7, 7}),
+	)
+
+	diverse, exists := summary.Attributes().Get("aggregation.diverse_attributes")
+	require.True(t, exists)
+	assert.Equal(t, "db.operation(2)", diverse.Str())
+
+	missing, exists := summary.Attributes().Get("aggregation.missing_attributes")
+	require.True(t, exists)
+	assert.Equal(t, "db.statement(1)", missing.Str())
+}
+
+func TestCreateSummarySpanWithParent_OmitsAttributeLossAnnotationsWhenEmpty(t *testing.T) {
+	nodes := createSpanNodesWithDurations(t, []int64{100, 200, 300})
+	processor := &spanPruningProcessor{
+		config: &Config{
+			AggregationAttributePrefix: "aggregation.",
+		},
+	}
+	data := processor.calculateAggregationData(nodes)
+
+	group := aggregationGroup{
+		nodes:         nodes,
+		depth:         0,
+		summarySpanID: pcommon.SpanID([8]byte{8, 8, 8, 8, 8, 8, 8, 8}),
+		templateNode:  nodes[1],
+	}
+
+	summary := processor.createSummarySpanWithParent(
+		group,
+		data,
+		pcommon.SpanID([8]byte{6, 6, 6, 6, 6, 6, 6, 6}),
+	)
+
+	_, diverseExists := summary.Attributes().Get("aggregation.diverse_attributes")
+	assert.False(t, diverseExists)
+
+	_, missingExists := summary.Attributes().Get("aggregation.missing_attributes")
+	assert.False(t, missingExists)
+}
+
 // createSpanNodesWithDurations creates span nodes with specified durations in nanoseconds
 func createSpanNodesWithDurations(t *testing.T, durationsNs []int64) []*spanNode {
 	t.Helper()

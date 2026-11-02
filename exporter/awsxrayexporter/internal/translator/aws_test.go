@@ -64,7 +64,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 	attrs.PutStr("cloud.account.id", "123456789")
 	attrs.PutStr("cloud.availability_zone", az)
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("container.name", containerName)
 	attrs.PutStr("container.id", containerID)
 	attrs.PutStr("host.id", instanceID)
@@ -141,7 +141,7 @@ func TestAwsFromEksResource(t *testing.T) {
 	attrs.PutStr("cloud.account.id", "123456789")
 	attrs.PutStr("cloud.availability_zone", "us-east-1c")
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")
@@ -180,7 +180,7 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	attrs.PutStr("cloud.availability_zone", "us-east-1c")
 	attrs.PutStr("container.name", containerName)
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")
@@ -229,6 +229,18 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	assert.Equal(t, queueURL, *awsData.QueueURL)
 }
 
+func TestAwsWithSqsQueueURLSemConvAttribute(t *testing.T) {
+	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
+	attributes := make(map[string]pcommon.Value)
+	attributes["aws.sqs.queue.url"] = pcommon.NewValueStr(queueURL)
+
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
+
+	assert.NotContains(t, filtered, "aws.sqs.queue.url")
+	assert.NotNil(t, awsData)
+	assert.Equal(t, queueURL, *awsData.QueueURL)
+}
+
 func TestAwsWithAwsSqsSemConvAttributes(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
@@ -252,7 +264,7 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	attrs.PutStr("cloud.availability_zone", "us-east-1c")
 	attrs.PutStr("container.name", "signup_aggregator")
 	attrs.PutStr("container.image.name", "otel/signupaggregator")
-	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutEmptySlice("container.image.tags").AppendEmpty().SetStr("v1")
 	attrs.PutStr("k8s.cluster.name", "production")
 	attrs.PutStr("k8s.namespace.name", "default")
 	attrs.PutStr("k8s.deployment.name", "signup_aggregator")

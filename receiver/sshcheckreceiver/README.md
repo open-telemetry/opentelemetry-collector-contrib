@@ -7,6 +7,7 @@ This receiver creates stats by connecting to an SSH server which may be an SFTP 
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
+| Warnings      | [Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsshcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsshcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsshcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsshcheck) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_sshcheck)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_sshcheck&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ishaish103](https://www.github.com/ishaish103) |
@@ -198,7 +199,7 @@ receivers:
 
 For production use, always configure proper host key validation using `known_hosts` or ensure the host key is in the default known_hosts locations.
 
-## Limitations and Warnings
+## Warnings
 
 ### Security
 
@@ -235,6 +236,5 @@ The receiver adds the following resource attribute:
 ### Detailed Metric Documentation
 
 Complete details about the metrics produced by this receiver, including attributes, types, and units, can be found in [documentation.md](./documentation.md) and [metadata.yaml](./metadata.yaml).
-
 
 

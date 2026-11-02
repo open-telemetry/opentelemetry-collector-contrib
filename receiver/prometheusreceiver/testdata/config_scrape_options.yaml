@@ -1,0 +1,26 @@
+prometheus/default:
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s
+
+prometheus/scrape_on_shutdown:
+  scrape_on_shutdown: true
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s
+
+prometheus/discovery_reload_on_startup:
+  discovery_reload_on_startup: true
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s
+
+prometheus/initial_scrape_offset:
+  initial_scrape_offset: 10s
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s

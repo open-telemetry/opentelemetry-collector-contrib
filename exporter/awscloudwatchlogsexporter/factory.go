@@ -25,13 +25,16 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
 	queueSettings := exporterhelper.NewDefaultQueueConfig()
 	// For backwards compatibilitiy, we default to 1 consumer
 	queueSettings.NumConsumers = 1
+	batchCfg := *queueSettings.Batch.GetOrInsertDefault()
+	queueSettings.Batch = configoptional.Some(batchCfg)
 
 	return &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),

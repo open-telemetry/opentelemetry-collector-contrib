@@ -6,8 +6,11 @@ docker_observer/all_settings:
   use_hostname_if_present: true
   use_host_bindings: true
   ignore_non_host_bindings: true
+  include_all_containers: true
   cache_sync_interval: 5m
   api_version: '1.45'
+docker_observer/include_all_containers:
+  include_all_containers: true
 docker_observer/use_hostname_if_present:
   use_hostname_if_present: true
 docker_observer/use_host_bindings:

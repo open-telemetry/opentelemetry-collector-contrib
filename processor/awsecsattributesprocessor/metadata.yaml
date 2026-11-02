@@ -1,0 +1,31 @@
+display_name: AWS ECS Attributes Processor
+type: aws_ecs_attributes
+
+description: |
+  The `aws_ecs_attributes` processor enriches logs, metrics, traces and profiles with
+  AWS ECS metadata for daemonset-style deployments on EC2, where a single collector
+  runs per host and processes telemetry for all containers on that host.
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics, traces, profiles]
+  distributions: []
+  codeowners:
+    active: [povilasv, iblancasa, dmitryax]
+
+tests:
+  config:
+    container_id:
+      sources: [container.id]
+  goleak:
+    ignore:
+      top:
+        # Background goroutines from the Docker client's HTTP transport, exercised
+        # by the component lifecycle test.
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"
+      any:
+        # Process-global Windows named-pipe I/O completion handler started by the
+        # Docker client (github.com/Microsoft/go-winio); it never exits.
+        - "github.com/Microsoft/go-winio.ioCompletionProcessor"

@@ -140,6 +140,69 @@ func TestRPCPAttributeMapping(t *testing.T) {
 	}
 }
 
+func testRPCNewSemconvAttributeMapping(t *testing.T, variant string) {
+	rpcAttributeValues := map[string]any{
+		"rpc.system.name":          "grpc",
+		"rpc.method":               "com.example.ExampleService/exampleMethod",
+		"rpc.response.status_code": "8",
+	}
+
+	attributeMap := pcommon.NewMap()
+	assert.NoError(t, attributeMap.FromRaw(rpcAttributeValues))
+
+	addNetworkAttributes(attributeMap)
+
+	switch variant {
+	case "client":
+		addClientAttributes(attributeMap)
+	case "server":
+		addServerAttributes(attributeMap)
+	default:
+		t.Fatalf("Unknown variant: %s", variant)
+	}
+
+	rpcAttributes := &rpcAttributes{}
+	attributeMap.Range(rpcAttributes.MapAttribute)
+
+	assert.Equal(t, "grpc", rpcAttributes.RPCSystem)
+	assert.Equal(t, "com.example.ExampleService/exampleMethod", rpcAttributes.RPCMethod)
+	assert.Equal(t, "8", rpcAttributes.RPCResponseStatusCode)
+
+	networkAttributesValidations(t, rpcAttributes.NetworkAttributes)
+
+	if variant == "client" {
+		clientAttributesValidations(t, rpcAttributes.ClientAttributes)
+	} else {
+		serverAttributesValidations(t, rpcAttributes.ServerAttributes)
+	}
+}
+
+func TestRPCNewSemconvAttributeMapping(t *testing.T) {
+	for _, variant := range []string{"client", "server"} {
+		t.Run(variant, func(t *testing.T) {
+			testRPCNewSemconvAttributeMapping(t, variant)
+		})
+	}
+}
+
+func TestRPCNewSemconvTakesPrecedence(t *testing.T) {
+	rpcAttributeValues := map[string]any{
+		"rpc.system":               "old_system",
+		"rpc.system.name":          "new_system",
+		"rpc.grpc.status_code":     int64(8),
+		"rpc.response.status_code": "14",
+	}
+
+	attributeMap := pcommon.NewMap()
+	assert.NoError(t, attributeMap.FromRaw(rpcAttributeValues))
+
+	rpcAttributes := &rpcAttributes{}
+	attributeMap.Range(rpcAttributes.MapAttribute)
+
+	assert.Equal(t, "new_system", rpcAttributes.RPCSystem)
+	assert.Equal(t, "14", rpcAttributes.RPCResponseStatusCode)
+}
+
 func testDatabaseAttributeMapping(t *testing.T, variant string) {
 	databaseAttributeValues := map[string]any{
 		"db.collection.name":       "db.collection.name",

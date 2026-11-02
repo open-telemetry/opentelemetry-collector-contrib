@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
@@ -29,6 +29,42 @@ func TestValidateConfig(t *testing.T) {
 	errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	errs = multierr.Append(errs, errRequiredHeader)
 
+	missingEndpointServerConfig := confighttp.NewDefaultServerConfig()
+	missingEndpointServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "",
+	}
+
+	readTimeoutServerConfig := confighttp.NewDefaultServerConfig()
+	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+
+	writeTimeoutServerConfig := confighttp.NewDefaultServerConfig()
+	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+
+	requiredHeaderKeyServerConfig := confighttp.NewDefaultServerConfig()
+	requiredHeaderKeyServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "",
+	}
+
+	requiredHeaderValueServerConfig := confighttp.NewDefaultServerConfig()
+	requiredHeaderValueServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "",
+	}
+
+	multipleInvalidServerConfig := confighttp.NewDefaultServerConfig()
+	multipleInvalidServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "",
+	}
+
 	tests := []struct {
 		desc   string
 		expect error
@@ -38,37 +74,22 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Missing valid endpoint",
 			expect: errMissingEndpointFromConfig,
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
-				},
+				ServerConfig: missingEndpointServerConfig,
 			},
 		},
 		{
 			desc:   "ReadTimeout exceeds maximum value",
 			expect: errReadTimeoutExceedsMaxValue,
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
-				ReadTimeout: "14s",
+				ServerConfig: readTimeoutServerConfig,
+				ReadTimeout:  "14s",
 			},
 		},
 		{
 			desc:   "WriteTimeout exceeds maximum value",
 			expect: errWriteTimeoutExceedsMaxValue,
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-				},
+				ServerConfig: writeTimeoutServerConfig,
 				WriteTimeout: "14s",
 			},
 		},
@@ -76,12 +97,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "RequiredHeader does not contain both a key and a value",
 			expect: errRequiredHeader,
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
-				},
+				ServerConfig: requiredHeaderKeyServerConfig,
 				RequiredHeader: RequiredHeader{
 					Key:   "key-present",
 					Value: "",
@@ -92,12 +108,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "RequiredHeader does not contain both a key and a value",
 			expect: errRequiredHeader,
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
-					},
-				},
+				ServerConfig: requiredHeaderValueServerConfig,
 				RequiredHeader: RequiredHeader{
 					Key:   "",
 					Value: "value-present",
@@ -105,15 +116,103 @@ func TestValidateConfig(t *testing.T) {
 			},
 		},
 		{
-			desc:   "Multiple invalid configs",
-			expect: errs,
+			desc:   "HMAC missing secret",
+			expect: errHMACMissingSecret,
 			conf: Config{
 				ServerConfig: confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "",
+						Endpoint:  "localhost:0",
 					},
 				},
+				HMACSignature: HMACSignature{
+					Header: "X-Hub-Signature-256",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing header",
+			expect: errHMACMissingHeader,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "HMAC missing prefix",
+			expect: errHMACMissingPrefix,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Header: "X-Hub-Signature-256",
+				},
+			},
+		},
+		{
+			desc:   "HMAC valid config",
+			expect: nil,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				HMACSignature: HMACSignature{
+					Secret: "mysecret",
+					Header: "X-Hub-Signature-256",
+					Prefix: "sha256=",
+				},
+			},
+		},
+		{
+			desc:   "Path missing leading slash",
+			expect: errPathMissingLeadingSlash,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path:       "eventsource/receiver",
+				HealthPath: defaultHealthPath,
+			},
+		},
+		{
+			desc:   "HealthPath missing leading slash",
+			expect: errHealthPathMissingSlash,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path:       defaultPath,
+				HealthPath: "eventreceiver/healthcheck",
+			},
+		},
+		{
+			desc:   "Multiple invalid configs",
+			expect: errs,
+			conf: Config{
+				ServerConfig: multipleInvalidServerConfig,
 				WriteTimeout: "14s",
 				ReadTimeout:  "15s",
 				RequiredHeader: RequiredHeader{
@@ -126,6 +225,12 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
+			if test.conf.Path == "" {
+				test.conf.Path = defaultPath
+			}
+			if test.conf.HealthPath == "" {
+				test.conf.HealthPath = defaultHealthPath
+			}
 			err := test.conf.Validate()
 			if test.expect != nil {
 				require.ErrorContains(t, err, test.expect.Error())
@@ -139,6 +244,41 @@ func TestValidateConfig(t *testing.T) {
 func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	t.Parallel()
 
+	zeroBodySizeServerConfig := confighttp.NewDefaultServerConfig()
+	zeroBodySizeServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+	zeroBodySizeServerConfig.MaxRequestBodySize = 0
+
+	smallBodySizeServerConfig := confighttp.NewDefaultServerConfig()
+	smallBodySizeServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+	smallBodySizeServerConfig.MaxRequestBodySize = 10
+
+	exact64KBBodySizeServerConfig := confighttp.NewDefaultServerConfig()
+	exact64KBBodySizeServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+	exact64KBBodySizeServerConfig.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
+
+	greaterBodySizeServerConfig := confighttp.NewDefaultServerConfig()
+	greaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+	greaterBodySizeServerConfig.MaxRequestBodySize = 65538
+
+	wayGreaterBodySizeServerConfig := confighttp.NewDefaultServerConfig()
+	wayGreaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+	wayGreaterBodySizeServerConfig.MaxRequestBodySize = 100 * 1024 * 1024 // 100MB
+
 	tests := []struct {
 		desc     string
 		conf     Config
@@ -147,65 +287,35 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 		{
 			desc: "MaxRequestBodySize is 0, should be set to default 20MB",
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-					MaxRequestBodySize: 0,
-				},
+				ServerConfig: zeroBodySizeServerConfig,
 			},
 			expected: 20 * 1024 * 1024, // 20MB default from confighttp
 		},
 		{
 			desc: "MaxRequestBodySize is set to small value, should remain unchanged",
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-					MaxRequestBodySize: 10,
-				},
+				ServerConfig: smallBodySizeServerConfig,
 			},
 			expected: 10, // No minimum enforcement, user's value is preserved
 		},
 		{
 			desc: "MaxRequestBodySize is exactly 64KB, should remain unchanged",
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-					MaxRequestBodySize: int64(bufio.MaxScanTokenSize),
-				},
+				ServerConfig: exact64KBBodySizeServerConfig,
 			},
 			expected: int64(bufio.MaxScanTokenSize),
 		},
 		{
 			desc: "MaxRequestBodySize is greater than 64KB, should remain unchanged",
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-					MaxRequestBodySize: 65538,
-				},
+				ServerConfig: greaterBodySizeServerConfig,
 			},
 			expected: 65538,
 		},
 		{
 			desc: "MaxRequestBodySize is way greater than 64KB, should remain unchanged",
 			conf: Config{
-				ServerConfig: confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Transport: confignet.TransportTypeTCP,
-						Endpoint:  "localhost:0",
-					},
-					MaxRequestBodySize: 100 * 1024 * 1024, // 100MB
-				},
+				ServerConfig: wayGreaterBodySizeServerConfig,
 			},
 			expected: 100 * 1024 * 1024, // 100MB
 		},
@@ -213,9 +323,11 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
+			test.conf.Path = defaultPath
+			test.conf.HealthPath = defaultHealthPath
 			err := test.conf.Validate()
 			require.NoError(t, err)
-			require.Equal(t, test.expected, test.conf.MaxRequestBodySize)
+			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
 		})
 	}
 }
@@ -231,17 +343,17 @@ func TestLoadConfig(t *testing.T) {
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
+	expectServerConfig := confighttp.NewDefaultServerConfig()
+	expectServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:8080",
+	}
 	expect := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: confignet.TransportTypeTCP,
-				Endpoint:  "localhost:8080",
-			},
-		},
+		ServerConfig: expectServerConfig,
 		ReadTimeout:  "500ms",
 		WriteTimeout: "500ms",
-		Path:         "some/path",
-		HealthPath:   "health/path",
+		Path:         "/some/path",
+		HealthPath:   "/health/path",
 		RequiredHeader: RequiredHeader{
 			Key:   "key-present",
 			Value: "value-present",
@@ -252,7 +364,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	conf := factory.CreateDefaultConfig()
 	require.NoError(t, cmNoStr.Unmarshal(conf))
-	require.NoError(t, xconfmap.Validate(conf))
+	require.NoError(t, confmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
 }

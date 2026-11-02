@@ -48,7 +48,7 @@ data:
           - container.id
           - container.image.name
           - container.image.repo_digests
-          - container.image.tag
+          - container.image.tags
         pod_association:
         - sources:
           - from: connection

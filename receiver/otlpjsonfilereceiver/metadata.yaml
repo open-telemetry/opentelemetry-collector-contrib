@@ -1,5 +1,6 @@
 display_name: OTLP JSON File Receiver
-type: otlpjsonfile
+type: otlp_json_file
+deprecated_type: otlpjsonfile
 
 description: |
   This receiver will read pipeline data from JSON files. The data is written in

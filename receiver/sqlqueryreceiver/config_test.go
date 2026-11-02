@@ -11,10 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
@@ -31,6 +32,37 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:    component.NewIDWithName(metadata.Type, ""),
 			fname: "config.yaml",
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
+					},
+					Driver:     "postgres",
+					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Queries: []sqlquery.Query{
+						{
+							SQL: "select count(*) as count, type from mytable group by type",
+							Metrics: []sqlquery.MetricCfg{
+								{
+									MetricName:       "val.count",
+									ValueColumn:      "count",
+									AttributeColumns: []string{"type"},
+									Monotonic:        false,
+									ValueType:        sqlquery.MetricValueTypeInt,
+									DataType:         sqlquery.MetricTypeSum,
+									Aggregation:      sqlquery.MetricAggregationCumulative,
+									StaticAttributes: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			id:    component.NewIDWithName(metadata.DeprecatedType, ""),
+			fname: "config-deprecated-alias.yaml",
 			expected: &Config{
 				Config: sqlquery.Config{
 					ControllerConfig: scraperhelper.ControllerConfig{
@@ -318,18 +350,94 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
+				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfigValidateDBAuth(t *testing.T) {
+	t.Parallel()
+
+	baseConfig := func() *Config {
+		return &Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Driver:           sqlquery.DriverPostgres,
+				Host:             "pg.example.postgres.database.azure.com",
+				Port:             5432,
+				Database:         "metrics",
+				Username:         "collector@pg.example",
+				Queries: []sqlquery.Query{{
+					SQL: "SELECT 1 AS value",
+					Metrics: []sqlquery.MetricCfg{{
+						MetricName: "test.value", ValueColumn: "value",
+						ValueType: sqlquery.MetricValueTypeInt, DataType: sqlquery.MetricTypeGauge,
+					}},
+				}},
+			},
+			DBAuth: configdbauth.ID(component.MustNewID("azure_auth")),
+		}
+	}
+
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{name: "postgres accepts db_auth"},
+		{
+			name: "other drivers reject db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.Driver = sqlquery.DriverMySQL
+			},
+			wantErr: "'db_auth' is currently supported only with the 'postgres' driver",
+		},
+		{
+			name: "datasource cannot be combined with db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.DataSource = "host=pg.example"
+			},
+			wantErr: "'host' cannot be set when 'datasource' is specified",
+		},
+		{
+			name: "static password cannot be combined with db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.Password = "secret"
+			},
+			wantErr: "set either 'db_auth' or 'password', not both",
+		},
+		{
+			name: "username required for db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.Username = ""
+			},
+			wantErr: "'username' must be set when 'db_auth' is configured",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := baseConfig()
+			if tt.mutate != nil {
+				tt.mutate(cfg)
+			}
+			err := confmap.Validate(cfg)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.CollectionInterval)
+	assert.Equal(t, 10*time.Second, cfg.Config.CollectionInterval)
 }
 
 func TestConfig_Validate_Multierr(t *testing.T) {
@@ -343,7 +451,7 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	err = xconfmap.Validate(cfg)
+	err = confmap.Validate(cfg)
 
 	assert.ErrorContains(t, err, "invalid metric config with metric_name 'my.metric'")
 	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")
@@ -363,6 +471,7 @@ func TestIsValidDriver(t *testing.T) {
 		{"postgres driver", sqlquery.DriverPostgres, true},
 		{"snowflake driver", sqlquery.DriverSnowflake, true},
 		{"sqlserver driver", sqlquery.DriverSQLServer, true},
+		{"azuresql driver", sqlquery.DriverAzureSQL, true},
 		{"tds driver", sqlquery.DriverTDS, true},
 		{"invalid driver", "invalid", false},
 		{"empty driver", "", false},

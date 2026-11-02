@@ -15,6 +15,9 @@ $defs:
       container_name:
         description: Name of the blob container with the logs (default = "logs")
         type: string
+      encoding:
+        description: Encoding of log blobs in this container (default = "otlp_json"). Either one of the built-in values "otlp_json" or "otlp_proto", or the ID of an encoding extension that implements plog.Unmarshaler.
+        type: string
   service_principal_config:
     type: object
     properties:
@@ -33,6 +36,9 @@ $defs:
       container_name:
         description: Name of the blob container with the traces (default = "traces")
         type: string
+      encoding:
+        description: Encoding of trace blobs in this container (default = "otlp_json"). Either one of the built-in values "otlp_json" or "otlp_proto", or the ID of an encoding extension that implements ptrace.Unmarshaler.
+        type: string
 type: object
 properties:
   auth:
@@ -41,6 +47,9 @@ properties:
   cloud:
     description: Azure Cloud to authenticate against, used with Service Principal authentication
     $ref: cloud_type
+  compression:
+    description: Compression format of blob payloads (default = "", meaning none). Options are "", "gzip", or "auto", which detects gzip per blob from its header.
+    type: string
   connection_string:
     description: Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
     type: string

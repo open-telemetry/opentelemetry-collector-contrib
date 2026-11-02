@@ -119,6 +119,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					FlinkJobID:         ResourceAttributeConfig{Enabled: true},
 					FlinkJobName:       ResourceAttributeConfig{Enabled: true},
 					FlinkResourceType:  ResourceAttributeConfig{Enabled: true},
 					FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: true},
@@ -225,6 +226,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					FlinkJobID:         ResourceAttributeConfig{Enabled: false},
 					FlinkJobName:       ResourceAttributeConfig{Enabled: false},
 					FlinkResourceType:  ResourceAttributeConfig{Enabled: false},
 					FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: false},
@@ -242,6 +244,30 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+
+func TestFlinkOperatorRecordCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FlinkOperatorRecordCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FlinkOperatorRecordCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric flink.operator.record.count doesn't have an attribute invalid, valid attributes: [name, record]")
+
+	cfg = DefaultMetricsConfig().FlinkOperatorRecordCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestFlinkOperatorWatermarkOutputMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().FlinkOperatorWatermarkOutput
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []FlinkOperatorWatermarkOutputMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric flink.operator.watermark.output doesn't have an attribute invalid, valid attributes: [name]")
+
+	cfg = DefaultMetricsConfig().FlinkOperatorWatermarkOutput
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
@@ -266,6 +292,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				FlinkJobID:         ResourceAttributeConfig{Enabled: true},
 				FlinkJobName:       ResourceAttributeConfig{Enabled: true},
 				FlinkResourceType:  ResourceAttributeConfig{Enabled: true},
 				FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: true},
@@ -277,6 +304,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				FlinkJobID:         ResourceAttributeConfig{Enabled: false},
 				FlinkJobName:       ResourceAttributeConfig{Enabled: false},
 				FlinkResourceType:  ResourceAttributeConfig{Enabled: false},
 				FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: false},

@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -26,7 +26,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(useSecondAsDefaultMetricsUnit.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ConnectorSpanmetricsUseSecondAsDefaultMetricsUnitFeatureGate.ID(), true))
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -112,6 +112,26 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "the duration should be positive",
 		},
 		{
+			name: "series_expiration",
+			id:   component.NewIDWithName(metadata.Type, "series_expiration"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				SeriesExpiration:         5 * time.Minute,
+				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars: ExemplarsConfig{
+					MaxPerDataPoint: defaultMaxPerDatapoint,
+				},
+				Namespace: DefaultNamespace,
+			},
+		},
+		{
+			name:         "invalid_series_expiration",
+			id:           component.NewIDWithName(metadata.Type, "invalid_series_expiration"),
+			errorMessage: "the duration should be positive",
+		},
+		{
 			name: "exemplars_enabled",
 			id:   component.NewIDWithName(metadata.Type, "exemplars_enabled"),
 			expected: &Config{
@@ -179,7 +199,7 @@ func TestLoadConfig(t *testing.T) {
 				Namespace: DefaultNamespace,
 			},
 			extraAssertions: func(config *Config) {
-				assert.Equal(t, defaultDeltaTimestampCacheSize, config.GetDeltaTimestampCacheSize())
+				assert.Equal(t, 10000, config.GetDeltaTimestampCacheSize())
 			},
 		},
 		{
@@ -207,6 +227,24 @@ func TestLoadConfig(t *testing.T) {
 				Namespace: DefaultNamespace,
 			},
 		},
+		{
+			name: "dimensions_with_globs",
+			id:   component.NewIDWithName(metadata.Type, "dimensions_with_globs"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+					{Glob: "db.*"},
+				},
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Exemplars: ExemplarsConfig{
+					MaxPerDataPoint: defaultMaxPerDatapoint,
+				},
+				Namespace: DefaultNamespace,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -219,11 +257,11 @@ func TestLoadConfig(t *testing.T) {
 			err = sub.Unmarshal(cfg)
 
 			if tt.expected == nil {
-				err = errors.Join(err, xconfmap.Validate(cfg))
+				err = errors.Join(err, confmap.Validate(cfg))
 				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 			if tt.extraAssertions != nil {
 				tt.extraAssertions(cfg.(*Config))
@@ -265,7 +303,7 @@ func TestValidateDimensions(t *testing.T) {
 			dimensions: []Dimension{
 				{Name: "service.name"},
 			},
-			expectedErr: "duplicate dimension name service.name",
+			expectedErr: "duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "duplicate additional dimensions",
@@ -273,7 +311,57 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "service_name"},
 				{Name: "service_name"},
 			},
-			expectedErr: "duplicate dimension name service_name",
+			expectedErr: "duplicate dimension name \"service_name\"",
+		},
+		{
+			name: "name and glob mixed",
+			dimensions: []Dimension{
+				{Name: "http.method"},
+				{Glob: "db.*"},
+			},
+		},
+		{
+			name: "entry sets both name and glob",
+			dimensions: []Dimension{
+				{Name: "http.method", Glob: "http.*"},
+			},
+			expectedErr: "dimension entry must set only one of `name` or `glob`, got both: name=\"http.method\" glob=\"http.*\"",
+		},
+		{
+			name: "entry sets neither name nor glob",
+			dimensions: []Dimension{
+				{},
+			},
+			expectedErr: "dimension entry must set one of `name` or `glob`",
+		},
+		{
+			name: "default on glob",
+			dimensions: []Dimension{
+				{Glob: "db.*", Default: new("x")},
+			},
+			expectedErr: "`default` is not supported on `glob` dimension \"db.*\"",
+		},
+		{
+			name: "invalid glob pattern",
+			dimensions: []Dimension{
+				{Glob: "db.["},
+			},
+			expectedErr: "invalid dimension glob \"db.[\": unexpected end of input",
+		},
+		{
+			name: "glob conflicts with reserved label",
+			dimensions: []Dimension{
+				{Glob: "service.*"},
+			},
+			expectedErr: "duplicate dimension name \"service.name\" conflicting with glob \"service.*\"",
+		},
+		{
+			name: "glob conflicts with configured name dimension",
+			dimensions: []Dimension{
+				{Name: "http.method"},
+				{Glob: "http.*"},
+			},
+			expectedErr: "duplicate dimension name \"http.method\" conflicting with glob \"http.*\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -317,7 +405,7 @@ func TestValidateEventDimensions(t *testing.T) {
 				{Name: "exception_type"},
 				{Name: "exception_type"},
 			},
-			expectedErr: "duplicate dimension name exception_type",
+			expectedErr: "duplicate dimension name \"exception_type\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -327,6 +415,48 @@ func TestValidateEventDimensions(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestGetDeltaTimestampCacheSize(t *testing.T) {
+	customTimestampCacheSize := 123
+	tests := []struct {
+		name               string
+		resourceCacheSize  int
+		timestampCacheSize *int
+		want               int
+	}{
+		{
+			name:              "default",
+			resourceCacheSize: defaultResourceMetricsCacheSize,
+			want:              10000,
+		},
+		{
+			name:              "small resource cache size",
+			resourceCacheSize: 1,
+			want:              1000,
+		},
+		{
+			name:              "custom resource cache size",
+			resourceCacheSize: 2000,
+			want:              20000,
+		},
+		{
+			name:               "explicit timestamp cache size",
+			resourceCacheSize:  2000,
+			timestampCacheSize: &customTimestampCacheSize,
+			want:               123,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				ResourceMetricsCacheSize: tt.resourceCacheSize,
+				TimestampCacheSize:       tt.timestampCacheSize,
+			}
+			assert.Equal(t, tt.want, cfg.GetDeltaTimestampCacheSize())
 		})
 	}
 }
@@ -365,6 +495,15 @@ func TestConfigValidate(t *testing.T) {
 				MetricsExpiration:        -1 * time.Second,
 			},
 			expectedErr: "invalid metrics_expiration: -1s, the duration should be positive",
+		},
+		{
+			name: "invalid series expiration",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				SeriesExpiration:         -1 * time.Second,
+			},
+			expectedErr: "invalid series_expiration: -1s, the duration should be positive",
 		},
 		{
 			name: "invalid delta timestamp cache size",
@@ -410,7 +549,7 @@ func TestConfigValidate(t *testing.T) {
 					{Name: "service.name"},
 				},
 			},
-			expectedErr: "failed validating dimensions: duplicate dimension name service.name",
+			expectedErr: "failed validating dimensions: duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "events enabled with no dimensions",

@@ -1,0 +1,16 @@
+version: 1
+signal: metrics
+resources:
+    - attributes:
+        ip: 1.2.3.4
+        source.address: '%'
+      scopes:
+        - name: MyTestInstrument
+          version: 1.2.3
+          metrics:
+            - name: test.gauge
+              type: gauge
+              datapoints:
+                - attributes:
+                    aaa: bbb
+                  value: 345

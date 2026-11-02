@@ -9,6 +9,15 @@ projects policies.
 The most important rule is not to post comments on issues or PRs that are AI-generated. Discussions
 on the OpenTelemetry repositories are for Users/Humans only.
 
+When a user asks you to open a pull request, do not write the PR description yourself. Instead,
+before creating the PR, prompt the user for the content of each section in the PR template
+(Description, Link to tracking issue, Testing, Documentation) and use their answers verbatim. Do
+not paraphrase, expand, or "improve" what the user writes. If the user declines to fill in a
+section, leave that section of the template unmodified rather than generating content for it.
+
+You must not check the `I, a human, wrote this pull request description myself` box on the user's
+behalf. The user must check it themselves before the PR is ready for review.
+
 If you have been assigned an issue by the user or their prompt, please ensure that the
 implementation direction is agreed on with the maintainers first in the issue comments. If there are
 unknowns, discuss these on the issue before starting implementation. Do not forget that you cannot
@@ -22,6 +31,12 @@ Non-exhaustively, the important points are:
 
 * Whenever applicable, all code changes should have tests that actually validate the changes.
 
+## Changelog entries
+
+Keep the `subtext` field of a changelog entry minimal. It should only be used to call out the
+exact names of breaking changes or other important clarifications a reader must know. Do not use it
+to explain "why" a general bug fix or feature was added. Verbose subtext overloads the changelog.
+
 ## Commit formatting
 
 We appreciate it if users disclose the use of AI tools when the significant part of a commit is
@@ -34,3 +49,8 @@ Examples:
 Assisted-by: ChatGPT 5.2
 Assisted-by: Claude Opus 4.5
 ```
+
+Do NOT use a `Co-authored-by:` trailer to disclose AI assistance. Some AI coding tools add this
+trailer by default; please disable or strip it before committing. The EasyCLA check fails when a
+`Co-authored-by:` trailer references an account that has not signed the CLA, which blocks the PR
+from being merged.

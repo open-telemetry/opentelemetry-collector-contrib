@@ -8,8 +8,6 @@ import (
 
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_getParsedStatementPaths(t *testing.T) {
@@ -31,6 +29,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "bear",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 43, Line: 1, Column: 44},
 							Name: "honey",
 						},
 					},
@@ -50,6 +49,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "bear",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 29, Line: 1, Column: 30},
 							Name: "honey",
 						},
 					},
@@ -69,14 +69,17 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "foo",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 8, Line: 1, Column: 9},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									Pos:    lexer.Position{Offset: 18, Line: 1, Column: 19},
+									String: new("bar"),
 								},
 							},
 						},
 						{
+							Pos:  lexer.Position{Offset: 26, Line: 1, Column: 27},
 							Name: "cat",
 						},
 					},
@@ -96,10 +99,12 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 4, Line: 1, Column: 5},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									Pos:    lexer.Position{Offset: 14, Line: 1, Column: 15},
+									String: new("bar"),
 								},
 							},
 						},
@@ -119,10 +124,12 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 16, Line: 1, Column: 17},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("message"),
+									Pos:    lexer.Position{Offset: 26, Line: 1, Column: 27},
+									String: new("message"),
 								},
 							},
 						},
@@ -136,10 +143,12 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 51, Line: 1, Column: 52},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("device_name"),
+									Pos:    lexer.Position{Offset: 61, Line: 1, Column: 62},
+									String: new("device_name"),
 								},
 							},
 						},
@@ -160,17 +169,21 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "foo",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 8, Line: 1, Column: 9},
 							Name: "bar",
 							Keys: []key{
 								{
-									String: ottltest.Strp("x"),
+									Pos:    lexer.Position{Offset: 11, Line: 1, Column: 12},
+									String: new("x"),
 								},
 								{
-									String: ottltest.Strp("y"),
+									Pos:    lexer.Position{Offset: 16, Line: 1, Column: 17},
+									String: new("y"),
 								},
 							},
 						},
 						{
+							Pos:  lexer.Position{Offset: 22, Line: 1, Column: 23},
 							Name: "z",
 						},
 					},
@@ -190,14 +203,17 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "foo",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 8, Line: 1, Column: 9},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									Pos:    lexer.Position{Offset: 18, Line: 1, Column: 19},
+									String: new("bar"),
 								},
 							},
 						},
 						{
+							Pos:  lexer.Position{Offset: 26, Line: 1, Column: 27},
 							Name: "cat",
 						},
 					},
@@ -210,6 +226,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 44, Line: 1, Column: 45},
 							Name: "name",
 						},
 					},
@@ -229,14 +246,17 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "foo",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 8, Line: 1, Column: 9},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									Pos:    lexer.Position{Offset: 18, Line: 1, Column: 19},
+									String: new("bar"),
 								},
 							},
 						},
 						{
+							Pos:  lexer.Position{Offset: 26, Line: 1, Column: 27},
 							Name: "cat",
 						},
 					},
@@ -249,6 +269,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 44, Line: 1, Column: 45},
 							Name: "name",
 						},
 					},
@@ -261,6 +282,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 63, Line: 1, Column: 64},
 							Name: "surname",
 						},
 					},
@@ -273,6 +295,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 84, Line: 1, Column: 85},
 							Name: "surname",
 						},
 					},
@@ -292,14 +315,17 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "foo",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 8, Line: 1, Column: 9},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("bar"),
+									Pos:    lexer.Position{Offset: 18, Line: 1, Column: 19},
+									String: new("bar"),
 								},
 							},
 						},
 						{
+							Pos:  lexer.Position{Offset: 26, Line: 1, Column: 27},
 							Name: "cat",
 						},
 					},
@@ -312,6 +338,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 46, Line: 1, Column: 47},
 							Name: "three",
 						},
 					},
@@ -325,6 +352,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					Context: "foo",
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 69, Line: 1, Column: 70},
 							Name: "value",
 						},
 					},
@@ -343,10 +371,12 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 4, Line: 1, Column: 5},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("test"),
+									Pos:    lexer.Position{Offset: 14, Line: 1, Column: 15},
+									String: new("test"),
 								},
 							},
 						},
@@ -359,7 +389,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 						Column: 26,
 					},
 					Context: "bear",
-					Fields:  []field{{Name: "bear"}},
+					Fields:  []field{{Pos: lexer.Position{Offset: 30, Line: 1, Column: 31}, Name: "bear"}},
 				},
 				{
 					Pos: lexer.Position{
@@ -368,7 +398,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 						Column: 37,
 					},
 					Context: "bear",
-					Fields:  []field{{Name: "honey"}},
+					Fields:  []field{{Pos: lexer.Position{Offset: 41, Line: 1, Column: 42}, Name: "honey"}},
 				},
 			},
 		},
@@ -384,10 +414,12 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 4, Line: 1, Column: 5},
 							Name: "attributes",
 							Keys: []key{
 								{
-									String: ottltest.Strp("test"),
+									Pos:    lexer.Position{Offset: 14, Line: 1, Column: 15},
+									String: new("test"),
 								},
 							},
 						},
@@ -401,6 +433,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 					},
 					Fields: []field{
 						{
+							Pos:  lexer.Position{Offset: 55, Line: 1, Column: 56},
 							Name: "three",
 						},
 					},
@@ -429,7 +462,7 @@ func Test_getBooleanExpressionPaths(t *testing.T) {
 				Column: 1,
 			},
 			Context: "honey",
-			Fields:  []field{{Name: "bear"}},
+			Fields:  []field{{Pos: lexer.Position{Offset: 6, Line: 1, Column: 7}, Name: "bear"}},
 		},
 		{
 			Pos: lexer.Position{
@@ -438,7 +471,7 @@ func Test_getBooleanExpressionPaths(t *testing.T) {
 				Column: 22,
 			},
 			Context: "foo",
-			Fields:  []field{{Name: "bar"}},
+			Fields:  []field{{Pos: lexer.Position{Offset: 25, Line: 1, Column: 26}, Name: "bar"}},
 		},
 	}
 
@@ -458,7 +491,7 @@ func Test_getValuePaths(t *testing.T) {
 				Column: 1,
 			},
 			Context: "honey",
-			Fields:  []field{{Name: "bear"}},
+			Fields:  []field{{Pos: lexer.Position{Offset: 6, Line: 1, Column: 7}, Name: "bear"}},
 		},
 		{
 			Pos: lexer.Position{
@@ -467,7 +500,7 @@ func Test_getValuePaths(t *testing.T) {
 				Column: 15,
 			},
 			Context: "foo",
-			Fields:  []field{{Name: "bar"}},
+			Fields:  []field{{Pos: lexer.Position{Offset: 18, Line: 1, Column: 19}, Name: "bar"}},
 		},
 	}
 

@@ -12,6 +12,10 @@ $defs:
       ratio:
         type: number
         x-customType: float64
+      refresh_interval:
+        description: RefreshInterval configures the refresh interval for GOMEMLIMIT. Setting the duration to 0 (default) disables periodic auto update.
+        type: string
+        format: duration
 type: object
 properties:
   gomaxprocs:

@@ -44,7 +44,7 @@ type receiverSignals struct {
 
 // receiverTemplate is the configuration of a single subreceiver.
 type receiverTemplate struct {
-	receiverConfig
+	receiverConfig receiverConfig
 
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
@@ -91,9 +91,10 @@ type Config struct {
 }
 
 type DiscoveryConfig struct {
-	Enabled            bool              `mapstructure:"enabled"`
-	IgnoreReceivers    []string          `mapstructure:"ignore_receivers"`
-	DefaultAnnotations map[string]string `mapstructure:"default_annotations"`
+	Enabled              bool              `mapstructure:"enabled"`
+	IgnoreReceivers      []string          `mapstructure:"ignore_receivers"`
+	DefaultAnnotations   map[string]string `mapstructure:"default_annotations"`
+	DefaultFileLogConfig userConfigMap     `mapstructure:"default_file_log_config"`
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
@@ -108,7 +109,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	for endpointType := range cfg.ResourceAttributes {
 		switch endpointType {
-		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType, observer.KafkaTopicType:
+		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType:
 		default:
 			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
 		}

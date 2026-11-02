@@ -5,6 +5,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -19,7 +20,7 @@ func createMetricsTranslator() *MetricsTranslator {
 		Command:     "otelcol",
 		Description: "OpenTelemetry Collector",
 		Version:     "latest",
-	})
+	}, 30*time.Minute)
 	return mt
 }
 
@@ -66,6 +67,17 @@ func requireDp(t *testing.T, dp pmetric.NumberDataPoint, expectedAttrs pcommon.M
 	require.Equal(t, expectedTime, dp.Timestamp().AsTime().Unix())
 	require.Equal(t, expectedValue, dp.DoubleValue())
 	require.Equal(t, expectedAttrs, dp.Attributes())
+}
+
+func requireAsTypeRate(t *testing.T, dp pmetric.NumberDataPoint) {
+	v, ok := dp.Attributes().Get(datadogMetricAsTypeKey)
+	require.True(t, ok)
+	require.Equal(t, TypeRate, v.Str())
+}
+
+func requireNoAsType(t *testing.T, dp pmetric.NumberDataPoint) {
+	_, ok := dp.Attributes().Get(datadogMetricAsTypeKey)
+	require.False(t, ok)
 }
 
 func totalHistBucketCounts(hist pmetric.ExponentialHistogramDataPoint) uint64 {

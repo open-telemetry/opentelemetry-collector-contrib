@@ -18,7 +18,7 @@ const (
 	modeValue = "value"
 )
 
-type ReplaceAllPatternsArguments[K any] struct {
+type replaceAllPatternsArguments[K any] struct {
 	Target            ottl.PMapGetSetter[K]
 	Mode              string
 	RegexPattern      ottl.StringGetter[K]
@@ -27,15 +27,17 @@ type ReplaceAllPatternsArguments[K any] struct {
 	ReplacementFormat ottl.Optional[ottl.StringGetter[K]]
 }
 
+// NewReplaceAllPatternsFactory returns a factory for the replace_all_patterns OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#replace_all_patterns
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("replace_all_patterns", &ReplaceAllPatternsArguments[K]{}, createReplaceAllPatternsFunction[K])
+	return ottl.NewFactory("replace_all_patterns", &replaceAllPatternsArguments[K]{}, createReplaceAllPatternsFunction[K])
 }
 
 func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ReplaceAllPatternsArguments[K])
+	args, ok := oArgs.(*replaceAllPatternsArguments[K])
 
 	if !ok {
-		return nil, errors.New("ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
+		return nil, errors.New("ReplaceAllPatternsFactory args must be of type *replaceAllPatternsArguments[K]")
 	}
 
 	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
@@ -84,6 +86,16 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 				}
 			}
 		case modeKey:
+			hasMatch := false
+			for key := range val.All() {
+				if cp.MatchString(key) {
+					hasMatch = true
+					break
+				}
+			}
+			if !hasMatch {
+				break
+			}
 			// Because we are changing the keys we cannot do in-place update, but we can move values to the
 			// updated map and then move back the updated map to the initial map to avoid a copy in the target.Set,
 			// because the pcommon.Map.CopyTo will not do a copy if it is the same object in this case val.

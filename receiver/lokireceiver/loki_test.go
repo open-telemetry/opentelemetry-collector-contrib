@@ -120,14 +120,14 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 }
 
 func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	config := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:0",
-				},
-			},
+			HTTP: &httpServerConfig,
 		},
 		KeepTimestamp: true,
 	}
@@ -398,6 +398,11 @@ func TestExpectedStatus(t *testing.T) {
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
+			httpServerConfig := confighttp.NewDefaultServerConfig()
+			httpServerConfig.NetAddr = confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			}
 			config := &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
@@ -406,12 +411,7 @@ func TestExpectedStatus(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: &confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:0",
-						},
-					},
+					HTTP: &httpServerConfig,
 				},
 				KeepTimestamp: true,
 			}
@@ -469,14 +469,14 @@ func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
 		]
 	}`
 
+	httpServerConfig := confighttp.NewDefaultServerConfig()
+	httpServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeTCP,
-					Endpoint:  "localhost:0",
-				},
-			},
+			HTTP: &httpServerConfig,
 		},
 	}
 	consumer := consumertest.NewNop()

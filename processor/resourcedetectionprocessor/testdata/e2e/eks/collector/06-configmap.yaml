@@ -14,7 +14,7 @@ data:
       health_check:
         endpoint: 0.0.0.0:13133
     processors:
-      resourcedetection:
+      resource_detection:
         detectors: [eks]
         timeout: 2s
         override: false
@@ -51,6 +51,6 @@ data:
           receivers:
             - hostmetrics
           processors:
-            - resourcedetection
+            - resource_detection
           exporters:
             - otlp

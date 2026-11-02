@@ -3,6 +3,11 @@
 
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 
+// ClusterName represents the RabbitMQ cluster name API response.
+type ClusterName struct {
+	Name string `json:"name"`
+}
+
 // Queue represents a queue in the API response
 type Queue struct {
 	// Identifiers
@@ -117,4 +122,21 @@ type Node struct {
 	QueueCreatedRate  float64 `json:"queue_created_details.rate"`
 	QueueDeleted      int64   `json:"queue_deleted"`
 	QueueDeletedRate  float64 `json:"queue_deleted_details.rate"`
+}
+
+// Exchange represents a RabbitMQ exchange in the API response
+type Exchange struct {
+	// Identifiers
+	Name  string `json:"name"`
+	VHost string `json:"vhost"`
+	Type  string `json:"type"`
+
+	// Metrics
+	MessageStats ExchangeMessageStats `json:"message_stats"`
+}
+
+// ExchangeMessageStats holds the message flow statistics for an exchange.
+type ExchangeMessageStats struct {
+	PublishIn  int64 `json:"publish_in"`
+	PublishOut int64 `json:"publish_out"`
 }

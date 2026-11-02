@@ -9,6 +9,8 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `hostmetrics.process.bootTimeCache` | beta | When enabled, all process scrapes will use the boot time value that is cached at the start of the process. | v0.98.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849) |
+| `receiver.hostmetrics.DontEmitV0SystemConventions` | alpha | When enabled, all scrapers stop emitting legacy semantic convention metrics, superseding per-scraper gates. | v0.160.0 | N/A | [Link](https://github.com/open-telemetry/semantic-conventions/issues/3041) |
+| `receiver.hostmetrics.EmitV1SystemConventions` | alpha | When enabled, all scrapers emit metrics aligned with the latest semantic conventions, superseding per-scraper gates. | v0.160.0 | N/A | [Link](https://github.com/open-telemetry/semantic-conventions/issues/3041) |
 | `receiver.hostmetricsreceiver.UseLinuxMemAvailable` | beta | When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel's MemAvailable statistic instead of MemFree, Buffers, and Cached. | v0.137.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

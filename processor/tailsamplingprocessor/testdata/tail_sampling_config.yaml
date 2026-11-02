@@ -39,7 +39,7 @@ tail_sampling:
         {
           name: test-policy-7,
           type: rate_limiting,
-          rate_limiting: {spans_per_second: 35}
+          rate_limiting: {spans_per_second: 35, burst_capacity: 70}
        },
        {
           name: test-policy-8,
@@ -91,6 +91,17 @@ tail_sampling:
                   name: test-and-policy-2,
                   type: string_attribute,
                   string_attribute: { key: key2, values: [ value1, value2 ] }
+              },
+              {
+                  name: test-and-policy-3,
+                  type: not,
+                  not: {
+                    not_sub_policy: {
+                      name: test-and-policy-3-not-sub-policy,
+                      type: latency,
+                      latency: { threshold_ms: 1000 }
+                    }
+                  }
               },
             ]
           }

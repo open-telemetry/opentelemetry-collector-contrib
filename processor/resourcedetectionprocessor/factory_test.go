@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !remove_all_resourcedetection_detectors
+
 package resourcedetectionprocessor
 
 import (
@@ -21,7 +23,11 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
@@ -76,6 +82,34 @@ func TestCreateConfigProcessors(t *testing.T) {
 			assert.NotNil(t, tt)
 		})
 	}
+}
+
+func TestGetResourceProviderLogsDetectorConfiguration(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+	factory := &factory{
+		resourceProviderFactory: internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
+			"mock": func(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
+				return &mockDetector{}, nil
+			},
+		}),
+		compiledDetectors: []string{"mock"},
+		providers:         map[component.ID]*internal.ResourceProvider{},
+	}
+	settings := processortest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	cfg := detectorCreateDefaultConfig()
+
+	provider, err := factory.getResourceProvider(settings, defaultRetryConfig(), []string{" mock "}, cfg, false)
+	require.NoError(t, err)
+	require.NotNil(t, provider)
+
+	logs := observedLogs.FilterMessage("resource detection processor detector configuration").All()
+	require.Len(t, logs, 1)
+	assert.Equal(t, zapcore.DebugLevel, logs[0].Level)
+	assert.Equal(t, map[string]any{
+		"compiled_detectors":   []any{"mock"},
+		"configured_detectors": []any{"mock"},
+	}, logs[0].ContextMap())
 }
 
 func TestInvalidConfig(t *testing.T) {
@@ -245,6 +279,8 @@ func TestLifecycle(t *testing.T) {
 
 			// Configure with system detector (always available)
 			oCfg.Detectors = []string{"system"}
+			// Lifecycle coverage does not require DNS resolution of the test host.
+			oCfg.DetectorConfig.SystemConfig.HostnameSources = []string{"os"}
 			oCfg.Override = false
 
 			// Run the signal-specific test
@@ -262,6 +298,8 @@ func TestLifecycleWithAllDetectors(t *testing.T) {
 
 	// Test with multiple detectors that are always available
 	oCfg.Detectors = []string{"env", "system"}
+	// Lifecycle coverage does not require DNS resolution of the test host.
+	oCfg.DetectorConfig.SystemConfig.HostnameSources = []string{"os"}
 	oCfg.Override = true
 
 	ctx := t.Context()
@@ -332,4 +370,136 @@ func TestLifecycleWithAllDetectors(t *testing.T) {
 func TestFactoryType(t *testing.T) {
 	factory := NewFactory()
 	assert.Equal(t, metadata.Type, factory.Type())
+}
+
+// newObservedLogger returns a zap.Logger whose output can be inspected in tests.
+func newObservedLogger() (*zap.Logger, *observer.ObservedLogs) {
+	core, logs := observer.New(zapcore.WarnLevel)
+	return zap.New(core), logs
+}
+
+func TestWarnDeprecatedPerDetectorFlags_WarnsEvenWhenTopLevelSet(t *testing.T) {
+	logger, logs := newObservedLogger()
+	cfg := createDefaultConfig().(*Config)
+	cfg.FailOnMissingMetadata = true
+	cfg.DetectorConfig.EC2Config.FailOnMissingMetadata = true //nolint:staticcheck
+
+	warnDeprecatedPerDetectorFlags(logger, cfg)
+
+	assert.Equal(t, 1, logs.Len(), "deprecation warning should be emitted even when the top-level flag is set")
+}
+
+func TestWarnDeprecatedPerDetectorFlags_WarningWhenPerDetectorSet(t *testing.T) {
+	tests := []struct {
+		name         string
+		setField     func(*Config)
+		wantDetector string
+	}{
+		{
+			name:         "ec2",
+			setField:     func(c *Config) { c.DetectorConfig.EC2Config.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "ec2",
+		},
+		{
+			name:         "alibaba_ecs",
+			setField:     func(c *Config) { c.DetectorConfig.AlibabaECSConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "alibaba_ecs",
+		},
+		{
+			name:         "tencent_cvm",
+			setField:     func(c *Config) { c.DetectorConfig.TencentCVMConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "tencent_cvm",
+		},
+		{
+			name:         "upcloud",
+			setField:     func(c *Config) { c.DetectorConfig.UpcloudConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "upcloud",
+		},
+		{
+			name:         "vultr",
+			setField:     func(c *Config) { c.DetectorConfig.VultrConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "vultr",
+		},
+		{
+			name:         "nova",
+			setField:     func(c *Config) { c.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata = true }, //nolint:staticcheck
+			wantDetector: "nova",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger, logs := newObservedLogger()
+			cfg := createDefaultConfig().(*Config)
+			tt.setField(cfg)
+
+			warnDeprecatedPerDetectorFlags(logger, cfg)
+
+			require.Equal(t, 1, logs.Len(), "expected exactly one deprecation warning")
+			entry := logs.All()[0]
+			assert.Equal(t, zapcore.WarnLevel, entry.Level)
+			assert.Contains(t, entry.Message, "deprecated")
+
+			// Verify the affected detector name appears in the log fields
+			found := false
+			for _, f := range entry.Context {
+				if f.Key == "affected_detectors" {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "expected 'affected_detectors' field in log entry")
+		})
+	}
+}
+
+func TestWarnDeprecatedPerDetectorFlags_NoWarningWhenNoneSet(t *testing.T) {
+	logger, logs := newObservedLogger()
+	cfg := createDefaultConfig().(*Config)
+
+	warnDeprecatedPerDetectorFlags(logger, cfg)
+
+	assert.Equal(t, 0, logs.Len(), "no warning should be emitted when no per-detector flags are set")
+}
+
+func TestDefaultDetectorRegistry(t *testing.T) {
+	expectedTypes := []string{
+		"akamai",
+		"alibaba_ecs",
+		"aks",
+		"azure",
+		"azureappservice",
+		"azurecontainerapps",
+		"azurefunctions",
+		"consul",
+		"digitalocean",
+		"docker",
+		"dynatrace",
+		"ec2",
+		"ecs",
+		"eks",
+		"elastic_beanstalk",
+		"env",
+		"gcp",
+		"heroku",
+		"hetzner",
+		"ibmcloud_classic",
+		"ibmcloud_vpc",
+		"k8s_api",
+		"k8snode",
+		"kubeadm",
+		"lambda",
+		"nova",
+		"openshift",
+		"oraclecloud",
+		"scaleway",
+		"system",
+		"tencent_cvm",
+		"upcloud",
+		"vultr",
+	}
+
+	actualTypes := internal.NewProviderFactory(detectorFactories()).CompiledDetectorTypes()
+
+	assert.ElementsMatch(t, expectedTypes, actualTypes)
 }

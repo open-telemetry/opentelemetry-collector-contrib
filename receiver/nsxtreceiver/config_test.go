@@ -20,6 +20,14 @@ import (
 
 func TestMetricValidation(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
+	notValidSchemeClientConfig := confighttp.NewDefaultClientConfig()
+	notValidSchemeClientConfig.Endpoint = "wss://not-supported-websockets"
+	unparsableURLClientConfig := confighttp.NewDefaultClientConfig()
+	unparsableURLClientConfig.Endpoint = "\x00"
+	usernameNotProvidedClientConfig := confighttp.NewDefaultClientConfig()
+	usernameNotProvidedClientConfig.Endpoint = "http://localhost"
+	passwordNotProvidedClientConfig := confighttp.NewDefaultClientConfig()
+	passwordNotProvidedClientConfig.Endpoint = "http://localhost"
 	cases := []struct {
 		desc          string
 		cfg           *Config
@@ -33,9 +41,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "not valid scheme",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "wss://not-supported-websockets",
-				},
+				ClientConfig:     notValidSchemeClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("url scheme must be http or https"),
@@ -43,9 +49,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "unparsable url",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "\x00",
-				},
+				ClientConfig:     unparsableURLClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("parse"),
@@ -53,10 +57,8 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "username not provided",
 			cfg: &Config{
-				Password: "password",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost",
-				},
+				Password:         "password",
+				ClientConfig:     usernameNotProvidedClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("username not provided"),
@@ -64,10 +66,8 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "password not provided",
 			cfg: &Config{
-				Username: "otelu",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost",
-				},
+				Username:         "otelu",
+				ClientConfig:     passwordNotProvidedClientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("password not provided"),
@@ -97,11 +97,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Endpoint = "https://nsx-manager-endpoint"
+	expected.ClientConfig.Endpoint = "https://nsx-manager-endpoint"
 	expected.Username = "admin"
 	expected.Password = "${env:NSXT_PASSWORD}"
-	expected.TLS.Insecure = true
-	expected.CollectionInterval = time.Minute
+	expected.ClientConfig.TLS.Insecure = true
+	expected.ControllerConfig.CollectionInterval = time.Minute
 
 	require.Equal(t, expected, cfg)
 }

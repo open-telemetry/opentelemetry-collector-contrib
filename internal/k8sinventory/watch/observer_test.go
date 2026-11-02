@@ -6,6 +6,7 @@ package watch
 import (
 	"context"
 	"errors"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -25,7 +26,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/checkpoint"
 )
+
+func setResourceVersionRetryDelay(observer *Observer, delay time.Duration) {
+	observer.resourceVersionRetryBackoff.Duration = delay
+	observer.resourceVersionRetryBackoff.Jitter = 0
+}
 
 func TestObserver(t *testing.T) {
 	mockClient := newMockDynamicClient()
@@ -56,8 +63,8 @@ func TestObserver(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -107,8 +114,8 @@ func TestObserverWithInitialState(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	verifyReceivedEvents(t, 1, receivedEventsChan, stopChan)
 
 	wg.Wait()
@@ -142,8 +149,8 @@ func TestObserverExcludeDelete(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	<-time.After(time.Millisecond * 100)
 
 	pod := generatePod("pod1", "default", map[string]any{
@@ -183,8 +190,8 @@ func TestObserverEmptyNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -221,8 +228,8 @@ func TestObserverMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -263,8 +270,8 @@ func TestObserverWithSelectors(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Since fake client doesn't filter, it will return all, but the code path is covered
@@ -308,8 +315,8 @@ func TestObserverInitialStateError(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// No events should be received due to error
@@ -350,8 +357,8 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// No events since no objects
@@ -365,6 +372,201 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 	close(stopChan)
 
 	wg.Wait()
+}
+
+func TestObserverRetriesResourceVersionRelistPastBackoffCap(t *testing.T) {
+	scheme := runtime.NewScheme()
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "", Version: "v1", Resource: "pods"}: "PodList",
+	}
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+
+	listCalls := 0
+	fakeClient.PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		listCalls++
+		switch listCalls {
+		case 1:
+			return true, podListWithResourceVersion("100"), nil
+		case 2, 3, 4, 5:
+			return true, nil, errors.New("transient list error")
+		default:
+			return true, podListWithResourceVersion("200"), nil
+		}
+	})
+
+	watchResourceVersions := make(chan string, 2)
+	watchCalls := 0
+	fakeClient.PrependWatchReactor("pods", func(action k8s_testing.Action) (bool, apiWatch.Interface, error) {
+		watchCalls++
+		watchAction := action.(k8s_testing.WatchAction)
+		watchResourceVersions <- watchAction.GetWatchRestrictions().ResourceVersion
+
+		watcher := apiWatch.NewFakeWithChanSize(1, false)
+		switch watchCalls {
+		case 1:
+			go watcher.Error(resourceVersionExpiredStatus())
+		case 2:
+			go watcher.Add(generatePod("pod-after-relist", "default", nil, "201"))
+		}
+		return true, watcher, nil
+	})
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 1)
+	obs, err := New(mockDynamicClient{client: fakeClient}, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+	require.NoError(t, err)
+	setResourceVersionRetryDelay(obs, time.Millisecond)
+	obs.resourceVersionRetryBackoff.Cap = 2 * time.Millisecond
+
+	wg := sync.WaitGroup{}
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+
+	select {
+	case event := <-receivedEventsChan:
+		assert.Equal(t, apiWatch.Added, event.Type)
+	case <-time.After(2 * time.Second):
+		close(stopChan)
+		wg.Wait()
+		t.Fatal("timeout waiting for event after relist retry")
+	}
+
+	close(stopChan)
+	wg.Wait()
+
+	assert.Equal(t, "100", <-watchResourceVersions)
+	assert.Equal(t, "200", <-watchResourceVersions)
+	assert.GreaterOrEqual(t, listCalls, 6)
+}
+
+func TestResourceVersionRetryStopsPromptly(t *testing.T) {
+	scheme := runtime.NewScheme()
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(
+		scheme,
+		map[schema.GroupVersionResource]string{gvr: "PodList"},
+	)
+
+	listCalled := make(chan struct{}, 1)
+	fakeClient.PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		listCalled <- struct{}{}
+		return true, nil, errors.New("persistent list error")
+	})
+
+	obs, err := New(
+		mockDynamicClient{client: fakeClient},
+		Config{Config: k8sinventory.Config{Gvr: gvr}},
+		zap.NewNop(),
+		nil,
+		nil,
+	)
+	require.NoError(t, err)
+	setResourceVersionRetryDelay(obs, time.Hour)
+
+	stopperChan := make(chan struct{})
+	retryDone := make(chan error, 1)
+	go func() {
+		_, err := obs.getResourceVersionWithRetry(
+			t.Context(),
+			fakeClient.Resource(gvr),
+			"",
+			stopperChan,
+		)
+		retryDone <- err
+	}()
+
+	<-listCalled
+	close(stopperChan)
+
+	select {
+	case err := <-retryDone:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(time.Second):
+		t.Fatal("resourceVersion retry did not stop promptly")
+	}
+}
+
+func TestObserverBypassesPersistedResourceVersionAfter410(t *testing.T) {
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	cp := checkpoint.New(storageClient, zap.NewNop())
+	require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", "50"))
+	require.NoError(t, cp.Flush(t.Context()))
+
+	scheme := runtime.NewScheme()
+	gvrToListKind := map[schema.GroupVersionResource]string{
+		{Group: "", Version: "v1", Resource: "pods"}: "PodList",
+	}
+	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
+	fakeClient.PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		return true, podListWithResourceVersion("200"), nil
+	})
+
+	watchResourceVersions := make(chan string, 2)
+	watchCalls := 0
+	fakeClient.PrependWatchReactor("pods", func(action k8s_testing.Action) (bool, apiWatch.Interface, error) {
+		watchCalls++
+		watchAction := action.(k8s_testing.WatchAction)
+		watchResourceVersions <- watchAction.GetWatchRestrictions().ResourceVersion
+
+		watcher := apiWatch.NewFakeWithChanSize(1, false)
+		switch watchCalls {
+		case 1:
+			go watcher.Error(resourceVersionExpiredStatus())
+		case 2:
+			go watcher.Add(generatePod("pod-after-relist", "default", nil, "201"))
+		}
+		return true, watcher, nil
+	})
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+	}
+
+	receivedEventsChan := make(chan *apiWatch.Event, 1)
+	obs, err := New(mockDynamicClient{client: fakeClient}, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+		receivedEventsChan <- event
+	})
+	require.NoError(t, err)
+	setResourceVersionRetryDelay(obs, 10*time.Millisecond)
+
+	wg := sync.WaitGroup{}
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+
+	select {
+	case event := <-receivedEventsChan:
+		assert.Equal(t, apiWatch.Added, event.Type)
+	case <-time.After(2 * time.Second):
+		close(stopChan)
+		wg.Wait()
+		t.Fatal("timeout waiting for event after stale checkpoint was deleted")
+	}
+
+	close(stopChan)
+	wg.Wait()
+
+	assert.Equal(t, "50", <-watchResourceVersions)
+	assert.Equal(t, "200", <-watchResourceVersions)
+}
+
+func TestObserverNonStatusWatchErrorDoesNotPanic(t *testing.T) {
+	assert.NotPanics(t, func() {
+		assert.False(t, isExpiredResourceVersionEvent(apiWatch.Event{
+			Type:   apiWatch.Error,
+			Object: generatePod("not-a-status", "default", nil, "1"),
+		}))
+	})
 }
 
 // TestSendInitialStateReturnsListRV verifies that sendInitialState returns the
@@ -423,14 +625,14 @@ func TestInitialStateListRVPersistedAsCheckpoint(t *testing.T) {
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(200 * time.Millisecond)
 
 	close(stopChan)
 	wg.Wait()
 
-	cp := newCheckpointer(storageClient, zap.NewNop())
+	cp := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := cp.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "999", rv, "checkpoint should hold the list RV, not a lower individual object RV")
@@ -445,7 +647,7 @@ func TestSendInitialStateUnparsableRVEmitsEvent(t *testing.T) {
 	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 
 	// Persist a checkpoint so the deduplication path is active.
-	cp := newCheckpointer(storageClient, zap.NewNop())
+	cp := checkpoint.New(storageClient, zap.NewNop())
 	require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", "100"))
 	require.NoError(t, cp.Flush(t.Context()))
 
@@ -638,6 +840,21 @@ func generatePod(name, namespace string, labels map[string]any, resourceVersion 
 	return &pod
 }
 
+func podListWithResourceVersion(resourceVersion string) *unstructured.UnstructuredList {
+	list := &unstructured.UnstructuredList{}
+	list.SetResourceVersion(resourceVersion)
+	return list
+}
+
+func resourceVersionExpiredStatus() *v1.Status {
+	return &v1.Status{
+		Status:  v1.StatusFailure,
+		Reason:  v1.StatusReasonExpired,
+		Message: "The resourceVersion for the provided watch is too old.",
+		Code:    http.StatusGone,
+	}
+}
+
 func TestObserverWithPersistence(t *testing.T) {
 	mockClient := newMockDynamicClient()
 	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
@@ -664,8 +881,8 @@ func TestObserverWithPersistence(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create a pod
@@ -687,7 +904,7 @@ func TestObserverWithPersistence(t *testing.T) {
 	wg.Wait()
 
 	// Verify resourceVersion was persisted
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	checkpointer := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv)
@@ -719,8 +936,8 @@ func TestObserverWithoutStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	mockClient.createPods(
@@ -764,8 +981,8 @@ func TestObserverPersistenceNilStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create a pod
@@ -810,8 +1027,8 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create pods in different namespaces
@@ -836,14 +1053,10 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 	wg.Wait()
 
 	// Verify single key for cluster-wide watch (no namespace suffix)
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	checkpointer := checkpoint.New(storageClient, zap.NewNop())
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "", "pods")
 	require.NoError(t, err)
 	assert.NotEmpty(t, rv) // Should have a value
-
-	// Verify key format
-	key := checkpointer.getCheckpointKey("", "pods")
-	assert.Equal(t, "latestResourceVersion/pods", key)
 }
 
 func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
@@ -871,8 +1084,8 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(t.Context(), &wg)
-
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
 	time.Sleep(time.Millisecond * 100)
 
 	// Create pods in different namespaces
@@ -897,7 +1110,7 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	wg.Wait()
 
 	// Verify separate keys for each namespace
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
+	checkpointer := checkpoint.New(storageClient, zap.NewNop())
 
 	rv1, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
@@ -906,13 +1119,6 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	rv2, err := checkpointer.GetCheckpoint(t.Context(), "other", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv2)
-
-	// Verify key formats
-	key1 := checkpointer.getCheckpointKey("default", "pods")
-	assert.Equal(t, "latestResourceVersion/pods.default", key1)
-
-	key2 := checkpointer.getCheckpointKey("other", "pods")
-	assert.Equal(t, "latestResourceVersion/pods.other", key2)
 }
 
 func TestGetResourceVersion(t *testing.T) {
@@ -955,7 +1161,7 @@ func TestGetResourceVersion(t *testing.T) {
 
 				storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 				if tt.persistedVersion != "" {
-					cp := newCheckpointer(storageClient, zap.NewNop())
+					cp := checkpoint.New(storageClient, zap.NewNop())
 					require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", tt.persistedVersion))
 					require.NoError(t, cp.Flush(t.Context()))
 				}
@@ -977,7 +1183,7 @@ func TestGetResourceVersion(t *testing.T) {
 
 				// When no persisted RV was set, verify the list version was persisted.
 				if tt.persistedVersion == "" && tt.listVersion != "" {
-					cp := newCheckpointer(storageClient, zap.NewNop())
+					cp := checkpoint.New(storageClient, zap.NewNop())
 					persisted, err := cp.GetCheckpoint(t.Context(), "default", "pods")
 					require.NoError(t, err)
 					assert.Equal(t, tt.expectedVersion, persisted, "list version should have been persisted")

@@ -1,13 +1,11 @@
 endpoint-1:
-  resourceMetrics: []
-endpoint-2:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
         attributes:
           - key: resource_key
             value:
-              stringValue: foo
+              stringValue: asdf
       scopeMetrics:
         - schemaUrl: https://test-scope-schema.com/schema
           scope:
@@ -23,14 +21,12 @@ endpoint-2:
                 aggregationTemporality: 2
                 isMonotonic: true
                 dataPoints:
-                  - timeUnixNano: 50
-                    asDouble: 333
+                  - timeUnixNano: 90
+                    asDouble: 666
                     attributes:
                       - key: aaa
                         value:
                           stringValue: bbb
-endpoint-3:
-  resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
         attributes:
@@ -58,12 +54,16 @@ endpoint-3:
                       - key: aaa
                         value:
                           stringValue: bbb
+endpoint-2:
+  resourceMetrics: []
+endpoint-3:
+  resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
         attributes:
           - key: resource_key
             value:
-              stringValue: asdf
+              stringValue: foo
       scopeMetrics:
         - schemaUrl: https://test-scope-schema.com/schema
           scope:
@@ -79,8 +79,8 @@ endpoint-3:
                 aggregationTemporality: 2
                 isMonotonic: true
                 dataPoints:
-                  - timeUnixNano: 90
-                    asDouble: 666
+                  - timeUnixNano: 50
+                    asDouble: 333
                     attributes:
                       - key: aaa
                         value:

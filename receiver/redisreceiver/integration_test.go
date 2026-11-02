@@ -32,12 +32,16 @@ func TestIntegrationV6(t *testing.T) {
 				Image:        "redis:6.0.3",
 				ExposedPorts: []string{redisPort},
 				WaitingFor:   wait.ForListeningPort(redisPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
-			}),
+				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, redisPort))
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubChannelStatus.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubPatternStatus.Enabled = true
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -82,9 +86,10 @@ func TestIntegrationV7Cluster(t *testing.T) {
 				// Strictly speaking this is non-deterministic and may not be the right port for one with repl offset
 				// However, we're using socat and some port forwarding in the Dockerfile to ensure this always points
 				// to a replica node, so in practice any failures due to cluster node role changes is unlikely
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
+				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, "6385"))
 				rCfg.MetricsBuilderConfig.Metrics.RedisReplicationReplicaOffset.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -118,19 +123,23 @@ func TestIntegrationV8Sentinel(t *testing.T) {
 					},
 				},
 				WaitingFor: wait.ForListeningPort(sentinelPort),
-			}),
+			},
+		),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, sentinelPort))
+				rCfg.AddrConfig.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, sentinelPort))
 				rCfg.MetricsBuilderConfig.Metrics.RedisMode.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubChannelStatus.Enabled = true
+				rCfg.MetricsBuilderConfig.Metrics.RedisPubsubPatternStatus.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelMasters.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelRunningScripts.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelScriptsQueueLength.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelSimulateFailureFlags.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelTiltSinceSeconds.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.RedisSentinelTotalTilt.Enabled = true
-			}),
+			},
+		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),

@@ -383,7 +383,7 @@ func TestLibhoneyReceiver_HandleEvent_WithMetadata(t *testing.T) {
 
 			// Create config with metadata setting
 			cfg := createDefaultConfig().(*Config)
-			getOrInsertDefault(t, &cfg.HTTP).IncludeMetadata = tt.includeMetadata
+			getOrInsertDefault(t, &cfg.HTTP).ServerConfig.IncludeMetadata = tt.includeMetadata
 
 			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg, &set)

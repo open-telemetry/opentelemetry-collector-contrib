@@ -27,7 +27,7 @@ type textLogCodec struct {
 
 func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	// Decode as a stream but flush all at once using flush options
-	decoder, err := r.NewLogsDecoder(bytes.NewReader(buf), encoding.WithOffset(0), encoding.WithFlushBytes(0))
+	decoder, err := r.NewLogsDecoder(bytes.NewReader(buf), encoding.WithOffset(0), encoding.WithFlushBytes(0), encoding.WithFlushItems(0))
 	if err != nil {
 		return plog.Logs{}, err
 	}
@@ -53,6 +53,10 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 	}
 
 	s := bufio.NewScanner(reader)
+
+	const maxLogMessageSize = 10 * 1024 * 1024
+	s.Buffer(make([]byte, 0, 64*1024), maxLogMessageSize+1)
+
 	if r.unmarshalingSeparator != nil {
 		s.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			if atEOF && len(data) == 0 {

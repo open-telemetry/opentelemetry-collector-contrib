@@ -37,6 +37,18 @@ func newMockServer(t *testing.T, responseCode int) *httptest.Server {
 }
 
 func TestScraperStart(t *testing.T) {
+	clientConfigBadConfig := confighttp.NewDefaultClientConfig()
+	clientConfigBadConfig.Endpoint = "http://example.com"
+	clientConfigBadConfig.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
+	clientConfigValidConfig := confighttp.NewDefaultClientConfig()
+	clientConfigValidConfig.TLS = configtls.ClientConfig{}
+	clientConfigValidConfig.Endpoint = "http://example.com"
+
 	testcases := []struct {
 		desc        string
 		scraper     *httpcheckScraper
@@ -48,14 +60,7 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							ClientConfig: confighttp.ClientConfig{
-								Endpoint: "http://example.com",
-								TLS: configtls.ClientConfig{
-									Config: configtls.Config{
-										CAFile: "/non/existent",
-									},
-								},
-							},
+							ClientConfig: clientConfigBadConfig,
 						},
 					},
 				},
@@ -69,10 +74,7 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							ClientConfig: confighttp.ClientConfig{
-								TLS:      configtls.ClientConfig{},
-								Endpoint: "http://example.com",
-							},
+							ClientConfig: clientConfigValidConfig,
 						},
 					},
 				},
@@ -163,21 +165,21 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if tc.endpoint != "" {
+				clientConfig := confighttp.NewDefaultClientConfig()
+				clientConfig.Endpoint = tc.endpoint
 				cfg.Targets = []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: tc.endpoint,
-						},
+						ClientConfig: clientConfig,
 					},
 				}
 			} else {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
+				clientConfig := confighttp.NewDefaultClientConfig()
+				clientConfig.Endpoint = ms.URL
 				cfg.Targets = []*targetConfig{
 					{
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: ms.URL,
-						},
+						ClientConfig: clientConfig,
 					},
 				}
 			}
@@ -247,15 +249,15 @@ func TestHTTPSWithTLS(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Explicitly enable the TLS metric (to test the opt-in behavior)
-	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled = true
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.TLS = configtls.ClientConfig{
+		InsecureSkipVerify: true, // Skip verification for test server
+	}
 	cfg.Targets = []*targetConfig{
 		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-				TLS: configtls.ClientConfig{
-					InsecureSkipVerify: true, // Skip verification for test server
-				},
-			},
+			ClientConfig: clientConfig,
 		},
 	}
 
@@ -302,15 +304,15 @@ func TestHTTPSWithTLSDisabled(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Explicitly disable the TLS metric
-	cfg.Metrics.HttpcheckTLSCertRemaining.Enabled = false
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckTLSCertRemaining.Enabled = false
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.TLS = configtls.ClientConfig{
+		InsecureSkipVerify: true, // Skip verification for test server
+	}
 	cfg.Targets = []*targetConfig{
 		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-				TLS: configtls.ClientConfig{
-					InsecureSkipVerify: true, // Skip verification for test server
-				},
-			},
+			ClientConfig: clientConfig,
 		},
 	}
 
@@ -457,11 +459,11 @@ func TestStatusCodeConditionalInclusion(t *testing.T) {
 			defer ms.Close()
 
 			cfg := createDefaultConfig().(*Config)
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ms.URL
 			cfg.Targets = []*targetConfig{
 				{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: ms.URL,
-					},
+					ClientConfig: clientConfig,
 				},
 			}
 
@@ -483,16 +485,18 @@ func TestScraperMultipleTargets(t *testing.T) {
 	ms2 := newMockServer(t, 404)
 	defer ms2.Close()
 
+	clientConfig1 := confighttp.NewDefaultClientConfig()
+	clientConfig1.Endpoint = ms1.URL
+
+	clientConfig2 := confighttp.NewDefaultClientConfig()
+	clientConfig2.Endpoint = ms2.URL
+
 	cfg.Targets = append(cfg.Targets,
 		&targetConfig{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: ms1.URL,
-			},
+			ClientConfig: clientConfig1,
 		},
 		&targetConfig{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: ms2.URL,
-			},
+			ClientConfig: clientConfig2,
 		})
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
@@ -521,16 +525,16 @@ func TestTimingMetrics(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Enable timing breakdown metrics
-	cfg.Metrics.HttpcheckDNSLookupDuration.Enabled = true
-	cfg.Metrics.HttpcheckClientConnectionDuration.Enabled = true
-	cfg.Metrics.HttpcheckClientRequestDuration.Enabled = true
-	cfg.Metrics.HttpcheckResponseDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseDuration.Enabled = true
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
+			ClientConfig: clientConfig,
 		},
 	}
 
@@ -561,6 +565,89 @@ func TestTimingMetrics(t *testing.T) {
 	assert.True(t, foundMetrics["httpcheck.client.connection.duration"])
 	assert.True(t, foundMetrics["httpcheck.client.request.duration"])
 	assert.True(t, foundMetrics["httpcheck.response.duration"])
+}
+
+// TestGetDurationsSubMillisecondPrecision is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47257.
+func TestGetDurationsSubMillisecondPrecision(t *testing.T) {
+	timing := &timingInfo{}
+
+	const microsecond = 1000 // ns
+	base := int64(1_000_000_000)
+
+	timing.dnsStart.Store(base)
+	timing.dnsEnd.Store(base + 500*microsecond)
+	timing.connectStart.Store(base)
+	timing.connectEnd.Store(base + 300*microsecond)
+	timing.tlsStart.Store(base)
+	timing.tlsEnd.Store(base + 800*microsecond)
+	timing.writeStart.Store(base)
+	timing.writeEnd.Store(base + 200*microsecond)
+	timing.readStart.Store(base)
+	timing.readEnd.Store(base + 100*microsecond)
+
+	dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
+
+	// With nanoseconds, 500µs = 500,000 ns (never 0 regardless of platform)
+	assert.Equal(t, int64(500*microsecond), dnsNs)
+	assert.Equal(t, int64(300*microsecond), tcpNs)
+	assert.Equal(t, int64(800*microsecond), tlsNs)
+	assert.Equal(t, int64(200*microsecond), requestNs)
+	assert.Equal(t, int64(100*microsecond), responseNs)
+}
+
+// TestTimingMetricsNonZeroValues is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47257.
+func TestTimingMetricsNonZeroValues(t *testing.T) {
+	server := newMockServer(t, 200)
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckDNSLookupDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientConnectionDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckClientRequestDuration.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseDuration.Enabled = true
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.Targets = []*targetConfig{
+		{
+			ClientConfig: clientConfig,
+		},
+	}
+
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	metrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, metrics.ResourceMetrics().Len())
+
+	ilm := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0)
+
+	timingValues := make(map[string]int64)
+	for i := 0; i < ilm.Metrics().Len(); i++ {
+		m := ilm.Metrics().At(i)
+		switch m.Name() {
+		case "httpcheck.dns.lookup.duration",
+			"httpcheck.client.connection.duration",
+			"httpcheck.client.request.duration",
+			"httpcheck.response.duration":
+			require.Equal(t, pmetric.MetricTypeGauge, m.Type(), "metric %s should be a gauge", m.Name())
+			require.Positive(t, m.Gauge().DataPoints().Len())
+			timingValues[m.Name()] = m.Gauge().DataPoints().At(0).IntValue()
+		}
+	}
+	assert.Len(t, timingValues, 4)
+
+	// Timing values are in nanoseconds. They may be 0 on some platforms (e.g.
+	// Windows loopback where httptrace callbacks don't always fire), so we only
+	// assert non-negative. The unit test TestGetDurationsSubMillisecondPrecision
+	// verifies the sub-millisecond precision numerically.
+	assert.GreaterOrEqual(t, timingValues["httpcheck.dns.lookup.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.client.connection.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.client.request.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.response.duration"], int64(0))
 }
 
 func TestRequestBodySupport(t *testing.T) {
@@ -643,11 +730,11 @@ func TestRequestBodySupport(t *testing.T) {
 			receivedContentType = ""
 
 			cfg := createDefaultConfig().(*Config)
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = server.URL
 			cfg.Targets = []*targetConfig{
 				{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: server.URL,
-					},
+					ClientConfig:    clientConfig,
 					Method:          tc.method,
 					Body:            tc.body,
 					AutoContentType: true,
@@ -684,17 +771,17 @@ func TestRequestBodyWithCustomHeaders(t *testing.T) {
 	defer server.Close()
 
 	cfg := createDefaultConfig().(*Config)
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "Content-Type", Value: configopaque.String("application/custom+json")},
+		{Name: "X-Custom-Header", Value: configopaque.String("custom-value")},
+	}
 	cfg.Targets = []*targetConfig{
 		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-				Headers: configopaque.MapList{
-					{Name: "Content-Type", Value: configopaque.String("application/custom+json")},
-					{Name: "X-Custom-Header", Value: configopaque.String("custom-value")},
-				},
-			},
-			Method: "POST",
-			Body:   `{"data": "test"}`,
+			ClientConfig: clientConfig,
+			Method:       "POST",
+			Body:         `{"data": "test"}`,
 		},
 	}
 
@@ -784,11 +871,11 @@ func TestAutoContentTypeConfiguration(t *testing.T) {
 			receivedContentType = ""
 
 			cfg := createDefaultConfig().(*Config)
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = server.URL
 			cfg.Targets = []*targetConfig{
 				{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: server.URL,
-					},
+					ClientConfig:    clientConfig,
 					Method:          "POST",
 					Body:            tc.body,
 					AutoContentType: tc.autoContentType,
@@ -819,15 +906,15 @@ func TestResponseValidation(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Enable validation metrics
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
-	cfg.Metrics.HttpcheckResponseSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationFailed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckResponseSize.Enabled = true
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
+			ClientConfig: clientConfig,
 			Validations: []validationConfig{
 				{
 					Contains: "healthy",
@@ -885,14 +972,14 @@ func TestResponseValidationFailures(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	// Enable validation metrics
-	cfg.Metrics.HttpcheckValidationPassed.Enabled = true
-	cfg.Metrics.HttpcheckValidationFailed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationPassed.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckValidationFailed.Enabled = true
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
 	cfg.Targets = []*targetConfig{
 		{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
+			ClientConfig: clientConfig,
 			Validations: []validationConfig{
 				{
 					Contains: "healthy", // This will fail

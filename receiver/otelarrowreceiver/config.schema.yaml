@@ -43,5 +43,6 @@ properties:
   admission:
     description: Admission is the configuration for controlling amount of request memory entering the receiver.
     $ref: admission_config
-allOf:
-  - $ref: protocols
+  protocols:
+    description: Protocols is the configuration for gRPC and Arrow.
+    $ref: protocols

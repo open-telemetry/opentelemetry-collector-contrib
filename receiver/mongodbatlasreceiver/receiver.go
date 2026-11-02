@@ -41,8 +41,11 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) (*mongodba
 		return nil, fmt.Errorf("failed to create MongoDB Atlas client receiver: %w", err)
 	}
 
-	for _, p := range cfg.Projects {
-		p.populateIncludesAndExcludes()
+	// Use index-based iteration: cfg.Projects is []ProjectConfig (value slice),
+	// so a range-copy would make populateIncludesAndExcludes a no-op on the
+	// original elements.
+	for i := range cfg.Projects {
+		cfg.Projects[i].populateIncludesAndExcludes()
 	}
 
 	return &mongodbatlasreceiver{
@@ -70,7 +73,7 @@ func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, err
 func (s *mongodbatlasreceiver) timeConstraints(now time.Time) timeconstraints {
 	var start time.Time
 	if s.lastRun.IsZero() {
-		start = now.Add(s.cfg.CollectionInterval * -1)
+		start = now.Add(s.cfg.ControllerConfig.CollectionInterval * -1)
 	} else {
 		start = s.lastRun
 	}

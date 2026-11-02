@@ -126,7 +126,7 @@ func TestScrape_Errors(t *testing.T) {
 				defaultPageFaultsPerSec int64 = 300
 				defaultPageMajPerSec    int64 = 200
 			)
-			scraper.perfCounterFactory = func(_, _, counter string) (winperfcounters.PerfCounterWatcher, error) {
+			scraper.perfCounterFactory = func(_, _, counter string, _ ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				perfCounterMock := &testmocks.PerfCounterWatcherMock{}
 				switch counter {
 				case pageReadsPerSec:
@@ -232,7 +232,7 @@ func TestPagingScrapeWithRealData(t *testing.T) {
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
 		name                  string
-		newPerfCounterFactory func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+		newPerfCounterFactory func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error)
 		expectedSkipScrape    bool
 	}{
 		{
@@ -241,7 +241,7 @@ func TestStart_Error(t *testing.T) {
 		},
 		{
 			name: "new_perf_counter_watcher_fails",
-			newPerfCounterFactory: func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+			newPerfCounterFactory: func(string, string, string, ...winperfcounters.WatcherOption) (winperfcounters.PerfCounterWatcher, error) {
 				return nil, errors.New("err1")
 			},
 			expectedSkipScrape: true,

@@ -44,7 +44,7 @@ func TestErrorsInStart(t *testing.T) {
 
 func TestScraperLoop(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.CollectionInterval = 100 * time.Millisecond
+	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 
 	client := make(mockPodmanClient)
 

@@ -53,7 +53,8 @@ func (r *reporter) RecordParseFailure() {
 		1,
 		metric.WithAttributes(
 			r.receiverAttr,
-			parseFailureAttr),
+			parseFailureAttr,
+		),
 	)
 }
 
@@ -63,6 +64,7 @@ func (r *reporter) RecordParseSuccess(count int64) {
 		count,
 		metric.WithAttributes(
 			r.receiverAttr,
-			parseSuccessAttr),
+			parseSuccessAttr,
+		),
 	)
 }

@@ -153,12 +153,11 @@ func transformFuncNode(obj any) (any, error) {
 }
 
 func createNodeListWatch(client kubernetes.Interface) cache.ListerWatcher {
-	ctx := context.Background()
 	return &cache.ListWatch{
-		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 			return client.CoreV1().Nodes().List(ctx, opts)
 		},
-		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 			return client.CoreV1().Nodes().Watch(ctx, opts)
 		},
 	}

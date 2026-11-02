@@ -68,13 +68,13 @@ func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (rcvr *cesReceiver) startReadingMetrics(ctx context.Context) {
-	if rcvr.config.InitialDelay > 0 {
-		<-time.After(rcvr.config.InitialDelay)
+	if rcvr.config.ControllerConfig.InitialDelay > 0 {
+		<-time.After(rcvr.config.ControllerConfig.InitialDelay)
 	}
 	if err := rcvr.pollMetricsAndConsume(ctx); err != nil {
 		rcvr.logger.Error(err.Error())
 	}
-	ticker := time.NewTicker(rcvr.config.CollectionInterval)
+	ticker := time.NewTicker(rcvr.config.ControllerConfig.CollectionInterval)
 
 	defer ticker.Stop()
 	for {
@@ -157,6 +157,7 @@ func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.Met
 		},
 		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
 		internal.NewExponentialBackOff(&rcvr.config.BackOffConfig),
+		rcvr.config.BackOffConfig.MaxElapsedTime,
 	)
 	if err != nil {
 		return []model.MetricInfoList{}, err
@@ -195,7 +196,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 		key := internal.GetMetricKey(metricDefinition)
 		from, ok := rcvr.lastSeenTs[key]
 		if !ok {
-			from = to.Add(-1 * rcvr.config.CollectionInterval)
+			from = to.Add(-1 * rcvr.config.ControllerConfig.CollectionInterval)
 		}
 		resp, dpErr := rcvr.listDataPointsForMetric(ctx, from, to, metricDefinition)
 		if dpErr != nil {
@@ -217,7 +218,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 		}
 		metrics[metricDefinition.Namespace] = append(metrics[metricDefinition.Namespace], &internal.MetricData{
 			MetricName: metricDefinition.MetricName,
-			Dimensions: metricDefinition.Dimensions,
+			Dimensions: internal.ToDimensions(metricDefinition.Dimensions),
 			Namespace:  metricDefinition.Namespace,
 			Unit:       metricDefinition.Unit,
 			Datapoints: datapoints,
@@ -227,6 +228,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 }
 
 func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to time.Time, infoList model.MetricInfoList) (*model.ShowMetricDataResponse, error) {
+	dimensions := internal.ToDimensions(infoList.Dimensions)
 	return internal.MakeAPICallWithRetry(
 		ctx,
 		rcvr.shutdownChan,
@@ -235,11 +237,11 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 			return rcvr.client.ShowMetricData(&model.ShowMetricDataRequest{
 				Namespace:  infoList.Namespace,
 				MetricName: infoList.MetricName,
-				Dim0:       infoList.Dimensions[0].Name + "," + infoList.Dimensions[0].Value,
-				Dim1:       internal.GetDimension(infoList.Dimensions, 1),
-				Dim2:       internal.GetDimension(infoList.Dimensions, 2),
-				Dim3:       internal.GetDimension(infoList.Dimensions, 3),
-				Period:     rcvr.config.Period,
+				Dim0:       dimensions[0].Name + "," + dimensions[0].Value,
+				Dim1:       internal.GetDimension(dimensions, 1),
+				Dim2:       internal.GetDimension(dimensions, 2),
+				Dim3:       internal.GetDimension(dimensions, 3),
+				Period:     validPeriods[rcvr.config.Period],
 				Filter:     validFilters[rcvr.config.Filter],
 				From:       from.UnixMilli(),
 				To:         to.UnixMilli(),
@@ -247,6 +249,7 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 		},
 		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
 		internal.NewExponentialBackOff(&rcvr.config.BackOffConfig),
+		rcvr.config.BackOffConfig.MaxElapsedTime,
 	)
 }
 

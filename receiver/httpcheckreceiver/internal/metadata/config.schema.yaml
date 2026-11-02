@@ -11,6 +11,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+                - "network.transport"
+            default:
+              - "http.url"
+              - "network.transport"
       httpcheck.client.request.duration:
         description: "HttpcheckClientRequestDurationMetricConfig provides config for the httpcheck.client.request.duration metric."
         type: object
@@ -18,6 +36,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+            default:
+              - "http.url"
       httpcheck.dns.lookup.duration:
         description: "HttpcheckDNSLookupDurationMetricConfig provides config for the httpcheck.dns.lookup.duration metric."
         type: object
@@ -25,6 +59,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+            default:
+              - "http.url"
       httpcheck.duration:
         description: "HttpcheckDurationMetricConfig provides config for the httpcheck.duration metric."
         type: object
@@ -32,6 +82,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+            default:
+              - "http.url"
       httpcheck.error:
         description: "HttpcheckErrorMetricConfig provides config for the httpcheck.error metric."
         type: object
@@ -39,6 +105,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+                - "error.message"
+            default:
+              - "http.url"
+              - "error.message"
       httpcheck.response.duration:
         description: "HttpcheckResponseDurationMetricConfig provides config for the httpcheck.response.duration metric."
         type: object
@@ -46,6 +130,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+            default:
+              - "http.url"
       httpcheck.response.size:
         description: "HttpcheckResponseSizeMetricConfig provides config for the httpcheck.response.size metric."
         type: object
@@ -53,6 +153,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+            default:
+              - "http.url"
       httpcheck.status:
         description: "HttpcheckStatusMetricConfig provides config for the httpcheck.status metric."
         type: object
@@ -60,6 +176,28 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+                - "http.status_code"
+                - "http.method"
+                - "http.status_class"
+            default:
+              - "http.url"
+              - "http.status_code"
+              - "http.method"
+              - "http.status_class"
       httpcheck.tls.cert_remaining:
         description: "HttpcheckTLSCertRemainingMetricConfig provides config for the httpcheck.tls.cert_remaining metric."
         type: object
@@ -67,6 +205,28 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+                - "http.tls.issuer"
+                - "http.tls.cn"
+                - "http.tls.san"
+            default:
+              - "http.url"
+              - "http.tls.issuer"
+              - "http.tls.cn"
+              - "http.tls.san"
       httpcheck.tls.handshake.duration:
         description: "HttpcheckTLSHandshakeDurationMetricConfig provides config for the httpcheck.tls.handshake.duration metric."
         type: object
@@ -74,6 +234,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+            default:
+              - "http.url"
       httpcheck.validation.failed:
         description: "HttpcheckValidationFailedMetricConfig provides config for the httpcheck.validation.failed metric."
         type: object
@@ -81,6 +257,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+                - "validation.type"
+            default:
+              - "http.url"
+              - "validation.type"
       httpcheck.validation.passed:
         description: "HttpcheckValidationPassedMetricConfig provides config for the httpcheck.validation.passed metric."
         type: object
@@ -88,6 +282,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "http.url"
+                - "validation.type"
+            default:
+              - "http.url"
+              - "validation.type"
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for http_check metrics builder.
     type: object

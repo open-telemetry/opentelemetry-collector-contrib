@@ -219,6 +219,15 @@ resourceMetrics:
                   timeUnixNano: "1632495518500962000"
               isMonotonic: true
             unit: s
+          - description: The maximum number of worker slots configured for the HTTP server, derived from the scoreboard length.
+            name: apache.worker.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "400"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "1632495518500962000"
+            unit: '{worker}'
           - description: The number of workers currently attached to the HTTP server.
             name: apache.workers
             sum:

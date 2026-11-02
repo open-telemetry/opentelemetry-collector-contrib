@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -30,11 +29,10 @@ const (
 var receivers = sharedcomponent.NewSharedComponents()
 
 func createDefaultConfig() component.Config {
-	netAddr := confignet.NewDefaultAddrConfig()
-	netAddr.Transport = confignet.TransportTypeTCP
-	netAddr.Endpoint = defaultFaroEndpoint
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Endpoint = defaultFaroEndpoint
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{NetAddr: netAddr},
+		ServerConfig: serverConfig,
 	}
 }
 
@@ -43,7 +41,8 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithTraces(createFaroReceiverTraces, metadata.TracesStability),
-		receiver.WithLogs(createFaroReceiverLogs, metadata.LogsStability))
+		receiver.WithLogs(createFaroReceiverLogs, metadata.LogsStability),
+	)
 }
 
 func newFaroReceiverFactory(fCfg *Config, set *receiver.Settings, err *error) func() component.Component {

@@ -40,7 +40,7 @@ func createReceiver(t *testing.T, endpoint string) (receiver.Metrics, *consumert
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger, _ = zap.NewDevelopment()
 	rcvCfg := createDefaultConfig()
-	rcvCfg.(*Config).NetAddr.Endpoint = endpoint
+	rcvCfg.(*Config).ServerConfig.NetAddr.Endpoint = endpoint
 	m, err := NewFactory().CreateMetrics(t.Context(), settings, rcvCfg, sink)
 	require.NoError(t, m.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, err)
@@ -49,8 +49,8 @@ func createReceiver(t *testing.T, endpoint string) (receiver.Metrics, *consumert
 
 func createExporter(t *testing.T, endpoint string) exporter.Metrics {
 	cfg := stefexporter.NewFactory().CreateDefaultConfig().(*stefexporter.Config)
-	cfg.Endpoint = endpoint
-	cfg.TLS.Insecure = true
+	cfg.ClientConfig.Endpoint = endpoint
+	cfg.ClientConfig.TLS.Insecure = true
 	settings := exportertest.NewNopSettings(metadata.Type)
 	settings.Logger, _ = zap.NewDevelopment()
 	exp, err := stefexporter.NewFactory().CreateMetrics(t.Context(), settings, cfg)

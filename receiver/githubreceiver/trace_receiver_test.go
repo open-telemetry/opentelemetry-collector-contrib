@@ -24,6 +24,12 @@ import (
 func TestCreateNewTracesReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
+	userServerConfig := confighttp.NewDefaultServerConfig()
+	userServerConfig.NetAddr = confignet.AddrConfig{
+		Transport: confignet.TransportTypeTCP,
+		Endpoint:  "localhost:0",
+	}
+
 	tests := []struct {
 		desc     string
 		config   Config
@@ -40,14 +46,9 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 			desc: "User defined config success",
 			config: Config{
 				WebHook: WebHook{
-					ServerConfig: confighttp.ServerConfig{
-						NetAddr: confignet.AddrConfig{
-							Transport: confignet.TransportTypeTCP,
-							Endpoint:  "localhost:0",
-						},
-					},
-					Path:       "/events",
-					HealthPath: "/health_check",
+					ServerConfig: userServerConfig,
+					Path:         "/events",
+					HealthPath:   "/health_check",
 				},
 			},
 			consumer: consumertest.NewNop(),
@@ -69,7 +70,7 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	defaultConfig.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
@@ -137,7 +138,7 @@ func TestHandleReq_RequiredHeaders(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.WebHook.NetAddr.Endpoint = "localhost:0"
+			cfg.WebHook.ServerConfig.NetAddr.Endpoint = "localhost:0"
 			if tt.requiredHeaders != nil {
 				cfg.WebHook.RequiredHeaders = tt.requiredHeaders
 			}

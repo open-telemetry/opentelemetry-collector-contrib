@@ -6,7 +6,6 @@ for any webhook style data source. It is designed to work alongside other pipeli
 [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
 to allow the ingestion of generic events as logs into the opentelemetry collector.
 
-
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
@@ -21,14 +20,17 @@ to allow the ingestion of generic events as logs into the opentelemetry collecto
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `webhookevent` to `webhook_event` to match the snake_case naming convention.
+> The deprecated component type `webhookevent` is still accepted as an alias and will log a deprecation warning.
+
 The following settings are required:
 
 * `endpoint` (no default): The endpoint where you may point your webhook to emit events to
 
 The following settings are optional:
 
-* `path` (default: '/events'): Path where the receiver instance will accept events 
-* `health_path` (default: '/health_check'): Path available for checking receiver status
+* `path` (default: '/events'): Path where the receiver instance will accept events. Must begin with a leading `/`.
+* `health_path` (default: '/health_check'): Path available for checking receiver status. Must begin with a leading `/`.
 * `read_timeout` (default: '500ms'): Maximum wait time while attempting to read a received event
 * `write_timeout` (default: '500ms'): Maximum wait time while attempting to write a response
 * `required_header` (optional):  
@@ -39,6 +41,10 @@ The following settings are optional:
 * `convert_headers_to_attributes` (optional): add all request headers (excluding `required_header` if also set) log attributes
 * `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
 * `max_request_body_size` (default comes from [confighttp module](https://github.com/open-telemetry/opentelemetry-collector/blob/7258150320ae4c3b489aa58bd2939ba358b23ae1/config/confighttp/server.go#L31)): Maximum size in bytes for request body. Requests exceeding this limit will be rejected with an error.
+* `hmac_signature` (optional): HMAC-SHA256 hex digest signature verification for webhook payloads. Compatible with [GitHub webhook signatures](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries) and [Fingerprint webhook signatures](https://docs.fingerprint.com/docs/webhooks).
+    * `secret` (required if `hmac_signature` is set): The shared secret used to compute the HMAC-SHA256 digest.
+    * `header` (required if `hmac_signature` is set): The HTTP header name containing the signature (e.g. `X-Hub-Signature-256` for GitHub, `fpjs-event-signature` for Fingerprint).
+    * `prefix` (required if `hmac_signature` is set): The prefix before the hex digest in the header value (e.g. `sha256=` for GitHub, `v1=` for Fingerprint).
 
 ### Split logs at newline example
 
@@ -81,15 +87,45 @@ know it!"}
 
 This settings works when JSON objects have newlines in the middle of a string or multiple objects on a line.
 
+### HMAC Signature Verification
+
+The receiver supports HMAC-SHA256 hex digest signature verification, which is used by webhook providers like GitHub and Fingerprint to ensure payload integrity and authenticity. When configured, the receiver reads the raw request body, computes the HMAC-SHA256 digest using the shared secret, and compares it with the signature in the specified header. Requests with missing or invalid signatures are rejected with HTTP 401 Unauthorized.
+
+#### GitHub webhook example
+
+```yaml
+receivers:
+    webhook_event:
+        endpoint: localhost:8088
+        path: "/github/webhooks"
+        hmac_signature:
+            secret: "your-github-webhook-secret"
+            header: "X-Hub-Signature-256"
+            prefix: "sha256="
+```
+
+#### Fingerprint webhook example
+
+```yaml
+receivers:
+    webhook_event:
+        endpoint: localhost:8088
+        path: "/fingerprint/webhooks"
+        hmac_signature:
+            secret: "your-fingerprint-webhook-secret"
+            header: "fpjs-event-signature"
+            prefix: "v1="
+```
+
 ### Configuration Example
 
 ```yaml
 receivers:
-    webhookevent:
+    webhook_event:
         endpoint: localhost:8088
         read_timeout: "500ms"
-        path: "eventsource/receiver"
-        health_path: "eventreceiver/healthcheck"
+        path: "/eventsource/receiver"
+        health_path: "/eventreceiver/healthcheck"
         required_header:
             key: "required-header-key"
             value: "required-header-value"

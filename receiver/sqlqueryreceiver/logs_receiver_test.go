@@ -4,11 +4,13 @@
 package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -268,4 +270,120 @@ func TestLogsReceiver_InitialDelay(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() >= 1
 	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
+}
+
+func TestStatusReportingLogs(t *testing.T) {
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
+			{{"col1": "42"}},
+		},
+	}
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return fakeClient
+	})
+
+	ctx := t.Context()
+	statusEvents := make(chan *componentstatus.Event, 10)
+	host := &statusReporterHost{
+		Host: componenttest.NewNopHost(),
+		report: func(event *componentstatus.Event) {
+			statusEvents <- event
+		},
+	}
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Millisecond,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, receiver.Start(ctx, host))
+
+	select {
+	case event := <-statusEvents:
+		require.Equal(t, componentstatus.StatusOK, event.Status())
+	case <-time.After(1 * time.Second):
+		t.Fatal("timed out waiting for status event")
+	}
+
+	require.NoError(t, receiver.Shutdown(ctx))
+}
+
+// blockingDBClient blocks in QueryRows until the provided context is done,
+// then returns the context error. It is used to verify that the configured
+// timeout cancels a long-running query.
+type blockingDBClient struct{}
+
+func (blockingDBClient) QueryRows(ctx context.Context, _ ...any) ([]sqlquery.StringMap, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func TestLogsReceiver_Timeout(t *testing.T) {
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, func(sqlquery.Db, string, *zap.Logger, sqlquery.TelemetryConfig) sqlquery.DbClient {
+		return blockingDBClient{}
+	})
+
+	ctx := t.Context()
+	statusEvents := make(chan *componentstatus.Event, 10)
+	host := &statusReporterHost{
+		Host: componenttest.NewNopHost(),
+		report: func(event *componentstatus.Event) {
+			statusEvents <- event
+		},
+	}
+
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Millisecond,
+					Timeout:            20 * time.Millisecond,
+				},
+				Driver:     "postgres",
+				DataSource: "my-datasource",
+				Queries: []sqlquery.Query{{
+					SQL: "select * from foo",
+					Logs: []sqlquery.LogsCfg{{
+						BodyColumn: "col1",
+					}},
+				}},
+			},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, receiver.Start(ctx, host))
+	defer func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	// The blocking query never returns on its own, so the only way a status
+	// event with an error is produced is if the configured timeout cancels it.
+	require.Eventually(t, func() bool {
+		select {
+		case event := <-statusEvents:
+			return event.Status() == componentstatus.StatusRecoverableError &&
+				assert.ErrorIs(t, event.Err(), context.DeadlineExceeded)
+		default:
+			return false
+		}
+	}, time.Second, 5*time.Millisecond, "expected a recoverable error status caused by the query timeout")
 }

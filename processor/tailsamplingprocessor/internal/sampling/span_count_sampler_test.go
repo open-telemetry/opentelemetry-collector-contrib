@@ -234,6 +234,14 @@ func TestEvaluate_RangeOfSpans(t *testing.T) {
 	}
 }
 
+func TestSpanCount_IsStateful(t *testing.T) {
+	withoutMaxSpans := NewSpanCount(componenttest.NewNopTelemetrySettings(), 3, 0)
+	assert.False(t, withoutMaxSpans.IsStateful())
+
+	withMaxSpans := NewSpanCount(componenttest.NewNopTelemetrySettings(), 3, 10)
+	assert.True(t, withMaxSpans.IsStateful())
+}
+
 func newTraceWithMultipleSpans(numberSpans []int32) *samplingpolicy.TraceData {
 	totalNumberSpans := int32(0)
 

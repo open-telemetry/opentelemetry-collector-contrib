@@ -114,6 +114,12 @@ resourceLogs:
               - key: url.query
                 value:
                   stringValue: upn=true&action=write&timeout=120&st=2025-09-17T14%3A12%3A45Z&sv=2022-05-01&ske=2025-09-17T16%3A12%3A45Z&sig=RANDOMSIG&sktid=abcdef12-3456-7890-abcd-ef1234567890&se=2025-09-17T15%3A22%3A45Z&sdd=1&skoid=12345678-90ab-cdef-1234-567890abcdef&spr=https&sks=a&skt=2025-09-17T14%3A12%3A45Z&sp=rw&skv=2025-09-17&sr=c
+              - key: azure.storage.schema_version
+                value:
+                  stringValue: "2.1"
+              - key: azure.resource.type
+                value:
+                  stringValue: Microsoft.Storage/storageAccounts/blobServices
               - key: azure.storage.namespace
                 value:
                   stringValue: randomstor

@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
@@ -33,7 +33,7 @@ func TestScrape(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
-	require.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, confmap.Validate(cfg))
 
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(mockClient)
@@ -108,7 +108,7 @@ func TestScrape(t *testing.T) {
 			{
 				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
 				Context: []zapcore.Field{
-					zap.String("endpoint", cfg.Endpoint),
+					zap.String("endpoint", cfg.ClientConfig.Endpoint),
 					zap.Error(errors.New("bad response")),
 				},
 			},
@@ -122,7 +122,7 @@ func TestStart(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, xconfmap.Validate(cfg))
+		require.NoError(t, confmap.Validate(cfg))
 
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -131,10 +131,10 @@ func TestStart(t *testing.T) {
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.TLS.CAFile = "/non/existent"
+		cfg.ClientConfig.TLS.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, xconfmap.Validate(cfg))
+		require.NoError(t, confmap.Validate(cfg))
 
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -147,14 +147,14 @@ func TestMetricSettings(t *testing.T) {
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
 	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics = metadata.MetricsConfig{
-		CouchdbAverageRequestTime: metadata.MetricConfig{Enabled: false},
-		CouchdbDatabaseOpen:       metadata.MetricConfig{Enabled: false},
-		CouchdbDatabaseOperations: metadata.MetricConfig{Enabled: true},
-		CouchdbFileDescriptorOpen: metadata.MetricConfig{Enabled: false},
-		CouchdbHttpdBulkRequests:  metadata.MetricConfig{Enabled: false},
-		CouchdbHttpdRequests:      metadata.MetricConfig{Enabled: false},
-		CouchdbHttpdResponses:     metadata.MetricConfig{Enabled: false},
-		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
+		CouchdbAverageRequestTime: metadata.CouchdbAverageRequestTimeMetricConfig{Enabled: false},
+		CouchdbDatabaseOpen:       metadata.CouchdbDatabaseOpenMetricConfig{Enabled: false},
+		CouchdbDatabaseOperations: metadata.CouchdbDatabaseOperationsMetricConfig{Enabled: true, AggregationStrategy: metadata.AggregationStrategySum, EnabledAttributes: []metadata.CouchdbDatabaseOperationsMetricAttributeKey{metadata.CouchdbDatabaseOperationsMetricAttributeKeyOperation}},
+		CouchdbFileDescriptorOpen: metadata.CouchdbFileDescriptorOpenMetricConfig{Enabled: false},
+		CouchdbHttpdBulkRequests:  metadata.CouchdbHttpdBulkRequestsMetricConfig{Enabled: false},
+		CouchdbHttpdRequests:      metadata.CouchdbHttpdRequestsMetricConfig{Enabled: false},
+		CouchdbHttpdResponses:     metadata.CouchdbHttpdResponsesMetricConfig{Enabled: false},
+		CouchdbHttpdViews:         metadata.CouchdbHttpdViewsMetricConfig{Enabled: false},
 	}
 	cfg := &Config{
 		ClientConfig:         confighttp.NewDefaultClientConfig(),

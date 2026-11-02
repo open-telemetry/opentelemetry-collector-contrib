@@ -50,5 +50,6 @@ func createLogsProcessor(
 		cfg,
 		nextConsumer,
 		proc.ProcessLogs,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+	)
 }

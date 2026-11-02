@@ -2,6 +2,29 @@
 
 # kafka
 
+## Sending Queue
+
+**Support:** This component uses the default QueueBatch configuration.
+
+```yaml
+sending_queue:
+    enabled: true              # default
+    wait_for_result: false     # default
+    sizer: requests            # default
+    queue_size: 1000           # default
+    block_on_overflow: false   # default
+    storage: null              # default
+    num_consumers: 10          # default
+    batch:
+        enabled: true          # FEATURE(pkg.exporterhelper.queueBatchEnabled)
+        flush_timeout: 200ms   # default
+        sizer: items           # default
+        min_size: 8192         # default
+        max_size: 0            # default
+        partition:
+            metadata_keys: []  # default
+```
+
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
@@ -188,3 +211,13 @@ The time it took in seconds to export a batch of records.
 | topic | The Kafka topic. | Any Str | - |
 | partition | The Kafka topic partition. | Any Int | - |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `exporter.kafka.useRequestType` | alpha | When enabled, the Kafka exporter converts pdata into Kafka records at request-creation time and uses a custom exporterhelper.Request for queue/batch sizing. | v0.157.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48090) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

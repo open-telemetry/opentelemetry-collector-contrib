@@ -6,7 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazureblob%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazureblob) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazureblob%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazureblob) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azureblob)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azureblob&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@eedorenko](https://www.github.com/eedorenko), [@mx-psi](https://www.github.com/mx-psi), [@dyl10s](https://www.github.com/dyl10s) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dyl10s](https://www.github.com/dyl10s) |
+| Emeritus      | [@eedorenko](https://www.github.com/eedorenko) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -14,6 +15,8 @@
 
 
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs/).
+
+Each blob is expected to contain a single payload. By default the payload is decoded as OTLP/JSON, but the encoding is configurable per signal via `logs.encoding` and `traces.encoding` (see below). In addition to the built-in `otlp_json` and `otlp_proto` encodings, you may reference an [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) by its component ID to decode other formats.
 
 ## Modes of Operation
 
@@ -35,8 +38,11 @@ The following settings can be optionally configured:
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
   - `container_name:` (default = "logs"): Name of the blob container with the logs
+  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `plog.Unmarshaler`.
 - `traces:`
   - `container_name:` (default = "traces"): Name of the blob container with the traces
+  - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `ptrace.Unmarshaler`.
+- `compression:` (default = ""): Compression format of blob payloads. Options are `` (none), `gzip`, or `auto`. `auto` detects gzip per blob from its header ([see RFC 1952](https://www.rfc-editor.org/rfc/rfc1952#section-2.3)), and is useful when a container holds a mix of compressed and uncompressed blobs. Decompression is applied before the payload is decoded with the configured encoding.
 
 Authenticating using a connection string requires configuration of the following additional setting:
 
@@ -87,6 +93,28 @@ Using polling mode (no Event Hub):
 receivers:
   azure_blob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+```
+
+Using an encoding extension to decode log blobs:
+
+```yaml
+extensions:
+  text_encoding:
+
+receivers:
+  azure_blob:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+    logs:
+      encoding: text_encoding
+```
+
+Reading gzip compressed blobs:
+
+```yaml
+receivers:
+  azure_blob:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+    compression: gzip
 ```
 
 ## Behavior

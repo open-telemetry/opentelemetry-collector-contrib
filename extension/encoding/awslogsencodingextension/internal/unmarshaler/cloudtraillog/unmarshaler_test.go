@@ -14,9 +14,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -413,4 +416,118 @@ func readLogFile(t *testing.T, dir, file string) io.Reader {
 	data, err := os.ReadFile(filepath.Join(dir, file))
 	require.NoError(t, err)
 	return bytes.NewReader(data)
+}
+
+func TestRPCAttributeFeatureGates(t *testing.T) {
+	// not parallel: mutates global featuregate registry
+	record := &CloudTrailRecord{
+		EventVersion: "1.08",
+		EventID:      "test-event-id",
+		EventName:    "TestAction",
+		EventType:    "AwsApiCall",
+		EventSource:  "test.amazonaws.com",
+	}
+
+	tests := []struct {
+		name           string
+		emitV1         bool
+		dontEmitV0     bool
+		wantSystem     bool
+		wantService    bool
+		wantSystemName bool
+		wantMethod     string
+	}{
+		{
+			name:           "default: only v0 attributes",
+			wantSystem:     true,
+			wantService:    true,
+			wantSystemName: false,
+			wantMethod:     "TestAction",
+		},
+		{
+			name:           "emit v1: both old and new",
+			emitV1:         true,
+			wantSystem:     true,
+			wantService:    true,
+			wantSystemName: true,
+			wantMethod:     "test.amazonaws.com/TestAction",
+		},
+		{
+			name:           "emit v1 and dont emit v0: only new",
+			emitV1:         true,
+			dontEmitV0:     true,
+			wantSystem:     false,
+			wantService:    false,
+			wantSystemName: true,
+			wantMethod:     "test.amazonaws.com/TestAction",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry := featuregate.GlobalRegistry()
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), tt.emitV1))
+			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
+			t.Cleanup(func() {
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), true))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
+			})
+
+			u := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test"}, false)
+			attrs := pcommon.NewMap()
+			u.setLogAttributes(attrs, record)
+
+			_, hasSystem := attrs.Get("rpc.system")
+			_, hasService := attrs.Get("rpc.service")
+			_, hasSystemName := attrs.Get("rpc.system.name")
+			method, hasMethod := attrs.Get("rpc.method")
+
+			require.Equal(t, tt.wantSystem, hasSystem, "rpc.system")
+			require.Equal(t, tt.wantService, hasService, "rpc.service")
+			require.Equal(t, tt.wantSystemName, hasSystemName, "rpc.system.name")
+			require.Equal(t, tt.wantMethod != "", hasMethod, "rpc.method presence")
+			if tt.wantMethod != "" {
+				require.Equal(t, tt.wantMethod, method.Str(), "rpc.method")
+			}
+		})
+	}
+}
+
+func TestFullyQualifiedRPCMethod(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		eventSource string
+		eventName   string
+		want        string
+	}{
+		{
+			name:        "source and name are qualified",
+			eventSource: "ec2.amazonaws.com",
+			eventName:   "StartInstances",
+			want:        "ec2.amazonaws.com/StartInstances",
+		},
+		{
+			name:      "empty source falls back to bare name",
+			eventName: "StartInstances",
+			want:      "StartInstances",
+		},
+		{
+			name:        "empty name omits method",
+			eventSource: "ec2.amazonaws.com",
+			want:        "",
+		},
+		{
+			name: "both empty omits method",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, fullyQualifiedRPCMethod(tt.eventSource, tt.eventName))
+		})
+	}
 }

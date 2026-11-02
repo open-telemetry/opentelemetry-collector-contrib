@@ -26,6 +26,18 @@ import (
 func TestReqToLog(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
+	newlineSplittingServerConfig := confighttp.NewDefaultServerConfig()
+	newlineSplittingServerConfig.MaxRequestBodySize = 150 * 1024 // Set to 150KB to handle the 100KB test payload
+
+	jsonBoundarySplittingServerConfig := confighttp.NewDefaultServerConfig()
+	jsonBoundarySplittingServerConfig.MaxRequestBodySize = 100 * 1024 // 100KB to handle the ~80KB test payload
+
+	exceedsMaxSizeServerConfig := confighttp.NewDefaultServerConfig()
+	exceedsMaxSizeServerConfig.MaxRequestBodySize = 100 * 1024 // Set to 100KB, smaller than payload
+
+	tinyMaxSizeServerConfig := confighttp.NewDefaultServerConfig()
+	tinyMaxSizeServerConfig.MaxRequestBodySize = 64 // Set smaller than allowed
+
 	tests := []struct {
 		desc        string
 		sc          *bufio.Scanner
@@ -403,9 +415,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 150 * 1024, // Set to 150KB to handle the 100KB test payload
-				},
+				ServerConfig:       newlineSplittingServerConfig,
 				Path:               defaultPath,
 				HealthPath:         defaultHealthPath,
 				ReadTimeout:        defaultReadTimeout,
@@ -439,9 +449,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 100 * 1024, // 100KB to handle the ~80KB test payload
-				},
+				ServerConfig:            jsonBoundarySplittingServerConfig,
 				Path:                    defaultPath,
 				HealthPath:              defaultHealthPath,
 				ReadTimeout:             defaultReadTimeout,
@@ -466,9 +474,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 100 * 1024, // Set to 100KB, smaller than payload
-				},
+				ServerConfig:       exceedsMaxSizeServerConfig,
 				Path:               defaultPath,
 				HealthPath:         defaultHealthPath,
 				ReadTimeout:        defaultReadTimeout,
@@ -495,9 +501,7 @@ func TestReqToLog(t *testing.T) {
 				return bufio.NewScanner(reader)
 			}(),
 			config: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					MaxRequestBodySize: 64, // Set smaller than allowed
-				},
+				ServerConfig:       tinyMaxSizeServerConfig,
 				Path:               defaultPath,
 				HealthPath:         defaultHealthPath,
 				ReadTimeout:        defaultReadTimeout,
@@ -521,7 +525,7 @@ func TestReqToLog(t *testing.T) {
 			_ = testConfig.Validate()
 
 			// receiver will fail to create if endpoint is empty
-			testConfig.NetAddr.Endpoint = "localhost:8080"
+			testConfig.ServerConfig.NetAddr.Endpoint = "localhost:8080"
 			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *testConfig, consumertest.NewNop())
 			require.NoError(t, err)
 			eventReceiver := receiver.(*eventReceiver)

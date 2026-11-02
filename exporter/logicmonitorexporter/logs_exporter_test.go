@@ -25,6 +25,9 @@ import (
 )
 
 func Test_NewLogsExporter(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
+
 	tests := []struct {
 		name string
 		args struct {
@@ -39,10 +42,8 @@ func Test_NewLogsExporter(t *testing.T) {
 				logger *zap.Logger
 			}{
 				config: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "http://example.logicmonitor.com/rest",
-					},
-					APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
+					ClientConfig: clientConfig,
+					APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
 				},
 				logger: zaptest.NewLogger(t),
 			},
@@ -68,11 +69,11 @@ func TestPushLogData(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = ts.URL
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: ts.URL,
-		},
-		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
+		ClientConfig: clientConfig,
+		APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
 	}
 
 	tests := []struct {

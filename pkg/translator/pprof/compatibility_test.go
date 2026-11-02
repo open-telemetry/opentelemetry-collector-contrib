@@ -26,7 +26,7 @@ func TestRoundTripConversion(t *testing.T) {
 		require.NoError(t, err)
 
 		// Convert back to pprof
-		roundTrip, err := convertPprofileToPprof(pprofiles)
+		roundTrip, err := ConvertPprofileToPprof(pprofiles)
 		require.NoError(t, err)
 
 		// Compare the profiles
@@ -35,27 +35,29 @@ func TestRoundTripConversion(t *testing.T) {
 		}
 	})
 
-	t.Run("gobench.cpu test data", func(t *testing.T) {
-		// Load gobench.cpu test data
-		inbytes, err := os.ReadFile(filepath.Join("internal/testdata/", "gobench.cpu"))
-		require.NoError(t, err)
+	for _, testfile := range []string{"cppbench.cpu", "gobench.cpu", "java.cpu"} {
+		t.Run(testfile+" test data", func(t *testing.T) {
+			// Load gobench.cpu test data
+			inbytes, err := os.ReadFile(filepath.Join("internal/testdata/", testfile))
+			require.NoError(t, err)
 
-		prof, err := profile.Parse(bytes.NewBuffer(inbytes))
-		require.NoError(t, err)
+			prof, err := profile.Parse(bytes.NewBuffer(inbytes))
+			require.NoError(t, err)
 
-		// Convert to OTel Profiles
-		pprofiles, err := ConvertPprofToProfiles(prof)
-		require.NoError(t, err)
+			// Convert to OTel Profiles
+			pprofiles, err := ConvertPprofToProfiles(prof)
+			require.NoError(t, err)
 
-		// Convert back to pprof
-		roundTrip, err := convertPprofileToPprof(pprofiles)
-		require.NoError(t, err)
+			// Convert back to pprof
+			roundTrip, err := ConvertPprofileToPprof(pprofiles)
+			require.NoError(t, err)
 
-		// Compare the profiles
-		if diff := cmp.Diff(prof.String(), roundTrip.String()); diff != "" {
-			t.Errorf("round-trip profile mismatch (-want +got):\n%s", diff)
-		}
-	})
+			// Compare the profiles
+			if diff := cmp.Diff(prof.String(), roundTrip.String()); diff != "" {
+				t.Errorf("round-trip profile mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }
 
 // createManualProfile creates a  pprof profile with at least three different sample types.

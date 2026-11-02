@@ -19,7 +19,7 @@ resourceMetrics:
         - key: process.command_line
           value:
             stringValue: /bin/bash
-    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total CPU seconds broken down by different states.
@@ -59,7 +59,7 @@ resourceMetrics:
                   startTimeUnixNano: "1693963661860000000"
                   timeUnixNano: "1734347455586234971"
             unit: By
-          - description: Virtual memory size.
+          - description: The amount of committed virtual memory.
             name: process.memory.virtual
             sum:
               aggregationTemporality: 2

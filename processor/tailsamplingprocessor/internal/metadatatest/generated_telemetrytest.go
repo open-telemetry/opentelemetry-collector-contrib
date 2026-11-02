@@ -21,6 +21,22 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	return set
 }
 
+func AssertEqualProcessorTailSamplingCountBytesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_count_bytes_sampled",
+		Description: "Count of bytes that were sampled or not per sampling policy [Development]",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_count_bytes_sampled")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessorTailSamplingCountSpansSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
@@ -33,6 +49,22 @@ func AssertEqualProcessorTailSamplingCountSpansSampled(t *testing.T, tt *compone
 		},
 	}
 	got, err := tt.GetMetric("otelcol_processor_tail_sampling_count_spans_sampled")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorTailSamplingCountSpansWithUnparseableTracestate(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate",
+		Description: "Count of spans skipped while rewriting the effective `th` because their tracestate could not be parsed [Development]",
+		Unit:        "{spans}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_count_spans_with_unparseable_tracestate")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -167,7 +199,7 @@ func AssertEqualProcessorTailSamplingSamplingPolicyExecutionTimeSum(t *testing.T
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_policy_execution_time_sum",
 		Description: "Total time spent (in microseconds) executing a specific sampling policy [Development]",
-		Unit:        "µs",
+		Unit:        "us",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

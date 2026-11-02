@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -31,6 +32,7 @@ type groupingFileExporter struct {
 	pathSuffix    string
 	attribute     string
 	maxOpenFiles  int
+	dirPerm       os.FileMode
 	newFileWriter func(path string) (*fileWriter, error)
 
 	mutex   sync.Mutex
@@ -195,12 +197,7 @@ func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf 
 		return err
 	}
 
-	err = writer.export(buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.Join(writer.export(buf), writer.release())
 }
 
 func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error) {
@@ -211,14 +208,11 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 
 	writer, ok := e.writers.Get(fullPath)
 	if ok {
+		writer.acquire()
 		return writer, nil
 	}
 
-	perm := os.FileMode(0o755)
-	if e.conf.directoryPermissionsParsed != 0 {
-		perm = os.FileMode(e.conf.directoryPermissionsParsed)
-	}
-	err := os.MkdirAll(path.Dir(fullPath), perm)
+	err := os.MkdirAll(path.Dir(fullPath), e.dirPerm)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +221,7 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 	if err != nil {
 		return nil, err
 	}
-
+	writer.acquire()
 	e.writers.Add(fullPath, writer)
 
 	writer.start()
@@ -245,6 +239,9 @@ func cleanPathPrefix(pathPrefix string) string {
 }
 
 func (e *groupingFileExporter) fullPath(pathSegment string) string {
+	// Normalize to forward slashes on Windows to match path package behavior
+	pathSegment = filepath.ToSlash(pathSegment)
+
 	if strings.HasPrefix(pathSegment, "./") {
 		pathSegment = pathSegment[1:]
 	} else if strings.HasPrefix(pathSegment, "../") {
@@ -261,7 +258,7 @@ func (e *groupingFileExporter) fullPath(pathSegment string) string {
 }
 
 func (e *groupingFileExporter) onEvict(_ string, writer *fileWriter) {
-	err := writer.shutdown()
+	err := writer.evict()
 	if err != nil {
 		e.logger.Warn("Failed to close file", zap.Error(err), zap.String("path", writer.path))
 	}
@@ -295,14 +292,19 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	}
 	export := buildExportFunc(e.conf)
 
+	e.dirPerm, err = e.conf.dirPermissions()
+	if err != nil {
+		return err
+	}
+
 	pathParts := strings.Split(e.conf.Path, "*")
 
-	e.pathPrefix = cleanPathPrefix(pathParts[0])
+	e.pathPrefix = filepath.ToSlash(cleanPathPrefix(pathParts[0]))
 	e.attribute = e.conf.GroupBy.ResourceAttribute
-	e.pathSuffix = pathParts[1]
+	e.pathSuffix = filepath.ToSlash(pathParts[1])
 	e.maxOpenFiles = e.conf.GroupBy.MaxOpenFiles
 	e.newFileWriter = func(path string) (*fileWriter, error) {
-		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
+		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
 	}
 
 	writers, err := simplelru.NewLRU(e.conf.GroupBy.MaxOpenFiles, e.onEvict)

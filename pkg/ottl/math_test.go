@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func mathParsePath[K any](p Path[K]) (GetSetter[any], error) {
@@ -67,8 +66,12 @@ func testTime[K any](time, format string) (ExprFunc[K], error) {
 	if err != nil {
 		return nil, err
 	}
+	parser, err := timeutils.NewStrptimeParser(format)
+	if err != nil {
+		return nil, err
+	}
 	return func(_ context.Context, _ K) (any, error) {
-		timestamp, err := timeutils.ParseStrptime(format, time, loc)
+		timestamp, err := parser.Parse(time, loc)
 		return timestamp, err
 	}, nil
 }
@@ -337,7 +340,7 @@ func Test_evaluateMathExpression(t *testing.T) {
 			parsed, err := mathParser.ParseString("", tt.input)
 			require.NoError(t, err)
 
-			getter, err := p.evaluateMathExpression(parsed.MathExpression)
+			getter, err := p.newParseContext().evaluateMathExpression(parsed.MathExpression)
 			require.NoError(t, err)
 
 			result, err := getter.Get(t.Context(), nil)
@@ -370,12 +373,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("2023-04-12"),
+											String: new("2023-04-12"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%Y-%m-%d"),
+											String: new("%Y-%m-%d"),
 										},
 									},
 								},
@@ -394,12 +397,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("2023-04-12"),
+													String: new("2023-04-12"),
 												},
 											},
 											{
 												Value: value{
-													String: ottltest.Strp("%Y-%m-%d"),
+													String: new("%Y-%m-%d"),
 												},
 											},
 										},
@@ -423,7 +426,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("100h100m100s100ns"),
+											String: new("100h100m100s100ns"),
 										},
 									},
 								},
@@ -442,7 +445,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("1h1m1s1ns"),
+													String: new("1h1m1s1ns"),
 												},
 											},
 										},
@@ -466,12 +469,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("2023-04-12"),
+											String: new("2023-04-12"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%Y-%m-%d"),
+											String: new("%Y-%m-%d"),
 										},
 									},
 								},
@@ -485,7 +488,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
-									Int: ottltest.Intp(1),
+									Int: new(int64(1)),
 								},
 							},
 						},
@@ -505,7 +508,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("1h1m1s1ns"),
+											String: new("1h1m1s1ns"),
 										},
 									},
 								},
@@ -519,7 +522,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 						Term: &addSubTerm{
 							Left: &mathValue{
 								Literal: &mathExprLiteral{
-									Int: ottltest.Intp(5),
+									Int: new(int64(5)),
 								},
 							},
 						},
@@ -539,12 +542,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("2023-04-12"),
+											String: new("2023-04-12"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%Y-%m-%d"),
+											String: new("%Y-%m-%d"),
 										},
 									},
 								},
@@ -563,12 +566,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("2022-05-11"),
+													String: new("2022-05-11"),
 												},
 											},
 											{
 												Value: value{
-													String: ottltest.Strp("%Y-%m-%d"),
+													String: new("%Y-%m-%d"),
 												},
 											},
 										},
@@ -592,7 +595,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("2h"),
+											String: new("2h"),
 										},
 									},
 								},
@@ -611,12 +614,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("2000-10-30"),
+													String: new("2000-10-30"),
 												},
 											},
 											{
 												Value: value{
-													String: ottltest.Strp("%Y-%m-%d"),
+													String: new("%Y-%m-%d"),
 												},
 											},
 										},
@@ -656,8 +659,9 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			pc := p.newParseContext()
 			if tt.mathExpr != nil {
-				getter, err := p.evaluateMathExpression(tt.mathExpr)
+				getter, err := pc.evaluateMathExpression(tt.mathExpr)
 				if err != nil {
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
@@ -671,7 +675,7 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				parsed, err := mathParser.ParseString("", tt.input)
 				require.NoError(t, err)
 
-				getter, err := p.evaluateMathExpression(parsed.MathExpression)
+				getter, err := pc.evaluateMathExpression(parsed.MathExpression)
 				require.NoError(t, err)
 
 				result, err := getter.Get(t.Context(), nil)
@@ -728,12 +732,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("2023-04-12"),
+											String: new("2023-04-12"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%Y-%m-%d"),
+											String: new("%Y-%m-%d"),
 										},
 									},
 								},
@@ -752,12 +756,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("2023-04-12"),
+													String: new("2023-04-12"),
 												},
 											},
 											{
 												Value: value{
-													String: ottltest.Strp("%Y-%m-%d"),
+													String: new("%Y-%m-%d"),
 												},
 											},
 										},
@@ -781,12 +785,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("1986-10-30T00:17:33"),
+											String: new("1986-10-30T00:17:33"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%Y-%m-%dT%H:%M:%S"),
+											String: new("%Y-%m-%dT%H:%M:%S"),
 										},
 									},
 								},
@@ -805,12 +809,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("1986-11-01"),
+													String: new("1986-11-01"),
 												},
 											},
 											{
 												Value: value{
-													String: ottltest.Strp("%Y-%m-%d"),
+													String: new("%Y-%m-%d"),
 												},
 											},
 										},
@@ -834,7 +838,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("10h"),
+											String: new("10h"),
 										},
 									},
 								},
@@ -853,12 +857,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("01-01-2000"),
+													String: new("01-01-2000"),
 												},
 											},
 											{
 												Value: value{
-													String: ottltest.Strp("%m-%d-%Y"),
+													String: new("%m-%d-%Y"),
 												},
 											},
 										},
@@ -882,12 +886,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("Feb 15, 2023"),
+											String: new("Feb 15, 2023"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%b %d, %Y"),
+											String: new("%b %d, %Y"),
 										},
 									},
 								},
@@ -906,7 +910,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("10h"),
+													String: new("10h"),
 												},
 											},
 										},
@@ -930,12 +934,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("02/04/2023"),
+											String: new("02/04/2023"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%m/%d/%Y"),
+											String: new("%m/%d/%Y"),
 										},
 									},
 								},
@@ -954,7 +958,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("1h2m3s"),
+													String: new("1h2m3s"),
 												},
 											},
 										},
@@ -978,12 +982,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("Mar 14 2023 17:02:59"),
+											String: new("Mar 14 2023 17:02:59"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%b %d %Y %H:%M:%S"),
+											String: new("%b %d %Y %H:%M:%S"),
 										},
 									},
 								},
@@ -1002,7 +1006,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("11h2m58s"),
+													String: new("11h2m58s"),
 												},
 											},
 										},
@@ -1026,12 +1030,12 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("Monday, May 01, 2023"),
+											String: new("Monday, May 01, 2023"),
 										},
 									},
 									{
 										Value: value{
-											String: ottltest.Strp("%A, %B %d, %Y"),
+											String: new("%A, %B %d, %Y"),
 										},
 									},
 								},
@@ -1050,7 +1054,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("100ns"),
+													String: new("100ns"),
 												},
 											},
 										},
@@ -1074,7 +1078,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("100h100m100s100ns"),
+											String: new("100h100m100s100ns"),
 										},
 									},
 								},
@@ -1093,7 +1097,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("1h1m1s1ns"),
+													String: new("1h1m1s1ns"),
 												},
 											},
 										},
@@ -1117,7 +1121,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("0h"),
+											String: new("0h"),
 										},
 									},
 								},
@@ -1136,7 +1140,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("1000h"),
+													String: new("1000h"),
 												},
 											},
 										},
@@ -1160,7 +1164,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("0h"),
+											String: new("0h"),
 										},
 									},
 								},
@@ -1179,7 +1183,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("328m"),
+													String: new("328m"),
 												},
 											},
 										},
@@ -1203,7 +1207,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Arguments: []argument{
 									{
 										Value: value{
-											String: ottltest.Strp("11h11ns"),
+											String: new("11h11ns"),
 										},
 									},
 								},
@@ -1222,7 +1226,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 										Arguments: []argument{
 											{
 												Value: value{
-													String: ottltest.Strp("12m12s"),
+													String: new("12m12s"),
 												},
 											},
 										},
@@ -1237,7 +1241,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		getter, err := p.evaluateMathExpression(tt.mathExpr)
+		getter, err := p.newParseContext().evaluateMathExpression(tt.mathExpr)
 		require.NoError(t, err)
 
 		result, err := getter.Get(t.Context(), nil)

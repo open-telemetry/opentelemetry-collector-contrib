@@ -36,6 +36,22 @@ func TestComponentLifecycle(t *testing.T) {
 	}{
 
 		{
+			name: "logs_to_logs",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{pipeline.NewID(pipeline.SignalLogs): consumertest.NewNop()})
+				return factory.CreateLogsToLogs(ctx, set, cfg, router)
+			},
+		},
+
+		{
+			name: "logs_to_metrics",
+			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
+				router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{pipeline.NewID(pipeline.SignalMetrics): consumertest.NewNop()})
+				return factory.CreateLogsToMetrics(ctx, set, cfg, router)
+			},
+		},
+
+		{
 			name: "traces_to_logs",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
 				router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{pipeline.NewID(pipeline.SignalLogs): consumertest.NewNop()})

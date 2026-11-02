@@ -3,15 +3,33 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 // AttributeK8sContainerStatusReason specifies the value k8s.container.status.reason attribute.
 type AttributeK8sContainerStatusReason int
@@ -251,10 +269,12 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.container.restarts",
 	},
 	K8sContainerStatusReason: metricInfo{
-		Name: "k8s.container.status.reason",
+		Name:       "k8s.container.status.reason",
+		Attributes: []string{"k8s.container.status.reason"},
 	},
 	K8sContainerStatusState: metricInfo{
-		Name: "k8s.container.status.state",
+		Name:       "k8s.container.status.state",
+		Attributes: []string{"k8s.container.status.state"},
 	},
 	K8sContainerStorageLimit: metricInfo{
 		Name: "k8s.container.storage_limit",
@@ -314,16 +334,19 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.namespace.phase",
 	},
 	K8sNodeCondition: metricInfo{
-		Name: "k8s.node.condition",
+		Name:       "k8s.node.condition",
+		Attributes: []string{"condition"},
 	},
 	K8sPersistentvolumeStatusPhase: metricInfo{
-		Name: "k8s.persistentvolume.status.phase",
+		Name:       "k8s.persistentvolume.status.phase",
+		Attributes: []string{"k8s.persistentvolume.status.phase"},
 	},
 	K8sPersistentvolumeStorageCapacity: metricInfo{
 		Name: "k8s.persistentvolume.storage.capacity",
 	},
 	K8sPersistentvolumeclaimStatusPhase: metricInfo{
-		Name: "k8s.persistentvolumeclaim.status.phase",
+		Name:       "k8s.persistentvolumeclaim.status.phase",
+		Attributes: []string{"k8s.persistentvolumeclaim.status.phase"},
 	},
 	K8sPersistentvolumeclaimStorageCapacity: metricInfo{
 		Name: "k8s.persistentvolumeclaim.storage.capacity",
@@ -350,13 +373,16 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.replication_controller.desired",
 	},
 	K8sResourceQuotaHardLimit: metricInfo{
-		Name: "k8s.resource_quota.hard_limit",
+		Name:       "k8s.resource_quota.hard_limit",
+		Attributes: []string{"resource"},
 	},
 	K8sResourceQuotaUsed: metricInfo{
-		Name: "k8s.resource_quota.used",
+		Name:       "k8s.resource_quota.used",
+		Attributes: []string{"resource"},
 	},
 	K8sServiceEndpointCount: metricInfo{
-		Name: "k8s.service.endpoint.count",
+		Name:       "k8s.service.endpoint.count",
+		Attributes: []string{"k8s.service.endpoint.address_type", "k8s.service.endpoint.condition", "k8s.service.endpoint.zone"},
 	},
 	K8sServiceLoadBalancerIngressCount: metricInfo{
 		Name: "k8s.service.load_balancer.ingress.count",
@@ -367,6 +393,9 @@ var MetricsInfo = metricsInfo{
 	K8sStatefulsetDesiredPods: metricInfo{
 		Name: "k8s.statefulset.desired_pods",
 	},
+	K8sStatefulsetPodAvailable: metricInfo{
+		Name: "k8s.statefulset.pod.available",
+	},
 	K8sStatefulsetReadyPods: metricInfo{
 		Name: "k8s.statefulset.ready_pods",
 	},
@@ -374,16 +403,20 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.statefulset.updated_pods",
 	},
 	OpenshiftAppliedclusterquotaLimit: metricInfo{
-		Name: "openshift.appliedclusterquota.limit",
+		Name:       "openshift.appliedclusterquota.limit",
+		Attributes: []string{"k8s.namespace.name", "resource"},
 	},
 	OpenshiftAppliedclusterquotaUsed: metricInfo{
-		Name: "openshift.appliedclusterquota.used",
+		Name:       "openshift.appliedclusterquota.used",
+		Attributes: []string{"k8s.namespace.name", "resource"},
 	},
 	OpenshiftClusterquotaLimit: metricInfo{
-		Name: "openshift.clusterquota.limit",
+		Name:       "openshift.clusterquota.limit",
+		Attributes: []string{"resource"},
 	},
 	OpenshiftClusterquotaUsed: metricInfo{
-		Name: "openshift.clusterquota.used",
+		Name:       "openshift.clusterquota.used",
+		Attributes: []string{"resource"},
 	},
 }
 
@@ -435,6 +468,7 @@ type metricsInfo struct {
 	K8sServiceLoadBalancerIngressCount      metricInfo
 	K8sStatefulsetCurrentPods               metricInfo
 	K8sStatefulsetDesiredPods               metricInfo
+	K8sStatefulsetPodAvailable              metricInfo
 	K8sStatefulsetReadyPods                 metricInfo
 	K8sStatefulsetUpdatedPods               metricInfo
 	OpenshiftAppliedclusterquotaLimit       metricInfo
@@ -444,13 +478,14 @@ type metricsInfo struct {
 }
 
 type metricInfo struct {
-	Name string
+	Name       string
+	Attributes []string
 }
 
 type metricK8sContainerCPULimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sContainerCPULimitMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.cpu_limit metric with initial data.
@@ -487,7 +522,7 @@ func (m *metricK8sContainerCPULimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerCPULimit(cfg MetricConfig) metricK8sContainerCPULimit {
+func newMetricK8sContainerCPULimit(cfg K8sContainerCPULimitMetricConfig) metricK8sContainerCPULimit {
 	m := metricK8sContainerCPULimit{config: cfg}
 
 	if cfg.Enabled {
@@ -498,9 +533,9 @@ func newMetricK8sContainerCPULimit(cfg MetricConfig) metricK8sContainerCPULimit 
 }
 
 type metricK8sContainerCPURequest struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   K8sContainerCPURequestMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.cpu_request metric with initial data.
@@ -537,7 +572,7 @@ func (m *metricK8sContainerCPURequest) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerCPURequest(cfg MetricConfig) metricK8sContainerCPURequest {
+func newMetricK8sContainerCPURequest(cfg K8sContainerCPURequestMetricConfig) metricK8sContainerCPURequest {
 	m := metricK8sContainerCPURequest{config: cfg}
 
 	if cfg.Enabled {
@@ -548,9 +583,9 @@ func newMetricK8sContainerCPURequest(cfg MetricConfig) metricK8sContainerCPURequ
 }
 
 type metricK8sContainerEphemeralstorageLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   K8sContainerEphemeralstorageLimitMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.ephemeralstorage_limit metric with initial data.
@@ -587,7 +622,7 @@ func (m *metricK8sContainerEphemeralstorageLimit) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricK8sContainerEphemeralstorageLimit(cfg MetricConfig) metricK8sContainerEphemeralstorageLimit {
+func newMetricK8sContainerEphemeralstorageLimit(cfg K8sContainerEphemeralstorageLimitMetricConfig) metricK8sContainerEphemeralstorageLimit {
 	m := metricK8sContainerEphemeralstorageLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -598,9 +633,9 @@ func newMetricK8sContainerEphemeralstorageLimit(cfg MetricConfig) metricK8sConta
 }
 
 type metricK8sContainerEphemeralstorageRequest struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   K8sContainerEphemeralstorageRequestMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.ephemeralstorage_request metric with initial data.
@@ -637,7 +672,7 @@ func (m *metricK8sContainerEphemeralstorageRequest) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricK8sContainerEphemeralstorageRequest(cfg MetricConfig) metricK8sContainerEphemeralstorageRequest {
+func newMetricK8sContainerEphemeralstorageRequest(cfg K8sContainerEphemeralstorageRequestMetricConfig) metricK8sContainerEphemeralstorageRequest {
 	m := metricK8sContainerEphemeralstorageRequest{config: cfg}
 
 	if cfg.Enabled {
@@ -648,9 +683,9 @@ func newMetricK8sContainerEphemeralstorageRequest(cfg MetricConfig) metricK8sCon
 }
 
 type metricK8sContainerMemoryLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   K8sContainerMemoryLimitMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.memory_limit metric with initial data.
@@ -687,7 +722,7 @@ func (m *metricK8sContainerMemoryLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerMemoryLimit(cfg MetricConfig) metricK8sContainerMemoryLimit {
+func newMetricK8sContainerMemoryLimit(cfg K8sContainerMemoryLimitMetricConfig) metricK8sContainerMemoryLimit {
 	m := metricK8sContainerMemoryLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -698,9 +733,9 @@ func newMetricK8sContainerMemoryLimit(cfg MetricConfig) metricK8sContainerMemory
 }
 
 type metricK8sContainerMemoryRequest struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   K8sContainerMemoryRequestMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.memory_request metric with initial data.
@@ -737,7 +772,7 @@ func (m *metricK8sContainerMemoryRequest) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerMemoryRequest(cfg MetricConfig) metricK8sContainerMemoryRequest {
+func newMetricK8sContainerMemoryRequest(cfg K8sContainerMemoryRequestMetricConfig) metricK8sContainerMemoryRequest {
 	m := metricK8sContainerMemoryRequest{config: cfg}
 
 	if cfg.Enabled {
@@ -748,9 +783,9 @@ func newMetricK8sContainerMemoryRequest(cfg MetricConfig) metricK8sContainerMemo
 }
 
 type metricK8sContainerReady struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   K8sContainerReadyMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.ready metric with initial data.
@@ -787,7 +822,7 @@ func (m *metricK8sContainerReady) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerReady(cfg MetricConfig) metricK8sContainerReady {
+func newMetricK8sContainerReady(cfg K8sContainerReadyMetricConfig) metricK8sContainerReady {
 	m := metricK8sContainerReady{config: cfg}
 
 	if cfg.Enabled {
@@ -798,9 +833,9 @@ func newMetricK8sContainerReady(cfg MetricConfig) metricK8sContainerReady {
 }
 
 type metricK8sContainerRestarts struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sContainerRestartsMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.restarts metric with initial data.
@@ -837,7 +872,7 @@ func (m *metricK8sContainerRestarts) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts {
+func newMetricK8sContainerRestarts(cfg K8sContainerRestartsMetricConfig) metricK8sContainerRestarts {
 	m := metricK8sContainerRestarts{config: cfg}
 
 	if cfg.Enabled {
@@ -848,9 +883,9 @@ func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts 
 }
 
 type metricK8sContainerStatusReason struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   K8sContainerStatusReasonMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.status.reason metric with initial data.
@@ -891,7 +926,7 @@ func (m *metricK8sContainerStatusReason) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerStatusReason(cfg MetricConfig) metricK8sContainerStatusReason {
+func newMetricK8sContainerStatusReason(cfg K8sContainerStatusReasonMetricConfig) metricK8sContainerStatusReason {
 	m := metricK8sContainerStatusReason{config: cfg}
 
 	if cfg.Enabled {
@@ -902,9 +937,9 @@ func newMetricK8sContainerStatusReason(cfg MetricConfig) metricK8sContainerStatu
 }
 
 type metricK8sContainerStatusState struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   K8sContainerStatusStateMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.status.state metric with initial data.
@@ -945,7 +980,7 @@ func (m *metricK8sContainerStatusState) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerStatusState(cfg MetricConfig) metricK8sContainerStatusState {
+func newMetricK8sContainerStatusState(cfg K8sContainerStatusStateMetricConfig) metricK8sContainerStatusState {
 	m := metricK8sContainerStatusState{config: cfg}
 
 	if cfg.Enabled {
@@ -956,9 +991,9 @@ func newMetricK8sContainerStatusState(cfg MetricConfig) metricK8sContainerStatus
 }
 
 type metricK8sContainerStorageLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   K8sContainerStorageLimitMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.storage_limit metric with initial data.
@@ -995,7 +1030,7 @@ func (m *metricK8sContainerStorageLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerStorageLimit(cfg MetricConfig) metricK8sContainerStorageLimit {
+func newMetricK8sContainerStorageLimit(cfg K8sContainerStorageLimitMetricConfig) metricK8sContainerStorageLimit {
 	m := metricK8sContainerStorageLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -1006,9 +1041,9 @@ func newMetricK8sContainerStorageLimit(cfg MetricConfig) metricK8sContainerStora
 }
 
 type metricK8sContainerStorageRequest struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   K8sContainerStorageRequestMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills k8s.container.storage_request metric with initial data.
@@ -1045,7 +1080,7 @@ func (m *metricK8sContainerStorageRequest) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sContainerStorageRequest(cfg MetricConfig) metricK8sContainerStorageRequest {
+func newMetricK8sContainerStorageRequest(cfg K8sContainerStorageRequestMetricConfig) metricK8sContainerStorageRequest {
 	m := metricK8sContainerStorageRequest{config: cfg}
 
 	if cfg.Enabled {
@@ -1056,9 +1091,9 @@ func newMetricK8sContainerStorageRequest(cfg MetricConfig) metricK8sContainerSto
 }
 
 type metricK8sCronjobActiveJobs struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sCronjobActiveJobsMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.cronjob.active_jobs metric with initial data.
@@ -1095,7 +1130,7 @@ func (m *metricK8sCronjobActiveJobs) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sCronjobActiveJobs(cfg MetricConfig) metricK8sCronjobActiveJobs {
+func newMetricK8sCronjobActiveJobs(cfg K8sCronjobActiveJobsMetricConfig) metricK8sCronjobActiveJobs {
 	m := metricK8sCronjobActiveJobs{config: cfg}
 
 	if cfg.Enabled {
@@ -1106,9 +1141,9 @@ func newMetricK8sCronjobActiveJobs(cfg MetricConfig) metricK8sCronjobActiveJobs 
 }
 
 type metricK8sDaemonsetCurrentScheduledNodes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   K8sDaemonsetCurrentScheduledNodesMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.daemonset.current_scheduled_nodes metric with initial data.
@@ -1145,7 +1180,7 @@ func (m *metricK8sDaemonsetCurrentScheduledNodes) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricK8sDaemonsetCurrentScheduledNodes(cfg MetricConfig) metricK8sDaemonsetCurrentScheduledNodes {
+func newMetricK8sDaemonsetCurrentScheduledNodes(cfg K8sDaemonsetCurrentScheduledNodesMetricConfig) metricK8sDaemonsetCurrentScheduledNodes {
 	m := metricK8sDaemonsetCurrentScheduledNodes{config: cfg}
 
 	if cfg.Enabled {
@@ -1156,9 +1191,9 @@ func newMetricK8sDaemonsetCurrentScheduledNodes(cfg MetricConfig) metricK8sDaemo
 }
 
 type metricK8sDaemonsetDesiredScheduledNodes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   K8sDaemonsetDesiredScheduledNodesMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.daemonset.desired_scheduled_nodes metric with initial data.
@@ -1195,7 +1230,7 @@ func (m *metricK8sDaemonsetDesiredScheduledNodes) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricK8sDaemonsetDesiredScheduledNodes(cfg MetricConfig) metricK8sDaemonsetDesiredScheduledNodes {
+func newMetricK8sDaemonsetDesiredScheduledNodes(cfg K8sDaemonsetDesiredScheduledNodesMetricConfig) metricK8sDaemonsetDesiredScheduledNodes {
 	m := metricK8sDaemonsetDesiredScheduledNodes{config: cfg}
 
 	if cfg.Enabled {
@@ -1206,9 +1241,9 @@ func newMetricK8sDaemonsetDesiredScheduledNodes(cfg MetricConfig) metricK8sDaemo
 }
 
 type metricK8sDaemonsetMisscheduledNodes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   K8sDaemonsetMisscheduledNodesMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills k8s.daemonset.misscheduled_nodes metric with initial data.
@@ -1245,7 +1280,7 @@ func (m *metricK8sDaemonsetMisscheduledNodes) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricK8sDaemonsetMisscheduledNodes(cfg MetricConfig) metricK8sDaemonsetMisscheduledNodes {
+func newMetricK8sDaemonsetMisscheduledNodes(cfg K8sDaemonsetMisscheduledNodesMetricConfig) metricK8sDaemonsetMisscheduledNodes {
 	m := metricK8sDaemonsetMisscheduledNodes{config: cfg}
 
 	if cfg.Enabled {
@@ -1256,9 +1291,9 @@ func newMetricK8sDaemonsetMisscheduledNodes(cfg MetricConfig) metricK8sDaemonset
 }
 
 type metricK8sDaemonsetReadyNodes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   K8sDaemonsetReadyNodesMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills k8s.daemonset.ready_nodes metric with initial data.
@@ -1295,7 +1330,7 @@ func (m *metricK8sDaemonsetReadyNodes) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sDaemonsetReadyNodes(cfg MetricConfig) metricK8sDaemonsetReadyNodes {
+func newMetricK8sDaemonsetReadyNodes(cfg K8sDaemonsetReadyNodesMetricConfig) metricK8sDaemonsetReadyNodes {
 	m := metricK8sDaemonsetReadyNodes{config: cfg}
 
 	if cfg.Enabled {
@@ -1306,9 +1341,9 @@ func newMetricK8sDaemonsetReadyNodes(cfg MetricConfig) metricK8sDaemonsetReadyNo
 }
 
 type metricK8sDeploymentAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   K8sDeploymentAvailableMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills k8s.deployment.available metric with initial data.
@@ -1345,7 +1380,7 @@ func (m *metricK8sDeploymentAvailable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sDeploymentAvailable(cfg MetricConfig) metricK8sDeploymentAvailable {
+func newMetricK8sDeploymentAvailable(cfg K8sDeploymentAvailableMetricConfig) metricK8sDeploymentAvailable {
 	m := metricK8sDeploymentAvailable{config: cfg}
 
 	if cfg.Enabled {
@@ -1356,9 +1391,9 @@ func newMetricK8sDeploymentAvailable(cfg MetricConfig) metricK8sDeploymentAvaila
 }
 
 type metricK8sDeploymentDesired struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sDeploymentDesiredMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.deployment.desired metric with initial data.
@@ -1395,7 +1430,7 @@ func (m *metricK8sDeploymentDesired) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sDeploymentDesired(cfg MetricConfig) metricK8sDeploymentDesired {
+func newMetricK8sDeploymentDesired(cfg K8sDeploymentDesiredMetricConfig) metricK8sDeploymentDesired {
 	m := metricK8sDeploymentDesired{config: cfg}
 
 	if cfg.Enabled {
@@ -1406,9 +1441,9 @@ func newMetricK8sDeploymentDesired(cfg MetricConfig) metricK8sDeploymentDesired 
 }
 
 type metricK8sHpaCurrentReplicas struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   K8sHpaCurrentReplicasMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills k8s.hpa.current_replicas metric with initial data.
@@ -1445,7 +1480,7 @@ func (m *metricK8sHpaCurrentReplicas) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sHpaCurrentReplicas(cfg MetricConfig) metricK8sHpaCurrentReplicas {
+func newMetricK8sHpaCurrentReplicas(cfg K8sHpaCurrentReplicasMetricConfig) metricK8sHpaCurrentReplicas {
 	m := metricK8sHpaCurrentReplicas{config: cfg}
 
 	if cfg.Enabled {
@@ -1456,9 +1491,9 @@ func newMetricK8sHpaCurrentReplicas(cfg MetricConfig) metricK8sHpaCurrentReplica
 }
 
 type metricK8sHpaDesiredReplicas struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   K8sHpaDesiredReplicasMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills k8s.hpa.desired_replicas metric with initial data.
@@ -1495,7 +1530,7 @@ func (m *metricK8sHpaDesiredReplicas) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sHpaDesiredReplicas(cfg MetricConfig) metricK8sHpaDesiredReplicas {
+func newMetricK8sHpaDesiredReplicas(cfg K8sHpaDesiredReplicasMetricConfig) metricK8sHpaDesiredReplicas {
 	m := metricK8sHpaDesiredReplicas{config: cfg}
 
 	if cfg.Enabled {
@@ -1506,9 +1541,9 @@ func newMetricK8sHpaDesiredReplicas(cfg MetricConfig) metricK8sHpaDesiredReplica
 }
 
 type metricK8sHpaMaxReplicas struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   K8sHpaMaxReplicasMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.hpa.max_replicas metric with initial data.
@@ -1545,7 +1580,7 @@ func (m *metricK8sHpaMaxReplicas) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sHpaMaxReplicas(cfg MetricConfig) metricK8sHpaMaxReplicas {
+func newMetricK8sHpaMaxReplicas(cfg K8sHpaMaxReplicasMetricConfig) metricK8sHpaMaxReplicas {
 	m := metricK8sHpaMaxReplicas{config: cfg}
 
 	if cfg.Enabled {
@@ -1556,9 +1591,9 @@ func newMetricK8sHpaMaxReplicas(cfg MetricConfig) metricK8sHpaMaxReplicas {
 }
 
 type metricK8sHpaMinReplicas struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   K8sHpaMinReplicasMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.hpa.min_replicas metric with initial data.
@@ -1595,7 +1630,7 @@ func (m *metricK8sHpaMinReplicas) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sHpaMinReplicas(cfg MetricConfig) metricK8sHpaMinReplicas {
+func newMetricK8sHpaMinReplicas(cfg K8sHpaMinReplicasMetricConfig) metricK8sHpaMinReplicas {
 	m := metricK8sHpaMinReplicas{config: cfg}
 
 	if cfg.Enabled {
@@ -1606,9 +1641,9 @@ func newMetricK8sHpaMinReplicas(cfg MetricConfig) metricK8sHpaMinReplicas {
 }
 
 type metricK8sJobActivePods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   K8sJobActivePodsMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills k8s.job.active_pods metric with initial data.
@@ -1645,7 +1680,7 @@ func (m *metricK8sJobActivePods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sJobActivePods(cfg MetricConfig) metricK8sJobActivePods {
+func newMetricK8sJobActivePods(cfg K8sJobActivePodsMetricConfig) metricK8sJobActivePods {
 	m := metricK8sJobActivePods{config: cfg}
 
 	if cfg.Enabled {
@@ -1656,9 +1691,9 @@ func newMetricK8sJobActivePods(cfg MetricConfig) metricK8sJobActivePods {
 }
 
 type metricK8sJobDesiredSuccessfulPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   K8sJobDesiredSuccessfulPodsMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills k8s.job.desired_successful_pods metric with initial data.
@@ -1695,7 +1730,7 @@ func (m *metricK8sJobDesiredSuccessfulPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sJobDesiredSuccessfulPods(cfg MetricConfig) metricK8sJobDesiredSuccessfulPods {
+func newMetricK8sJobDesiredSuccessfulPods(cfg K8sJobDesiredSuccessfulPodsMetricConfig) metricK8sJobDesiredSuccessfulPods {
 	m := metricK8sJobDesiredSuccessfulPods{config: cfg}
 
 	if cfg.Enabled {
@@ -1706,9 +1741,9 @@ func newMetricK8sJobDesiredSuccessfulPods(cfg MetricConfig) metricK8sJobDesiredS
 }
 
 type metricK8sJobFailedPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   K8sJobFailedPodsMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills k8s.job.failed_pods metric with initial data.
@@ -1745,7 +1780,7 @@ func (m *metricK8sJobFailedPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sJobFailedPods(cfg MetricConfig) metricK8sJobFailedPods {
+func newMetricK8sJobFailedPods(cfg K8sJobFailedPodsMetricConfig) metricK8sJobFailedPods {
 	m := metricK8sJobFailedPods{config: cfg}
 
 	if cfg.Enabled {
@@ -1756,9 +1791,9 @@ func newMetricK8sJobFailedPods(cfg MetricConfig) metricK8sJobFailedPods {
 }
 
 type metricK8sJobMaxParallelPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   K8sJobMaxParallelPodsMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills k8s.job.max_parallel_pods metric with initial data.
@@ -1795,7 +1830,7 @@ func (m *metricK8sJobMaxParallelPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sJobMaxParallelPods(cfg MetricConfig) metricK8sJobMaxParallelPods {
+func newMetricK8sJobMaxParallelPods(cfg K8sJobMaxParallelPodsMetricConfig) metricK8sJobMaxParallelPods {
 	m := metricK8sJobMaxParallelPods{config: cfg}
 
 	if cfg.Enabled {
@@ -1806,9 +1841,9 @@ func newMetricK8sJobMaxParallelPods(cfg MetricConfig) metricK8sJobMaxParallelPod
 }
 
 type metricK8sJobSuccessfulPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sJobSuccessfulPodsMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.job.successful_pods metric with initial data.
@@ -1845,7 +1880,7 @@ func (m *metricK8sJobSuccessfulPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sJobSuccessfulPods(cfg MetricConfig) metricK8sJobSuccessfulPods {
+func newMetricK8sJobSuccessfulPods(cfg K8sJobSuccessfulPodsMetricConfig) metricK8sJobSuccessfulPods {
 	m := metricK8sJobSuccessfulPods{config: cfg}
 
 	if cfg.Enabled {
@@ -1856,9 +1891,9 @@ func newMetricK8sJobSuccessfulPods(cfg MetricConfig) metricK8sJobSuccessfulPods 
 }
 
 type metricK8sNamespacePhase struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   K8sNamespacePhaseMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.namespace.phase metric with initial data.
@@ -1895,7 +1930,7 @@ func (m *metricK8sNamespacePhase) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sNamespacePhase(cfg MetricConfig) metricK8sNamespacePhase {
+func newMetricK8sNamespacePhase(cfg K8sNamespacePhaseMetricConfig) metricK8sNamespacePhase {
 	m := metricK8sNamespacePhase{config: cfg}
 
 	if cfg.Enabled {
@@ -1906,9 +1941,9 @@ func newMetricK8sNamespacePhase(cfg MetricConfig) metricK8sNamespacePhase {
 }
 
 type metricK8sNodeCondition struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric               // data buffer for generated metric.
+	config   K8sNodeConditionMetricConfig // metric config provided by user.
+	capacity int                          // max observed number of data points added to the metric.
 }
 
 // init fills k8s.node.condition metric with initial data.
@@ -1947,7 +1982,7 @@ func (m *metricK8sNodeCondition) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
+func newMetricK8sNodeCondition(cfg K8sNodeConditionMetricConfig) metricK8sNodeCondition {
 	m := metricK8sNodeCondition{config: cfg}
 
 	if cfg.Enabled {
@@ -1958,9 +1993,9 @@ func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
 }
 
 type metricK8sPersistentvolumeStatusPhase struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   K8sPersistentvolumeStatusPhaseMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills k8s.persistentvolume.status.phase metric with initial data.
@@ -2001,7 +2036,7 @@ func (m *metricK8sPersistentvolumeStatusPhase) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricK8sPersistentvolumeStatusPhase(cfg MetricConfig) metricK8sPersistentvolumeStatusPhase {
+func newMetricK8sPersistentvolumeStatusPhase(cfg K8sPersistentvolumeStatusPhaseMetricConfig) metricK8sPersistentvolumeStatusPhase {
 	m := metricK8sPersistentvolumeStatusPhase{config: cfg}
 
 	if cfg.Enabled {
@@ -2012,9 +2047,9 @@ func newMetricK8sPersistentvolumeStatusPhase(cfg MetricConfig) metricK8sPersiste
 }
 
 type metricK8sPersistentvolumeStorageCapacity struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   K8sPersistentvolumeStorageCapacityMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills k8s.persistentvolume.storage.capacity metric with initial data.
@@ -2053,7 +2088,7 @@ func (m *metricK8sPersistentvolumeStorageCapacity) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricK8sPersistentvolumeStorageCapacity(cfg MetricConfig) metricK8sPersistentvolumeStorageCapacity {
+func newMetricK8sPersistentvolumeStorageCapacity(cfg K8sPersistentvolumeStorageCapacityMetricConfig) metricK8sPersistentvolumeStorageCapacity {
 	m := metricK8sPersistentvolumeStorageCapacity{config: cfg}
 
 	if cfg.Enabled {
@@ -2064,9 +2099,9 @@ func newMetricK8sPersistentvolumeStorageCapacity(cfg MetricConfig) metricK8sPers
 }
 
 type metricK8sPersistentvolumeclaimStatusPhase struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   K8sPersistentvolumeclaimStatusPhaseMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills k8s.persistentvolumeclaim.status.phase metric with initial data.
@@ -2107,7 +2142,7 @@ func (m *metricK8sPersistentvolumeclaimStatusPhase) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricK8sPersistentvolumeclaimStatusPhase(cfg MetricConfig) metricK8sPersistentvolumeclaimStatusPhase {
+func newMetricK8sPersistentvolumeclaimStatusPhase(cfg K8sPersistentvolumeclaimStatusPhaseMetricConfig) metricK8sPersistentvolumeclaimStatusPhase {
 	m := metricK8sPersistentvolumeclaimStatusPhase{config: cfg}
 
 	if cfg.Enabled {
@@ -2118,9 +2153,9 @@ func newMetricK8sPersistentvolumeclaimStatusPhase(cfg MetricConfig) metricK8sPer
 }
 
 type metricK8sPersistentvolumeclaimStorageCapacity struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   K8sPersistentvolumeclaimStorageCapacityMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills k8s.persistentvolumeclaim.storage.capacity metric with initial data.
@@ -2159,7 +2194,7 @@ func (m *metricK8sPersistentvolumeclaimStorageCapacity) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricK8sPersistentvolumeclaimStorageCapacity(cfg MetricConfig) metricK8sPersistentvolumeclaimStorageCapacity {
+func newMetricK8sPersistentvolumeclaimStorageCapacity(cfg K8sPersistentvolumeclaimStorageCapacityMetricConfig) metricK8sPersistentvolumeclaimStorageCapacity {
 	m := metricK8sPersistentvolumeclaimStorageCapacity{config: cfg}
 
 	if cfg.Enabled {
@@ -2170,9 +2205,9 @@ func newMetricK8sPersistentvolumeclaimStorageCapacity(cfg MetricConfig) metricK8
 }
 
 type metricK8sPersistentvolumeclaimStorageRequest struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   K8sPersistentvolumeclaimStorageRequestMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills k8s.persistentvolumeclaim.storage.request metric with initial data.
@@ -2211,7 +2246,7 @@ func (m *metricK8sPersistentvolumeclaimStorageRequest) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricK8sPersistentvolumeclaimStorageRequest(cfg MetricConfig) metricK8sPersistentvolumeclaimStorageRequest {
+func newMetricK8sPersistentvolumeclaimStorageRequest(cfg K8sPersistentvolumeclaimStorageRequestMetricConfig) metricK8sPersistentvolumeclaimStorageRequest {
 	m := metricK8sPersistentvolumeclaimStorageRequest{config: cfg}
 
 	if cfg.Enabled {
@@ -2222,9 +2257,9 @@ func newMetricK8sPersistentvolumeclaimStorageRequest(cfg MetricConfig) metricK8s
 }
 
 type metricK8sPodPhase struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric          // data buffer for generated metric.
+	config   K8sPodPhaseMetricConfig // metric config provided by user.
+	capacity int                     // max observed number of data points added to the metric.
 }
 
 // init fills k8s.pod.phase metric with initial data.
@@ -2261,7 +2296,7 @@ func (m *metricK8sPodPhase) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
+func newMetricK8sPodPhase(cfg K8sPodPhaseMetricConfig) metricK8sPodPhase {
 	m := metricK8sPodPhase{config: cfg}
 
 	if cfg.Enabled {
@@ -2272,9 +2307,9 @@ func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
 }
 
 type metricK8sPodStatusReason struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   K8sPodStatusReasonMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills k8s.pod.status_reason metric with initial data.
@@ -2311,7 +2346,7 @@ func (m *metricK8sPodStatusReason) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sPodStatusReason(cfg MetricConfig) metricK8sPodStatusReason {
+func newMetricK8sPodStatusReason(cfg K8sPodStatusReasonMetricConfig) metricK8sPodStatusReason {
 	m := metricK8sPodStatusReason{config: cfg}
 
 	if cfg.Enabled {
@@ -2322,9 +2357,9 @@ func newMetricK8sPodStatusReason(cfg MetricConfig) metricK8sPodStatusReason {
 }
 
 type metricK8sReplicasetAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   K8sReplicasetAvailableMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills k8s.replicaset.available metric with initial data.
@@ -2361,7 +2396,7 @@ func (m *metricK8sReplicasetAvailable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sReplicasetAvailable(cfg MetricConfig) metricK8sReplicasetAvailable {
+func newMetricK8sReplicasetAvailable(cfg K8sReplicasetAvailableMetricConfig) metricK8sReplicasetAvailable {
 	m := metricK8sReplicasetAvailable{config: cfg}
 
 	if cfg.Enabled {
@@ -2372,9 +2407,9 @@ func newMetricK8sReplicasetAvailable(cfg MetricConfig) metricK8sReplicasetAvaila
 }
 
 type metricK8sReplicasetDesired struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sReplicasetDesiredMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.replicaset.desired metric with initial data.
@@ -2411,7 +2446,7 @@ func (m *metricK8sReplicasetDesired) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sReplicasetDesired(cfg MetricConfig) metricK8sReplicasetDesired {
+func newMetricK8sReplicasetDesired(cfg K8sReplicasetDesiredMetricConfig) metricK8sReplicasetDesired {
 	m := metricK8sReplicasetDesired{config: cfg}
 
 	if cfg.Enabled {
@@ -2422,9 +2457,9 @@ func newMetricK8sReplicasetDesired(cfg MetricConfig) metricK8sReplicasetDesired 
 }
 
 type metricK8sReplicationControllerAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   K8sReplicationControllerAvailableMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.replication_controller.available metric with initial data.
@@ -2461,7 +2496,7 @@ func (m *metricK8sReplicationControllerAvailable) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricK8sReplicationControllerAvailable(cfg MetricConfig) metricK8sReplicationControllerAvailable {
+func newMetricK8sReplicationControllerAvailable(cfg K8sReplicationControllerAvailableMetricConfig) metricK8sReplicationControllerAvailable {
 	m := metricK8sReplicationControllerAvailable{config: cfg}
 
 	if cfg.Enabled {
@@ -2472,9 +2507,9 @@ func newMetricK8sReplicationControllerAvailable(cfg MetricConfig) metricK8sRepli
 }
 
 type metricK8sReplicationControllerDesired struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   K8sReplicationControllerDesiredMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills k8s.replication_controller.desired metric with initial data.
@@ -2511,7 +2546,7 @@ func (m *metricK8sReplicationControllerDesired) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricK8sReplicationControllerDesired(cfg MetricConfig) metricK8sReplicationControllerDesired {
+func newMetricK8sReplicationControllerDesired(cfg K8sReplicationControllerDesiredMetricConfig) metricK8sReplicationControllerDesired {
 	m := metricK8sReplicationControllerDesired{config: cfg}
 
 	if cfg.Enabled {
@@ -2522,9 +2557,9 @@ func newMetricK8sReplicationControllerDesired(cfg MetricConfig) metricK8sReplica
 }
 
 type metricK8sResourceQuotaHardLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   K8sResourceQuotaHardLimitMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills k8s.resource_quota.hard_limit metric with initial data.
@@ -2563,7 +2598,7 @@ func (m *metricK8sResourceQuotaHardLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sResourceQuotaHardLimit(cfg MetricConfig) metricK8sResourceQuotaHardLimit {
+func newMetricK8sResourceQuotaHardLimit(cfg K8sResourceQuotaHardLimitMetricConfig) metricK8sResourceQuotaHardLimit {
 	m := metricK8sResourceQuotaHardLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -2574,9 +2609,9 @@ func newMetricK8sResourceQuotaHardLimit(cfg MetricConfig) metricK8sResourceQuota
 }
 
 type metricK8sResourceQuotaUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   K8sResourceQuotaUsedMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills k8s.resource_quota.used metric with initial data.
@@ -2615,7 +2650,7 @@ func (m *metricK8sResourceQuotaUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed {
+func newMetricK8sResourceQuotaUsed(cfg K8sResourceQuotaUsedMetricConfig) metricK8sResourceQuotaUsed {
 	m := metricK8sResourceQuotaUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -2626,9 +2661,11 @@ func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed 
 }
 
 type metricK8sServiceEndpointCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        K8sServiceEndpointCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills k8s.service.endpoint.count metric with initial data.
@@ -2638,19 +2675,55 @@ func (m *metricK8sServiceEndpointCount) init() {
 	m.data.SetUnit("{endpoint}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricK8sServiceEndpointCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sServiceEndpointAddressTypeAttributeValue string, k8sServiceEndpointConditionAttributeValue string, k8sServiceEndpointZoneAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointAddressType) {
+		dp.Attributes().PutStr("k8s.service.endpoint.address_type", k8sServiceEndpointAddressTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointCondition) {
+		dp.Attributes().PutStr("k8s.service.endpoint.condition", k8sServiceEndpointConditionAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, K8sServiceEndpointCountMetricAttributeKeyK8sServiceEndpointZone) {
+		dp.Attributes().PutStr("k8s.service.endpoint.zone", k8sServiceEndpointZoneAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("k8s.service.endpoint.address_type", k8sServiceEndpointAddressTypeAttributeValue)
-	dp.Attributes().PutStr("k8s.service.endpoint.condition", k8sServiceEndpointConditionAttributeValue)
-	dp.Attributes().PutStr("k8s.service.endpoint.zone", k8sServiceEndpointZoneAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2663,13 +2736,18 @@ func (m *metricK8sServiceEndpointCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sServiceEndpointCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricK8sServiceEndpointCount(cfg MetricConfig) metricK8sServiceEndpointCount {
+func newMetricK8sServiceEndpointCount(cfg K8sServiceEndpointCountMetricConfig) metricK8sServiceEndpointCount {
 	m := metricK8sServiceEndpointCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2680,9 +2758,9 @@ func newMetricK8sServiceEndpointCount(cfg MetricConfig) metricK8sServiceEndpoint
 }
 
 type metricK8sServiceLoadBalancerIngressCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   K8sServiceLoadBalancerIngressCountMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills k8s.service.load_balancer.ingress.count metric with initial data.
@@ -2719,7 +2797,7 @@ func (m *metricK8sServiceLoadBalancerIngressCount) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricK8sServiceLoadBalancerIngressCount(cfg MetricConfig) metricK8sServiceLoadBalancerIngressCount {
+func newMetricK8sServiceLoadBalancerIngressCount(cfg K8sServiceLoadBalancerIngressCountMetricConfig) metricK8sServiceLoadBalancerIngressCount {
 	m := metricK8sServiceLoadBalancerIngressCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2730,9 +2808,9 @@ func newMetricK8sServiceLoadBalancerIngressCount(cfg MetricConfig) metricK8sServ
 }
 
 type metricK8sStatefulsetCurrentPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   K8sStatefulsetCurrentPodsMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills k8s.statefulset.current_pods metric with initial data.
@@ -2769,7 +2847,7 @@ func (m *metricK8sStatefulsetCurrentPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sStatefulsetCurrentPods(cfg MetricConfig) metricK8sStatefulsetCurrentPods {
+func newMetricK8sStatefulsetCurrentPods(cfg K8sStatefulsetCurrentPodsMetricConfig) metricK8sStatefulsetCurrentPods {
 	m := metricK8sStatefulsetCurrentPods{config: cfg}
 
 	if cfg.Enabled {
@@ -2780,9 +2858,9 @@ func newMetricK8sStatefulsetCurrentPods(cfg MetricConfig) metricK8sStatefulsetCu
 }
 
 type metricK8sStatefulsetDesiredPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   K8sStatefulsetDesiredPodsMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills k8s.statefulset.desired_pods metric with initial data.
@@ -2819,7 +2897,7 @@ func (m *metricK8sStatefulsetDesiredPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sStatefulsetDesiredPods(cfg MetricConfig) metricK8sStatefulsetDesiredPods {
+func newMetricK8sStatefulsetDesiredPods(cfg K8sStatefulsetDesiredPodsMetricConfig) metricK8sStatefulsetDesiredPods {
 	m := metricK8sStatefulsetDesiredPods{config: cfg}
 
 	if cfg.Enabled {
@@ -2829,10 +2907,62 @@ func newMetricK8sStatefulsetDesiredPods(cfg MetricConfig) metricK8sStatefulsetDe
 	return m
 }
 
+type metricK8sStatefulsetPodAvailable struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   K8sStatefulsetPodAvailableMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills k8s.statefulset.pod.available metric with initial data.
+func (m *metricK8sStatefulsetPodAvailable) init() {
+	m.data.SetName("k8s.statefulset.pod.available")
+	m.data.SetDescription("The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.")
+	m.data.SetUnit("{pod}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sStatefulsetPodAvailable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sStatefulsetPodAvailable) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sStatefulsetPodAvailable) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sStatefulsetPodAvailable(cfg K8sStatefulsetPodAvailableMetricConfig) metricK8sStatefulsetPodAvailable {
+	m := metricK8sStatefulsetPodAvailable{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sStatefulsetReadyPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   K8sStatefulsetReadyPodsMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills k8s.statefulset.ready_pods metric with initial data.
@@ -2869,7 +2999,7 @@ func (m *metricK8sStatefulsetReadyPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sStatefulsetReadyPods(cfg MetricConfig) metricK8sStatefulsetReadyPods {
+func newMetricK8sStatefulsetReadyPods(cfg K8sStatefulsetReadyPodsMetricConfig) metricK8sStatefulsetReadyPods {
 	m := metricK8sStatefulsetReadyPods{config: cfg}
 
 	if cfg.Enabled {
@@ -2880,9 +3010,9 @@ func newMetricK8sStatefulsetReadyPods(cfg MetricConfig) metricK8sStatefulsetRead
 }
 
 type metricK8sStatefulsetUpdatedPods struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   K8sStatefulsetUpdatedPodsMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills k8s.statefulset.updated_pods metric with initial data.
@@ -2919,7 +3049,7 @@ func (m *metricK8sStatefulsetUpdatedPods) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sStatefulsetUpdatedPods(cfg MetricConfig) metricK8sStatefulsetUpdatedPods {
+func newMetricK8sStatefulsetUpdatedPods(cfg K8sStatefulsetUpdatedPodsMetricConfig) metricK8sStatefulsetUpdatedPods {
 	m := metricK8sStatefulsetUpdatedPods{config: cfg}
 
 	if cfg.Enabled {
@@ -2930,9 +3060,11 @@ func newMetricK8sStatefulsetUpdatedPods(cfg MetricConfig) metricK8sStatefulsetUp
 }
 
 type metricOpenshiftAppliedclusterquotaLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        OpenshiftAppliedclusterquotaLimitMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills openshift.appliedclusterquota.limit metric with initial data.
@@ -2942,18 +3074,52 @@ func (m *metricOpenshiftAppliedclusterquotaLimit) init() {
 	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricOpenshiftAppliedclusterquotaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OpenshiftAppliedclusterquotaLimitMetricAttributeKeyK8sNamespaceName) {
+		dp.Attributes().PutStr("k8s.namespace.name", k8sNamespaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OpenshiftAppliedclusterquotaLimitMetricAttributeKeyResource) {
+		dp.Attributes().PutStr("resource", resourceAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("k8s.namespace.name", k8sNamespaceNameAttributeValue)
-	dp.Attributes().PutStr("resource", resourceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2966,13 +3132,18 @@ func (m *metricOpenshiftAppliedclusterquotaLimit) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOpenshiftAppliedclusterquotaLimit) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOpenshiftAppliedclusterquotaLimit(cfg MetricConfig) metricOpenshiftAppliedclusterquotaLimit {
+func newMetricOpenshiftAppliedclusterquotaLimit(cfg OpenshiftAppliedclusterquotaLimitMetricConfig) metricOpenshiftAppliedclusterquotaLimit {
 	m := metricOpenshiftAppliedclusterquotaLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -2983,9 +3154,11 @@ func newMetricOpenshiftAppliedclusterquotaLimit(cfg MetricConfig) metricOpenshif
 }
 
 type metricOpenshiftAppliedclusterquotaUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        OpenshiftAppliedclusterquotaUsedMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills openshift.appliedclusterquota.used metric with initial data.
@@ -2995,18 +3168,52 @@ func (m *metricOpenshiftAppliedclusterquotaUsed) init() {
 	m.data.SetUnit("{resource}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricOpenshiftAppliedclusterquotaUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, OpenshiftAppliedclusterquotaUsedMetricAttributeKeyK8sNamespaceName) {
+		dp.Attributes().PutStr("k8s.namespace.name", k8sNamespaceNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, OpenshiftAppliedclusterquotaUsedMetricAttributeKeyResource) {
+		dp.Attributes().PutStr("resource", resourceAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("k8s.namespace.name", k8sNamespaceNameAttributeValue)
-	dp.Attributes().PutStr("resource", resourceAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3019,13 +3226,18 @@ func (m *metricOpenshiftAppliedclusterquotaUsed) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOpenshiftAppliedclusterquotaUsed) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOpenshiftAppliedclusterquotaUsed(cfg MetricConfig) metricOpenshiftAppliedclusterquotaUsed {
+func newMetricOpenshiftAppliedclusterquotaUsed(cfg OpenshiftAppliedclusterquotaUsedMetricConfig) metricOpenshiftAppliedclusterquotaUsed {
 	m := metricOpenshiftAppliedclusterquotaUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -3036,9 +3248,9 @@ func newMetricOpenshiftAppliedclusterquotaUsed(cfg MetricConfig) metricOpenshift
 }
 
 type metricOpenshiftClusterquotaLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   OpenshiftClusterquotaLimitMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills openshift.clusterquota.limit metric with initial data.
@@ -3077,7 +3289,7 @@ func (m *metricOpenshiftClusterquotaLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOpenshiftClusterquotaLimit(cfg MetricConfig) metricOpenshiftClusterquotaLimit {
+func newMetricOpenshiftClusterquotaLimit(cfg OpenshiftClusterquotaLimitMetricConfig) metricOpenshiftClusterquotaLimit {
 	m := metricOpenshiftClusterquotaLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -3088,9 +3300,9 @@ func newMetricOpenshiftClusterquotaLimit(cfg MetricConfig) metricOpenshiftCluste
 }
 
 type metricOpenshiftClusterquotaUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OpenshiftClusterquotaUsedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills openshift.clusterquota.used metric with initial data.
@@ -3129,7 +3341,7 @@ func (m *metricOpenshiftClusterquotaUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftClusterquotaUsed {
+func newMetricOpenshiftClusterquotaUsed(cfg OpenshiftClusterquotaUsedMetricConfig) metricOpenshiftClusterquotaUsed {
 	m := metricOpenshiftClusterquotaUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -3196,6 +3408,7 @@ type MetricsBuilder struct {
 	metricK8sServiceLoadBalancerIngressCount      metricK8sServiceLoadBalancerIngressCount
 	metricK8sStatefulsetCurrentPods               metricK8sStatefulsetCurrentPods
 	metricK8sStatefulsetDesiredPods               metricK8sStatefulsetDesiredPods
+	metricK8sStatefulsetPodAvailable              metricK8sStatefulsetPodAvailable
 	metricK8sStatefulsetReadyPods                 metricK8sStatefulsetReadyPods
 	metricK8sStatefulsetUpdatedPods               metricK8sStatefulsetUpdatedPods
 	metricOpenshiftAppliedclusterquotaLimit       metricOpenshiftAppliedclusterquotaLimit
@@ -3274,6 +3487,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sServiceLoadBalancerIngressCount:      newMetricK8sServiceLoadBalancerIngressCount(mbc.Metrics.K8sServiceLoadBalancerIngressCount),
 		metricK8sStatefulsetCurrentPods:               newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
 		metricK8sStatefulsetDesiredPods:               newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
+		metricK8sStatefulsetPodAvailable:              newMetricK8sStatefulsetPodAvailable(mbc.Metrics.K8sStatefulsetPodAvailable),
 		metricK8sStatefulsetReadyPods:                 newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
 		metricK8sStatefulsetUpdatedPods:               newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
 		metricOpenshiftAppliedclusterquotaLimit:       newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
@@ -3816,6 +4030,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sServiceLoadBalancerIngressCount.emit(ils.Metrics())
 	mb.metricK8sStatefulsetCurrentPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetDesiredPods.emit(ils.Metrics())
+	mb.metricK8sStatefulsetPodAvailable.emit(ils.Metrics())
 	mb.metricK8sStatefulsetReadyPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetUpdatedPods.emit(ils.Metrics())
 	mb.metricOpenshiftAppliedclusterquotaLimit.emit(ils.Metrics())
@@ -4180,6 +4395,13 @@ func (mb *MetricsBuilder) RecordK8sStatefulsetCurrentPodsDataPoint(ts pcommon.Ti
 // Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetDesiredPodsDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sStatefulsetDesiredPodsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sStatefulsetDesiredPods.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sStatefulsetPodAvailableDataPoint adds a data point to k8s.statefulset.pod.available metric.
+//
+// Deprecated: Use mb.ForK8sStatefulset(entity).RecordK8sStatefulsetPodAvailableDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sStatefulsetPodAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sStatefulsetPodAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetReadyPodsDataPoint adds a data point to k8s.statefulset.ready_pods metric.

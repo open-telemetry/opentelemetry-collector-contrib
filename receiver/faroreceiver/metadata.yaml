@@ -13,3 +13,38 @@ status:
     - contrib
   codeowners:
     active: [dehaansa,rlankfo,mar4uk]
+
+telemetry:
+  metrics:
+    faro.event.ingested:
+      enabled: true
+      description: Number of Faro events ingested.
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    faro.exception.ingested:
+      enabled: true
+      description: Number of Faro exceptions ingested.
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    faro.log.ingested:
+      enabled: true
+      description: Number of Faro logs ingested.
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    faro.measurement.ingested:
+      enabled: true
+      description: Number of Faro measurements ingested.
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true

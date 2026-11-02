@@ -6,6 +6,7 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -144,6 +145,14 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
 	require.NotNil(t, p)
 	require.NoError(t, err)
+
+	dnsRes, ok := p.res.(*dnsResolver)
+	require.True(t, ok)
+	dnsRes.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			return nil, nil
+		},
+	}
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)

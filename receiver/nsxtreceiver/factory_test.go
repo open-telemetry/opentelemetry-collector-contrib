@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -24,7 +24,7 @@ func TestType(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	err := xconfmap.Validate(factory.CreateDefaultConfig())
+	err := confmap.Validate(factory.CreateDefaultConfig())
 	// default does not endpoint
 	require.ErrorContains(t, err, "no manager endpoint was specified")
 }

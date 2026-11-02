@@ -124,7 +124,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 		{
 			name:       "inferred path context with missing enum",
 			priority:   []string{"foo", "bar"},
-			statements: []string{`set(foo.name, FOO) where IsFoo() == true`},
+			statements: []string{`set(foo.name, "x") where IsFoo() == FOO`},
 			candidates: map[string]*priorityContextInferrerCandidate{
 				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
 				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
@@ -137,6 +137,60 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			statements: []string{`set(unknown.count, 0)`},
 			candidates: map[string]*priorityContextInferrerCandidate{},
 			err:        `inferred context "unknown" is not a valid candidate`,
+		},
+		{
+			name:       "infer from converter key",
+			priority:   []string{"foo", "bar"},
+			statements: []string{`set(bar.name, "foo") where IsFoo()[foo.name] == true`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "foo",
+		},
+		{
+			name:     "infer from lambda body argument",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{"set(span.foo, Lambda(() => spanevent.bar))"},
+			expected:   "spanevent",
+		},
+		{
+			name:     "infer from map key path",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(span.attributes["x"], {spanevent.name: 1})`},
+			expected:   "spanevent",
+		},
+		{
+			name:     "infer from map key converter argument",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span": {
+					hasFunctionName:  func(name string) bool { return name != "Concat" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return true },
+					getLowerContexts: func(string) []string { return []string{"spanevent"} },
+				},
+			},
+			statements: []string{`set(span.attributes["x"], {Concat(["a", "b"], "-"): 1})`},
+			expected:   "spanevent",
+		},
+		{
+			name:     "local identifiers are not candidates",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{"set(span.foo, Lambda((spanevent) => spanevent.bar))"},
+			expected:   "span",
 		},
 	}
 
@@ -259,6 +313,26 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 			candidates: map[string]*priorityContextInferrerCandidate{},
 			expected:   "",
 		},
+		{
+			name:       "infer from converter key",
+			priority:   []string{"foo", "bar"},
+			conditions: []string{`IsFoo()[foo.name] == true`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "foo",
+		},
+		{
+			name:     "infer from lambda body argument",
+			priority: []string{"spanevent", "span"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+				"span":      defaultDummyPriorityContextInferrerCandidate,
+			},
+			conditions: []string{"Lambda(() => spanevent.bar) == true"},
+			expected:   "spanevent",
+		},
 	}
 
 	for _, tt := range tests {
@@ -269,6 +343,132 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 				withContextInferrerPriorities(tt.priority),
 			)
 			inferredContext, err := inferrer.inferFromConditions(tt.conditions)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, inferredContext)
+		})
+	}
+}
+
+func Test_NewPriorityContextInferrer_InferValueExpressions(t *testing.T) {
+	tests := []struct {
+		name        string
+		priority    []string
+		candidates  map[string]*priorityContextInferrerCandidate
+		expressions []string
+		expected    string
+	}{
+		{
+			name:     "with priority and expression context",
+			priority: []string{"spanevent", "span", "resource"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{"spanevent.bar"},
+			expected:    "spanevent",
+		},
+		{
+			name:     "with multiple expressions and contexts",
+			priority: []string{"spanevent", "span", "resource"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"spanevent": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{
+				"span.bar",
+				"spanevent.bar",
+			},
+			expected: "spanevent",
+		},
+		{
+			name:        "with no expression context",
+			priority:    []string{"log", "resource"},
+			candidates:  map[string]*priorityContextInferrerCandidate{},
+			expressions: []string{"bar"},
+			expected:    "",
+		},
+		{
+			name: "with empty priority list",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{"[foo.name, bar.name]"},
+			expected:    "foo",
+		},
+		{
+			name:     "with non-prioritized expression context",
+			priority: []string{"foo", "bar"},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"span": defaultDummyPriorityContextInferrerCandidate,
+			},
+			expressions: []string{"span.bar"},
+			expected:    "span",
+		},
+		{
+			name:        "inferred path context with missing function",
+			priority:    []string{"foo", "datapoint", "metric"},
+			expressions: []string{`HasFoo(metric.name) + HasBar(metric.foo)`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":    newDummyPriorityContextInferrerCandidate(false, true, []string{"foo", "datapoint"}),
+				"foo":       newDummyPriorityContextInferrerCandidate(false, true, []string{}),
+				"datapoint": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "datapoint",
+		},
+		{
+			name:        "inferred path context with missing function and no qualified lower context",
+			priority:    []string{"datapoint", "metric"},
+			expressions: []string{`DummyFunc("foo")`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":    newDummyPriorityContextInferrerCandidate(false, false, []string{"datapoint"}),
+				"datapoint": newDummyPriorityContextInferrerCandidate(false, false, []string{}),
+			},
+			expected: "",
+		},
+		{
+			name:        "inferred path context with missing function and no lower context",
+			priority:    []string{"datapoint", "metric"},
+			expressions: []string{`is_name`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric": newDummyPriorityContextInferrerCandidate(false, true, []string{}),
+			},
+			expected: "",
+		},
+		{
+			name:        "inferred path context with missing enum",
+			priority:    []string{"foo", "bar"},
+			expressions: []string{`[foo.name, FOO]`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "bar",
+		},
+		{
+			name:        "unknown context candidate inferred from paths",
+			priority:    []string{"unknown"},
+			expressions: []string{`count`},
+			candidates:  map[string]*priorityContextInferrerCandidate{},
+			expected:    "",
+		},
+		{
+			name:        "infer from converter key",
+			priority:    []string{"foo", "bar"},
+			expressions: []string{`Concat([IsFoo()[foo.name], bar.name], "-")`},
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": newDummyPriorityContextInferrerCandidate(true, false, []string{"foo", "bar"}),
+				"bar": newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+			},
+			expected: "foo",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferrer := newPriorityContextInferrer(
+				componenttest.NewNopTelemetrySettings(),
+				tt.candidates,
+				withContextInferrerPriorities(tt.priority),
+			)
+			inferredContext, err := inferrer.inferFromValueExpressions(tt.expressions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})
@@ -292,6 +492,7 @@ func Test_NewPriorityContextInferrer_InvalidCondition(t *testing.T) {
 func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
 	expectedPriority := []string{
 		"log",
+		"exemplar",
 		"datapoint",
 		"metric",
 		"spanevent",
@@ -305,6 +506,7 @@ func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{}).(*priorityContextInferrer)
 	require.NotNil(t, inferrer)
 
+	require.Len(t, inferrer.contextPriority, len(expectedPriority))
 	for pri, ctx := range expectedPriority {
 		require.Equal(t, pri, inferrer.contextPriority[ctx])
 	}
@@ -313,6 +515,7 @@ func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
 func Test_NewPriorityContextInferrer_InferStatements_DefaultContextsOrder(t *testing.T) {
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{
 		"log":                   newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"exemplar":              newDummyPriorityContextInferrerCandidate(true, true, []string{"datapoint", "metric", "scope", "instrumentation_scope", "resource"}),
 		"metric":                newDummyPriorityContextInferrerCandidate(true, true, []string{"datapoint", "scope", "instrumentation_scope", "resource"}),
 		"datapoint":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
 		"span":                  newDummyPriorityContextInferrerCandidate(true, true, []string{"spanevent", "scope", "instrumentation_scope", "resource"}),
@@ -369,6 +572,16 @@ func Test_NewPriorityContextInferrer_InferStatements_DefaultContextsOrder(t *tes
 			expected:  "datapoint",
 		},
 		{
+			name:      "exemplar,datapoint,metric,instrumentation_scope,resource",
+			statement: `set(metric.name, "foo") where exemplar.double_value > 0 and datapoint.double_value > 0 and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "exemplar",
+		},
+		{
+			name:      "exemplar,datapoint,metric,scope,resource",
+			statement: `set(metric.name, "foo") where exemplar.double_value > 0 and datapoint.double_value > 0 and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "exemplar",
+		},
+		{
 			name:      "span,instrumentation_scope,resource",
 			statement: `set(span.name, "foo") where instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
 			expected:  "span",
@@ -417,6 +630,7 @@ func Test_NewPriorityContextInferrer_InferStatements_DefaultContextsOrder(t *tes
 func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *testing.T) {
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{
 		"log":                   newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"exemplar":              newDummyPriorityContextInferrerCandidate(true, true, []string{"datapoint", "metric", "scope", "instrumentation_scope", "resource"}),
 		"metric":                newDummyPriorityContextInferrerCandidate(true, true, []string{"datapoint", "scope", "instrumentation_scope", "resource"}),
 		"datapoint":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
 		"span":                  newDummyPriorityContextInferrerCandidate(true, true, []string{"spanevent", "scope", "instrumentation_scope", "resource"}),
@@ -471,6 +685,16 @@ func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *tes
 			name:      "datapoint,metric,scope,resource",
 			condition: `metric.name != nil and datapoint.double_value > 0 and scope.name != nil and resource.attributes["foo"] != nil`,
 			expected:  "datapoint",
+		},
+		{
+			name:      "exemplar,datapoint,metric,instrumentation_scope,resource",
+			condition: `metric.name != nil and exemplar.double_value > 0 and datapoint.double_value > 0 and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "exemplar",
+		},
+		{
+			name:      "exemplar,datapoint,metric,scope,resource",
+			condition: `metric.name != nil and exemplar.double_value > 0 and datapoint.double_value > 0 and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "exemplar",
 		},
 		{
 			name:      "span,instrumentation_scope,resource",
@@ -589,6 +813,35 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			},
 			expected: "metric",
 		},
+		{
+			name: "function name as uppercase argument",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"log": {
+					hasFunctionName:  func(name string) bool { return name == "Foo" || name == "SHA256" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+					getLowerContexts: func(string) []string { return []string{} },
+				},
+			},
+			conditions: []string{`Foo(log.attributes, SHA256) == true`},
+			expected:   "log",
+		},
+		{
+			name: "function name as uppercase argument inferred from lower context",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"foo": {
+					hasFunctionName:  func(name string) bool { return name == "Foo" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+					getLowerContexts: func(string) []string { return []string{"foo", "bar"} },
+				},
+				"bar": {
+					hasFunctionName:  func(name string) bool { return name == "Foo" || name == "SHA256" },
+					hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+					getLowerContexts: func(string) []string { return []string{} },
+				},
+			},
+			conditions: []string{`Foo(foo.attributes, SHA256) == true`},
+			expected:   "bar",
+		},
 	}
 
 	for _, tt := range tests {
@@ -600,6 +853,42 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			inferredContext, err := inferrer.infer(tt.statements, tt.conditions, tt.expressions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
+		})
+	}
+}
+
+func Test_NewPriorityContextInferrer_Infer_UppercaseArgumentErrors(t *testing.T) {
+	tests := []struct {
+		name        string
+		hasFunction func(string) bool
+		condition   string
+	}{
+		{
+			name:        "uppercase operand outside arguments is not a function name",
+			hasFunction: func(string) bool { return true },
+			condition:   `log.attributes["a"] == SHA256`,
+		},
+		{
+			name:        "uppercase argument that is neither enum nor function",
+			hasFunction: func(name string) bool { return name == "Foo" },
+			condition:   `Foo(log.attributes, SHA256) == true`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferrer := newPriorityContextInferrer(
+				componenttest.NewNopTelemetrySettings(),
+				map[string]*priorityContextInferrerCandidate{
+					"log": {
+						hasFunctionName:  tt.hasFunction,
+						hasEnumSymbol:    func(*EnumSymbol) bool { return false },
+						getLowerContexts: func(string) []string { return []string{} },
+					},
+				},
+			)
+			_, err := inferrer.infer(nil, []string{tt.condition}, nil)
+			require.EqualError(t, err, `inferred context "log" does not support the enum symbol "SHA256"`)
 		})
 	}
 }

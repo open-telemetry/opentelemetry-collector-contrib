@@ -4,3 +4,7 @@ googlecloudpubsub/customname:
   user_agent: opentelemetry-collector-contrib {{version}}
   timeout: 20s
   subscription: projects/my-project/subscriptions/otlp-subscription
+googlecloudpubsub/sovereign:
+  project: my-sovereign-project
+  subscription: projects/my-sovereign-project/subscriptions/otlp-subscription
+  universe_domain: apis.example.com

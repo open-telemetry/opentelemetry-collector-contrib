@@ -48,7 +48,7 @@ func newHTTPLogsExporter(client *http.Client, config *Config) httpLogsExporter {
 	return httpLogsExporter{
 		httpExporter: httpExporter{
 			Client:   client,
-			Endpoint: config.Logs.Endpoint,
+			Endpoint: config.Logs.ClientConfig.Endpoint,
 		},
 	}
 }
@@ -57,7 +57,7 @@ func newHTTPMetricsExporter(client *http.Client, config *Config) httpMetricsExpo
 	return httpMetricsExporter{
 		httpExporter: httpExporter{
 			Client:   client,
-			Endpoint: config.Metrics.Endpoint,
+			Endpoint: config.Metrics.ClientConfig.Endpoint,
 		},
 	}
 }
@@ -66,7 +66,7 @@ func newHTTPTracesExporter(client *http.Client, config *Config) httpTracesExport
 	return httpTracesExporter{
 		httpExporter: httpExporter{
 			Client:   client,
-			Endpoint: config.Traces.Endpoint,
+			Endpoint: config.Traces.ClientConfig.Endpoint,
 		},
 	}
 }

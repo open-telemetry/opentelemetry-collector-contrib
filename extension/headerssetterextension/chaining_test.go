@@ -78,8 +78,8 @@ func TestChainingWithAdditionalAuth_HTTP(t *testing.T) {
 	cfg := &Config{
 		HeadersConfig: []HeaderConfig{
 			{
-				Key:    stringp("X-Custom-Header"),
-				Value:  stringp("custom-value"),
+				Key:    new("X-Custom-Header"),
+				Value:  new("custom-value"),
 				Action: UPSERT,
 			},
 		},
@@ -131,8 +131,8 @@ func TestChainingWithAdditionalAuth_gRPC(t *testing.T) {
 	cfg := &Config{
 		HeadersConfig: []HeaderConfig{
 			{
-				Key:    stringp("x-custom-header"),
-				Value:  stringp("custom-value"),
+				Key:    new("x-custom-header"),
+				Value:  new("custom-value"),
 				Action: UPSERT,
 			},
 		},
@@ -178,8 +178,8 @@ func TestChainingWithMissingAuth(t *testing.T) {
 	cfg := &Config{
 		HeadersConfig: []HeaderConfig{
 			{
-				Key:    stringp("X-Custom-Header"),
-				Value:  stringp("custom-value"),
+				Key:    new("X-Custom-Header"),
+				Value:  new("custom-value"),
 				Action: UPSERT,
 			},
 		},
@@ -214,8 +214,8 @@ func TestWithoutAdditionalAuth(t *testing.T) {
 	cfg := &Config{
 		HeadersConfig: []HeaderConfig{
 			{
-				Key:    stringp("X-Custom-Header"),
-				Value:  stringp("custom-value"),
+				Key:    new("X-Custom-Header"),
+				Value:  new("custom-value"),
 				Action: UPSERT,
 			},
 		},
@@ -275,8 +275,8 @@ func TestDependencies(t *testing.T) {
 			cfg := &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:    stringp("X-Test"),
-						Value:  stringp("test"),
+						Key:    new("X-Test"),
+						Value:  new("test"),
 						Action: UPSERT,
 					},
 				},

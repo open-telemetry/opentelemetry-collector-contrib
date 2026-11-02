@@ -12,7 +12,35 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, ArthurSens, perebaj]
+    active: [dashpole, ArthurSens, perebaj, himanshu130700]
+attributes:
+  metric_type:
+    description: The kind of series the receiver dropped.
+    type: string
+    enum:
+      - classic_histogram
+      - summary
+
+telemetry:
+  metrics:
+    receiver_prometheusremotewrite_dropped_series:
+      enabled: true
+      description: Number of classic histogram and summary series dropped because the receiver does not support them. Their samples are still reported as written.
+      stability: development
+      unit: "{series}"
+      attributes: [metric_type]
+      sum:
+        value_type: int
+        monotonic: true
+    receiver_prometheusremotewrite_resource_cache_evictions:
+      enabled: true
+      description: Number of job/instance entries evicted from the resource metrics cache because it was full.
+      stability: development
+      unit: "{entries}"
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
   goleak:

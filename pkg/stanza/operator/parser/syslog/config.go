@@ -21,6 +21,7 @@ const (
 
 	RFC3164 = "rfc3164"
 	RFC5424 = "rfc5424"
+	None    = "none"
 
 	NULTrailer = "NUL"
 	LFTrailer  = "LF"
@@ -60,7 +61,11 @@ type BaseConfig struct {
 
 // Build will build a JSON parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
-	if c.TimeParser == nil {
+	proto := strings.ToLower(c.Protocol)
+
+	// For RFC protocols, set up the default time parser if not provided.
+	// For 'none' protocol, skip automatic time parser setup since timestamp may not exist.
+	if c.TimeParser == nil && proto != None {
 		parseFromField := entry.NewAttributeField("timestamp")
 		c.TimeParser = &helper.TimeParser{
 			ParseFrom:  &parseFromField,
@@ -73,21 +78,21 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	proto := strings.ToLower(c.Protocol)
-
 	switch {
 	case proto == "":
 		return nil, errors.New("missing field 'protocol'")
-	case proto != RFC5424 && (c.NonTransparentFramingTrailer != nil || c.EnableOctetCounting):
-		return nil, errors.New("octet_counting and non_transparent_framing are only compatible with protocol rfc5424")
-	case proto == RFC5424 && (c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting):
+	case proto != RFC5424 && proto != RFC3164 && proto != None:
+		return nil, fmt.Errorf("unsupported protocol version: %s", proto)
+	case c.NonTransparentFramingTrailer != nil && c.EnableOctetCounting:
 		return nil, errors.New("only one of octet_counting or non_transparent_framing can be enabled")
-	case proto == RFC5424 && c.NonTransparentFramingTrailer != nil:
+	case proto == None && c.NonTransparentFramingTrailer != nil:
+		return nil, errors.New("non_transparent_framing is not compatible with protocol none")
+	case proto != RFC5424 && c.NonTransparentFramingTrailer != nil:
+		return nil, errors.New("non_transparent_framing is only compatible with protocol rfc5424")
+	case c.NonTransparentFramingTrailer != nil:
 		if *c.NonTransparentFramingTrailer != NULTrailer && *c.NonTransparentFramingTrailer != LFTrailer {
 			return nil, fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *c.NonTransparentFramingTrailer)
 		}
-	case proto != RFC5424 && proto != RFC3164:
-		return nil, fmt.Errorf("unsupported protocol version: %s", proto)
 	}
 
 	if c.Location == "" {

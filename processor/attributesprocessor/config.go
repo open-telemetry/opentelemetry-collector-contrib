@@ -20,19 +20,19 @@ import (
 // This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
-	filterconfig.MatchConfig `mapstructure:",squash"`
+	MatchConfig filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Specifies the list of attributes to act on.
 	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
 	// This is a required field.
-	attraction.Settings `mapstructure:",squash"`
+	Settings attraction.Settings `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	if len(cfg.Actions) == 0 {
+	if len(cfg.Settings.Actions) == 0 {
 		return errors.New("missing required field \"actions\"")
 	}
 	return nil

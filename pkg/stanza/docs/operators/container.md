@@ -76,7 +76,6 @@ Note: in this example the `format: docker` is optional since formats can be auto
   "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
   "body": "INFO: log line here",
   "attributes": {
-    "time": "2024-03-30T08:31:20.545192187Z", 
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
@@ -122,7 +121,6 @@ Configuration:
   "timestamp": "2024-04-13 12:59:37.505201169 +0000 UTC",
   "body": "standalone crio line which is awesome",
   "attributes": {
-    "time": "2024-04-13T07:59:37.505201169-05:00",
     "logtag": "F",
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
@@ -169,7 +167,6 @@ Configuration:
   "timestamp": "2023-06-22 10:27:25.813799277 +0000 UTC",
   "body": "standalone containerd line that is super awesome",
   "attributes": {
-    "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F", 
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
@@ -224,7 +221,6 @@ Configuration:
   "timestamp": "2023-06-22 10:27:25.813799277 +0000 UTC",
   "body": "multiline containerd line that is super awesome",
   "attributes": {
-    "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F",
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
@@ -291,7 +287,6 @@ receivers:
   "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
   "body": "2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\njava.net.ConnectException: Failed to connect to",
   "attributes": {
-    "time": "2024-03-30T08:31:20.545192187Z",
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
@@ -343,7 +338,6 @@ Configuration:
   "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
   "body": "INFO: log line here",
   "attributes": {
-    "time": "2024-03-30T08:31:20.545192187Z",
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
