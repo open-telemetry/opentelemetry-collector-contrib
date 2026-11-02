@@ -114,6 +114,7 @@ exporter/prometheusremotewriteexporter
 processor/deltatocumulativeprocessor
 receiver/prometheusreceiver
 exporter/prometheusexporter
+exporter/prometheusremotewriteexporter/compliance
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter

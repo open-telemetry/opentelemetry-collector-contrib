@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
@@ -358,6 +359,82 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+func TestConfigValidateDBAuth(t *testing.T) {
+	t.Parallel()
+
+	baseConfig := func() *Config {
+		return &Config{
+			Config: sqlquery.Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Driver:           sqlquery.DriverPostgres,
+				Host:             "pg.example.postgres.database.azure.com",
+				Port:             5432,
+				Database:         "metrics",
+				Username:         "collector@pg.example",
+				Queries: []sqlquery.Query{{
+					SQL: "SELECT 1 AS value",
+					Metrics: []sqlquery.MetricCfg{{
+						MetricName: "test.value", ValueColumn: "value",
+						ValueType: sqlquery.MetricValueTypeInt, DataType: sqlquery.MetricTypeGauge,
+					}},
+				}},
+			},
+			DBAuth: configdbauth.ID(component.MustNewID("azure_auth")),
+		}
+	}
+
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{name: "postgres accepts db_auth"},
+		{
+			name: "other drivers reject db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.Driver = sqlquery.DriverMySQL
+			},
+			wantErr: "'db_auth' is currently supported only with the 'postgres' driver",
+		},
+		{
+			name: "datasource cannot be combined with db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.DataSource = "host=pg.example"
+			},
+			wantErr: "'host' cannot be set when 'datasource' is specified",
+		},
+		{
+			name: "static password cannot be combined with db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.Password = "secret"
+			},
+			wantErr: "set either 'db_auth' or 'password', not both",
+		},
+		{
+			name: "username required for db_auth",
+			mutate: func(cfg *Config) {
+				cfg.Config.Username = ""
+			},
+			wantErr: "'username' must be set when 'db_auth' is configured",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := baseConfig()
+			if tt.mutate != nil {
+				tt.mutate(cfg)
+			}
+			err := confmap.Validate(cfg)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, 10*time.Second, cfg.Config.CollectionInterval)
@@ -394,6 +471,7 @@ func TestIsValidDriver(t *testing.T) {
 		{"postgres driver", sqlquery.DriverPostgres, true},
 		{"snowflake driver", sqlquery.DriverSnowflake, true},
 		{"sqlserver driver", sqlquery.DriverSQLServer, true},
+		{"azuresql driver", sqlquery.DriverAzureSQL, true},
 		{"tds driver", sqlquery.DriverTDS, true},
 		{"invalid driver", "invalid", false},
 		{"empty driver", "", false},

@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: exporter/azuredataexplorer
+note: Propagate caller's context to Kusto ingestion submission so configured timeouts and cancellations are honored
+issues: [51872]
+subtext: |
+  Previously, ingestion calls used context.Background(), causing exports to ignore configured timeout deadlines.
+  The default configuration (`timeout: 0`) is unchanged and still runs without a deadline; only an explicitly
+  configured `timeout` is now enforced.
+change_logs: [user]

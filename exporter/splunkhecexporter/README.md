@@ -165,11 +165,11 @@ uses to identify and ingest them:
 | Attribute | Value |
 |---|---|
 | `profiling.data.format` | `pprof-gzip-base64` |
-| `profiling.data.type` | sample type (e.g. `cpu`, `wall`) |
+| `profiling.data.type` | `cpu` for supported CPU profiles and `allocation` for supported allocation profiles |
 | `profiling.instrumentation.source` | `continuous` |
 | `com.splunk.sourcetype` | `otel.profiling` |
 
-All values are fixed constants emitted by the exporter except `profiling.data.type`, which is derived from each profile's sample type.
+The exporter maps on-CPU profiles and allocation-event profiles to `cpu` and `allocation`, respectively. It preserves the pprof sample type, unit, and values, and emits periodic CPU sampling periods in milliseconds. Unsupported or ambiguous profile measurements are dropped during conversion, and counted by `otelcol_exporter_dropped_unsupported_profile_records`. Successfully exported profile records are included in the standard `otelcol_exporter_sent_log_records` counter.
 
 ### Enabling profile export
 

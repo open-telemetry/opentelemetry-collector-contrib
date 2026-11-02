@@ -49,10 +49,11 @@ var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = f
 
 var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0RPCConventions",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv RPC attributes rpc.service and peer.service."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )
 
 var InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -98,8 +99,9 @@ var InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate = featu
 
 var InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.EmitV1RPCConventions",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with rpc.method and service.peer.name (semconv v1.40.0) alongside legacy rpc.service and peer.service to support migration."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548"),
 	featuregate.WithRegisterFromVersion("v0.148.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )
