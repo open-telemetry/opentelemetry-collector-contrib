@@ -16,13 +16,18 @@ const (
 	// idToken indicates Google-signed ID-token (https://cloud.google.com/docs/authentication/token-types#id)
 	idToken = "id_token"
 
+	// googleManagedKafka indicates an OAuth 2.0 access token wrapped in the format expected by
+	// Google Cloud Managed Service for Apache Kafka for SASL/OAUTHBEARER.
+	googleManagedKafka = "google_managed_kafka"
+
 	authorizationHeader      = "authorization"
 	proxyAuthorizationHeader = "proxy-authorization"
 )
 
 var tokenTypes = map[string]struct{}{
-	accessToken: {},
-	idToken:     {},
+	accessToken:        {},
+	idToken:            {},
+	googleManagedKafka: {},
 }
 
 var tokenHeaders = map[string]struct{}{
@@ -51,6 +56,11 @@ type Config struct {
 	// Audience specifies the audience claim used for generating ID token.
 	Audience string `mapstructure:"audience,omitempty"`
 
+	// Principal specifies the email of the principal the google_managed_kafka token is issued for.
+	// If unspecified, it is the client_email of the service account key, or the email of the
+	// default service account reported by the metadata server.
+	Principal string `mapstructure:"principal,omitempty"`
+
 	// TokenHeader controls which HTTP header carries the token.
 	// "authorization" (default) or "proxy-authorization" (for IAP-protected endpoints).
 	TokenHeader string `mapstructure:"token_header,omitempty"`
@@ -72,6 +82,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.TokenType == idToken && cfg.Audience == "" {
 		return errors.New("audience must be specified when using the id_token token_type")
+	}
+
+	if cfg.TokenType != googleManagedKafka && cfg.Principal != "" {
+		return errors.New("principal can only be specified when using the google_managed_kafka token_type")
 	}
 
 	if _, ok := tokenHeaders[cfg.TokenHeader]; !ok {

@@ -24,12 +24,12 @@ func (ca *clientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundT
 	}
 	if ca.config.TokenHeader == proxyAuthorizationHeader {
 		return &proxyAuthTransport{
-			source: ca,
+			source: ca.TokenSource,
 			base:   paramBase,
 		}, nil
 	}
 	return &oauth2.Transport{
-		Source: ca,
+		Source: ca.TokenSource,
 		Base:   paramBase,
 	}, nil
 }

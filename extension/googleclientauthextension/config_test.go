@@ -42,6 +42,17 @@ func TestLoadConfig(t *testing.T) {
 			TokenHeader:  "authorization",
 		},
 	}, cfg)
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "kafka").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, cfg.(*Config).Validate())
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Config.TokenType = "google_managed_kafka"
+	expected.Config.Principal = "kafka-client@my-project.iam.gserviceaccount.com"
+	assert.Equal(t, expected, cfg)
 }
 
 func TestValidate(t *testing.T) {

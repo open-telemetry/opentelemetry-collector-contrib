@@ -84,3 +84,25 @@ func TestConfig_DefaultTokenHeader(t *testing.T) {
 	cfg := CreateDefaultConfig().(*Config)
 	assert.Equal(t, authorizationHeader, cfg.TokenHeader)
 }
+
+func TestConfig_Validate_ValidGoogleManagedKafka(t *testing.T) {
+	cfg := &Config{
+		TokenType:   googleManagedKafka,
+		Principal:   "kafka-client@my-project.iam.gserviceaccount.com",
+		TokenHeader: authorizationHeader,
+	}
+
+	err := cfg.Validate()
+	assert.NoError(t, err)
+}
+
+func TestConfig_Validate_PrincipalWithoutGoogleManagedKafka(t *testing.T) {
+	cfg := &Config{
+		TokenType:   accessToken,
+		Principal:   "kafka-client@my-project.iam.gserviceaccount.com",
+		TokenHeader: authorizationHeader,
+	}
+
+	err := cfg.Validate()
+	assert.ErrorContains(t, err, "principal")
+}
