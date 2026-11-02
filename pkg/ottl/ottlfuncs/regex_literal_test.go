@@ -77,7 +77,8 @@ func BenchmarkReplaceAllPatternsLiteralNoMatch(b *testing.B) {
 					}, mode, pattern,
 					ottl.StandardStringGetter[pcommon.Map]{Getter: func(context.Context, pcommon.Map) (any, error) {
 						return "replacement", nil
-					}}, ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}, ottl.Optional[ottl.StringGetter[pcommon.Map]]{})
+					}}, ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}, ottl.Optional[ottl.StringGetter[pcommon.Map]]{},
+				)
 				if err != nil {
 					b.Fatal(err)
 				}

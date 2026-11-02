@@ -28,7 +28,7 @@ func TestReplacePatternPrefixMatchesRegexp(t *testing.T) {
 						value, sets := input, 0
 						target := ottl.StandardGetSetter[any]{
 							Getter: func(context.Context, any) (any, error) { return value, nil },
-							Setter: func(_ context.Context, _ any, next any) error {
+							Setter: func(_ context.Context, _, next any) error {
 								sets++
 								value = next.(string)
 								return nil
@@ -68,7 +68,8 @@ func TestReplacePatternPrefixPreservesReplacementError(t *testing.T) {
 		}}, pattern,
 		ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) {
 			return nil, expected
-		}}, ottl.Optional[ottl.FunctionGetter[any]]{}, ottl.Optional[ottl.StringGetter[any]]{})
+		}}, ottl.Optional[ottl.FunctionGetter[any]]{}, ottl.Optional[ottl.StringGetter[any]]{},
+	)
 	require.NoError(t, err)
 	_, err = function(t.Context(), nil)
 	require.ErrorIs(t, err, expected)
@@ -91,7 +92,8 @@ func BenchmarkReplacePatternLiteralPrefix(b *testing.B) {
 				}, pattern,
 				ottl.StandardStringGetter[any]{Getter: func(context.Context, any) (any, error) {
 					return "worker", nil
-				}}, ottl.Optional[ottl.FunctionGetter[any]]{}, ottl.Optional[ottl.StringGetter[any]]{})
+				}}, ottl.Optional[ottl.FunctionGetter[any]]{}, ottl.Optional[ottl.StringGetter[any]]{},
+			)
 			if err != nil {
 				b.Fatal(err)
 			}
