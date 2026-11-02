@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: receiver/pulsar
+
+note: Add aix/ppc64 as a supported build platform.
+
+issues: [19195]
+
+subtext:
+
+change_logs: [user]
