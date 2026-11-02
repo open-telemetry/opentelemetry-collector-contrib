@@ -4,9 +4,10 @@ display_name: Azure Data Explorer Exporter
 status:
   class: exporter
   stability:
-    unmaintained: [traces, metrics, logs]
+    beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
+    active: [Abhimanyu9988]
     emeritus: [asaharn, ag-ramachandran]
 
 # TODO: Update the exporter to pass the tests
