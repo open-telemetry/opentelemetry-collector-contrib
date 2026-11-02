@@ -635,3 +635,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/conte
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto => ../../../pkg/expohisto
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl => ../../../pkg/ottl/xottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xspanlink => ../../../pkg/ottl/contexts/xspanlink
