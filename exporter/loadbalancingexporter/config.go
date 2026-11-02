@@ -4,7 +4,9 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
@@ -12,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
 
 type routingKey int
@@ -34,6 +37,9 @@ const (
 	streamIDRoutingStr   = "streamID"
 	attrRoutingStr       = "attributes"
 	randomnessRoutingStr = "randomness"
+
+	defaultGRPCPort = "4317"
+	defaultHTTPPort = "4318"
 )
 
 // Config defines configuration for the exporter.
@@ -71,12 +77,19 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("routing_attributes can only be used when routing_key is %q; got %q. Remove routing_attributes or set routing_key to %q", attrRoutingStr, c.RoutingKey, attrRoutingStr)
 	}
 
+	// Validate that only one transport is explicitly configured
+	// It's acceptable for neither to be configured (defaults to gRPC)
+	if c.Protocol.OTLP.HasValue() && c.Protocol.OTLPHTTP.HasValue() {
+		return errors.New("only one protocol can be configured, both otlp and otlp_http are set")
+	}
+
 	return nil
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
 type Protocol struct {
-	OTLP otlpexporter.Config `mapstructure:"otlp"`
+	OTLP     configoptional.Optional[otlpexporter.Config]     `mapstructure:"otlp"`
+	OTLPHTTP configoptional.Optional[otlphttpexporter.Config] `mapstructure:"otlp_http"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -126,4 +139,40 @@ type AWSCloudMapResolver struct {
 	Timeout       time.Duration            `mapstructure:"timeout"`
 	Port          *uint16                  `mapstructure:"port"`
 	OwnerAccount  *string                  `mapstructure:"owner_account"`
+}
+
+// selectedProtocol returns the protocol to use for backend connections.
+// If neither is explicitly configured, defaults to OTLP/gRPC for backward compatibility.
+func (c *Config) selectedProtocol() string {
+	if c.Protocol.OTLPHTTP.HasValue() {
+		return "otlp_http"
+	}
+	return "otlp"
+}
+
+// defaultPort returns the default port for the selected protocol.
+func (c *Config) defaultPort() string {
+	if c.Protocol.OTLPHTTP.HasValue() {
+		return defaultHTTPPort
+	}
+	return defaultGRPCPort
+}
+
+// rewriteHTTPEndpoint replaces the host and port in the configured endpoint
+// with the resolved backend host and port, preserving the scheme, path, and query parameters.
+func rewriteHTTPEndpoint(configuredEndpoint, resolvedBackend string) (string, error) {
+	if configuredEndpoint == "" {
+		return "", errors.New("configured endpoint is empty")
+	}
+
+	// Parse the configured endpoint
+	parsedURL, err := url.Parse(configuredEndpoint)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse configured endpoint %q: %w", configuredEndpoint, err)
+	}
+
+	// Set the resolved host (includes port if present)
+	parsedURL.Host = resolvedBackend
+
+	return parsedURL.String(), nil
 }

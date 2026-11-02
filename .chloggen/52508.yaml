@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/load_balancing
+note: Add OTLP/HTTP backend support for metrics
+issues: [52508]
+subtext: Initial implementation supports metrics only.
