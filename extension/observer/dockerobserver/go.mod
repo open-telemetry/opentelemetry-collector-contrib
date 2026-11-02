@@ -11,10 +11,10 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/confmap v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/extension v1.70.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/extension/extensiontest v0.164.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/extension/extensiontest v0.164.1-0.20261102165206-9372e2e353df
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.24.0
@@ -76,7 +76,7 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.70.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/collector/config/configtls v1.70.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261102165206-9372e2e353df // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261029175530-9afdf701f333 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/collector/pdata v1.70.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
