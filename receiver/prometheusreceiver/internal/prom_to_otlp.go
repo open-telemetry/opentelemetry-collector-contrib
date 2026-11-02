@@ -39,10 +39,7 @@ func CreateResource(job, instance string, targetURL *url.URL, serviceDiscoveryLa
 	var host, port string
 	var err error
 	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetURL != nil {
-		host, port, err = net.SplitHostPort(targetURL.Host)
-		if err != nil {
-			host = targetURL.Host
-		}
+		host, port = targetURL.Hostname(), targetURL.Port()
 	} else {
 		host, port, err = net.SplitHostPort(instance)
 		if err != nil {
