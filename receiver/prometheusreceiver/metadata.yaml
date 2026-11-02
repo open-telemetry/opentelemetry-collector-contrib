@@ -27,7 +27,7 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, server.address and server.port are populated from the scraped target's URL (model.AddressLabel) instead of parsing the instance label.
-    from_version: v0.115.0
+    from_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565
   - id: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
     stage: alpha
