@@ -362,9 +362,6 @@ exclusions:
       - name: ottl.functions.enableLambda
         validation:
           enabled: false
-      - name: ottl.set.allowNil
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
     feature_gates:
       - name: logs.assignKeys

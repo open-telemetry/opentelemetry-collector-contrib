@@ -2213,6 +2213,88 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 	}
 }
 
+func TestDeltaTimestampsForIndependentResources(t *testing.T) {
+	for _, exponential := range []bool{false, true} {
+		t.Run(fmt.Sprintf("exponential=%t", exponential), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.AggregationTemporality = delta
+			cfg.AddResourceAttributes = true
+			cfg.Events = EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: exceptionTypeAttrName}}}
+			if exponential {
+				cfg.Histogram.Exponential = configoptional.Some(ExponentialHistogramConfig{})
+			}
+
+			clock := clockwork.NewFakeClockAt(time.Unix(1_700_000_000, 0))
+			p, err := newConnector(zaptest.NewLogger(t), cfg, clock, instanceID)
+			require.NoError(t, err)
+			t.Cleanup(p.ticker.Stop)
+			sink := &consumertest.MetricsSink{}
+			p.metricsConsumer = sink
+
+			lastTimestamps := make(map[string]pcommon.Timestamp)
+			for flush, pods := range [][]string{{"pod-a", "pod-b"}, {"pod-a"}, {"pod-b"}, {"pod-a", "pod-b"}} {
+				start := pcommon.NewTimestampFromTime(clock.Now())
+				traces := ptrace.NewTraces()
+				for _, pod := range pods {
+					rs := traces.ResourceSpans().AppendEmpty()
+					rs.Resource().Attributes().PutStr(serviceNameKey, "checkout")
+					rs.Resource().Attributes().PutStr("service.instance.id", pod)
+					span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+					span.SetName("GET /checkout")
+					span.SetKind(ptrace.SpanKindServer)
+					span.SetStartTimestamp(start)
+					span.SetEndTimestamp(start + pcommon.Timestamp(time.Millisecond))
+					span.Events().AppendEmpty().Attributes().PutStr(exceptionTypeAttrName, "Error")
+				}
+
+				require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+				clock.Advance(time.Minute)
+				p.exportMetrics(t.Context())
+
+				end := pcommon.NewTimestampFromTime(clock.Now())
+				resourceMetrics := sink.AllMetrics()[flush].ResourceMetrics()
+				require.Equal(t, len(pods), resourceMetrics.Len())
+				for _, rm := range resourceMetrics.All() {
+					pod, ok := rm.Resource().Attributes().Get("service.instance.id")
+					require.True(t, ok)
+					wantStart, seen := lastTimestamps[pod.Str()]
+					if !seen {
+						wantStart = start
+					}
+
+					metrics := rm.ScopeMetrics().At(0).Metrics()
+					require.Equal(t, 3, metrics.Len())
+					for _, metric := range metrics.All() {
+						var gotStart, gotEnd pcommon.Timestamp
+						switch metric.Type() {
+						case pmetric.MetricTypeSum:
+							dps := metric.Sum().DataPoints()
+							require.Equal(t, 1, dps.Len())
+							assert.Equal(t, int64(1), dps.At(0).IntValue())
+							gotStart, gotEnd = dps.At(0).StartTimestamp(), dps.At(0).Timestamp()
+						case pmetric.MetricTypeHistogram:
+							dps := metric.Histogram().DataPoints()
+							require.Equal(t, 1, dps.Len())
+							assert.Equal(t, uint64(1), dps.At(0).Count())
+							gotStart, gotEnd = dps.At(0).StartTimestamp(), dps.At(0).Timestamp()
+						case pmetric.MetricTypeExponentialHistogram:
+							dps := metric.ExponentialHistogram().DataPoints()
+							require.Equal(t, 1, dps.Len())
+							assert.Equal(t, uint64(1), dps.At(0).Count())
+							gotStart, gotEnd = dps.At(0).StartTimestamp(), dps.At(0).Timestamp()
+						default:
+							t.Fatalf("unexpected metric type %s", metric.Type())
+						}
+						assert.Equal(t, wantStart.AsTime(), gotStart.AsTime(), "flush %d, resource %s, metric %s", flush, pod.Str(), metric.Name())
+						assert.Equal(t, end.AsTime(), gotEnd.AsTime())
+					}
+					lastTimestamps[pod.Str()] = end
+				}
+			}
+		})
+	}
+}
+
 func TestTimestampsForUninterruptedStream(t *testing.T) {
 	// enable it
 	require.NoError(t, featuregate.GlobalRegistry().Set(spanmetricsmetadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.ID(), true))
