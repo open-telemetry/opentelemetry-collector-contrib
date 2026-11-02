@@ -551,13 +551,15 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 }
 
 // buildNamedList generates named bind placeholders and sql.Named args for a column.
-func buildNamedList(prefix string, values []string) (placeholders []string, args []any) {
+func buildNamedList(prefix string, values []string) ([]string, []any) {
+	placeholders := make([]string, 0, len(values))
+	args := make([]any, 0, len(values))
 	for i, v := range values {
 		name := prefix + strconv.Itoa(i)
 		placeholders = append(placeholders, ":"+name)
 		args = append(args, sql.Named(name, v))
 	}
-	return
+	return placeholders, args
 }
 
 // buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN clauses
@@ -567,8 +569,8 @@ func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (stri
 	names := make([]string, len(hits))
 	types := make([]string, len(hits))
 	conIDs := make([]string, len(hits))
-	for i, h := range hits {
-		owners[i], names[i], types[i], conIDs[i] = h.schemaName, h.objectName, h.procedureType, h.conID
+	for i := range hits {
+		owners[i], names[i], types[i], conIDs[i] = hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID
 	}
 	ownerPH, ownerArgs := buildNamedList("owner", owners)
 	namePH, nameArgs := buildNamedList("name", names)
