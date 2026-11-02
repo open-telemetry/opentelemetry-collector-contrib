@@ -87,18 +87,6 @@ func TestByteSliceLabelValueMetadata(t *testing.T) {
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
 
-func TestLockRequestSliceLabelValueMetadata(t *testing.T) {
-	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestSliceValueType)
-
-	assert.Equal(t, LockRequestSliceValueType, metadata.ValueType())
-	assert.Equal(t, labelName, metadata.Name())
-	assert.Equal(t, labelColumnName, metadata.ColumnName())
-
-	var expectedType *[]*lockRequest
-
-	assert.IsType(t, expectedType, metadata.ValueHolder())
-}
-
 func TestLockRequestJSONLabelValueMetadata(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestJSONValueType)
 
@@ -253,26 +241,6 @@ func TestByteSliceLabelValue(t *testing.T) {
 	assert.Equal(t, labelName, labelValue.Value())
 }
 
-func TestLockRequestSliceLabelValue(t *testing.T) {
-	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestSliceValueType)
-	labelValue := lockRequestSliceLabelValue{
-		metadata: metadata,
-		value:    stringValue,
-	}
-
-	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
-	assert.Equal(t, stringValue, labelValue.Value())
-
-	attributes := pcommon.NewMap()
-
-	labelValue.SetValueTo(attributes)
-
-	attributeValue, exists := attributes.Get(labelName)
-
-	assert.True(t, exists)
-	assert.Equal(t, stringValue, attributeValue.Str())
-}
-
 func TestLockRequestJSONLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestJSONValueType)
 	labelValue := lockRequestJSONLabelValue{
@@ -423,24 +391,6 @@ func TestNewByteSliceLabelValue(t *testing.T) {
 
 	assert.Equal(t, ByteSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, stringValue, labelValue.Value())
-}
-
-func TestNewLockRequestSliceLabelValue(t *testing.T) {
-	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, LockRequestSliceValueType)
-	value := []*lockRequest{
-		{LockMode: "lockMode1", Column: "column1", TransactionTag: "tag1"},
-		{LockMode: "lockMode2", Column: "column2", TransactionTag: "tag2"},
-		{LockMode: "lockMode1", Column: "column1", TransactionTag: "tag1"},
-		{LockMode: "lockMode2", Column: "column2", TransactionTag: "tag2"},
-		{LockMode: "lockMode3", Column: "column3"},
-	}
-	expectedValue := "{lockMode1,column1,tag1},{lockMode2,column2,tag2},{lockMode3,column3}"
-	valueHolder := &value
-
-	labelValue := newLockRequestSliceLabelValue(metadata, valueHolder)
-
-	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
-	assert.Equal(t, expectedValue, labelValue.Value())
 }
 
 func TestNewLockRequestJSONLabelValue(t *testing.T) {

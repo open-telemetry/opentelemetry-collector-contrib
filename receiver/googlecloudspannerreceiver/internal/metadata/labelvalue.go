@@ -80,11 +80,6 @@ type byteSliceLabelValue struct {
 	value    string
 }
 
-type lockRequestSliceLabelValue struct {
-	metadata LabelValueMetadata
-	value    string
-}
-
 type lockRequestJSONLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
@@ -256,54 +251,6 @@ func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelV
 	}
 }
 
-func (v lockRequestSliceLabelValue) Metadata() LabelValueMetadata {
-	return v.metadata
-}
-
-func (v lockRequestSliceLabelValue) Value() any {
-	return v.value
-}
-
-func (v lockRequestSliceLabelValue) SetValueTo(attributes pcommon.Map) {
-	attributes.PutStr(v.metadata.Name(), v.value)
-}
-
-type lockRequest struct {
-	LockMode       string `spanner:"lock_mode"`
-	Column         string `spanner:"column"`
-	TransactionTag string `spanner:"transaction_tag"`
-}
-
-func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
-	value := *valueHolder.(*[]*lockRequest)
-	// During the specifics of this label we need to take into account only distinct values
-	uniqueValueItems := make(map[string]struct{})
-	var convertedValue []string
-
-	for _, valueItem := range value {
-		var valueItemString string
-		if valueItem.TransactionTag == "" {
-			valueItemString = fmt.Sprintf("{%v,%v}", valueItem.LockMode, valueItem.Column)
-		} else {
-			valueItemString = fmt.Sprintf("{%v,%v,%v}", valueItem.LockMode, valueItem.Column, valueItem.TransactionTag)
-		}
-
-		if _, contains := uniqueValueItems[valueItemString]; !contains {
-			uniqueValueItems[valueItemString] = struct{}{}
-			convertedValue = append(convertedValue, valueItemString)
-		}
-	}
-
-	sort.Strings(convertedValue)
-
-	constructedValue := strings.Join(convertedValue, ",")
-
-	return lockRequestSliceLabelValue{
-		metadata: metadata,
-		value:    constructedValue,
-	}
-}
-
 func (v lockRequestJSONLabelValue) Metadata() LabelValueMetadata {
 	return v.metadata
 }
@@ -454,12 +401,6 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc = newByteSliceLabelValue
 		valueHolderFunc = func() any {
 			var valueHolder []byte
-			return &valueHolder
-		}
-	case LockRequestSliceValueType:
-		newLabelValueFunc = newLockRequestSliceLabelValue
-		valueHolderFunc = func() any {
-			var valueHolder []*lockRequest
 			return &valueHolder
 		}
 	case LockRequestJSONValueType:

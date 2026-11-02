@@ -20,7 +20,7 @@ import (
 const (
 	// Value was generated using the same library. Intent is to detect that something changed in library implementation
 	// in case we received different value here. For more details inspect tests where this value is used.
-	expectedHashValue = "6bfdeeb761d2c0ca"
+	expectedHashValue = "da712d73a643248d"
 )
 
 func TestMetricsDataPoint_GroupingKey(t *testing.T) {
@@ -198,11 +198,6 @@ func allPossibleLabelValues() []LabelValue {
 		metadata: btSliceLabelValueMetadata,
 		value:    stringValue,
 	}
-	lckReqSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
-	lckReqSliceLabelValue := lockRequestSliceLabelValue{
-		metadata: lckReqSliceLabelValueMetadata,
-		value:    stringValue,
-	}
 	iSliceLabelValueMetadata, _ := NewLabelValueMetadata("intSliceLabelName", "intSliceLabelColumnName", IntSliceValueType)
 	iSliceLabelValue := intSliceLabelValue{
 		metadata: iSliceLabelValueMetadata,
@@ -235,7 +230,6 @@ func allPossibleLabelValues() []LabelValue {
 		i64LabelValue,
 		strSliceLabelValue,
 		btSliceLabelValue,
-		lckReqSliceLabelValue,
 		iSliceLabelValue,
 		lckReqJSONLabelValue,
 		tsLabelValue,
@@ -279,7 +273,7 @@ func assertLabelValue(t *testing.T, attributesMap pcommon.Map, labelValue LabelV
 
 	assert.True(t, exists)
 	switch labelValue.(type) {
-	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, lockRequestSliceLabelValue, intSliceLabelValue, lockRequestJSONLabelValue, operationsByTableJSONLabelValue, timestampLabelValue, dateLabelValue:
+	case stringLabelValue, stringSliceLabelValue, byteSliceLabelValue, intSliceLabelValue, lockRequestJSONLabelValue, operationsByTableJSONLabelValue, timestampLabelValue, dateLabelValue:
 		assert.Equal(t, labelValue.Value(), value.Str())
 	case boolLabelValue:
 		assert.Equal(t, labelValue.Value(), value.Bool())
