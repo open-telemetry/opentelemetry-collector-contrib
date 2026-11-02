@@ -23,6 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
+// inClusterConfig is a seam so tests can stub the in-cluster Kubernetes config.
+var inClusterConfig = rest.InClusterConfig
+
 type prometheusReceiverWrapper struct {
 	params             receiver.Settings
 	config             *Config
@@ -59,16 +62,18 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 }
 
 func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
-	var bearerToken string
+	var bearerTokenFile string
 	if cfg.UseServiceAccount {
-		restConfig, err := rest.InClusterConfig()
+		restConfig, err := inClusterConfig()
 		if err != nil {
 			return nil, err
 		}
-		bearerToken = restConfig.BearerToken
-		if bearerToken == "" {
+		if restConfig.BearerToken == "" {
 			return nil, errors.New("bearer token was empty")
 		}
+		// Pass the token file rather than the token so Prometheus re-reads it
+		// on each scrape and picks up rotated service account tokens.
+		bearerTokenFile = restConfig.BearerTokenFile
 	}
 
 	out := &prometheusreceiver.Config{}
@@ -98,7 +103,7 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 		}
 	}
 
-	httpConfig.BearerToken = configutil.Secret(bearerToken)
+	httpConfig.BearerTokenFile = bearerTokenFile
 
 	if len(cfg.ClientConfig.Headers) > 0 {
 		headers := make(map[string]configutil.Header, len(cfg.ClientConfig.Headers))
