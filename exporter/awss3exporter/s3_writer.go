@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -65,7 +66,11 @@ func newUploadManager(
 		})
 	}
 
-	if arn := conf.S3Uploader.RoleArn; arn != "" {
+	if conf.S3Uploader.AccessKey != "" && conf.S3Uploader.SecretKey != "" {
+		s3Opts = append(s3Opts, func(o *s3.Options) {
+			o.Credentials = credentials.NewStaticCredentialsProvider(string(conf.S3Uploader.AccessKey), string(conf.S3Uploader.SecretKey), "")
+		})
+	} else if arn := conf.S3Uploader.RoleArn; arn != "" {
 		s3Opts = append(s3Opts, func(o *s3.Options) {
 			o.Credentials = stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), arn)
 		})

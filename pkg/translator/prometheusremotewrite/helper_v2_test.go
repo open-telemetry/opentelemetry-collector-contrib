@@ -129,6 +129,25 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 			timestamp: 0,
 		},
 		{
+			desc: "preserve leading and consecutive underscores in target_info labels",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("_foo", "leading")
+				r.Attributes().PutStr("app__component", "backend")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: "_foo", Value: "leading"},
+				{Name: "app__component", Value: "backend"},
+				{Name: model.JobLabel, Value: "my_service"},
+			},
+			wantLabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+			wantHelpRef:    9,
+		},
+		{
 			desc: "with resource, NoTranslation strategy preserves dots in attribute names",
 			resource: func() pcommon.Resource {
 				r := pcommon.NewResource()

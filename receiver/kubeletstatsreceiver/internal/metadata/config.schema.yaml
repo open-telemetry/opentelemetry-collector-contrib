@@ -537,23 +537,6 @@ $defs:
     description: ResourceAttributesConfig provides config for kubelet_stats resource attributes.
     type: object
     properties:
-      aws.volume.id:
-        description: ResourceAttributeConfig provides common config for a aws.volume.id resource attribute.
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          metrics_include:
-            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-          metrics_exclude:
-            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
       container.id:
         description: ResourceAttributeConfig provides common config for a container.id resource attribute.
         type: object
@@ -561,74 +544,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          metrics_include:
-            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-          metrics_exclude:
-            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-      fs.type:
-        description: ResourceAttributeConfig provides common config for a fs.type resource attribute.
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          metrics_include:
-            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-          metrics_exclude:
-            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-      gce.pd.name:
-        description: ResourceAttributeConfig provides common config for a gce.pd.name resource attribute.
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          metrics_include:
-            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-          metrics_exclude:
-            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-      glusterfs.endpoints.name:
-        description: ResourceAttributeConfig provides common config for a glusterfs.endpoints.name resource attribute.
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
-          metrics_include:
-            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-          metrics_exclude:
-            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-      glusterfs.path:
-        description: ResourceAttributeConfig provides common config for a glusterfs.path resource attribute.
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array
@@ -782,23 +697,6 @@ $defs:
           enabled:
             type: boolean
             default: true
-          metrics_include:
-            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-          metrics_exclude:
-            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
-            type: array
-            items:
-              $ref: go.opentelemetry.io/collector/filter.config
-      partition:
-        description: ResourceAttributeConfig provides common config for a partition resource attribute.
-        type: object
-        properties:
-          enabled:
-            type: boolean
-            default: false
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array

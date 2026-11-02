@@ -21,7 +21,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
 

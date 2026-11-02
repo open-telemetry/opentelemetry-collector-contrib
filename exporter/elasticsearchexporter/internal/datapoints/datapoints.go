@@ -40,3 +40,7 @@ type DataPoint interface {
 	HasMappingHint(elasticsearch.MappingHint) bool
 	Metric() pmetric.Metric
 }
+
+func (hm HistogramMapping) String() string {
+	return [...]string{"TDigest", "Raw", "Exponential", "AggregateMetricDouble"}[hm]
+}

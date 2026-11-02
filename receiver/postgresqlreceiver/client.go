@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -1628,11 +1628,11 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			obfuscated = ""
 		}
 		currentAttributes[dbAttributePrefix+querySampleColumnPID] = pid
-		currentAttributes[string(semconv.NetworkPeerPortKey)] = clientPort
-		currentAttributes[string(semconv.NetworkPeerAddressKey)] = row[querySampleColumnClientAddr]
-		currentAttributes[string(semconv.DBQueryTextKey)] = obfuscated
-		currentAttributes[string(semconv.DBNamespaceKey)] = row[querySampleColumnDatname]
-		currentAttributes[string(semconv.UserNameKey)] = row[querySampleColumnUsename]
+		currentAttributes[string(conventions.NetworkPeerPortKey)] = clientPort
+		currentAttributes[string(conventions.NetworkPeerAddressKey)] = row[querySampleColumnClientAddr]
+		currentAttributes[string(conventions.DBQueryTextKey)] = obfuscated
+		currentAttributes[string(conventions.DBNamespaceKey)] = row[querySampleColumnDatname]
+		currentAttributes[string(conventions.UserNameKey)] = row[querySampleColumnUsename]
 		currentAttributes[postgresqlTotalExecTimeAttributeName] = duration
 		currentAttributes[dbAttributePrefix+querySampleColumnBlockingWaitDuration] = blockingWaitDuration
 		finalAttributes = append(finalAttributes, currentAttributes)
@@ -1702,8 +1702,8 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 
 	for _, row := range rows {
 		hasConvention := map[string]string{
-			"datname": string(semconv.DBNamespaceKey),
-			"query":   string(semconv.DBQueryTextKey),
+			"datname": string(conventions.DBNamespaceKey),
+			"query":   string(conventions.DBQueryTextKey),
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){

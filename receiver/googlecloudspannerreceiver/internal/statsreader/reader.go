@@ -14,6 +14,7 @@ type ReaderConfig struct {
 	BackfillEnabled                   bool
 	HideTopnLockstatsRowrangestartkey bool
 	HideSplitStatsKeys                bool
+	HideClientIPAddress               bool
 	TruncateText                      bool
 }
 

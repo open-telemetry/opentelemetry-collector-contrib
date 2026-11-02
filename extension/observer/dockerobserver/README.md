@@ -77,10 +77,16 @@ default: `[]`
 
 If true, the `Config.Hostname` field (if present) of the docker
 container will be used as the discovered host that is used to configure
-receivers.  If false or if no hostname is configured, the field
+receivers. If false or if no hostname is configured, the field
 `IPAddress` from the container's network settings is used, with
-`GlobalIPv6Address` as a fallback. These settings can be found
-in the output of the Docker API's [Container Inspect](https://docs.docker.com/engine/api/v1.41/#operation/ContainerInspect) json.
+`GlobalIPv6Address` as a fallback. When a container is attached to
+multiple networks, the network with the highest `GwPriority` (falling
+back to alphabetical order by network name) is selected to deterministically
+choose a stable IP address. Note that `GwPriority` requires Docker Engine 28.0+;
+on older Docker daemon versions where `GwPriority` is not available (or is 0
+for all networks), the observer deterministically falls back to alphabetical
+order by network name to prevent endpoint flapping. These settings can be
+found in the output of the Docker API's [Container Inspect](https://docs.docker.com/engine/api/v1.41/#operation/ContainerInspect) json.
 
 default: `false`
 

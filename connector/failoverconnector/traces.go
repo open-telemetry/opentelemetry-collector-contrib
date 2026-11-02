@@ -51,7 +51,13 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 			return errNoValidPipeline
 		}
 
-		if err := tc.ConsumeTraces(ctx, td); err != nil {
+		// Preserve the original data for later attempts.
+		data := td
+		if tc.Capabilities().MutatesData {
+			data = ptrace.NewTraces()
+			td.CopyTo(data)
+		}
+		if err := tc.ConsumeTraces(ctx, data); err != nil {
 			if f.shouldFailoverOnError(err) {
 				f.reportConsumerError(idx, err)
 				continue
@@ -68,7 +74,12 @@ func (f *tracesRouter) sampleRetryConsumers(ctx context.Context, td ptrace.Trace
 	stableIndex := f.pS.CurrentPipeline()
 	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
-		err := consumer.ConsumeTraces(ctx, td)
+		data := td
+		if consumer.Capabilities().MutatesData {
+			data = ptrace.NewTraces()
+			td.CopyTo(data)
+		}
+		err := consumer.ConsumeTraces(ctx, data)
 		// if the returned error is not considered as failure
 		// reset the pipeline to healthy
 		if err == nil || !f.shouldFailoverOnError(err) {

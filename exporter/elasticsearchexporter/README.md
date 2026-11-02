@@ -364,7 +364,7 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 | `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
 
 - `retry`: Elasticsearch bulk request retry settings
-  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, e.g. during a shutdown, it is not retried. Timeout errors are retried only before the connection is ready, including during DNS, the TCP handshake, and the TLS handshake. A timeout after the connection is ready, including while the request is being written or while waiting for the response, is not retried, to avoid duplicates. Other transport errors are retried.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
@@ -437,6 +437,7 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input_rate_limit` (default="1s"): Rate limiting of logs emitted by `log_failed_docs_input` config, e.g. "1s" means roughly 1 log line per second. A zero or negative value disables rate limiting.
+  - `include_destination_index` (default=false): Adds the `db.collection.name` attribute to the `otelcol.elasticsearch.docs.processed` metric, based on the `_index` of each document in the bulk response. For backing and failure store indices, the `.ds-`/`.fs-` prefix and the date and generation suffix are stripped, leaving the data stream name. WARNING: it multiplies the number of metric series by the number of destination indices, which can be high with dynamic index names.
 
 ### Metadata keys
 
@@ -468,15 +469,19 @@ The metric types supported are:
 
 In OTel mapping mode, OTLP exponential histograms are stored in Elasticsearch's
 native [`exponential_histogram`](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/exponential-histogram)
-field when connected to Elasticsearch 9.3.0 or later. This preserves the
+field when connected to Elasticsearch 9.4.0 or later. This preserves the
 exponential bucket layout (scale, zero bucket, positive/negative buckets, sum,
 min, max) losslessly.
 
 This is enabled automatically via [version detection](#elasticsearch-version-detection): when
 version detection is disabled (`version_detection.enabled: false`) or the
-connected Elasticsearch is older than 9.3.0, exponential histograms fall back to
+connected Elasticsearch is older than 9.4.0, exponential histograms fall back to
 a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
 `histogram` field.
+
+Explicit-bounds histograms are converted to exponential histograms
+when the Elasticsearch version is 9.4.0 or later. This can be disabled via `version_detection.enabled: false`, which stores
+explicit-bounds histograms as `histogram` field.
 
 Per-data-point mapping hints still apply and take precedence: `histogram:raw`
 stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
@@ -493,7 +498,7 @@ The index template must define dynamic templates whose names match the values se
 
 | Mapping mode | Field path in document | Template names sent | Notes |
 | ------------ | ---------------------- | -------------------- | ----- |
-| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.3.0 or later. |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.4.0 or later. |
 | **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
