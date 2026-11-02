@@ -152,7 +152,7 @@ func TestSelectedProtocol(t *testing.T) {
 	t.Run("neither configured", func(t *testing.T) {
 		cfg := &Config{
 			Protocol: Protocol{
-				OTLP: configoptional.None[otlpexporter.Config](),
+				OTLP:     configoptional.None[otlpexporter.Config](),
 				OTLPHTTP: configoptional.None[otlphttpexporter.Config](),
 			},
 		}

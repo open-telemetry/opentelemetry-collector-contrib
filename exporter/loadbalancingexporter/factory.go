@@ -59,7 +59,29 @@ func createDefaultConfig() component.Config {
 func buildExporterConfig(cfg *Config, endpoint string) *otlpexporter.Config {
 	var oCfg *otlpexporter.Config
 	if cfg.Protocol.OTLP.HasValue() {
-		oCfg = cfg.Protocol.OTLP.Get()
+		// Merge configured OTLP with default to ensure all fields have proper defaults
+		otlpFactory := otlpexporter.NewFactory()
+		otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
+		configuredOTLP := cfg.Protocol.OTLP.Get()
+		
+		// Use the configured values, falling back to defaults for unset fields
+		if configuredOTLP.ClientConfig.Endpoint != "" {
+			otlpDefaultCfg.ClientConfig.Endpoint = configuredOTLP.ClientConfig.Endpoint
+		}
+		if configuredOTLP.ClientConfig.Headers != nil {
+			otlpDefaultCfg.ClientConfig.Headers = configuredOTLP.ClientConfig.Headers
+		}
+		if configuredOTLP.TimeoutConfig.Timeout > 0 {
+			otlpDefaultCfg.TimeoutConfig.Timeout = configuredOTLP.TimeoutConfig.Timeout
+		}
+		if configuredOTLP.RetryConfig.Enabled {
+			otlpDefaultCfg.RetryConfig = configuredOTLP.RetryConfig
+		}
+		if configuredOTLP.QueueConfig.HasValue() {
+			otlpDefaultCfg.QueueConfig = configuredOTLP.QueueConfig
+		}
+		
+		oCfg = otlpDefaultCfg
 	} else {
 		// Use default gRPC config when neither protocol is explicitly configured
 		otlpFactory := otlpexporter.NewFactory()
