@@ -470,7 +470,7 @@ When tuning collection for larger clusters, consider the following:
 
 ## Warnings
 
-- **Read-only kubelet endpoint:** When `auth_type:` none is configured and no endpoint is specified, the receiver may use the unauthenticated HTTP kubelet endpoint on port `10255`. This read-only port is deprecated and is disabled by default or unavailable in many Kubernetes distributions and managed environments. Its availability depends on your cluster configuration. Verify your distribution's security requirements and prefer the secured kubelet endpoint.
+- **Read-only kubelet endpoint:** When `auth_type: none` is configured and no endpoint is specified, the receiver may use the unauthenticated HTTP kubelet endpoint on port `10255`. This read-only port is deprecated and is disabled by default or unavailable in many Kubernetes distributions and managed environments. Its availability depends on your cluster configuration. Verify your distribution's security requirements and prefer the secured kubelet endpoint.
 
 - **TLS certificate verification:** Setting `insecure_skip_verify: true` disables verification of the kubelet server certificate chain and hostname. Avoid this setting in production when certificate verification can be configured.
 
