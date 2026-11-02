@@ -54,6 +54,7 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
+	eCfg.Config.LogConfig.DisableRetries = eCfg.RetrySettings.Enabled
 	if metadata.ExporterGooglecloudCustomMonitoredResourcesFeatureGate.IsEnabled() {
 		eCfg.Config.LogConfig.MapMonitoredResource = resourcemapping.CustomLoggingMonitoredResourceMapping
 	}
