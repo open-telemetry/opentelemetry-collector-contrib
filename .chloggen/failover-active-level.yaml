@@ -1,0 +1,4 @@
+change_type: enhancement
+component: connector/failover
+note: Add the otelcol_connector_failover_active_level gauge to report the current zero-based priority level, or -1 when all levels have failed.
+issues: [51684]

@@ -5,6 +5,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -68,7 +69,7 @@ func createTracesToTraces(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, t.Shutdown(ctx))
 	}
 
 	// Return testable wrapper that exposes internal failover router
@@ -106,7 +107,7 @@ func createMetricsToMetrics(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, t.Shutdown(ctx))
 	}
 
 	// Return testable wrapper that exposes internal failover router
@@ -144,7 +145,7 @@ func createLogsToLogs(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, t.Shutdown(ctx))
 	}
 
 	// Return testable wrapper that exposes internal failover router
