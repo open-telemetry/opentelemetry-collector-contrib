@@ -118,6 +118,7 @@ func TestPeriodicFlushLogsFirstErrorOnly(t *testing.T) {
 
 				require.Equal(t, 1, logs.Len())
 				require.Equal(t, zap.ErrorLevel, logs.All()[0].Level)
+				require.Equal(t, "Failed to flush file. Buffered data may be lost and subsequent writes may fail.", logs.All()[0].Message)
 				require.Equal(t, writer.path, logs.All()[0].ContextMap()["path"])
 				require.Equal(t, firstErr.Error(), logs.All()[0].ContextMap()["error"])
 

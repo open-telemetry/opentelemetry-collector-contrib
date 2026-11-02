@@ -94,7 +94,7 @@ func (w *fileWriter) startFlusher() {
 				w.mutex.Lock()
 				if err := ff.flush(); err != nil && !w.flushErrorLogged {
 					w.flushErrorLogged = true
-					w.logger.Error("Failed to flush file", zap.String("path", w.path), zap.Error(err))
+					w.logger.Error("Failed to flush file. Buffered data may be lost and subsequent writes may fail.", zap.String("path", w.path), zap.Error(err))
 				}
 				w.mutex.Unlock()
 			case <-stop:
