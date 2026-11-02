@@ -364,7 +364,7 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 | `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
 
 - `retry`: Elasticsearch bulk request retry settings
-  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, e.g. during a shutdown, it is not retried. Timeout errors are retried only before the connection is ready, including during DNS, the TCP handshake, and the TLS handshake. A timeout after the connection is ready, including while the request is being written or while waiting for the response, is not retried, to avoid duplicates. Other transport errors are retried.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
@@ -478,6 +478,10 @@ version detection is disabled (`version_detection.enabled: false`) or the
 connected Elasticsearch is older than 9.4.0, exponential histograms fall back to
 a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
 `histogram` field.
+
+Explicit-bounds histograms are converted to exponential histograms
+when the Elasticsearch version is 9.4.0 or later. This can be disabled via `version_detection.enabled: false`, which stores
+explicit-bounds histograms as `histogram` field.
 
 Per-data-point mapping hints still apply and take precedence: `histogram:raw`
 stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`

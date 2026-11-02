@@ -220,6 +220,84 @@ func Test_e2e_converters(t *testing.T) {
 	}
 }
 
+func Test_e2e_toValidUTF8(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, true))
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, true))
+
+	tests := []struct {
+		statement string
+		want      func(tCtx *ottllog.TransformContext)
+	}{
+		{
+			statement: `set(body, ToValidUTF8(body))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("operation\uFFFDA")
+			},
+		},
+		{
+			statement: `set(body, ToValidUTF8(body, "?"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("operation?A")
+			},
+		},
+		{
+			statement: `set(attributes["invalid"], ToValidUTF8(attributes["invalid"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\uFFFDvalue")
+			},
+		},
+		{
+			statement: `set(attributes["http.method"], ToValidUTF8(attributes["http.method"]))`,
+			want:      func(*ottllog.TransformContext) {},
+		},
+		{
+			statement: `set(attributes["bad_list"], MapEach(attributes["bad_list"], (_, v) => ToValidUTF8(v)))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				list := tCtx.GetLogRecord().Attributes().PutEmptySlice("bad_list")
+				list.AppendEmpty().SetStr("one\uFFFD")
+				list.AppendEmpty().SetStr("two")
+			},
+		},
+	}
+
+	construct := func() *ottllog.TransformContext {
+		tCtx := constructLogTransformContext()
+		tCtx.GetLogRecord().Body().SetStr("operation\xffA")
+		tCtx.GetLogRecord().Attributes().PutStr("invalid", "bad\xffvalue")
+		list := tCtx.GetLogRecord().Attributes().PutEmptySlice("bad_list")
+		list.AppendEmpty().SetStr("one\xff")
+		list.AppendEmpty().SetStr("two")
+		return tCtx
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
+			require.NoError(t, err)
+
+			for _, statement := range logStatements {
+				tCtx := construct()
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				require.NoError(t, err)
+
+				exTCtx := construct()
+				tt.want(exTCtx)
+
+				require.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				tCtx.Close()
+				exTCtx.Close()
+			}
+		})
+	}
+}
+
+func Test_e2e_experimental_gate_disabled(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableExperimentalFeatureGate, false))
+
+	_, err := parseStatementWithAndWithoutPathContext(`set(body, ToValidUTF8(body))`)
+	require.ErrorContains(t, err, "function \"ToValidUTF8\" is experimental and requires the `pkg.ottl.functions.enableExperimental` feature gate to be enabled")
+}
+
 func Test_e2e_lambda_gate_disabled(t *testing.T) {
 	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.OttlFunctionsEnableLambdaFeatureGate, false))
 

@@ -4,6 +4,7 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: minikube
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -182,6 +183,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 42ad382b-ed0b-446d-9aab-3fdce8b4f9e2
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -342,6 +344,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: eb632b33-62c6-4a80-9575-a97ab363ad7f
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -502,6 +505,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -662,6 +666,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5a5fbd34cfb43ee7bee976798370c910
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -822,6 +827,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 3bef16d65fa74d46458df57d8f6f59af
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -982,6 +988,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 3016593d20758bbfe68aba26604a8e3d
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1142,6 +1149,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 0a6d6b05-0e8d-4920-8a38-926a33164d45
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1302,6 +1310,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1462,6 +1471,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 14bf95e0-9451-4192-b111-807b03163670
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1625,6 +1635,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: eb632b33-62c6-4a80-9575-a97ab363ad7f
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1734,6 +1745,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1843,6 +1855,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5a5fbd34cfb43ee7bee976798370c910
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -1952,6 +1965,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 3bef16d65fa74d46458df57d8f6f59af
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -2061,6 +2075,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 3016593d20758bbfe68aba26604a8e3d
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -2170,6 +2185,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 0a6d6b05-0e8d-4920-8a38-926a33164d45
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -2279,6 +2295,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -2388,6 +2405,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 42ad382b-ed0b-446d-9aab-3fdce8b4f9e2
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -2497,6 +2515,7 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 14bf95e0-9451-4192-b111-807b03163670
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -2606,6 +2625,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: default-token-wgfsl
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -2665,6 +2685,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: config-volume
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -2724,6 +2745,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: coredns-token-dzc5t
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -2783,6 +2805,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: config-volume
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -2842,6 +2865,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: coredns-token-dzc5t
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -2901,6 +2925,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: kube-proxy
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -2960,6 +2985,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: kube-proxy-token-2z27z
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -3019,6 +3045,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: storage-provisioner-token-qzlx6
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
