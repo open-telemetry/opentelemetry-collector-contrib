@@ -347,27 +347,16 @@ The Kubelet Stats Receiver supports the following configuration options. Options
 |---|---|---|
 | `collection_interval` | Interval between collection attempts. | `10s` |
 | `initial_delay` | Delay before the first collection. Non-positive values start collection immediately. | `1s` |
-| `timeout` | Optional deadline for a collection operation. | `0` (no timeout configured) |
-| `endpoint` | Kubelet endpoint to scrape. When omitted, the hostname and port are derived from the selected authentication method. | `https://<hostname>:10250` with `tls`; `http://<hostname>:10255` with `none` |
+| `timeout` | Scraper-controller timeout setting. Currently not propagated to kubelet HTTP requests, so it does not cancel stalled requests. | `0` (no timeout configured) |
+ | `endpoint` | Kubelet endpoint to scrape. With `tls`, `serviceAccount`, or `none`, omission uses the Collector hostname and the authentication method's default port. With `kubeConfig`, specify the node name for API-server proxy access; there is no hostname fallback. | `https://<hostname>:10250` with `tls`/`serviceAccount`; `http://<hostname>:10255` with `none`; no default with `kubeConfig` |
 | `auth_type` | Authentication method for kubelet access: `tls`, `serviceAccount`, `kubeConfig`, or `none`. | `tls` |
 | `context` | Kubeconfig context override when `auth_type` is `kubeConfig`. | Empty |
 | `insecure_skip_verify` | Skips verification of the kubelet server certificate chain and hostname when enabled. | `false` |
 | `ca_file` | Path to the CA certificate used to verify the server certificate. | Empty |
-| `ca_pem` | PEM-encoded CA certificate supplied directly in configuration. | Empty |
 | `cert_file` | Path to the client TLS certificate. | Empty |
-| `cert_pem` | PEM-encoded client TLS certificate. | Empty |
 | `key_file` | Path to the client TLS private key. | Empty |
-| `key_pem` | PEM-encoded client TLS private key. | Empty |
-| `cipher_suites` | TLS cipher suites available to the client. | Go TLS defaults |
-| `include_insecure_cipher_suites` | Enables insecure TLS cipher suites. | `false` |
-| `curve_preferences` | Preferred elliptic curves for TLS key exchange. | Go TLS defaults |
-| `include_system_ca_certs_pool` | Includes system CA certificates in the certificate pool. | `false` |
-| `min_version` | Minimum acceptable TLS version. | TLS 1.2 |
-| `max_version` | Maximum acceptable TLS version. | Go TLS default |
-| `reload_interval` | Interval for reloading certificates. | Not configured |
-| `dialer.timeout` | Maximum time allowed to establish a network connection. | No timeout |
-| `kube_api_qps` | Maximum queries per second for the Kubernetes API client configuration. | Client-go default: `5` |
-| `kube_api_burst` | Maximum burst of requests for the Kubernetes API client configuration. | Client-go default: `10` |
+ | `k8s_api_config.kube_api_qps` | Maximum queries per second for the optional Kubernetes metadata API client; does not throttle kubelet scraping. | Client-go default: `5` |
+ | `k8s_api_config.kube_api_burst` | Maximum burst of requests for the optional Kubernetes metadata API client; does not throttle kubelet scraping. | Client-go default: `10` |
 | `node` | Node name used to limit node discovery. Required for certain deprecated node-utilization metrics. | Empty |
 | `metric_groups` | Metric groups to collect: `container`, `pod`, `node`, and `volume`. | `container`, `pod`, `node` |
 | `extra_metadata_labels` | Additional metadata to retrieve from the kubelet `/pods` endpoint. | Empty |
@@ -443,24 +432,19 @@ otelcol --config=config.yaml --feature-gates=-receiver.kubeletstats.cpuUsageScra
 
 ## Self-observability
 
-The Kubelet Stats Receiver uses the Collector's standard receiver and scraper
-observability mechanisms.
+The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. It uses the Collector's standard receiver and scraper observability mechanisms.
 
 The `otelcol_scraper_scraped_metric_points` and
 `otelcol_scraper_errored_metric_points` metrics provide information about
 scraped metric points and scraping errors, respectively.
 
 Failures when requesting the kubelet `/stats/summary` or `/pods` endpoints
-are logged and returned by the scraping operation. Use the Collector's
-internal telemetry and logs to monitor receiver activity and investigate
-scraping failures.
+are reported through the scraping operation and Collector logs. Use the
+Collector's internal telemetry and logs to monitor receiver activity and
+investigate scraping failures.
 
 For details on configuring and monitoring Collector internal telemetry,
 see the [Collector internal telemetry documentation](https://opentelemetry.io/docs/collector/internal-telemetry/).
-
-## Deployment and scaling
-
-The Kubelet Stats Receiver collects metrics by querying the kubelet associated with a Kubernetes node. For node-level collection in Kubernetes, a common deployment pattern is to run the OpenTelemetry Collector as a DaemonSet, with each Collector instance configured to scrape the kubelet on its own node.
 
 ## Graceful Shutdown and Statefulness
 
@@ -495,16 +479,6 @@ When tuning collection for larger clusters, consider the following:
 - **Scrape-based CPU usage gaps:** When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, CPU usage is calculated from consecutive CPU-time samples. A value may be unavailable on the first scrape for a resource, after a Collector restart, or after a container restart or CPU-time counter reset. A subsequent valid sample is needed before usage can be calculated again.
 
 - **Deprecated node-utilization metrics:** `k8s.container.cpu.node.utilization`, `k8s.pod.cpu.node.utilization`, `k8s.container.memory.node.utilization`, and `k8s.pod.memory.node.utilization` are deprecated. Consider the corresponding CPU or memory usage metrics and `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory`, as appropriate. These alternatives use allocatable capacity and are not equivalent to the deprecated node-capacity-based calculation.
-
-## Self-observability
-
-The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. Use the Collector's standard scraper-level metrics and logs to monitor collection activity and investigate failures.
-
-The `otelcol_scraper_scraped_metric_points` and `otelcol_scraper_errored_metric_points` metrics provide information about scraped metric points and scraping errors, respectively.
-
-Failures when requesting the kubelet `/stats/summary` or `/pods` endpoints are reported through the scraping operation and Collector logs. Use the Collector's internal telemetry and logs to investigate scraping failures.
-
-For details on configuring and monitoring Collector internal telemetry, see the [Collector internal telemetry documentation](https://opentelemetry.io/docs/collector/internal-telemetry/).
 
 ## Available Benchmarks
 
