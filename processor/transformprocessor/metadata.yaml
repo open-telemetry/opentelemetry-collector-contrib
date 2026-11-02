@@ -21,7 +21,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47306
   - id: "processor.transform.enableProfileStatements"
     description: Enables support for the profiles signal, including the `profile_statements` configuration option.
-    stage: alpha
+    stage: beta
     from_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40489
   - id: "transform.flatten.logs"
@@ -32,5 +32,3 @@ feature_gates:
 
 tests:
   config:
-  goleak:
-    setup: "setupTestMain(m)"

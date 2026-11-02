@@ -9,6 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	setupTestMain(m)
 	goleak.VerifyTestMain(m)
 }
