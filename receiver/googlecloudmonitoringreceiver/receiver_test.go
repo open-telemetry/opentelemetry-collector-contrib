@@ -400,6 +400,10 @@ func TestConvertGCPTimeSeriesToMetrics_UnsupportedCombinationsSkipped(t *testing
 		{name: "distribution gauge", valueType: metric.MetricDescriptor_DISTRIBUTION, metricKind: metric.MetricDescriptor_GAUGE},
 		{name: "distribution unspecified kind", valueType: metric.MetricDescriptor_DISTRIBUTION, metricKind: metric.MetricDescriptor_METRIC_KIND_UNSPECIFIED},
 		{name: "scalar unspecified kind", valueType: metric.MetricDescriptor_INT64, metricKind: metric.MetricDescriptor_METRIC_KIND_UNSPECIFIED},
+		{name: "string gauge", valueType: metric.MetricDescriptor_STRING, metricKind: metric.MetricDescriptor_GAUGE},
+		{name: "money gauge", valueType: metric.MetricDescriptor_MONEY, metricKind: metric.MetricDescriptor_GAUGE},
+		{name: "bool delta", valueType: metric.MetricDescriptor_BOOL, metricKind: metric.MetricDescriptor_DELTA},
+		{name: "bool cumulative", valueType: metric.MetricDescriptor_BOOL, metricKind: metric.MetricDescriptor_CUMULATIVE},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			mr := newGoogleCloudMonitoringReceiver(&Config{}, zap.NewNop())

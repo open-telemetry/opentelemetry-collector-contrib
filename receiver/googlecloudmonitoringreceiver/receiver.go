@@ -352,10 +352,17 @@ func isSupportedMetricKind(valueType metric.MetricDescriptor_ValueType, metricKi
 	switch valueType {
 	case metric.MetricDescriptor_DISTRIBUTION:
 		return metricKind == metric.MetricDescriptor_DELTA || metricKind == metric.MetricDescriptor_CUMULATIVE
-	default:
+	case metric.MetricDescriptor_BOOL:
+		// Only gauges support boolean values (converted to 1/0). Google Cloud Monitoring
+		// also requires BOOL metrics to be GAUGE.
+		return metricKind == metric.MetricDescriptor_GAUGE
+	case metric.MetricDescriptor_INT64, metric.MetricDescriptor_DOUBLE:
 		return metricKind == metric.MetricDescriptor_GAUGE ||
 			metricKind == metric.MetricDescriptor_CUMULATIVE ||
 			metricKind == metric.MetricDescriptor_DELTA
+	default:
+		// STRING, MONEY and unspecified value types cannot be converted to numeric data points.
+		return false
 	}
 }
 
