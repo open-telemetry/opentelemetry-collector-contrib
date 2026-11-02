@@ -280,6 +280,8 @@ go.opentelemetry.io/collector/exporter/exportertest v0.164.1-0.20261029175530-9a
 go.opentelemetry.io/collector/exporter/exportertest v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:MZqbOzAYU7LrGgsK+o5GcFulnKkxj7sXdgPS8TTA36g=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.164.1-0.20261029175530-9afdf701f333 h1:QzGDWJhOZIFpKKVpq63NmUu/QTMeb3zFPaHxxoYouz4=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:BNxq/v0ZlX3vQw8ioC025G/IT1vzFRs69OQaAF8vMu0=
+go.opentelemetry.io/collector/exporter/otlphttpexporter v0.164.1-0.20261029175530-9afdf701f333 h1:m5FuWSwBEAKwipbdkgwwiWs/y5qXCp+rIKinzb/7v2E=
+go.opentelemetry.io/collector/exporter/otlphttpexporter v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:c3wnexsLNIXXwPuFR3XNOUXr0XY1khs1ABZj2yE/x0w=
 go.opentelemetry.io/collector/exporter/xexporter v0.164.1-0.20261029175530-9afdf701f333 h1:xPv+7zhH65dNGgaQiMm5hmZObbmNIHLrt+p4UXY7+lc=
 go.opentelemetry.io/collector/exporter/xexporter v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:3RjiXX6q2T4ibQHP1TDI3IMGSouNbKwLoSj0WOztVoM=
 go.opentelemetry.io/collector/extension v1.70.1-0.20261029175530-9afdf701f333 h1:sDuq38SMYjxG1iqEn8R4GO1G+f0XLXQVwAnYjDuy57A=

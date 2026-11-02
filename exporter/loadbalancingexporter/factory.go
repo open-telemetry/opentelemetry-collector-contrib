@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
@@ -46,33 +47,102 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		// By default we disable resilience options on loadbalancing exporter level
 		// to maintain compatibility with workflow in previous versions
+		// Note: OTLP is not set by default to allow OTLP/HTTP configuration
+		// The default gRPC config is stored implicitly and used when neither protocol is configured
 		Protocol: Protocol{
-			OTLP: *otlpDefaultCfg,
+			OTLP: configoptional.None[otlpexporter.Config](),
 		},
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
-func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
-	oCfg := cfg.Protocol.OTLP
+func buildExporterConfig(cfg *Config, endpoint string) *otlpexporter.Config {
+	var oCfg *otlpexporter.Config
+	if cfg.Protocol.OTLP.HasValue() {
+		// Merge configured OTLP with default to ensure all fields have proper defaults
+		otlpFactory := otlpexporter.NewFactory()
+		otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
+		configuredOTLP := cfg.Protocol.OTLP.Get()
+		
+		// Use the configured values, falling back to defaults for unset fields
+		if configuredOTLP.ClientConfig.Endpoint != "" {
+			otlpDefaultCfg.ClientConfig.Endpoint = configuredOTLP.ClientConfig.Endpoint
+		}
+		if configuredOTLP.ClientConfig.Headers != nil {
+			otlpDefaultCfg.ClientConfig.Headers = configuredOTLP.ClientConfig.Headers
+		}
+		if configuredOTLP.TimeoutConfig.Timeout > 0 {
+			otlpDefaultCfg.TimeoutConfig.Timeout = configuredOTLP.TimeoutConfig.Timeout
+		}
+		if configuredOTLP.RetryConfig.Enabled {
+			otlpDefaultCfg.RetryConfig = configuredOTLP.RetryConfig
+		}
+		if configuredOTLP.QueueConfig.HasValue() {
+			otlpDefaultCfg.QueueConfig = configuredOTLP.QueueConfig
+		}
+		
+		oCfg = otlpDefaultCfg
+	} else {
+		// Use default gRPC config when neither protocol is explicitly configured
+		otlpFactory := otlpexporter.NewFactory()
+		otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
+		oCfg = otlpDefaultCfg
+	}
 	oCfg.ClientConfig.Endpoint = endpoint
 
 	return oCfg
 }
 
+func buildHTTPExporterConfig(cfg *Config, resolvedBackend string) (*otlphttpexporter.Config, error) {
+	httpCfg := cfg.Protocol.OTLPHTTP.Get()
+
+	// Set default encoding to proto if not explicitly configured
+	if httpCfg.Encoding == "" {
+		httpCfg.Encoding = otlphttpexporter.EncodingProto
+	}
+
+	// For HTTP, we need to rewrite the endpoint to preserve the configured path
+	// while replacing the host and port with the resolved backend
+	var rewrittenEndpoint string
+	var err error
+
+	// Prefer signal-specific endpoints if configured
+	switch {
+	case httpCfg.MetricsEndpoint != "":
+		rewrittenEndpoint, err = rewriteHTTPEndpoint(httpCfg.MetricsEndpoint, resolvedBackend)
+		if err != nil {
+			return nil, fmt.Errorf("failed to rewrite metrics endpoint: %w", err)
+		}
+		httpCfg.MetricsEndpoint = rewrittenEndpoint
+	case httpCfg.ClientConfig.Endpoint != "":
+		// Fall back to the generic endpoint with /v1/metrics appended
+		rewrittenEndpoint, err = rewriteHTTPEndpoint(httpCfg.ClientConfig.Endpoint, resolvedBackend)
+		if err != nil {
+			return nil, fmt.Errorf("failed to rewrite endpoint: %w", err)
+		}
+		httpCfg.ClientConfig.Endpoint = rewrittenEndpoint
+	default:
+		// Use the default with resolved backend
+		httpCfg.ClientConfig.Endpoint = fmt.Sprintf("http://%s/v1/metrics", resolvedBackend)
+	}
+
+	return httpCfg, nil
+}
+
 func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {
+	exporterParams := params
 	if name := params.ID.Name(); name != "" {
-		params.ID = component.NewIDWithName(typ, name)
+		exporterParams.ID = component.NewIDWithName(typ, name)
 	} else {
-		params.ID = component.NewID(typ)
+		exporterParams.ID = component.NewID(typ)
 	}
 	telemetry := params.TelemetrySettings
 	telemetry.MeterProvider = metricnoop.NewMeterProvider()
 	telemetry.TracerProvider = tracenoop.NewTracerProvider()
-	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
-	telemetry.Logger = params.Logger
-	params.TelemetrySettings = telemetry
-	return params
+	exporterParams.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
+	telemetry.Logger = exporterParams.Logger
+	exporterParams.TelemetrySettings = telemetry
+	return exporterParams
 }
 
 func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {

@@ -53,15 +53,16 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		return nil, err
 	}
 
+	config := cfg.(*Config)
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
+		oCfg := buildExporterConfig(config, endpoint)
 		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
-		return exporterFactory.CreateTraces(ctx, oParams, &oCfg)
+		return exporterFactory.CreateTraces(ctx, oParams, oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry, defaultGRPCPort)
 	if err != nil {
 		return nil, err
 	}
@@ -73,17 +74,17 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		logger:       params.Logger,
 	}
 
-	switch cfg.(*Config).RoutingKey {
+	switch config.RoutingKey {
 	case svcRoutingStr:
 		traceExporter.routingKey = svcRouting
 	case attrRoutingStr:
 		traceExporter.routingKey = attrRouting
-		traceExporter.routingAttrs = cfg.(*Config).RoutingAttributes
+		traceExporter.routingAttrs = config.RoutingAttributes
 	case randomnessRoutingStr:
 		traceExporter.routingKey = randomnessRouting
 	case traceIDRoutingStr, "":
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: %s", config.RoutingKey)
 	}
 	return &traceExporter, nil
 }

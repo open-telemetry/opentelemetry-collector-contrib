@@ -145,6 +145,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
     Unparseable tracestates that never carried an `rv` are not counted, as those traces would have routed by trace ID regardless.
 * The `load_balancing` exporter supports a set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disabled by default to maintain compatibility
 * The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`. For both traces and metrics, keys are encoded in configured order as `name=value|name=value|`, and missing attributes are encoded as `name=|`. Non-string values are deterministically stringified.
+* The `protocol` property configures the backend transport. Either `otlp` (for OTLP/gRPC) or `otlp_http` (for OTLP/HTTP) can be configured, but not both. When `otlp_http` is configured, metrics are exported over HTTP. The initial HTTP implementation supports metrics only; traces and logs continue to use OTLP/gRPC. The resolver default port for HTTP backends is 4318.
 
 Simple example
 
@@ -191,6 +192,63 @@ service:
       exporters:
         - load_balancing
 ```
+
+OTLP/HTTP backend example (metrics only):
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+
+processors:
+
+exporters:
+  load_balancing:
+    routing_key: "service"
+    protocol:
+      otlp_http:
+        # all options from the OTLP/HTTP exporter are supported
+        # except the endpoint (it will be replaced with resolved backends)
+        metrics_endpoint: http://placeholder:4318/v1/metrics
+        timeout: 30s
+        compression: gzip
+        encoding: proto
+    resolver:
+      static:
+        hostnames:
+        - backend-1:4318
+        - backend-2:4318
+        - backend-3:4318
+
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - load_balancing
+```
+
+OTLP/HTTP with custom endpoint path (e.g., VictoriaMetrics vmagent):
+
+```yaml
+exporters:
+  load_balancing:
+    routing_key: "service"
+    protocol:
+      otlp_http:
+        metrics_endpoint: http://placeholder:8429/opentelemetry/v1/metrics
+    resolver:
+      dns:
+        hostname: vmagent-headless.monitoring.svc
+        port: "8429"
+```
+
+> [!NOTE]
+> The initial OTLP/HTTP implementation supports metrics only. Traces and logs continue to use OTLP/gRPC.
 
 Persistent queue, retry and timeout usage example:
 
