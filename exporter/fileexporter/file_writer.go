@@ -24,6 +24,7 @@ type fileWriter struct {
 
 	flushInterval time.Duration
 	stopTicker    chan struct{}
+	wg            sync.WaitGroup
 	// Protected by mutex
 	refs    int  // number of active references to this writer
 	evicted bool // true if the writer has been evicted from the LRU
@@ -33,6 +34,9 @@ func exportMessageAsLine(w *fileWriter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
+	if w.file == nil {
+		return io.ErrClosedPipe
+	}
 	if _, err := w.file.Write(buf); err != nil {
 		return err
 	}
@@ -46,6 +50,9 @@ func exportMessageAsBuffer(w *fileWriter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
+	if w.file == nil {
+		return io.ErrClosedPipe
+	}
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
 	data := make([]byte, 4, 4+len(buf))
@@ -69,13 +76,14 @@ func (w *fileWriter) startFlusher() {
 		return
 	}
 
-	// Create the stop channel.
-	w.stopTicker = make(chan struct{})
+	// Create the stop channel and capture it locally so the goroutine
+	// always selects on the original channel value, even after shutdown
+	// nils out w.stopTicker.
+	stop := make(chan struct{})
+	w.stopTicker = stop
 	// Start the ticker.
 	ticker := time.NewTicker(w.flushInterval)
-	// use the local copies so the goroutine does not read these fields without the lock.
-	stop := w.stopTicker
-	go func() {
+	w.wg.Go(func() {
 		for {
 			select {
 			case <-ticker.C:
@@ -87,7 +95,7 @@ func (w *fileWriter) startFlusher() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 // Start starts the flush timer if set.
@@ -131,14 +139,28 @@ func (w *fileWriter) evict() error {
 
 // shutdown stops the flusher and closes the file.
 func (w *fileWriter) shutdown() error {
+	// Snapshot and nil out stopTicker under the lock to prevent a double-close
+	// if shutdown is called more than once.
+	w.mutex.Lock()
+	stopTicker := w.stopTicker
+	w.stopTicker = nil
+	w.mutex.Unlock()
+
+	if stopTicker != nil {
+		close(stopTicker)
+		// Wait for the flusher goroutine to finish before closing the file.
+		// Cannot hold w.mutex here because the goroutine acquires it on each tick.
+		w.wg.Wait()
+	}
+
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
-	if w.stopTicker != nil {
-		close(w.stopTicker)
-		w.stopTicker = nil
+	if w.file == nil {
+		return nil
 	}
-	// Close the file. This will flush any buffered data.
-	return w.file.Close()
+	err := w.file.Close()
+	w.file = nil
+	return err
 }
 
 func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {

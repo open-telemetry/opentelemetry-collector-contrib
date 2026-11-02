@@ -14,6 +14,12 @@ status:
     seeking_new: false
 
 feature_gates:
+  - id: "processor.transform.enableExperimentalFunctions"
+    description: Allow the transform processor's experimental functions to be used in statements and conditions. When disabled, experimental functions are rejected.
+    stage: alpha
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47306
+
   - id: "transform.flatten.logs"
     description: Flatten log data prior to transformation so every record has a unique copy of the resource and scope. Regroups logs based on resource and scope after transformations.
     stage: alpha
