@@ -17,7 +17,7 @@ issues: [46541]
 # Use pipe (|) for multiline entries.
 subtext: |
   Previously the status image was used, which some runtimes report as a bare digest (`sha256:<hex>`).
-   Values may change for images without a fully qualified registry (e.g. `nginx` instead of `docker.io/library/nginx`).
+  Values may change for images without a fully qualified registry (e.g. `nginx` instead of `docker.io/library/nginx`).
   Previously the status image was used, which some runtimes report as a bare digest (`sha256:<hex>`).
   Values may change for images without a fully qualified registry (e.g. `nginx` instead of `docker.io/library/nginx`).
 
