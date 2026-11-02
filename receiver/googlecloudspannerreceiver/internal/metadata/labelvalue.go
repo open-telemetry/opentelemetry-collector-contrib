@@ -383,7 +383,7 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 	case StringValueType:
 		newLabelValueFunc = newStringLabelValue
 		valueHolderFunc = func() any {
-				var valueHolder spanner.NullString
+			var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case IntValueType:
@@ -419,13 +419,13 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 	case LockRequestJSONValueType:
 		newLabelValueFunc = newLockRequestJSONLabelValue
 		valueHolderFunc = func() any {
-				var valueHolder spanner.NullString
+			var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case OperationsByTableJSONValueType:
 		newLabelValueFunc = newOperationsByTableJSONLabelValue
 		valueHolderFunc = func() any {
-				var valueHolder spanner.NullString
+			var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case TimestampValueType:
