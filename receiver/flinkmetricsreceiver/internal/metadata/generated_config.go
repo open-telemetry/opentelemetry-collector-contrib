@@ -807,6 +807,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for flink_metrics resource attributes.
 type ResourceAttributesConfig struct {
+	FlinkJobID         ResourceAttributeConfig `mapstructure:"flink.job.id"`
 	FlinkJobName       ResourceAttributeConfig `mapstructure:"flink.job.name"`
 	FlinkResourceType  ResourceAttributeConfig `mapstructure:"flink.resource.type"`
 	FlinkSubtaskIndex  ResourceAttributeConfig `mapstructure:"flink.subtask.index"`
@@ -817,6 +818,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		FlinkJobID: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		FlinkJobName: ResourceAttributeConfig{
 			Enabled: true,
 		},

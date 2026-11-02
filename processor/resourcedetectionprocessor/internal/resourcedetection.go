@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
@@ -53,7 +55,13 @@ type ResourceProviderFactory struct {
 }
 
 func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourceProviderFactory {
-	return &ResourceProviderFactory{detectors: detectors}
+	available := make(map[DetectorType]DetectorFactory, len(detectors))
+	for detectorType, factory := range detectors {
+		if factory != nil {
+			available[detectorType] = factory
+		}
+	}
+	return &ResourceProviderFactory{detectors: available}
 }
 
 func (f *ResourceProviderFactory) CreateResourceProvider(
@@ -94,7 +102,8 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
 		if !ok {
-			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
+			return nil, fmt.Errorf("detector %q is not compiled into this binary; compiled detectors: [%s]",
+				detectorType, strings.Join(f.CompiledDetectorTypes(), ", "))
 		}
 
 		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType), failOnMissingMetadata)
@@ -106,6 +115,17 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 	}
 
 	return detectors, nil
+}
+
+// CompiledDetectorTypes returns the sorted names of detectors available in this build.
+func (f *ResourceProviderFactory) CompiledDetectorTypes() []string {
+	detectorTypes := make([]string, 0, len(f.detectors))
+	for detectorType := range f.detectors {
+		detectorTypes = append(detectorTypes, string(detectorType))
+	}
+
+	sort.Strings(detectorTypes)
+	return detectorTypes
 }
 
 type ResourceProvider struct {
@@ -260,7 +280,7 @@ func (p *ResourceProvider) detectWithRetry(ctx context.Context, client *http.Cli
 		base := []attribute.KeyValue{detectorAttr, attribute.String("outcome", outcome)}
 		p.telemetry.ResourcedetectionDetectorDuration.Record(ctx, time.Since(startTime).Seconds(), metric.WithAttributes(base...))
 		if failErr != nil {
-			base = append(base, semconv.ErrorType(failErr))
+			base = append(base, conventions.ErrorType(failErr))
 		}
 		p.telemetry.ResourcedetectionDetectorResults.Add(ctx, 1, metric.WithAttributes(base...))
 	}

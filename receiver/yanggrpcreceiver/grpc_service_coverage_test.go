@@ -23,7 +23,7 @@ func TestMdtDialout_BasicFlow(t *testing.T) {
 
 	receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
-	yangParser := internal.NewYANGParser()
+	yangParser := internal.NewYANGParser(settings.Logger)
 	yangParser.LoadBuiltinModules()
 
 	service := &grpcService{
@@ -45,7 +45,7 @@ func TestProcessTelemetryData_ErrorHandling(t *testing.T) {
 
 	receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
-	yangParser := internal.NewYANGParser()
+	yangParser := internal.NewYANGParser(settings.Logger)
 	yangParser.LoadBuiltinModules()
 
 	service := &grpcService{
@@ -94,7 +94,7 @@ func TestConvertToOTELMetrics(t *testing.T) {
 
 	receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
-	yangParser := internal.NewYANGParser()
+	yangParser := internal.NewYANGParser(settings.Logger)
 	yangParser.LoadBuiltinModules()
 
 	// Don't initialize RFC parser to avoid nil pointer issues

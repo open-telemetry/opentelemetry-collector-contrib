@@ -22,6 +22,7 @@ type TaskmanagerMetrics struct {
 // JobMetrics store metrics with associated identifier attributes.
 type JobMetrics struct {
 	Host    string
+	JobID   string
 	JobName string
 	Metrics MetricsResponse
 }
@@ -30,6 +31,7 @@ type JobMetrics struct {
 type SubtaskMetrics struct {
 	Host          string
 	TaskmanagerID string
+	JobID         string
 	JobName       string
 	TaskName      string
 	SubtaskIndex  string

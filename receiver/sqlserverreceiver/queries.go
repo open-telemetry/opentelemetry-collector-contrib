@@ -165,7 +165,6 @@ SELECT DISTINCT
 			,'Logical Connections'
 			,'Temp Tables Creation Rate'
 			,'Temp Tables For Destruction'
-			,'Free Space in tempdb (KB)'
 			,'Version Store Size (KB)'
 			,'Memory Grants Pending'
 			,'Memory Grants Outstanding'
@@ -273,6 +272,8 @@ SELECT DISTINCT
 				,'Latch Waits/sec'
 				,'Lock Requests/sec'
 				,'Lock Wait Time (ms)'
+				,'Average Wait Time (ms)'
+				,'Average Wait Time Base'
 			)
 		)
 )
@@ -316,6 +317,9 @@ SELECT
 	,pc.[object_name] AS [object]
 	,pc.[counter_name] AS [counter]
 	,CASE pc.[instance_name] WHEN '_Total' THEN 'Total' ELSE ISNULL(pc.[instance_name],'') END AS [instance]
+	-- [instance] renames the _Total aggregate to Total, which a real database could also
+	-- be called, so carry the unmodified name for telling the two apart.
+	,ISNULL(pc.[instance_name],'') AS [instance_raw]
 	,CAST(CASE WHEN pc.[cntr_type] = 537003264 AND pc1.[cntr_value] > 0 THEN (pc.[cntr_value] * 1.0) / (pc1.[cntr_value] * 1.0) * 100 ELSE pc.[cntr_value] END AS float(10)) AS [value]
 	,pc.[cntr_value] AS [raw_value]
 	,CAST(pc.[cntr_type] AS varchar(25)) AS [counter_type]
@@ -330,7 +334,12 @@ LEFT OUTER JOIN @PCounters AS pc1
 	AND pc.[instance_name] = pc1.[instance_name]
 	AND pc1.[counter_name] LIKE '%base'
 WHERE
-	pc.[counter_name] NOT LIKE '% base'
+	(
+		pc.[counter_name] NOT LIKE '% base'
+		-- Average Wait Time (ms) only becomes an average once divided by this base
+		-- counter, so it has to survive the filter that drops the other bases.
+		OR pc.[counter_name] = 'Average Wait Time Base'
+	)
 OPTION(RECOMPILE)
 `
 
@@ -1378,4 +1387,102 @@ EXEC sp_executesql @SqlStatement
 
 func getSQLServerDiskIOQuery() string {
 	return sqlServerDiskIOQuery
+}
+
+// sqlServerTempDBQuery returns a single row of tempdb space usage from
+// tempdb.sys.dm_db_file_space_usage, broken down into a mutually exclusive partition:
+// user_objects/internal_objects/version_store/free/mixed_extents.
+const sqlServerTempDBQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.* metrics.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+;
+SELECT
+	'sqlserver_tempdb' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(SUM(user_object_reserved_page_count)     AS BIGINT) * 8 AS kb_user_objects,
+	CAST(SUM(internal_object_reserved_page_count) AS BIGINT) * 8 AS kb_internal_objects,
+	CAST(SUM(version_store_reserved_page_count)   AS BIGINT) * 8 AS kb_version_store,
+	CAST(SUM(unallocated_extent_page_count)       AS BIGINT) * 8 AS kb_free,
+	CAST(SUM(mixed_extent_page_count)             AS BIGINT) * 8 AS kb_mixed_extents
+FROM tempdb.sys.dm_db_file_space_usage WITH (NOLOCK)
+`
+
+func getSQLServerTempDBQuery() string {
+	return sqlServerTempDBQuery
+}
+
+// sqlServerTempDBContentionQuery returns tempdb page latch waiters by page type (GAM/SGAM/PFS/
+// other), classified from the page number in resource_description. Uses sys.dm_os_waiting_tasks
+// (point-in-time) rather than sys.dm_os_wait_stats (cumulative, keyed by wait_type not resource).
+const sqlServerTempDBContentionQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.allocation.* metrics.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+;
+WITH
+tempdb_pagelatch_waits AS (
+	SELECT
+		TRY_CAST(PARSENAME(REPLACE(wt.resource_description, ':', '.'), 1) AS BIGINT) AS page_id
+	FROM sys.dm_os_waiting_tasks AS wt WITH (NOLOCK)
+	WHERE wt.wait_type LIKE 'PAGELATCH_%'
+	  AND wt.resource_description LIKE '2:%'
+),
+valid_pages AS (
+	SELECT page_id FROM tempdb_pagelatch_waits WHERE page_id IS NOT NULL
+),
+classified AS (
+	SELECT
+		CASE
+			WHEN page_id = 1 OR page_id % 8088 = 0 THEN 'pfs'
+			WHEN page_id = 2 OR page_id % 511232 = 0 THEN 'gam'
+			WHEN page_id = 3 OR page_id % 511232 = 1 THEN 'sgam'
+			ELSE 'other'
+		END AS page_type
+	FROM valid_pages
+)
+SELECT
+	'sqlserver_tempdb_contention' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'gam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS gam_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'sgam' THEN 1 ELSE 0 END), 0) AS BIGINT) AS sgam_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'pfs' THEN 1 ELSE 0 END), 0) AS BIGINT) AS pfs_waiters,
+	CAST(ISNULL(SUM(CASE WHEN page_type = 'other' THEN 1 ELSE 0 END), 0) AS BIGINT) AS other_waiters
+FROM classified
+`
+
+func getSQLServerTempDBContentionQuery() string {
+	return sqlServerTempDBContentionQuery
+}
+
+// sqlServerTempDBFileQuery returns one row per tempdb data/log file. Reads from
+// tempdb.sys.database_files, not sys.master_files: for tempdb specifically, sys.master_files.size
+// reflects the configured startup size, not the current size after autogrowth, since tempdb is
+// recreated from scratch on every server restart.
+const sqlServerTempDBFileQuery string = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.tempdb.file.size.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_tempdb_file' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	CAST(file_id AS BIGINT) AS [file_id],
+	CASE type WHEN 0 THEN 'data' WHEN 1 THEN 'log' ELSE 'other' END AS [file_type],
+	CAST(size AS BIGINT) * 8 * 1024 AS [size_bytes]
+FROM tempdb.sys.database_files WITH (NOLOCK)
+WHERE type IN (0, 1)
+`
+
+func getSQLServerTempDBFileQuery() string {
+	return sqlServerTempDBFileQuery
 }
