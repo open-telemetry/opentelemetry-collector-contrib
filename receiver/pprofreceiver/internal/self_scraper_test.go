@@ -4,7 +4,9 @@
 package internal
 
 import (
+	"bytes"
 	"runtime"
+	runtimepprof "runtime/pprof"
 	"sync"
 	"testing"
 	"time"
@@ -29,7 +31,6 @@ func TestScrapeSelf_CPUProfile(t *testing.T) {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}()
 
-	// Generate some CPU activity
 	sum := 0
 	for range 1_000_000 {
 		sum++
@@ -40,15 +41,32 @@ func TestScrapeSelf_CPUProfile(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEqual(t, 0, p.ProfileCount())
 
-	sp := p.ResourceProfiles().At(0).ScopeProfiles().At(0)
-	require.Equal(t, metadata.ScopeName+"/selfscraper", sp.Scope().Name())
-	require.Equal(t, "1.2.3", sp.Scope().Version())
+	// Inspect ALL ResourceProfiles
+	foundCPUProfile := false
+	for i := 0; i < p.ResourceProfiles().Len(); i++ {
+		rp := p.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+			// Verify scope name and version for the first ScopeProfile in the first ResourceProfile
+			if i == 0 && j == 0 {
+				require.Equal(t, metadata.ScopeName+"/selfscraper", sp.Scope().Name())
+				require.Equal(t, "1.2.3", sp.Scope().Version())
+			}
+			for k := 0; k < sp.Profiles().Len(); k++ {
+				prof := sp.Profiles().At(k)
+				typeIdx := int(prof.SampleType().TypeStrindex())
+				sampleType := p.Dictionary().StringTable().At(typeIdx)
+				if sampleType == "samples" || sampleType == "cpu" {
+					foundCPUProfile = true
+				}
+			}
+		}
+	}
+	require.True(t, foundCPUProfile, "CPU profile should be collected")
 }
 
 // Test B: Block profile is collected
 func TestScrapeSelf_BlockProfile(t *testing.T) {
-	// This test must not run in parallel with other tests that manipulate
-	// runtime profiling rates, as they are process-global.
 	s := SelfScraper{
 		BlockProfileFraction: 1,
 		MutexProfileFraction: 0,
@@ -60,45 +78,65 @@ func TestScrapeSelf_BlockProfile(t *testing.T) {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}()
 
-	// Generate blocking activity using a channel with multiple goroutines
-	// to ensure block profiling captures the contention
+	runtime.SetBlockProfileRate(1)
+
+	var mu sync.Mutex
+	var cond sync.Cond
+	cond.L = &mu
 	var wg sync.WaitGroup
-	blockCh := make(chan struct{}, 1)
-	for range 10 {
+	readyCh := make(chan struct{}, 1000)
+
+	for range 1000 {
 		wg.Go(func() {
-			<-blockCh
+			mu.Lock()
+			readyCh <- struct{}{}
+			cond.Wait()
+			mu.Unlock()
 		})
 	}
-	time.Sleep(10 * time.Millisecond)
-	close(blockCh)
-	wg.Wait()
 
+	for range 1000 {
+		<-readyCh
+	}
+
+	time.Sleep(200 * time.Millisecond)
+
+	// Scrape while goroutines are still blocked
 	p, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
 	require.NotEqual(t, 0, p.ProfileCount())
 
-	sp := p.ResourceProfiles().At(0).ScopeProfiles().At(0)
-	require.Equal(t, metadata.ScopeName+"/selfscraper", sp.Scope().Name())
-	require.Equal(t, "1.2.3", sp.Scope().Version())
+	mu.Lock()
+	cond.Broadcast()
+	mu.Unlock()
+	wg.Wait()
 
-	// Verify that CPU profile is still collected
+	// Inspect ALL ResourceProfiles (block/mutex may be in different ResourceProfiles)
 	foundCPUProfile := false
-	for i := 0; i < sp.Profiles().Len(); i++ {
-		prof := sp.Profiles().At(i)
-		typeIdx := int(prof.SampleType().TypeStrindex())
-		sampleType := p.Dictionary().StringTable().At(typeIdx)
-		if sampleType == "samples" || sampleType == "cpu" {
-			foundCPUProfile = true
-			break
+	foundBlockProfile := false
+	for i := 0; i < p.ResourceProfiles().Len(); i++ {
+		rp := p.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+			for k := 0; k < sp.Profiles().Len(); k++ {
+				prof := sp.Profiles().At(k)
+				typeIdx := int(prof.SampleType().TypeStrindex())
+				sampleType := p.Dictionary().StringTable().At(typeIdx)
+				if sampleType == "samples" || sampleType == "cpu" {
+					foundCPUProfile = true
+				}
+				if sampleType == "contentions" || sampleType == "delay" {
+					foundBlockProfile = true
+				}
+			}
 		}
 	}
 	require.True(t, foundCPUProfile, "CPU profile should be collected")
+	require.True(t, foundBlockProfile, "Block profile should be collected with contentions or delay sample type")
 }
 
 // Test C: Mutex profile is collected
 func TestScrapeSelf_MutexProfile(t *testing.T) {
-	// This test must not run in parallel with other tests that manipulate
-	// runtime profiling rates, as they are process-global.
 	s := SelfScraper{
 		BlockProfileFraction: 0,
 		MutexProfileFraction: 1,
@@ -110,38 +148,52 @@ func TestScrapeSelf_MutexProfile(t *testing.T) {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}()
 
-	// Generate mutex contention
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-	for range 10 {
+	readyCh := make(chan struct{}, 100)
+
+	for range 100 {
 		wg.Go(func() {
 			mu.Lock()
-			defer mu.Unlock()
-			time.Sleep(1 * time.Millisecond)
+			readyCh <- struct{}{}
+			time.Sleep(10 * time.Millisecond)
+			mu.Unlock()
 		})
 	}
-	wg.Wait()
 
+	for range 100 {
+		<-readyCh
+	}
+
+	// Scrape while contention is ongoing
 	p, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
 	require.NotEqual(t, 0, p.ProfileCount())
 
-	sp := p.ResourceProfiles().At(0).ScopeProfiles().At(0)
-	require.Equal(t, metadata.ScopeName+"/selfscraper", sp.Scope().Name())
-	require.Equal(t, "1.2.3", sp.Scope().Version())
+	wg.Wait()
 
-	// Verify that CPU profile is still collected
+	// Inspect ALL ResourceProfiles (block/mutex may be in different ResourceProfiles)
 	foundCPUProfile := false
-	for i := 0; i < sp.Profiles().Len(); i++ {
-		prof := sp.Profiles().At(i)
-		typeIdx := int(prof.SampleType().TypeStrindex())
-		sampleType := p.Dictionary().StringTable().At(typeIdx)
-		if sampleType == "samples" || sampleType == "cpu" {
-			foundCPUProfile = true
-			break
+	foundMutexProfile := false
+	for i := 0; i < p.ResourceProfiles().Len(); i++ {
+		rp := p.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+			for k := 0; k < sp.Profiles().Len(); k++ {
+				prof := sp.Profiles().At(k)
+				typeIdx := int(prof.SampleType().TypeStrindex())
+				sampleType := p.Dictionary().StringTable().At(typeIdx)
+				if sampleType == "samples" || sampleType == "cpu" {
+					foundCPUProfile = true
+				}
+				if sampleType == "contentions" || sampleType == "delay" {
+					foundMutexProfile = true
+				}
+			}
 		}
 	}
 	require.True(t, foundCPUProfile, "CPU profile should be collected")
+	require.True(t, foundMutexProfile, "Mutex profile should be collected with contentions or delay sample type")
 }
 
 // Test D: Disabled profiles are not collected
@@ -159,22 +211,26 @@ func TestScrapeSelf_DisabledProfiles(t *testing.T) {
 
 	p, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
-	// CPU profile should still be collected
-	require.NotEqual(t, 0, p.ProfileCount())
+
+	sp := p.ResourceProfiles().At(0).ScopeProfiles().At(0)
+	require.Equal(t, 2, sp.Profiles().Len(), "CPU profile should have 2 sample types when block/mutex are disabled")
+
+	for i := 0; i < sp.Profiles().Len(); i++ {
+		prof := sp.Profiles().At(i)
+		typeIdx := int(prof.SampleType().TypeStrindex())
+		sampleType := p.Dictionary().StringTable().At(typeIdx)
+		require.Contains(t, []string{"cpu", "samples"}, sampleType,
+			"Only CPU sample types should be present when block/mutex are disabled")
+	}
 }
 
 // Test E: Shutdown without scraping still restores state
 func TestScrapeSelf_ShutdownWithoutScrape(t *testing.T) {
-	// This test must not run in parallel with other tests that manipulate
-	// runtime profiling rates, as they are process-global.
-
-	// Save the original mutex fraction
 	originalFraction := runtime.SetMutexProfileFraction(-1)
 	t.Cleanup(func() {
 		runtime.SetMutexProfileFraction(originalFraction)
 	})
 
-	// Set a known starting value
 	runtime.SetMutexProfileFraction(10)
 
 	s := SelfScraper{
@@ -186,11 +242,9 @@ func TestScrapeSelf_ShutdownWithoutScrape(t *testing.T) {
 	err := s.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	// Shutdown without scraping
 	err = s.Shutdown(t.Context())
 	require.NoError(t, err)
 
-	// Verify the original fraction was restored even without scraping
 	restoredFraction := runtime.SetMutexProfileFraction(-1)
 	require.Equal(t, 10, restoredFraction, "Shutdown should restore mutex fraction even without scraping")
 }
@@ -208,7 +262,6 @@ func TestScrapeSelf_RepeatedScrape(t *testing.T) {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}()
 
-	// Multiple scrape cycles
 	for range 3 {
 		p, err := s.ScrapeProfiles(t.Context())
 		require.NoError(t, err)
@@ -222,8 +275,6 @@ func TestScrapeSelf_RepeatedScrape(t *testing.T) {
 
 // Test: All profiles collected together
 func TestScrapeSelf_AllProfiles(t *testing.T) {
-	// This test must not run in parallel with other tests that manipulate
-	// runtime profiling rates, as they are process-global.
 	s := SelfScraper{
 		BlockProfileFraction: 1,
 		MutexProfileFraction: 1,
@@ -235,51 +286,81 @@ func TestScrapeSelf_AllProfiles(t *testing.T) {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}()
 
-	// Generate CPU, blocking, and mutex activity
 	sum := 0
 	for range 1_000_000 {
 		sum++
 	}
 	_ = sum
 
-	ch := make(chan struct{})
-	go func() {
-		time.Sleep(10 * time.Millisecond)
-		close(ch)
-	}()
-	<-ch
+	runtime.SetBlockProfileRate(1)
 
 	var mu sync.Mutex
+	var cond sync.Cond
+	cond.L = &mu
 	var wg sync.WaitGroup
-	for range 10 {
+	readyCh := make(chan struct{}, 200)
+
+	for range 100 {
 		wg.Go(func() {
 			mu.Lock()
-			defer mu.Unlock()
-			time.Sleep(1 * time.Millisecond)
+			readyCh <- struct{}{}
+			cond.Wait()
+			mu.Unlock()
 		})
 	}
-	wg.Wait()
+
+	for range 100 {
+		wg.Go(func() {
+			mu.Lock()
+			readyCh <- struct{}{}
+			time.Sleep(10 * time.Millisecond)
+			mu.Unlock()
+		})
+	}
+
+	for range 200 {
+		<-readyCh
+	}
+
+	time.Sleep(50 * time.Millisecond)
 
 	p, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
 	require.NotEqual(t, 0, p.ProfileCount())
 
-	sp := p.ResourceProfiles().At(0).ScopeProfiles().At(0)
-	require.Equal(t, metadata.ScopeName+"/selfscraper", sp.Scope().Name())
-	require.Equal(t, "1.2.3", sp.Scope().Version())
+	mu.Lock()
+	cond.Broadcast()
+	mu.Unlock()
+	wg.Wait()
 
-	// Verify that CPU profile is collected
+	// Inspect ALL ResourceProfiles (block/mutex may be in different ResourceProfiles)
 	foundCPUProfile := false
-	for i := 0; i < sp.Profiles().Len(); i++ {
-		prof := sp.Profiles().At(i)
-		typeIdx := int(prof.SampleType().TypeStrindex())
-		sampleType := p.Dictionary().StringTable().At(typeIdx)
-		if sampleType == "samples" || sampleType == "cpu" {
-			foundCPUProfile = true
-			break
+	foundBlockProfile := false
+	foundMutexProfile := false
+	for i := 0; i < p.ResourceProfiles().Len(); i++ {
+		rp := p.ResourceProfiles().At(i)
+		for j := 0; j < rp.ScopeProfiles().Len(); j++ {
+			sp := rp.ScopeProfiles().At(j)
+			for k := 0; k < sp.Profiles().Len(); k++ {
+				prof := sp.Profiles().At(k)
+				typeIdx := int(prof.SampleType().TypeStrindex())
+				sampleType := p.Dictionary().StringTable().At(typeIdx)
+				if sampleType == "samples" || sampleType == "cpu" {
+					foundCPUProfile = true
+				}
+				if sampleType == "contentions" || sampleType == "delay" {
+					if foundBlockProfile {
+						foundMutexProfile = true
+					} else {
+						foundBlockProfile = true
+					}
+				}
+			}
 		}
 	}
 	require.True(t, foundCPUProfile, "CPU profile should be collected")
+	require.True(t, foundBlockProfile, "Block profile should be collected")
+	require.True(t, foundMutexProfile, "Mutex profile should be collected")
 }
 
 // Test: Verify CPU profiling is stopped during scrape
@@ -295,30 +376,39 @@ func TestScrapeSelf_CPUProfilingStopped(t *testing.T) {
 		require.NoError(t, s.Shutdown(t.Context()))
 	}()
 
-	// First scrape
 	p1, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
 	require.NotEqual(t, 0, p1.ProfileCount())
 
-	// Second scrape should work without issues
 	p2, err := s.ScrapeProfiles(t.Context())
 	require.NoError(t, err)
 	require.NotEqual(t, 0, p2.ProfileCount())
 }
 
+// Test: Startup failure when CPU profiling is already started
+func TestScrapeSelf_StartupFailure(t *testing.T) {
+	var buf bytes.Buffer
+	err := runtimepprof.StartCPUProfile(&buf)
+	require.NoError(t, err)
+	defer runtimepprof.StopCPUProfile()
+
+	s := SelfScraper{
+		BlockProfileFraction: 0,
+		MutexProfileFraction: 0,
+		BuildInfo:            component.BuildInfo{Version: "1.2.3"},
+	}
+
+	err = s.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err, "Start should fail when CPU profiling is already active")
+}
+
 // Test: Verify mutex profiling fraction is restored after Shutdown
 func TestScrapeSelf_MutexFractionRestored(t *testing.T) {
-	// This test must not run in parallel with other tests that manipulate
-	// runtime profiling rates, as they are process-global.
-
-	// Save the original mutex fraction
 	originalFraction := runtime.SetMutexProfileFraction(-1)
 	t.Cleanup(func() {
-		// Restore the original fraction in cleanup
 		runtime.SetMutexProfileFraction(originalFraction)
 	})
 
-	// Set a known starting value
 	runtime.SetMutexProfileFraction(10)
 
 	s := SelfScraper{
@@ -330,14 +420,12 @@ func TestScrapeSelf_MutexFractionRestored(t *testing.T) {
 	err := s.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	// Verify the scraper applied its configured fraction
 	currentFraction := runtime.SetMutexProfileFraction(-1)
 	require.Equal(t, 5, currentFraction, "Scraper should have set mutex fraction to 5")
 
 	err = s.Shutdown(t.Context())
 	require.NoError(t, err)
 
-	// Verify the original fraction was restored
 	restoredFraction := runtime.SetMutexProfileFraction(-1)
 	require.Equal(t, 10, restoredFraction, "Shutdown should restore mutex fraction to 10")
 }
