@@ -70,6 +70,7 @@ type BaseConfig struct {
 	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
 	OneLogPerPacket bool         `mapstructure:"one_log_per_packet,omitempty"`
 	AddAttributes   bool         `mapstructure:"add_attributes,omitempty"`
+	ResolveNames    *bool        `mapstructure:"resolve_names,omitempty"`
 	Encoding        string       `mapstructure:"encoding,omitempty"`
 	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
 	TrimConfig      trim.Config  `mapstructure:",squash"`
@@ -104,8 +105,13 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
-	var resolver *helper.IPResolver
-	if c.AddAttributes {
+	resolveNames := true
+	if c.ResolveNames != nil {
+		resolveNames = *c.ResolveNames
+	}
+
+	var resolver ipResolver
+	if c.AddAttributes && resolveNames {
 		resolver = helper.NewIPResolver()
 	}
 
@@ -126,6 +132,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		address:                    address,
 		buffer:                     make([]byte, MaxUDPSize),
 		addAttributes:              c.AddAttributes,
+		resolveNames:               resolveNames,
 		useStableNetworkAttributes: metadata.StanzaUDPUseStableNetworkAttributesFeatureGate.IsEnabled(),
 		encoding:                   enc,
 		splitFunc:                  splitFunc,

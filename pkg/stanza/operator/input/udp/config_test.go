@@ -51,6 +51,30 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:               "resolve_names_true",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.ListenAddress = "10.0.0.1:9000"
+					cfg.AddAttributes = true
+					resolveNames := true
+					cfg.ResolveNames = &resolveNames
+					return cfg
+				}(),
+			},
+			{
+				Name:               "resolve_names_false",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.ListenAddress = "10.0.0.1:9000"
+					cfg.AddAttributes = true
+					resolveNames := false
+					cfg.ResolveNames = &resolveNames
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }
