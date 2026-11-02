@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -34,14 +32,6 @@ func TestFlattenLogRequiresGate(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Flatten.Log = true
 	assert.Equal(t, errFlatLogsGateDisabled, oCfg.Validate())
-}
-
-func TestFlattenDataRequiresGate(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
-	assert.Equal(t, errFlattenDataGateDisabled, oCfg.Validate())
 }
 
 func TestProcessLogsWithoutFlatten(t *testing.T) {
@@ -91,43 +81,6 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	p, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, sink)
 	require.NoError(t, err)
-
-	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
-	require.NoError(t, err)
-	expected, err := golden.ReadLogs(filepath.Join("testdata", "logs", "expected-with-flatten.yaml"))
-	require.NoError(t, err)
-
-	require.NoError(t, p.ConsumeLogs(t.Context(), input))
-
-	actual := sink.AllLogs()
-	require.Len(t, actual, 1)
-
-	require.NoError(t, plogtest.CompareLogs(expected, actual[0]))
-}
-
-func TestProcessLogsWithFlattenData(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
-	oCfg.LogStatements = []common.ContextStatements{
-		{
-			Context: "log",
-			Statements: []string{
-				`set(resource.attributes["host.name"], attributes["host.name"])`,
-				`delete_key(attributes, "host.name")`,
-			},
-		},
-	}
-	core, observedLogs := observer.New(zap.WarnLevel)
-	settings := processortest.NewNopSettings(metadata.Type)
-	settings.Logger = zap.New(core)
-	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogs(t.Context(), settings, oCfg, sink)
-	require.NoError(t, err)
-
-	warnings := observedLogs.FilterMessageSnippet("'flatten_data' is deprecated").All()
-	require.Len(t, warnings, 1)
 
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 	require.NoError(t, err)

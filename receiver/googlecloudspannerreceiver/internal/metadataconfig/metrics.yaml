@@ -1,5 +1,56 @@
 metadata:
 #
+# -------------------------------------------- Active Partitioned DMLs -------------------------------------------------
+#
+  - name: "active partitioned dmls"
+    query: "SELECT SESSION_ID, TEXT, TEXT_FINGERPRINT, NUM_PARTITIONS_TOTAL, NUM_PARTITIONS_COMPLETE, NUM_TRIVIAL_PARTITIONS_COMPLETE, PROGRESS, ROWS_PROCESSED, START_TIMESTAMP, LAST_UPDATE_TIMESTAMP FROM SPANNER_SYS.ACTIVE_PARTITIONED_DMLS ORDER BY START_TIMESTAMP ASC, LAST_UPDATE_TIMESTAMP ASC, ROWS_PROCESSED DESC"
+    metric_name_prefix: "database/spanner/active_partitioned_dmls/"
+    high_cardinality: true
+    labels:
+      - name: "session_id"
+        column_name: "SESSION_ID"
+        value_type: "string"
+      - name: "query_text"
+        column_name: "TEXT"
+        value_type: "string"
+      - name: "query_text_fingerprint"
+        column_name: "TEXT_FINGERPRINT"
+        value_type: "string"
+      - name: "progress"
+        column_name: "PROGRESS"
+        value_type: "string"
+      - name: "start_timestamp"
+        column_name: "START_TIMESTAMP"
+        value_type: "timestamp"
+      - name: "last_update_timestamp"
+        column_name: "LAST_UPDATE_TIMESTAMP"
+        value_type: "timestamp"
+    metrics:
+      - name: "num_partitions_total"
+        column_name: "NUM_PARTITIONS_TOTAL"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "num_partitions_complete"
+        column_name: "NUM_PARTITIONS_COMPLETE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "num_trivial_partitions_complete"
+        column_name: "NUM_TRIVIAL_PARTITIONS_COMPLETE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "rows_processed"
+        column_name: "ROWS_PROCESSED"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Active Queries Summary --------------------------------------------------
 #
   - name: "active queries summary"
@@ -107,12 +158,45 @@ metadata:
 # -------------------------------------------- Oldest Active Queries -----------------------------------------------------------
 #
   - name: "oldest active queries"
-    query: "SELECT CLIENT_IP_ADDRESS, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY CLIENT_IP_ADDRESS ORDER BY ACTIVE_QUERIES_COUNT DESC"
+    query: "SELECT START_TIME, TEXT_FINGERPRINT, TEXT, TEXT_TRUNCATED, SESSION_ID, QUERY_ID, CLIENT_IP_ADDRESS, API_CLIENT_HEADER, USER_AGENT_HEADER, SERVER_REGION, PRIORITY, TRANSACTION_TYPE, COUNT(*) AS ACTIVE_QUERIES_COUNT FROM SPANNER_SYS.OLDEST_ACTIVE_QUERIES GROUP BY START_TIME, TEXT_FINGERPRINT, TEXT, TEXT_TRUNCATED, SESSION_ID, QUERY_ID, CLIENT_IP_ADDRESS, API_CLIENT_HEADER, USER_AGENT_HEADER, SERVER_REGION, PRIORITY, TRANSACTION_TYPE ORDER BY START_TIME ASC"
     metric_name_prefix: "database/spanner/oldest_active_queries/"
     high_cardinality: true
     labels:
+      - name: "start_time"
+        column_name: "START_TIME"
+        value_type: "timestamp"
+      - name: "query_text_fingerprint"
+        column_name: "TEXT_FINGERPRINT"
+        value_type: "int"
+      - name: "query_text"
+        column_name: "TEXT"
+        value_type: "string"
+      - name: "query_text_truncated"
+        column_name: "TEXT_TRUNCATED"
+        value_type: "bool"
+      - name: "session_id"
+        column_name: "SESSION_ID"
+        value_type: "string"
+      - name: "query_id"
+        column_name: "QUERY_ID"
+        value_type: "string"
       - name: "client_ip_address"
         column_name: "CLIENT_IP_ADDRESS"
+        value_type: "string"
+      - name: "api_client_header"
+        column_name: "API_CLIENT_HEADER"
+        value_type: "string"
+      - name: "user_agent_header"
+        column_name: "USER_AGENT_HEADER"
+        value_type: "string"
+      - name: "server_region"
+        column_name: "SERVER_REGION"
+        value_type: "string"
+      - name: "priority"
+        column_name: "PRIORITY"
+        value_type: "string"
+      - name: "transaction_type"
+        column_name: "TRANSACTION_TYPE"
         value_type: "string"
     metrics:
       - name: "active_queries_count"
@@ -734,7 +818,7 @@ metadata:
         value_type: "string_slice"
       - name: "operations_by_table_json_string"
         column_name: "OPERATIONS_BY_TABLE_JSON_STRING"
-        value_type: "string"
+        value_type: "operations_by_table_json"
     metrics:
       - name: "commit_attempt_count"
         column_name: "COMMIT_ATTEMPT_COUNT"
@@ -1156,6 +1240,36 @@ metadata:
     metrics:
       - name: "cpu_usage_score"
         column_name: "CPU_USAGE_SCORE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
+# -------------------------------------------- User Split Points -------------------------------------------------------
+#
+  - name: "user split points"
+    query: "SELECT TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME, COUNT(*) AS USER_SPLIT_POINTS_COUNT FROM SPANNER_SYS.USER_SPLIT_POINTS GROUP BY TABLE_NAME, INDEX_NAME, INITIATOR, SPLIT_KEY, EXPIRE_TIME ORDER BY TABLE_NAME ASC, INDEX_NAME ASC"
+    metric_name_prefix: "database/spanner/user_split_points/"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+      - name: "index_name"
+        column_name: "INDEX_NAME"
+        value_type: "string"
+      - name: "initiator"
+        column_name: "INITIATOR"
+        value_type: "string"
+      - name: "split_key"
+        column_name: "SPLIT_KEY"
+        value_type: "string"
+      - name: "expire_time"
+        column_name: "EXPIRE_TIME"
+        value_type: "timestamp"
+    metrics:
+      - name: "split_points_count"
+        column_name: "USER_SPLIT_POINTS_COUNT"
         value_type: "int"
         data:
           type: "gauge"
