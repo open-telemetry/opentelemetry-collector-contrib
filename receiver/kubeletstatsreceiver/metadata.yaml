@@ -14,7 +14,7 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth, ChrsMark]
 
-sem_conv_version: 1.43.0
+sem_conv_version: 1.44.0
 
 resource_attributes:
   container.id:
