@@ -1,0 +1,5 @@
+default:
+  type: otelcol
+on_error_drop:
+  type: otelcol
+  on_error: drop
