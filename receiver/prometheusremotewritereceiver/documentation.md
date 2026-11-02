@@ -6,6 +6,20 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_receiver_prometheusremotewrite_dropped_series
+
+Number of classic histogram and summary series dropped because the receiver does not support them. Their samples are still reported as written.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {series} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| metric_type | The kind of series the receiver dropped. | Str: ``classic_histogram``, ``summary`` | - |
+
 ### otelcol_receiver_prometheusremotewrite_resource_cache_evictions
 
 Number of job/instance entries evicted from the resource metrics cache because it was full.

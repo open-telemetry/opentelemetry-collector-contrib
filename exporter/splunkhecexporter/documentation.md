@@ -29,6 +29,14 @@ sending_queue:
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_dropped_unsupported_profile_records
+
+Number of eBPF profile records dropped during conversion because their measurement type is unsupported or ambiguous.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {record} | Sum | Int | true | Development |
+
 ### otelcol_exporter_splunkhec_heartbeats_failed
 
 Number of heartbeats failed by the Splunk HEC exporter.
