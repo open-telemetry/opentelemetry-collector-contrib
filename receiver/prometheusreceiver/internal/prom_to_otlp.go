@@ -5,7 +5,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"net"
-	"net/url"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
@@ -35,11 +35,14 @@ func isDiscernibleHost(host string) bool {
 }
 
 // CreateResource creates the resource data added to OTLP payloads.
-func CreateResource(job, instance string, targetURL *url.URL, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
+func CreateResource(job, instance, targetAddress, targetScheme string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
 	var host, port string
 	var err error
-	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetURL != nil {
-		host, port = targetURL.Hostname(), targetURL.Port()
+	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetAddress != "" {
+		host, port, err = net.SplitHostPort(targetAddress)
+		if err != nil {
+			host = strings.TrimSuffix(strings.TrimPrefix(targetAddress, "["), "]")
+		}
 	} else {
 		host, port, err = net.SplitHostPort(instance)
 		if err != nil {
@@ -54,7 +57,11 @@ func CreateResource(job, instance string, targetURL *url.URL, serviceDiscoveryLa
 	}
 	attrs.PutStr(string(conventions.ServiceInstanceIDKey), instance)
 	attrs.PutStr(string(conventions.ServerPortKey), port)
-	attrs.PutStr(string(conventions.URLSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
+	scheme := serviceDiscoveryLabels.Get(model.SchemeLabel)
+	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetScheme != "" {
+		scheme = targetScheme
+	}
+	attrs.PutStr(string(conventions.URLSchemeKey), scheme)
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
