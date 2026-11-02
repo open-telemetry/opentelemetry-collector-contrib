@@ -533,6 +533,34 @@ func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
 	t.Fatal("expected a db.server.procedure_definition event")
 }
 
+// When fetchProcedureDefinitions fails, no definition events must be emitted
+// (otherwise an empty definition is indistinguishable from a wrapped procedure),
+// and the error must surface via scrapeLogs.
+func TestProcedureDefinitionNotEmittedWhenFetchFails(t *testing.T) {
+	fetchErr := errors.New("ORA-00942: table or view does not exist")
+
+	dbclientFn := func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Err: fetchErr}
+		}
+		return &fakeDbClient{Responses: [][]metricRow{{procedureRow("ORCLPDB1", nil)}}}
+	}
+
+	scrpr := newProcedureMetricsScraper(t, dbclientFn, procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.Error(t, err, "fetchProcedureDefinitions error must surface")
+	require.ErrorIs(t, err, fetchErr)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition must not be emitted when definitions fetch fails")
+	}
+}
+
 func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
 	core, observed := observer.New(zapcore.WarnLevel)
 

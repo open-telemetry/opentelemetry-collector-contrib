@@ -562,6 +562,12 @@ func buildNamedList(prefix string, values []string) ([]string, []any) {
 	return placeholders, args
 }
 
+// procedureKey builds the lookup key used to map a procedure to its concatenated source text.
+// conID is empty string for PDB connections.
+func procedureKey(owner, name, procType, conID string) string {
+	return owner + "|" + name + "|" + procType + "|" + conID
+}
+
 // buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN clauses
 // using named bind parameters. CON_ID is included only when isCDB is true.
 func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (string, []any) {
@@ -575,7 +581,15 @@ func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (stri
 	ownerPH, ownerArgs := buildNamedList("owner", owners)
 	namePH, nameArgs := buildNamedList("name", names)
 	typePH, typeArgs := buildNamedList("type", types)
-	args := append(append(ownerArgs, nameArgs...), typeArgs...)
+
+	argCount := len(ownerArgs) + len(nameArgs) + len(typeArgs)
+	if isCDB {
+		argCount += len(hits)
+	}
+	args := make([]any, 0, argCount)
+	args = append(args, ownerArgs...)
+	args = append(args, nameArgs...)
+	args = append(args, typeArgs...)
 
 	if isCDB {
 		conIDPH, conIDArgs := buildNamedList("conid", conIDs)
@@ -593,11 +607,11 @@ func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (stri
 }
 
 // groupSourceRowsByKey concatenates source lines per procedure into a definition map.
-// Key format: "owner|name|type|conID" — conID is empty string for PDB rows.
+// Key format matches procedureKey — conID is empty string for PDB rows.
 func groupSourceRowsByKey(sourceRows []metricRow) map[string]string {
 	builders := make(map[string]*strings.Builder)
 	for _, row := range sourceRows {
-		key := row["OWNER"] + "|" + row["NAME"] + "|" + row["TYPE"] + "|" + row["CON_ID"]
+		key := procedureKey(row["OWNER"], row["NAME"], row["TYPE"], row["CON_ID"])
 		if builders[key] == nil {
 			builders[key] = &strings.Builder{}
 		}
@@ -2468,8 +2482,10 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.firstLoadTime,
 			hit.lastActiveTime)
 
-		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
-			key := hit.schemaName + "|" + hit.objectName + "|" + hit.procedureType + "|" + hit.conID
+		// Only emit the definition event when fetch succeeded; a nil map means fetch failed,
+		// and emitting empty definitions would be indistinguishable from a wrapped/empty procedure.
+		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled && definitions != nil {
+			key := procedureKey(hit.schemaName, hit.objectName, hit.procedureType, hit.conID)
 			s.lb.RecordDbServerProcedureDefinitionEvent(context.Background(),
 				pcommon.NewTimestampFromTime(collectionTime),
 				dbSystemNameVal,
