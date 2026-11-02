@@ -89,6 +89,7 @@ func (hcs *SelfScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, er
 	}
 
 	// Collect and convert block profile if configured
+	// Do this BEFORE restarting CPU profiling
 	if hcs.BlockProfileFraction > 0 {
 		if blockProfile := pprof.Lookup("block"); blockProfile != nil {
 			blockBuf := bytes.NewBuffer(make([]byte, 0, 4096))
@@ -114,10 +115,10 @@ func (hcs *SelfScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, er
 				}
 			}
 		}
-		// If blockProfile is nil, it's not an error - it just means no samples were collected yet
 	}
 
 	// Collect and convert mutex profile if configured
+	// Do this BEFORE restarting CPU profiling
 	if hcs.MutexProfileFraction > 0 {
 		if mutexProfile := pprof.Lookup("mutex"); mutexProfile != nil {
 			mutexBuf := bytes.NewBuffer(make([]byte, 0, 4096))
