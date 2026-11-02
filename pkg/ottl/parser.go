@@ -485,6 +485,8 @@ type SequenceTelemetry struct {
 	// item of the OTTL context being processed (e.g. per span, per resource), so the rate depends
 	// on that context.
 	FailureCounter metric.Int64Counter
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // StatementSequence represents a list of statements that will be executed sequentially for a TransformContext
