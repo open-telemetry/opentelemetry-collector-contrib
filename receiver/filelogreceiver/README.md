@@ -252,6 +252,53 @@ When this option is set, all files ending with that suffix are scanned using a g
 before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
 compressed file, rather than recompressing the whole content and overwriting the previous file.
 
+## Example - Collector self-monitoring
+
+Receiver Configuration
+```yaml
+receivers:
+  file_log:
+    include:
+    - /var/log/otelcol/collector.log
+    multiline:
+      line_start_pattern: '^(\{|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})'
+    operators:
+      - type: otelcol
+```
+
+The above configuration will tail the collector's own self-log file, so the logs can be correlated with the collector's own
+metrics and traces. The [`otelcol` operator](../../pkg/stanza/docs/operators/otelcol.md) detects whether the collector wrote
+its self-logs in zap's `json` or `console` encoding, and promotes `ts`, `level`, `msg`, and the nested `resource` object onto
+the log record's Timestamp, Severity, Body, and Resource. Remaining fields become attributes.
+
+The `multiline` block is needed for `console` encoding, which writes stacktraces and multi-line messages over several lines.
+Without it, each of those lines becomes its own entry and fails to parse. The pattern matches the start of an entry in either
+encoding: `{` for `json` and the timestamp for `console`.
+
+An input line in `json` encoding:
+```
+{"ts":"2026-07-06T22:56:21.989Z","level":"warn","msg":"Failed to scrape Prometheus endpoint","resource":{"k8s.pod.name":"otel-agent-qkvqj","service.name":"otel-agent"},"otelcol.component.id":"receiver_creator"}
+```
+
+The same event in `console` encoding produces the same entry, with the caller added as an attribute:
+```
+2026-07-06T22:56:21.989Z	warn	internal/transaction.go:127	Failed to scrape Prometheus endpoint	{"resource":{"k8s.pod.name":"otel-agent-qkvqj","service.name":"otel-agent"},"otelcol.component.id":"receiver_creator"}
+```
+
+Emitted log record:
+```
+Timestamp: 2026-07-06 22:56:21.989 +0000 UTC
+SeverityText: warn
+SeverityNumber: Warn(13)
+Body: Str(Failed to scrape Prometheus endpoint)
+Resource:
+  -> k8s.pod.name: Str(otel-agent-qkvqj)
+  -> service.name: Str(otel-agent)
+Attributes:
+  -> otelcol.component.id: Str(receiver_creator)
+  -> log.file.name: Str(collector.log)
+```
+
 ## Offset tracking
 
 The `storage` setting allows you to define the proper storage extension for storing file offsets.

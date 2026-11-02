@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetFlinkJobID("flink.job.id-val")
 			rb.SetFlinkJobName("flink.job.name-val")
 			rb.SetFlinkResourceTypeJobmanager()
 			rb.SetFlinkSubtaskIndex("flink.subtask.index-val")
@@ -27,12 +28,17 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 6, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 6, res.Attributes().Len())
+				assert.Equal(t, 7, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			flinkJobIDAttrVal, ok := res.Attributes().Get("flink.job.id")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "flink.job.id-val", flinkJobIDAttrVal.Str())
 			}
 			flinkJobNameAttrVal, ok := res.Attributes().Get("flink.job.name")
 			assert.True(t, ok)
