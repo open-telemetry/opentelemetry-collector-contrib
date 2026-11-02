@@ -32,7 +32,7 @@ import (
 )
 
 // semconvRegistry must match sem_conv_version in metadata.yaml.
-const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.43.0[model]"
+const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.44.0[model]"
 
 // TestSemconvCompliancePodAttributes checks the pod resource attributes that
 // the processor adds against semantic conventions. The input metric is fully
