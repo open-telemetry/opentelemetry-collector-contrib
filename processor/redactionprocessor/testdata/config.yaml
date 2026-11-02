@@ -39,6 +39,8 @@ redaction:
   # information, while it is valuable when integrating and testing a new
   # configuration. Possible values are `debug`, `info`, and `silent`.
   summary: debug
+  skip_conditions:
+    - resource.attributes["service.name"] == "payments"
 
 redaction/empty:
 
