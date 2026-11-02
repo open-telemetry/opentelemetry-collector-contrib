@@ -64,12 +64,10 @@ func TestScrapeSelf_BlockProfile(t *testing.T) {
 	// to ensure block profiling captures the contention
 	var wg sync.WaitGroup
 	blockCh := make(chan struct{}, 1)
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+		wg.Go(func() {
 			<-blockCh
-		}()
+		})
 	}
 	time.Sleep(10 * time.Millisecond)
 	close(blockCh)
