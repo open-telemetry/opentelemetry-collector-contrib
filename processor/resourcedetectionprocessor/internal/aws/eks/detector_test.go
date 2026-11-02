@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
@@ -710,7 +710,7 @@ func TestNewDetectorWithAPIConfig(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 	cfg := CreateDefaultConfig()
-	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
 
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
@@ -753,7 +753,7 @@ func TestIsIMDSAccessible(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, Config{
-		APIConfig:          k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		APIConfig:          k8sconfigtypes.APIConfig{AuthType: k8sconfigtypes.AuthTypeServiceAccount},
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}, CreateDefaultConfig())
 }

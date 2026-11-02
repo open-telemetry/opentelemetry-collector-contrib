@@ -9,7 +9,7 @@ status:
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu, mwear]
     emeritus: [jpkrohling]
-    seeking_new: true
+    seeking_new: false
 
 feature_gates:
   - id: connector.routing.defaultErrorModeIgnore

@@ -295,8 +295,11 @@ func TestAckTimeout(t *testing.T) {
 			)
 
 			mockSrv.logger.Debug("Second set of data received after reconnection. Should be acknowledged.")
-			// Verify that acks were sent.
-			assert.Equal(t, pointCount, mockSrv.acksSent.Load())
+			// Receiving a record does not mean its acknowledgement has been sent yet.
+			assert.Eventually(
+				t, func() bool { return mockSrv.acksSent.Load() == pointCount },
+				5*time.Second, 5*time.Millisecond,
+			)
 		},
 	)
 }
