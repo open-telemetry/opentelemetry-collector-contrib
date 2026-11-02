@@ -499,16 +499,14 @@ func NewLogStreamManager(svcStructuredLog Client) LogStreamManager {
 }
 
 func (lsm *logStreamManager) InitStream(ctx context.Context, streamKey StreamKey) error {
-	if _, ok := lsm.streams[streamKey]; !ok {
-		lsm.logStreamMutex.Lock()
-		defer lsm.logStreamMutex.Unlock()
+	lsm.logStreamMutex.Lock()
+	defer lsm.logStreamMutex.Unlock()
 
-		if _, ok := lsm.streams[streamKey]; !ok {
-			err := lsm.client.CreateStream(ctx, &streamKey.LogGroupName, &streamKey.LogStreamName)
-			lsm.streams[streamKey] = true
-			return err
-		}
+	// does not do anything if stream already exists
+	if _, ok := lsm.streams[streamKey]; !ok {
+		err := lsm.client.CreateStream(ctx, &streamKey.LogGroupName, &streamKey.LogStreamName)
+		lsm.streams[streamKey] = true
+		return err
 	}
 	return nil
-	// does not do anything if stream already exists
 }

@@ -242,6 +242,30 @@ func TestStreamManager(t *testing.T) {
 	assert.Equal(t, int32(2), mockCwAPI.createLogStreamCount.Load())
 }
 
+func TestStreamManagerConcurrentInitStream(t *testing.T) {
+	mockCwAPI := &mockCloudWatchClient{
+		createLogStream: func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+			return &cloudwatchlogs.CreateLogStreamOutput{}, nil
+		},
+	}
+	manager := NewLogStreamManager(Client{svc: mockCwAPI})
+	ctx := t.Context()
+
+	const streams = 5
+	var wg sync.WaitGroup
+	for i := range 100 {
+		wg.Go(func() {
+			assert.NoError(t, manager.InitStream(ctx, StreamKey{
+				LogGroupName:  "foo",
+				LogStreamName: fmt.Sprintf("bar%d", i%streams),
+			}))
+		})
+	}
+	wg.Wait()
+
+	assert.Equal(t, int32(streams), mockCwAPI.createLogStreamCount.Load())
+}
+
 func TestMultiStreamFactory(t *testing.T) {
 	mockCwAPI := &mockCloudWatchClient{
 		createLogStream: func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
