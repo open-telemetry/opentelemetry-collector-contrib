@@ -74,6 +74,10 @@ github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b h1:2EkxDI
 github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b/go.mod h1:lNrzMwI4fx6xfzieyLEpYIJPLWjT/Sak4G/hIzGTEL4=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
+github.com/dmitryax/opentelemetry-collector/pdata v1.0.0-rcv0011.0.20261102051314-48d2fbae2be2 h1:9hVrGlmJ5NvKp4A6Y62crYOahlI0Tz9SUTDLNdY/D58=
+github.com/dmitryax/opentelemetry-collector/pdata v1.0.0-rcv0011.0.20261102051314-48d2fbae2be2/go.mod h1:k4sRgkDEszxQS5w0NFuu6bw5cAt3D9ZzAs2Sk7b7W2w=
+github.com/dmitryax/opentelemetry-collector/pdata/xpdata v0.0.0-20261102051314-48d2fbae2be2 h1:mWU2i75XsmMMzQBFE5w1oNU70ZQLPpmjVc4B3HLU33k=
+github.com/dmitryax/opentelemetry-collector/pdata/xpdata v0.0.0-20261102051314-48d2fbae2be2/go.mod h1:i9DyMV7TNRSktkuM9wYp6dFQvrylSnUGthlCrrMjZVs=
 github.com/docker/go-connections v0.8.2 h1:9d9DEokx5W7qlr0shkFXIxEA7+TTD+llwzcykSlxMNc=
 github.com/docker/go-connections v0.8.2/go.mod h1:no1qkHdjq7kLMGUXYAduOhYPSJxxvgWBh7ogVvptn3Q=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
@@ -418,14 +422,10 @@ go.opentelemetry.io/collector/internal/telemetry v0.164.1-0.20261029175530-9afdf
 go.opentelemetry.io/collector/internal/telemetry v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:jIFaasEATs+3l0pibQVASOTm7Ad7ocfnGqpdL95B9AU=
 go.opentelemetry.io/collector/internal/testutil v0.164.0 h1:3UsU+N8FfYjclzMlw7oH+qyaP0KqwqCe3ILrW8icuy4=
 go.opentelemetry.io/collector/internal/testutil v0.164.0/go.mod h1:5NTFUqDo6AanqaznxeJhE1Eexjm8TQe7NyjckhRIWYk=
-go.opentelemetry.io/collector/pdata v1.70.1-0.20261029175530-9afdf701f333 h1:Nu7IzBFtoKFQuh0rdEtxEvencGPs/bZuuAuRnfU0OrQ=
-go.opentelemetry.io/collector/pdata v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:k4sRgkDEszxQS5w0NFuu6bw5cAt3D9ZzAs2Sk7b7W2w=
 go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261029175530-9afdf701f333 h1:S1kGY3sSphBanHQFTYsMZfgIuQJPj0KPKWefAwlWToQ=
 go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:kdOQ2eQp/FIUN9ZKWCnwgWIF7cGhsPn08Z7hr6ESHc0=
 go.opentelemetry.io/collector/pdata/testdata v0.164.1-0.20261029175530-9afdf701f333 h1:VJNdDDA7ospndzMgudLeXgUjlxjlLstKhddpVQM8v3E=
 go.opentelemetry.io/collector/pdata/testdata v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:asfXFk8FX00QQ3PVqQ/JJFjTX2pemSbM9jYGvgAGPaM=
-go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261029175530-9afdf701f333 h1:1VeBurJMdq6RFLaunQ0hZO9pXLdweN+1qyl47QLBtkc=
-go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261029175530-9afdf701f333/go.mod h1:i9DyMV7TNRSktkuM9wYp6dFQvrylSnUGthlCrrMjZVs=
 go.opentelemetry.io/collector/pipeline v1.70.1-0.20261029175530-9afdf701f333 h1:oxevImZDAGWUebTZB+wsd8ZJO1eJPGW72azYidzNafM=
 go.opentelemetry.io/collector/pipeline v1.70.1-0.20261029175530-9afdf701f333/go.mod h1:4S7iD/7hGDNXg4yPi+5es5WTvwo/Uie2OoHio79xokI=
 go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261029175530-9afdf701f333 h1:crFQEv3lR/3ny32ViybSiosEIKCwegbv4CTLYMoO1Wk=

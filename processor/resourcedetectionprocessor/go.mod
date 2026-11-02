@@ -41,6 +41,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261029175530-9afdf701f333
 	go.opentelemetry.io/collector/pdata v1.70.1-0.20261029175530-9afdf701f333
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261029175530-9afdf701f333
 	go.opentelemetry.io/collector/processor v1.70.1-0.20261029175530-9afdf701f333
 	go.opentelemetry.io/collector/processor/processorhelper v0.164.1-0.20261029175530-9afdf701f333
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.164.1-0.20261029175530-9afdf701f333
@@ -189,7 +190,6 @@ require (
 	go.opentelemetry.io/collector/internal/statusutil v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.164.1-0.20261029175530-9afdf701f333 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/pipeline v1.70.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261029175530-9afdf701f333 // indirect
 	go.opentelemetry.io/collector/receiver v1.70.1-0.20261029175530-9afdf701f333 // indirect
@@ -247,3 +247,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
+
+replace go.opentelemetry.io/collector/pdata => github.com/dmitryax/opentelemetry-collector/pdata v1.0.0-rcv0011.0.20261102051314-48d2fbae2be2
+
+replace go.opentelemetry.io/collector/pdata/xpdata => github.com/dmitryax/opentelemetry-collector/pdata/xpdata v0.0.0-20261102051314-48d2fbae2be2
