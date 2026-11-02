@@ -4,11 +4,15 @@
 package internal
 
 import (
+	"net/url"
 	"testing"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type jobInstanceDefinition struct {
@@ -270,6 +274,57 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := CreateResource(tt.job, tt.instance, nil, tt.sdLabels)
+			require.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
+		})
+	}
+}
+
+func TestCreateResourceWithTargetURL(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true)
+	require.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false)
+	}()
+
+	tests := []struct {
+		name, job string
+		instance  string
+		targetURL *url.URL
+		sdLabels  labels.Labels
+		want      pcommon.Resource
+	}{
+		{
+			name: "Host with port",
+			job:  "job", instance: "example.com:8080",
+			targetURL: &url.URL{Host: "example.com:8080"},
+			sdLabels: labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
+				"job", "example.com:8080", "example.com", "http", "8080",
+			}, true),
+		},
+		{
+			name: "IPv6 with port",
+			job:  "job", instance: "[2001:db8::1]:9090",
+			targetURL: &url.URL{Host: "[2001:db8::1]:9090"},
+			sdLabels: labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
+				"job", "[2001:db8::1]:9090", "2001:db8::1", "http", "9090",
+			}, true),
+		},
+		{
+			name: "IPv6 without port",
+			job:  "job", instance: "[2001:db8::1]",
+			targetURL: &url.URL{Host: "[2001:db8::1]"},
+			sdLabels: labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: makeResourceWithJobInstanceScheme(&jobInstanceDefinition{
+				"job", "[2001:db8::1]", "2001:db8::1", "http", "",
+			}, true),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CreateResource(tt.job, tt.instance, tt.targetURL, tt.sdLabels)
 			require.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
 		})
 	}
