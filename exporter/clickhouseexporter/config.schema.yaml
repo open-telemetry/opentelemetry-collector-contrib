@@ -1,4 +1,12 @@
 $defs:
+  database_engine:
+    description: DatabaseEngine defines the ENGINE string value when creating the database.
+    type: object
+    properties:
+      name:
+        type: string
+      params:
+        type: string
   metric_tables_config:
     type: object
     properties:
@@ -36,7 +44,7 @@ properties:
     x-optional: true
     $ref: go.opentelemetry.io/collector/config/configauth.config
   cluster_name:
-    description: ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+    description: ClusterName if set will append `ON CLUSTER` with the provided name when creating the database and tables.
     type: string
   compress:
     description: 'Compress controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4).'
@@ -52,6 +60,9 @@ properties:
   database:
     description: Database is the database name to export.
     type: string
+  database_engine:
+    description: DatabaseEngine is the database engine to use when creating the database. default is the server default.
+    $ref: database_engine
   endpoint:
     description: Endpoint is the clickhouse endpoint.
     type: string

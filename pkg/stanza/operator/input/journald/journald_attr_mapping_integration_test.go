@@ -29,5 +29,5 @@ func TestSemanticConventionCompliance(t *testing.T) {
 		"_CMDLINE":  "/usr/bin/test-app --config test.yaml",
 	})
 
-	semconvtest.TestLogs(t, adapter.ConvertEntries([]*entry.Entry{e}))
+	semconvtest.TestLogs(t, adapter.ConvertEntries([]*entry.Entry{e}, "", ""))
 }

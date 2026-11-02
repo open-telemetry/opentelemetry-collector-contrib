@@ -6,6 +6,7 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -22,6 +23,8 @@ var (
 	errHMACMissingSecret           = errors.New("hmac_signature.secret is required when hmac_signature is configured")
 	errHMACMissingHeader           = errors.New("hmac_signature.header is required when hmac_signature is configured")
 	errHMACMissingPrefix           = errors.New("hmac_signature.prefix is required when hmac_signature is configured")
+	errPathMissingLeadingSlash     = errors.New("path must begin with a leading '/'")
+	errHealthPathMissingSlash      = errors.New("health_path must begin with a leading '/'")
 )
 
 // Config defines configuration for the Generic Webhook receiver.
@@ -63,6 +66,15 @@ func (cfg *Config) Validate() error {
 
 	if cfg.ServerConfig.NetAddr.Endpoint == "" {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
+	}
+
+	// httprouter panics at Start() if a registered path does not begin with '/'.
+	// Catch it here so it surfaces as a config error instead of a runtime panic.
+	if !strings.HasPrefix(cfg.Path, "/") {
+		errs = multierr.Append(errs, errPathMissingLeadingSlash)
+	}
+	if !strings.HasPrefix(cfg.HealthPath, "/") {
+		errs = multierr.Append(errs, errHealthPathMissingSlash)
 	}
 
 	// If a user defines a custom read/write timeout there is a maximum value

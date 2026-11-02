@@ -43,6 +43,8 @@ type Config struct {
 	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
+	// DatabaseEngine is the database engine to use when creating the database. default is the server default.
+	DatabaseEngine DatabaseEngine `mapstructure:"database_engine"`
 	// TLS is the TLS config for connecting to ClickHouse.
 	TLS configtls.ClientConfig `mapstructure:"tls"`
 	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
@@ -63,7 +65,7 @@ type Config struct {
 	TTL time.Duration `mapstructure:"ttl"`
 	// TableEngine is the table engine to use. default is `MergeTree()`.
 	TableEngine TableEngine `mapstructure:"table_engine"`
-	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+	// ClusterName if set will append `ON CLUSTER` with the provided name when creating the database and tables.
 	ClusterName string `mapstructure:"cluster_name"`
 	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
 	CreateSchema bool `mapstructure:"create_schema"`
@@ -95,6 +97,12 @@ type MetricTablesConfig struct {
 	ExponentialHistogram metrics.MetricTypeConfig `mapstructure:"exponential_histogram"`
 }
 
+// DatabaseEngine defines the ENGINE string value when creating the database.
+type DatabaseEngine struct {
+	Name   string `mapstructure:"name"`
+	Params string `mapstructure:"params"`
+}
+
 // TableEngine defines the ENGINE string value when creating the table.
 type TableEngine struct {
 	Name   string `mapstructure:"name"`
@@ -102,6 +110,7 @@ type TableEngine struct {
 }
 
 const (
+	replicatedDatabaseEngine  = "Replicated"
 	defaultDatabase           = "default"
 	defaultTableEngineName    = "MergeTree"
 	defaultMetricTableName    = "otel_metrics"
@@ -225,6 +234,17 @@ func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
+	// Size the connection pool to match the number of queue consumers, unless set in the DSN or connection params.
+	if queueCfg := cfg.QueueSettings.Get(); queueCfg != nil && queueCfg.NumConsumers > 0 {
+		if opt.MaxOpenConns <= 0 {
+			opt.MaxOpenConns = queueCfg.NumConsumers
+		}
+		// Idle connections beyond MaxOpenConns can never be used.
+		if opt.MaxIdleConns <= 0 {
+			opt.MaxIdleConns = min(queueCfg.NumConsumers, opt.MaxOpenConns)
+		}
+	}
+
 	// Load TLS config if any TLS-related field is set (not just cert/key).
 	if cfg.TLS.CertFile != "" ||
 		cfg.TLS.KeyFile != "" ||
@@ -291,6 +311,19 @@ func (cfg *Config) tableEngineString() string {
 	return fmt.Sprintf("%s(%s)", engine, params)
 }
 
+// databaseEngineString generates the ENGINE clause for creating the database. Returns empty string if not set.
+func (cfg *Config) databaseEngineString() string {
+	if cfg.DatabaseEngine.Name == "" {
+		return ""
+	}
+
+	if cfg.DatabaseEngine.Params == "" {
+		return "ENGINE = " + cfg.DatabaseEngine.Name
+	}
+
+	return fmt.Sprintf("ENGINE = %s(%s)", cfg.DatabaseEngine.Name, cfg.DatabaseEngine.Params)
+}
+
 // database returns the preferred database for creating tables and inserting data.
 // The config option takes precedence over the DSN's settings.
 // Falls back to default if neither are set.
@@ -324,4 +357,14 @@ func (cfg *Config) clusterString() string {
 	}
 	escaped := strings.ReplaceAll(cfg.ClusterName, "`", "``")
 	return fmt.Sprintf("ON CLUSTER `%s`", escaped)
+}
+
+// tableClusterString generates the ON CLUSTER string for table DDL.
+// Returns empty string for Replicated databases, since they replicate table DDL themselves and reject ON CLUSTER.
+func (cfg *Config) tableClusterString() string {
+	if cfg.DatabaseEngine.Name == replicatedDatabaseEngine && cfg.database() != defaultDatabase {
+		return ""
+	}
+
+	return cfg.clusterString()
 }

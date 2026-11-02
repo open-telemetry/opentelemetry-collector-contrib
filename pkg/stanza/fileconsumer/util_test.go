@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -20,10 +21,14 @@ func testManager(t *testing.T, cfg *Config, opts ...Option) (*Manager, *emittest
 }
 
 func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink, opts ...Option) *Manager {
+	return testManagerWithEmit(t, cfg, sink.Callback, opts...)
+}
+
+func testManagerWithEmit(t *testing.T, cfg *Config, emitFunc emit.Callback, opts ...Option) *Manager {
 	set := componenttest.NewNopTelemetrySettings()
-	input, err := cfg.Build(set, sink.Callback, opts...)
-	input.tracker = tracker.NewFileTracker(t.Context(), set, cfg.MaxBatches, cfg.PollsToArchive, testutil.NewUnscopedMockPersister())
+	input, err := cfg.Build(set, emitFunc, opts...)
 	require.NoError(t, err)
+	input.tracker = tracker.NewFileTracker(t.Context(), set, cfg.MaxBatches, cfg.PollsToArchive, testutil.NewUnscopedMockPersister())
 	t.Cleanup(func() { input.tracker.ClosePreviousFiles() })
 	return input
 }

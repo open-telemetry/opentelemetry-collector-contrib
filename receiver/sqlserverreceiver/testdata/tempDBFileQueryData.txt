@@ -1,0 +1,16 @@
+[
+  {
+    "measurement": "sqlserver_tempdb_file",
+    "sql_instance": "testhost",
+    "file_id": "1",
+    "file_type": "data",
+    "size_bytes": "67108864"
+  },
+  {
+    "measurement": "sqlserver_tempdb_file",
+    "sql_instance": "testhost",
+    "file_id": "2",
+    "file_type": "log",
+    "size_bytes": "33554432"
+  }
+]

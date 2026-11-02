@@ -89,6 +89,9 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 			fmt.Errorf("cannot convert exponential to native histogram."+
 				" Scale must be >= -4, was %d", scale)
 	}
+	if !p.Flags().NoRecordedValue() && !p.HasSum() {
+		return writev2.Histogram{}, errors.New("cannot convert exponential to native histogram: sum is not set")
+	}
 
 	var scaleDown int32
 	if scale > 8 {
@@ -135,9 +138,7 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		h.Sum = math.Float64frombits(value.StaleNaN)
 		h.Count = &writev2.Histogram_CountInt{CountInt: value.StaleNaN}
 	} else {
-		if p.HasSum() {
-			h.Sum = p.Sum()
-		}
+		h.Sum = p.Sum()
 		h.Count = &writev2.Histogram_CountInt{CountInt: p.Count()}
 	}
 	return h, nil

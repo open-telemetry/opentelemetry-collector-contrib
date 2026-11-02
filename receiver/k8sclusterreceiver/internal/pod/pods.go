@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -63,7 +63,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	for i := range pod.Spec.Containers {
 		c := &pod.Spec.Containers[i]
 		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
-			Name: c.Name,
+			Name:  c.Name,
+			Image: c.Image,
 			Resources: corev1.ResourceRequirements{
 				Requests: c.Resources.Requests,
 				Limits:   c.Resources.Limits,

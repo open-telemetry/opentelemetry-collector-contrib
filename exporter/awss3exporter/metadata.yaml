@@ -7,7 +7,11 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, pdelewski, Erog38]
+    active: [atoulme, Erog38]
+    emeritus: [pdelewski]
+
+sending_queue:
+  support: default
 
 tests:
   config:

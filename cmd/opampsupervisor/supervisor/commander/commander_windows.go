@@ -9,9 +9,13 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
+
+// The Go runtime can swallow a Ctrl-Break that arrives while it is still bootstrapping, leaving the agent running.
+const minAgentAgeForShutdownSignal = 500 * time.Millisecond
 
 var (
 	kernel32API = windows.NewLazySystemDLL("kernel32.dll")

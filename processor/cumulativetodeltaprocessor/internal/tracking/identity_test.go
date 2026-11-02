@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
@@ -102,6 +103,32 @@ func TestMetricIdentity_Write(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMetricIdentity_WriteScopeAttributes(t *testing.T) {
+	identity := func(scopeAttrs map[string]any) string {
+		il := pcommon.NewInstrumentationScope()
+		il.SetName("ilm_name")
+		il.SetVersion("ilm_version")
+		require.NoError(t, il.Attributes().FromRaw(scopeAttrs))
+
+		mi := &MetricIdentity{
+			Resource:               pcommon.NewResource(),
+			InstrumentationLibrary: il,
+			Attributes:             pcommon.NewMap(),
+			MetricType:             pmetric.MetricTypeSum,
+			MetricName:             "m_name",
+		}
+		b := &bytes.Buffer{}
+		mi.Write(b)
+		return b.String()
+	}
+
+	assert.NotEqual(t, identity(map[string]any{"tenant": "a"}), identity(map[string]any{"tenant": "b"}), "scopes that differ only in attribute values")
+	assert.NotEqual(t, identity(map[string]any{"tenant": "a"}), identity(map[string]any{"owner": "a"}), "scopes that differ only in attribute keys")
+	assert.NotEqual(t, identity(nil), identity(map[string]any{"tenant": "a"}), "scope with and without attributes")
+	assert.Equal(t, identity(map[string]any{"a": "1", "b": "2"}), identity(map[string]any{"b": "2", "a": "1"}), "attribute order does not matter")
+	assert.Equal(t, identity(nil), identity(map[string]any{}), "a scope without attributes keeps its identity")
 }
 
 func TestMetricIdentity_IsFloatVal(t *testing.T) {
