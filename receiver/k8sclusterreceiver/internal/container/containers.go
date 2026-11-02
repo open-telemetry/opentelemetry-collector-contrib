@@ -209,11 +209,6 @@ func specImageForContainer(pod *corev1.Pod, containerName string) string {
 			return pod.Spec.Containers[i].Image
 		}
 	}
-	for i := range pod.Spec.InitContainers {
-		if pod.Spec.InitContainers[i].Name == containerName {
-			return pod.Spec.InitContainers[i].Image
-		}
-	}
 	return ""
 }
 

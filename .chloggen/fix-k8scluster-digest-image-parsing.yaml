@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/k8s_cluster
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "`container.image.name` and `container.image.tag` are now correctly resolved when the container runtime reports a bare digest in the container status instead of the full image reference."
+note: "Use the pod spec image for `container.image.name` and `container.image.tag`, consistent with `k8sattributesprocessor`."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46541]
@@ -16,9 +16,8 @@ issues: [46541]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Some container runtimes (e.g. containerd on EKS) set ContainerStatus.Image to
-  a bare digest (e.g. "sha256:<hex>") instead of the full image reference. The
-  receiver now detects this and falls back to the container spec image.
+  Previously the status image was used, which some runtimes report as a bare digest (`sha256:<hex>`).
+  Values may change for images without a fully qualified registry (e.g. `nginx` instead of `docker.io/library/nginx`).
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -338,6 +338,6 @@ func TestSpecImageForContainer(t *testing.T) {
 
 	assert.Equal(t, "myregistry.com/app:v1", specImageForContainer(pod, "app"))
 	assert.Equal(t, "myregistry.com/sidecar:v2", specImageForContainer(pod, "sidecar"))
-	assert.Equal(t, "myregistry.com/init:latest", specImageForContainer(pod, "init"))
+	assert.Empty(t, specImageForContainer(pod, "init"))
 	assert.Empty(t, specImageForContainer(pod, "nonexistent"))
 }
