@@ -23,3 +23,7 @@
 | cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
 | cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
 | cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
+| host.id | The host.id of the EC2 instance running the collector task. | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-id) | - |
+| host.image.id | The host.image.id of the EC2 instance running the collector task. | Any Str | true | [host.image.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-image-id) | - |
+| host.name | The host.name of the EC2 instance running the collector task. | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The host.type of the EC2 instance running the collector task. | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-type) | - |

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -25,6 +26,9 @@ import (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
+	ec2Metadata           bool
+	logger                *zap.Logger
+	clients               func(context.Context, string) (ecsAPI, ec2API, error)
 	provider              ecsutil.MetadataProvider
 	rb                    *metadata.ResourceBuilder
 	failOnMissingMetadata bool
@@ -40,12 +44,12 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOn
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
+	return &Detector{ec2Metadata: cfg.EC2Metadata, logger: params.Logger, clients: newEC2MetadataClients, provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
 		if d.failOnMissingMetadata {
@@ -92,6 +96,12 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		d.rb.SetAwsEcsLaunchtype("ec2")
 	case "fargate":
 		d.rb.SetAwsEcsLaunchtype("fargate")
+	}
+
+	if d.ec2Metadata && strings.EqualFold(tmdeResp.LaunchType, "EC2") {
+		if enrichmentErr := d.enrichEC2(ctx, tmdeResp); enrichmentErr != nil {
+			d.logger.Warn("Unable to enrich ECS resource with EC2 metadata", zap.Error(enrichmentErr))
+		}
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()

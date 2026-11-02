@@ -412,6 +412,160 @@ processors:
 
 > **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the ECS Task Metadata Endpoint is not detected (not running on ECS) or if container sidecar metadata retrieval fails, instead of silently returning an empty or partial resource.
 
+#### EC2 host metadata without IMDS
+
+When the collector runs in an ECS task on EC2 with bridge networking, an IMDSv2
+token response hop limit of `1` can prevent it from reading EC2 instance metadata.
+The `ec2` detector then cannot identify the instance. The `system` detector may
+report the container's hostname instead, or a fixed hostname baked into the AMI.
+Neither necessarily matches the instance's EC2 private DNS name.
+
+Enable `ec2_metadata` to let the ECS detector look up the instance through the
+AWS APIs. This lets you keep bridge networking and a hop limit of `1`. You must
+also grant the collector's task role the permissions described below. Adding
+permissions alone does not make the `ec2` detector use the AWS APIs.
+
+The option is disabled by default:
+
+```yaml
+processors:
+  resource_detection/ecs:
+    detectors: [ecs]
+    timeout: 15s
+    ecs:
+      ec2_metadata: true
+```
+
+The task metadata endpoint must be V4 and report `LaunchType: EC2`. The detector
+reads its own task ARN, calls `ecs:DescribeTasks` to find the container instance,
+then calls `ecs:DescribeContainerInstances` to find the EC2 instance ID. Finally,
+`ec2:DescribeInstances` provides the host metadata. These calls need permissions
+on the **task role**. The execution role alone does not provide them.
+
+The detector uses the AWS SDK's default credential chain and takes the Region
+from the task ARN. It does not try to obtain EC2 instance-role credentials
+through IMDS.
+
+On success, the detector sets `host.id`, `host.name` (the EC2 private DNS name),
+`host.type` and `host.image.id`. It also reads `cloud.availability_zone` from EC2.
+Account and Region come from the task ARN, and `cloud.platform` stays `aws_ecs`.
+You can disable individual attributes with
+`ecs.resource_attributes.<attribute>.enabled: false`.
+
+These attributes describe the EC2 instance running the collector. They do not
+identify the original host of telemetry forwarded from another instance.
+
+The detector skips these API calls when the option is disabled or the task's
+launch type is Fargate, missing or unknown. If the lookup fails, it logs a warning
+and returns the ECS metadata it could read. Missing credentials, insufficient
+permissions or a timeout will therefore leave the EC2 host fields unset by this
+detector, but will not stop the collector from running. This also applies when
+`fail_on_missing_metadata` is enabled. That setting still controls failures when
+reading task and container metadata, as described above.
+
+#### Configure the ECS task role
+
+Use the collector's existing [ECS task IAM role](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html)
+if it has one. This is the role assigned to `taskRoleArn` in the task definition.
+The execution role (`executionRoleArn`) and EC2 instance profile serve different
+purposes. All containers in the same task can use the task role's permissions.
+
+Start by setting the Region, cluster name and task role name for your deployment.
+Run the commands with AWS CLI credentials that can manage the role and deploy
+ECS tasks.
+
+```bash
+AWS_REGION=us-east-1
+ECS_CLUSTER=my-ecs-cluster
+TASK_ROLE_NAME=otel-collector-task
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+```
+
+If the collector does not already have a task role, create one with the following
+trust policy. Skip this step when using an existing task role.
+
+```bash
+cat > ecs-task-trust.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Service": "ecs-tasks.amazonaws.com"},
+    "Action": "sts:AssumeRole",
+    "Condition": {
+      "StringEquals": {"aws:SourceAccount": "${AWS_ACCOUNT_ID}"},
+      "ArnLike": {"aws:SourceArn": "arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:*"}
+    }
+  }]
+}
+EOF
+
+aws iam create-role \
+  --role-name "$TASK_ROLE_NAME" \
+  --assume-role-policy-document file://ecs-task-trust.json
+```
+
+Next, attach a policy that allows the three read operations. The ECS permissions
+in this example cover tasks and container instances in the collector's cluster.
+EC2 `DescribeInstances` requires `Resource: "*"`, so its permission is restricted
+to the selected Region instead.
+
+These examples use the standard `aws` partition and ECS ARNs that include the
+cluster name. Adjust the resource patterns if your deployment uses another
+partition or legacy ECS ARNs.
+
+```bash
+cat > ecs-ec2-metadata-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ecs:DescribeTasks",
+      "Resource": "arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:task/${ECS_CLUSTER}/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ecs:DescribeContainerInstances",
+      "Resource": "arn:aws:ecs:${AWS_REGION}:${AWS_ACCOUNT_ID}:container-instance/${ECS_CLUSTER}/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ec2:DescribeInstances",
+      "Resource": "*",
+      "Condition": {"StringEquals": {"aws:RequestedRegion": "${AWS_REGION}"}}
+    }
+  ]
+}
+EOF
+
+aws iam put-role-policy \
+  --role-name "$TASK_ROLE_NAME" \
+  --policy-name OtelEcsEc2Metadata \
+  --policy-document file://ecs-ec2-metadata-policy.json
+
+aws iam get-role \
+  --role-name "$TASK_ROLE_NAME" \
+  --query Role.Arn --output text
+```
+
+The last command prints the role ARN. If you created a new role, assign that ARN
+to `taskRoleArn` in a new revision of the collector's existing task definition. In the ECS console, select the task
+definition, choose **Create new revision** and select the role under **Task role**.
+Keep the execution role and the rest of the task definition as required by your
+deployment. The identity deploying the task needs `iam:PassRole` for the task role.
+
+Enable `ecs.ec2_metadata: true` in the collector configuration, then start new
+tasks. For an ECS service, update the service to use the new task definition
+revision. If you kept the same task role and only added permissions, force a new
+deployment to restart the collector. For standalone tasks, replace the running
+tasks using the intended task definition.
+
+The lookup runs at collector startup. A collector that has already failed the
+lookup will not try again just because its IAM permissions changed. ECS supplies
+the task credentials to the AWS SDK, so you do not need to configure static AWS
+keys in the collector.
+
 ### Amazon Elastic Beanstalk
 
 Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).

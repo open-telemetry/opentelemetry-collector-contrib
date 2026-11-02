@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	EC2Metadata        bool                              `mapstructure:"ec2_metadata"`
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 

@@ -28,15 +28,19 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
+			rb.SetHostID("host.id-val")
+			rb.SetHostImageID("host.image.id-val")
+			rb.SetHostName("host.name-val")
+			rb.SetHostType("host.type-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 19, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 19, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -117,6 +121,26 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "cloud.region-val", cloudRegionAttrVal.Str())
+			}
+			hostIDAttrVal, ok := res.Attributes().Get("host.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.id-val", hostIDAttrVal.Str())
+			}
+			hostImageIDAttrVal, ok := res.Attributes().Get("host.image.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.image.id-val", hostImageIDAttrVal.Str())
+			}
+			hostNameAttrVal, ok := res.Attributes().Get("host.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+			}
+			hostTypeAttrVal, ok := res.Attributes().Get("host.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.type-val", hostTypeAttrVal.Str())
 			}
 		})
 	}
