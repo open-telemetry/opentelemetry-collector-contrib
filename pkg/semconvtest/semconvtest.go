@@ -157,10 +157,14 @@ func registryForSchemaURL(schemaURL string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("schema URL %q is not an opentelemetry.io schema URL (%s<version>); use WithRegistry to select a custom registry", schemaURL, schemaURLPrefix)
 	}
-	if !semver.IsValid("v" + version) {
-		return "", fmt.Errorf("schema URL %q does not end in a valid semantic-conventions version", schemaURL)
+	// Schema versions are full MAJOR.MINOR.PATCH. Canonical rejects semver
+	// shorthand (1.34), build metadata, and invalid input; Prerelease
+	// rejects suffixes like -rc.1, which Canonical keeps.
+	v := "v" + version
+	if semver.Canonical(v) != v || semver.Prerelease(v) != "" {
+		return "", fmt.Errorf("schema URL %q does not end in a valid semantic-conventions version (MAJOR.MINOR.PATCH)", schemaURL)
 	}
-	return fmt.Sprintf(defaultRegistryTemplate, "v"+version), nil
+	return fmt.Sprintf(defaultRegistryTemplate, v), nil
 }
 
 // weaverUsesReportEndpoint reports whether version uses the GET /report +

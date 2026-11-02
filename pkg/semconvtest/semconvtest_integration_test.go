@@ -203,6 +203,21 @@ func TestRegistryForSchemaURL(t *testing.T) {
 			wantErr:   "valid semantic-conventions version",
 		},
 		{
+			name:      "semver shorthand rejected",
+			schemaURL: "https://opentelemetry.io/schemas/1.34",
+			wantErr:   "valid semantic-conventions version",
+		},
+		{
+			name:      "prerelease version rejected",
+			schemaURL: "https://opentelemetry.io/schemas/1.34.0-rc.1",
+			wantErr:   "valid semantic-conventions version",
+		},
+		{
+			name:      "build metadata rejected",
+			schemaURL: "https://opentelemetry.io/schemas/1.34.0+custom",
+			wantErr:   "valid semantic-conventions version",
+		},
+		{
 			name:      "trailing slash rejected",
 			schemaURL: "https://opentelemetry.io/schemas/1.34.0/",
 			wantErr:   "valid semantic-conventions version",
