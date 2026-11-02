@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	configutil "github.com/prometheus/common/config"
@@ -35,6 +36,9 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint must be specified")
+	}
+	if strings.Contains(cfg.ClientConfig.Endpoint, "/") {
+		return fmt.Errorf("endpoint must be host:port without a scheme or path, got %q; the scheme is selected from the tls settings and the path is set with metrics_path", cfg.ClientConfig.Endpoint)
 	}
 	if cfg.CollectionInterval <= 0 {
 		return fmt.Errorf("collection_interval must be positive, got %s", cfg.CollectionInterval)
