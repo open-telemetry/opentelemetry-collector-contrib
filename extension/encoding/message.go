@@ -19,28 +19,28 @@ import (
 // Implementations must support concurrent calls and keep per-message state local to each call.
 type LogsMessageDecoderExtension interface {
 	extension.Extension
-	DecodeLogs(ctx context.Context, payload []byte, opts ...LogsDecodeOption) (plog.Logs, error)
+	DecodeLogs(ctx context.Context, payload []byte, opts ...MessageDecodeOption) (plog.Logs, error)
 }
 
 // MetricsMessageDecoderExtension decodes a complete message into metrics.
 // Implementations must support concurrent calls and keep per-message state local to each call.
 type MetricsMessageDecoderExtension interface {
 	extension.Extension
-	DecodeMetrics(ctx context.Context, payload []byte, opts ...MetricsDecodeOption) (pmetric.Metrics, error)
+	DecodeMetrics(ctx context.Context, payload []byte, opts ...MessageDecodeOption) (pmetric.Metrics, error)
 }
 
 // TracesMessageDecoderExtension decodes a complete message into traces.
 // Implementations must support concurrent calls and keep per-message state local to each call.
 type TracesMessageDecoderExtension interface {
 	extension.Extension
-	DecodeTraces(ctx context.Context, payload []byte, opts ...TracesDecodeOption) (ptrace.Traces, error)
+	DecodeTraces(ctx context.Context, payload []byte, opts ...MessageDecodeOption) (ptrace.Traces, error)
 }
 
 // ProfilesMessageDecoderExtension decodes a complete message into profiles.
 // Implementations must support concurrent calls and keep per-message state local to each call.
 type ProfilesMessageDecoderExtension interface {
 	extension.Extension
-	DecodeProfiles(ctx context.Context, payload []byte, opts ...ProfilesDecodeOption) (pprofile.Profiles, error)
+	DecodeProfiles(ctx context.Context, payload []byte, opts ...MessageDecodeOption) (pprofile.Profiles, error)
 }
 
 // MessageDecodeOption configures decoding of complete messages through
@@ -52,18 +52,6 @@ type ProfilesMessageDecoderExtension interface {
 type MessageDecodeOption interface {
 	apply(*DecodeConfig) error
 }
-
-// LogsDecodeOption configures [LogsMessageDecoderExtension.DecodeLogs].
-type LogsDecodeOption = MessageDecodeOption
-
-// MetricsDecodeOption configures [MetricsMessageDecoderExtension.DecodeMetrics].
-type MetricsDecodeOption = MessageDecodeOption
-
-// TracesDecodeOption configures [TracesMessageDecoderExtension.DecodeTraces].
-type TracesDecodeOption = MessageDecodeOption
-
-// ProfilesDecodeOption configures [ProfilesMessageDecoderExtension.DecodeProfiles].
-type ProfilesDecodeOption = MessageDecodeOption
 
 // DecodeConfig holds the configuration for one message decoding call.
 // Construct a separate configuration for each call with NewDecodeConfig.

@@ -397,22 +397,22 @@ func (e *messageContextExtension) decode(ctx context.Context, payload []byte, re
 	return e.err
 }
 
-func (e *messageContextExtension) DecodeLogs(ctx context.Context, payload []byte, options ...encoding.LogsDecodeOption) (plog.Logs, error) {
+func (e *messageContextExtension) DecodeLogs(ctx context.Context, payload []byte, options ...encoding.MessageDecodeOption) (plog.Logs, error) {
 	data := testdata.GenerateLogs(1)
 	return data, e.decode(ctx, payload, data.ResourceLogs().At(0).Resource(), options...)
 }
 
-func (e *messageContextExtension) DecodeMetrics(ctx context.Context, payload []byte, options ...encoding.MetricsDecodeOption) (pmetric.Metrics, error) {
+func (e *messageContextExtension) DecodeMetrics(ctx context.Context, payload []byte, options ...encoding.MessageDecodeOption) (pmetric.Metrics, error) {
 	data := testdata.GenerateMetrics(1)
 	return data, e.decode(ctx, payload, data.ResourceMetrics().At(0).Resource(), options...)
 }
 
-func (e *messageContextExtension) DecodeTraces(ctx context.Context, payload []byte, options ...encoding.TracesDecodeOption) (ptrace.Traces, error) {
+func (e *messageContextExtension) DecodeTraces(ctx context.Context, payload []byte, options ...encoding.MessageDecodeOption) (ptrace.Traces, error) {
 	data := testdata.GenerateTraces(1)
 	return data, e.decode(ctx, payload, data.ResourceSpans().At(0).Resource(), options...)
 }
 
-func (e *messageContextExtension) DecodeProfiles(ctx context.Context, payload []byte, options ...encoding.ProfilesDecodeOption) (pprofile.Profiles, error) {
+func (e *messageContextExtension) DecodeProfiles(ctx context.Context, payload []byte, options ...encoding.MessageDecodeOption) (pprofile.Profiles, error) {
 	data := testdata.GenerateProfiles(1)
 	return data, e.decode(ctx, payload, data.ResourceProfiles().At(0).Resource(), options...)
 }
@@ -421,7 +421,7 @@ type headerMetricsMessageExtension struct {
 	component.Component
 }
 
-func (*headerMetricsMessageExtension) DecodeMetrics(_ context.Context, payload []byte, options ...encoding.MetricsDecodeOption) (pmetric.Metrics, error) {
+func (*headerMetricsMessageExtension) DecodeMetrics(_ context.Context, payload []byte, options ...encoding.MessageDecodeOption) (pmetric.Metrics, error) {
 	config, err := encoding.NewDecodeConfig(options...)
 	if err != nil {
 		return pmetric.Metrics{}, err

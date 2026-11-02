@@ -35,7 +35,7 @@ type externalMetricsDecoder struct {
 	extension.Extension
 }
 
-func (externalMetricsDecoder) DecodeMetrics(ctx context.Context, payload []byte, opts ...encoding.MetricsDecodeOption) (pmetric.Metrics, error) {
+func (externalMetricsDecoder) DecodeMetrics(ctx context.Context, payload []byte, opts ...encoding.MessageDecodeOption) (pmetric.Metrics, error) {
 	config, err := encoding.NewDecodeConfig(opts...)
 	if err != nil {
 		return pmetric.Metrics{}, err
