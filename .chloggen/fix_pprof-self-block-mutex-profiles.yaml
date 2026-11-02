@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/pprof
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Collect block and mutex profiles in self-scraping mode and reset runtime profiling rates to disabled state on shutdown.
+note: Collect block and mutex profiles in self-scraping mode. On shutdown, mutex profiling fraction is restored to its pre-start value, while block profiling rate is disabled (set to 0) as the Go runtime API does not provide a getter for the current rate.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52347]
