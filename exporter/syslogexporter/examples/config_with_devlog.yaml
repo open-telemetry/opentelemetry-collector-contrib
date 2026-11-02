@@ -1,0 +1,34 @@
+exporters:
+  syslog:
+    network: unixgram
+    endpoint: /dev/log
+    protocol: rfc3164
+
+processors:
+  transform:
+    log_statements:
+      # /dev/log requires an empty hostname.
+      - set(log.attributes["hostname"], "")
+      # The `appname` attribute becomes the syslog identifier.
+      - set(log.attributes["appname"], "app")
+      # syslogexporter uses the `message` attribute and ignores the log body.
+      - set(log.attributes["message"], log.body)
+
+receivers:
+  file_log:
+    start_at: beginning
+    include:
+    - /other/path/**/*.txt
+
+service:
+  telemetry:
+      logs:
+        level: "debug"
+  pipelines:
+    logs:
+      receivers:
+        - file_log
+      processors:
+        - transform
+      exporters:
+        - syslog

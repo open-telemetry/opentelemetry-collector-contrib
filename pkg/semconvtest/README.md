@@ -61,23 +61,31 @@ validates it.
 
 ## Source of truth
 
-By default the check runs against the newest published semantic-conventions
-registry: Weaver downloads it when the container starts, and the container
-runs the `otel/weaver:latest` image. Two consequences follow:
+The check runs against a pinned pair, and both parts update deliberately:
 
-- A test can start to fail without any code change, when the conventions
-  evolve. That is the compliance signal: the telemetry no longer matches the
-  current specification.
-- For deterministic results, pin both floating parts with the options below.
+- The registry: the package pins a released semantic-conventions version
+  and passes it to Weaver. Renovate opens a PR for each new release; new
+  conventions arrive in that PR, and a test that fails there shows
+  telemetry that no longer matches them.
+- The tool: the package pins a tested `otel/weaver` image version, also
+  updated through Renovate PRs.
+
+CI validates each new pair: the integration tests run in the Renovate bump
+PR, so a registry release that needs a newer Weaver fails that PR instead
+of main, and the fix is to update both pins together. An unpinned registry
+can require a newer Weaver at any time, which fails every test at container
+start. Use the options below to select other versions.
 
 ## Options
 
 - `WithVersion(version string)`: select the `otel/weaver` image version.
-  The default is `latest`; the minimum is v0.22.1. Tags that are not semver
-  pass through to Docker unchecked.
+  The default is the pinned, tested version; the minimum is v0.22.1. Tags
+  that are not semver (for example, `latest`) pass through to Docker
+  unchecked.
 - `WithRegistry(registry string)`: set the semantic-conventions registry
-  passed to Weaver's `--registry` flag. When unset, Weaver uses its default
-  registry: the latest published semantic conventions.
+  passed to Weaver's `--registry` flag. The default is the pinned release.
+  An empty string restores Weaver's own default: the unreleased registry on
+  semantic-conventions main.
 
 ## Report types
 

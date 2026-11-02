@@ -25,7 +25,7 @@ func (hs *service) Get(ctx context.Context) (string, error) {
 
 	hostname := ""
 	if src.Kind == source.HostnameKind {
-		hostname = src.Identifier
+		hostname = src.SourceIdentifier.Primary
 	}
 
 	return hostname, nil

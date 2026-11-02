@@ -54,7 +54,7 @@ func Benchmark_BrokerScraperFranz_Scrape(b *testing.B) {
 			// Enable the config-derived metric so DescribeBrokerConfigs runs.
 			cfg.MetricsBuilderConfig.Metrics.KafkaBrokerLogRetentionPeriod.Enabled = true
 
-			s, err := createBrokerScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+			s, err := createBrokerScraperFranz(b.Context(), cfg, receivertest.NewNopSettings(metadata.Type), nil)
 			require.NoError(b, err)
 			require.NoError(b, s.Start(b.Context(), componenttest.NewNopHost()))
 			b.Cleanup(func() { require.NoError(b, s.Shutdown(b.Context())) })

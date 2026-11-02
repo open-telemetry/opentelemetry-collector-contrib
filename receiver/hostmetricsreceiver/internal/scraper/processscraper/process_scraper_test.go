@@ -197,7 +197,7 @@ func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.
 		"process.command",
 		"process.command_line",
 		"process.owner",
-		"process.parent_pid", // TODO: use this from conventions when it is available
+		"process.parent_pid",
 	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		attrs := resourceMetrics.At(i).Resource().Attributes().AsRaw()

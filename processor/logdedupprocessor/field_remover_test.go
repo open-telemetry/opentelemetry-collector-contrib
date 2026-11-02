@@ -10,8 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 func Test_newFieldRemover(t *testing.T) {
@@ -76,7 +75,7 @@ func TestRemoveFields(t *testing.T) {
 	// Expected attribute map
 	expectedAttrsMap := pcommon.NewMap()
 	expectedAttrsMap.PutStr("str", "attr str")
-	expectedAttrHash := pdatautil.MapHash(expectedAttrsMap)
+	expectedAttrHash := xhash.MapHash(expectedAttrsMap)
 
 	// Fill body map
 	bodyMap := logRecord.Body().SetEmptyMap()
@@ -88,12 +87,12 @@ func TestRemoveFields(t *testing.T) {
 	expectedBodyMap := pcommon.NewMap()
 	expectedBodyMap.PutEmptyMap("nested.map")
 	expectedBodyMap.PutInt("safe", 10)
-	expectedBodyHash := pdatautil.MapHash(expectedBodyMap)
+	expectedBodyHash := xhash.MapHash(expectedBodyMap)
 
 	remover.RemoveFields(logRecord)
 
-	actualAttrHash := pdatautil.MapHash(logRecord.Attributes())
-	actualBodyHash := pdatautil.MapHash(logRecord.Body().Map())
+	actualAttrHash := xhash.MapHash(logRecord.Attributes())
+	actualBodyHash := xhash.MapHash(logRecord.Body().Map())
 
 	require.Equal(t, expectedAttrHash, actualAttrHash)
 	require.Equal(t, expectedBodyHash, actualBodyHash)

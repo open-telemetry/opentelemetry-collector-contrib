@@ -29,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Port:     514,
 		Network:  "tcp",
 		Protocol: "rfc5424",
-		QueueSettings: configoptional.Default(func() exporterhelper.QueueBatchConfig {
+		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 			queue := exporterhelper.NewDefaultQueueConfig()
 			queue.NumConsumers = 10
 			queue.QueueSize = 1000

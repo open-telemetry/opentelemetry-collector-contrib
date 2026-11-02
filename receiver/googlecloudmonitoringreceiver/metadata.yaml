@@ -12,7 +12,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, TylerHelmuth]
+    active: [dashpole]
     emeritus: [abhishek-at-cloudwerx]
 
 tests:

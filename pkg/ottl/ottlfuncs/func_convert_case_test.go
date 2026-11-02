@@ -259,14 +259,14 @@ func Test_ConvertCaseFactory(t *testing.T) {
 		factory := NewConvertCaseFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ConvertCaseArguments[any]{}, args)
+		assert.IsType(t, &convertCaseArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "ToCase"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewConvertCaseFactory[any]()
 		args := factory.CreateDefaultArguments()
-		convertArgs, ok := args.(*ConvertCaseArguments[any])
+		convertArgs, ok := args.(*convertCaseArguments[any])
 		require.True(t, ok)
 		convertArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -282,6 +282,23 @@ func Test_ConvertCaseFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createConvertCaseFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "ConvertCaseFactory args must be of type *ConvertCaseArguments[K]")
+		assert.ErrorContains(t, err, "ConvertCaseFactory args must be of type *convertCaseArguments[K]")
 	})
+}
+
+func BenchmarkConvertCase(b *testing.B) {
+	target := &ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "CPUUtilizationMetric", nil
+		},
+	}
+	exprFunc, err := convertCase[any](target, "snake")
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

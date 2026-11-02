@@ -109,14 +109,14 @@ func Test_StringFactory(t *testing.T) {
 		factory := NewStringFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &StringArguments[any]{}, args)
+		assert.IsType(t, &stringArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewStringFactory[any]()
 		args := factory.CreateDefaultArguments()
-		stringArgs, ok := args.(*StringArguments[any])
+		stringArgs, ok := args.(*stringArguments[any])
 		require.True(t, ok)
 		stringArgs.Target = &ottl.StandardStringLikeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -131,6 +131,21 @@ func Test_StringFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createStringFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "StringFactory args must be of type *StringArguments[K]")
+		assert.ErrorContains(t, err, "StringFactory args must be of type *stringArguments[K]")
 	})
+}
+
+func BenchmarkString(b *testing.B) {
+	exprFunc := stringFunc[any](&ottl.StandardStringLikeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return int64(333), nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

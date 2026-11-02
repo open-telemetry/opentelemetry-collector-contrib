@@ -1,5 +1,9 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: service-a
     scopeLogs:
       - logRecords:
           - attributes:
@@ -45,6 +49,7 @@ resourceLogs:
                 value:
                   stringValue: Exception stacktrace
             body: {}
+            eventName: exception
             severityNumber: 17
             severityText: ERROR
             spanId: 2a00000000000000
@@ -92,12 +97,17 @@ resourceLogs:
                 value:
                   stringValue: Exception stacktrace
             body: {}
+            eventName: exception
             severityNumber: 17
             severityText: ERROR
             spanId: 2a00000000000000
             traceId: 2a000000000000000000000000000000
         scope: {}
-  - resource: {}
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: service-b
     scopeLogs:
       - logRecords:
           - attributes:
@@ -143,6 +153,7 @@ resourceLogs:
                 value:
                   stringValue: Exception stacktrace
             body: {}
+            eventName: exception
             severityNumber: 17
             severityText: ERROR
             spanId: 2a00000000000000

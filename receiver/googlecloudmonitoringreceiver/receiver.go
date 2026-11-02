@@ -256,6 +256,10 @@ func getFilterQuery(metric MetricConfig) string {
 
 // ConvertGCPTimeSeriesToMetrics converts GCP Monitoring TimeSeries to pmetric.Metrics
 func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metrics, metricDesc *metric.MetricDescriptor, timeSeries *monitoringpb.TimeSeries) {
+	if timeSeries != nil {
+		internal.SortPointsChronologically(timeSeries.Points)
+	}
+
 	// Map to track existing ResourceMetrics by resource attributes
 	resourceMetricsMap := make(map[string]pmetric.ResourceMetrics)
 

@@ -54,9 +54,17 @@ make update-core-module-list
 git add internal/buildscripts/modules
 git commit -m "update core modules list" --allow-empty
 
-make chlog-update VERSION="v${CANDIDATE_BETA}"
+RELEASE_VERSION=v${CANDIDATE_STABLE}/v${CANDIDATE_BETA}
+if [ "${CANDIDATE_STABLE}" == "" ]; then
+    RELEASE_VERSION="v${CANDIDATE_BETA}"
+fi
+if [ "${CANDIDATE_BETA}" == "" ]; then
+    RELEASE_VERSION="v${CANDIDATE_STABLE}"
+fi
+
+make chlog-update VERSION="${RELEASE_VERSION}"
 git add --all
-git commit -m "changelog update ${CANDIDATE_BETA}"
+git commit -m "changelog update ${RELEASE_VERSION}"
 
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g" versions.yaml
 if [[ ${STABLE_RELEASE} == "true" ]]
@@ -69,6 +77,8 @@ git commit -m "update version.yaml ${CANDIDATE_BETA}${CANDIDATE_STABLE:+ ${CANDI
 
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
 sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_STABLE_ESCAPED}/v${CANDIDATE_STABLE}/g" ./cmd/oteltestbedcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_STABLE_ESCAPED}/v${CANDIDATE_STABLE}/g" ./cmd/otelcontribcol/builder-config.yaml
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/otelcontribcol/builder-config.yaml
 sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/oteltestbedcol/builder-config.yaml
 
@@ -76,14 +86,19 @@ find . -name "*.bak" -type f -delete
 make genotelcontribcol
 make genoteltestbedcol
 git add .
-git commit -m "builder config changes ${CANDIDATE_BETA}" || (echo "no builder config changes to commit")
+git commit -m "builder config changes ${CANDIDATE_STABLE}/${CANDIDATE_BETA}" || (echo "no builder config changes to commit")
 
 make multimod-prerelease
 git add .
-git commit -m "make multimod-prerelease changes ${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
+git commit -m "make multimod-prerelease changes ${CANDIDATE_STABLE}/${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
 
 pushd cmd/otelcontribcol
-go mod tidy
+# go mod tidy reads sum.golang.org directly, which the GOPROXY fallback doesn't cover.
+for i in 1 2 3; do
+    go mod tidy && break
+    [ "$i" -lt 3 ] || exit 1
+    sleep $((i*10))
+done
 popd
 make otelcontribcol
 
@@ -96,10 +111,11 @@ then
 - sed -i.bak s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g versions.yaml"
 fi
 
-gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare release ${CANDIDATE_BETA}" --body "
+gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare release ${RELEASE_VERSION}" --body "
 The following commands were run to prepare this release:
-- make chlog-update VERSION=v${CANDIDATE_BETA}
+- make chlog-update VERSION=v${RELEASE_VERSION}
 - sed -i.bak s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g versions.yaml${STABLE_SED_LINE}
+- sed -i.bak s/${CURRENT_STABLE_ESCAPED}/${CANDIDATE_STABLE}/g versions.yaml${STABLE_SED_LINE}
 - make multimod-prerelease
 - make multimod-sync
 "

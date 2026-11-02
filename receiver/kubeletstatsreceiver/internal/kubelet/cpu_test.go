@@ -62,9 +62,8 @@ func TestScrapeBasedCPUUsage(t *testing.T) {
 }
 
 func TestScrapeBasedCPUUsage_DisabledGateUsesUsageNanoCores(t *testing.T) {
-	// Gate defaults to disabled; explicitly assert the default (legacy) behavior is
-	// unaffected by the new code path.
-	require.False(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate.IsEnabled())
+	// The gate is beta (on by default); disable it explicitly to test the legacy UsageNanoCores path.
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 
 	mbs := &metadata.MetricsBuilders{
 		NodeMetricsBuilder: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),

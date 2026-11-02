@@ -9,9 +9,9 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // CompareProfilesOption can be used to mutate expected and/or actual profiles before comparing.
@@ -164,8 +164,8 @@ func sortResourceProfilesSlice(rls pprofile.ResourceProfilesSlice) {
 		if a.SchemaUrl() != b.SchemaUrl() {
 			return a.SchemaUrl() < b.SchemaUrl()
 		}
-		aAttrs := pdatautil.MapHash(a.Resource().Attributes())
-		bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+		aAttrs := xhash.MapHash(a.Resource().Attributes())
+		bAttrs := xhash.MapHash(b.Resource().Attributes())
 		return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 	})
 }

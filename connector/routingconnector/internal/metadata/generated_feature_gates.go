@@ -8,8 +8,9 @@ import (
 
 var ConnectorRoutingDefaultErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"connector.routing.defaultErrorModeIgnore",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the default error_mode is `ignore` instead of `propagate`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418"),
 	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )

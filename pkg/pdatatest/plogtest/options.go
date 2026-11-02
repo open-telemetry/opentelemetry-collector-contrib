@@ -9,9 +9,9 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // CompareLogsOption can be used to mutate expected and/or actual logs before comparing.
@@ -154,8 +154,8 @@ func sortResourceLogsSlice(rls plog.ResourceLogsSlice) {
 		if a.SchemaUrl() != b.SchemaUrl() {
 			return a.SchemaUrl() < b.SchemaUrl()
 		}
-		aAttrs := pdatautil.MapHash(a.Resource().Attributes())
-		bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+		aAttrs := xhash.MapHash(a.Resource().Attributes())
+		bAttrs := xhash.MapHash(b.Resource().Attributes())
 		return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 	})
 }
@@ -216,13 +216,13 @@ func sortLogRecordSlices(ls plog.Logs) {
 				if !bytes.Equal(as[:], bs[:]) {
 					return bytes.Compare(as[:], bs[:]) < 0
 				}
-				aAttrs := pdatautil.MapHash(a.Attributes())
-				bAttrs := pdatautil.MapHash(b.Attributes())
+				aAttrs := xhash.MapHash(a.Attributes())
+				bAttrs := xhash.MapHash(b.Attributes())
 				if !bytes.Equal(aAttrs[:], bAttrs[:]) {
 					return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 				}
-				ab := pdatautil.ValueHash(a.Body())
-				bb := pdatautil.ValueHash(b.Body())
+				ab := xhash.ValueHash(a.Body())
+				bb := xhash.ValueHash(b.Body())
 				return bytes.Compare(ab[:], bb[:]) < 0
 			})
 		}

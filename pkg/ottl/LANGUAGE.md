@@ -75,7 +75,7 @@ The following types are supported for parameters in OTTL functions:
 - `PMapGetSetter`
 - `PSliceGetter`
 - `PSliceGetSetter`
-- `SliceGetter`
+- `SliceGetter` (experimental, from the `xottl` module)
 - `FloatGetter`
 - `FloatLikeGetter`
 - `StringGetter`
@@ -88,7 +88,7 @@ The following types are supported for parameters in OTTL functions:
 - `DurationGetter`
 - `TimeGetter`
 - `FunctionGetter`
-- `LambdaExpression`
+- `LambdaExpression` (provided by the `xottl` module)
 - `Enum`
 - `string`
 - `float64`
@@ -113,8 +113,10 @@ Bare slice parameters (`[]T`) accept only literal lists. The following element t
 - `int64`
 - `uint8`. Byte slice literals are parsed as byte slices by OTTL.
 
-To accept lists that are not known until runtime, use a `SliceGetter` parameter. Unlike bare slice
+To accept lists that are not known until runtime, use an `xottl.SliceGetter` parameter. Unlike bare slice
 parameters, it can accept either a literal list or a path or converter that evaluates to a slice.
+Stable functions only accept a path or converter for these parameters when the
+[`pkg.ottl.functions.enableDynamicSliceArguments`](README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate is enabled.
 
 To make a parameter optional, use the `Optional` type, which takes a type argument for the underlying
 parameter type. For example, an optional string parameter would be specified as `Optional[string]`.
@@ -188,12 +190,18 @@ Example List Values:
 ### Maps
 
 A Map Value comprises a set of key Value pairs.
+Keys may be string literals, Converters, or Paths, and must evaluate to strings.
+Converter and Path keys require the [`pkg.ottl.enableDynamicMapKeys`](README.md#pkgottlenabledynamicmapkeys) feature gate.
+Keys are evaluated in source order, and if a key is repeated the last value wins.
+A bare lowercase identifier such as `{foo: 1}` is treated as a Path, not a string.
 
 Example Map Values:
 - `{}`
 - `{"foo": "bar"}`
 - `{"foo": {"a": 2}}`
 - `{"foo": {"a": log.attributes["key"]}}`
+- `{ToUpperCase("key"): "value"}`
+- `{log.attributes["k"]: 1}`
 
 > [!IMPORTANT]
 > The examples above include a space after each `:` for readability, but a statement

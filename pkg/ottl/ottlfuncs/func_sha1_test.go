@@ -33,12 +33,11 @@ func Test_SHA1(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA1HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha1HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,13 +69,12 @@ func Test_SHA1Error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := SHA1HashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := sha1HashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -92,14 +90,14 @@ func Test_SHA1Factory(t *testing.T) {
 		factory := NewSHA1Factory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SHA1Arguments[any]{}, args)
+		assert.IsType(t, &sHA1Arguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSHA1Factory[any]()
 		args := factory.CreateDefaultArguments()
-		shaArgs, ok := args.(*SHA1Arguments[any])
+		shaArgs, ok := args.(*sHA1Arguments[any])
 		require.True(t, ok)
 		shaArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -114,6 +112,21 @@ func Test_SHA1Factory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSHA1Function[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SHA1Factory args must be of type *SHA1Arguments[K]")
+		assert.ErrorContains(t, err, "SHA1Factory args must be of type *sHA1Arguments[K]")
 	})
+}
+
+func BenchmarkSHA1(b *testing.B) {
+	exprFunc := sha1HashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world", nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

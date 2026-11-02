@@ -19,7 +19,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
@@ -27,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 const (
@@ -97,8 +97,13 @@ type connectorImp struct {
 	events EventsConfig
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
-	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
 	instanceID          string
+}
+
+type deltaMetricKey struct {
+	resource resourceKey
+	metric   metrics.Key
 }
 
 type resourceMetrics struct {
@@ -149,10 +154,10 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		resourceMetricsKeyAttributes[attr] = s
 	}
 
-	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	var lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
 	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
-			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
+		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k deltaMetricKey, _ pcommon.Timestamp) {
+			logger.Debug("Evicting cached delta timestamp", zap.String("key", string(k.metric)), zap.Binary("resource", k.resource[:]))
 		})
 		if err != nil {
 			return nil, err
@@ -310,7 +315,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	timestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 
-	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
+	p.resourceMetrics.ForEach(func(rk resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
 		if !metadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled() || p.config.AddResourceAttributes {
 			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
@@ -327,7 +332,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		deltaMetricKeys := make(map[metrics.Key]bool)
 		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
 			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
+				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(deltaMetricKey{resource: rk, metric: mk}); ok {
 					startTime = lastTimestamp
 				}
 				// Collect lastDeltaTimestamps keys that need to be updated. Metrics can share the same key, so defer the update.
@@ -363,7 +368,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 
 		for mk := range deltaMetricKeys {
 			// For delta metrics, cache the current data point's timestamp, which will be the start timestamp for the next data points in the series
-			p.lastDeltaTimestamps.Add(mk, timestamp)
+			p.lastDeltaTimestamps.Add(deltaMetricKey{resource: rk, metric: mk}, timestamp)
 		}
 	})
 
@@ -527,7 +532,7 @@ type resourceKey [16]byte
 
 func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	if len(p.resourceMetricsKeyAttributes) == 0 {
-		return pdatautil.MapHash(attr)
+		return xhash.MapHash(attr)
 	}
 	m := pcommon.NewMap()
 	attr.CopyTo(m)
@@ -535,7 +540,7 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 		_, ok := p.resourceMetricsKeyAttributes[k]
 		return !ok
 	})
-	return pdatautil.MapHash(m)
+	return xhash.MapHash(m)
 }
 
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {

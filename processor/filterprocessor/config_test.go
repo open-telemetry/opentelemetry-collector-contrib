@@ -1147,19 +1147,19 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_trace"),
-			errorMessage: `condition has invalid syntax at 1:23: (expected Field ("." Field)*)`,
+			errorMessage: `1:23: condition has invalid syntax: (expected Field ("." Field)*)`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_metric"),
-			errorMessage: `converter names must start with an uppercase letter but got 'invalid_function'`,
+			errorMessage: "1:1: condition failed to parse near `invalid_fu`: converter names must start with an uppercase letter but got 'invalid_function'",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_log"),
-			errorMessage: `condition has invalid syntax at 1:11 near ` + "`condition`" + `: (expected <opcomparison> Value)`,
+			errorMessage: "1:11: condition has invalid syntax near `condition`: (expected <opcomparison> Value)",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_profile"),
-			errorMessage: `condition has invalid syntax at 1:11 near ` + "`condition`" + `: (expected <opcomparison> Value)`,
+			errorMessage: "1:11: condition has invalid syntax near `condition`: (expected <opcomparison> Value)",
 		},
 	}
 

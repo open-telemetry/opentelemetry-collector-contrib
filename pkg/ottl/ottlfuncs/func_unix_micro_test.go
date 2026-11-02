@@ -59,8 +59,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixMicro(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixMicro(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.UnixMicro()
@@ -79,14 +78,14 @@ func Test_UnixMicroFactory(t *testing.T) {
 		factory := NewUnixMicroFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixMicroArguments[any]{}, args)
+		assert.IsType(t, &unixMicroArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixMicroFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*UnixMicroArguments[any])
+		timeArgs, ok := args.(*unixMicroArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -101,6 +100,19 @@ func Test_UnixMicroFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixMicroFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixMicroFactory args must be of type *UnixMicroArguments[K]")
+		assert.ErrorContains(t, err, "UnixMicroFactory args must be of type *unixMicroArguments[K]")
 	})
+}
+
+func BenchmarkUnixMicro(b *testing.B) {
+	exprFunc := unixMicro[any](&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

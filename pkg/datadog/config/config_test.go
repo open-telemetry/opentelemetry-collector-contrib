@@ -25,9 +25,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	idleConnTimeout := 30 * time.Second
-	maxIdleConn := 300
-	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
@@ -40,16 +37,11 @@ func TestValidate(t *testing.T) {
 	}
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
 	httpClientConfig.ForceAttemptHTTP2 = false
 	httpClientConfig.ReadBufferSize = 100
 	httpClientConfig.WriteBufferSize = 200
 	httpClientConfig.Timeout = 10 * time.Second
-	httpClientConfig.IdleConnTimeout = idleConnTimeout        //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout.
-	httpClientConfig.MaxIdleConns = maxIdleConn               //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns.
-	httpClientConfig.MaxIdleConnsPerHost = maxIdleConnPerHost //nolint:staticcheck // SA1019: MaxIdleConnsPerHost is deprecated in favor of Keepalive.MaxIdleConnsPerHost.
 	httpClientConfig.MaxConnsPerHost = maxConnPerHost
-	httpClientConfig.DisableKeepAlives = true //nolint:staticcheck // SA1019: DisableKeepAlives is deprecated, set Keepalive.Enabled to false instead.
 	httpClientConfig.TLS = configtls.ClientConfig{InsecureSkipVerify: true}
 
 	unsupportedClientConfig := confighttp.NewDefaultClientConfig()
@@ -289,15 +281,16 @@ func TestValidateConnectorComponentConfig(t *testing.T) {
 
 func TestUnmarshal(t *testing.T) {
 	httpConfigs := map[string]any{
-		"read_buffer_size":        100,
-		"write_buffer_size":       200,
-		"timeout":                 "10s",
-		"max_idle_conns":          300,
-		"max_idle_conns_per_host": 150,
-		"max_conns_per_host":      250,
-		"disable_keep_alives":     true,
-		"idle_conn_timeout":       "30s",
-		"tls":                     map[string]any{"insecure_skip_verify": true},
+		"read_buffer_size":  100,
+		"write_buffer_size": 200,
+		"timeout":           "10s",
+		"keepalive": map[string]any{
+			"idle_conn_timeout":       "30s",
+			"max_idle_conns":          300,
+			"max_idle_conns_per_host": 150,
+		},
+		"max_conns_per_host": 250,
+		"tls":                map[string]any{"insecure_skip_verify": true},
 	}
 	// Create confighttp.ClientConfig via unmarshaling to preserve internal state.
 	cfgWithHTTPConfigs := CreateDefaultConfig().(*Config)
@@ -465,6 +458,17 @@ func TestUnmarshal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalHostnameWhitespace(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+
+	configMap := confmap.NewFromStringMap(map[string]any{
+		"hostname": " my-hostname\n",
+	})
+
+	require.NoError(t, cfg.Unmarshal(configMap))
+	assert.Equal(t, "my-hostname", cfg.Hostname)
 }
 
 // Test that the factory creates the default configuration

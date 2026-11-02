@@ -1,0 +1,56 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: delta.monotonic.sum
+            sum:
+              aggregationTemporality: 1
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 60
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: delta.histogram.test
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - timeUnixNano: 90
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [10, 14, 20, 12, 39]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: delta.exphistogram.test
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - timeUnixNano: 90
+                  scale: 4
+                  zeroCount: 7
+                  positive:
+                    offset: 2
+                    bucketCounts: [10, 13, 18, 9, 35]
+                  negative:
+                    offset: 6
+                    bucketCounts: [8, 23, 11, 21, 9]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

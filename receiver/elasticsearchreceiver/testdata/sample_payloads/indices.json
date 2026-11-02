@@ -14,8 +14,8 @@
           "total_count" : 1
         },
         "store" : {
-          "size_in_bytes" : 40230884,
-          "total_data_set_size_in_bytes" : 40230884,
+          "size_in_bytes" : 20115442,
+          "total_data_set_size_in_bytes" : 20115442,
           "reserved_in_bytes" : 0
         },
         "indexing" : {
@@ -274,8 +274,8 @@
             "total_count" : 1
           },
           "store" : {
-            "size_in_bytes" : 40230884,
-            "total_data_set_size_in_bytes" : 40230884,
+            "size_in_bytes" : 20115442,
+            "total_data_set_size_in_bytes" : 20115442,
             "reserved_in_bytes" : 0
           },
           "indexing" : {
