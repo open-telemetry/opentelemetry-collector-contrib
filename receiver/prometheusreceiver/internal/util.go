@@ -42,8 +42,8 @@ var (
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
 
 	notUsefulLabelsOther = sortString([]string{
-		model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel,
-		model.MetricsPathLabel, model.JobLabel,
+		model.InstanceLabel,
+		model.JobLabel,
 	})
 	notUsefulLabelsHistogram = sortString(append(notUsefulLabelsOther, model.BucketLabel))
 	notUsefulLabelsSummary   = sortString(append(notUsefulLabelsOther, model.QuantileLabel))
@@ -69,7 +69,7 @@ func getSortedNotUsefulLabelsForSeries(mType pmetric.MetricType, ls labels.Label
 	base := getSortedNotUsefulLabels(mType)
 	var exclusions []string
 	ls.Range(func(l labels.Label) {
-		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) {
+		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) || strings.HasPrefix(l.Name, "__") {
 			if exclusions == nil {
 				exclusions = make([]string, 0, len(base)+ls.Len())
 				exclusions = append(exclusions, base...)

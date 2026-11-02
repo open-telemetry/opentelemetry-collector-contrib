@@ -487,7 +487,7 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 			skipped++
 			return
 		}
-		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) {
+		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) || strings.HasPrefix(l.Name, "__") {
 			skipped++
 			return
 		}
