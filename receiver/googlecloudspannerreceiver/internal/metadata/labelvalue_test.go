@@ -22,7 +22,7 @@ func TestStringLabelValueMetadata(t *testing.T) {
 	assert.Equal(t, labelName, metadata.Name())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
 
-	var expectedType *string
+	var expectedType *spanner.NullString
 
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
@@ -94,7 +94,7 @@ func TestLockRequestJSONLabelValueMetadata(t *testing.T) {
 	assert.Equal(t, labelName, metadata.Name())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
 
-	var expectedType *string
+	var expectedType *spanner.NullString
 
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
@@ -106,7 +106,7 @@ func TestOperationsByTableJSONLabelValueMetadata(t *testing.T) {
 	assert.Equal(t, labelName, metadata.Name())
 	assert.Equal(t, labelColumnName, metadata.ColumnName())
 
-	var expectedType *string
+	var expectedType *spanner.NullString
 
 	assert.IsType(t, expectedType, metadata.ValueHolder())
 }
@@ -283,7 +283,7 @@ func TestOperationsByTableJSONLabelValue(t *testing.T) {
 
 func TestNewStringLabelValue(t *testing.T) {
 	metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, StringValueType)
-	value := stringValue
+	value := spanner.NullString{StringVal: stringValue, Valid: true}
 	valueHolder := &value
 
 	labelValue := newStringLabelValue(metadata, valueHolder)
@@ -458,6 +458,11 @@ func TestNewLockRequestJSONLabelValue(t *testing.T) {
 			expectedValue: "",
 		},
 		{
+			name:          "Null DB value",
+			inputJSON:     "NULL_DB_VALUE",
+			expectedValue: "",
+		},
+		{
 			name:          "Null element in JSON array",
 			inputJSON:     `[null, {"lock_mode":"lockMode1","column":"column1"}]`,
 			expectedValue: "{lockMode1,column1}",
@@ -481,7 +486,10 @@ func TestNewLockRequestJSONLabelValue(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			input := tc.inputJSON // Copy for passing as pointer
+			input := spanner.NullString{StringVal: tc.inputJSON, Valid: true}
+			if tc.inputJSON == "NULL_DB_VALUE" {
+				input.Valid = false
+			}
 			labelValue := newLockRequestJSONLabelValue(metadata, &input)
 			assert.Equal(t, LockRequestJSONValueType, labelValue.Metadata().ValueType())
 			assert.Equal(t, tc.expectedValue, labelValue.Value())
@@ -535,6 +543,11 @@ func TestNewOperationsByTableJSONLabelValue(t *testing.T) {
 			expectedValue: "{table1,1,10}",
 		},
 		{
+			name:          "Null DB value",
+			inputJSON:     "NULL_DB_VALUE",
+			expectedValue: "",
+		},
+		{
 			name:          "All elements skipped (no valid table_name)",
 			inputJSON:     `[null, {}, {"table_name":null}, {"table_name":""}]`,
 			expectedValue: "",
@@ -573,8 +586,11 @@ func TestNewOperationsByTableJSONLabelValue(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			value := tc.inputJSON
-			valueHolder := &value
+			input := spanner.NullString{StringVal: tc.inputJSON, Valid: true}
+			if tc.inputJSON == "NULL_DB_VALUE" {
+				input.Valid = false
+			}
+			valueHolder := &input
 
 			labelValue := newOperationsByTableJSONLabelValue(metadata, valueHolder)
 

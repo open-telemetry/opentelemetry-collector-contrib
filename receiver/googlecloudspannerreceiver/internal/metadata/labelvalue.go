@@ -111,9 +111,14 @@ func (v stringLabelValue) SetValueTo(attributes pcommon.Map) {
 }
 
 func newStringLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullStr := *valueHolder.(*spanner.NullString)
+	val := ""
+	if nullStr.Valid {
+		val = nullStr.StringVal
+	}
 	return stringLabelValue{
 		metadata: metadata,
-		value:    *valueHolder.(*string),
+		value:    val,
 	}
 }
 
@@ -270,7 +275,11 @@ type lockRequestJSON struct {
 }
 
 func newLockRequestJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
-	rawJSON := *valueHolder.(*string)
+	nullStr := *valueHolder.(*spanner.NullString)
+	if !nullStr.Valid {
+		return lockRequestJSONLabelValue{metadata: metadata, value: ""}
+	}
+	rawJSON := nullStr.StringVal
 	var value []*lockRequestJSON
 	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
 		return lockRequestJSONLabelValue{
@@ -328,7 +337,11 @@ type operationsByTableJSON struct {
 }
 
 func newOperationsByTableJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
-	rawJSON := *valueHolder.(*string)
+	nullStr := *valueHolder.(*spanner.NullString)
+	if !nullStr.Valid {
+		return operationsByTableJSONLabelValue{metadata: metadata, value: ""}
+	}
+	rawJSON := nullStr.StringVal
 	var value []*operationsByTableJSON
 	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
 		return operationsByTableJSONLabelValue{
@@ -370,7 +383,7 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 	case StringValueType:
 		newLabelValueFunc = newStringLabelValue
 		valueHolderFunc = func() any {
-			var valueHolder string
+				var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case IntValueType:
@@ -406,13 +419,13 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 	case LockRequestJSONValueType:
 		newLabelValueFunc = newLockRequestJSONLabelValue
 		valueHolderFunc = func() any {
-			var valueHolder string
+				var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case OperationsByTableJSONValueType:
 		newLabelValueFunc = newOperationsByTableJSONLabelValue
 		valueHolderFunc = func() any {
-			var valueHolder string
+				var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case TimestampValueType:
