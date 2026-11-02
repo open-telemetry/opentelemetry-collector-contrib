@@ -304,12 +304,7 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	e.pathSuffix = filepath.ToSlash(pathParts[1])
 	e.maxOpenFiles = e.conf.GroupBy.MaxOpenFiles
 	e.newFileWriter = func(path string) (*fileWriter, error) {
-		writer, writerErr := newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
-		if writerErr != nil {
-			return nil, writerErr
-		}
-		writer.logger = e.logger
-		return writer, nil
+		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level), e.logger)
 	}
 
 	writers, err := simplelru.NewLRU(e.conf.GroupBy.MaxOpenFiles, e.onEvict)

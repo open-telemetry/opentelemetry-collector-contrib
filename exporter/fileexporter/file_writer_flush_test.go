@@ -34,6 +34,30 @@ func (w *flushTestWriter) flush() error {
 	return w.err
 }
 
+func TestNewFileWriterReportsFlushError(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		core, logs := observer.New(zap.ErrorLevel)
+		logger := zap.New(core)
+		path := filepath.Join(t.TempDir(), "out.json")
+		writer, err := newFileWriter(path, false, nil, time.Second, exportMessageAsLine, "", 0, logger)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, writer.shutdown())
+		})
+		require.Same(t, logger, writer.logger, "the constructor must set the logger before the writer starts")
+
+		require.NoError(t, writer.file.Close())
+		writer.file = &flushTestWriter{err: errors.New("disk full")}
+		writer.start()
+		time.Sleep(time.Second)
+		synctest.Wait()
+
+		require.Equal(t, 1, logs.Len())
+		require.Equal(t, path, logs.All()[0].ContextMap()["path"])
+		require.Equal(t, "disk full", logs.All()[0].ContextMap()["error"])
+	})
+}
+
 func newFlushTestWriter(t *testing.T, grouped bool, logger *zap.Logger, flushErr error) (*fileWriter, *flushTestWriter, FileExporter) {
 	t.Helper()
 
