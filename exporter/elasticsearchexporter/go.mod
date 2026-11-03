@@ -10,7 +10,7 @@ require (
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.20.3
-	github.com/lestrrat-go/strftime v1.2.0
+	github.com/lestrrat-go/strftime v1.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
