@@ -680,7 +680,6 @@ type AttributeSqlserverThreadPoolTaskState int
 const (
 	_ AttributeSqlserverThreadPoolTaskState = iota
 	AttributeSqlserverThreadPoolTaskStateCurrent
-	AttributeSqlserverThreadPoolTaskStateQueued
 	AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool
 )
 
@@ -689,8 +688,6 @@ func (av AttributeSqlserverThreadPoolTaskState) String() string {
 	switch av {
 	case AttributeSqlserverThreadPoolTaskStateCurrent:
 		return "current"
-	case AttributeSqlserverThreadPoolTaskStateQueued:
-		return "queued"
 	case AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool:
 		return "waiting_for_threadpool"
 	}
@@ -700,7 +697,6 @@ func (av AttributeSqlserverThreadPoolTaskState) String() string {
 // MapAttributeSqlserverThreadPoolTaskState is a helper map of string to AttributeSqlserverThreadPoolTaskState attribute value.
 var MapAttributeSqlserverThreadPoolTaskState = map[string]AttributeSqlserverThreadPoolTaskState{
 	"current":                AttributeSqlserverThreadPoolTaskStateCurrent,
-	"queued":                 AttributeSqlserverThreadPoolTaskStateQueued,
 	"waiting_for_threadpool": AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool,
 }
 
@@ -1237,8 +1233,8 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.tempdb.file.size",
 		Attributes: []string{"file_type", "sqlserver.tempdb.file.id"},
 	},
-	SqlserverThreadPoolTasksCount: metricInfo{
-		Name:       "sqlserver.thread_pool.tasks.count",
+	SqlserverThreadPoolTaskCount: metricInfo{
+		Name:       "sqlserver.thread_pool.task.count",
 		Attributes: []string{"sqlserver.thread_pool.task.state"},
 	},
 	SqlserverTransactionDelay: metricInfo{
@@ -1376,7 +1372,7 @@ type metricsInfo struct {
 	SqlserverTaskRate                                     metricInfo
 	SqlserverTempdbAllocationWaitersCount                 metricInfo
 	SqlserverTempdbFileSize                               metricInfo
-	SqlserverThreadPoolTasksCount                         metricInfo
+	SqlserverThreadPoolTaskCount                          metricInfo
 	SqlserverTransactionDelay                             metricInfo
 	SqlserverTransactionMirrorWriteRate                   metricInfo
 	SqlserverTransactionRate                              metricInfo
@@ -7295,17 +7291,17 @@ func newMetricSqlserverTempdbFileSize(cfg SqlserverTempdbFileSizeMetricConfig) m
 	return m
 }
 
-type metricSqlserverThreadPoolTasksCount struct {
-	data          pmetric.Metric                            // data buffer for generated metric.
-	config        SqlserverThreadPoolTasksCountMetricConfig // metric config provided by user.
-	capacity      int                                       // max observed number of data points added to the metric.
-	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
-	dpIndex       map[uint64]int                            // maps a data point's hash to its index, for O(1) dedup lookup.
+type metricSqlserverThreadPoolTaskCount struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SqlserverThreadPoolTaskCountMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
-// init fills sqlserver.thread_pool.tasks.count metric with initial data.
-func (m *metricSqlserverThreadPoolTasksCount) init() {
-	m.data.SetName("sqlserver.thread_pool.tasks.count")
+// init fills sqlserver.thread_pool.task.count metric with initial data.
+func (m *metricSqlserverThreadPoolTaskCount) init() {
+	m.data.SetName("sqlserver.thread_pool.task.count")
 	m.data.SetDescription("Number of SQL Server tasks tracked by schedulers, broken down by queueing state.")
 	m.data.SetUnit("{task}")
 	m.data.SetEmptyGauge()
@@ -7314,7 +7310,7 @@ func (m *metricSqlserverThreadPoolTasksCount) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverThreadPoolTasksCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverThreadPoolTaskStateAttributeValue string) {
+func (m *metricSqlserverThreadPoolTaskCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverThreadPoolTaskStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -7322,7 +7318,7 @@ func (m *metricSqlserverThreadPoolTasksCount) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState) {
+	if slices.Contains(m.config.EnabledAttributes, SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState) {
 		dp.Attributes().PutStr("sqlserver.thread_pool.task.state", sqlserverThreadPoolTaskStateAttributeValue)
 	}
 
@@ -7356,14 +7352,14 @@ func (m *metricSqlserverThreadPoolTasksCount) recordDataPoint(start pcommon.Time
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverThreadPoolTasksCount) updateCapacity() {
+func (m *metricSqlserverThreadPoolTaskCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverThreadPoolTasksCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverThreadPoolTaskCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
@@ -7376,8 +7372,8 @@ func (m *metricSqlserverThreadPoolTasksCount) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSqlserverThreadPoolTasksCount(cfg SqlserverThreadPoolTasksCountMetricConfig) metricSqlserverThreadPoolTasksCount {
-	m := metricSqlserverThreadPoolTasksCount{config: cfg}
+func newMetricSqlserverThreadPoolTaskCount(cfg SqlserverThreadPoolTaskCountMetricConfig) metricSqlserverThreadPoolTaskCount {
+	m := metricSqlserverThreadPoolTaskCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -8272,7 +8268,7 @@ type MetricsBuilder struct {
 	metricSqlserverTaskRate                                     metricSqlserverTaskRate
 	metricSqlserverTempdbAllocationWaitersCount                 metricSqlserverTempdbAllocationWaitersCount
 	metricSqlserverTempdbFileSize                               metricSqlserverTempdbFileSize
-	metricSqlserverThreadPoolTasksCount                         metricSqlserverThreadPoolTasksCount
+	metricSqlserverThreadPoolTaskCount                          metricSqlserverThreadPoolTaskCount
 	metricSqlserverTransactionDelay                             metricSqlserverTransactionDelay
 	metricSqlserverTransactionMirrorWriteRate                   metricSqlserverTransactionMirrorWriteRate
 	metricSqlserverTransactionRate                              metricSqlserverTransactionRate
@@ -8400,7 +8396,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTaskRate:                                     newMetricSqlserverTaskRate(mbc.Metrics.SqlserverTaskRate),
 		metricSqlserverTempdbAllocationWaitersCount:                 newMetricSqlserverTempdbAllocationWaitersCount(mbc.Metrics.SqlserverTempdbAllocationWaitersCount),
 		metricSqlserverTempdbFileSize:                               newMetricSqlserverTempdbFileSize(mbc.Metrics.SqlserverTempdbFileSize),
-		metricSqlserverThreadPoolTasksCount:                         newMetricSqlserverThreadPoolTasksCount(mbc.Metrics.SqlserverThreadPoolTasksCount),
+		metricSqlserverThreadPoolTaskCount:                          newMetricSqlserverThreadPoolTaskCount(mbc.Metrics.SqlserverThreadPoolTaskCount),
 		metricSqlserverTransactionDelay:                             newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
 		metricSqlserverTransactionMirrorWriteRate:                   newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
 		metricSqlserverTransactionRate:                              newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
@@ -8641,7 +8637,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTaskRate.emit(ils.Metrics())
 	mb.metricSqlserverTempdbAllocationWaitersCount.emit(ils.Metrics())
 	mb.metricSqlserverTempdbFileSize.emit(ils.Metrics())
-	mb.metricSqlserverThreadPoolTasksCount.emit(ils.Metrics())
+	mb.metricSqlserverThreadPoolTaskCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionDelay.emit(ils.Metrics())
 	mb.metricSqlserverTransactionMirrorWriteRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionRate.emit(ils.Metrics())
@@ -9192,9 +9188,9 @@ func (mb *MetricsBuilder) RecordSqlserverTempdbFileSizeDataPoint(ts pcommon.Time
 	return nil
 }
 
-// RecordSqlserverThreadPoolTasksCountDataPoint adds a data point to sqlserver.thread_pool.tasks.count metric.
-func (mb *MetricsBuilder) RecordSqlserverThreadPoolTasksCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverThreadPoolTaskStateAttributeValue AttributeSqlserverThreadPoolTaskState) {
-	mb.metricSqlserverThreadPoolTasksCount.recordDataPoint(mb.startTime, ts, val, sqlserverThreadPoolTaskStateAttributeValue.String())
+// RecordSqlserverThreadPoolTaskCountDataPoint adds a data point to sqlserver.thread_pool.task.count metric.
+func (mb *MetricsBuilder) RecordSqlserverThreadPoolTaskCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverThreadPoolTaskStateAttributeValue AttributeSqlserverThreadPoolTaskState) {
+	mb.metricSqlserverThreadPoolTaskCount.recordDataPoint(mb.startTime, ts, val, sqlserverThreadPoolTaskStateAttributeValue.String())
 }
 
 // RecordSqlserverTransactionDelayDataPoint adds a data point to sqlserver.transaction.delay metric.

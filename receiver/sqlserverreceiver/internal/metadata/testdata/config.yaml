@@ -210,7 +210,7 @@ all_set:
     sqlserver.tempdb.file.size:
       enabled: true
       attributes: ["file_type","sqlserver.tempdb.file.id"]
-    sqlserver.thread_pool.tasks.count:
+    sqlserver.thread_pool.task.count:
       enabled: true
       attributes: ["sqlserver.thread_pool.task.state"]
     sqlserver.transaction.delay:
@@ -488,7 +488,7 @@ reaggregate_set:
     sqlserver.tempdb.file.size:
       enabled: true
       attributes: []
-    sqlserver.thread_pool.tasks.count:
+    sqlserver.thread_pool.task.count:
       enabled: true
       attributes: []
     sqlserver.transaction.delay:
@@ -766,7 +766,7 @@ none_set:
     sqlserver.tempdb.file.size:
       enabled: false
       attributes: ["file_type","sqlserver.tempdb.file.id"]
-    sqlserver.thread_pool.tasks.count:
+    sqlserver.thread_pool.task.count:
       enabled: false
       attributes: ["sqlserver.thread_pool.task.state"]
     sqlserver.transaction.delay:

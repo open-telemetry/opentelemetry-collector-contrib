@@ -2728,23 +2728,23 @@ func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverThreadPoolTasksCountMetricAttributeKey specifies the key of an attribute for the sqlserver.thread_pool.tasks.count metric.
-type SqlserverThreadPoolTasksCountMetricAttributeKey string
+// SqlserverThreadPoolTaskCountMetricAttributeKey specifies the key of an attribute for the sqlserver.thread_pool.task.count metric.
+type SqlserverThreadPoolTaskCountMetricAttributeKey string
 
 const (
-	SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState SqlserverThreadPoolTasksCountMetricAttributeKey = "sqlserver.thread_pool.task.state"
+	SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState SqlserverThreadPoolTaskCountMetricAttributeKey = "sqlserver.thread_pool.task.state"
 )
 
-// SqlserverThreadPoolTasksCountMetricConfig provides config for the sqlserver.thread_pool.tasks.count metric.
-type SqlserverThreadPoolTasksCountMetricConfig struct {
+// SqlserverThreadPoolTaskCountMetricConfig provides config for the sqlserver.thread_pool.task.count metric.
+type SqlserverThreadPoolTaskCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverThreadPoolTasksCountMetricAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverThreadPoolTaskCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SqlserverThreadPoolTasksCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverThreadPoolTaskCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2758,12 +2758,12 @@ func (ms *SqlserverThreadPoolTasksCountMetricConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *SqlserverThreadPoolTasksCountMetricConfig) Validate() error {
+func (ms *SqlserverThreadPoolTaskCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState:
+		case SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState:
 		default:
-			return fmt.Errorf("metric sqlserver.thread_pool.tasks.count doesn't have an attribute %v, valid attributes: [sqlserver.thread_pool.task.state]", val)
+			return fmt.Errorf("metric sqlserver.thread_pool.task.count doesn't have an attribute %v, valid attributes: [sqlserver.thread_pool.task.state]", val)
 		}
 	}
 
@@ -3202,7 +3202,7 @@ type MetricsConfig struct {
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
 	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
 	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
-	SqlserverThreadPoolTasksCount                         SqlserverThreadPoolTasksCountMetricConfig                         `mapstructure:"sqlserver.thread_pool.tasks.count"`
+	SqlserverThreadPoolTaskCount                          SqlserverThreadPoolTaskCountMetricConfig                          `mapstructure:"sqlserver.thread_pool.task.count"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
@@ -3551,10 +3551,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
 		},
-		SqlserverThreadPoolTasksCount: SqlserverThreadPoolTasksCountMetricConfig{
+		SqlserverThreadPoolTaskCount: SqlserverThreadPoolTaskCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverThreadPoolTasksCountMetricAttributeKey{SqlserverThreadPoolTasksCountMetricAttributeKeySqlserverThreadPoolTaskState},
+			EnabledAttributes:   []SqlserverThreadPoolTaskCountMetricAttributeKey{SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState},
 		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,

@@ -1109,7 +1109,7 @@ ELSE
 
 // sqlServerWorkerThreadsQuery queries sys.dm_os_schedulers for worker thread counts, and
 // sys.dm_os_waiting_tasks for the live count of tasks queued behind the worker-thread pool
-// (wait_type = 'THREADPOOL'), feeding sqlserver.thread_pool.tasks.count.
+// (wait_type = 'THREADPOOL'), feeding sqlserver.thread_pool.task.count.
 const sqlServerWorkerThreadsQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
