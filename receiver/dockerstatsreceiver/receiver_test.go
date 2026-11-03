@@ -347,7 +347,7 @@ func TestScrapeV2(t *testing.T) {
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
 					withResourceAttributes(allResourceAttributesEnabled).
-					withLabelMatchers(filter.Config{Strict: "container.label.2"}).
+					withLabelMatchers(filter.Config{Strict: "app"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 		}

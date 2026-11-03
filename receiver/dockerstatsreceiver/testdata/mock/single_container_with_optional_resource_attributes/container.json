@@ -21,7 +21,7 @@
     "Image": "ubuntu",
     "Labels": {
       "container.label": "container-label",
-      "container.label.2": "container-label-2"
+      "app": "my-app"
     },
     "OnBuild": null,
     "OpenStdin": true,
