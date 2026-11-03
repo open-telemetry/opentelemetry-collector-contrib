@@ -77,9 +77,10 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 
 		// Create endpoint for each container port.
 		for _, port := range container.Ports {
+			transport := getTransport(port.Protocol)
 			endpointID = observer.EndpointID(
 				fmt.Sprintf(
-					"%s/%s/%s(%d)", podID, container.Name, port.Name, port.ContainerPort,
+					"%s/%s/%s(%d/%s)", podID, container.Name, port.Name, port.ContainerPort, transport,
 				),
 			)
 			endpoints = append(endpoints, observer.Endpoint{
@@ -89,7 +90,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 					Pod:            podDetails,
 					Name:           port.Name,
 					Port:           uint16(port.ContainerPort),
-					Transport:      getTransport(port.Protocol),
+					Transport:      transport,
 					ContainerName:  container.Name,
 					ContainerID:    rc.ID,
 					ContainerImage: container.Image,
@@ -103,7 +104,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 
 func getTransport(protocol v1.Protocol) observer.Transport {
 	switch protocol {
-	case v1.ProtocolTCP:
+	case "", v1.ProtocolTCP:
 		return observer.ProtocolTCP
 	case v1.ProtocolUDP:
 		return observer.ProtocolUDP

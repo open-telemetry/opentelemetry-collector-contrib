@@ -41,7 +41,7 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 			},
 		},
 		{
-			ID:     "namespace/pod-2-UID/container-2/https(443)",
+			ID:     "namespace/pod-2-UID/container-2/https(443/TCP)",
 			Target: "1.2.3.4:443",
 			Details: &observer.Port{
 				Name: "https", Pod: observer.Pod{
@@ -94,14 +94,15 @@ func TestMultiContainerUnnamedPortNoCollision(t *testing.T) {
 					Name:  "app",
 					Image: "app:1.0",
 					Ports: []v1.ContainerPort{
-						{ContainerPort: 80, Protocol: v1.ProtocolTCP}, // Unnamed
+						{ContainerPort: 80, Protocol: v1.ProtocolTCP}, // Unnamed TCP 80
+						{ContainerPort: 80, Protocol: v1.ProtocolUDP}, // Unnamed UDP 80 in same container
 					},
 				},
 				{
 					Name:  "sidecar",
 					Image: "sidecar:1.0",
 					Ports: []v1.ContainerPort{
-						{ContainerPort: 80, Protocol: v1.ProtocolTCP}, // Identical unnamed port
+						{ContainerPort: 80, Protocol: v1.ProtocolTCP}, // Unnamed TCP 80 in second container
 					},
 				},
 			},
@@ -126,15 +127,16 @@ func TestMultiContainerUnnamedPortNoCollision(t *testing.T) {
 
 	endpoints := convertPodToEndpoints("test-ns", pod)
 
-	// Expect 5 distinct endpoints: 1 pod + 2 containers + 2 ports
-	require.Len(t, endpoints, 5)
+	// Expect 6 distinct endpoints: 1 pod + 2 containers + 3 ports (2 in app, 1 in sidecar)
+	require.Len(t, endpoints, 6)
 
 	expectedIDs := []observer.EndpointID{
 		"test-ns/multi-pod-uid",
 		"test-ns/multi-pod-uid/app",
-		"test-ns/multi-pod-uid/app/(80)",
+		"test-ns/multi-pod-uid/app/(80/TCP)",
+		"test-ns/multi-pod-uid/app/(80/UDP)",
 		"test-ns/multi-pod-uid/sidecar",
-		"test-ns/multi-pod-uid/sidecar/(80)",
+		"test-ns/multi-pod-uid/sidecar/(80/TCP)",
 	}
 
 	actualIDs := make([]observer.EndpointID, len(endpoints))
