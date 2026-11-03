@@ -12,6 +12,10 @@ import (
 	"encoding/pem"
 	"math/big"
 	"os"
+	"path/filepath"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -303,6 +307,181 @@ func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
 			}
 			require.Len(t, warned, 1)
 			assert.Equal(t, tt.wantKeys, warned[0].ContextMap()["settings"])
+		})
+	}
+}
+
+// TestTLSSettingsAreClassified fails when configtls.ClientConfig gains a
+// setting that this receiver does not handle. Every tls key must be in exactly
+// one of the sets below. When this test fails after a configtls update, either
+// forward the new setting in getPrometheusConfig, or add it to
+// unsupportedTLSSettings in receiver.go, and document it in the README.
+func TestTLSSettingsAreClassified(t *testing.T) {
+	// forwarded settings reach the prometheus scrape TLS config.
+	forwarded := []string{
+		"ca_file", "ca_pem", "cert_file", "cert_pem", "key_file", "key_pem",
+		"server_name_override", "insecure_skip_verify", "min_version", "max_version",
+	}
+	// warnedUnsupported settings have no prometheus equivalent and are named
+	// in the start-time warning from unsupportedTLSSettings.
+	warnedUnsupported := []string{
+		"cipher_suites", "include_insecure_cipher_suites", "curve_preferences",
+		"include_system_ca_certs_pool", "tpm",
+	}
+	// coveredByPrometheus settings are not forwarded or warned about because
+	// prometheus already provides the behavior: it re-reads changed
+	// certificate, key and CA files, which is what reload_interval does.
+	coveredByPrometheus := []string{"reload_interval"}
+	// controlsScheme settings select between an http and an https scrape.
+	controlsScheme := []string{"insecure"}
+
+	classes := map[string][]string{
+		"forwarded":           forwarded,
+		"warnedUnsupported":   warnedUnsupported,
+		"coveredByPrometheus": coveredByPrometheus,
+		"controlsScheme":      controlsScheme,
+	}
+	classOf := map[string]string{}
+	for class, keys := range classes {
+		for _, key := range keys {
+			if other, ok := classOf[key]; ok {
+				t.Fatalf("tls key %q is in both %s and %s", key, other, class)
+			}
+			classOf[key] = class
+		}
+	}
+
+	keys := tlsKeys(reflect.TypeFor[configtls.ClientConfig]())
+	for _, key := range keys {
+		if _, ok := classOf[key]; !ok {
+			t.Errorf("tls key %q is not classified: forward it in getPrometheusConfig or add it to "+
+				"the warning list in unsupportedTLSSettings (receiver.go), update the tls section "+
+				"of README.md, then classify it in this test", key)
+		}
+	}
+	for key, class := range classOf {
+		if !slices.Contains(keys, key) {
+			t.Errorf("%s lists tls key %q, which configtls.ClientConfig no longer has", class, key)
+		}
+	}
+}
+
+// tlsKeys returns the mapstructure keys of typ, descending into squashed
+// embedded structs.
+func tlsKeys(typ reflect.Type) []string {
+	var keys []string
+	for field := range typ.Fields() {
+		tag, ok := field.Tag.Lookup("mapstructure")
+		if !ok || tag == "-" {
+			continue
+		}
+		name, opts, _ := strings.Cut(tag, ",")
+		if name == "" && slices.Contains(strings.Split(opts, ","), "squash") {
+			keys = append(keys, tlsKeys(field.Type)...)
+			continue
+		}
+		keys = append(keys, name)
+	}
+	return keys
+}
+
+// TestForwardedTLSSettingsSurviveReload checks that every forwarded tls key
+// reaches the prometheus scrape TLS config after the reload that the
+// prometheus receiver runs on start.
+func TestForwardedTLSSettingsSurviveReload(t *testing.T) {
+	caPem, err := os.ReadFile("./testdata/test_cert.pem")
+	require.NoError(t, err)
+	certPem, keyPem := generateSelfSignedPEM(t)
+
+	dir := t.TempDir()
+	caFile := filepath.Join(dir, "ca.pem")
+	certFile := filepath.Join(dir, "cert.pem")
+	keyFile := filepath.Join(dir, "key.pem")
+	require.NoError(t, os.WriteFile(caFile, caPem, 0o600))
+	require.NoError(t, os.WriteFile(certFile, certPem, 0o600))
+	require.NoError(t, os.WriteFile(keyFile, keyPem, 0o600))
+
+	// Every case sets insecure to false so the scrape uses https and the tls
+	// settings are forwarded.
+	tests := []struct {
+		name string
+		cfg  configtls.Config
+		// serverName and insecureSkipVerify are configtls.ClientConfig fields.
+		serverName         string
+		insecureSkipVerify bool
+		want               configutil.TLSConfig
+	}{
+		{
+			name: "ca_file",
+			cfg:  configtls.Config{CAFile: caFile},
+			want: configutil.TLSConfig{CAFile: caFile},
+		},
+		{
+			name: "ca_pem",
+			cfg:  configtls.Config{CAPem: configopaque.String(caPem)},
+			want: configutil.TLSConfig{CA: string(caPem)},
+		},
+		{
+			name: "cert_file and key_file",
+			cfg:  configtls.Config{CertFile: certFile, KeyFile: keyFile},
+			want: configutil.TLSConfig{CertFile: certFile, KeyFile: keyFile},
+		},
+		{
+			name: "cert_pem and key_pem",
+			cfg:  configtls.Config{CertPem: configopaque.String(certPem), KeyPem: configopaque.String(keyPem)},
+			want: configutil.TLSConfig{Cert: string(certPem), Key: configutil.Secret(keyPem)},
+		},
+		{
+			name: "cert_file and key_pem",
+			cfg:  configtls.Config{CertFile: certFile, KeyPem: configopaque.String(keyPem)},
+			want: configutil.TLSConfig{CertFile: certFile, Key: configutil.Secret(keyPem)},
+		},
+		{
+			name:       "server_name_override",
+			serverName: "example.com",
+			want:       configutil.TLSConfig{ServerName: "example.com"},
+		},
+		{
+			name:               "insecure_skip_verify",
+			insecureSkipVerify: true,
+			want:               configutil.TLSConfig{InsecureSkipVerify: true},
+		},
+		{
+			name: "min_version and max_version",
+			cfg:  configtls.Config{MinVersion: "1.1", MaxVersion: "1.2"},
+			want: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS11"], MaxVersion: configutil.TLSVersions["TLS12"]},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = "localhost:1234"
+			clientConfig.TLS = configtls.ClientConfig{
+				Config:             tt.cfg,
+				Insecure:           false,
+				InsecureSkipVerify: tt.insecureSkipVerify,
+				ServerName:         tt.serverName,
+			}
+			cfg := &Config{
+				ClientConfig:       clientConfig,
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+			}
+			require.NoError(t, confmap.Validate(cfg))
+
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			require.NoError(t, err)
+			require.NoError(t, got.PrometheusConfig.Reload())
+
+			scrapeConfig := got.PrometheusConfig.ScrapeConfigs[0]
+			assert.Equal(t, "https", scrapeConfig.Scheme)
+			want := tt.want
+			if want.MinVersion == 0 {
+				// An unset min_version resolves to the collector default.
+				want.MinVersion = configutil.TLSVersions["TLS12"]
+			}
+			assert.Equal(t, want, scrapeConfig.HTTPClientConfig.TLSConfig)
 		})
 	}
 }
