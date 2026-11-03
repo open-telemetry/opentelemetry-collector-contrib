@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/prometheus
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Introduce alpha feature gate receiver.prometheus.UseTargetUrlForServerAddress to populate server.address and server.port from scraped target URL instead of instance label"
+note: "Introduce alpha feature gate `receiver.prometheus.UseTargetUrlForServerAddress` to populate `server.address`, `server.port`, and `url.scheme` from post-relabeling `__address__` and `__scheme__` target labels instead of parsing `instance` and pre-relabeling service discovery labels."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52565, 52570]

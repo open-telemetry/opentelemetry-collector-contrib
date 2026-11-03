@@ -9,7 +9,7 @@ import (
 var ReceiverPrometheusUseTargetURLForServerAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheus.UseTargetUrlForServerAddress",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, server.address and server.port are populated from the scraped target's URL (model.AddressLabel) instead of parsing the instance label."),
+	featuregate.WithRegisterDescription("When enabled, server.address, server.port, and url.scheme are populated from the scraped target's post-relabeling __address__ and __scheme__ labels instead of parsing the instance label and pre-relabeling service discovery labels."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565"),
 	featuregate.WithRegisterFromVersion("v0.165.0"),
 )

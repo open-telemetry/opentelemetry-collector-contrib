@@ -26,7 +26,7 @@ feature_gates:
   - id: receiver.prometheus.UseTargetUrlForServerAddress
     stage: alpha
     description: >-
-      When enabled, server.address and server.port are populated from the scraped target's URL (model.AddressLabel) instead of parsing the instance label.
+      When enabled, server.address, server.port, and url.scheme are populated from the scraped target's post-relabeling __address__ and __scheme__ labels instead of parsing the instance label and pre-relabeling service discovery labels.
     from_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565
   - id: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion

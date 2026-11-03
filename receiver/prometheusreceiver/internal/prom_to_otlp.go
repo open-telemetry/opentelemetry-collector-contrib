@@ -36,32 +36,45 @@ func isDiscernibleHost(host string) bool {
 
 // CreateResource creates the resource data added to OTLP payloads.
 func CreateResource(job, instance, targetAddress, targetScheme string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
-	var host, port string
-	var err error
-	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetAddress != "" {
-		host, port, err = net.SplitHostPort(targetAddress)
-		if err != nil {
-			host = strings.TrimSuffix(strings.TrimPrefix(targetAddress, "["), "]")
-		}
-	} else {
-		host, port, err = net.SplitHostPort(instance)
-		if err != nil {
-			host = instance
-		}
-	}
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.ServiceNameKey), job)
-	if isDiscernibleHost(host) {
-		attrs.PutStr(string(conventions.ServerAddressKey), host)
-	}
 	attrs.PutStr(string(conventions.ServiceInstanceIDKey), instance)
-	attrs.PutStr(string(conventions.ServerPortKey), port)
-	scheme := serviceDiscoveryLabels.Get(model.SchemeLabel)
-	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() && targetScheme != "" {
-		scheme = targetScheme
+
+	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() {
+		var host, port string
+		if targetAddress != "" {
+			var err error
+			host, port, err = net.SplitHostPort(targetAddress)
+			if err != nil {
+				if strings.HasPrefix(targetAddress, "[") && strings.HasSuffix(targetAddress, "]") {
+					host = targetAddress[1 : len(targetAddress)-1]
+				} else {
+					host = targetAddress
+				}
+			}
+		}
+		if host != "" && isDiscernibleHost(host) {
+			attrs.PutStr(string(conventions.ServerAddressKey), host)
+		}
+		if port != "" {
+			attrs.PutStr(string(conventions.ServerPortKey), port)
+		}
+		scheme := targetScheme
+		if scheme != "" {
+			attrs.PutStr(string(conventions.URLSchemeKey), scheme)
+		}
+	} else {
+		host, port, err := net.SplitHostPort(instance)
+		if err != nil {
+			host = instance
+		}
+		if isDiscernibleHost(host) {
+			attrs.PutStr(string(conventions.ServerAddressKey), host)
+		}
+		attrs.PutStr(string(conventions.ServerPortKey), port)
+		attrs.PutStr(string(conventions.URLSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
 	}
-	attrs.PutStr(string(conventions.URLSchemeKey), scheme)
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
