@@ -6,13 +6,12 @@ package natsexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 
-	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
@@ -35,12 +34,10 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint: nats.DefaultURL,
-		Pedantic: false,
-		TLS:      configtls.NewDefaultClientConfig(),
-		Logs:     SignalConfig{Subject: defaultLogsSubject},
-		Metrics:  SignalConfig{Subject: defaultMetricsSubject},
-		Traces:   SignalConfig{Subject: defaultTracesSubject},
+		ClientConfig: natsclient.NewDefaultClientConfig(),
+		Logs:         SignalConfig{Subject: defaultLogsSubject},
+		Metrics:      SignalConfig{Subject: defaultMetricsSubject},
+		Traces:       SignalConfig{Subject: defaultTracesSubject},
 	}
 }
 

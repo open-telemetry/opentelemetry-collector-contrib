@@ -472,7 +472,11 @@ func (dc *Client) RemoveContainer(cid string) {
 // Close shuts down the client and waits for all background streams to finish.
 func (dc *Client) Close() error {
 	dc.streamClientCancel()
-	return dc.streamErrorGroup.Wait()
+	err := dc.streamErrorGroup.Wait()
+	if dc.client != nil {
+		return errors.Join(err, dc.client.Close())
+	}
+	return err
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {
@@ -489,11 +493,11 @@ func isTCPEndpoint(endpoint string) bool {
 func ContainerEnvToMap(env []string) map[string]string {
 	out := make(map[string]string, len(env))
 	for _, v := range env {
-		parts := strings.Split(v, "=")
-		if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
+		key, val, found := strings.Cut(v, "=")
+		if !found || strings.TrimSpace(val) == "" {
 			continue
 		}
-		out[parts[0]] = parts[1]
+		out[key] = val
 	}
 	return out
 }

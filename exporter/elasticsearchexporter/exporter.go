@@ -311,8 +311,12 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality histogram %q", metric.Name()))
 						continue
 					}
+					hm := e.defaultHistogramMapping
+					if mappingMode != MappingOTel {
+						hm = datapoints.HistogramMappingTDigest
+					}
 					for _, dp := range metric.Histogram().DataPoints().All() {
-						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp, hm)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}

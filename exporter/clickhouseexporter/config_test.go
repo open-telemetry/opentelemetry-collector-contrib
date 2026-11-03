@@ -930,3 +930,71 @@ func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
 	// No panic, but options may be nil since TLS setup failed early.
 	require.Nil(t, opt, "expected nil options when TLS setup fails cleanly")
 }
+
+func TestBuildClickHouseOptions_ConnectionPoolSize(t *testing.T) {
+	tests := []struct {
+		name             string
+		endpoint         string
+		connectionParams map[string]string
+		queue            configoptional.Optional[exporterhelper.QueueBatchConfig]
+		expectedMaxOpen  int
+		expectedMaxIdle  int
+	}{
+		{
+			name:            "default queue",
+			endpoint:        defaultEndpoint,
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 10,
+			expectedMaxIdle: 10,
+		},
+		{
+			name:     "custom num consumers",
+			endpoint: defaultEndpoint,
+			queue: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+				queue := exporterhelper.NewDefaultQueueConfig()
+				queue.NumConsumers = 25
+				return queue
+			}()),
+			expectedMaxOpen: 25,
+			expectedMaxIdle: 25,
+		},
+		{
+			name:            "queue disabled",
+			endpoint:        defaultEndpoint,
+			queue:           configoptional.None[exporterhelper.QueueBatchConfig](),
+			expectedMaxOpen: 0,
+			expectedMaxIdle: 0,
+		},
+		{
+			name:            "endpoint overrides",
+			endpoint:        defaultEndpoint + "?max_open_conns=3&max_idle_conns=2",
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 3,
+			expectedMaxIdle: 2,
+		},
+		{
+			name:             "connection params override",
+			endpoint:         defaultEndpoint,
+			connectionParams: map[string]string{"max_open_conns": "7"},
+			queue:            configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen:  7,
+			expectedMaxIdle:  7,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tt.endpoint
+			cfg.QueueSettings = tt.queue
+			if tt.connectionParams != nil {
+				cfg.ConnectionParams = tt.connectionParams
+			}
+
+			opt, err := cfg.buildClickHouseOptions()
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedMaxOpen, opt.MaxOpenConns)
+			assert.Equal(t, tt.expectedMaxIdle, opt.MaxIdleConns)
+		})
+	}
+}

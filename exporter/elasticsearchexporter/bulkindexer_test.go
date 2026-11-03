@@ -5,6 +5,7 @@ package elasticsearchexporter
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -732,6 +733,126 @@ func TestSyncBulkIndexer_SuppressConflictErrors(t *testing.T) {
 
 			messages := observed.FilterMessage("failed to index document")
 			assert.Equal(t, tt.wantLogs, messages.Len())
+		})
+	}
+}
+
+func TestAppendDestinationIndex(t *testing.T) {
+	for index, want := range map[string]string{
+		".ds-logs-app-default-2026.10.13-000001":              "logs-app-default",
+		".ds-logs-app-default-2026.10.13-1234567":             "logs-app-default", // generation with more than 6 digits
+		".fs-logs-app-default-2026.10.13-000001":              "logs-app-default", // failure store
+		".ds-logs-app-2026.10.13-x-default-2026.10.14-000002": "logs-app-2026.10.13-x-default",
+		".ds-logs-app-default-2026.10.13":                     ".ds-logs-app-default-2026.10.13",                 // no generation
+		".ds-2026.10.13-000001":                               ".ds-2026.10.13-000001",                           // no name
+		".ds-.alerts-default-2026.10.13-000001":               ".alerts-default",                                 // data stream name starting with "."
+		".migrated-ds-logs-app-default-2026.10.13-000001":     ".migrated-ds-logs-app-default-2026.10.13-000001", // data stream reindex, never a write target
+		"logs-app-default":                                    "logs-app-default",
+		"logs-000001":                                         "logs-000001",
+	} {
+		t.Run(index, func(t *testing.T) {
+			attrs := appendDestinationIndex(nil, index)
+			require.Equal(t, []attribute.KeyValue{attribute.String("db.collection.name", want)}, attrs)
+		})
+	}
+
+	t.Run("unknown index", func(t *testing.T) {
+		assert.Empty(t, appendDestinationIndex(nil, ""))
+	})
+}
+
+func TestSyncBulkIndexerDestinationIndex(t *testing.T) {
+	const resp = `{"items":[
+		{"create":{"_index":".ds-logs-app-default-2026.10.13-000001","status":201}},
+		{"create":{"_index":".ds-logs-app-default-2026.10.14-000002","status":201}},
+		{"create":{"_index":"plain","status":201}},
+		{"create":{"_index":".ds-logs-bad-default-2026.10.14-000002","status":400,"error":{"type":"mapper_parsing_exception","reason":"boom"}}},
+		{"create":{"_index":".fs-logs-app-default-2026.10.14-000002","status":201,"failure_store":"used"}}
+	]}`
+
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%v", enabled), func(t *testing.T) {
+			cfg := Config{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{NumConsumers: 1}),
+				// Absent keys leave spare capacity in the metadata attributes, which
+				// must not be shared by the series built from them.
+				MetadataKeys:      []string{"x-test", "x-absent1", "x-absent2"},
+				TelemetrySettings: TelemetrySettings{IncludeDestinationIndex: enabled},
+			}
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{
+					RoundTripFunc: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:       io.NopCloser(strings.NewReader(resp)),
+							StatusCode: http.StatusOK,
+						}, nil
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(ct).TelemetrySettings)
+			require.NoError(t, err)
+
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop(), nil)
+			ctx := client.NewContext(t.Context(), client.Info{
+				Metadata: client.NewMetadata(map[string][]string{"x-test": {"test"}}),
+			})
+			session := bi.StartSession(ctx)
+			for range 5 {
+				require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{}`), nil, docappender.ActionCreate))
+			}
+			require.NoError(t, session.Flush(ctx))
+
+			success := func(count int64, index string) metricdata.DataPoint[int64] {
+				attrs := []attribute.KeyValue{
+					attribute.StringSlice("x-test", []string{"test"}),
+					attribute.String("outcome", "success"),
+					attribute.Int("http.response.status_code", http.StatusOK),
+				}
+				if index != "" {
+					attrs = append(attrs, attribute.String("db.collection.name", index))
+				}
+				return metricdata.DataPoint[int64]{Value: count, Attributes: attribute.NewSet(attrs...)}
+			}
+			failureStore := func(index string) metricdata.DataPoint[int64] {
+				attrs := []attribute.KeyValue{
+					attribute.StringSlice("x-test", []string{"test"}),
+					attribute.String("outcome", "failure_store"),
+					attribute.String("failure_store", "used"),
+				}
+				if index != "" {
+					attrs = append(attrs, attribute.String("db.collection.name", index))
+				}
+				return metricdata.DataPoint[int64]{Value: 1, Attributes: attribute.NewSet(attrs...)}
+			}
+			failed := attribute.NewSet(
+				attribute.StringSlice("x-test", []string{"test"}),
+				attribute.String("outcome", "failed_client"),
+				attribute.Int("http.response.status_code", http.StatusBadRequest),
+				attribute.String("error.type", "mapper_parsing_exception"),
+			)
+			failedWithIndex := attribute.NewSet(append(failed.ToSlice(), attribute.String("db.collection.name", "logs-bad-default"))...)
+
+			want := []metricdata.DataPoint[int64]{
+				success(4, ""), // includes the document indexed to the failure store
+				failureStore(""),
+				{Value: 1, Attributes: failed},
+			}
+			if enabled {
+				want = []metricdata.DataPoint[int64]{
+					// The rolled over indices and the failure store index are counted
+					// as one destination index. failure_store tells them apart.
+					success(3, "logs-app-default"),
+					failureStore("logs-app-default"),
+					success(1, "plain"),
+					{Value: 1, Attributes: failedWithIndex},
+				}
+			}
+			metadatatest.AssertEqualElasticsearchDocsProcessed(t, ct, want, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }

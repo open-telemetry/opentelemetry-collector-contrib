@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -1517,6 +1518,53 @@ func TestConvertExemplar(t *testing.T) {
 				return e
 			},
 		},
+		{
+			name: "valid ids with no extra labels leave filtered attributes empty",
+			labels: labels.New(
+				labels.Label{Name: "trace_id", Value: validTraceID},
+				labels.Label{Name: "span_id", Value: validSpanID},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.SetTraceID(validTraceIDBytes)
+				e.SetSpanID(validSpanIDBytes)
+				return e
+			},
+		},
+		{
+			name: "uppercase hex trace_id and span_id with mixed-case keys convert cleanly",
+			labels: labels.New(
+				labels.Label{Name: "foo", Value: "bar"},
+				labels.Label{Name: "SPAN_ID", Value: "719CEE4A669FD7D1"},
+				labels.Label{Name: "Trace_ID", Value: "36ECBE11BBA98DD6D16DC5AC8078791C"},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("foo", "bar")
+				e.SetTraceID([16]byte{0x36, 0xec, 0xbe, 0x11, 0xbb, 0xa9, 0x8d, 0xd6, 0xd1, 0x6d, 0xc5, 0xac, 0x80, 0x78, 0x79, 0x1c})
+				e.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+				return e
+			},
+		},
+		{
+			name: "invalid low-nibble and ASCII boundary characters are kept as attributes",
+			labels: labels.New(
+				labels.Label{Name: "span_id", Value: "0g0/0:0@0G0`0000"},
+				labels.Label{Name: "trace_id", Value: "0g0/0:0@0G0`00000000000000000001"},
+			),
+			want: func() pmetric.Exemplar {
+				e := pmetric.NewExemplar()
+				e.SetTimestamp(timestampFromMs(11))
+				e.SetDoubleValue(1)
+				e.FilteredAttributes().PutStr("span_id", "0g0/0:0@0G0`0000")
+				e.FilteredAttributes().PutStr("trace_id", "0g0/0:0@0G0`00000000000000000001")
+				return e
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1529,6 +1577,31 @@ func TestConvertExemplar(t *testing.T) {
 			got := pmetric.NewExemplar()
 			convertExemplar(pe, got)
 			require.Equal(t, tt.want(), got)
+		})
+	}
+}
+
+func TestPopulateAttributes(t *testing.T) {
+	for _, keptCount := range []int{0, 5, 16, 20} {
+		t.Run(fmt.Sprintf("kept=%d", keptCount), func(t *testing.T) {
+			lb := labels.NewBuilder(labels.EmptyLabels())
+			lb.Set(model.MetricNameLabel, "http_requests_total")
+			lb.Set(model.JobLabel, "api")
+			lb.Set(model.InstanceLabel, "localhost:8080")
+			lb.Set(model.BucketLabel, "0.5")
+			lb.Set("otel_scope_name", "my.scope")
+			lb.Set("empty_label", "")
+			want := pcommon.NewMap()
+			for i := range keptCount {
+				k := fmt.Sprintf("label_%02d", i)
+				v := fmt.Sprintf("val_%02d", i)
+				lb.Set(k, v)
+				want.PutStr(k, v)
+			}
+
+			got := pcommon.NewMap()
+			populateAttributes(pmetric.MetricTypeHistogram, lb.Labels(), got)
+			require.Equal(t, want, got)
 		})
 	}
 }

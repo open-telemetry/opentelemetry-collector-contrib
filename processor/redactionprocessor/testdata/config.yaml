@@ -41,3 +41,10 @@ redaction:
   summary: debug
 
 redaction/empty:
+
+redaction/masking_string:
+  # masking_string is the string that replaces the values being masked.
+  # If not set, the masked values will be replaced with "****".
+  # If hash_function is set, this value must not be set
+  masking_string: "[REDACTED]"
+

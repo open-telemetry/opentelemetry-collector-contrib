@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter/internal/grouper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/natsexporter/internal/marshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient"
 )
 
 // natsExporter publishes telemetry to a NATS server. A single instance is shared
@@ -191,7 +192,7 @@ func newPublisher(ctx context.Context, cfg *Config, name string, logger *zap.Log
 	if cfg.JetStream != nil {
 		return nil, errors.New("jetstream publishing is not yet implemented")
 	}
-	conn, err := connect(ctx, cfg, name, logger)
+	conn, err := natsclient.Connect(ctx, &cfg.ClientConfig, name, logger)
 	if err != nil {
 		return nil, err
 	}

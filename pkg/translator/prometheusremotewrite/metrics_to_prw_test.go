@@ -327,7 +327,17 @@ func TestFromMetrics_TranslationStrategies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md := pmetric.NewMetrics()
 			metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-			tt.metricFunc().CopyTo(metrics.AppendEmpty())
+			metric := tt.metricFunc()
+			var attrs pcommon.Map
+			if metric.Type() == pmetric.MetricTypeGauge {
+				attrs = metric.Gauge().DataPoints().At(0).Attributes()
+			} else {
+				attrs = metric.Sum().DataPoints().At(0).Attributes()
+			}
+			attrs.PutStr("_foo", "leading")
+			attrs.PutStr("a__b", "consecutive")
+			attrs.PutStr("__custom__", "reserved")
+			metric.CopyTo(metrics.AppendEmpty())
 
 			tsMap, err := FromMetrics(md, Settings{TranslationStrategy: tt.strategy})
 			require.NoError(t, err)
@@ -339,6 +349,9 @@ func TestFromMetrics_TranslationStrategies(t *testing.T) {
 				break
 			}
 			require.NotNil(t, tsFound)
+			assert.Contains(t, tsFound.Labels, prompb.Label{Name: "_foo", Value: "leading"})
+			assert.Contains(t, tsFound.Labels, prompb.Label{Name: "a__b", Value: "consecutive"})
+			assert.Contains(t, tsFound.Labels, prompb.Label{Name: "__custom__", Value: "reserved"})
 
 			var nameFound bool
 			for _, l := range tsFound.Labels {
