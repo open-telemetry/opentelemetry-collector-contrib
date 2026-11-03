@@ -7,7 +7,7 @@ status:
     active: [dashpole, bertysentry, ArthurSens]
 
 feature_gates:
-  - id: pkg.prometheus.CorrectUCUMUnits
+  - id: pkg.translator.prometheus.CorrectUCUMUnits
     description: Use spec-compliant UCUM unit mappings.
     stage: alpha
     from_version: v0.165.0

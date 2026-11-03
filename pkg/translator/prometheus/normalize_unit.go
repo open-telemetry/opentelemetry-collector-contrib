@@ -110,14 +110,12 @@ func buildCompliantPerUnit(unit string) string {
 // Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit
 // Returns the specified unit if not found in unitMap
 func unitMapGetOrDefault(unit string) string {
-	if metadata.PkgPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
+	if metadata.PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
 		switch unit {
 		case "TiBy":
 			return "tebibytes"
 		case "kBy":
 			return "kilobytes"
-		case "KBy":
-			return unit
 		}
 	}
 	if promUnit, ok := unitMap[unit]; ok {
@@ -129,7 +127,7 @@ func unitMapGetOrDefault(unit string) string {
 // Retrieve the Prometheus "per" unit corresponding to the specified "per" unit
 // Returns the specified unit if not found in perUnitMap
 func perUnitMapGetOrDefault(perUnit string) string {
-	if metadata.PkgPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
+	if metadata.PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
 		switch perUnit {
 		case "min":
 			return "minute"

@@ -11,7 +11,7 @@ import (
 )
 
 func TestCorrectUCUMUnitsFeatureGate(t *testing.T) {
-	const gateID = "pkg.prometheus.CorrectUCUMUnits"
+	const gateID = "pkg.translator.prometheus.CorrectUCUMUnits"
 	registry := featuregate.GlobalRegistry()
 
 	require.NoError(t, registry.Set(gateID, false))
@@ -94,6 +94,13 @@ func TestCorrectUCUMUnitsFeatureGate(t *testing.T) {
 			"TiBy",
 			"tibibytes",
 			"tebibytes",
+			BuildCompliantPrometheusUnit,
+		},
+		{
+			"legacy KBy alias to Prometheus",
+			"KBy",
+			"kilobytes",
+			"kilobytes",
 			BuildCompliantPrometheusUnit,
 		},
 		{
