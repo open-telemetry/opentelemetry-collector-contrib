@@ -33,8 +33,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 h1:Nljr4q1GRA/
 github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0/go.mod h1:Y33QHnf0FfdVewFFISOGe20mkZbxX4H839o955/PoeI=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421 h1:y9MeSee2LelHW4BfqIZG0j9rpGudLmm0TzTlnZoAvrE=
-github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
+github.com/DataDog/agent-payload/v5 v5.0.215 h1:PVci8YOjgLL+AH+XXXvq5OXgshpaq8BhWxqNXr1pWp8=
+github.com/DataDog/agent-payload/v5 v5.0.215/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.85.0 h1:kXsdMrkiP5uOGpIYhDZq7ab/DeyRDVN5Q0N68HMlSZg=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.85.0/go.mod h1:G5QPtqHGVFxIestd3xcJ/Cq9h9XlCqhIB+evP3T56gI=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.0 h1:Ypj4dgXeKrxev81MpgtoauyDjXknp39dkKxvDlPn/ug=

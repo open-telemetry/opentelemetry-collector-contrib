@@ -37,8 +37,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 h1:Nljr4q1GRA/
 github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0/go.mod h1:Y33QHnf0FfdVewFFISOGe20mkZbxX4H839o955/PoeI=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421 h1:y9MeSee2LelHW4BfqIZG0j9rpGudLmm0TzTlnZoAvrE=
-github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
+github.com/DataDog/agent-payload/v5 v5.0.215 h1:PVci8YOjgLL+AH+XXXvq5OXgshpaq8BhWxqNXr1pWp8=
+github.com/DataDog/agent-payload/v5 v5.0.215/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:D2JGsE5P7bqtP0zodaHnvDED3EnB7Q7ioRJbVEJep2w=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:ddZlZ6msnTJcjRbma+PJlXO3jaQWuf+0qyyV6G/p5wM=
 github.com/DataDog/datadog-agent/comp/core/config v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:e8Ep2JhNr14frENAbG5/ZlGst4FxM1OyBYCHTkKeht4=

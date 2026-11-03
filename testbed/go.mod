@@ -92,7 +92,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v8 v8.0.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.215 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.85.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
