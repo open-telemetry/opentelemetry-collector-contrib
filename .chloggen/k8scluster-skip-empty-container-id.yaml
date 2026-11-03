@@ -10,7 +10,7 @@ component: receiver/k8s_cluster
 note: Don't emit container entity events for containers that don't have a container ID yet.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [52608]
+issues: [52722]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
