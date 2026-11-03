@@ -241,7 +241,9 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability: development
+    stability: beta
+    semantic_convention:
+      ref: system/k8s-metrics.md#metric-k8snodecputime
     sum:
       value_type: double
       monotonic: true
@@ -452,7 +454,9 @@ metrics:
     enabled: true
     description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
-    stability: development
+    stability: beta
+    semantic_convention:
+      ref: system/k8s-metrics.md#metric-k8spodcputime
     sum:
       value_type: double
       monotonic: true
