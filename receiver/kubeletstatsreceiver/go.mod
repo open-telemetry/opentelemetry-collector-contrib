@@ -35,10 +35,10 @@ require (
 	go.opentelemetry.io/otel v1.47.1-0.20261102082644-9c507082cd98
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	k8s.io/api v0.37.1
-	k8s.io/apimachinery v0.37.1
-	k8s.io/client-go v0.37.1
-	k8s.io/kubelet v0.37.1
+	k8s.io/api v0.37.2
+	k8s.io/apimachinery v0.37.2
+	k8s.io/client-go v0.37.2
+	k8s.io/kubelet v0.37.2
 )
 
 require (
