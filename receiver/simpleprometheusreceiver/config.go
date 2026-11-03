@@ -8,10 +8,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	configutil "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -37,8 +38,10 @@ func (cfg *Config) Validate() error {
 	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
-	if strings.Contains(cfg.ClientConfig.Endpoint, "/") {
-		return fmt.Errorf("endpoint must be host:port without a scheme or path, got %q; the scheme is selected from the tls settings and the path is set with metrics_path", cfg.ClientConfig.Endpoint)
+	// Apply the same check the prometheus scrape manager applies to the target
+	// address. Its error is not wrapped because it echoes the endpoint value.
+	if promconfig.CheckTargetAddress(model.LabelValue(cfg.ClientConfig.Endpoint)) != nil {
+		return errors.New("endpoint must be host:port without a scheme or path; the scheme is selected from the tls settings and the path is set with metrics_path")
 	}
 	if cfg.CollectionInterval <= 0 {
 		return fmt.Errorf("collection_interval must be positive, got %s", cfg.CollectionInterval)

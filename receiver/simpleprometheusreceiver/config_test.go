@@ -162,17 +162,17 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "endpoint with http scheme",
 			mutate:  func(cfg *Config) { cfg.ClientConfig.Endpoint = "http://localhost:9090" },
-			wantErr: `endpoint must be host:port without a scheme or path, got "http://localhost:9090"`,
+			wantErr: "endpoint must be host:port without a scheme or path; the scheme is selected from the tls settings and the path is set with metrics_path",
 		},
 		{
 			name:    "endpoint with https scheme",
 			mutate:  func(cfg *Config) { cfg.ClientConfig.Endpoint = "https://h:1" },
-			wantErr: `endpoint must be host:port without a scheme or path, got "https://h:1"`,
+			wantErr: "endpoint must be host:port without a scheme or path; the scheme is selected from the tls settings and the path is set with metrics_path",
 		},
 		{
 			name:    "endpoint with path",
 			mutate:  func(cfg *Config) { cfg.ClientConfig.Endpoint = "localhost:9090/metrics" },
-			wantErr: `endpoint must be host:port without a scheme or path, got "localhost:9090/metrics"`,
+			wantErr: "endpoint must be host:port without a scheme or path; the scheme is selected from the tls settings and the path is set with metrics_path",
 		},
 		{
 			name:    "zero collection_interval",
@@ -231,4 +231,12 @@ func TestValidate(t *testing.T) {
 			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
+}
+
+func TestValidateEndpointErrorDoesNotEchoEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = "http://user:s3cret@localhost:9090"
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "s3cret")
 }
