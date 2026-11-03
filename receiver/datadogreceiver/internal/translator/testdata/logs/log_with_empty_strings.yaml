@@ -6,3 +6,4 @@ resourceLogs:
               stringValue: ""
             observedTimeUnixNano: "1700000000000000000"
         scope: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
