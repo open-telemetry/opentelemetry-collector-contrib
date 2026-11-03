@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver
 
-go 1.26.4
+go 1.26.0
 
 require (
-	github.com/grafana/faro/pkg/go v0.0.0-20261023195816-bd48199c6aee
+	github.com/grafana/faro/pkg/go v0.0.0-20261103171555-9657d2ceff41
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component/componentstatus v0.164.0
 	go.opentelemetry.io/collector/config/confighttp v0.164.0

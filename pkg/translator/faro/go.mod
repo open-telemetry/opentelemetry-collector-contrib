@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
 
-go 1.26.4
+go 1.26.0
 
 require (
 	github.com/go-logfmt/logfmt v0.6.1
-	github.com/grafana/faro/pkg/go v0.0.0-20261023195816-bd48199c6aee
+	github.com/grafana/faro/pkg/go v0.0.0-20261103171555-9657d2ceff41
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
 	github.com/stretchr/testify v1.12.1
