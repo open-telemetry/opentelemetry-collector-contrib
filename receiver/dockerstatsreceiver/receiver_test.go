@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -548,4 +550,27 @@ func (cb *testConfigBuilder) withLabelMatchers(filters ...filter.Config) *testCo
 
 func (cb *testConfigBuilder) build() *Config {
 	return cb.config
+}
+
+func TestContainerLabelsToMetricLabelsDeprecationWarning(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		labels   map[string]string
+		wantLogs int
+	}{
+		{name: "set", labels: map[string]string{"app": "app"}, wantLogs: 1},
+		{name: "unset", labels: nil, wantLogs: 0},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			core, logs := observer.New(zap.WarnLevel)
+			set := receivertest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+			cfg := createDefaultConfig().(*Config)
+			cfg.ContainerLabelsToMetricLabels = tt.labels
+
+			newMetricsReceiver(set, cfg)
+
+			assert.Equal(t, tt.wantLogs, logs.FilterMessageSnippet("container_labels_to_metric_labels").Len())
+		})
+	}
 }

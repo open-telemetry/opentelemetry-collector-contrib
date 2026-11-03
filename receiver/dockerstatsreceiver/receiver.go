@@ -58,6 +58,10 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 		settings: set,
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
+	if len(config.ContainerLabelsToMetricLabels) > 0 {
+		set.Logger.Warn("`container_labels_to_metric_labels` is deprecated and will be removed in a future release; " +
+			"use `container_labels_to_resource_attributes` instead, which records labels as `container.label.<key>` resource attributes")
+	}
 	if len(config.ContainerLabelsToResourceAttributes) > 0 {
 		r.labelFilter = filter.CreateFilter(config.ContainerLabelsToResourceAttributes)
 	}

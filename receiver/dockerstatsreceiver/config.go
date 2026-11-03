@@ -25,6 +25,9 @@ type Config struct {
 	// for the mapped name.  E.g. `io.kubernetes.container.name: container_spec_name`
 	// would result in a MetricDescriptor label called `container_spec_name` whose
 	// Metric DataPoints have the value of the `io.kubernetes.container.name` container label.
+	//
+	// Deprecated: Use ContainerLabelsToResourceAttributes, which records labels as
+	// `container.label.<key>` resource attributes per the semantic conventions.
 	ContainerLabelsToMetricLabels map[string]string `mapstructure:"container_labels_to_metric_labels"`
 
 	// ContainerLabelsToResourceAttributes selects container labels to record as
