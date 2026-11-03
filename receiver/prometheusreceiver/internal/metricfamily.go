@@ -5,7 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"cmp"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"slices"
@@ -60,8 +59,13 @@ type metricGroup struct {
 	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
+//nolint:unparam
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
+	return newMetricFamilyWithMetadata(metricName, familyName, metadata, logger, isNativeHistogram, isNHCB)
+}
+
+func newMetricFamilyWithMetadata(metricName, familyName string, metadata scrape.MetricMetadata, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	// Native histograms have intrinsic metric type, use it,
 	// regardless of what metadata says.
 	if isNativeHistogram {
@@ -555,7 +559,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
-		case metricName == mf.metadata.MetricFamily+metricSuffixCreated:
+		case isCreatedMetric(metricName, mf.metadata.MetricFamily):
 			mg.createdSeconds = v
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
@@ -565,11 +569,11 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.complexValue = append(mg.complexValue, dataPoint{value: v, boundary: boundary})
 		}
 	case pmetric.MetricTypeExponentialHistogram:
-		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
+		if isCreatedMetric(metricName, mf.metadata.MetricFamily) {
 			mg.createdSeconds = v
 		}
 	case pmetric.MetricTypeSum:
-		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
+		if isCreatedMetric(metricName, mf.metadata.MetricFamily) {
 			mg.createdSeconds = v
 		} else {
 			mg.value = v
@@ -581,6 +585,11 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	}
 
 	return nil
+}
+
+func isCreatedMetric(metricName, familyName string) bool {
+	return strings.HasSuffix(metricName, metricSuffixCreated) &&
+		metricName[:len(metricName)-len(metricSuffixCreated)] == familyName
 }
 
 // addCreationTimestamp updates the metric group cache with the created timestamp for the group.
@@ -751,36 +760,30 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
 	pe.Labels.Range(func(lb labels.Label) {
-		switch strings.ToLower(lb.Name) {
-		case prometheus.ExemplarTraceIDKey:
+		switch {
+		case strings.EqualFold(lb.Name, prometheus.ExemplarTraceIDKey):
 			if lb.Value == "" {
 				return
 			}
 			var tid [16]byte
-			if len(lb.Value) == hex.EncodedLen(len(tid)) {
-				if b, err := hex.DecodeString(lb.Value); err == nil {
-					copy(tid[:], b)
-					// all-zero looks unset already, so keep the original value instead of setting it
-					if traceID := pcommon.TraceID(tid); !traceID.IsEmpty() {
-						e.SetTraceID(traceID)
-						return
-					}
+			if decodeHexString(tid[:], lb.Value) {
+				// all-zero looks unset already, so keep the original value instead of setting it
+				if traceID := pcommon.TraceID(tid); !traceID.IsEmpty() {
+					e.SetTraceID(traceID)
+					return
 				}
 			}
 			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
-		case prometheus.ExemplarSpanIDKey:
+		case strings.EqualFold(lb.Name, prometheus.ExemplarSpanIDKey):
 			if lb.Value == "" {
 				return
 			}
 			var sid [8]byte
-			if len(lb.Value) == hex.EncodedLen(len(sid)) {
-				if b, err := hex.DecodeString(lb.Value); err == nil {
-					copy(sid[:], b)
-					// all-zero looks unset already, so keep the original value instead of setting it
-					if spanID := pcommon.SpanID(sid); !spanID.IsEmpty() {
-						e.SetSpanID(spanID)
-						return
-					}
+			if decodeHexString(sid[:], lb.Value) {
+				// all-zero looks unset already, so keep the original value instead of setting it
+				if spanID := pcommon.SpanID(sid); !spanID.IsEmpty() {
+					e.SetSpanID(spanID)
+					return
 				}
 			}
 			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
@@ -788,4 +791,32 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		}
 	})
+}
+
+func decodeHexByte(c byte) (byte, bool) {
+	switch {
+	case '0' <= c && c <= '9':
+		return c - '0', true
+	case 'a' <= c && c <= 'f':
+		return c - 'a' + 10, true
+	case 'A' <= c && c <= 'F':
+		return c - 'A' + 10, true
+	default:
+		return 0, false
+	}
+}
+
+func decodeHexString(dst []byte, s string) bool {
+	if len(s) != len(dst)*2 {
+		return false
+	}
+	for i := range dst {
+		hi, ok1 := decodeHexByte(s[i*2])
+		lo, ok2 := decodeHexByte(s[i*2+1])
+		if !ok1 || !ok2 {
+			return false
+		}
+		dst[i] = (hi << 4) | lo
+	}
+	return true
 }

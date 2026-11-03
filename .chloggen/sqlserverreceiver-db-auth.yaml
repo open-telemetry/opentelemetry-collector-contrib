@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: Support database credential providers through `db_auth`.
+
+issues: [50294]
+
+subtext:
+
+change_logs: [user]

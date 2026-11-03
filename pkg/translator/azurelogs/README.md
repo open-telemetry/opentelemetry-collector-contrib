@@ -84,7 +84,7 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `trackingReference`     | `azure.ref`                                                                                                                           |
 | `httpMethod`            | `http.request.method`                                                                                                                 |
 | `httpVersion`           | `network.protocol.version`                                                                                                            |
-| `requestUri`            | `url.orginal`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
+| `requestUri`            | `url.original`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
 | `sni`                   | `tls.server.name`                                                                                                                     |
 | `requestBytes`          | `http.request.size`                                                                                                                   |
 | `responseBytes`         | `http.response.size`                                                                                                                  |
@@ -114,7 +114,7 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `clientIP`            | `client.address`                                                                                                                      |
 | `clientPort`          | `client.port`                                                                                                                         |
 | `socketIP`            | `source.address`                                                                                                                      |
-| `requestUri`          | `url.orginal`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
+| `requestUri`          | `url.original`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
 | `ruleName`            | `azure.frontdoor.waf.rule.name`                                                                                                       |
 | `policy`              | `azure.frontdoor.waf.policy.name`                                                                                                     |
 | `action`              | `azure.frontdoor.waf.action`                                                                                                          |
@@ -129,7 +129,7 @@ https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-sch
 | `trackingReference`   | `azure.ref`                                                                                                                           |
 | `httpMethod`          | `http.request.method`                                                                                                                 |
 | `httpVersion`         | `network.protocol.version`                                                                                                            |
-| `requestUri`          | `url.orginal`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
+| `requestUri`          | `url.original`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
 | `sni`                 | `tls.server.name`                                                                                                                     |
 | `requestBytes`        | `http.request.size`                                                                                                                   |
 | `responseBytes`       | `http.response.size`                                                                                                                  |
