@@ -299,7 +299,9 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		kr.mu.Unlock()
 		for _, object := range validConfigs {
 			if err := kr.start(cctx, registry, object); err != nil {
-				return err
+				if handlerErr := kr.handleError(err, ""); handlerErr != nil {
+					return handlerErr
+				}
 			}
 		}
 	}

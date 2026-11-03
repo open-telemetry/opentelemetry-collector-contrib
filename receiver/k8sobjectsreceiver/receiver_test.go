@@ -20,7 +20,12 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
 	k8s_testing "k8s.io/client-go/testing"
@@ -905,6 +910,67 @@ func TestCacheSyncTimeoutFailsStart(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "informer cache")
 	assert.Contains(t, err.Error(), "pods")
+}
+
+func TestCacheSyncFailureErrorModes(t *testing.T) {
+	enableInformerObserver(t)
+
+	const syncErrMsg = "timed out waiting for informer cache to sync"
+	tests := []struct {
+		errorMode   ErrorMode
+		expectError bool
+		expectLogs  int
+	}{
+		{errorMode: PropagateError, expectError: true},
+		{errorMode: IgnoreError, expectLogs: 1},
+		{errorMode: SilentError},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.errorMode), func(t *testing.T) {
+			// Pods never sync; events stays healthy so ignore/silent can be shown to keep going.
+			mockClient := newMockDynamicClient()
+			mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+				return true, nil, errors.New("simulated apiserver failure")
+			})
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+			rCfg.makeDiscoveryClient = getMockDiscoveryClient
+			rCfg.ErrorMode = tt.errorMode
+			rCfg.CacheSyncTimeout = time.Second
+			rCfg.Objects = []*K8sObjectsConfig{
+				{Name: "pods", Mode: k8sinventory.WatchMode},
+				{Name: "events", Group: "", Mode: k8sinventory.WatchMode},
+			}
+
+			core, logs := observer.New(zap.InfoLevel)
+			settings := receivertest.NewNopSettings(metadata.Type)
+			settings.Logger = zap.New(core)
+			consumer := newMockLogConsumer()
+			r, err := newReceiver(settings, rCfg, consumer)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
+
+			err = r.Start(t.Context(), componenttest.NewNopHost())
+			assert.Len(t, logs.FilterMessageSnippet(syncErrMsg).All(), tt.expectLogs)
+			if tt.expectError {
+				require.ErrorContains(t, err, syncErrMsg)
+				return
+			}
+			require.NoError(t, err)
+
+			_, err = mockClient.client.Resource(schema.GroupVersionResource{Version: "v1", Resource: "events"}).
+				Namespace("default").
+				Create(t.Context(), &unstructured.Unstructured{Object: map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Event",
+					"metadata":   map[string]any{"name": "event1", "namespace": "default", "resourceVersion": "1"},
+				}}, metav1.CreateOptions{})
+			require.NoError(t, err)
+			assert.Eventually(t, func() bool { return consumer.Count() == 1 }, 5*time.Second, 10*time.Millisecond)
+		})
+	}
 }
 
 func TestSharedInformerFactoryDedupesListAndWatch(t *testing.T) {
