@@ -60,6 +60,14 @@ Container memory available
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `container.memory.available@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### container.memory.major_page_faults
 
 Container memory major_page_faults
@@ -84,6 +92,14 @@ Container memory rss
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `container.memory.rss@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### container.memory.usage
 
 Container memory usage
@@ -92,6 +108,14 @@ Container memory usage
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `container.memory.usage@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### container.memory.working_set
 
 Container memory working_set
@@ -99,6 +123,14 @@ Container memory working_set
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+#### Migration
+
+- Target Metric: `container.memory.working_set@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### k8s.node.cpu.time
 
@@ -386,6 +418,46 @@ metrics:
     enabled: true
 ```
 
+### container.memory.available@v1
+
+Container memory available.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.memory.available`
+
+### container.memory.rss@v1
+
+Container memory RSS.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.memory.rss`
+
+### container.memory.usage@v1
+
+Memory usage of the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.memory.usage`
+
+### container.memory.working_set@v1
+
+Container memory working set.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.memory.working_set`
+
 ### container.uptime
 
 The time since the container started
@@ -613,6 +685,8 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.kubelet_stats.DontEmitV0K8sConventions` | alpha | When enabled, the legacy (pre semantic conventions) version of the migrated metrics is not emitted. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728) |
+| `receiver.kubelet_stats.EmitV1K8sConventions` | alpha | When enabled, metrics that are release candidate in the K8s/container semantic conventions are emitted following the latest semantic conventions definition. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728) |
 | `receiver.kubeletstats.cpuUsageScrapeBased` | beta | When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
