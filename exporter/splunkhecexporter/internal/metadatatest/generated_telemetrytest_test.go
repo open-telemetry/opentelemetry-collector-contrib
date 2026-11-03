@@ -19,8 +19,12 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ExporterDroppedUnsupportedProfileRecords.Add(context.Background(), 1)
 	tb.ExporterSplunkhecHeartbeatsFailed.Add(context.Background(), 1)
 	tb.ExporterSplunkhecHeartbeatsSent.Add(context.Background(), 1)
+	AssertEqualExporterDroppedUnsupportedProfileRecords(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterSplunkhecHeartbeatsFailed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

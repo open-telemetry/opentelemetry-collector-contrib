@@ -18,7 +18,7 @@ import (
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -235,6 +235,9 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)
 	}
+	if !dp.HasSum() {
+		return nil, errors.New("cannot convert exponential to native histogram: sum is not set")
+	}
 	var scaleDown int32
 	if schema > 8 {
 		scaleDown = schema - 8
@@ -255,15 +258,10 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		created = dp.StartTimestamp().AsTime()
 	}
 
-	sumVal := 0.0
-	if dp.HasSum() {
-		sumVal = dp.Sum()
-	}
-
 	m, err := prometheus.NewConstNativeHistogram(
 		desc,
 		dp.Count(),
-		sumVal,
+		dp.Sum(),
 		pos,
 		neg,
 		dp.ZeroCount(),

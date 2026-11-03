@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
@@ -143,6 +145,45 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/?users=junit")
+}
+
+func TestClientSpanServerPortPreferredWithEmitV1(t *testing.T) {
+	enableGate(t, metadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate)
+
+	tests := []struct {
+		name       string
+		attributes map[string]any
+		want       string
+	}{
+		{
+			name: "server.* win over net.peer.*",
+			attributes: map[string]any{
+				"server.address": "new.example.com", "server.port": 9090,
+				"net.peer.name": "old.example.com", "net.peer.port": 8080,
+			},
+			want: "http://new.example.com:9090/users/junit",
+		},
+		{
+			name:       "net.peer.port fallback when server.port absent",
+			attributes: map[string]any{"server.address": "new.example.com", "net.peer.port": 8080},
+			want:       "http://new.example.com:8080/users/junit",
+		},
+		{
+			name:       "server.port with legacy host",
+			attributes: map[string]any{"net.peer.name": "old.example.com", "server.port": 9090, "net.peer.port": 8080},
+			want:       "http://old.example.com:9090/users/junit",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.attributes["http.request.method"] = http.MethodGet
+			tt.attributes["url.path"] = "/users/junit"
+			_, httpData := makeHTTP(constructHTTPClientSpan(tt.attributes))
+			require.NotNil(t, httpData)
+			require.NotNil(t, httpData.Request.URL)
+			assert.Equal(t, tt.want, *httpData.Request.URL)
+		})
+	}
 }
 
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
