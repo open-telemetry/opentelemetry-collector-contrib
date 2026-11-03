@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/storage v1.70.0
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.20.3
-	github.com/lestrrat-go/strftime v1.2.0
+	github.com/lestrrat-go/strftime v1.2.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
