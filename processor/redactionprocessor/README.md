@@ -119,6 +119,10 @@ processors:
       # When enabled, span names containing "/" will be sanitized to reduce cardinality
       # Set to false to disable span name sanitization while keeping attribute sanitization active
       sanitize_span_name: true
+    # masking_string is the string that replaces the values being masked.
+    # If not set, the masked values will be replaced with "****".
+    # If hash_function is set, this value must not be set.
+    masking_string: "****"
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
@@ -171,6 +175,9 @@ The value is then masked according to the configuration.
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
 are `md5`, `sha1`, `sha3` (SHA3-256), `hmac-sha256`, and `hmac-sha512`.
+`md5` and `sha1` are not FIPS 140-3 approved. When the collector runs in FIPS mode
+(`GODEBUG=fips140=on` or `GODEBUG=fips140=only`) the processor rejects them at startup.
+Use `sha3`, `hmac-sha256` or `hmac-sha512` in that case.
 
 ### HMAC Hash Functions
 

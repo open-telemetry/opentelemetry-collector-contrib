@@ -4,6 +4,7 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
@@ -80,6 +81,11 @@ type byteSliceLabelValue struct {
 }
 
 type lockRequestSliceLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+type operationsByTableJSONLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
 }
@@ -293,6 +299,59 @@ func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any)
 	}
 }
 
+func (v operationsByTableJSONLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v operationsByTableJSONLabelValue) Value() any {
+	return v.value
+}
+
+func (v operationsByTableJSONLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+type operationsByTableJSON struct {
+	TableName           string `json:"table_name"`
+	InsertOrUpdateCount int64  `json:"insert_or_update_count"`
+	InsertOrUpdateBytes int64  `json:"insert_or_update_bytes"`
+}
+
+func newOperationsByTableJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	rawJSON := *valueHolder.(*string)
+	var value []*operationsByTableJSON
+	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
+		return operationsByTableJSONLabelValue{
+			metadata: metadata,
+			value:    "",
+		}
+	}
+
+	uniqueValueItems := make(map[string]struct{})
+	var convertedValue []string
+
+	for _, valueItem := range value {
+		if valueItem == nil || valueItem.TableName == "" {
+			continue
+		}
+		valueItemString := fmt.Sprintf("{%v,%v,%v}", valueItem.TableName, valueItem.InsertOrUpdateCount, valueItem.InsertOrUpdateBytes)
+
+		if _, contains := uniqueValueItems[valueItemString]; !contains {
+			uniqueValueItems[valueItemString] = struct{}{}
+			convertedValue = append(convertedValue, valueItemString)
+		}
+	}
+
+	sort.Strings(convertedValue)
+
+	constructedValue := strings.Join(convertedValue, ",")
+
+	return operationsByTableJSONLabelValue{
+		metadata: metadata,
+		value:    constructedValue,
+	}
+}
+
 func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelValueMetadata, error) {
 	var newLabelValueFunc newLabelValueFunction
 	var valueHolderFunc valueHolderFunction
@@ -338,6 +397,12 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 		newLabelValueFunc = newLockRequestSliceLabelValue
 		valueHolderFunc = func() any {
 			var valueHolder []*lockRequest
+			return &valueHolder
+		}
+	case OperationsByTableJSONValueType:
+		newLabelValueFunc = newOperationsByTableJSONLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder string
 			return &valueHolder
 		}
 	case TimestampValueType:
