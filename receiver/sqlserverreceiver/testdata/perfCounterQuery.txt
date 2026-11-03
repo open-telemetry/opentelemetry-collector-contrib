@@ -90,6 +90,8 @@ SELECT DISTINCT
 			,'Temp Tables Creation Rate'
 			,'Temp Tables For Destruction'
 			,'Version Store Size (KB)'
+			,'Version Cleanup rate (KB/s)'
+			,'Version Generation rate (KB/s)'
 			,'Memory Grants Pending'
 			,'Memory Grants Outstanding'
 			,'Free list stalls/sec'

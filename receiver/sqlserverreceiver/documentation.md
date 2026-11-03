@@ -1218,6 +1218,16 @@ Time consumed in transaction delays.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ms | Sum | Double | Cumulative | false | Development |
 
+### sqlserver.transaction.longest_running_time
+
+Age of the longest currently-open transaction on the server.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
 ### sqlserver.transaction.mirror_write.rate
 
 Total number of mirror write transactions.
@@ -1225,6 +1235,26 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {transactions}/s | Gauge | Double | Development |
+
+### sqlserver.transaction.version_cleanup.rate
+
+Rate at which row versions are removed from the snapshot isolation version store in tempdb.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| kBy/s | Gauge | Double | Development |
+
+### sqlserver.transaction.version_generation.rate
+
+Rate at which new row versions are added to the snapshot isolation version store in tempdb.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| kBy/s | Gauge | Double | Development |
 
 ### sqlserver.worker.request.count
 
