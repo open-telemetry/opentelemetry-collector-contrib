@@ -6,7 +6,6 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,90 +14,21 @@ import (
 	ctypes "github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-// Matcher is an interface for matching container labels.
-type Matcher interface {
-	Matches(label string) bool
-}
-
-// strictMatcher is a matcher that matches by exact match.
-type strictMatcher struct {
-	Include string
-	_       struct{}
-}
-
-// Matches returns true if the matcher matches the label.
-func (sm *strictMatcher) Matches(label string) bool {
-	return label == sm.Include
-}
-
-// regexMatcher is a matcher that matches by regular expression.
-type regexMatcher struct {
-	re *regexp.Regexp
-}
-
-// Matches returns true if the matcher matches the label.
-func (rm *regexMatcher) Matches(label string) bool {
-	return rm.re.MatchString(label)
-}
-
-// matcherCorpus is a collection of matchers.
-type matcherCorpus struct {
-	matchers []Matcher
-}
-
-// Add adds a matcher to the corpus.
-func (mc *matcherCorpus) Add(lm LabelMatcher) error {
-	switch lm.MatchType {
-	case strictMatchType:
-		mc.matchers = append(mc.matchers, &strictMatcher{Include: lm.Include})
-	case regexpMatchType:
-		re, err := regexp.Compile(lm.Include)
-		if err != nil {
-			return fmt.Errorf("failed to compile regex from include '%v': %w", lm.Include, err)
-		}
-		mc.matchers = append(mc.matchers, &regexMatcher{re: re})
-	default:
-		return fmt.Errorf("unknown match type: %v", lm.MatchType)
-	}
-	return nil
-}
-
-// matcherCorpusFromConfig creates a matcherCorpus from a Config.
-func matcherCorpusFromConfig(config *Config) (*matcherCorpus, error) {
-	mc := &matcherCorpus{}
-	for _, lm := range config.ContainerLabelsToResourceAttributes {
-		if err := mc.Add(lm); err != nil {
-			return nil, err
-		}
-	}
-	return mc, nil
-}
-
-// Matches returns true if any of the matchers in the corpus matches the label.
-func (mc *matcherCorpus) Matches(label string) bool {
-	for _, matcher := range mc.matchers {
-		if matcher.Matches(label) {
-			return true
-		}
-	}
-	return false
-}
-
-// IsEmpty returns true if the corpus is empty.
-func (mc *matcherCorpus) IsEmpty() bool {
-	return mc == nil || len(mc.matchers) == 0
-}
+// containerLabelAttributePrefix is the prefix for container labels recorded as
+// resource attributes, per the container resource semantic conventions:
+// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md
+const containerLabelAttributePrefix = "container.label."
 
 var (
 	defaultDockerAPIVersion         = docker.MustNewAPIVersion("1.44")
@@ -116,22 +46,22 @@ type metricsReceiver struct {
 	settings receiver.Settings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
-	lm       *matcherCorpus
-	cancel   context.CancelFunc
+	// labelFilter selects container labels to record as resource attributes.
+	// It is nil when no filters are configured.
+	labelFilter filter.Filter
+	cancel      context.CancelFunc
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
-	lm, err := matcherCorpusFromConfig(config)
-	if err != nil {
-		// This can practically never happen due to config validation.
-		set.Logger.Warn("Failed to parse include regexes for labels from config.", zap.Error(err))
-	}
-	return &metricsReceiver{
-		lm:       lm,
+	r := &metricsReceiver{
 		config:   config,
 		settings: set,
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
+	if len(config.ContainerLabelsToResourceAttributes) > 0 {
+		r.labelFilter = filter.CreateFilter(config.ContainerLabelsToResourceAttributes)
+	}
+	return r
 }
 
 func (r *metricsReceiver) clientOptions() []client.Opt {
@@ -281,22 +211,15 @@ func (r *metricsReceiver) recordContainerStats(
 	rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
 	rb.SetContainerImageID(container.Image)
 	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
+	resource := rb.Emit()
 
-	// Copy container labels that match the configured matchers into the
-	// container.labels resource attribute. The attribute is omitted entirely
-	// when nothing matches, rather than emitting an empty map.
-	if !r.lm.IsEmpty() {
-		matched := make(map[string]any)
+	if r.labelFilter != nil {
 		for k, v := range container.Config.Labels {
-			if r.lm.Matches(k) {
-				matched[k] = v
+			if r.labelFilter.Matches(k) {
+				resource.Attributes().PutStr(containerLabelAttributePrefix+k, v)
 			}
 		}
-		if len(matched) > 0 {
-			rb.SetContainerLabels(matched)
-		}
 	}
-	resource := rb.Emit()
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {

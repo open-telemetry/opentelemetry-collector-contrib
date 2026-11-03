@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
@@ -80,15 +81,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 
-				ContainerLabelsToResourceAttributes: []LabelMatcher{
-					{
-						MatchType: strictMatchType,
-						Include:   "my.container.label",
-					},
-					{
-						MatchType: regexpMatchType,
-						Include:   "my.container.prefix.*",
-					},
+				ContainerLabelsToResourceAttributes: []filter.Config{
+					{Strict: "my.container.label"},
+					{Regex: "my.container.prefix.*"},
 				},
 
 				ContainerLabelsToMetricLabels: map[string]string{
@@ -105,7 +100,6 @@ func TestLoadConfig(t *testing.T) {
 					m.Metrics.ContainerCPUUsageSystem.Enabled = false
 					m.Metrics.ContainerMemoryTotalRss.Enabled = true
 					m.Metrics.ContainerStateHealthStatus.Enabled = true
-					m.ResourceAttributes.ContainerLabels.Enabled = true
 					return m
 				}(),
 			},
@@ -173,4 +167,30 @@ func TestApiVersionCustomError(t *testing.T) {
 	sub = loadConf(t, "api_version_string.yaml", component.NewID(metadata.Type))
 	err = sub.Unmarshal(cfg)
 	require.NoError(t, err)
+}
+
+func TestValidateContainerLabelsToResourceAttributes(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters []filter.Config
+		wantErr string
+	}{
+		{name: "valid strict", filters: []filter.Config{{Strict: "app"}}},
+		{name: "valid regexp", filters: []filter.Config{{Regex: "^com\\.example\\."}}},
+		{name: "empty entry", filters: []filter.Config{{}}, wantErr: "must specify either strict or regex"},
+		{name: "strict and regexp", filters: []filter.Config{{Strict: "app", Regex: "app"}}, wantErr: "strict and regex cannot be used together"},
+		{name: "invalid regexp", filters: []filter.Config{{Regex: "("}}, wantErr: "error parsing regexp"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ContainerLabelsToResourceAttributes = tt.filters
+			err := confmap.Validate(cfg)
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorContains(t, err, tt.wantErr)
+		})
+	}
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -120,7 +121,6 @@ var (
 		ContainerImageName:   resourceAttributeEnabled,
 		ContainerName:        resourceAttributeEnabled,
 		ContainerRuntime:     resourceAttributeEnabled,
-		ContainerLabels:      resourceAttributeEnabled,
 	}
 )
 
@@ -249,15 +249,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
-					withResourceAttributes(func() metadata.ResourceAttributesConfig {
-						ra := metadata.DefaultResourceAttributesConfig()
-						ra.ContainerLabels.Enabled = true
-						return ra
-					}()).
-					withLabelMatchers(LabelMatcher{
-						MatchType: regexpMatchType,
-						Include:   ".*",
-					}).
+					withLabelMatchers(filter.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -277,15 +269,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
-					withResourceAttributes(func() metadata.ResourceAttributesConfig {
-						ra := metadata.DefaultResourceAttributesConfig()
-						ra.ContainerLabels.Enabled = true
-						return ra
-					}()).
-					withLabelMatchers(LabelMatcher{
-						MatchType: regexpMatchType,
-						Include:   ".*",
-					}).
+					withLabelMatchers(filter.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -304,11 +288,6 @@ func TestScrapeV2(t *testing.T) {
 				},
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
-					withResourceAttributes(func() metadata.ResourceAttributesConfig {
-						ra := metadata.DefaultResourceAttributesConfig()
-						ra.ContainerLabels.Enabled = true
-						return ra
-					}()).
 					withMetrics(allMetricsEnabled).
 					withAPIVersion(dockerAPIVersion),
 			},
@@ -328,11 +307,6 @@ func TestScrapeV2(t *testing.T) {
 				},
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
-					withResourceAttributes(func() metadata.ResourceAttributesConfig {
-						ra := metadata.DefaultResourceAttributesConfig()
-						ra.ContainerLabels.Enabled = true
-						return ra
-					}()).
 					withMetrics(allMetricsEnabled).
 					withAPIVersion(dockerAPIVersion),
 			},
@@ -351,11 +325,6 @@ func TestScrapeV2(t *testing.T) {
 				},
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
-					withResourceAttributes(func() metadata.ResourceAttributesConfig {
-						ra := metadata.DefaultResourceAttributesConfig()
-						ra.ContainerLabels.Enabled = true
-						return ra
-					}()).
 					withMetrics(allMetricsEnabled).
 					withAPIVersion(dockerAPIVersion),
 			},
@@ -376,10 +345,7 @@ func TestScrapeV2(t *testing.T) {
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
 					withResourceAttributes(allResourceAttributesEnabled).
-					withLabelMatchers(LabelMatcher{
-						MatchType: strictMatchType,
-						Include:   "container.label.2",
-					}).
+					withLabelMatchers(filter.Config{Strict: "container.label.2"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 		}
@@ -575,8 +541,8 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 	return cb
 }
 
-func (cb *testConfigBuilder) withLabelMatchers(matchers ...LabelMatcher) *testConfigBuilder {
-	cb.config.ContainerLabelsToResourceAttributes = matchers
+func (cb *testConfigBuilder) withLabelMatchers(filters ...filter.Config) *testConfigBuilder {
+	cb.config.ContainerLabelsToResourceAttributes = filters
 	return cb
 }
 

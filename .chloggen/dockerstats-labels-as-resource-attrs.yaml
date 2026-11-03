@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/docker_stats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add `container_labels_to_resource_attributes` to export matching container labels as the `container.labels` resource attribute."
+note: "Add `container_labels_to_resource_attributes` to record matching container labels as `container.label.<key>` resource attributes."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38131]
@@ -15,11 +15,7 @@ issues: [38131]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  A new, disabled-by-default `container.labels` resource attribute (type map) is added.
-  Labels are selected with an OR'ed list of matchers, each with `match_type` (`strict` or `regexp`) and `include`.
-  Unlike `container_labels_to_metric_labels`, label names do not need to be known in advance.
-  Supersedes #39735 and #46802.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

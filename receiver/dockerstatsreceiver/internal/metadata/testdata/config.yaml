@@ -177,8 +177,6 @@ all_set:
       enabled: true
     container.image.name:
       enabled: true
-    container.labels:
-      enabled: true
     container.name:
       enabled: true
     container.runtime:
@@ -360,8 +358,6 @@ reaggregate_set:
     container.image.id:
       enabled: true
     container.image.name:
-      enabled: true
-    container.labels:
       enabled: true
     container.name:
       enabled: true
@@ -545,8 +541,6 @@ none_set:
       enabled: false
     container.image.name:
       enabled: false
-    container.labels:
-      enabled: false
     container.name:
       enabled: false
     container.runtime:
@@ -570,10 +564,6 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     container.image.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    container.labels:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -607,10 +597,6 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "container.image.name-val"
-    container.labels:
-      enabled: true
-      metrics_exclude:
-        - regexp: ".*"
     container.name:
       enabled: true
       metrics_exclude:

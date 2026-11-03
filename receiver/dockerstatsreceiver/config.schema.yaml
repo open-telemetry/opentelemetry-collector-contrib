@@ -1,12 +1,3 @@
-$defs:
-  label_matcher:
-    description: LabelMatcher represents a matcher for container label values.
-    type: object
-    properties:
-      include:
-        type: string
-      match_type:
-        type: string
 type: object
 properties:
   container_labels_to_metric_labels:
@@ -15,10 +6,10 @@ properties:
     additionalProperties:
       type: string
   container_labels_to_resource_attributes:
-    description: An OR'ed allow list of matchers to pass container label names though as ResourceAttributes.
+    description: ContainerLabelsToResourceAttributes selects container labels to record as resource attributes. A label is recorded if its key matches any of the filters. Matching labels are recorded as `container.label.<key>`, following the container resource semantic conventions.
     type: array
     items:
-      $ref: label_matcher
+      $ref: go.opentelemetry.io/collector/filter.config
   env_vars_to_metric_labels:
     description: 'A mapping of container environment variable names to MetricDescriptor label keys.  The corresponding env var values become the DataPoint label value. E.g. `APP_VERSION: version` would result MetricDescriptors having a label key called `version` whose DataPoint label values are the value of the `APP_VERSION` environment variable configured for that particular container, if present.'
     type: object
