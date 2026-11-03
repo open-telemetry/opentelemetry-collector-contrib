@@ -33,7 +33,7 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
-        - key: container.label.container.label
+        - key: container.label.team
           value:
             stringValue: container-label
         - key: container.name

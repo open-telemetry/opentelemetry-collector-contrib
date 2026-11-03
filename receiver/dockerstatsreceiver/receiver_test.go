@@ -537,7 +537,7 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 		"ENV_VAR_2": "env-var-metric-label-2",
 	}
 	cb.config.ContainerLabelsToMetricLabels = map[string]string{
-		"container.label":   "container-metric-label",
+		"team":              "container-metric-label",
 		"container.label.2": "container-metric-label-2",
 	}
 	return cb
