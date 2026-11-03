@@ -1824,16 +1824,18 @@ func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) 
 		s.eventID, _ = parseInt(text[11])
 		s.sessionStatus = text[12]
 		s.waitType = text[13]
-		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
-		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
-		if len(text) > 16 {
-			s.traceparent = text[16]
-		}
-		if len(text) > 17 {
-			s.clientName = text[17]
-		}
+		s.waitEventType = text[14]
+		s.waitEvent = text[15]
+		s.waitTime, _ = strconv.ParseFloat(text[16], 64)
+		s.statementTimerWait, _ = strconv.ParseFloat(text[17], 64)
 		if len(text) > 18 {
-			s.blockerDetails = text[18]
+			s.traceparent = text[18]
+		}
+		if len(text) > 19 {
+			s.clientName = text[19]
+		}
+		if len(text) > 20 {
+			s.blockerDetails = text[20]
 		}
 
 		samples = append(samples, s)

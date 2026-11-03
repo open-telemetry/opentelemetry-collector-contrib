@@ -9,6 +9,7 @@ resourceMetrics:
                     - "5"
                     - "11"
                   count: "16"
+                  sum: 0
                   explicitBounds:
                     - 11.1
                   startTimeUnixNano: "13000000000"

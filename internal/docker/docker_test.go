@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -545,4 +546,86 @@ func TestTLSClientConfigInvalidCert(t *testing.T) {
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "could not load docker client TLS config")
+}
+
+// TestClientCloseClosesUnderlyingClient verifies that Client.Close closes idle transport connections.
+func TestClientCloseClosesUnderlyingClient(t *testing.T) {
+	var activeConns atomic.Int32
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			activeConns.Add(1)
+		case http.StateClosed:
+			activeConns.Add(-1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	err = cli.LoadContainerList(t.Context())
+	require.NoError(t, err)
+	assert.Positive(t, activeConns.Load())
+
+	err = cli.Close()
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, int32(0), activeConns.Load(), "Underlying client transport should be closed")
+}
+
+// TestContainerEnvToMap verifies that ContainerEnvToMap correctly parses
+// environment variable strings, including those whose values contain "=".
+func TestContainerEnvToMap(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected map[string]string
+	}{
+		{
+			name:     "simple key=value",
+			input:    []string{"KEY=value"},
+			expected: map[string]string{"KEY": "value"},
+		},
+		{
+			name:     "value with embedded equals sign (issue #51948)",
+			input:    []string{"JAVA_OPTS=-Xmx=512m"},
+			expected: map[string]string{"JAVA_OPTS": "-Xmx=512m"},
+		},
+		{
+			name:     "value with multiple equals signs",
+			input:    []string{"CONN=host=db;pass=secret"},
+			expected: map[string]string{"CONN": "host=db;pass=secret"},
+		},
+		{
+			name:     "entry without equals sign is skipped",
+			input:    []string{"NOEQUALS"},
+			expected: map[string]string{},
+		},
+		{
+			name:     "entry with empty value is skipped",
+			input:    []string{"EMPTY="},
+			expected: map[string]string{},
+		},
+		{
+			name:     "mixed entries",
+			input:    []string{"SIMPLE=val", "JAVA_OPTS=-Xmx=512m", "NOEQUALS", "EMPTY="},
+			expected: map[string]string{"SIMPLE": "val", "JAVA_OPTS": "-Xmx=512m"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ContainerEnvToMap(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }

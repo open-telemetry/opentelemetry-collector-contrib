@@ -361,6 +361,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 					Value: &monitoringpb.TypedValue_DistributionValue{
 						DistributionValue: &distribution.Distribution{
 							Count: sourceCountTotal,
+							Mean:  25.5,
 							BucketOptions: &distribution.Distribution_BucketOptions{
 								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
 									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
@@ -416,6 +417,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 					Value: &monitoringpb.TypedValue_DistributionValue{
 						DistributionValue: &distribution.Distribution{
 							Count: int64(1234), // counts are still reported for distributions without buckets
+							Mean:  12.5,
 							BucketOptions: &distribution.Distribution_BucketOptions{
 								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
 									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
@@ -633,6 +635,7 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 					Value: &monitoringpb.TypedValue_DistributionValue{
 						DistributionValue: &distribution.Distribution{
 							Count: sourceCountTotal,
+							Mean:  20.5,
 							BucketOptions: &distribution.Distribution_BucketOptions{
 								Options: &distribution.Distribution_BucketOptions_LinearBuckets{
 									LinearBuckets: &distribution.Distribution_BucketOptions_Linear{
@@ -797,6 +800,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 					Value: &monitoringpb.TypedValue_DistributionValue{
 						DistributionValue: &distribution.Distribution{
 							Count: sourceCountTotal,
+							Mean:  12.5,
 							BucketOptions: &distribution.Distribution_BucketOptions{
 								Options: &distribution.Distribution_BucketOptions_ExponentialBuckets{
 									ExponentialBuckets: &distribution.Distribution_BucketOptions_Exponential{
