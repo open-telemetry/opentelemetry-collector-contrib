@@ -26,7 +26,7 @@ import (
 )
 
 // semconvRegistry must match sem_conv_version in metadata.yaml.
-const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.43.0[model]"
+const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.44.0[model]"
 
 // semconvCompliantMetrics lists the receiver metrics whose name, type, unit
 // and attributes already match a release_candidate (or stable) definition
