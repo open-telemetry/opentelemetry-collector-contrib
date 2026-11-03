@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 
-go 1.26.0
+go 1.26.9
 
 require (
 	github.com/elastic/go-docappender/v2 v2.15.0

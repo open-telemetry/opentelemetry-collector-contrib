@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
 
-go 1.26.0
+go 1.26.9
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.215
