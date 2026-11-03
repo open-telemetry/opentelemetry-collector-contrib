@@ -87,6 +87,11 @@ their native types (bool, int, double, bytes, array and map), and the trace id i
 breaking change for your data: attributes that arrive as strings or doubles over the older endpoints may arrive with a
 different type.
 
+The memory use of `/v1.0/traces` is not bounded by `max_request_body_size`. The decoder of the v1 format allocates
+memory for the array and map sizes that a request declares before it reads their elements, so a request of a few
+bytes can make the receiver allocate more than 100 MB. Do not expose the endpoint to untrusted clients. Traces that an
+agent forwards to `/api/v0.2/traces` are not affected.
+
 Default: `false`
 
 ### logs.decode_json_message (Optional)

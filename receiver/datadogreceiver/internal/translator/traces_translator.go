@@ -52,7 +52,8 @@ const (
 type spanView struct {
 	name     string
 	resource string
-	err      int32
+	// errCode is the status code of a failed span, or nil if the format of the span does not have one.
+	errCode *int32
 	// meta looks up a string tag of the span.
 	meta func(key string) (string, bool)
 }
@@ -66,7 +67,7 @@ func legacySpanView(span *pb.Span) spanView {
 	return spanView{
 		name:     span.Name,
 		resource: span.Resource,
-		err:      span.Error,
+		errCode:  &span.Error,
 		meta: func(key string) (string, bool) {
 			v, ok := span.Meta[key]
 			return v, ok
@@ -185,7 +186,9 @@ func processGRPCSpan(span spanView, newSpan *ptrace.Span) {
 	// not the numeric value (eg "0")
 	// it's ddSpan.error that indicates holds the gRPC status code numeric value
 	newSpan.Attributes().PutStr(string(conventions.RPCSystemNameKey), conventions.RPCSystemNameGRPC.Value.AsString())
-	newSpan.Attributes().PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.Itoa(int(span.err)))
+	if span.errCode != nil {
+		newSpan.Attributes().PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.Itoa(int(*span.errCode)))
+	}
 
 	method := ""
 	service := ""

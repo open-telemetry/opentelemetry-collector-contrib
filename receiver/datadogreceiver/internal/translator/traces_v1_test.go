@@ -101,3 +101,49 @@ func TestToTracesV1TagsAndConvertedSpans(t *testing.T) {
 		})
 	}
 }
+
+func v1PayloadWithSpan(span *idx.Span, strs *idx.StringTable) *idx.InternalTracerPayload {
+	return &idx.InternalTracerPayload{
+		Strings: strs,
+		Chunks: []*idx.InternalTraceChunk{
+			idx.NewInternalTraceChunk(strs, 1, "", nil, []*idx.InternalSpan{idx.NewInternalSpan(strs, span)}, false, make([]byte, 16), 0),
+		},
+	}
+}
+
+// The v1 format only says whether a span failed, not with which status code, so a failed gRPC span has no status code.
+func TestToTracesV1GRPCStatusCode(t *testing.T) {
+	for name, tc := range map[string]struct {
+		failed bool
+		want   any
+	}{
+		"ok span":     {failed: false, want: "0"},
+		"failed span": {failed: true, want: nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			strs := idx.NewStringTable()
+			span := &idx.Span{
+				ServiceRef: strs.Add("svc"), NameRef: strs.Add("grpc.server"), ResourceRef: strs.Add("/pkg.Service/Method"),
+				Kind: idx.SpanKind_SPAN_KIND_SERVER, SpanID: 1, Error: tc.failed,
+			}
+
+			traces, err := ToTracesV1(zap.NewNop(), v1PayloadWithSpan(span, strs), &http.Request{Header: http.Header{}})
+			require.NoError(t, err)
+
+			attrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().AsRaw()
+			assert.Equal(t, "grpc", attrs["rpc.system.name"], "the span is still processed as a gRPC span")
+			assert.Equal(t, tc.want, attrs["rpc.response.status_code"])
+		})
+	}
+}
+
+// Payloads that an agent forwards are not checked when they are decoded, so a reference to a string that does not exist
+// is possible.
+func TestToTracesV1StringReferenceOutOfRange(t *testing.T) {
+	strs := idx.NewStringTable()
+	span := &idx.Span{ServiceRef: 99, SpanID: 1}
+
+	_, err := ToTracesV1(zap.NewNop(), v1PayloadWithSpan(span, strs), &http.Request{Header: http.Header{}})
+
+	require.Error(t, err)
+}

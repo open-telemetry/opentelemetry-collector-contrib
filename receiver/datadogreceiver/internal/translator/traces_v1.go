@@ -13,7 +13,7 @@ import (
 	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,9 @@ const attributeConvertedV1 = "_dd.convertedv1"
 // 128-bit trace id is taken from the trace chunk as is. Span links and events that are in JSON tags are parsed, and
 // spans that the agent converted from the v0.x formats get the span kind that the v0.x translation produces for them.
 func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *http.Request) (traces ptrace.Traces, err error) {
-	// Payloads that were not decoded from the wire (agent payloads) can reference strings that do not exist.
+	// The string references of a payload from /v1.0/traces are checked when it is decoded, but the ones of an agent
+	// payload (protobuf) are not. Strings.Get panics on a reference that is out of range, so convert that panic into
+	// an error to keep one malformed payload from taking the request down.
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("invalid v1 tracer payload: %v", r)
@@ -57,112 +59,15 @@ func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *htt
 		for _, span := range chunk.Spans {
 			service := span.Service()
 			// Restore base service name as the service name, like for the older payload formats.
-			baseService, hasBaseService := span.GetAttributeAsString("_dd.base_service")
-
-			if hasBaseService {
-				service, baseService = baseService, service
+			if baseService, ok := span.GetAttributeAsString("_dd.base_service"); ok {
+				service = baseService
 			}
 			slice, exist := groupByService[service]
 			if !exist {
 				slice = ptrace.NewSpanSlice()
 				groupByService[service] = slice
 			}
-			newSpan := slice.AppendEmpty()
-
-			newSpan.SetTraceID(traceID)
-			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID()))
-			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID()))
-			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start()))
-			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start() + span.Duration()))
-			newSpan.SetName(span.Name())
-			newSpan.Status().SetCode(ptrace.StatusCodeOk)
-			if span.Error() {
-				newSpan.Status().SetCode(ptrace.StatusCodeError)
-			}
-
-			attrs := newSpan.Attributes()
-			attrs.PutStr("dd.span.Resource", span.Resource())
-			if chunk.Priority != int32(ddsampler.PriorityNone) {
-				attrs.PutStr("sampling.priority", fmt.Sprintf("%f", float64(chunk.Priority)))
-			}
-			attrs.PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID(), 10))
-			attrs.PutStr(attributeDatadogTraceID, strconv.FormatUint(binary.BigEndian.Uint64(traceID[8:]), 10))
-			if hasBaseService {
-				// Preserve original per-span service name so the DD exporter can recover it via span-level
-				// service.name precedence.
-				attrs.PutStr(string(conventions.ServiceNameKey), baseService)
-			}
-			// env, version and component are fields of a v1 span.
-			for k, v := range map[string]string{
-				string(conventions.DeploymentEnvironmentNameKey): span.Env(),
-				string(conventions.ServiceVersionKey):            span.Version(),
-				"component":                                      span.Component(),
-			} {
-				if v != "" {
-					attrs.PutStr(k, v)
-				}
-			}
-			putV1Attributes(attrs, span.Attributes(), strs, true)
-
-			_, converted := span.GetAttributeAsString(attributeConvertedV1)
-			switch span.Kind() {
-			case idx.SpanKind_SPAN_KIND_SERVER:
-				newSpan.SetKind(ptrace.SpanKindServer)
-			case idx.SpanKind_SPAN_KIND_CLIENT:
-				newSpan.SetKind(ptrace.SpanKindClient)
-			case idx.SpanKind_SPAN_KIND_PRODUCER:
-				newSpan.SetKind(ptrace.SpanKindProducer)
-			case idx.SpanKind_SPAN_KIND_CONSUMER:
-				newSpan.SetKind(ptrace.SpanKindConsumer)
-			case idx.SpanKind_SPAN_KIND_INTERNAL:
-				newSpan.SetKind(ptrace.SpanKindInternal)
-				// The agent sets internal on converted spans that have no span.kind, so the span type is more telling.
-				if kind := kindFromType(span.Type()); converted && kind != ptrace.SpanKindUnspecified {
-					newSpan.SetKind(kind)
-				}
-			default:
-				newSpan.SetKind(kindFromType(span.Type()))
-			}
-
-			// For client/producer/consumer spans, if we have `peer.hostname`, and `server.address` is unset, set
-			// `server.address` to `peer.hostname`.
-			if newSpan.Kind() == ptrace.SpanKindClient ||
-				newSpan.Kind() == ptrace.SpanKindProducer ||
-				newSpan.Kind() == ptrace.SpanKindConsumer {
-				if _, ok := attrs.Get("server.address"); !ok {
-					if val, ok := span.GetAttributeAsString("peer.hostname"); ok {
-						attrs.PutStr("server.address", val)
-					}
-				}
-			}
-
-			for _, l := range span.Links() {
-				link := newSpan.Links().AppendEmpty()
-				if id := l.TraceID(); len(id) == 16 {
-					link.SetTraceID(pcommon.TraceID(id))
-				}
-				link.SetSpanID(uInt64ToSpanID(l.SpanID()))
-				link.TraceState().FromRaw(l.Tracestate())
-				link.SetFlags(l.Flags())
-				putV1Attributes(link.Attributes(), l.Attributes(), strs, false)
-			}
-			for _, e := range span.Events() {
-				event := newSpan.Events().AppendEmpty()
-				event.SetName(e.Name())
-				event.SetTimestamp(pcommon.Timestamp(e.Time()))
-				putV1Attributes(event.Attributes(), e.Attributes(), strs, false)
-			}
-
-			// Tracers send links and events as JSON tags when the agent does not advertise native support in /info,
-			// and the agent keeps them as tags when it converts spans to v1.
-			parseLinksAndEventsTags(logger, newSpan, len(span.Links()) > 0, len(span.Events()) > 0)
-
-			var errCode int32
-			if span.Error() {
-				errCode = 1
-			}
-			// Some spans need specific processing (http, db, grpc...)
-			processSpanByName(spanView{name: span.Name(), resource: span.Resource(), err: errCode, meta: span.GetAttributeAsString}, &newSpan)
+			spanToOTelV1(logger, slice.AppendEmpty(), span, chunk, traceID, strs)
 		}
 	}
 
@@ -179,6 +84,105 @@ func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *htt
 		spans.CopyTo(in.Spans())
 	}
 	return results, nil
+}
+
+// spanToOTelV1 fills newSpan from a v1 span of the given chunk. It is the single place that maps a v1 span to a span.
+func spanToOTelV1(logger *zap.Logger, newSpan ptrace.Span, span *idx.InternalSpan, chunk *idx.InternalTraceChunk, traceID pcommon.TraceID, strs *idx.StringTable) {
+	newSpan.SetTraceID(traceID)
+	newSpan.SetSpanID(uInt64ToSpanID(span.SpanID()))
+	newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID()))
+	newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start()))
+	newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start() + span.Duration()))
+	newSpan.SetName(span.Name())
+	newSpan.Status().SetCode(ptrace.StatusCodeOk)
+	if span.Error() {
+		newSpan.Status().SetCode(ptrace.StatusCodeError)
+	}
+
+	attrs := newSpan.Attributes()
+	attrs.PutStr("dd.span.Resource", span.Resource())
+	if chunk.Priority != int32(ddsampler.PriorityNone) {
+		attrs.PutStr("sampling.priority", strconv.FormatFloat(float64(chunk.Priority), 'f', 6, 64))
+	}
+	attrs.PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID(), 10))
+	attrs.PutStr(attributeDatadogTraceID, strconv.FormatUint(binary.BigEndian.Uint64(traceID[8:]), 10))
+	if _, ok := span.GetAttributeAsString("_dd.base_service"); ok {
+		// Preserve original per-span service name so the DD exporter can recover it via span-level
+		// service.name precedence.
+		attrs.PutStr(string(conventions.ServiceNameKey), span.Service())
+	}
+	// env, version and component are fields of a v1 span.
+	for k, v := range map[string]string{
+		string(conventions.DeploymentEnvironmentNameKey): span.Env(),
+		string(conventions.ServiceVersionKey):            span.Version(),
+		"component":                                      span.Component(),
+	} {
+		if v != "" {
+			attrs.PutStr(k, v)
+		}
+	}
+	putV1Attributes(attrs, span.Attributes(), strs, true)
+
+	_, converted := span.GetAttributeAsString(attributeConvertedV1)
+	switch span.Kind() {
+	case idx.SpanKind_SPAN_KIND_SERVER:
+		newSpan.SetKind(ptrace.SpanKindServer)
+	case idx.SpanKind_SPAN_KIND_CLIENT:
+		newSpan.SetKind(ptrace.SpanKindClient)
+	case idx.SpanKind_SPAN_KIND_PRODUCER:
+		newSpan.SetKind(ptrace.SpanKindProducer)
+	case idx.SpanKind_SPAN_KIND_CONSUMER:
+		newSpan.SetKind(ptrace.SpanKindConsumer)
+	case idx.SpanKind_SPAN_KIND_INTERNAL:
+		newSpan.SetKind(ptrace.SpanKindInternal)
+		// The agent sets internal on converted spans that have no span.kind, so the span type is more telling.
+		if kind := kindFromType(span.Type()); converted && kind != ptrace.SpanKindUnspecified {
+			newSpan.SetKind(kind)
+		}
+	default:
+		newSpan.SetKind(kindFromType(span.Type()))
+	}
+
+	// For client/producer/consumer spans, if we have `peer.hostname`, and `server.address` is unset, set
+	// `server.address` to `peer.hostname`.
+	if newSpan.Kind() == ptrace.SpanKindClient ||
+		newSpan.Kind() == ptrace.SpanKindProducer ||
+		newSpan.Kind() == ptrace.SpanKindConsumer {
+		if _, ok := attrs.Get("server.address"); !ok {
+			if val, ok := span.GetAttributeAsString("peer.hostname"); ok {
+				attrs.PutStr("server.address", val)
+			}
+		}
+	}
+
+	for _, l := range span.Links() {
+		link := newSpan.Links().AppendEmpty()
+		if id := l.TraceID(); len(id) == 16 {
+			link.SetTraceID(pcommon.TraceID(id))
+		}
+		link.SetSpanID(uInt64ToSpanID(l.SpanID()))
+		link.TraceState().FromRaw(l.Tracestate())
+		link.SetFlags(l.Flags())
+		putV1Attributes(link.Attributes(), l.Attributes(), strs, false)
+	}
+	for _, e := range span.Events() {
+		event := newSpan.Events().AppendEmpty()
+		event.SetName(e.Name())
+		event.SetTimestamp(pcommon.Timestamp(e.Time()))
+		putV1Attributes(event.Attributes(), e.Attributes(), strs, false)
+	}
+
+	// Tracers send links and events as JSON tags when the agent does not advertise native support in /info,
+	// and the agent keeps them as tags when it converts spans to v1.
+	parseLinksAndEventsTags(logger, newSpan, len(span.Links()) > 0, len(span.Events()) > 0)
+
+	// The status code of a failed span is not in the v1 format, which only has a boolean for the error.
+	var errCode *int32
+	if !span.Error() {
+		errCode = new(int32)
+	}
+	// Some spans need specific processing (http, db, grpc...)
+	processSpanByName(spanView{name: span.Name(), resource: span.Resource(), errCode: errCode, meta: span.GetAttributeAsString}, &newSpan)
 }
 
 func kindFromType(spanType string) ptrace.SpanKind {
