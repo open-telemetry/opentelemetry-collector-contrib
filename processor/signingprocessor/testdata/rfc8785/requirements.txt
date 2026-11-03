@@ -1,4 +1,0 @@
-# Read by rfc8785_integration_test.go, which fetches this wheel and checks its hash.
-agent-evidence-vectors==0.31.2 \
-    --hash=sha256:36d4f0a1885a8f03c65cd257ae5642b7510b03505713eb6484d79173e7716d30 \
-    --hash=sha256:896ac929811a1660938a6650aa1e534390cb58598a9a4f9c60ce8664f151e6c5

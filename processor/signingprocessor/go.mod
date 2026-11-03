@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/gowebpki/jcs v1.0.2
 	github.com/openbao/openbao/api/v2 v2.7.1
+	github.com/probityai/agent-evidence-vectors/jcsvectors v0.1.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
