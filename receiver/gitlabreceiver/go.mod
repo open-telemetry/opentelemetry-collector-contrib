@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	gitlab.com/gitlab-org/api/client-go/v3 v3.35.0
+	gitlab.com/gitlab-org/api/client-go/v3 v3.40.0
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/config/confighttp v0.164.1-0.20261102165206-9372e2e353df
