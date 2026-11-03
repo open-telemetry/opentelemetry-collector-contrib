@@ -361,7 +361,7 @@ Connection options:
 - `connection_params` (default = {}). Extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map. Parameters can be either driver parameters (e.g., `connection_open_strategy`, `max_open_conns`) that control client-side behavior, or ClickHouse session settings (e.g., `max_execution_time`) that are passed to the server. See the [driver parameters list](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#Options) for recognized driver options; all others are treated as session settings.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
-- `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
+- `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 - `tls` Advanced TLS configuration (See [TLS](#tls)).
 
 Additional DSN features:

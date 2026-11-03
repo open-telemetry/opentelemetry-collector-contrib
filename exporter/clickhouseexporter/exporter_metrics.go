@@ -42,7 +42,7 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-	if err := e.cfg.applyAuth(ctx, opt, host); err != nil {
+	if err = e.cfg.applyAuth(ctx, opt, host); err != nil {
 		return err
 	}
 
