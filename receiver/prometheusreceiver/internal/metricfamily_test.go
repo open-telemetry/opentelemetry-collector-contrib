@@ -721,7 +721,7 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 		// Only one kind of value should be set.
 		value            float64
 		integerHistogram *histogram.Histogram
-		floatHistogram   *histogram.FloatHistogram // TODO: add tests for float histograms.
+		floatHistogram   *histogram.FloatHistogram
 	}
 	tests := []struct {
 		name                string
@@ -836,6 +836,72 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 			want: func() pmetric.ExponentialHistogramDataPoint {
 				point := pmetric.NewExponentialHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "float histogram without startTimestamp",
+			metricName:          "request_duration_seconds",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{
+					at:     11,
+					metric: "request_duration_seconds",
+					// Absolute float counts; fractional values are truncated to uint64 in OTLP.
+					floatHistogram: &histogram.FloatHistogram{
+						CounterResetHint: histogram.UnknownCounterReset,
+						Schema:           1,
+						ZeroThreshold:    0.42,
+						ZeroCount:        1.9,
+						Count:            66.9,
+						Sum:              1004.78,
+						PositiveSpans:    []histogram.Span{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+						PositiveBuckets:  []float64{33.7, 3.2, 29.9},
+						NegativeSpans:    []histogram.Span{{Offset: 0, Length: 1}},
+						NegativeBuckets:  []float64{1.8},
+					},
+				},
+			},
+			want: func() pmetric.ExponentialHistogramDataPoint {
+				point := pmetric.NewExponentialHistogramDataPoint()
+				point.SetCount(66)
+				point.SetSum(1004.78)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
+				point.SetScale(1)
+				point.SetZeroThreshold(0.42)
+				point.SetZeroCount(1)
+				point.Positive().SetOffset(0)
+				point.Positive().BucketCounts().FromRaw([]uint64{33, 3, 0, 0, 0, 29})
+				point.Negative().SetOffset(-1)
+				point.Negative().BucketCounts().FromRaw([]uint64{1})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "float histogram that is stale",
+			metricName:          "request_duration_seconds",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{
+					at:     11,
+					metric: "request_duration_seconds",
+					floatHistogram: &histogram.FloatHistogram{
+						Sum: math.Float64frombits(value.StaleNaN),
+					},
+				},
+			},
+			want: func() pmetric.ExponentialHistogramDataPoint {
+				point := pmetric.NewExponentialHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))
 				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
