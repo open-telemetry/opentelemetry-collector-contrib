@@ -720,7 +720,17 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			return nil, err
 		}
 
-		return agentPayload.TracerPayloads, err
+		tracerPayloads = agentPayload.TracerPayloads
+		// Datadog Agent 7.73+ sends the traces in the string-table ("idx") format instead.
+		for _, idxPayload := range agentPayload.IdxTracerPayloads {
+			tracerPayload, convErr := tracerPayloadFromIdx(idxPayload)
+			if convErr != nil {
+				return nil, convErr
+			}
+			if tracerPayload != nil {
+				tracerPayloads = append(tracerPayloads, tracerPayload)
+			}
+		}
 
 	default:
 		var traces pb.Traces
