@@ -22,7 +22,7 @@ The processor strips only the exploding label — not the entire data point. You
 
 A code change introduces raw exception strings into `error.type`. Yesterday that label had 5 unique values. Today it has 50,000 and climbing. Your TSDB bill noticed before you did.
 
-This processor sits in your OTel pipeline and detects labels with abnormal growth. It either strips them (enforcement mode) or tags them for routing (tag-only mode). The metric stays intact — only the bad label is removed.
+This processor sits in your OTel pipeline and detects labels with abnormal growth. It either strips them (enforcement mode) or tags them for routing (tag-only mode). The metric stays intact — only the bad label is removed. With [`read_only`](#read-only-and-distinct-value-report) it changes no data and only reports.
 
 ```
 Before:  {region="us-east", status="200", error.type="Lock wait timeout; txn=a3f9c..."}
@@ -38,7 +38,9 @@ flowchart LR
     A[Metric arrives] --> B[Hash metric name]
     B --> C[Select 1 of 256 shards]
     C --> D[For each label: hash value, insert into HLL++ sketch]
-    D --> E{Delta > threshold?}
+    D --> R{read_only?}
+    R -- Yes --> P[Forward unchanged]
+    R -- No --> E{Delta > threshold?}
     E -- No --> F[Pass through]
     E -- Yes --> G{enforcement_mode?}
     G -- tag_only --> H[Add otel.metric.overflow tag]
@@ -87,6 +89,9 @@ processors:
     # Enforcement mode: tag_only | overflow_attribute | strip_and_reaggregate
     enforcement_mode: tag_only
 
+    # Track and report only; enforcement_mode is not applied and data is not changed
+    read_only: false
+
     # Labels that are never stripped regardless of cardinality
     never_drop_labels:
       - region
@@ -98,7 +103,7 @@ processors:
       http.server.request.duration: 5000
       db.query.duration: 50
 
-    # Emit gauge with top N highest-delta trackers
+    # Emit gauges with the top N trackers by delta and by distinct values (0 = off)
     top_offenders_count: 10
 
     # Max tracked metric+label pairs (0 = unlimited)
@@ -209,6 +214,94 @@ Both `strip_and_reaggregate` and `overflow_attribute` modes utilize the spatial 
 
 > **Note:** For metric types that don't yet support reaggregation, the processor automatically falls back to `tag_only` behavior with an `otel.metric.overflow` tag, ensuring no data corruption.
 
+## Read-only and distinct-value report
+
+```yaml
+read_only: true
+top_offenders_count: 10
+```
+
+`read_only: true` tracks the same labels as the enforcement modes and forwards every batch unchanged;
+`enforcement_mode` is not applied and `processor_cardinality_labels.stripped` stays at 0. Without it,
+enforcement runs as configured and the report below is still published.
+
+At each epoch rotation the processor publishes `processor_cardinality_top.distinct`: the
+`top_offenders_count` (metric, label) pairs with the most distinct values in the epoch that ended. A
+stable label keeps its count every epoch, unlike the growth-based `processor_cardinality_top.offenders`.
+Attribute values are never reported.
+
+| Attribute | Value |
+|---|---|
+| `metric_name`, `label_key` | The pair |
+| `metric_type` | `gauge`, `delta_sum`, `cumulative_sum`, `delta_histogram`, `cumulative_histogram`, `delta_exponential_histogram`, `cumulative_exponential_histogram`, `summary`, or `mixed` for a name seen with several types |
+| `multi_service` | `true` once the metric arrives from more than one non-empty `service.name`; the count combines them |
+| `recommendation` | One of the codes below |
+
+| `recommendation` | When |
+|---|---|
+| `check_per_service` | `multi_service` is `true` |
+| `remove_and_reaggregate` | Gauge or delta temporality |
+| `reduce_at_source` | Cumulative temporality, summary or `mixed` |
+
+Keep `service.name` in `never_drop_labels`: on metrics that carry it as a data point attribute, such as
+span metrics, its count is the number of services and is not something to remove.
+
+### Acting on a recommendation
+
+#### `check_per_service`
+
+The count combines every service that sends the metric, so a label can look high only because many
+services add their own values.
+
+1. In your backend, count the label's distinct values per `service.name`.
+2. If every service is low, no action is needed.
+3. If one service is high, fix it there. For a gauge or delta type, use the `remove_and_reaggregate`
+   statements with `and resource.attributes["service.name"] == "<service>"` added to both conditions;
+   otherwise follow `reduce_at_source` in that service.
+
+#### `remove_and_reaggregate`
+
+Removing the label merges the series that differed only by it. For gauges and delta temporality this is
+safe in the collector. Add a `transformprocessor` with two statement groups, in this order, and place it
+before `cardinality_guardian` in the pipeline so the pair leaves the report at the next epoch:
+
+```yaml
+transform:
+  metric_statements:
+    - statements:
+        - delete_key(datapoint.attributes, "<label_key>") where metric.name == "<metric_name>"
+    - statements:
+        - aggregate_on_attributes("<fn>") where metric.name == "<metric_name>"
+```
+
+Use `sum` for `<fn>` on delta sums and delta (exponential) histograms, and `max`, `min`, `mean` or
+`median` on gauges.
+The metric keeps its totals but loses its breakdown by `<label_key>`.
+
+#### `reduce_at_source`
+
+A cumulative series is a running total from one writer, so merging cumulative series that arrive in
+different batches or at different collectors produces wrong values. Fix the label where it is created:
+
+- Replace unbounded values with bounded ones, such as a route template instead of a raw URL, or an
+  error class instead of an error message.
+- Or drop the attribute in the SDK with a View that keeps only the attribute keys you need.
+
+For `mixed`, first make the metric name report a single type.
+
+Limitations:
+
+- Counts are distinct values per (metric name, label) on one collector, combined across all resources and
+  services. Resource attributes and `never_drop_labels` are not tracked.
+- Counts are HyperLogLog++ estimates: close to exact at low counts, and about 0.81% standard error once a
+  sketch switches to its dense form, at several thousand distinct values.
+- A pair with no data in an epoch is not reported. Set `epoch_duration_seconds` above the senders' export
+  or flush interval so every epoch sees each sender.
+- Once a tracker sees a second type or service it keeps `mixed` or `multi_service` until it is evicted
+  after two idle epochs.
+- `aggregate_on_attributes` merges data points within one batch, so the delta fix can still send more than
+  one point per series and interval when a series spans batches.
+
 ## Warnings
 
 Care needs to be taken when modifying data point attributes using this processor:
@@ -226,6 +319,7 @@ The processor emits internal metrics via the OTel SDK to help troubleshoot cardi
 | `processor_cardinality_trackers.active` | Gauge | Current tracked metric+label pairs across all shards |
 | `processor_cardinality_labels.stripped` | Counter | Attributes stripped or tagged per data point. Use `rate()` for spike detection. |
 | `processor_cardinality_top.offenders` | Gauge | Top N highest-delta trackers with `metric_name` and `label_key` attributes |
+| `processor_cardinality_top.distinct` | Gauge | Top N trackers by distinct values in the last epoch, with a `recommendation`. See [Read-only and distinct-value report](#read-only-and-distinct-value-report). |
 | `processor_cardinality_trackers.rejected` | Counter | Trackers rejected after hitting `max_tracker_count` |
 | `processor_cardinality_savings.estimated` | Counter | Dollar value of series prevented from reaching your TSDB |
 

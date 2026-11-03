@@ -22,6 +22,14 @@ Cumulative estimated dollar value of time-series churn prevented by the processo
 | ---- | ----------- | ---------- | --------- | --------- |
 | {dollar} | Sum | Double | true | Development |
 
+### otelcol_processor_cardinality_top.distinct
+
+Distinct values in the last epoch of the top-N (metric, label) pairs, with a recommendation for each.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {value} | Gauge | Int | Development |
+
 ### otelcol_processor_cardinality_top.offenders
 
 Cardinality delta of the top-N highest-growth (metric, label) pairs from the last epoch rotation.
