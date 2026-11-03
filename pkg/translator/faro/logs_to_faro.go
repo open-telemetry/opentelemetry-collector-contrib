@@ -159,7 +159,7 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 				meta := payload.Meta
 				w.Reset() // Reset hash before encoding
 				if encodeErr := encoder.Encode(meta); encodeErr != nil {
-					errs = multierr.Append(errs, err)
+					errs = multierr.Append(errs, encodeErr)
 					continue
 				}
 				metaKey := fmt.Sprintf("%x", w.Sum(nil))
