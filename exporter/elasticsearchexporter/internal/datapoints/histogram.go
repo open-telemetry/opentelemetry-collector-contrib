@@ -10,32 +10,48 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 )
 
 type Histogram struct {
 	pmetric.HistogramDataPoint
 	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
+	metric           pmetric.Metric
+	histogramMapping HistogramMapping
 }
 
-func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint) Histogram {
+func NewHistogram(metric pmetric.Metric, dp pmetric.HistogramDataPoint, hm HistogramMapping) Histogram {
 	return Histogram{
 		HistogramDataPoint: dp,
 		MappingHintGetter:  elasticsearch.NewMappingHintGetter(dp.Attributes()),
 		metric:             metric,
+		histogramMapping:   hm,
 	}
 }
 
 func (dp Histogram) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+	bucketCounts := dp.BucketCounts()
+	explicitBounds := dp.ExplicitBounds()
+	if bucketCounts.Len() > 0 && bucketCounts.Len() != explicitBounds.Len()+1 {
+		return pcommon.Value{}, fmt.Errorf("invalid histogram data point %q", dp.Metric().Name())
+	}
+
+	switch dp.resolvedMapping() {
+	case HistogramMappingAggregateMetricDouble:
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
 		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
+	case HistogramMappingExponential:
+		return exphistogram.ExplicitToNativeExponentialHistogram(
+			dp.HistogramDataPoint,
+			dp.Metric().Histogram().AggregationTemporality(),
+		), nil
+	default:
+		raw := dp.HasMappingHint(elasticsearch.HintHistogramRaw)
+		return histogramToValue(dp.HistogramDataPoint, dp.metric, raw)
 	}
-	raw := dp.HasMappingHint(elasticsearch.HintHistogramRaw)
-	return histogramToValue(dp.HistogramDataPoint, dp.metric, raw)
 }
 
 func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) string {
@@ -46,10 +62,14 @@ func (dp Histogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) 
 		return "histogram_metrics"
 	}
 
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+	switch dp.resolvedMapping() {
+	case HistogramMappingAggregateMetricDouble:
 		return "summary"
+	case HistogramMappingExponential:
+		return "exponential_histogram"
+	default:
+		return "histogram"
 	}
-	return "histogram"
 }
 
 func (dp Histogram) DocCount() uint64 {
@@ -58,6 +78,16 @@ func (dp Histogram) DocCount() uint64 {
 
 func (dp Histogram) Metric() pmetric.Metric {
 	return dp.metric
+}
+
+func (dp Histogram) resolvedMapping() HistogramMapping {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
+		return HistogramMappingAggregateMetricDouble
+	}
+	if dp.HasMappingHint(elasticsearch.HintHistogramRaw) {
+		return HistogramMappingRaw
+	}
+	return dp.histogramMapping
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric, raw bool) (pcommon.Value, error) {

@@ -141,9 +141,9 @@ func TestPartitionProcessing(t *testing.T) {
 				tp := topicPartition{topic: "test", partition: 0}
 				partitionConsumer := &pc{
 					ctx:     t.Context(),
-					mailbox: newPartitionMailbox(t.Context(), 1),
+					mailbox: newPartitionMailbox(t.Context(), 1, 0),
 				}
-				partitionConsumer.addPauseReason(partitionPauseRewind)
+				partitionConsumer.addPauseReason(partitionPauseRewind | partitionPauseBackpressure)
 				partitionConsumer.mailbox.requestRewind(
 					&kgo.Record{Topic: "test", Partition: 0, Offset: 1},
 					true,
@@ -186,7 +186,7 @@ func TestPartitionProcessing(t *testing.T) {
 		// A cancelled partition does not apply a rewind.
 		client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 		ctx, cancel := context.WithCancel(t.Context())
-		partitionConsumer := &pc{ctx: ctx, mailbox: newPartitionMailbox(ctx, 1)}
+		partitionConsumer := &pc{ctx: ctx, mailbox: newPartitionMailbox(ctx, 1, 0)}
 		partitionConsumer.mailbox.requestRewind(&kgo.Record{Topic: "test", Partition: 0, Offset: 1}, true, func() {})
 		// Cancel before the poll loop sees the control. SetOffsets must not run.
 		cancel()
@@ -271,7 +271,7 @@ func TestPartitionProcessing(t *testing.T) {
 		// records are not processed.
 		h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
 			cfg.ConsumerConfig.MaxFetchSize = 1
-			cfg.PartitionProcessing.MaxBufferedBatches = 3
+			cfg.PartitionProcessing.MaxPrefetch.Batches = 3
 			cfg.MessageMarking = MessageMarking{After: true, OnPermanentError: false}
 		})
 		started := make(chan struct{}, 1)
@@ -518,9 +518,9 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	cfg.ConsumerConfig.GroupID = t.Name()
 	// These tests cover independent workers only.
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 1,
-		MaxInFlight:        MaxInFlightConfig{Records: 1},
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 1},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	if configure != nil {
 		configure(cfg)
@@ -651,9 +651,9 @@ func waitSignal(t *testing.T, ch <-chan struct{}, msg string) {
 func newStaleWorkerConsumer(t *testing.T, kafkaClient *kgo.Client, cfg *Config, topic string) *franzConsumer {
 	t.Helper()
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 2,
-		MaxInFlight:        MaxInFlightConfig{Records: 1},
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 	cfg.MessageMarking.After = true
@@ -927,6 +927,52 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 	}
 }
 
+// TestConsumerWarnsMaxBufferedBatchesDeprecated proves Start logs the deprecation
+// warning only when the deprecated field is set.
+func TestConsumerWarnsMaxBufferedBatchesDeprecated(t *testing.T) {
+	cases := []struct {
+		name          string
+		prefetch      int
+		deprecated    int
+		deprecatedSet bool
+		wantWarning   int
+	}{
+		{
+			name:          "max_buffered_batches set",
+			deprecated:    2,
+			deprecatedSet: true,
+			prefetch:      2,
+			wantWarning:   1,
+		},
+		{
+			name:     "only max_prefetch set",
+			prefetch: 2,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
+			cfg.PartitionProcessing.Independent = true
+			cfg.PartitionProcessing.MaxBufferedBatches = tc.deprecated
+			cfg.PartitionProcessing.maxBufferedBatchesSet = tc.deprecatedSet
+			cfg.PartitionProcessing.MaxPrefetch.Batches = tc.prefetch
+			settings, _, logs := mustNewSettings(t)
+			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+				return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+					return nil
+				}, nil
+			}
+			c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn)
+			require.NoError(t, err)
+			require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+			require.Equal(t, tc.wantWarning, logs.FilterMessageSnippet("max_buffered_batches is deprecated").Len())
+		})
+	}
+}
+
 func TestConsumerShutdownNotStarted(t *testing.T) {
 	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 	settings, _, _ := mustNewSettings(t)
@@ -1150,9 +1196,9 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 	const topic = "test"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 2,
-		MaxInFlight:        MaxInFlightConfig{Records: 1},
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 
@@ -1439,8 +1485,8 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(2, topic))
 			cfg.PartitionProcessing = PartitionProcessing{
-				Independent:        tc.independent,
-				MaxBufferedBatches: 1,
+				Independent: tc.independent,
+				MaxPrefetch: MaxPrefetchConfig{Batches: 1},
 			}
 			cfg.MessageMarking = MessageMarking{
 				After:            true,
