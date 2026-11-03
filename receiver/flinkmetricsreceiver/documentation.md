@@ -285,6 +285,7 @@ The number of records a task has.
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
+| flink.job.id | The unique job submission ID (jid) from the Flink REST API. Unique per submission; a resubmitted job receives a new ID. | Any Str | false | - | - |
 | flink.job.name | The job name. | Any Str | true | - | - |
 | flink.resource.type | The flink scope type in which a metric belongs to. | Str: ``jobmanager``, ``taskmanager`` | true | - | - |
 | flink.subtask.index | The subtask index. | Any Str | true | - | - |

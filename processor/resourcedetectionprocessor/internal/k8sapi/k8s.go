@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_k8s_api
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_k8s_api) && !omit_detector_k8s_api
 
 package k8sapi // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi"
 
@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/internal/metadata"
@@ -37,7 +38,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		return nil, err
 	}
 	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	k8snodeProvider, err := k8snode.NewProvider(nodeName, cfg.APIConfig)
+	k8snodeProvider, err := k8snode.NewProvider(nodeName, k8sconfig.FromConfigTypes(cfg.APIConfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed creating k8snode detector: %w", err)
 	}
