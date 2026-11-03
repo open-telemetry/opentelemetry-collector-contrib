@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/apache/pulsar-client-go v0.21.0
-	github.com/cenkalti/backoff/v7 v7.0.2
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
