@@ -413,9 +413,9 @@ func TestInputSlowResolverDoesNotBlockWhenResolveNamesFalse(t *testing.T) {
 	udpInput, ok := op.(*Input)
 	require.True(t, ok)
 
-	// mock resolver with a blockChan that will NEVER be unblocked
-	unclosedBlockChan := make(chan struct{})
-	mockRes := &mockResolver{blockChan: unclosedBlockChan}
+	// mock resolver with a blockChan to simulate an unresponsive resolver
+	blockChan := make(chan struct{})
+	mockRes := &mockResolver{blockChan: blockChan}
 	udpInput.resolver = mockRes
 	udpInput.OutputOperators = []operator.Operator{&mockOutput}
 
@@ -427,6 +427,7 @@ func TestInputSlowResolverDoesNotBlockWhenResolveNamesFalse(t *testing.T) {
 	err = udpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(t, err)
 	defer func() {
+		close(blockChan)
 		require.NoError(t, udpInput.Stop())
 	}()
 
