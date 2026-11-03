@@ -266,6 +266,9 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces ptrace.Trace
 	}
 
 	for key, tracesForKey := range tracesByOrderingKey {
+		if tracesForKey.ResourceSpans().Len() == 0 {
+			continue
+		}
 		if err := ex.publishTraces(ctx, tracesForKey, key); err != nil {
 			return err
 		}
@@ -321,6 +324,9 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Me
 	}
 
 	for key, metricsForKey := range metricsByOrderingKey {
+		if metricsForKey.ResourceMetrics().Len() == 0 {
+			continue
+		}
 		if err := ex.publishMetrics(ctx, metricsForKey, key); err != nil {
 			return err
 		}
@@ -378,6 +384,9 @@ func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error
 	}
 
 	for key, logsForKey := range logsByOrderingKey {
+		if logsForKey.ResourceLogs().Len() == 0 {
+			continue
+		}
 		if err := ex.publishLogs(ctx, logsForKey, key); err != nil {
 			return err
 		}
