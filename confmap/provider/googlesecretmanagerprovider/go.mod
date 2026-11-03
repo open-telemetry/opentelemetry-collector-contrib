@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provide
 go 1.26.0
 
 require (
-	cloud.google.com/go/secretmanager v1.23.0
+	cloud.google.com/go/secretmanager v1.23.1
 	github.com/googleapis/gax-go/v2 v2.27.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/confmap v1.70.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/confmap v1.70.1-0.20261102165206-9372e2e353df
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.84.0
 )
@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261029175530-9afdf701f333 // indirect
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
