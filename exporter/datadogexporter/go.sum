@@ -1,7 +1,7 @@
 cloud.google.com/go/compute/metadata v0.10.0 h1:pyKMUQSwchgkIBBJGdILqQbs/BNJXqwSA7Ej6LAvvtY=
 cloud.google.com/go/compute/metadata v0.10.0/go.mod h1:rGFHRrIif570kSibjFTMbt6/4/tzgJWFGI/HVol4GIk=
-github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421 h1:y9MeSee2LelHW4BfqIZG0j9rpGudLmm0TzTlnZoAvrE=
-github.com/DataDog/agent-payload/v5 v5.0.215-0.20261016095910-a4a2a218d421/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
+github.com/DataDog/agent-payload/v5 v5.0.215 h1:PVci8YOjgLL+AH+XXXvq5OXgshpaq8BhWxqNXr1pWp8=
+github.com/DataDog/agent-payload/v5 v5.0.215/go.mod h1:W6yXZM1qJnPKp4jnAG6B5W5lT8rJJFBCLk/WbeeqvTc=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:D2JGsE5P7bqtP0zodaHnvDED3EnB7Q7ioRJbVEJep2w=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:ddZlZ6msnTJcjRbma+PJlXO3jaQWuf+0qyyV6G/p5wM=
 github.com/DataDog/datadog-agent/comp/core/config v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:e8Ep2JhNr14frENAbG5/ZlGst4FxM1OyBYCHTkKeht4=
