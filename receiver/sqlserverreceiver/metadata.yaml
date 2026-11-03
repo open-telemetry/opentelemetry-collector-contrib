@@ -165,6 +165,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [waiting]
+  resource_pool.name:
+    description: The name of the SQL Server Resource Governor resource pool.
+    type: string
+    requirement_level: recommended
+    enum: [default, internal]
   sqlserver.access.scan.type:
     description: The type of access method scan being performed.
     type: string
@@ -499,6 +504,11 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [maximum, active, available, waiting_for_cpu]
+  workload_group.name:
+    description: The name of the SQL Server Resource Governor workload group.
+    type: string
+    requirement_level: recommended
+    enum: [default, internal]
   # attributes for events
   ## common
 events:
@@ -1078,6 +1088,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
+    attributes: [workload_group.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
@@ -1167,7 +1178,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: double
-    attributes: []
+    attributes: [resource_pool.name]
   sqlserver.os.wait.duration:
     enabled: false
     description: Total wait time for this wait type

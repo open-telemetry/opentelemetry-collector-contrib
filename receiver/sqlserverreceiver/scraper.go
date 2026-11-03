@@ -1451,7 +1451,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitCount)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64), metadata.MapAttributeWorkloadGroupName[row[instanceKey]])
 			}
 		case lockWaitTimeAvgMS:
 			val, err := retrieveFloat(row, valueKey)
@@ -1877,7 +1877,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, usedMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(float64), metadata.MapAttributeResourcePoolName[row[instanceKey]])
 			}
 		case userConnCount:
 			val, err := retrieveInt(row, valueKey)
