@@ -82,7 +82,7 @@ timeout: 90s
 
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
 Note that this is per request and is independent between HTTP request retries.
-A client timeout, including a deadline exceeded after the request body has started to be sent, is retried.
+HTTP client timeouts are all retried.
 All other defaults are as defined by [confighttp].
 
 ### Queuing and batching
@@ -366,20 +366,20 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 
 - `retry`: Elasticsearch bulk request retry settings.
   The default is at-least-once delivery: transport errors, including client timeouts, and HTTP status codes 429, 500, 502, 503, and 504 are retried.
-  A retried timeout or 5xx response can create duplicate documents when Elasticsearch accepted the bulk request but the exporter did not observe success.
-  Client timeouts are always retried. To reduce duplicates from HTTP status retries, set `retry_on_status` to `[429]`.
+  Retrying an HTTP client timeout or status 500, 502, 503, or 504 can index the same documents twice when the first `_bulk` request was applied and its response was lost.
+  HTTP client timeouts are all retried. Set `retry_on_status` to `[429]` so status codes 500, 502, 503, and 504 are not retried.
   When `retry_on_document_status` is unset, `retry_on_status` also applies to document-level retries.
 
   ```yaml
-  exporters:
-    elasticsearch:
-      retry:
-        # Opt out of HTTP status retries that can duplicate documents.
-        # Client timeouts are still retried.
-        retry_on_status: [429]
+  retry:
+    enabled: true
+    max_retries: 2
+    initial_interval: 100ms
+    max_interval: 1m
+    retry_on_status: [429, 500, 502, 503, 504]
   ```
 
-  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, for example during shutdown, it is not retried. Context deadline exceeded is retried, including after the request body has started to be sent. Other transport errors are retried.
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, for example during shutdown, it is not retried. HTTP client timeouts are all retried. Other transport errors are retried.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.

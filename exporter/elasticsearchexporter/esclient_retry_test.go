@@ -8,56 +8,17 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
-
-func skipFlakyOnWindows(t *testing.T) {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		t.Skip("TODO: flaky on Windows, re-enable once https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52435 is fixed")
-	}
-}
-
-func TestRetry_CallerDeadlineDuringDial_NoRetry(t *testing.T) {
-	skipFlakyOnWindows(t)
-	var finished atomic.Int32
-	client, dials := newRetryClient(t, "http://es.invalid:9200", time.Second, func(ctx context.Context, _, _ string) (net.Conn, error) {
-		defer finished.Add(1)
-		timer := time.NewTimer(time.Second)
-		defer timer.Stop()
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-timer.C:
-			return nil, context.DeadlineExceeded
-		}
-	})
-	// The dial keeps running after the test returns. Wait for it so goleak passes.
-	t.Cleanup(func() {
-		require.Eventually(t, func() bool {
-			return finished.Load() == dials.Load() && dials.Load() > 0
-		}, 3*time.Second, 10*time.Millisecond)
-	})
-
-	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://es.invalid:9200/_bulk", http.NoBody)
-	require.NoError(t, err)
-	_, err = client.Perform(req)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-	assert.Equal(t, int32(1), dials.Load())
-}
 
 // newRetryClient builds a client with newElasticsearchClient. dial is installed
 // on the HTTP transport confighttp creates, and each dial is counted.

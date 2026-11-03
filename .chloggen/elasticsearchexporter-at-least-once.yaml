@@ -7,7 +7,7 @@ note: Default to at-least-once retries on transport errors, client timeouts, and
 issues: [52551]
 
 subtext: |
-  Client timeouts are always retried, including when the deadline is exceeded after the request body has started to be sent.
-  To keep the previous HTTP status behavior, set `retry::retry_on_status` to `[429]`.
+  HTTP client timeouts are all retried.
+  To keep the previous HTTP status behavior, set `retry::retry_on_status` to `[429]`. HTTP 500, 502, 503, and 504 are then not retried.
 
 change_logs: [user]
