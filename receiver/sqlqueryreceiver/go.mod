@@ -10,7 +10,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/moby/moby/api v1.56.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
