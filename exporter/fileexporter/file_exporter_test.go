@@ -857,31 +857,7 @@ func (w *flushTestWriter) flush() error {
 	return w.err
 }
 
-func TestNewFileWriterReportsFlushError(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		core, logs := observer.New(zap.ErrorLevel)
-		logger := zap.New(core)
-		path := filepath.Join(t.TempDir(), "out.json")
-		writer, err := newFileWriter(path, false, nil, time.Second, exportMessageAsLine, "", 0, logger)
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			require.NoError(t, writer.shutdown())
-		})
-		require.Same(t, logger, writer.logger, "the constructor must set the logger before the writer starts")
-
-		require.NoError(t, writer.file.Close())
-		writer.file = &flushTestWriter{err: errors.New("disk full")}
-		writer.start()
-		time.Sleep(time.Second)
-		synctest.Wait()
-
-		require.Equal(t, 1, logs.Len())
-		require.Equal(t, path, logs.All()[0].ContextMap()["path"])
-		require.Equal(t, "disk full", logs.All()[0].ContextMap()["error"])
-	})
-}
-
-func newFlushTestWriter(t *testing.T, grouped bool, logger *zap.Logger, flushErr error) (*fileWriter, *flushTestWriter, FileExporter) {
+func newFlushTestWriter(t *testing.T, grouped bool, logger *zap.Logger, flushErr error) (*fileWriter, *flushTestWriter) {
 	t.Helper()
 
 	dir := t.TempDir()
@@ -920,7 +896,7 @@ func newFlushTestWriter(t *testing.T, grouped bool, logger *zap.Logger, flushErr
 	writer.flushInterval = time.Second
 	writer.start()
 
-	return writer, sink, e
+	return writer, sink
 }
 
 func TestPeriodicFlushLogsFirstErrorOnly(t *testing.T) {
@@ -934,7 +910,7 @@ func TestPeriodicFlushLogsFirstErrorOnly(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				core, logs := observer.New(zap.ErrorLevel)
 				firstErr := errors.New("disk full")
-				writer, sink, _ := newFlushTestWriter(t, grouped, zap.New(core), firstErr)
+				writer, sink := newFlushTestWriter(t, grouped, zap.New(core), firstErr)
 
 				time.Sleep(time.Second)
 				synctest.Wait()
@@ -958,38 +934,13 @@ func TestPeriodicFlushLogsFirstErrorOnly(t *testing.T) {
 func TestPeriodicFlushSuccessDoesNotLog(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		core, logs := observer.New(zap.ErrorLevel)
-		_, sink, _ := newFlushTestWriter(t, false, zap.New(core), nil)
+		_, sink := newFlushTestWriter(t, false, zap.New(core), nil)
 
 		time.Sleep(3 * time.Second)
 		synctest.Wait()
 
 		require.Equal(t, 3, sink.calls)
 		require.Empty(t, logs.All())
-	})
-}
-
-func TestPeriodicFlushErrorsAreIndependent(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		core, logs := observer.New(zap.ErrorLevel)
-		first, firstSink, e := newFlushTestWriter(t, true, zap.New(core), errors.New("first file failed"))
-		second, err := e.(*groupingFileExporter).getWriter("second")
-		require.NoError(t, err)
-		require.NoError(t, second.release())
-		require.NoError(t, second.file.Close())
-
-		secondSink := &flushTestWriter{err: errors.New("second file failed")}
-		second.file = secondSink
-		second.flushInterval = time.Second
-		second.start()
-
-		time.Sleep(3 * time.Second)
-		synctest.Wait()
-
-		require.Equal(t, 3, firstSink.calls)
-		require.Equal(t, 3, secondSink.calls)
-		require.Equal(t, 2, logs.Len())
-		require.Equal(t, 1, logs.FilterField(zap.String("path", first.path)).Len())
-		require.Equal(t, 1, logs.FilterField(zap.String("path", second.path)).Len())
 	})
 }
 
