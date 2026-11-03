@@ -92,6 +92,7 @@ type sqlServerScraperHelper struct {
 	dbEdition                 string
 	dbVersion                 string
 	instanceInfoFunc          func(context.Context, *zap.Logger) (version, edition string, resolved bool)
+	databaseFilter            databaseFilter
 }
 
 var (
@@ -143,6 +144,7 @@ func newSQLServerScraper(id component.ID,
 		serviceInstanceID:         serviceInstanceID,
 		serverAddress:             serverAddress,
 		serverPort:                int64(serverPort),
+		databaseFilter:            newDatabaseFilter(cfg),
 	}
 }
 
@@ -165,7 +167,7 @@ func (s *sqlServerScraperHelper) Start(_ context.Context, host component.Host) e
 	if err != nil {
 		return fmt.Errorf("failed to open Db connection: %w", err)
 	}
-	s.client = s.clientProviderFunc(sqlquery.DbWrapper{Db: s.db}, s.sqlQuery, s.logger, s.telemetry)
+	s.client = s.clientProviderFunc(sqlquery.DbWrapper{Db: s.db}, s.databaseFilter.apply(s.sqlQuery), s.logger, s.telemetry)
 
 	return nil
 }
@@ -559,6 +561,9 @@ func (s *sqlServerScraperHelper) recordAvailabilityGroupMetrics(ctx context.Cont
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var val any
 	for i, row := range rows {
+		if !s.databaseFilter.allows(row[databaseNameKey]) {
+			continue
+		}
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 
@@ -644,6 +649,9 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var val any
 	for i, row := range rows {
+		if !s.databaseFilter.allows(row[databaseNameKey]) {
+			continue
+		}
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 
@@ -1032,6 +1040,11 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	averageBases := averageBulkBaseValues(rows)
 
 	for i, row := range rows {
+		// Counters on the Databases object carry the database in instance. Skipping
+		// them before the rate and average calculations lets their samples age out.
+		if strings.HasSuffix(row[objectKey], ":Databases") && row[instanceRawKey] != totalInstanceName && !s.databaseFilter.allows(row[instanceKey]) {
+			continue
+		}
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 
 		if isPerformanceCounterAverageBulk(row["counter_type"], row[counterKey]) {
@@ -2017,7 +2030,7 @@ func (s *sqlServerScraperHelper) recordIndexPhysicalMetrics(ctx context.Context)
 		sqlServerPageSizeBy = int64(8192) // SQL Server pages are 8 KB
 	)
 
-	rows, err := s.client.QueryRows(ctx)
+	rows, err := s.client.QueryRows(ctx, s.databaseFilter.args()...)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper: %w", err)
@@ -2028,6 +2041,11 @@ func (s *sqlServerScraperHelper) recordIndexPhysicalMetrics(ctx context.Context)
 	var errs []error
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
+		// The query only scans the allowed databases, except on Azure SQL Database,
+		// where it reports the connected database without consulting the filter.
+		if !s.databaseFilter.allows(row[databaseNameKey]) {
+			continue
+		}
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 
@@ -2109,8 +2127,10 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
-		sql.Named("maxSampleCount", s.config.TopQueryCollection.MaxQuerySampleCount),
+		append([]any{
+			sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
+			sql.Named("maxSampleCount", s.config.TopQueryCollection.MaxQuerySampleCount),
+		}, s.databaseFilter.args()...)...,
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -2563,7 +2583,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("top", s.config.QuerySample.MaxRowsPerQuery),
+		append([]any{sql.Named("top", s.config.QuerySample.MaxRowsPerQuery)}, s.databaseFilter.args()...)...,
 	)
 	resources := pcommon.NewResource()
 	if err != nil {
@@ -3027,8 +3047,10 @@ func (s *sqlServerScraperHelper) recordDatabaseTopProcedure(ctx context.Context)
 	}
 
 	rows, err := s.client.QueryRows(ctx,
-		sql.Named("lookbackTime", -s.procedureLookbackSeconds()),
-		sql.Named("maxSampleCount", s.config.TopProcedureCollection.MaxProcedureSampleCount))
+		append([]any{
+			sql.Named("lookbackTime", -s.procedureLookbackSeconds()),
+			sql.Named("maxSampleCount", s.config.TopProcedureCollection.MaxProcedureSampleCount),
+		}, s.databaseFilter.args()...)...)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return pcommon.NewResource(), fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
