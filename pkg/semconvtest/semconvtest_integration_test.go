@@ -183,6 +183,16 @@ func TestRegistryForSchemaURL(t *testing.T) {
 			want:      "https://github.com/open-telemetry/semantic-conventions.git@v1.34.0[model]",
 		},
 		{
+			name:      "oldest weaver-supported release accepted",
+			schemaURL: "https://opentelemetry.io/schemas/1.26.0",
+			want:      "https://github.com/open-telemetry/semantic-conventions.git@v1.26.0[model]",
+		},
+		{
+			name:      "release older than weaver supports rejected",
+			schemaURL: "https://opentelemetry.io/schemas/1.25.0",
+			wantErr:   "which Weaver does not support (minimum v1.26.0)",
+		},
+		{
 			name:      "http scheme rejected",
 			schemaURL: "http://opentelemetry.io/schemas/1.34.0",
 			wantErr:   "use WithRegistry",

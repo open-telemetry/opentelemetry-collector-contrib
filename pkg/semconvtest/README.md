@@ -92,7 +92,8 @@ start. Use the options below to select other versions.
   schema URL constant (for example `semconv.SchemaURL`) so the check follows
   the component's schema version. Other URLs fail the test; use
   `WithRegistry` for a custom registry. Cannot be combined with
-  `WithRegistry`.
+  `WithRegistry`. Schema versions older than 1.26.0 fail: Weaver does not
+  support those registries.
 
 ## Report types
 

@@ -73,6 +73,11 @@ const (
 	// schemaURLPrefix is the prefix of OpenTelemetry schema URLs, which
 	// WithSchemaURL maps to semantic-conventions release registries.
 	schemaURLPrefix = "https://opentelemetry.io/schemas/"
+
+	// minRegistryVersion is the oldest semantic-conventions release Weaver
+	// can load: earlier releases use registry syntax (for example the
+	// "constraints" property) that Weaver rejects at startup.
+	minRegistryVersion = "v1.26.0"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
@@ -104,6 +109,8 @@ func WithRegistry(registry string) WeaverOption {
 // component's schema URL constant (for example semconv.SchemaURL). Only
 // https://opentelemetry.io/schemas/<version> URLs are supported; for any
 // other registry, use WithRegistry. Combining both options fails the test.
+// Schema versions older than 1.26.0 fail: Weaver does not support those
+// registries.
 func WithSchemaURL(schemaURL string) WeaverOption {
 	return func(o *weaverOptions) {
 		o.schemaURL = schemaURL
@@ -163,6 +170,9 @@ func registryForSchemaURL(schemaURL string) (string, error) {
 	v := "v" + version
 	if semver.Canonical(v) != v || semver.Prerelease(v) != "" {
 		return "", fmt.Errorf("schema URL %q does not end in a valid semantic-conventions version (MAJOR.MINOR.PATCH)", schemaURL)
+	}
+	if semver.Compare(v, minRegistryVersion) < 0 {
+		return "", fmt.Errorf("schema URL %q maps to semantic-conventions release %s, which Weaver does not support (minimum %s)", schemaURL, v, minRegistryVersion)
 	}
 	return fmt.Sprintf(defaultRegistryTemplate, v), nil
 }
