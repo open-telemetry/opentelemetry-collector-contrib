@@ -592,3 +592,154 @@ func TestOTelV1_EncodeTrace_NonRootSpan(t *testing.T) {
 	// Verify durationInNanos = 1 second
 	assert.Equal(t, float64(1000000000), doc["durationInNanos"])
 }
+
+func TestResolveAttributeKeyConflicts(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]any
+		expected map[string]any
+	}{
+		{
+			name:     "no conflict",
+			input:    map[string]any{"code.function": "doWork", "code.line.number": int64(10)},
+			expected: map[string]any{"code.function": "doWork", "code.line.number": int64(10)},
+		},
+		{
+			name:     "concrete value conflicts with object prefix",
+			input:    map[string]any{"code.function": "doWork", "code.function.name": "doWork"},
+			expected: map[string]any{"code.function.value": "doWork", "code.function.name": "doWork"},
+		},
+		{
+			name:     "object prefix appears before concrete value",
+			input:    map[string]any{"a.b.c": int64(1), "a.b": "x"},
+			expected: map[string]any{"a.b.c": int64(1), "a.b.value": "x"},
+		},
+		{
+			name:     "similar prefix that is not a path boundary is untouched",
+			input:    map[string]any{"code.function": "doWork", "code.functionName": "doWork"},
+			expected: map[string]any{"code.function": "doWork", "code.functionName": "doWork"},
+		},
+		{
+			name:     "value target already present drops concrete value",
+			input:    map[string]any{"code.function": "concrete", "code.function.value": "kept", "code.function.name": "n"},
+			expected: map[string]any{"code.function.value": "kept", "code.function.name": "n"},
+		},
+		{
+			name:     "nested map conflict is resolved recursively",
+			input:    map[string]any{"outer": map[string]any{"x": "v", "x.y": "w"}},
+			expected: map[string]any{"outer": map[string]any{"x.value": "v", "x.y": "w"}},
+		},
+		{
+			name: "conflict inside array of maps is resolved",
+			input: map[string]any{"items": []any{
+				map[string]any{"p": "v", "p.q": "w"},
+			}},
+			expected: map[string]any{"items": []any{
+				map[string]any{"p.value": "v", "p.q": "w"},
+			}},
+		},
+		{
+			name:     "empty map",
+			input:    map[string]any{},
+			expected: map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolveAttributeKeyConflicts(tt.input)
+			assert.Equal(t, tt.expected, tt.input)
+		})
+	}
+}
+
+// TestSSO_EncodeTrace_DottedAttributeConflict reproduces
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47465:
+// a span carrying both the old and new code.function semantic conventions must
+// not emit a document that OpenSearch would reject with a mapper_parsing_exception.
+func TestSSO_EncodeTrace_DottedAttributeConflict(t *testing.T) {
+	model := &encodeModel{dataset: "default", namespace: "namespace"}
+
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("test-span")
+	span.Attributes().PutStr("code.function", "doWork")
+	span.Attributes().PutStr("code.function.name", "doWork")
+
+	resource := pcommon.NewResource()
+	scope := pcommon.NewInstrumentationScope()
+
+	result, err := model.encodeTrace(resource, scope, "", span)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	attrs := doc["attributes"].(map[string]any)
+	// The concrete value is relocated so code.function can be an object holding
+	// both children; there is no bare concrete "code.function" key left.
+	_, hasConcrete := attrs["code.function"]
+	assert.False(t, hasConcrete, "bare concrete code.function must be rewritten")
+	assert.Equal(t, "doWork", attrs["code.function.value"])
+	assert.Equal(t, "doWork", attrs["code.function.name"])
+}
+
+// TestSSO_EncodeLog_DottedAttributeConflict verifies the log SSO path applies
+// the same conflict resolution as traces.
+func TestSSO_EncodeLog_DottedAttributeConflict(t *testing.T) {
+	model := &encodeModel{sso: true, dataset: "default", namespace: "namespace"}
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Attributes().PutStr("code.function", "doWork")
+	lr.Attributes().PutStr("code.function.name", "doWork")
+
+	result, err := model.encodeLog(rl.Resource(), rl.ScopeLogs().At(0).Scope(), "", lr)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	attrs := doc["attributes"].(map[string]any)
+	_, hasConcrete := attrs["code.function"]
+	assert.False(t, hasConcrete, "bare concrete code.function must be rewritten")
+	assert.Equal(t, "doWork", attrs["code.function.value"])
+	assert.Equal(t, "doWork", attrs["code.function.name"])
+}
+
+// TestOTelV1_EncodeTrace_DottedAttributeConflict verifies the otel-v1 trace
+// path resolves dotted-key conflicts for span, event and link attributes.
+func TestOTelV1_EncodeTrace_DottedAttributeConflict(t *testing.T) {
+	model := &encodeModel{otelV1: true}
+
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("test-span")
+	span.Attributes().PutStr("code.function", "doWork")
+	span.Attributes().PutStr("code.function.name", "doWork")
+
+	ev := span.Events().AppendEmpty()
+	ev.Attributes().PutStr("code.function", "onEvent")
+	ev.Attributes().PutStr("code.function.name", "onEvent")
+
+	link := span.Links().AppendEmpty()
+	link.Attributes().PutStr("code.function", "onLink")
+	link.Attributes().PutStr("code.function.name", "onLink")
+
+	result, err := model.encodeTrace(pcommon.NewResource(), pcommon.NewInstrumentationScope(), "", span)
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(result, &doc))
+
+	assertResolved := func(attrs map[string]any) {
+		_, hasConcrete := attrs["code.function"]
+		assert.False(t, hasConcrete, "bare concrete code.function must be rewritten")
+		assert.Equal(t, attrs["code.function.name"], attrs["code.function.value"])
+	}
+
+	assertResolved(doc["attributes"].(map[string]any))
+	assertResolved(doc["events"].([]any)[0].(map[string]any)["attributes"].(map[string]any))
+	assertResolved(doc["links"].([]any)[0].(map[string]any)["attributes"].(map[string]any))
+}
