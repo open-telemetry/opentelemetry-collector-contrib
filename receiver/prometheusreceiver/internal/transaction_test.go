@@ -2344,3 +2344,68 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "connection refused", errField)
 }
+
+func TestExtraInternalLabelsSeriesRefAndZeroAllocFastPath(t *testing.T) {
+	t.Run("extra __custom__ label is excluded from series ref hash without duplicating base exclusions", func(t *testing.T) {
+		lsA := labels.FromStrings(
+			model.MetricNameLabel, "metric_x",
+			model.JobLabel, "test",
+			model.InstanceLabel, "localhost:8080",
+			model.SchemeLabel, "http",
+			model.MetricsPathLabel, "/metrics",
+			"__custom__", "val_a",
+			"env", "prod",
+		)
+		lsB := labels.FromStrings(
+			model.MetricNameLabel, "metric_x",
+			model.JobLabel, "test",
+			model.InstanceLabel, "localhost:8080",
+			model.SchemeLabel, "http",
+			model.MetricsPathLabel, "/metrics",
+			"__custom__", "val_b",
+			"env", "prod",
+		)
+
+		_, _, hasExtraA := getScopeID(lsA)
+		_, _, hasExtraB := getScopeID(lsB)
+		require.True(t, hasExtraA)
+		require.True(t, hasExtraB)
+
+		exclusions := getSortedNotUsefulLabelsForSeries(pmetric.MetricTypeSum, lsA)
+		seen := make(map[string]int, len(exclusions))
+		for _, name := range exclusions {
+			seen[name]++
+			require.Equal(t, 1, seen[name], "duplicate exclusion entry for %q", name)
+		}
+		require.Contains(t, seen, "__custom__")
+
+		tr := newTxn(t, false)
+		refA := tr.getSeriesRef(lsA, pmetric.MetricTypeSum, hasExtraA)
+		refB := tr.getSeriesRef(lsB, pmetric.MetricTypeSum, hasExtraB)
+		require.Equal(t, refA, refB, "series differing only in extra __custom__ label should have identical series ref")
+	})
+
+	t.Run("standard series keeps hasScopeLabels false and 0 allocs on fast path", func(t *testing.T) {
+		stdLabels := labels.FromStrings(
+			model.MetricNameLabel, "metric_x",
+			model.JobLabel, "test",
+			model.InstanceLabel, "localhost:8080",
+			model.SchemeLabel, "http",
+			model.MetricsPathLabel, "/metrics",
+			"env", "prod",
+		)
+
+		_, _, hasScopeLabels := getScopeID(stdLabels)
+		require.False(t, hasScopeLabels, "standard internal labels must not trigger slow path")
+
+		tr := newTxn(t, false)
+		// Warm up tr.bufBytes buffer once, then assert 0 heap allocations per call.
+		_ = tr.getSeriesRef(stdLabels, pmetric.MetricTypeSum, hasScopeLabels)
+		allocs := testing.AllocsPerRun(100, func() {
+			_ = getSortedNotUsefulLabels(pmetric.MetricTypeSum)
+			_ = getSortedNotUsefulLabelsForSeries(pmetric.MetricTypeSum, stdLabels)
+			_ = tr.getSeriesRef(stdLabels, pmetric.MetricTypeSum, hasScopeLabels)
+		})
+		require.Zero(t, allocs)
+	})
+}

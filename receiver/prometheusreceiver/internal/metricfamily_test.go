@@ -1605,3 +1605,107 @@ func TestPopulateAttributes(t *testing.T) {
 		})
 	}
 }
+
+func TestInternalLabelsExcludedAcrossMetricTypes(t *testing.T) {
+	baseLabels := func(metricName string, extras ...string) labels.Labels {
+		kv := []string{
+			model.MetricNameLabel, metricName,
+			model.JobLabel, "api",
+			model.InstanceLabel, "localhost:8080",
+			model.SchemeLabel, "https",
+			model.MetricsPathLabel, "/custom/metrics",
+			"__meta_k8s_pod", "pod-123",
+			"__otel_scope_foo", "bar",
+			"env", "prod",
+		}
+		kv = append(kv, extras...)
+		return labels.FromStrings(kv...)
+	}
+
+	wantAttrs := map[string]any{"env": "prod"}
+
+	t.Run("Number", func(t *testing.T) {
+		mf := newMetricFamily("counter", mc, zap.NewNop(), false, false)
+		ls := baseLabels("counter")
+		sRef, _ := getSeriesRefWithoutScopeLabels(nil, ls, mf.mtype)
+		require.NoError(t, mf.addSeries(sRef, "counter", ls, 11, 42))
+
+		sl := pmetric.NewMetricSlice()
+		mf.appendMetric(sl, false)
+		require.Equal(t, 1, sl.Len())
+		dp := sl.At(0).Sum().DataPoints().At(0)
+		require.Equal(t, wantAttrs, dp.Attributes().AsRaw())
+	})
+
+	t.Run("ClassicHistogram", func(t *testing.T) {
+		mf := newMetricFamily("histogram", mc, zap.NewNop(), false, false)
+		for _, sample := range []struct {
+			metric string
+			val    float64
+			extras []string
+		}{
+			{metric: "histogram_count", val: 3},
+			{metric: "histogram_sum", val: 5.5},
+			{metric: "histogram_bucket", val: 2, extras: []string{model.BucketLabel, "1.0"}},
+			{metric: "histogram_bucket", val: 3, extras: []string{model.BucketLabel, "+Inf"}},
+		} {
+			ls := baseLabels(sample.metric, sample.extras...)
+			sRef, _ := getSeriesRefWithoutScopeLabels(nil, ls, mf.mtype)
+			require.NoError(t, mf.addSeries(sRef, sample.metric, ls, 11, sample.val))
+		}
+
+		sl := pmetric.NewMetricSlice()
+		mf.appendMetric(sl, false)
+		require.Equal(t, 1, sl.Len())
+		dp := sl.At(0).Histogram().DataPoints().At(0)
+		require.Equal(t, wantAttrs, dp.Attributes().AsRaw())
+	})
+
+	t.Run("ExponentialHistogram", func(t *testing.T) {
+		mf := newMetricFamily("histogram", mc, zap.NewNop(), true, false)
+		ls := baseLabels("histogram")
+		sRef, _ := getSeriesRefWithoutScopeLabels(nil, ls, mf.mtype)
+		h := &histogram.Histogram{
+			Schema:        1,
+			Count:         3,
+			Sum:           5.5,
+			ZeroThreshold: 0.001,
+			ZeroCount:     1,
+			PositiveSpans: []histogram.Span{{Offset: 0, Length: 1}},
+			PositiveBuckets: []int64{
+				2,
+			},
+		}
+		require.NoError(t, mf.addExponentialHistogramSeries(sRef, "histogram", ls, 11, h, nil))
+
+		sl := pmetric.NewMetricSlice()
+		mf.appendMetric(sl, false)
+		require.Equal(t, 1, sl.Len())
+		dp := sl.At(0).ExponentialHistogram().DataPoints().At(0)
+		require.Equal(t, wantAttrs, dp.Attributes().AsRaw())
+	})
+
+	t.Run("Summary", func(t *testing.T) {
+		mf := newMetricFamily("summary", mc, zap.NewNop(), false, false)
+		for _, sample := range []struct {
+			metric string
+			val    float64
+			extras []string
+		}{
+			{metric: "summary_count", val: 10},
+			{metric: "summary_sum", val: 25.0},
+			{metric: "summary", val: 2.5, extras: []string{model.QuantileLabel, "0.5"}},
+			{metric: "summary", val: 9.0, extras: []string{model.QuantileLabel, "0.99"}},
+		} {
+			ls := baseLabels(sample.metric, sample.extras...)
+			sRef, _ := getSeriesRefWithoutScopeLabels(nil, ls, mf.mtype)
+			require.NoError(t, mf.addSeries(sRef, sample.metric, ls, 11, sample.val))
+		}
+
+		sl := pmetric.NewMetricSlice()
+		mf.appendMetric(sl, false)
+		require.Equal(t, 1, sl.Len())
+		dp := sl.At(0).Summary().DataPoints().At(0)
+		require.Equal(t, wantAttrs, dp.Attributes().AsRaw())
+	})
+}

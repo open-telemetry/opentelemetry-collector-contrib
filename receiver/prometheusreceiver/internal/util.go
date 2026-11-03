@@ -42,8 +42,8 @@ var (
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
 
 	notUsefulLabelsOther = sortString([]string{
-		model.InstanceLabel,
-		model.JobLabel,
+		model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel,
+		model.MetricsPathLabel, model.JobLabel,
 	})
 	notUsefulLabelsHistogram = sortString(append(notUsefulLabelsOther, model.BucketLabel))
 	notUsefulLabelsSummary   = sortString(append(notUsefulLabelsOther, model.QuantileLabel))
@@ -52,6 +52,13 @@ var (
 func sortString(strs []string) []string {
 	sort.Strings(strs)
 	return strs
+}
+
+func isExtraInternalLabel(name string) bool {
+	return strings.HasPrefix(name, "__") &&
+		name != model.MetricNameLabel &&
+		name != model.SchemeLabel &&
+		name != model.MetricsPathLabel
 }
 
 func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
@@ -69,7 +76,7 @@ func getSortedNotUsefulLabelsForSeries(mType pmetric.MetricType, ls labels.Label
 	base := getSortedNotUsefulLabels(mType)
 	var exclusions []string
 	ls.Range(func(l labels.Label) {
-		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) || strings.HasPrefix(l.Name, "__") {
+		if strings.HasPrefix(l.Name, prometheus.ScopeLabelPrefix) || isExtraInternalLabel(l.Name) {
 			if exclusions == nil {
 				exclusions = make([]string, 0, len(base)+ls.Len())
 				exclusions = append(exclusions, base...)

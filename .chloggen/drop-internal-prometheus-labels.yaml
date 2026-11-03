@@ -15,5 +15,4 @@ issues: [52623]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  This allows the receiver to properly exclude all standard internal prometheus labels that may be present during translation, as opposed to only a limited subset.
+subtext:

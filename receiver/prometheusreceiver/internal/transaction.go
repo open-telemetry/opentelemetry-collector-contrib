@@ -491,8 +491,9 @@ func getScopeID(ls labels.Labels) (scopeID, pcommon.Map, bool) {
 	var attrs pcommon.Map
 	var hasAttrs, hasScopeLabels bool
 	ls.Range(func(lbl labels.Label) {
-		if strings.HasPrefix(lbl.Name, "__") {
+		if isExtraInternalLabel(lbl.Name) {
 			hasScopeLabels = true
+			return
 		}
 		if !strings.HasPrefix(lbl.Name, prometheus.ScopeLabelPrefix) {
 			return
