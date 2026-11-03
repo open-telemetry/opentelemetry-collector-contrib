@@ -66,43 +66,39 @@ type Observer struct {
 
 // NewPull creates a pull-mode observer.
 func NewPull(reg *FactoryRegistry, config PullConfig, logger *zap.Logger, handler func(*unstructured.UnstructuredList)) (*Observer, error) {
-	factories, err := factoriesForConfig(reg, config.Config)
+	infs, err := informersForConfig(reg, config.Config)
 	if err != nil {
 		return nil, err
 	}
-	if len(factories) == 0 {
+	if len(infs) == 0 {
 		return nil, errors.New("at least one factory is required")
 	}
-	o := &Observer{
-		infs:             make(map[namespacedFactory]cache.SharedIndexInformer, len(factories)),
+	return &Observer{
+		infs:             infs,
 		base:             config.Config,
 		cacheSyncTimeout: config.CacheSyncTimeout,
 		stopCh:           reg.StopCh(),
 		pullHandler:      handler,
 		interval:         config.Interval,
 		logger:           logger,
-	}
-	for _, nf := range factories {
-		o.infs[nf] = nf.factory.ForResource(config.Gvr).Informer()
-	}
-	return o, nil
+	}, nil
 }
 
 // NewWatch creates a watch-mode observer.
 func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, handler func(*apiWatch.Event)) (*Observer, error) {
-	factories, err := factoriesForConfig(reg, config.Config)
+	infs, err := informersForConfig(reg, config.Config)
 	if err != nil {
 		return nil, err
 	}
-	if len(factories) == 0 {
+	if len(infs) == 0 {
 		return nil, errors.New("at least one factory is required")
 	}
 	if config.Exclude[apiWatch.Bookmark] {
 		logger.Warn("exclude_watch_type: BOOKMARK has no effect with informer-based watching; informers never surface BOOKMARK events")
 	}
 	o := &Observer{
-		infs:             make(map[namespacedFactory]cache.SharedIndexInformer, len(factories)),
-		handlerRegs:      make(map[namespacedFactory]cache.ResourceEventHandlerRegistration, len(factories)),
+		infs:             infs,
+		handlerRegs:      make(map[namespacedFactory]cache.ResourceEventHandlerRegistration, len(infs)),
 		base:             config.Config,
 		cacheSyncTimeout: config.CacheSyncTimeout,
 		stopCh:           reg.StopCh(),
@@ -114,32 +110,24 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 	if config.StorageClient != nil {
 		o.cp = checkpoint.New(config.StorageClient, logger)
 	}
-	for _, nf := range factories {
-		o.infs[nf] = nf.factory.ForResource(config.Gvr).Informer()
-	}
 	return o, nil
 }
 
-// factoriesForConfig resolves one factory per configured namespace from the registry.
-func factoriesForConfig(reg *FactoryRegistry, config k8sinventory.Config) ([]namespacedFactory, error) {
+// informersForConfig resolves one informer per configured namespace from the registry.
+func informersForConfig(reg *FactoryRegistry, config k8sinventory.Config) (map[namespacedFactory]cache.SharedIndexInformer, error) {
 	namespaces := config.Namespaces
 	if len(namespaces) == 0 {
 		namespaces = []string{""}
 	}
-	factories := make([]namespacedFactory, 0, len(namespaces))
-	seen := make(map[string]struct{}, len(namespaces))
+	infs := make(map[namespacedFactory]cache.SharedIndexInformer, len(namespaces))
 	for _, ns := range namespaces {
-		if _, ok := seen[ns]; ok {
-			continue
-		}
-		seen[ns] = struct{}{}
-		f, err := reg.Get(ns, config.LabelSelector, config.FieldSelector)
+		f, inf, err := reg.Informer(ns, config.LabelSelector, config.FieldSelector, config.Gvr)
 		if err != nil {
 			return nil, err
 		}
-		factories = append(factories, namespacedFactory{namespace: ns, factory: f})
+		infs[namespacedFactory{namespace: ns, factory: f}] = inf
 	}
-	return factories, nil
+	return infs, nil
 }
 
 // Start starts the observer's factories, waits for cache sync, then launches workers.

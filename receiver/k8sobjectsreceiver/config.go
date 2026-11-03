@@ -66,6 +66,7 @@ type Config struct {
 	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
 	IncludeInitialState bool                `mapstructure:"include_initial_state"`
 	CacheSyncTimeout    time.Duration       `mapstructure:"cache_sync_timeout"`
+	DropManagedFields   bool                `mapstructure:"drop_managed_fields"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
