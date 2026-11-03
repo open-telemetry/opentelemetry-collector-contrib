@@ -233,8 +233,12 @@ func WriteProfiles(tb testing.TB, filePath string, profiles pprofile.Profiles) e
 // WriteProfilesToFile writes a pprofile.Profiles to the specified file in YAML format.
 // Prefer using WriteProfiles in tests.
 func WriteProfilesToFile(filePath string, profiles pprofile.Profiles) error {
+	// MarshalProfiles converts strings to dictionary references in place,
+	// so marshal a copy to avoid mutating the caller's profiles.
+	profilesCopy := pprofile.NewProfiles()
+	profiles.CopyTo(profilesCopy)
 	unmarshaler := &pprofile.JSONMarshaler{}
-	fileBytes, err := unmarshaler.MarshalProfiles(profiles)
+	fileBytes, err := unmarshaler.MarshalProfiles(profilesCopy)
 	if err != nil {
 		return err
 	}
