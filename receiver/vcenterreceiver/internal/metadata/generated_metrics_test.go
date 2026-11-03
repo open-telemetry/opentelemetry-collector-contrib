@@ -232,6 +232,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, 1, AttributeVcenterAlarmStateRed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatastoreAlarmCountDataPoint(ts, 3, AttributeVcenterAlarmStateYellow)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatastoreAlarmCountDataPoint(ts+1, 3, AttributeVcenterAlarmStateYellow)
+				assert.Equal(t, 2, mb.metricVcenterDatastoreAlarmCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -250,18 +253,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterDatastoreMaintenanceStatusDataPoint(ts, 1, AttributeVcenterDatastoreMaintenanceStateNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterDatastoreMaintenanceStatusDataPoint(ts, 3, AttributeVcenterDatastoreMaintenanceStateEnteringMaintenance)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterDatastoreMaintenanceStatusDataPoint(ts+1, 3, AttributeVcenterDatastoreMaintenanceStateEnteringMaintenance)
+				assert.Equal(t, 2, mb.metricVcenterDatastoreMaintenanceStatus.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordVcenterHostAlarmCountDataPoint(ts, 1, AttributeVcenterAlarmStateRed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostAlarmCountDataPoint(ts, 3, AttributeVcenterAlarmStateYellow)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostAlarmCountDataPoint(ts+1, 3, AttributeVcenterAlarmStateYellow)
+				assert.Equal(t, 2, mb.metricVcenterHostAlarmCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordVcenterHostConnectionStatusDataPoint(ts, 1, AttributeVcenterHostConnectionStateConnected)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostConnectionStatusDataPoint(ts, 3, AttributeVcenterHostConnectionStateDisconnected)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostConnectionStatusDataPoint(ts+1, 3, AttributeVcenterHostConnectionStateDisconnected)
+				assert.Equal(t, 2, mb.metricVcenterHostConnectionStatus.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -376,6 +388,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterHostPowerStatusDataPoint(ts, 1, AttributeHostPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterHostPowerStatusDataPoint(ts, 3, AttributeHostPowerStateOff)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterHostPowerStatusDataPoint(ts+1, 3, AttributeHostPowerStateOff)
+				assert.Equal(t, 2, mb.metricVcenterHostPowerStatus.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -580,6 +595,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterVMPowerStatusDataPoint(ts, 1, AttributeVMCountPowerStateOn)
 			if tt.name == "reaggregate_set" {
 				mb.RecordVcenterVMPowerStatusDataPoint(ts, 3, AttributeVMCountPowerStateOff)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMPowerStatusDataPoint(ts+1, 3, AttributeVMCountPowerStateOff)
+				assert.Equal(t, 2, mb.metricVcenterVMPowerStatus.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1254,7 +1272,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["vcenter.datastore.alarm.count"], "Found a duplicate in the metrics slice: vcenter.datastore.alarm.count")
 						validatedMetrics["vcenter.datastore.alarm.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of triggered alarms on the datastore.", mi.Description())
 						assert.Equal(t, "{alarms}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1356,7 +1376,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["vcenter.datastore.maintenance.status"], "Found a duplicate in the metrics slice: vcenter.datastore.maintenance.status")
 						validatedMetrics["vcenter.datastore.maintenance.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current maintenance status of the datastore.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1400,7 +1422,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["vcenter.host.alarm.count"], "Found a duplicate in the metrics slice: vcenter.host.alarm.count")
 						validatedMetrics["vcenter.host.alarm.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of triggered alarms on the host.", mi.Description())
 						assert.Equal(t, "{alarms}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1444,7 +1468,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["vcenter.host.connection.status"], "Found a duplicate in the metrics slice: vcenter.host.connection.status")
 						validatedMetrics["vcenter.host.connection.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current connection status of the host.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2034,7 +2060,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["vcenter.host.power.status"], "Found a duplicate in the metrics slice: vcenter.host.power.status")
 						validatedMetrics["vcenter.host.power.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current power state of the host.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -3053,7 +3081,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["vcenter.vm.power.status"], "Found a duplicate in the metrics slice: vcenter.vm.power.status")
 						validatedMetrics["vcenter.vm.power.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current power state of the virtual machine.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
