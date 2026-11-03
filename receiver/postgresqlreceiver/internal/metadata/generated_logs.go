@@ -79,7 +79,7 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	dp.Attributes().PutInt("postgresql.pid", postgresqlPidAttributeValue)
 	dp.Attributes().PutStr("postgresql.backend.connection.start", postgresqlBackendConnectionStartAttributeValue)
 	dp.Attributes().PutStr("postgresql.application_name", postgresqlApplicationNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.backend_type", postgresqlBackendTypeAttributeValue)
+	dp.Attributes().PutStr("postgresql.backend.type", postgresqlBackendTypeAttributeValue)
 	dp.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
 	dp.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
 	dp.Attributes().PutStr("postgresql.client_hostname", postgresqlClientHostnameAttributeValue)
