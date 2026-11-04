@@ -6,7 +6,7 @@ exclude github.com/knadh/koanf v1.5.0
 
 require (
 	cloud.google.com/go/auth v0.24.1-0.20261001053825-dbc26066f70a
-	cloud.google.com/go/auth/oauth2adapt v0.3.0
+	cloud.google.com/go/auth/oauth2adapt v0.3.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
@@ -30,7 +30,7 @@ require (
 	github.com/google/s2a-go v0.1.11 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.23 // indirect
-	github.com/googleapis/gax-go/v2 v2.26.2 // indirect
+	github.com/googleapis/gax-go/v2 v2.27.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect

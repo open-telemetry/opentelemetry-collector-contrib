@@ -137,10 +137,10 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Skip known compliance gaps:
-	// - samples_sorted: receiver/prometheus deduplicates multiple samples for the same series in one scrape.
-	// - start_timestamp_*: receiver/prometheus truncates float64 _created timestamps by up to 1ms.
-	// - float_histogram: pmetric exponential histograms store bucket counts as uint64.
-	// - type_info_and_stateset: OpenTelemetry does not support INFO/STATESET, those are gauges.
+	// - samples_sorted (MUST): receiver/prometheus deduplicates multiple samples for the same series in one scrape.
+	// - start_timestamp_* (SHOULD): receiver/prometheus truncates float64 _created timestamps by up to 1ms.
+	// - float_histogram (MUST): pmetric exponential histograms store bucket counts as uint64.
+	// - type_info_and_stateset (SHOULD): OpenTelemetry does not support INFO/STATESET, those are gauges.
 	skip := strings.Join([]string{
 		"TestRemoteWriteSender/otelcol-contrib/samples_sorted",
 		"TestRemoteWriteSender/otelcol-contrib/samples/rw2/start_timestamp_for_.*",
