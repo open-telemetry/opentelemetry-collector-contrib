@@ -164,7 +164,7 @@ internal/otelarrow/                                              @open-telemetry
 internal/pdatautil/                                              @open-telemetry/collector-contrib-approvers
 internal/rabbitmq/                                               @open-telemetry/collector-contrib-approvers @atoulme
 internal/sharedcomponent/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-internal/splunk/                                                 @open-telemetry/collector-contrib-approvers @dmitryax
+internal/splunk/                                                 @open-telemetry/collector-contrib-approvers @crobert-1
 internal/sqlquery/                                               @open-telemetry/collector-contrib-approvers @crobert-1
 internal/tools/                                                  @open-telemetry/collector-contrib-approvers
 pkg/batchperresourceattr/                                        @open-telemetry/collector-contrib-approvers @atoulme
@@ -197,7 +197,7 @@ pkg/translator/loki/                                             @open-telemetry
 pkg/translator/pprof/                                            @open-telemetry/collector-contrib-approvers @florianl
 pkg/translator/prometheus/                                       @open-telemetry/collector-contrib-approvers @dashpole @bertysentry @ArthurSens
 pkg/translator/prometheusremotewrite/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
-pkg/translator/signalfx/                                         @open-telemetry/collector-contrib-approvers @dmitryax
+pkg/translator/signalfx/                                         @open-telemetry/collector-contrib-approvers @dloucasfx @crobert-1
 pkg/translator/skywalking/                                       @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/splunk/                                           @open-telemetry/collector-contrib-approvers @atoulme @crobert-1
 pkg/translator/zipkin/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
