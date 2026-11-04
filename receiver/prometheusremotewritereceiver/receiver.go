@@ -238,11 +238,13 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	stats.SetHeaders(w)
 	if err != nil {
+		// A refused request is not passed on, so nothing in it was written.
+		promremote.WriteResponseStats{}.SetHeaders(w)
 		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
 		return
 	}
+	stats.SetHeaders(w)
 
 	// Return early if metric count is 0.
 	if m.MetricCount() == 0 {

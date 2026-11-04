@@ -5121,6 +5121,68 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 	}
 }
 
+func TestRefusedRequestReportsNothingWritten(t *testing.T) {
+	// A refused request is not passed on, so the Written headers report zero, including for the
+	// series in it that translated.
+	gauge := writev2.TimeSeries{
+		Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+		LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+		Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+	}
+	for _, tc := range []struct {
+		name    string
+		refused writev2.TimeSeries
+	}{
+		{
+			name: "a histogram Prometheus refuses",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      1,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{2, -5},
+				}},
+			},
+		},
+		{
+			name: "a series without a metric name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_gauge", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"test_histogram", // 7
+				},
+				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
+			})
+			defer resp.Body.Close()
+
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			for _, header := range []string{
+				"X-Prometheus-Remote-Write-Samples-Written",
+				"X-Prometheus-Remote-Write-Histograms-Written",
+				"X-Prometheus-Remote-Write-Exemplars-Written",
+			} {
+				assert.Equal(t, "0", resp.Header.Get(header), header)
+			}
+			assert.Empty(t, sink.AllMetrics())
+		})
+	}
+}
+
 func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
 	// Count is derived from the buckets for both schemas, so a count that disagrees with them is
 	// replaced rather than refused. Prometheus sends one when an observation of NaN raised the
