@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
-	github.com/cenkalti/backoff/v7 v7.0.2
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
 	github.com/stretchr/testify v1.12.1
