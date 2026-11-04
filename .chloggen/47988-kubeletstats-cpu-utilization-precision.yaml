@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/kubeletstats
+component: receiver/kubelet_stats
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `receiver.kubelet_stats.cpuUtilizationPrecision` alpha feature gate that removes excessive float64 precision from pod and container CPU utilization metrics.
@@ -18,7 +18,7 @@ issues: [47988]
 subtext: |
   When enabled, `k8s.{pod,container}.cpu.node.utilization`, `k8s.{pod,container}.cpu_limit_utilization`
   and `k8s.{pod,container}.cpu_request_utilization` are computed from integer nanocore values and rounded
-  to the significant digits justified by the inputs, matching the approach used by the hostmetrics receiver.
+  to the significant digits justified by the inputs.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your entry with the type `refactor` or `chore`.
