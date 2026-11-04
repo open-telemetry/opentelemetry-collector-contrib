@@ -126,6 +126,9 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for routingID, lds := range batches {
 		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
+			for exp := range logsByExporter {
+				exp.consumeWG.Done()
+			}
 			return err
 		}
 
