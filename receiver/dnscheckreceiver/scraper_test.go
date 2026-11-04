@@ -124,6 +124,67 @@ func TestScrapeSuccessNonAddressRecordType(t *testing.T) {
 	require.False(t, ok, "dns.resolved.all.ips must be absent for non-address record types")
 }
 
+func TestScrapeTruncatedResponse(t *testing.T) {
+	tests := []struct {
+		name   string
+		answer string
+	}{
+		{name: "empty answer"},
+		{name: "partial answer", answer: "example.com. 60 IN A 192.0.2.42"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+			require.NoError(t, err)
+
+			var answer dns.RR
+			if tt.answer != "" {
+				answer, err = dns.NewRR(tt.answer)
+				require.NoError(t, err)
+			}
+
+			mux := dns.NewServeMux()
+			mux.HandleFunc("example.com.", func(w dns.ResponseWriter, r *dns.Msg) {
+				m := new(dns.Msg)
+				m.SetReply(r)
+				m.Truncated = true
+				if answer != nil {
+					m.Answer = append(m.Answer, answer)
+				}
+				_ = w.WriteMsg(m)
+			})
+
+			dnsServer := &dns.Server{PacketConn: pc, Handler: mux}
+			started := make(chan struct{})
+			dnsServer.NotifyStartedFunc = func() { close(started) }
+			go func() { _ = dnsServer.ActivateAndServe() }()
+			t.Cleanup(func() { _ = dnsServer.Shutdown() })
+			<-started
+
+			cfg := &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				DNSServers:           []DNSServerConfig{{Endpoint: pc.LocalAddr().String(), Timeout: 2 * time.Second}},
+				Hostnames:            []HostnameConfig{{Name: "example.com", RecordType: "A"}},
+			}
+			s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
+			metrics, err := s.scrape(t.Context())
+			require.NoError(t, err)
+
+			dp := findMetric(t, metrics, "dnscheck.status").Sum().DataPoints().At(0)
+			require.Equal(t, int64(0), dp.IntValue())
+
+			rcode, ok := dp.Attributes().Get("dns.rcode")
+			require.True(t, ok)
+			require.Equal(t, int64(dns.RcodeSuccess), rcode.Int())
+
+			_, hasIP := dp.Attributes().Get("dns.resolved.ip")
+			_, hasIPs := dp.Attributes().Get("dns.resolved.all.ips")
+			require.False(t, hasIP)
+			require.False(t, hasIPs)
+		})
+	}
+}
+
 func TestScrapeNXDOMAIN(t *testing.T) {
 	addr := startTestDNSServer(t)
 
