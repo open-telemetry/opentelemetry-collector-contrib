@@ -59,7 +59,18 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 
 	// Transforms are monotonic, so they preserve both the sort above and the
 	// classification below; only the spread the detectors measure changes.
+	var zeroIndices []int
 	if cfg.DurationTransform == DurationTransformLog {
+		// Zero durations sort first and have no logarithm. They are classified as
+		// normal and left out of the spread and the median the minimum threshold
+		// is relative to, both of which the floor would otherwise set.
+		for len(values) > 0 && values[0].value <= 0 {
+			zeroIndices = append(zeroIndices, values[0].index)
+			values = values[1:]
+		}
+		if len(zeroIndices) > 0 && len(values) > 0 {
+			minThreshold = medianValue(values) * (1 + cfg.MinOutlierThresholdPercent)
+		}
 		for i := range values {
 			values[i].value = logTransform(values[i].value)
 		}
@@ -74,12 +85,15 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 
 	var outlierIndices, normalIndices []int
 
-	switch method {
-	case OutlierMethodMAD:
-		outlierIndices, normalIndices = detectOutliersMAD(values, cfg.MADMultiplier, minThreshold)
-	default: // IQR
-		outlierIndices, normalIndices = detectOutliersIQR(values, cfg.IQRMultiplier, minThreshold)
+	if len(values) > 0 {
+		switch method {
+		case OutlierMethodMAD:
+			outlierIndices, normalIndices = detectOutliersMAD(values, cfg.MADMultiplier, minThreshold)
+		default: // IQR
+			outlierIndices, normalIndices = detectOutliersIQR(values, cfg.IQRMultiplier, minThreshold)
+		}
 	}
+	normalIndices = append(normalIndices, zeroIndices...)
 
 	hasOutliers := len(outlierIndices) > 0
 
