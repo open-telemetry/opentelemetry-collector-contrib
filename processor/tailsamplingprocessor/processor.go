@@ -1017,24 +1017,17 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-// splitResourceSpansByTrace moves the data of rss into one ResourceSpans per
-// trace ID. rss is consumed: it must not be used afterwards. Every returned
-// ResourceSpans owns its data exclusively, so downstream code can mutate it.
-//
-// Data is moved wherever the split allows it and copied only when several
-// traces share it:
-//   - If rss holds a single trace, it is moved as a whole.
-//   - A scope that holds a single trace is moved as a whole, spans included.
-//   - Otherwise spans are moved one by one. The resource and scopes are moved
-//     into the first trace that needs them and copied into the others.
-//
-// We walk scopes in order and never go back, so lastScope is enough to open
+// splitResourceSpansByTrace moves rss into one exclusively owned ResourceSpans
+// per trace ID, copying the resource and scopes only when traces share them.
+// rss is consumed. Scopes are walked in order, so lastScope is enough to open
 // dest scopes in first-seen order.
 func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 	if batch, ok := moveSingleTrace(rss); ok {
 		return []traceBatch{batch}
 	}
 
+	// Past this point rss is only consumed if it holds a span, because the
+	// resource is moved when the first builder is created.
 	srcScopes := rss.ScopeSpans()
 	type builder struct {
 		rs        ptrace.ResourceSpans
