@@ -27,7 +27,8 @@ The following settings are available:
 - `endpoint` (default = `localhost:9090`): The `host:port` of the target to
 scrape. Do not include a scheme or a path: the scheme is selected from the `tls`
 settings (see below) and the path is set with `metrics_path`. An endpoint such
-as `http://host:9090` is rejected at configuration validation.
+as `http://host:9090` is rejected at configuration validation with a clear
+error, instead of failing collector start with "is not a valid hostname".
 - `collection_interval` (default = `10s`): The interval at which the target is
 scraped.
 - `timeout` (default = `0`): The scrape timeout. It is capped at
