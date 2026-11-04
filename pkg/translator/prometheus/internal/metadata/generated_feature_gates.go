@@ -6,19 +6,19 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.translator.prometheus.CorrectUCUMUnits",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Use spec-compliant UCUM unit mappings."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52480"),
-	featuregate.WithRegisterFromVersion("v0.165.0"),
-)
-
 var PkgPrometheusKeepIdentifyingResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.prometheus.KeepIdentifyingResourceAttributes",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Preserve service.name, service.namespace, and service.instance.id as labels on target_info in addition to job and instance."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48890"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
+var PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.translator.prometheus.CorrectUCUMUnits",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Use spec-compliant UCUM unit mappings."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52480"),
 	featuregate.WithRegisterFromVersion("v0.165.0"),
 )
 
