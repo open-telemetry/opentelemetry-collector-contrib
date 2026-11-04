@@ -309,12 +309,11 @@ func (e *traceExporterImp) exportToBackend(ctx context.Context, exp *wrappedExpo
 // exportBatches sends each pre-routed batch to its backend. When any backend fails with a
 // retryable error, it returns a consumererror.Traces carrying only the retryable failed data and
 // causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
-// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// The permanently rejected data is dropped. When every failure is permanent, it
 // returns a permanent error wrapping a consumererror.Traces with the failed data.
 func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTraces) error {
 	var retryableErrs, permanentErrs []error
 	var retryable, permanent []ptrace.Traces
-	var permanentExps []*wrappedExporter
 	for exp, td := range batches {
 		err := e.exportToBackend(ctx, exp, td)
 		if err == nil {
@@ -324,7 +323,6 @@ func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTr
 		if consumererror.IsPermanent(err) {
 			permanentErrs = append(permanentErrs, err)
 			permanent = append(permanent, failed)
-			permanentExps = append(permanentExps, exp)
 		} else {
 			retryableErrs = append(retryableErrs, err)
 			retryable = append(retryable, failed)
@@ -333,12 +331,6 @@ func (e *traceExporterImp) exportBatches(ctx context.Context, batches exporterTr
 	if len(retryableErrs) > 0 {
 		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
 		// searches the whole error tree and would stop the retry of the retryable data.
-		for i, err := range permanentErrs {
-			e.logger.Warn("dropping traces rejected permanently by backend, retrying the remaining failed traces",
-				zap.String("endpoint", permanentExps[i].endpoint),
-				zap.Int("spans", permanent[i].SpanCount()),
-				zap.Error(err))
-		}
 		return consumererror.NewTraces(errors.Join(retryableErrs...), copyFailedTraces(retryable))
 	}
 	if len(permanentErrs) > 0 {

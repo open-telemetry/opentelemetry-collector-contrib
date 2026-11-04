@@ -126,17 +126,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		batches = splitMetricsByAttributes(md, e.routingAttrs)
 	}
 
-	metricsByExporter, err := groupMetricsByExporter(batches, e.loadBalancer.exporterAndEndpoint)
-	if err != nil {
-		return err
-	}
-	return e.exportBatches(ctx, metricsByExporter)
-}
-
-// groupMetricsByExporter resolves the backend for each routed batch and merges batches that
-// share a backend, adding one consumeWG count per distinct backend.
-func groupMetricsByExporter(batches map[string]pmetric.Metrics, resolve func([]byte) (*wrappedExporter, string, error)) (exporterMetrics, error) {
-	// Assign each batch to an exporter, and merge as we go. A Merger (as
+	// Now assign each batch to an exporter, and merge as we go. A Merger (as
 	// opposed to repeated metrics.Merge calls) caches the identities of the
 	// accumulated data, so merging N batches costs O(N) identity computations
 	// instead of O(N^2) — with per-stream routing keys N can easily be in the
@@ -144,14 +134,9 @@ func groupMetricsByExporter(batches map[string]pmetric.Metrics, resolve func([]b
 	mergersByExporter := map[*wrappedExporter]*metrics.Merger{}
 
 	for routingID, mds := range batches {
-		exp, _, err := resolve([]byte(routingID))
+		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
-			// Release the consumeWG counts already added for backends collected so far;
-			// otherwise Shutdown's consumeWG.Wait() would hang on the skipped Done() calls.
-			for exp := range mergersByExporter {
-				exp.consumeWG.Done()
-			}
-			return nil, err
+			return err
 		}
 
 		merger, ok := mergersByExporter[exp]
@@ -169,7 +154,7 @@ func groupMetricsByExporter(batches map[string]pmetric.Metrics, resolve func([]b
 		metricsByExporter[exp] = merger.Metrics()
 	}
 
-	return metricsByExporter, nil
+	return e.exportBatches(ctx, metricsByExporter)
 }
 
 // exportToBackend sends md to one backend, records per-backend telemetry, and signals the
@@ -192,12 +177,11 @@ func (e *metricExporterImp) exportToBackend(ctx context.Context, exp *wrappedExp
 // exportBatches sends each pre-routed batch to its backend. When any backend fails with a
 // retryable error, it returns a consumererror.Metrics carrying only the retryable failed data and
 // causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
-// The permanently rejected data is logged and dropped. When every failure is permanent, it
+// The permanently rejected data is dropped. When every failure is permanent, it
 // returns a permanent error wrapping a consumererror.Metrics with the failed data.
 func (e *metricExporterImp) exportBatches(ctx context.Context, batches exporterMetrics) error {
 	var retryableErrs, permanentErrs []error
 	var retryable, permanent []pmetric.Metrics
-	var permanentExps []*wrappedExporter
 	for exp, mds := range batches {
 		err := e.exportToBackend(ctx, exp, mds)
 		if err == nil {
@@ -207,7 +191,6 @@ func (e *metricExporterImp) exportBatches(ctx context.Context, batches exporterM
 		if consumererror.IsPermanent(err) {
 			permanentErrs = append(permanentErrs, err)
 			permanent = append(permanent, failed)
-			permanentExps = append(permanentExps, exp)
 		} else {
 			retryableErrs = append(retryableErrs, err)
 			retryable = append(retryable, failed)
@@ -216,12 +199,6 @@ func (e *metricExporterImp) exportBatches(ctx context.Context, batches exporterM
 	if len(retryableErrs) > 0 {
 		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
 		// searches the whole error tree and would stop the retry of the retryable data.
-		for i, err := range permanentErrs {
-			e.logger.Warn("dropping metrics rejected permanently by backend, retrying the remaining failed metrics",
-				zap.String("endpoint", permanentExps[i].endpoint),
-				zap.Int("data_points", permanent[i].DataPointCount()),
-				zap.Error(err))
-		}
 		return consumererror.NewMetrics(errors.Join(retryableErrs...), copyFailedMetrics(retryable))
 	}
 	if len(permanentErrs) > 0 {

@@ -10,8 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 )
 
 // mergeTraces concatenates two ptrace.Traces into a single ptrace.Traces.
@@ -77,9 +75,12 @@ func copyFailedLogs(failed []plog.Logs) plog.Logs {
 }
 
 func copyFailedMetrics(failed []pmetric.Metrics) pmetric.Metrics {
-	merger := metrics.NewMerger(pmetric.NewMetrics())
+	out := pmetric.NewMetrics()
 	for _, md := range failed {
-		merger.Merge(md)
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			rms.At(i).CopyTo(out.ResourceMetrics().AppendEmpty())
+		}
 	}
-	return merger.Metrics()
+	return out
 }

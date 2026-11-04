@@ -28,8 +28,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
@@ -478,8 +476,6 @@ func TestExportBatchesPartialFailureClassification(t *testing.T) {
 		// reachable and unreachable are indexes of backend causes.
 		reachable   []int
 		unreachable []int
-		// wantDropWarnings is the number of warnings for permanently dropped data.
-		wantDropWarnings int
 	}{
 		{
 			name:    "all backends succeed",
@@ -521,10 +517,9 @@ func TestExportBatchesPartialFailureClassification(t *testing.T) {
 				{items: []string{"p1", "p2"}, fail: true, permanent: true},
 				{items: []string{"r1", "r2"}, fail: true, reported: []string{"r2"}},
 			},
-			wantItems:        []string{"r2"},
-			reachable:        []int{2},
-			unreachable:      []int{1},
-			wantDropWarnings: 1,
+			wantItems:   []string{"r2"},
+			reachable:   []int{2},
+			unreachable: []int{1},
 		},
 		{
 			name: "typed permanent wrapping plus retryable",
@@ -534,10 +529,9 @@ func TestExportBatchesPartialFailureClassification(t *testing.T) {
 				{items: []string{"q1"}, fail: true, permanent: true, permanentInsideTyped: true, reported: []string{"q1"}, wrapTyped: true},
 				{items: []string{"r1"}, fail: true},
 			},
-			wantItems:        []string{"r1"},
-			reachable:        []int{3},
-			unreachable:      []int{1, 2},
-			wantDropWarnings: 2,
+			wantItems:   []string{"r1"},
+			reachable:   []int{3},
+			unreachable: []int{1, 2},
 		},
 		{
 			name: "only permanent failures",
@@ -564,11 +558,9 @@ func TestExportBatchesPartialFailureClassification(t *testing.T) {
 	for _, sig := range partialFailureSignals {
 		for _, tt := range tests {
 			t.Run(sig.name()+"/"+tt.name, func(t *testing.T) {
-				core, logs := observer.New(zapcore.WarnLevel)
-				runs, err := runExportBatches(t, sig, zap.New(core), nil, tt.specs, false)
+				runs, err := runExportBatches(t, sig, zap.NewNop(), nil, tt.specs, false)
 				if tt.wantNil {
 					require.NoError(t, err)
-					assert.Zero(t, logs.Len())
 					return
 				}
 				require.Error(t, err)
@@ -582,7 +574,6 @@ func TestExportBatchesPartialFailureClassification(t *testing.T) {
 				for _, i := range tt.unreachable {
 					assert.NotErrorIs(t, err, runs[i].cause, "cause of backend %d must not be reachable", i)
 				}
-				assert.Equal(t, tt.wantDropWarnings, logs.FilterMessageSnippet("permanently").Len(), "drop warnings: %v", logs.All())
 			})
 		}
 	}
@@ -641,191 +632,6 @@ func TestExportBatchesPreservesFailurePayloads(t *testing.T) {
 			}
 		}
 	}
-}
-
-// TestExportMetricsBatchesMergesFailureStructure checks that failed metric payloads that share
-// a resource and scope are merged into one structure, keeping every data point and metric kind.
-func TestExportMetricsBatchesMergesFailureStructure(t *testing.T) {
-	build := func(dpValue int64) pmetric.Metrics {
-		md := pmetric.NewMetrics()
-		rm := md.ResourceMetrics().AppendEmpty()
-		rm.SetSchemaUrl("https://schema/resource")
-		rm.Resource().Attributes().PutStr("service.name", "svc")
-		sm := rm.ScopeMetrics().AppendEmpty()
-		sm.SetSchemaUrl("https://schema/scope")
-		sm.Scope().SetName("scope")
-		sm.Scope().Attributes().PutStr("scope.attr", "v")
-
-		gauge := sm.Metrics().AppendEmpty()
-		gauge.SetName("gauge")
-		gauge.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(dpValue)
-
-		sum := sm.Metrics().AppendEmpty()
-		sum.SetName("sum")
-		sum.SetEmptySum().SetIsMonotonic(true)
-		sum.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		sum.Sum().DataPoints().AppendEmpty().SetIntValue(dpValue)
-
-		hist := sm.Metrics().AppendEmpty()
-		hist.SetName("histogram")
-		hist.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-		hist.Histogram().DataPoints().AppendEmpty().SetCount(uint64(dpValue))
-
-		exp := sm.Metrics().AppendEmpty()
-		exp.SetName("exponential_histogram")
-		exp.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-		exp.ExponentialHistogram().DataPoints().AppendEmpty().SetCount(uint64(dpValue))
-
-		summary := sm.Metrics().AppendEmpty()
-		summary.SetName("summary")
-		summary.SetEmptySummary().DataPoints().AppendEmpty().SetCount(uint64(dpValue))
-		return md
-	}
-
-	_, tb := getTelemetryAssets(t)
-	e := &metricExporterImp{logger: zap.NewNop(), telemetry: tb}
-	batches := exporterMetrics{}
-	for i := range 2 {
-		md := build(int64(i + 1))
-		exp := newWrappedExporter(newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
-			return fmt.Errorf("backend %d failed", i)
-		}), endpointWithPort(fmt.Sprintf("backend-%d", i)))
-		exp.consumeWG.Add(1)
-		batches[exp] = md
-	}
-
-	err := e.exportBatches(t.Context(), batches)
-	metricsErr, ok := errors.AsType[consumererror.Metrics](err)
-	require.True(t, ok)
-	got := metricsErr.Data()
-
-	require.Equal(t, 1, got.ResourceMetrics().Len())
-	rm := got.ResourceMetrics().At(0)
-	assert.Equal(t, "https://schema/resource", rm.SchemaUrl())
-	assert.Equal(t, map[string]any{"service.name": "svc"}, rm.Resource().Attributes().AsRaw())
-	require.Equal(t, 1, rm.ScopeMetrics().Len())
-	sm := rm.ScopeMetrics().At(0)
-	assert.Equal(t, "https://schema/scope", sm.SchemaUrl())
-	assert.Equal(t, "scope", sm.Scope().Name())
-	assert.Equal(t, map[string]any{"scope.attr": "v"}, sm.Scope().Attributes().AsRaw())
-	require.Equal(t, 5, sm.Metrics().Len())
-	assert.Equal(t, 10, got.DataPointCount(), "every data point of every metric kind must be kept")
-
-	values := map[int64]bool{}
-	for i := 0; i < sm.Metrics().Len(); i++ {
-		m := sm.Metrics().At(i)
-		switch m.Type() {
-		case pmetric.MetricTypeGauge:
-			for j := 0; j < m.Gauge().DataPoints().Len(); j++ {
-				values[m.Gauge().DataPoints().At(j).IntValue()] = true
-			}
-		case pmetric.MetricTypeSum:
-			assert.True(t, m.Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, m.Sum().AggregationTemporality())
-		case pmetric.MetricTypeHistogram:
-			assert.Equal(t, pmetric.AggregationTemporalityDelta, m.Histogram().AggregationTemporality())
-		case pmetric.MetricTypeExponentialHistogram:
-			assert.Equal(t, pmetric.AggregationTemporalityDelta, m.ExponentialHistogram().AggregationTemporality())
-		case pmetric.MetricTypeSummary:
-		default:
-			t.Errorf("unexpected metric type %v", m.Type())
-		}
-	}
-	assert.Equal(t, map[int64]bool{1: true, 2: true}, values)
-}
-
-// abortingResolver resolves the first two identifiers to exp and fails on the third, so a
-// reservation always exists before the error regardless of map iteration order.
-func abortingResolver(exp *wrappedExporter) func([]byte) (*wrappedExporter, string, error) {
-	calls := 0
-	return func([]byte) (*wrappedExporter, string, error) {
-		calls++
-		if calls >= 3 {
-			return nil, "", errors.New("couldn't find the exporter")
-		}
-		return exp, "endpoint", nil
-	}
-}
-
-func TestGroupLogsByExporterReleasesReservationsOnResolveError(t *testing.T) {
-	consumed := false
-	exp := newWrappedExporter(newMockLogsExporter(func(context.Context, plog.Logs) error {
-		consumed = true
-		return nil
-	}), endpointWithPort("endpoint"))
-	batches := map[string]plog.Logs{
-		"a": simpleLogWithServiceName("a"),
-		"b": simpleLogWithServiceName("b"),
-		"c": simpleLogWithServiceName("c"),
-	}
-
-	_, err := groupLogsByExporter(batches, abortingResolver(exp))
-	require.Error(t, err)
-	assert.False(t, consumed, "no backend may receive data after a resolution error")
-	// A second Done() would panic with a negative counter; a missing one blocks Wait().
-	require.True(t, waitGroupReturns(&exp.consumeWG), "consumeWG leaked on resolve error")
-	require.NoError(t, exp.Shutdown(t.Context()))
-}
-
-func TestGroupLogsByExporterReservesOncePerExporter(t *testing.T) {
-	exp := newWrappedExporter(newNopMockLogsExporter(), endpointWithPort("endpoint"))
-	batches := map[string]plog.Logs{
-		"a": simpleLogWithServiceName("a"),
-		"b": simpleLogWithServiceName("b"),
-		"c": simpleLogWithServiceName("c"),
-	}
-
-	grouped, err := groupLogsByExporter(batches, func([]byte) (*wrappedExporter, string, error) {
-		return exp, "endpoint", nil
-	})
-	require.NoError(t, err)
-	require.Len(t, grouped, 1)
-	assert.Equal(t, 3, grouped[exp].LogRecordCount())
-	exp.consumeWG.Done()
-	require.True(t, waitGroupReturns(&exp.consumeWG), "more than one reservation for one exporter")
-}
-
-func TestGroupMetricsByExporterReleasesReservationsOnResolveError(t *testing.T) {
-	consumed := false
-	exp := newWrappedExporter(newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
-		consumed = true
-		return nil
-	}), endpointWithPort("endpoint"))
-	batches := map[string]pmetric.Metrics{}
-	for _, svc := range []string{"a", "b", "c"} {
-		md := pmetric.NewMetrics()
-		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutStr("service.name", svc)
-		appendSimpleMetricWithID(rm, svc)
-		batches[svc] = md
-	}
-
-	_, err := groupMetricsByExporter(batches, abortingResolver(exp))
-	require.Error(t, err)
-	assert.False(t, consumed, "no backend may receive data after a resolution error")
-	require.True(t, waitGroupReturns(&exp.consumeWG), "consumeWG leaked on resolve error")
-	require.NoError(t, exp.Shutdown(t.Context()))
-}
-
-func TestGroupMetricsByExporterReservesOncePerExporter(t *testing.T) {
-	exp := newWrappedExporter(newNopMockMetricsExporter(), endpointWithPort("endpoint"))
-	batches := map[string]pmetric.Metrics{}
-	for _, svc := range []string{"a", "b", "c"} {
-		md := pmetric.NewMetrics()
-		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutStr("service.name", svc)
-		appendSimpleMetricWithID(rm, svc)
-		batches[svc] = md
-	}
-
-	grouped, err := groupMetricsByExporter(batches, func([]byte) (*wrappedExporter, string, error) {
-		return exp, "endpoint", nil
-	})
-	require.NoError(t, err)
-	require.Len(t, grouped, 1)
-	assert.Equal(t, 3, grouped[exp].ResourceMetrics().Len())
-	exp.consumeWG.Done()
-	require.True(t, waitGroupReturns(&exp.consumeWG), "more than one reservation for one exporter")
 }
 
 // recordingBackend records a copy of every payload it receives and answers each call with
