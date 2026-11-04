@@ -1,0 +1,11 @@
+change_type: enhancement
+component: receiver/aws_cloudwatch
+note: Add optional `k8s_leader_elector` support so several collector replicas can share one CloudWatch receiver configuration without duplicating API calls
+issues: [51596]
+subtext: |
+  Both the logs and the metrics receiver only collect while they hold the lease
+  managed by the `k8sleaderelector` extension. Logs additionally need a storage
+  extension that several collectors can use at once, such as `redis_storage`,
+  otherwise a new leader restarts from `start_from`/`initial_lookback`; the
+  receiver warns when leader election is configured without one.
+change_logs: [user]
