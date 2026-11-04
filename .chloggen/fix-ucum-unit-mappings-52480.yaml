@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/prometheus
+note: "Correct UCUM time and byte unit conversions behind the pkg.translator.prometheus.CorrectUCUMUnits feature gate."
+issues: [52480]
+subtext:
+change_logs: [user]

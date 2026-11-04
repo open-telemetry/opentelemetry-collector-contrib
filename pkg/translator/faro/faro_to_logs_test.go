@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
 	"github.com/stretchr/testify/assert"
@@ -128,6 +129,76 @@ func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
 
 	// Compare the original otlp traces with the translated otlp traces
 	require.Equal(t, expectedTraces, traces)
+}
+
+func TestTranslateMobileMetadataToLogsAndBack(t *testing.T) {
+	testcases := []struct {
+		name string
+		meta faroTypes.Meta
+	}{
+		{
+			name: "all mobile fields set",
+			meta: faroTypes.Meta{
+				App: faroTypes.App{Name: "testapp"},
+				Device: faroTypes.Device{
+					Arch:          "arm64-v8a",
+					ScreenWidth:   1080,
+					ScreenHeight:  2400,
+					ScreenDensity: 2.625,
+					MemoryTotal:   7621,
+					BatteryLevel:  new(42),
+					IsCharging:    new(true),
+					LowPowerMode:  new(true),
+					ThermalState:  faroTypes.DeviceThermalStateCritical,
+				},
+				OS: faroTypes.OS{Name: "Android", APILevel: 34},
+				Network: faroTypes.Network{
+					ConnectionType:    "cell",
+					ConnectionSubtype: "nr",
+					CarrierName:       "TestCarrier",
+					Reachable:         new(true),
+				},
+			},
+		},
+		{
+			name: "pointer fields set to 0 and false",
+			meta: faroTypes.Meta{
+				App: faroTypes.App{Name: "testapp"},
+				Device: faroTypes.Device{
+					BatteryLevel: new(0),
+					IsCharging:   new(false),
+					LowPowerMode: new(false),
+				},
+				Network: faroTypes.Network{Reachable: new(false)},
+			},
+		},
+		{
+			name: "no network",
+			meta: faroTypes.Meta{
+				App:    faroTypes.App{Name: "testapp"},
+				Device: faroTypes.Device{Arch: "arm64"},
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := faroTypes.Payload{
+				Logs: []faroTypes.Log{{
+					Message:   "hello",
+					LogLevel:  faroTypes.LogLevelInfo,
+					Timestamp: time.Date(2026, 10, 21, 10, 0, 0, 0, time.UTC),
+				}},
+				Meta: tt.meta,
+			}
+			logs, err := TranslateToLogs(t.Context(), payload)
+			require.NoError(t, err)
+
+			payloads, err := TranslateFromLogs(t.Context(), logs)
+			require.NoError(t, err)
+			require.Len(t, payloads, 1)
+			require.Equal(t, payload, payloads[0])
+		})
+	}
 }
 
 func TestDrainExceptionValue(t *testing.T) {

@@ -393,6 +393,15 @@ func Test_extractDeviceFromKeyVal(t *testing.T) {
 				"device_brand":            "iPhone",
 				"device_is_physical":      "true",
 				"device_type":             "mobile",
+				"device_arch":             "arm64-v8a",
+				"device_screen_width":     "1080",
+				"device_screen_height":    "2400",
+				"device_screen_density":   "2.625",
+				"device_memory_total":     "7621",
+				"device_battery_level":    "85",
+				"device_is_charging":      "true",
+				"device_low_power_mode":   "true",
+				"device_thermal_state":    "fair",
 			},
 			want: faroTypes.Device{
 				Manufacturer:    "Apple",
@@ -401,6 +410,29 @@ func Test_extractDeviceFromKeyVal(t *testing.T) {
 				Brand:           "iPhone",
 				IsPhysical:      true,
 				Type:            "mobile",
+				Arch:            "arm64-v8a",
+				ScreenWidth:     1080,
+				ScreenHeight:    2400,
+				ScreenDensity:   2.625,
+				MemoryTotal:     7621,
+				BatteryLevel:    new(85),
+				IsCharging:      new(true),
+				LowPowerMode:    new(true),
+				ThermalState:    faroTypes.DeviceThermalStateFair,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "pointer fields set to 0 and false",
+			kv: map[string]string{
+				"device_battery_level":  "0",
+				"device_is_charging":    "false",
+				"device_low_power_mode": "false",
+			},
+			want: faroTypes.Device{
+				BatteryLevel: new(0),
+				IsCharging:   new(false),
+				LowPowerMode: new(false),
 			},
 			wantErr: assert.NoError,
 		},
@@ -410,6 +442,41 @@ func Test_extractDeviceFromKeyVal(t *testing.T) {
 				"device_is_physical": "nope",
 			},
 			want:    faroTypes.Device{},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_screen_width cannot be parsed as int",
+			kv:      map[string]string{"device_screen_width": "wide"},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_screen_height cannot be parsed as int",
+			kv:      map[string]string{"device_screen_height": "1.5"},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_screen_density cannot be parsed as float",
+			kv:      map[string]string{"device_screen_density": "dense"},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_memory_total cannot be parsed as int",
+			kv:      map[string]string{"device_memory_total": "8GB"},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_battery_level cannot be parsed as int",
+			kv:      map[string]string{"device_battery_level": "full"},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_is_charging cannot be parsed as boolean",
+			kv:      map[string]string{"device_is_charging": "nope"},
+			wantErr: assert.Error,
+		},
+		{
+			name:    "device_low_power_mode cannot be parsed as boolean",
+			kv:      map[string]string{"device_low_power_mode": "nope"},
 			wantErr: assert.Error,
 		},
 	}
@@ -426,36 +493,256 @@ func Test_extractDeviceFromKeyVal(t *testing.T) {
 
 func Test_extractOSFromKeyVal(t *testing.T) {
 	testcases := []struct {
-		name string
-		kv   map[string]string
-		want faroTypes.OS
+		name    string
+		kv      map[string]string
+		want    faroTypes.OS
+		wantErr assert.ErrorAssertionFunc
 	}{
 		{
-			name: "empty kv yields zero-value OS",
-			kv:   map[string]string{},
-			want: faroTypes.OS{},
+			name:    "empty kv yields zero-value OS",
+			kv:      map[string]string{},
+			want:    faroTypes.OS{},
+			wantErr: assert.NoError,
 		},
 		{
 			name: "all fields populated",
 			kv: map[string]string{
-				"os_name":     "iOS",
-				"os_version":  "18.1",
-				"os_build_id": "22G91",
-				"os_detail":   "iOS 18.1 (22G91)",
+				"os_name":      "Android",
+				"os_version":   "14",
+				"os_build_id":  "UQ1A.240205.004",
+				"os_detail":    "Android 14 (SDK 34)",
+				"os_api_level": "34",
 			},
 			want: faroTypes.OS{
-				Name:    "iOS",
-				Version: "18.1",
-				BuildID: "22G91",
-				Detail:  "iOS 18.1 (22G91)",
+				Name:     "Android",
+				Version:  "14",
+				BuildID:  "UQ1A.240205.004",
+				Detail:   "Android 14 (SDK 34)",
+				APILevel: 34,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name:    "os_api_level cannot be parsed as int",
+			kv:      map[string]string{"os_api_level": "U"},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractOSFromKeyVal(tt.kv)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractOSFromKeyVal(%v)", tt.kv)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "extractOSFromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_extractNetworkFromKeyVal(t *testing.T) {
+	testcases := []struct {
+		name    string
+		kv      map[string]string
+		want    faroTypes.Network
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name:    "empty kv yields zero-value Network",
+			kv:      map[string]string{},
+			want:    faroTypes.Network{},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "all fields populated",
+			kv: map[string]string{
+				"network_connection_type":    "cell",
+				"network_connection_subtype": "nr",
+				"network_carrier_name":       "TestCarrier",
+				"network_reachable":          "true",
+			},
+			want: faroTypes.Network{
+				ConnectionType:    "cell",
+				ConnectionSubtype: "nr",
+				CarrierName:       "TestCarrier",
+				Reachable:         new(true),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "network_reachable set to false",
+			kv: map[string]string{
+				"network_connection_type": "wifi",
+				"network_reachable":       "false",
+			},
+			want: faroTypes.Network{
+				ConnectionType: "wifi",
+				Reachable:      new(false),
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name:    "network_reachable cannot be parsed as boolean",
+			kv:      map[string]string{"network_reachable": "maybe"},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractNetworkFromKeyVal(tt.kv)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractNetworkFromKeyVal(%v)", tt.kv)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "extractNetworkFromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_deviceToKeyVal(t *testing.T) {
+	testcases := []struct {
+		name   string
+		device faroTypes.Device
+		want   map[string]string
+	}{
+		{
+			name:   "zero value emits no keys",
+			device: faroTypes.Device{},
+			want:   map[string]string{},
+		},
+		{
+			name: "mobile fields set emits all keys",
+			device: faroTypes.Device{
+				Arch:          "arm64-v8a",
+				ScreenWidth:   1080,
+				ScreenHeight:  2400,
+				ScreenDensity: 2.625,
+				MemoryTotal:   7621,
+				BatteryLevel:  new(85),
+				IsCharging:    new(true),
+				LowPowerMode:  new(true),
+				ThermalState:  faroTypes.DeviceThermalStateSerious,
+			},
+			want: map[string]string{
+				"device_arch":           "arm64-v8a",
+				"device_screen_width":   "1080",
+				"device_screen_height":  "2400",
+				"device_screen_density": "2.625",
+				"device_memory_total":   "7621",
+				"device_battery_level":  "85",
+				"device_is_charging":    "true",
+				"device_low_power_mode": "true",
+				"device_thermal_state":  "serious",
+			},
+		},
+		{
+			name: "pointer fields set to 0 and false are emitted",
+			device: faroTypes.Device{
+				BatteryLevel: new(0),
+				IsCharging:   new(false),
+				LowPowerMode: new(false),
+			},
+			want: map[string]string{
+				"device_battery_level":  "0",
+				"device_is_charging":    "false",
+				"device_low_power_mode": "false",
 			},
 		},
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, extractOSFromKeyVal(tt.kv))
+			got := keyValToStringMap(deviceToKeyVal(tt.device))
+			assert.Equal(t, tt.want, got)
+
+			roundTrip, err := extractDeviceFromKeyVal(got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.device, roundTrip)
 		})
 	}
+}
+
+func Test_osToKeyVal(t *testing.T) {
+	testcases := []struct {
+		name string
+		os   faroTypes.OS
+		want map[string]string
+	}{
+		{
+			name: "zero value emits no keys",
+			os:   faroTypes.OS{},
+			want: map[string]string{},
+		},
+		{
+			name: "APILevel set emits os_api_level",
+			os:   faroTypes.OS{Name: "Android", APILevel: 34},
+			want: map[string]string{
+				"os_name":      "Android",
+				"os_api_level": "34",
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := keyValToStringMap(osToKeyVal(tt.os))
+			assert.Equal(t, tt.want, got)
+
+			roundTrip, err := extractOSFromKeyVal(got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.os, roundTrip)
+		})
+	}
+}
+
+func Test_networkToKeyVal(t *testing.T) {
+	testcases := []struct {
+		name    string
+		network faroTypes.Network
+		want    map[string]string
+	}{
+		{
+			name:    "zero value emits no keys",
+			network: faroTypes.Network{},
+			want:    map[string]string{},
+		},
+		{
+			name: "all fields set emits all keys",
+			network: faroTypes.Network{
+				ConnectionType:    "cell",
+				ConnectionSubtype: "nr",
+				CarrierName:       "TestCarrier",
+				Reachable:         new(true),
+			},
+			want: map[string]string{
+				"network_connection_type":    "cell",
+				"network_connection_subtype": "nr",
+				"network_carrier_name":       "TestCarrier",
+				"network_reachable":          "true",
+			},
+		},
+		{
+			name:    "Reachable set to false is emitted",
+			network: faroTypes.Network{Reachable: new(false)},
+			want: map[string]string{
+				"network_reachable": "false",
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := keyValToStringMap(networkToKeyVal(tt.network))
+			assert.Equal(t, tt.want, got)
+
+			roundTrip, err := extractNetworkFromKeyVal(got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.network, roundTrip)
+		})
+	}
+}
+
+func keyValToStringMap(kv *keyVal) map[string]string {
+	m := make(map[string]string, kv.Len())
+	for el := kv.Oldest(); el != nil; el = el.Next() {
+		m[el.Key] = el.Value.(string)
+	}
+	return m
 }
 
 func Test_extractAppFromKeyVal_InstallationID(t *testing.T) {
