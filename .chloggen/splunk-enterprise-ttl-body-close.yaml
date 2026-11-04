@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/splunk_enterprise
+note: Close the HTTP response body when setting the search job TTL
+issues: [51986]
+subtext: |
+  The response body of the search job TTL request was never closed on a successful response, or when reading it failed.
+  This leaked a connection on every search scrape. The body is now always closed.
+change_logs: [user]
