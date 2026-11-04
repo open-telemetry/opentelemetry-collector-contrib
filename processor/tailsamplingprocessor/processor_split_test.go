@@ -140,9 +140,23 @@ func requireIndependentBatches(tb testing.TB, batches []traceBatch) {
 	}
 }
 
-// splitInput describes a ResourceSpans as scopes of trace numbers. A negative
-// number is a span that has a parent, so is not a root.
-type splitInput [][]int
+// testSpan is a span of the trace with the given number.
+type testSpan struct {
+	trace  uint64
+	isRoot bool
+}
+
+// rootOf returns a span of the given trace that has no parent.
+func rootOf(trace uint64) testSpan { return testSpan{trace: trace, isRoot: true} }
+
+// childOf returns a span of the given trace that has a parent.
+func childOf(trace uint64) testSpan { return testSpan{trace: trace} }
+
+// splitInput describes a ResourceSpans: one slice of spans for each scope, in
+// order. For example {{rootOf(1), childOf(2)}, {childOf(1)}} has two scopes;
+// the first holds the root of trace 1 and a child span of trace 2, and the
+// second holds a child span of trace 1.
+type splitInput [][]testSpan
 
 func (in splitInput) build() ptrace.ResourceSpans {
 	rs := ptrace.NewResourceSpans()
@@ -158,15 +172,14 @@ func (in splitInput) build() ptrace.ResourceSpans {
 		ss.Scope().SetVersion("1.0")
 		ss.Scope().Attributes().PutStr("k", fmt.Sprintf("v%d", i))
 		ss.Scope().SetDroppedAttributesCount(uint32(i + 1))
-		for _, trace := range scope {
+		for _, spec := range scope {
 			spanID++
 			span := ss.Spans().AppendEmpty()
 			span.SetSpanID(uInt64ToSpanID(spanID))
-			if trace < 0 {
-				trace = -trace
+			if !spec.isRoot {
 				span.SetParentSpanID(uInt64ToSpanID(spanID + 1000))
 			}
-			span.SetTraceID(uInt64ToTraceID(uint64(trace)))
+			span.SetTraceID(uInt64ToTraceID(spec.trace))
 			span.SetName(fmt.Sprintf("span-%d", spanID))
 		}
 	}
@@ -180,18 +193,83 @@ func TestSplitResourceSpansByTraceMatchesCopy(t *testing.T) {
 	}{
 		{name: "no scopes", input: splitInput{}},
 		{name: "empty scope", input: splitInput{{}}},
-		{name: "single span", input: splitInput{{1}}},
-		{name: "single trace single scope", input: splitInput{{1, -1, -1}}},
-		{name: "single trace several scopes", input: splitInput{{1, -1}, {-1}, {-1, -1}}},
-		{name: "single trace without root", input: splitInput{{-1, -1}, {-1}}},
-		{name: "single trace with empty scope", input: splitInput{{1}, {}, {-1}}},
-		{name: "scope per trace", input: splitInput{{1, -1}, {2}, {3, -3}}},
-		{name: "trace in several scopes", input: splitInput{{1}, {-1}, {2}, {-1}}},
-		{name: "mixed scope", input: splitInput{{1, 2, -1, -2, 3}}},
-		{name: "mixed and uniform scopes", input: splitInput{{1, 2, -1}, {1}, {-2, -2}, {3, 1}}},
-		{name: "uniform scope between mixed", input: splitInput{{1, 2}, {2, -2}, {1, 2}}},
-		{name: "empty scopes between traces", input: splitInput{{}, {1}, {}, {2}, {}}},
-		{name: "root only in later scope", input: splitInput{{-1, -2}, {-1, 2}}},
+		{name: "single span", input: splitInput{{rootOf(1)}}},
+		{name: "single trace single scope", input: splitInput{{rootOf(1), childOf(1), childOf(1)}}},
+		{
+			name: "single trace several scopes",
+			input: splitInput{
+				{rootOf(1), childOf(1)},
+				{childOf(1)},
+				{childOf(1), childOf(1)},
+			},
+		},
+		{
+			name: "single trace without root",
+			input: splitInput{
+				{childOf(1), childOf(1)},
+				{childOf(1)},
+			},
+		},
+		{
+			name: "single trace with empty scope",
+			input: splitInput{
+				{rootOf(1)},
+				{},
+				{childOf(1)},
+			},
+		},
+		{
+			name: "scope per trace",
+			input: splitInput{
+				{rootOf(1), childOf(1)},
+				{rootOf(2)},
+				{rootOf(3), childOf(3)},
+			},
+		},
+		{
+			name: "trace in several scopes",
+			input: splitInput{
+				{rootOf(1)},
+				{childOf(1)},
+				{rootOf(2)},
+				{childOf(1)},
+			},
+		},
+		{name: "mixed scope", input: splitInput{{rootOf(1), rootOf(2), childOf(1), childOf(2), rootOf(3)}}},
+		{
+			name: "mixed and uniform scopes",
+			input: splitInput{
+				{rootOf(1), rootOf(2), childOf(1)},
+				{rootOf(1)},
+				{childOf(2), childOf(2)},
+				{rootOf(3), rootOf(1)},
+			},
+		},
+		{
+			name: "uniform scope between mixed",
+			input: splitInput{
+				{rootOf(1), rootOf(2)},
+				{rootOf(2), childOf(2)},
+				{rootOf(1), rootOf(2)},
+			},
+		},
+		{
+			name: "empty scopes between traces",
+			input: splitInput{
+				{},
+				{rootOf(1)},
+				{},
+				{rootOf(2)},
+				{},
+			},
+		},
+		{
+			name: "root only in later scope",
+			input: splitInput{
+				{childOf(1), childOf(2)},
+				{childOf(1), rootOf(2)},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -206,9 +284,9 @@ func TestSplitResourceSpansByTraceRandomMatchesCopy(t *testing.T) {
 		numTraces := 1 + r.IntN(4)
 		in := make(splitInput, r.IntN(5))
 		for i := range in {
-			in[i] = make([]int, r.IntN(6))
+			in[i] = make([]testSpan, r.IntN(6))
 			for j := range in[i] {
-				in[i][j] = (1 + r.IntN(numTraces)) * (1 - 2*r.IntN(2))
+				in[i][j] = testSpan{trace: uint64(1 + r.IntN(numTraces)), isRoot: r.IntN(2) == 0}
 			}
 		}
 		requireSameSplit(t, in.build())
@@ -216,7 +294,7 @@ func TestSplitResourceSpansByTraceRandomMatchesCopy(t *testing.T) {
 }
 
 func TestSplitResourceSpansByTraceMovesWholeResourceSpans(t *testing.T) {
-	rss := splitInput{{1, -1}, {-1}}.build()
+	rss := splitInput{{rootOf(1), childOf(1)}, {childOf(1)}}.build()
 	batches := splitResourceSpansByTrace(rss)
 	require.Len(t, batches, 1)
 	require.EqualValues(t, 3, batches[0].spanCount)
@@ -228,9 +306,9 @@ func TestSplitResourceSpansByTraceMovesWholeResourceSpans(t *testing.T) {
 
 func TestSplitResourceSpansByTraceDoesNotShareResourceOrScope(t *testing.T) {
 	for name, in := range map[string]splitInput{
-		"one resource with several traces":       {{1, 2, 3}, {1, 2, 3}},
-		"single-trace scopes of several traces":  {{1, -1}, {2, -2}, {3}},
-		"mixed scope next to single-trace scope": {{1, 2}, {1}},
+		"one resource with several traces":       {{rootOf(1), rootOf(2), rootOf(3)}, {rootOf(1), rootOf(2), rootOf(3)}},
+		"single-trace scopes of several traces":  {{rootOf(1), childOf(1)}, {rootOf(2), childOf(2)}, {rootOf(3)}},
+		"mixed scope next to single-trace scope": {{rootOf(1), rootOf(2)}, {rootOf(1)}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			batches := splitResourceSpansByTrace(in.build())
