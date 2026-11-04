@@ -197,7 +197,7 @@ pkg/translator/loki/                                             @open-telemetry
 pkg/translator/pprof/                                            @open-telemetry/collector-contrib-approvers @florianl
 pkg/translator/prometheus/                                       @open-telemetry/collector-contrib-approvers @dashpole @bertysentry @ArthurSens
 pkg/translator/prometheusremotewrite/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
-pkg/translator/signalfx/                                         @open-telemetry/collector-contrib-approvers @dloucasfx @crobert-1
+pkg/translator/signalfx/                                         @open-telemetry/collector-contrib-approvers @crobert-1 @dloucasfx
 pkg/translator/skywalking/                                       @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/splunk/                                           @open-telemetry/collector-contrib-approvers @atoulme @crobert-1
 pkg/translator/zipkin/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
