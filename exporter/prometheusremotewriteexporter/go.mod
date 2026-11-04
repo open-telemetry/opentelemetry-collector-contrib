@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/promet
 go 1.26.0
 
 require (
-	github.com/cenkalti/backoff/v7 v7.0.2
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1

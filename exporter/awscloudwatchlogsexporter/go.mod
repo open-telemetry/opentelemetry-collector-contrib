@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.5
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.91.0
-	github.com/cenkalti/backoff/v7 v7.0.2
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.164.1
