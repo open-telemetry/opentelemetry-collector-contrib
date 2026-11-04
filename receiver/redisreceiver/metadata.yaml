@@ -12,7 +12,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, hughesjj]
+    active: [hughesjj, crobert-1]
+    emeritus: [dmitryax]
 
 resource_attributes:
   redis.version:
