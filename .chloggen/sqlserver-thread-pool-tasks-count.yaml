@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/sql_server
 
-note: "Add `sqlserver.thread_pool.tasks.count` metric, reporting scheduler task-queueing state."
+note: "Add `sqlserver.thread_pool.task.count` metric, reporting scheduler task-queueing state."
 
 issues: [52413]
 

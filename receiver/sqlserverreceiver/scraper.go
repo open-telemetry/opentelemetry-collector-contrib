@@ -2401,18 +2401,26 @@ func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) 
 			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateWaitingForCPU)
 		}
 
-		val, err = retrieveInt(row, currentTasks)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", currentTasks, i, err))
-		} else {
-			s.mb.RecordSqlserverThreadPoolTaskCountDataPoint(now, val.(int64), metadata.AttributeSqlserverThreadPoolTaskStateCurrent)
+		currentTasksVal, currentTasksErr := retrieveInt(row, currentTasks)
+		if currentTasksErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", currentTasks, i, currentTasksErr))
 		}
 
-		val, err = retrieveInt(row, tasksWaitingForThreadpool)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", tasksWaitingForThreadpool, i, err))
-		} else {
-			s.mb.RecordSqlserverThreadPoolTaskCountDataPoint(now, val.(int64), metadata.AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool)
+		waitingForThreadpoolVal, waitingForThreadpoolErr := retrieveInt(row, tasksWaitingForThreadpool)
+		if waitingForThreadpoolErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", tasksWaitingForThreadpool, i, waitingForThreadpoolErr))
+		}
+
+		if waitingForThreadpoolErr == nil {
+			s.mb.RecordSqlserverThreadPoolTaskCountDataPoint(now, waitingForThreadpoolVal.(int64), metadata.AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool)
+		}
+
+		// current_tasks_count already includes the tasks counted as waiting_for_threadpool,
+		// so subtract them to make the two attribute values partition the total instead of
+		// double-counting every waiting task.
+		if currentTasksErr == nil && waitingForThreadpoolErr == nil {
+			current := max(currentTasksVal.(int64)-waitingForThreadpoolVal.(int64), 0)
+			s.mb.RecordSqlserverThreadPoolTaskCountDataPoint(now, current, metadata.AttributeSqlserverThreadPoolTaskStateCurrent)
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

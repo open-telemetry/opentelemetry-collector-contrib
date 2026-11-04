@@ -27,14 +27,14 @@ resourceMetrics:
           - description: Number of SQL Server tasks tracked by schedulers, broken down by queueing state.
             gauge:
               dataPoints:
-                - asInt: "47"
+                - asInt: "44"
                   attributes:
                     - key: sqlserver.thread_pool.task.state
                       value:
                         stringValue: current
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "3"
                   attributes:
                     - key: sqlserver.thread_pool.task.state
                       value:

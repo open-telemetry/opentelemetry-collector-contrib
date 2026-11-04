@@ -9,6 +9,6 @@
     "waiting_for_cpu_threads": "5",
     "requests_waiting_for_threads": "0",
     "current_tasks": "47",
-    "tasks_waiting_for_threadpool": "0"
+    "tasks_waiting_for_threadpool": "3"
   }
 ]
