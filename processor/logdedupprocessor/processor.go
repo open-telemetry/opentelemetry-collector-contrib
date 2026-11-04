@@ -127,7 +127,7 @@ func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute
 	return shard, nil
 }
 
-func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
+func (m *multiShardAggregator) flush(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
 	m.lock.Lock()
 	shards := make([]*aggregatorShard, 0, len(m.shards))
 	for _, s := range m.shards {
@@ -136,7 +136,7 @@ func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Lo
 	m.lock.Unlock()
 
 	for _, shard := range shards {
-		exportCtx := client.NewContext(context.Background(), shard.clientInfo)
+		exportCtx := client.NewContext(ctx, shard.clientInfo)
 		logs := shard.aggregator.Export(exportCtx)
 		if logs.LogRecordCount() > 0 {
 			if err := nextConsumer.ConsumeLogs(exportCtx, logs); err != nil {
@@ -213,8 +213,8 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 }
 
 // Start starts the processor.
-func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(ctx)
+func (p *logDedupProcessor) Start(_ context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
 	p.wg.Add(1)
@@ -229,11 +229,14 @@ func (*logDedupProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Shutdown stops the processor.
-func (p *logDedupProcessor) Shutdown(context.Context) error {
+func (p *logDedupProcessor) Shutdown(ctx context.Context) error {
 	if p.cancel != nil {
 		// Call cancel to stop the export interval goroutine and wait for it to finish.
 		p.cancel()
 		p.wg.Wait()
+		// Flush whatever the goroutine left behind using the context we were given,
+		// so the export honors any deadline the host sets on shutdown.
+		p.exportLogs(ctx)
 	}
 	return nil
 }
@@ -307,8 +310,8 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Export any remaining logs
-			p.exportLogs(ctx)
+			// Shutdown performs the final export, so it runs on the host's context
+			// rather than this cancelled one.
 			if err := ctx.Err(); err != context.Canceled {
 				p.logger.Error("context error", zap.Error(err))
 			}
