@@ -238,21 +238,6 @@ func Test_ParseJSON_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_ParseJSON_ParseInts(t *testing.T) {
-	tests := []struct {
-		name      string
-		target    ottl.StringGetter[any]
-		wantMap   func(pcommon.Map)
-		wantSlice func(pcommon.Slice)
-	}{}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-		})
-	}
-}
-
 const benchData = `{
 	"_id": "667cb0db02f4dfc7648b0f6b",
 	"index": 0,
