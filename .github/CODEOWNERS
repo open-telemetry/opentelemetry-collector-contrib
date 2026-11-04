@@ -356,7 +356,7 @@ receiver/purefbreceiver/                                         @open-telemetry
 receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed @khushijain21
-receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @hughesjj @crobert-1
+receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @crobert-1
 receiver/saphanareceiver/                                        @open-telemetry/collector-contrib-approvers @dehaansa
 receiver/simpleprometheusreceiver/                               @open-telemetry/collector-contrib-approvers @s3onghyun
 receiver/skywalkingreceiver/                                     @open-telemetry/collector-contrib-approvers @JaredTan95
