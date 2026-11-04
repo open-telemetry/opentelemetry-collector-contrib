@@ -606,8 +606,20 @@ func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (stri
 		strings.Join(typePH, ",")), args
 }
 
+// isWrappedDefinition reports whether a procedure's source begins with Oracle's
+// `wrapped` keyword, which marks the body as encrypted. The following lines contain
+// only the encoded payload, not readable source.
+func isWrappedDefinition(definition string) bool {
+	firstLine := definition
+	if idx := strings.IndexByte(firstLine, '\n'); idx >= 0 {
+		firstLine = firstLine[:idx]
+	}
+	return strings.Contains(strings.ToLower(firstLine), " wrapped")
+}
+
 // groupSourceRowsByKey concatenates source lines per procedure into a definition map.
-// Key format matches procedureKey — conID is empty string for PDB rows.
+// Key format matches procedureKey — conID is empty string for PDB rows. Wrapped
+// (encrypted) procedures map to an empty string so callers don't ship the encoded blob.
 func groupSourceRowsByKey(sourceRows []metricRow) map[string]string {
 	builders := make(map[string]*strings.Builder)
 	for _, row := range sourceRows {
@@ -619,7 +631,11 @@ func groupSourceRowsByKey(sourceRows []metricRow) map[string]string {
 	}
 	result := make(map[string]string, len(builders))
 	for k, v := range builders {
-		result[k] = v.String()
+		definition := v.String()
+		if isWrappedDefinition(definition) {
+			definition = ""
+		}
+		result[k] = definition
 	}
 	return result
 }

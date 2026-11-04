@@ -1714,7 +1714,7 @@ The SQL source text of stored procedures observed in db.server.top_procedure. Co
 | db.namespace | The database name. | Any Str | - |
 | oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
-| oracledb.procedure.definition | The SQL source text of the stored procedure as returned by DBA_SOURCE (or CDB_SOURCE for CDB environments). Empty string when the procedure is encrypted (WRAPPED) or the source is unavailable. | Any Str | - |
+| oracledb.procedure.definition | The SQL source text of the stored procedure. Empty string when the procedure is encrypted (WRAPPED) or the source is unavailable. | Any Str | - |
 
 ### db.server.query_plan
 

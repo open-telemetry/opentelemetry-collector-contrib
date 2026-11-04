@@ -533,6 +533,37 @@ func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
 	t.Fatal("expected a db.server.procedure_definition event")
 }
 
+// Wrapped (encrypted) procedures must map to an empty definition. DBA_SOURCE returns the
+// `wrapped` header followed by the encoded payload; shipping that blob downstream would
+// mislead consumers and contradict the documented behavior.
+func TestProcedureDefinitionEmptyWhenWrapped(t *testing.T) {
+	wrappedRows := []metricRow{
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "PROCEDURE MY_PROCEDURE wrapped\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "a000000\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "354\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "abcd\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "gL4Nq8IVCqO9DAh8W6nhfzw5\n"},
+	}
+
+	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, wrappedRows), procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+			require.True(t, ok)
+			assert.Empty(t, def.Str(), "wrapped procedure must emit empty definition, not the encoded payload")
+			return
+		}
+	}
+	t.Fatal("expected a db.server.procedure_definition event")
+}
+
 // When fetchProcedureDefinitions fails, no definition events must be emitted
 // (otherwise an empty definition is indistinguishable from a wrapped procedure),
 // and the error must surface via scrapeLogs.

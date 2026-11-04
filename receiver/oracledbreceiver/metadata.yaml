@@ -247,7 +247,7 @@ attributes:
     description: Numeric representation of the execution plan.
     type: string
   oracledb.procedure.definition:
-    description: The SQL source text of the stored procedure as returned by DBA_SOURCE (or CDB_SOURCE for CDB environments). Empty string when the procedure is encrypted (WRAPPED) or the source is unavailable.
+    description: The SQL source text of the stored procedure. Empty string when the procedure is encrypted (WRAPPED) or the source is unavailable.
     type: string
     requirement_level: recommended
   oracledb.procedure.first_load_time:
