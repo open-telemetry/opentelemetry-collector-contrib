@@ -278,8 +278,8 @@ receiver/azuremonitorreceiver/                                   @open-telemetry
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/chronyreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
 receiver/ciscoosreceiver/                                        @open-telemetry/collector-contrib-approvers @etserend
-receiver/ciscoosreceiver/internal/scraper/interfacesscraper/     @open-telemetry/collector-contrib-approvers
-receiver/ciscoosreceiver/internal/scraper/systemscraper/         @open-telemetry/collector-contrib-approvers
+receiver/ciscoosreceiver/internal/scraper/interfacesscraper/     @open-telemetry/collector-contrib-approvers @etserend
+receiver/ciscoosreceiver/internal/scraper/systemscraper/         @open-telemetry/collector-contrib-approvers @etserend
 receiver/cloudflarereceiver/                                     @open-telemetry/collector-contrib-approvers @dehaansa
 receiver/cloudfoundryreceiver/                                   @open-telemetry/collector-contrib-approvers @crobert-1
 receiver/collectdreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme
