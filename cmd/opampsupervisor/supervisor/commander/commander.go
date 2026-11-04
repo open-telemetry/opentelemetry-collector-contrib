@@ -182,11 +182,7 @@ func (c *Commander) startNormal() error {
 }
 
 func (c *Commander) startWithPassthroughLogging() error {
-	// Give the agent plain writers instead of using StdoutPipe/StderrPipe. Wait
-	// closes those pipes as soon as the process exits, which can drop output the
-	// readers below have not consumed yet. With writers, Wait returns only after
-	// all output has been copied, or after WaitDelay if something else still
-	// holds the pipes open.
+	// Wait closes StdoutPipe/StderrPipe on exit, which can drop unread output.
 	stdoutPipe, stdoutWriter := io.Pipe()
 	stderrPipe, stderrWriter := io.Pipe()
 	c.cmd.Stdout = stdoutWriter
