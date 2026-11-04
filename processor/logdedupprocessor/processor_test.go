@@ -708,7 +708,8 @@ func (s *ctxAwareSink) count() int {
 }
 
 func TestShutdownFlushesWithLiveContext(t *testing.T) {
-	cfg := &Config{LogCountAttribute: defaultLogCountAttribute, Interval: time.Hour, Timezone: defaultTimezone}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = time.Hour
 	sink := &ctxAwareSink{}
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
@@ -721,7 +722,8 @@ func TestShutdownFlushesWithLiveContext(t *testing.T) {
 }
 
 func TestStartContextCancelDoesNotStopProcessor(t *testing.T) {
-	cfg := &Config{LogCountAttribute: defaultLogCountAttribute, Interval: time.Hour, Timezone: defaultTimezone}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = time.Hour
 	sink := &ctxAwareSink{}
 	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
