@@ -8,7 +8,8 @@ subtext: |
   ```
   data('system.disk.operations', rollup='delta').sum(by=['host.name'])
   ```
-  Use `system.disk.pending_operations` instead of `disk_ops.pending`. It is excluded by default, so add it to `include_metrics`:
+  Use `system.disk.pending_operations` instead of `disk_ops.pending`. Both are excluded by default, so replace
+  `disk_ops.pending` with `system.disk.pending_operations` in `include_metrics`:
   ```yaml
   exporters:
     signalfx:
