@@ -73,8 +73,8 @@ processors:
       # k8s_secret:
       #   name:        verify-secret
       #   namespace:   default              # optional, defaults to "default"
-      #   certificate: tls.crt
-      #   # hmac_key:  hmac.key
+      #   certificate: tls.crt              # PEM or base64-encoded PEM
+      #   # hmac_key:  hmac.key              # raw secret bytes (client-go returns them decoded)
 
       # --- OpenBao / Vault provider (OpenBao API v2 / KVv2) ---
       # bao:
@@ -82,8 +82,8 @@ processors:
       #   token:       s.xxxx                    # optional, falls back to BAO_TOKEN
       #   mount_path:  secret                    # KV v2 mount point; default: "secret"
       #   secret_path: verify                    # path within the mount (no "data/" prefix)
-      #   certificate: certificate
-      #   # hmac_key:  hmac_key
+      #   certificate: certificate           # PEM or base64-encoded PEM
+      #   # hmac_key:  hmac_key              # field value must be standard base64
 
     # Optional dead-letter queue for verification failures.
     # Note: dead_letter persistence is not yet implemented. Setting
@@ -105,8 +105,8 @@ either a certificate or an HMAC secret, not both.
 | --- | --- | --- |
 | `file` | Local file paths | Reads a PEM certificate or an HMAC secret from disk. HMAC content is standard base64, or the raw secret when that decode fails. Certificates may be plain PEM or base64-encoded PEM. |
 | `env` | Key material (usually via `${env:}`) | Holds resolved PEM or HMAC strings from Collector confmap `${env:VAR}` expansion (not env-var names). HMAC content is standard base64, or the raw secret when that decode fails. |
-| `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. |
-| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) KV v2 secrets engine via [`github.com/openbao/openbao/api/v2`](https://pkg.go.dev/github.com/openbao/openbao/api/v2) (`mount_path` default `secret`, `secret_path` relative to that mount). |
+| `k8s_secret` | Keys inside the Secret | Reads a Kubernetes Secret by name/namespace via the in-cluster or kubeconfig client. HMAC data is the raw secret bytes. Certificates may be plain PEM or base64-encoded PEM. |
+| `bao` | Fields inside the secret | Reads key material from an [OpenBao](https://openbao.org/) KV v2 secrets engine via [`github.com/openbao/openbao/api/v2`](https://pkg.go.dev/github.com/openbao/openbao/api/v2) (`mount_path` default `secret`, `secret_path` relative to that mount). The HMAC field must be standard base64. Certificates may be plain PEM or base64-encoded PEM. |
 
 > **Note on the `env` key source:** The `certificate` and `hmac_key` fields hold
 > the actual PEM text or HMAC secret, **not** environment variable names. The
