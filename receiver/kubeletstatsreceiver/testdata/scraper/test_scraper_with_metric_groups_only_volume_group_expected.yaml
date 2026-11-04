@@ -13,7 +13,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: default-token-wgfsl
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -73,7 +73,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: config-volume
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -133,7 +133,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: coredns-token-dzc5t
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -193,7 +193,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: config-volume
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -253,7 +253,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: coredns-token-dzc5t
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -313,7 +313,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: kube-proxy
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -373,7 +373,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: kube-proxy-token-2z27z
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -433,7 +433,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: storage-provisioner-token-qzlx6
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.

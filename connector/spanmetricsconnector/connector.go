@@ -62,6 +62,10 @@ type dimensionList struct {
 	globDimensions []glob.Glob
 }
 
+func (d dimensionList) empty() bool {
+	return len(d.nameDimensions) == 0 && len(d.globDimensions) == 0
+}
+
 type connectorImp struct {
 	lock   sync.Mutex
 	logger *zap.Logger
@@ -329,9 +333,13 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		 * - For cumulative metrics: (T1, T2), (T1, T3), (T1, T4) ...
 		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
 		 */
-		deltaMetricKeys := make(map[metrics.Key]bool)
+		aggregationTemporality := p.config.GetAggregationTemporality()
+		var deltaMetricKeys map[metrics.Key]bool
+		if aggregationTemporality == pmetric.AggregationTemporalityDelta {
+			deltaMetricKeys = make(map[metrics.Key]bool)
+		}
 		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
-			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+			if aggregationTemporality == pmetric.AggregationTemporalityDelta {
 				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(deltaMetricKey{resource: rk, metric: mk}); ok {
 					startTime = lastTimestamp
 				}
@@ -349,21 +357,21 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
-		sums.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
-			events.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 		}
 
 		for mk := range deltaMetricKeys {
@@ -461,9 +469,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 
 				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCountWithCache(&span, &adjustedCountCache)
-				key := p.buildKey(serviceName, span, p.dimensions, p.callsDimensions, resourceAttr, isAdjusted)
+				key := p.buildKey(serviceName, span, p.dimensions, p.callsDimensions, resourceAttr, nil, isAdjusted)
 				attributesFun := func() pcommon.Map {
-					return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, p.callsDimensions, ils.Scope(), isAdjusted)
+					return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.callsDimensions, ils.Scope(), isAdjusted)
 				}
 
 				// aggregate sums metrics
@@ -476,11 +484,16 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate histogram metrics
 				if !p.config.Histogram.Disable {
-					durationKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, isAdjusted)
-					attributesFun = func() pcommon.Map {
-						return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+					// Reuse the calls key/attributes when neither metric has metric-specific dimensions.
+					durationKey := key
+					durationAttributesFun := attributesFun
+					if !p.callsDimensions.empty() || !p.durationDimensions.empty() {
+						durationKey = p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, nil, isAdjusted)
+						durationAttributesFun = func() pcommon.Map {
+							return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+						}
 					}
-					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp, lastSeen)
+					h, durationLimitReached := histograms.GetOrCreate(durationKey, durationAttributesFun, startTimestamp, lastSeen)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
@@ -491,19 +504,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if p.events.Enabled {
 					for l := 0; l < span.Events().Len(); l++ {
 						event := span.Events().At(l)
-						rscAndEventAttrs := pcommon.NewMap()
-
-						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
-						resourceAttr.CopyTo(rscAndEventAttrs)
-						// We cannot use event.Attributes().CopyTo(rscAdnEventAttrs) because it overrides the existing keys.
-						event.Attributes().Range(func(k string, v pcommon.Value) bool {
-							v.CopyTo(rscAndEventAttrs.PutEmpty(k))
-							return true
-						})
-
-						eKey := p.buildKey(serviceName, span, p.dimensions, p.eDimensions, rscAndEventAttrs, isAdjusted)
+						eventAttrs := event.Attributes()
+						eKey := p.buildKey(serviceName, span, p.dimensions, p.eDimensions, resourceAttr, &eventAttrs, isAdjusted)
 						attributesFun = func() pcommon.Map {
-							return p.buildAttributes(serviceName, span, rscAndEventAttrs, p.dimensions, p.eDimensions, ils.Scope(), isAdjusted)
+							ea := event.Attributes()
+							return p.buildAttributes(serviceName, span, resourceAttr, &ea, p.dimensions, p.eDimensions, ils.Scope(), isAdjusted)
 						}
 						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp, lastSeen)
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
@@ -535,11 +540,12 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 		return xhash.MapHash(attr)
 	}
 	m := pcommon.NewMap()
-	attr.CopyTo(m)
-	m.RemoveIf(func(k string, _ pcommon.Value) bool {
-		_, ok := p.resourceMetricsKeyAttributes[k]
-		return !ok
-	})
+	m.EnsureCapacity(len(p.resourceMetricsKeyAttributes))
+	for k := range p.resourceMetricsKeyAttributes {
+		if v, ok := attr.Get(k); ok {
+			v.CopyTo(m.PutEmpty(k))
+		}
+	}
 	return xhash.MapHash(m)
 }
 
@@ -568,6 +574,7 @@ func (p *connectorImp) buildAttributes(
 	serviceName string,
 	span ptrace.Span,
 	resourceAttrs pcommon.Map,
+	eventAttrs *pcommon.Map,
 	dimensions dimensionList,
 	optionalDims dimensionList,
 	instrumentationScope pcommon.InstrumentationScope,
@@ -622,8 +629,8 @@ func (p *connectorImp) buildAttributes(
 		}
 	}
 
-	addResourceAttributes(&attr, dimensions, span, resourceAttrs)
-	addResourceAttributes(&attr, optionalDims, span, resourceAttrs)
+	addResourceAttributes(&attr, dimensions, span, resourceAttrs, eventAttrs)
+	addResourceAttributes(&attr, optionalDims, span, resourceAttrs, eventAttrs)
 
 	return attr
 }
@@ -637,11 +644,22 @@ func sortedKeys(attrs pcommon.Map) []string {
 	return keys
 }
 
-// matchDimensions iterates over span and resource attributes, applying function f
-// if the attribute matches any of dimension's name or glob expression.
-func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, f func(string, pcommon.Value)) {
+// matchDimensions iterates over span, optional event, and resource attributes, applying
+// function f if the attribute matches any of dimension's name or glob expression.
+// Precedence is span attributes, then event attributes (when provided), then resource attributes.
+// Glob matches are visited in sorted name order across the merged event and resource attribute
+// names so the resulting metric key is stable regardless of where each attribute came from.
+func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map, f func(string, pcommon.Value)) {
+	spanAttrs := span.Attributes()
 	for _, d := range dimensions.nameDimensions {
-		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		var v pcommon.Value
+		var ok bool
+		if eventAttrs != nil {
+			v, ok = utilattri.GetDimensionValue(d, spanAttrs, *eventAttrs, resourceAttrs)
+		} else {
+			v, ok = utilattri.GetDimensionValue(d, spanAttrs, resourceAttrs)
+		}
+		if ok {
 			f(d.Name, v)
 		}
 	}
@@ -649,22 +667,59 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 	if len(dimensions.globDimensions) == 0 {
 		return
 	}
-	for _, n := range sortedKeys(span.Attributes()) {
+	for _, n := range sortedKeys(spanAttrs) {
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
-				v, _ := span.Attributes().Get(n)
+				v, _ := spanAttrs.Get(n)
 				f(n, v)
 				break
 			}
 		}
 	}
-	for _, n := range sortedKeys(resourceAttrs) {
-		if _, ok := span.Attributes().Get(n); ok {
+	if eventAttrs == nil {
+		for _, n := range sortedKeys(resourceAttrs) {
+			if _, ok := spanAttrs.Get(n); ok {
+				continue
+			}
+			for _, g := range dimensions.globDimensions {
+				if g.Match(n) {
+					v, _ := resourceAttrs.Get(n)
+					f(n, v)
+					break
+				}
+			}
+		}
+		return
+	}
+
+	// Walk the sorted event and resource attribute names as a single merged, deduplicated
+	// sequence so the visiting order (and therefore the metric key) only depends on the final
+	// attribute set, not on which names the event happens to repeat from the resource.
+	// Event attributes take precedence over resource attributes for the same name.
+	eventKeys := sortedKeys(*eventAttrs)
+	resourceKeys := sortedKeys(resourceAttrs)
+	ei, ri := 0, 0
+	for ei < len(eventKeys) || ri < len(resourceKeys) {
+		var n string
+		var attrs pcommon.Map
+		switch {
+		case ri >= len(resourceKeys) || (ei < len(eventKeys) && eventKeys[ei] < resourceKeys[ri]):
+			n, attrs = eventKeys[ei], *eventAttrs
+			ei++
+		case ei >= len(eventKeys) || resourceKeys[ri] < eventKeys[ei]:
+			n, attrs = resourceKeys[ri], resourceAttrs
+			ri++
+		default: // same name in both: the event value wins.
+			n, attrs = eventKeys[ei], *eventAttrs
+			ei++
+			ri++
+		}
+		if _, ok := spanAttrs.Get(n); ok {
 			continue
 		}
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
-				v, _ := resourceAttrs.Get(n)
+				v, _ := attrs.Get(n)
 				f(n, v)
 				break
 			}
@@ -672,8 +727,8 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 	}
 }
 
-func addResourceAttributes(attrs *pcommon.Map, dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map) {
-	matchDimensions(dimensions, span, resourceAttrs, func(n string, v pcommon.Value) {
+func addResourceAttributes(attrs *pcommon.Map, dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map) {
+	matchDimensions(dimensions, span, resourceAttrs, eventAttrs, func(n string, v pcommon.Value) {
 		v.CopyTo(attrs.PutEmpty(n))
 	})
 }
@@ -688,12 +743,13 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // buildKey builds the metric key from the service name and span metadata such as name, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
 // or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
+// When eventAttrs is non-nil, event attributes override resource attributes for the same key.
 //
 // When enable_metrics_sampling_method is true, the sampling method (extrapolated or counted) is included in the key
 // so that spans with different tracestate produce distinct metrics.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions, optionalDims dimensionList, resourceOrEventAttrs pcommon.Map, isAdjusted bool) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions, optionalDims dimensionList, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map, isAdjusted bool) metrics.Key {
 	p.keyBuf.Reset()
 
 	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -715,10 +771,10 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions
 		}
 	}
 
-	matchDimensions(dimensions, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+	matchDimensions(dimensions, span, resourceAttrs, eventAttrs, func(n string, v pcommon.Value) {
 		concatDimensionValue(p.keyBuf, n+":"+v.AsString(), true)
 	})
-	matchDimensions(optionalDims, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+	matchDimensions(optionalDims, span, resourceAttrs, eventAttrs, func(n string, v pcommon.Value) {
 		concatDimensionValue(p.keyBuf, n+":"+v.AsString(), true)
 	})
 

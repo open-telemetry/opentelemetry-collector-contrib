@@ -322,6 +322,7 @@ extension/tailstorage/pebbletailstorageextension/integrationtest: extension/tail
 internal/aws/xray/testdata/sampleapp internal/aws/xray/testdata/sampleserver: internal/aws/xray
 internal/datadog/e2e: internal/datadog
 pkg/ottl/contexts/xprofile pkg/ottl/contexts/xspanlink pkg/ottl/xottl: pkg/ottl
+receiver/prometheusremotewritereceiver/compliance: receiver/prometheusremotewritereceiver
 testbed/mockdatasenders/mockdatadogagentexporter: testbed
 
 # Trigger each module's delegation target

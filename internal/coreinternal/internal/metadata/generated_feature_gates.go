@@ -8,7 +8,7 @@ import (
 
 var InternalCoreinternalGoldendatasetDontEmitV0DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.28.0 attribute db.system."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),
@@ -58,7 +58,7 @@ var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featu
 
 var InternalCoreinternalGoldendatasetEmitV1DatabaseConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.EmitV1DatabaseConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with db.system.name (semconv v1.40.0) instead of the deprecated db.system (semconv v1.28.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299"),
 	featuregate.WithRegisterFromVersion("v0.154.0"),

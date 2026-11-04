@@ -1237,7 +1237,7 @@ BEGIN
 	BEGIN TRY
 		DECLARE db_cursor CURSOR LOCAL FAST_FORWARD FOR
 			SELECT [name] FROM sys.databases WITH (NOLOCK)
-			WHERE [state] = 0 AND [database_id] > 4; -- exclude system databases
+			WHERE [state] = 0 AND [database_id] > 4{database_filter AND [name]}; -- exclude system databases
 		OPEN db_cursor;
 		FETCH NEXT FROM db_cursor INTO @dbname;
 		WHILE @@FETCH_STATUS = 0

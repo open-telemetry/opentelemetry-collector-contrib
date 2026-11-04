@@ -7,6 +7,11 @@ status:
     active: [dashpole, bertysentry, ArthurSens]
 
 feature_gates:
+  - id: pkg.prometheus.KeepIdentifyingResourceAttributes
+    description: Preserve service.name, service.namespace, and service.instance.id as labels on target_info in addition to job and instance.
+    stage: alpha
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48890
   - id: pkg.translator.prometheus.PermissiveLabelSanitization
     description: Controls whether to change labels starting with '_' to 'key_'.
     stage: stable

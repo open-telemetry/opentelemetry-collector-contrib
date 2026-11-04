@@ -4,6 +4,7 @@
 package fileexporter
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -14,8 +15,51 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
+
+type failingDisk struct{ err error }
+
+func (f failingDisk) Write([]byte) (int, error) { return 0, f.err }
+func (failingDisk) Close() error                { return nil }
+
+func TestGroupingFileExporterShutdownReportsFlushErrors(t *testing.T) {
+	conf := newEvictionTestConfig(t.TempDir())
+	conf.FlushInterval = time.Hour
+	conf.GroupBy.MaxOpenFiles = 2
+
+	gfe := newFileExporter(conf, zap.NewNop()).(*groupingFileExporter)
+	require.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+
+	firstErr := errors.New("first disk full")
+	secondErr := errors.New("second disk full")
+	gfe.newFileWriter = func(path string) (*fileWriter, error) {
+		err := firstErr
+		if strings.HasSuffix(path, "two.log") {
+			err = secondErr
+		}
+		return &fileWriter{
+			path:          path,
+			file:          newBufferedWriteCloser(failingDisk{err}),
+			exporter:      exportMessageAsLine,
+			flushInterval: conf.FlushInterval,
+		}, nil
+	}
+
+	logs := plog.NewLogs()
+	for _, name := range []string{"one", "two"} {
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resourceLogs.Resource().Attributes().PutStr(defaultResourceAttribute, name)
+		resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("buffered data")
+	}
+	require.NoError(t, gfe.consumeLogs(t.Context(), logs))
+
+	err := gfe.Shutdown(t.Context())
+	assert.ErrorIs(t, err, firstErr)
+	assert.ErrorIs(t, err, secondErr)
+	assert.NoError(t, gfe.Shutdown(t.Context()))
+}
 
 func newEvictionTestConfig(tmpDir string) *Config {
 	return &Config{

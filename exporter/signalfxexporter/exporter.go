@@ -198,7 +198,7 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		version:                createSettings.BuildInfo.Version,
 		logger:                 createSettings.Logger,
 		telemetrySettings:      createSettings.TelemetrySettings,
-		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties),
+		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties, config.DimensionClient.StripK8sLabelPrefix),
 	}, nil
 }
 

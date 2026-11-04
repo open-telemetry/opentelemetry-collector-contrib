@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/prometheus
+note: Add the pkg.prometheus.KeepIdentifyingResourceAttributes feature gate to preserve service.name, service.namespace, and service.instance.id on target_info.
+issues: [48890]
+change_logs: [user]

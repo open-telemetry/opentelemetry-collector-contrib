@@ -5,6 +5,7 @@ package prometheusexporter
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -1239,4 +1241,51 @@ func TestNormalizeNamespaceSanitizes(t *testing.T) {
 	ns2 := normalizeNamespace("my_namespace.1", labelNamerUTF8, logger)
 
 	require.Equal(t, "my_namespace.1", ns2, "UTF-8 allowed should not sanitize ASCII characters")
+}
+
+func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%t", enabled), func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, prometheustranslator.KeepIdentifyingResourceAttributesGate, enabled)()
+			for _, strategy := range []translationStrategy{underscoreEscapingWithSuffixes, noTranslation} {
+				for _, withOtherAttribute := range []bool{false, true} {
+					t.Run(fmt.Sprintf("%s/other_attribute=%t", strategy, withOtherAttribute), func(t *testing.T) {
+						attrs := pcommon.NewMap()
+						attrs.PutStr("service.name", "api")
+						attrs.PutStr("service.namespace", "shop")
+						attrs.PutStr("service.instance.id", "replica-1")
+						want := map[string]string{"job": "shop/api", "instance": "replica-1"}
+						if withOtherAttribute {
+							attrs.PutStr("region", "west")
+							want["region"] = "west"
+						}
+						original := attrs.AsRaw()
+						if enabled {
+							for key, value := range original {
+								if strings.HasPrefix(key, "service.") {
+									if strategy != noTranslation {
+										key = strings.ReplaceAll(key, ".", "_")
+									}
+									want[key] = value.(string)
+								}
+							}
+						}
+						c := newCollector(&Config{TranslationStrategy: strategy}, zap.NewNop())
+						metrics, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
+						require.NoError(t, err)
+						require.Len(t, metrics, 1)
+						var metric io_prometheus_client.Metric
+						require.NoError(t, metrics[0].Write(&metric))
+						got := map[string]string{}
+						for _, label := range metric.Label {
+							got[label.GetName()] = label.GetValue()
+						}
+						require.Equal(t, want, got)
+						require.Equal(t, float64(1), metric.Gauge.GetValue())
+						require.Equal(t, original, attrs.AsRaw())
+					})
+				}
+			}
+		})
+	}
 }

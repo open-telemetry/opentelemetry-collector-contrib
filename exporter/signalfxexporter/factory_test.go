@@ -218,14 +218,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 		require.True(t, directionFound, `missing dimension: direction`)
 	}
 
-	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
-	// is the cumulative across devices and directions.
-	dps, ok = metrics["disk_ops.total"]
-	require.True(t, ok, "disk_ops.total metrics not found")
-	require.Len(t, dps, 1)
-	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
-	require.Len(t, dps[0].Dimensions, 1)
-	requireDimension(t, dps[0].Dimensions, "host", "host0")
+	require.NotContains(t, metrics, "disk_ops.total")
 
 	// system.network.io.total new metric calculation
 	dps, ok = metrics["system.network.io.total"]
@@ -694,7 +687,7 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 8, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 7, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 
 	require.Empty(t, dps)

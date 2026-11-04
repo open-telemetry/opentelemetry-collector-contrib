@@ -50,12 +50,18 @@ credentials is rejected at configuration validation. See
 Kubernetes Pod service account for authentication.
 - `tls`: TLS settings for the scrape. Only the following
 [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings)
-are used: `insecure`, `ca_file`, `cert_file`, `key_file`,
-`insecure_skip_verify`, `min_version` and `max_version`. Other `tls` options are accepted but currently have no
-effect.
+are used: `insecure`, `ca_file`, `ca_pem`, `cert_file`, `cert_pem`, `key_file`,
+`key_pem`, `server_name_override`, `insecure_skip_verify`, `min_version` and
+`max_version`. Other `tls` options are accepted but have no effect. When the
+target is scraped over `https`, setting `cipher_suites` (with or without
+`include_insecure_cipher_suites`), `curve_preferences`, `tpm`, or
+`include_system_ca_certs_pool` together with a CA logs a warning at start,
+because these settings have no equivalent in the Prometheus scrape config.
+Certificate, key and CA files are re-read when they change, so
+`reload_interval` is not needed.
   - `insecure` (default = `true`): Unlike other HTTP clients in the Collector,
   this receiver defaults to plain `http`. The target is scraped over `https`
-  when `insecure` is `false` or a `ca_file` is set; otherwise it is scraped over
+  when `insecure` is `false` or a `ca_file` or `ca_pem` is set; otherwise it is scraped over
   `http` and the other `tls` settings, including `cert_file` and `key_file`,
   are not used.
 
