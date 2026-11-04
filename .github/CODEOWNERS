@@ -122,10 +122,10 @@ extension/jaegerremotesampling/                                  @open-telemetry
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
 extension/mcp/                                                   @open-telemetry/collector-contrib-approvers @pavolloffay @codeboten
 extension/oauth2clientauthextension/                             @open-telemetry/collector-contrib-approvers @pavankrish123
-extension/observer/                                              @open-telemetry/collector-contrib-approvers @dmitryax
+extension/observer/                                              @open-telemetry/collector-contrib-approvers @jinja2 @pjanotti
 extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1 @jriguera
 extension/observer/dockerobserver/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
-extension/observer/ecsobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
+extension/observer/ecsobserver/                                  @open-telemetry/collector-contrib-approvers @pjanotti
 extension/observer/hostobserver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 extension/oidcauthextension/                                     @open-telemetry/collector-contrib-approvers @asweet-confluent
@@ -354,7 +354,7 @@ receiver/pulsarreceiver/                                         @open-telemetry
 receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @chrroberts-pure
 receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @chrroberts-pure
 receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
-receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
+receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @ChrsMark @pjanotti @jinja2
 receiver/redfishreceiver/                                        @open-telemetry/collector-contrib-approvers @steven-freed @khushijain21
 receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @crobert-1
 receiver/saphanareceiver/                                        @open-telemetry/collector-contrib-approvers @dehaansa
