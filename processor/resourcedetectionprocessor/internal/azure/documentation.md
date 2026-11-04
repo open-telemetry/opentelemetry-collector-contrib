@@ -9,7 +9,7 @@
 | azure.resourcegroup.name | The azure.resourcegroup.name | Any Str | true | - | - |
 | azure.vm.name | The azure.vm.name | Any Str | true | - | - |
 | azure.vm.scaleset.name | The azure.vm.scaleset.name | Any Str | true | - | - |
-| azure.vm.size | The azure.vm.size | Any Str | true | - | - |
+| azure.vm.size | The azure.vm.size. Deprecated, use host.type instead. | Any Str | true | - | Deprecated |
 | cloud.account.id | The cloud.account.id | Any Str | true | [cloud.account.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-account-id) | - |
 | cloud.availability_zone | The cloud availability zone | Any Str | false | [cloud.availability_zone](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-availability-zone) | - |
 | cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
@@ -17,3 +17,4 @@
 | cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
 | host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-id) | - |
 | host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
+| host.type | The host.type | Any Str | true | [host.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-type) | - |

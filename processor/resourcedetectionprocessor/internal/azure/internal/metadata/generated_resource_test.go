@@ -24,15 +24,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetHostID("host.id-val")
 			rb.SetHostName("host.name-val")
+			rb.SetHostType("host.type-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 10, res.Attributes().Len())
-			case "all_set":
 				assert.Equal(t, 11, res.Attributes().Len())
+			case "all_set":
+				assert.Equal(t, 12, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -93,6 +94,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
+			}
+			hostTypeAttrVal, ok := res.Attributes().Get("host.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "host.type-val", hostTypeAttrVal.Str())
 			}
 		})
 	}

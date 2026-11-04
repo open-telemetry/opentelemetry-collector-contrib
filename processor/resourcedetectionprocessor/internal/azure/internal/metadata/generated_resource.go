@@ -98,6 +98,13 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 	}
 }
 
+// SetHostType sets provided value as "host.type" attribute.
+func (rb *ResourceBuilder) SetHostType(val string) {
+	if rb.config.HostType.Enabled {
+		rb.res.Attributes().PutStr("host.type", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

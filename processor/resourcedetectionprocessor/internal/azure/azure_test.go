@@ -72,6 +72,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		"cloud.account.id":         "subscriptionID",
 		"azure.vm.name":            "name",
 		"azure.vm.size":            "vmSize",
+		"host.type":                "vmSize",
 		"azure.resourcegroup.name": "resourceGroup",
 		"azure.vm.scaleset.name":   "myScaleset",
 		"azure.tag.tag1key":        "value1",
@@ -146,6 +147,32 @@ func TestDetectEmptyFieldsOmitted(t *testing.T) {
 
 	_, hasZone := res.Attributes().Get("cloud.availability_zone")
 	require.False(t, hasZone, "empty cloud.availability_zone should not be set")
+}
+
+func TestDetectHostTypeWithoutDeprecatedVMSize(t *testing.T) {
+	mp := &azure.MockProvider{}
+	mp.On("Metadata").Return(&azure.ComputeMetadata{
+		Location: "location",
+		Name:     "name",
+		VMSize:   "Standard_D2s_v3",
+	}, nil)
+
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.AzureVMSize.Enabled = false
+
+	detector := &Detector{
+		provider: mp,
+		rb:       metadata.NewResourceBuilder(cfg),
+	}
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	mp.AssertExpectations(t)
+
+	hostType, ok := res.Attributes().Get("host.type")
+	require.True(t, ok)
+	assert.Equal(t, "Standard_D2s_v3", hostType.Str())
+	_, hasVMSize := res.Attributes().Get("azure.vm.size")
+	assert.False(t, hasVMSize)
 }
 
 func TestDetectError(t *testing.T) {
