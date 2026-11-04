@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.164.1
