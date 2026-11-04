@@ -155,8 +155,10 @@ func BuildDataSourceString(config Config) (string, error) {
 	case DriverSnowflake:
 		// Snowflake connection string format: user:pass@host:port/database?param1=value1&param2=value2
 		connStr = fmt.Sprintf("%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
-	case DriverSQLServer:
-		// SQL Server connection string format: sqlserver://username:password@host:port/instance
+	case DriverSQLServer, DriverAzureSQL:
+		// SQL Server connection string format: sqlserver://username:password@host:port/instance.
+		// The azuresql driver uses the same DSN format, with Azure AD options such as
+		// fedauth supplied through the query parameters.
 
 		// replace all backslashes with forward slashes
 		host := strings.ReplaceAll(config.Host, "\\", "/")

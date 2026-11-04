@@ -15,9 +15,6 @@ exclude_metrics:
   - cpu.user
   - cpu.wait
 
-  # Disk-IO metrics.
-  - disk_ops.pending
-
   # Virtual memory metrics
   - vmpage_io.memory.in
   - vmpage_io.memory.out
