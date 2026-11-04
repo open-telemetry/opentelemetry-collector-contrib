@@ -315,16 +315,30 @@ func TestJMXAddonUpgradeReplacesProcess(t *testing.T) {
 
 // --- file ---
 
+// TestFileAddonThroughSupervisor covers the geoip case: a database installed
+// as a file addon, then refreshed. Components read such files at startup, so
+// each new version restarts the Collector once.
 func TestFileAddonThroughSupervisor(t *testing.T) {
 	s := newAddonTestSupervisor(t)
+	ctx := t.Context()
 
-	require.NoError(t, installPackage(s.packages, "file:geoip", []byte("pretend-database"), "https://example.invalid/GeoLite2-City.mmdb", "2026.10.28"))
+	require.NoError(t, installPackage(s.packages, "file:geoip", []byte("database v1"), "https://example.invalid/GeoLite2-City.mmdb", "2026.10.28"))
+	assert.True(t, s.reconcileAddons(ctx), "a newly installed file must be read by the Collector")
+	assert.False(t, s.reconcileAddons(ctx), "an unchanged file must not restart the Collector again")
 
-	assert.False(t, s.reconcileAddons(t.Context()))
 	_, dir, ok := s.addons.Get("file:geoip")
 	require.True(t, ok)
 	// This path is what a geoipprocessor database_path points at.
-	assert.FileExists(t, filepath.Join(dir, "GeoLite2-City.mmdb"))
+	db := filepath.Join(dir, "GeoLite2-City.mmdb")
+	assert.FileExists(t, db)
+
+	// The weekly refresh: a new version under the same name.
+	require.NoError(t, installPackage(s.packages, "file:geoip", []byte("database v2"), "https://example.invalid/GeoLite2-City.mmdb", "2026.11.04"))
+	assert.True(t, s.reconcileAddons(ctx), "an upgraded file must be read by the Collector")
+	body, err := os.ReadFile(db)
+	require.NoError(t, err)
+	assert.Equal(t, "database v2", string(body))
+	assert.False(t, s.reconcileAddons(ctx))
 }
 
 // --- framework behavior ---
@@ -382,6 +396,9 @@ func TestAddonsSurviveRestart(t *testing.T) {
 	installFakeJava(t)
 	s := newAddonTestSupervisor(t)
 	require.NoError(t, installPackage(s.packages, "jmx:tomcat", fakeJar("1"), "https://example.invalid/opentelemetry-jmx-scraper.jar", "1"))
+	// A file addon asks for a Collector restart on its first start. At startup
+	// that request must be ignored, since the Collector has not started yet.
+	require.NoError(t, installPackage(s.packages, "file:geoip", []byte("db"), "https://example.invalid/GeoLite2-City.mmdb", "1"))
 	require.NoError(t, s.packages.SetAllPackagesHash([]byte("all-hash")))
 	s.stopAddons(t.Context())
 
@@ -602,12 +619,13 @@ func TestAddonStateChangeRestartsCollectorOnce(t *testing.T) {
 	assert.Contains(t, string(conf), "state = disabled")
 }
 
-// TestNoRestartWhenNothingChanged checks that a package offer carrying no
-// change to the Collector does not restart it.
+// TestNoRestartWhenNothingChanged checks that a package offer whose addons do
+// not need the Collector restarted, and that carries no Collector config change,
+// does not restart it.
 func TestNoRestartWhenNothingChanged(t *testing.T) {
-	s := newAddonTestSupervisor(t)
+	s := newAddonTestSupervisor(t, flakyFactory{reject: &atomic.Bool{}})
 	syncer := newGatedSyncer(func() {
-		require.NoError(t, installPackage(s.packages, "file:geoip", []byte("db"), "https://example.invalid/GeoLite2-City.mmdb", "1"))
+		require.NoError(t, installPackage(s.packages, "flaky:x", []byte("x"), "https://example.invalid/x", "1"))
 	})
 	close(syncer.gate)
 

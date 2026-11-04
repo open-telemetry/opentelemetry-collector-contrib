@@ -71,7 +71,7 @@ func TestInstallRejectsURLWithoutFileName(t *testing.T) {
 	}
 }
 
-func TestFileAddonRunsNothingAndRejectsConfig(t *testing.T) {
+func TestFileAddonRestartsCollectorOnceAndRejectsConfig(t *testing.T) {
 	a, err := NewFactory().Create(t.Context(), addon.Settings{ID: addon.ID{Type: Type, Name: "geoip"}, Dir: t.TempDir(), Logger: zap.NewNop()})
 	require.NoError(t, err)
 	ctx := t.Context()
@@ -79,6 +79,12 @@ func TestFileAddonRunsNothingAndRejectsConfig(t *testing.T) {
 	effect, err := a.Configure(ctx, nil)
 	require.NoError(t, err)
 	assert.Equal(t, addon.Effect{}, effect)
+
+	// The first start asks for a Collector restart so the Collector reads the new
+	// files; later starts change nothing.
+	effect, err = a.Start(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, addon.Effect{RestartAgent: true}, effect)
 
 	effect, err = a.Start(ctx)
 	require.NoError(t, err)
