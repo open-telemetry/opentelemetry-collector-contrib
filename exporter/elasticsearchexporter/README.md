@@ -365,9 +365,9 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 | `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
 
 - `retry`: Elasticsearch bulk request retry settings.
-  The default is at-least-once delivery. HTTP client timeouts and other transport errors are retried. A bulk HTTP status of 400, 401, 403, 404, 409, 429, 500, 502, 503, or 504 retries the whole request. Inside an HTTP 200 response, document status codes 429, 500, 502, 503, and 504 are retried.
+  The default is at-least-once delivery. HTTP client timeouts and other transport errors are retried. See the defaults below for the request and document status codes that are retried.
   Retrying an HTTP client timeout or status 500, 502, 503, or 504 can index the same documents twice when the first `_bulk` request was applied and its response was lost.
-  HTTP client timeouts are all retried. `retry_on_document_status` does not follow `retry_on_status`.
+  HTTP client timeouts are all retried.
 
   ```yaml
   retry:
@@ -384,8 +384,8 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[400, 401, 403, 404, 409, 429, 500, 502, 503, 504]): Status codes that retry the whole bulk HTTP request.
-  - `retry_on_document_status` (default=[429, 500, 502, 503, 504]): Status codes that retry failed documents in a successful bulk HTTP response. This does not follow `retry_on_status`. Set to `[]` to disable document level retries by status code.
+  - `retry_on_status` (default=[400, 401, 403, 404, 409, 429, 500, 502, 503, 504]): Status codes that retry the whole bulk HTTP request. Version detection reuses this list and excludes `401` and `403`.
+  - `retry_on_document_status` (default=[429, 500, 502, 503, 504]): Status codes that retry failed documents in a successful bulk HTTP response. Set to `[]` to disable document level retries by status code.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
@@ -440,6 +440,10 @@ The query is best-effort: if it fails (for example, when Elasticsearch is
 temporarily unreachable), startup is not blocked. Version detection cannot be
 performed when the endpoint is resolved at request time (for example, when a
 routing middleware rewrites the destination per request).
+
+The version check uses the `retry` settings. It retries the same
+`retry_on_status` codes except `401` and `403`, because the credentials do not
+change between attempts.
 
 ### Telemetry settings
 
