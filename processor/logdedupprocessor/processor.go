@@ -213,8 +213,8 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 }
 
 // Start starts the processor.
-func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(ctx)
+func (p *logDedupProcessor) Start(_ context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
 	p.wg.Add(1)
@@ -307,8 +307,8 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Export any remaining logs
-			p.exportLogs(ctx)
+			// Export any remaining logs with a live context so downstream does not reject them.
+			p.exportLogs(context.WithoutCancel(ctx))
 			if err := ctx.Err(); err != context.Canceled {
 				p.logger.Error("context error", zap.Error(err))
 			}
