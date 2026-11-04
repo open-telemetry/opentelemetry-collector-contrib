@@ -103,7 +103,12 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 		}
 	}
 
-	httpConfig.BearerTokenFile = bearerTokenFile
+	if bearerTokenFile != "" {
+		httpConfig.Authorization = &configutil.Authorization{
+			Type:            "Bearer",
+			CredentialsFile: bearerTokenFile,
+		}
+	}
 
 	if len(cfg.ClientConfig.Headers) > 0 {
 		headers := make(map[string]configutil.Header, len(cfg.ClientConfig.Headers))

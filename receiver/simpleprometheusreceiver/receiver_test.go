@@ -107,17 +107,21 @@ func TestGetPrometheusConfigServiceAccount(t *testing.T) {
 			}
 			require.NoError(t, err)
 
+			wantAuth := &configutil.Authorization{Type: "Bearer", CredentialsFile: tokenFile}
+			assertAuth := func(httpConfig configutil.HTTPClientConfig) {
+				t.Helper()
+				assert.Equal(t, wantAuth, httpConfig.Authorization)
+				assert.Empty(t, httpConfig.BearerToken)
+				assert.Empty(t, httpConfig.BearerTokenFile)
+			}
+			assertAuth(got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig)
+
 			// The prometheus receiver re-marshals its config through YAML on
 			// start; the token file must survive that round trip so the token
 			// is re-read on each scrape instead of being fixed at start.
 			require.NoError(t, got.PrometheusConfig.Reload())
 			require.Len(t, got.PrometheusConfig.ScrapeConfigs, 1)
-			httpConfig := got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig
-			require.NotNil(t, httpConfig.Authorization)
-			assert.Equal(t, "Bearer", httpConfig.Authorization.Type)
-			assert.Equal(t, tokenFile, httpConfig.Authorization.CredentialsFile)
-			assert.Empty(t, httpConfig.Authorization.Credentials)
-			assert.Empty(t, httpConfig.BearerToken)
+			assertAuth(got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig)
 		})
 	}
 }
