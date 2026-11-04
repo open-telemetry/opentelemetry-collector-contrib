@@ -157,7 +157,7 @@ internal/k8sconfig/                                              @open-telemetry
 internal/k8sinventory/                                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @krisztianfekete @jinja2
 internal/k8sleaderelectortest/                                   @open-telemetry/collector-contrib-approvers @rakesh-garimella @jinja2
 internal/kafka/                                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
-internal/kubelet/                                                @open-telemetry/collector-contrib-approvers @jinja2 @dloucasfx
+internal/kubelet/                                                @open-telemetry/collector-contrib-approvers @dloucasfx @jinja2
 internal/metadataproviders/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
 internal/natsclient/                                             @open-telemetry/collector-contrib-approvers @suckatrash @kalebpace @ChrsMark
 internal/otelarrow/                                              @open-telemetry/collector-contrib-approvers @jmacd @JakeDern
