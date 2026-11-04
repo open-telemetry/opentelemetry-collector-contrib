@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.343.0
 	github.com/aws/smithy-go v1.28.7
-	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
@@ -25,7 +25,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.164.1
 	github.com/scaleway/scaleway-sdk-go v1.39.0
-	github.com/shirou/gopsutil/v4 v4.26.9
+	github.com/shirou/gopsutil/v4 v4.26.10
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
@@ -94,7 +94,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.8.2 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/ebitengine/purego v0.11.1 // indirect
+	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
