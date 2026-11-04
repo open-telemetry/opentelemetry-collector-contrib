@@ -164,7 +164,7 @@ internal/otelarrow/                                              @open-telemetry
 internal/pdatautil/                                              @open-telemetry/collector-contrib-approvers
 internal/rabbitmq/                                               @open-telemetry/collector-contrib-approvers @atoulme
 internal/sharedcomponent/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-internal/splunk/                                                 @open-telemetry/collector-contrib-approvers @crobert-1
+internal/splunk/                                                 @open-telemetry/collector-contrib-approvers @crobert-1 @dloucasfx
 internal/sqlquery/                                               @open-telemetry/collector-contrib-approvers @crobert-1
 internal/tools/                                                  @open-telemetry/collector-contrib-approvers
 pkg/batchperresourceattr/                                        @open-telemetry/collector-contrib-approvers @atoulme
