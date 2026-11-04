@@ -279,10 +279,13 @@ func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
 					TPMConfig:                   configtls.TPMConfig{Enabled: true},
 				},
 			},
-			wantKeys: []any{
-				"cipher_suites", "include_insecure_cipher_suites", "curve_preferences",
-				"include_system_ca_certs_pool", "tpm",
-			},
+			wantKeys: func() []any {
+				keys := make([]any, 0, len(warnedUnsupportedTLSKeys))
+				for _, key := range warnedUnsupportedTLSKeys {
+					keys = append(keys, key)
+				}
+				return keys
+			}(),
 		},
 	}
 
@@ -321,7 +324,7 @@ var (
 		"server_name_override", "insecure_skip_verify", "min_version", "max_version",
 	}
 	// warnedUnsupportedTLSKeys have no prometheus equivalent and are named in
-	// the start-time warning from unsupportedTLSSettings.
+	// the start-time warning from unsupportedTLSSettings, in the same order.
 	warnedUnsupportedTLSKeys = []string{
 		"cipher_suites", "include_insecure_cipher_suites", "curve_preferences",
 		"include_system_ca_certs_pool", "tpm",
