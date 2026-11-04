@@ -35,7 +35,8 @@ const (
 // checkpoints: a new leader would restart from the configured start time, which
 // duplicates or skips events on every failover.
 var errLeaderElectionWithoutStorage = errors.New(
-	"logs collection with k8s_leader_elector requires a storage extension that several collectors can use at the same time")
+	"logs collection with k8s_leader_elector requires a storage extension that several collectors can use at the same time",
+)
 
 type logsReceiver struct {
 	settings                      receiver.Settings
