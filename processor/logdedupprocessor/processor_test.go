@@ -735,3 +735,65 @@ func TestStartContextCancelDoesNotStopProcessor(t *testing.T) {
 
 	require.Equal(t, 1, sink.count())
 }
+
+func TestShutdownFlushUsesShutdownContext(t *testing.T) {
+	sink := &contextCapturingLogsSink{}
+	cfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          time.Hour,
+		Timezone:          defaultTimezone,
+		Conditions:        []string{},
+	}
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.ConsumeLogs(t.Context(), newSimpleLog()))
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	require.NoError(t, p.Shutdown(shutdownCtx))
+
+	require.Equal(t, 1, sink.logRecordCount())
+	ctxs := sink.capturedContexts()
+	require.Len(t, ctxs, 1)
+
+	expected, ok := shutdownCtx.Deadline()
+	require.True(t, ok)
+	actual, ok := ctxs[0].Deadline()
+	require.True(t, ok, "the shutdown flush should inherit the deadline from the Shutdown context")
+	require.Equal(t, expected, actual)
+}
+
+func TestShutdownFlushUsesShutdownContextWithMetadataKeys(t *testing.T) {
+	sink := &contextCapturingLogsSink{}
+	cfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          time.Hour,
+		Timezone:          defaultTimezone,
+		Conditions:        []string{},
+		MetadataKeys:      []string{"x-scope-orgid"},
+	}
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.ConsumeLogs(metadataContext(t, "tenant-a"), newSimpleLog()))
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	require.NoError(t, p.Shutdown(shutdownCtx))
+
+	require.Equal(t, 1, sink.logRecordCount())
+	ctxs := sink.capturedContexts()
+	require.Len(t, ctxs, 1)
+
+	// The shard context must carry the tenant metadata as well as the deadline.
+	require.Equal(t, []string{"tenant-a"}, client.FromContext(ctxs[0]).Metadata.Get("x-scope-orgid"))
+
+	expected, ok := shutdownCtx.Deadline()
+	require.True(t, ok)
+	actual, ok := ctxs[0].Deadline()
+	require.True(t, ok, "the shutdown flush should inherit the deadline from the Shutdown context")
+	require.Equal(t, expected, actual)
+}
