@@ -43,10 +43,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 const configTemplate = `
@@ -450,6 +450,7 @@ func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
 			Env: map[string]string{
 				supervisorRestartHelperEnv: "sleep",
 			},
+			StopGracePeriod: 10 * time.Second,
 		},
 	)
 	require.NoError(t, err)
@@ -487,6 +488,7 @@ func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testi
 			Env: map[string]string{
 				supervisorRestartHelperEnv: "emit-on-interrupt",
 			},
+			StopGracePeriod: 10 * time.Second,
 		},
 	)
 	require.NoError(t, err)
@@ -3619,24 +3621,19 @@ telemetry:
 	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 
-	path := filepath.Join(t.TempDir(), "output.txt")
-	backend := testbed.NewOTLPHTTPDataReceiver(4318)
-	mockBackend := testbed.NewMockBackend(path, backend)
-	err = mockBackend.Start()
-	require.NoError(t, err)
+	sink := testutil.StartOTLPSink(t, "127.0.0.1:4318")
 
-	mockBackend.EnableRecording()
 	supervisor.telemetrySettings.Logger.Info("test log")
 
 	require.Eventually(t, func() bool {
-		return len(mockBackend.GetReceivedLogs()) > 0
+		return len(sink.Logs.AllLogs()) > 0
 	}, 5*time.Second, 1*time.Second)
 
-	mockBackend.Stop()
+	sink.Shutdown()
 
-	receivedLogs := mockBackend.GetReceivedLogs()
+	receivedLogs := sink.Logs.AllLogs()
 	require.Len(t, receivedLogs, 1)
-	l := mockBackend.ReceivedLogs[0]
+	l := receivedLogs[0]
 	require.Equal(t, 1, l.ResourceLogs().Len())
 	l.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		require.Equal(t, 1, rl.ScopeLogs().Len())

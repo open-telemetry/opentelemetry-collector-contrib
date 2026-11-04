@@ -39,6 +39,9 @@ type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
 	// Traces related configurations
 	Traces TracesConfig `mapstructure:"traces"`
+	// Compression format of blob payloads (default = "", meaning none).
+	// Options are "", "gzip", or "auto", which detects gzip per blob from its header.
+	Compression string `mapstructure:"compression"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -125,6 +128,13 @@ const (
 	EncodingOTLPJSON = "otlp_json"
 	// EncodingOTLPProto denotes OTLP/Protobuf-encoded blob payloads.
 	EncodingOTLPProto = "otlp_proto"
+
+	// CompressionNone denotes uncompressed blob payloads.
+	CompressionNone = ""
+	// CompressionGzip denotes gzip-compressed blob payloads.
+	CompressionGzip = "gzip"
+	// CompressionAuto detects gzip compression per blob from its header.
+	CompressionAuto = "auto"
 )
 
 // isBuiltinEncoding reports whether enc is one of the encodings the receiver
@@ -151,6 +161,16 @@ func validateEncoding(enc string) error {
 		return fmt.Errorf("encoding %q is not a supported built-in encoding (%q, %q) or a valid encoding extension ID: %w", enc, EncodingOTLPJSON, EncodingOTLPProto, err)
 	}
 	return nil
+}
+
+// validateCompression accepts the supported compression formats.
+func validateCompression(compression string) error {
+	switch compression {
+	case CompressionNone, CompressionGzip, CompressionAuto:
+		return nil
+	default:
+		return fmt.Errorf("compression %q is not supported. supported options include [%q,%q,%q]", compression, CompressionNone, CompressionGzip, CompressionAuto)
+	}
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
@@ -183,6 +203,10 @@ func (c Config) Validate() (err error) {
 	}
 	if encErr := validateEncoding(c.Traces.Encoding); encErr != nil {
 		err = multierr.Append(err, fmt.Errorf("traces.%w", encErr))
+	}
+
+	if compErr := validateCompression(c.Compression); compErr != nil {
+		err = multierr.Append(err, compErr)
 	}
 
 	return err

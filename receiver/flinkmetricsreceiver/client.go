@@ -238,6 +238,7 @@ func (c *flinkClient) getJobsMetricsByIDs(ctx context.Context, jobIDs *models.Jo
 		}
 		jobInstance := models.JobMetrics{
 			Host:    c.hostName,
+			JobID:   job.Jid,
 			JobName: job.Name,
 			Metrics: *metrics,
 		}
@@ -312,6 +313,7 @@ func (c *flinkClient) getSubtasksMetricsByIDs(ctx context.Context, jobsResponse 
 					&models.SubtaskMetrics{
 						Host:          getTaskmanagerHost(subtask.TaskmanagerID),
 						TaskmanagerID: getTaskmanagerID(subtask.TaskmanagerID),
+						JobID:         job.ID,
 						JobName:       jobsWithIDResponse.Name,
 						TaskName:      vertex.Name,
 						SubtaskIndex:  strconv.Itoa(subtask.Subtask),

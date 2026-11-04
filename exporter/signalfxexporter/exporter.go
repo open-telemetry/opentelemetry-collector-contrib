@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -197,7 +198,7 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		version:                createSettings.BuildInfo.Version,
 		logger:                 createSettings.Logger,
 		telemetrySettings:      createSettings.TelemetrySettings,
-		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties),
+		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties, config.DimensionClient.StripK8sLabelPrefix),
 	}, nil
 }
 
@@ -306,6 +307,22 @@ func (se *signalfxExporter) processEntityEvents(logs plog.LogRecordSlice) error 
 		}
 	}
 	return nil
+}
+
+// Log deprecation warning for any "include_metrics" entry that's deprecated on collector startup
+func (se *signalfxExporter) logDeprecatedMetricsWarnings() {
+	// Maps deprecated metric name to log message
+	deprecatedMetrics := make(map[string]string)
+	deprecatedMetrics["container_cpu_utilization"] = "The metric \"container_cpu_utilization\" has been deprecated and will " +
+		"be removed in a future release. Please use \"container.cpu.usage\" instead."
+
+	for _, include := range se.config.IncludeMetrics {
+		for deprecatedMetric, deprecationWarning := range deprecatedMetrics {
+			if deprecatedMetric == include.MetricName || slices.Contains(include.MetricNames, deprecatedMetric) {
+				se.logger.Warn(deprecationWarning)
+			}
+		}
+	}
 }
 
 func (se *signalfxExporter) shutdown(_ context.Context) error {

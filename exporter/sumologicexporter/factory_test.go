@@ -35,8 +35,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
 	batchCfg.MinSize = 1024
 	batchCfg.MaxSize = 2048
-	qConfig.Batch = configoptional.Default(batchCfg)
-	qs := configoptional.Default(qConfig)
+	qConfig.Batch = configoptional.Some(batchCfg)
+	qs := configoptional.Some(qConfig)
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.Enabled = true
 	retryConfig.InitialInterval = 5 * time.Second

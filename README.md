@@ -84,6 +84,7 @@ For more information about the maintainer role, see the [community repository](h
 ### Approvers
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
+- [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
@@ -101,7 +102,6 @@ For more information about the approver role, see the [community repository](htt
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
-- [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
@@ -112,6 +112,7 @@ For more information about the approver role, see the [community repository](htt
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Roger Coll](https://github.com/rogercoll), Elastic
+- [Satoshi Kamiyama](https://github.com/SatoshiKamiyama), MagicPod
 - [Vibhanshu Singh](https://github.com/singhvibhanshu)
 - Actively seeking contributors to triage issues
 

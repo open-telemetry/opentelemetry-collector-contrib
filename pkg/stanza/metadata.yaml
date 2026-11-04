@@ -29,6 +29,12 @@ feature_gates:
       When enabled resulting map will be in semconv compliant format.
     from_version: v0.103.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/32906
+  - id: pkg.stanza.addDefaultScopeName
+    stage: beta
+    description: >-
+      When enabled, adds a default scope name and version for stanza log entries without scope name
+    from_version: v0.162.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51084
   - id: stanza.synchronousLogEmitter
     stage: alpha
     description: >-

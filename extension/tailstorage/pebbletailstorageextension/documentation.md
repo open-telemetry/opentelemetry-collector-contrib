@@ -21,6 +21,22 @@ Count of Pebble tail storage operations by operation and outcome
 | operation | The Pebble tail storage operation. | Str: ``append``, ``take``, ``delete`` | - |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
+### otelcol_extension_pebble_tail_storage_read_error_partial_returns
+
+Count of traces returned with partial data by Take because of a read-path error while on_read_error is return_partial
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |
+
+### otelcol_extension_pebble_tail_storage_read_error_trace_drops
+
+Count of traces dropped by Take because of a read-path error while on_read_error is drop_trace
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |
+
 ### otelcol_extension_pebble_tail_storage_read_errors
 
 Count of Pebble tail storage read-path iterator creation, value read, payload decode, and iterator terminal errors

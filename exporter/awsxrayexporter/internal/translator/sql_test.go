@@ -9,9 +9,59 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 )
+
+func enableGate(t *testing.T, gate *featuregate.Gate) {
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+}
+
+func TestClientSpanWithNewAndLegacyDBAttributesPrefersNew(t *testing.T) {
+	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
+
+	attributes := make(map[string]pcommon.Value)
+	attributes["db.system.name"] = pcommon.NewValueStr("postgresql")
+	attributes["db.namespace"] = pcommon.NewValueStr("orders")
+	attributes["db.query.text"] = pcommon.NewValueStr("SELECT 1")
+	attributes["user.name"] = pcommon.NewValueStr("new_user")
+	attributes["db.system"] = pcommon.NewValueStr("mysql")
+	attributes["db.name"] = pcommon.NewValueStr("customers")
+	attributes["db.statement"] = pcommon.NewValueStr("SELECT 2")
+	attributes["db.user"] = pcommon.NewValueStr("legacy_user")
+	span := constructSQLSpan(attributes)
+
+	// Map iteration order is random; repeat to make an order-dependent bug surface.
+	for range 50 {
+		_, sqlData := makeSQL(span, attributes)
+		require.NotNil(t, sqlData)
+		assert.Equal(t, "postgresql", *sqlData.DatabaseType)
+		assert.Equal(t, "localhost/orders", *sqlData.ConnectionString)
+		assert.Equal(t, "SELECT 1", *sqlData.SanitizedQuery)
+		assert.Equal(t, "new_user", *sqlData.User)
+	}
+}
+
+func TestClientSpanWithLegacyDBAttributesOnlyWithEmitV1(t *testing.T) {
+	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
+
+	attributes := make(map[string]pcommon.Value)
+	attributes["db.system"] = pcommon.NewValueStr("mysql")
+	attributes["db.name"] = pcommon.NewValueStr("customers")
+	span := constructSQLSpan(attributes)
+
+	_, sqlData := makeSQL(span, attributes)
+	require.NotNil(t, sqlData)
+	assert.Equal(t, "mysql", *sqlData.DatabaseType)
+	assert.Equal(t, "localhost/customers", *sqlData.ConnectionString)
+}
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)

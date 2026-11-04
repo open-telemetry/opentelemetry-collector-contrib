@@ -118,6 +118,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBackendsDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBackendsDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlBackends.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -127,18 +130,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 1, AttributeBgBufferSourceBackend)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 3, AttributeBgBufferSourceBackendFsync)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts+1, 3, AttributeBgBufferSourceBackendFsync)
+				assert.Equal(t, 2, mb.metricPostgresqlBgwriterBuffersWrites.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts, 1, AttributeBgCheckpointTypeRequested)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts, 3, AttributeBgCheckpointTypeScheduled)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts+1, 3, AttributeBgCheckpointTypeScheduled)
+				assert.Equal(t, 2, mb.metricPostgresqlBgwriterCheckpointCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterDurationDataPoint(ts, 1, AttributeBgDurationTypeSync)
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBgwriterDurationDataPoint(ts, 3, AttributeBgDurationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBgwriterDurationDataPoint(ts+1, 3, AttributeBgDurationTypeWrite)
+				assert.Equal(t, 2, mb.metricPostgresqlBgwriterDuration.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -148,24 +160,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlBlksHitDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBlksHitDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBlksHitDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlBlksHit.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlBlksReadDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBlksReadDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBlksReadDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlBlksRead.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, AttributeSourceHeapRead, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlBlocksReadDataPoint(ts, 3, AttributeSourceHeapHit, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlBlocksReadDataPoint(ts+1, 3, AttributeSourceHeapHit, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlBlocksRead.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlCommitsDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlCommitsDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlCommitsDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlCommits.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -178,168 +202,252 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 3, "relation-val-2", "mode-val-2", "lock_type-val-2", "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlDatabaseLocksDataPoint(ts+1, 3, "relation-val-2", "mode-val-2", "lock_type-val-2", "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlDatabaseLocks.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlDbSizeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlDbSizeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlDbSizeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlDbSize.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlDeadlocksDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlDeadlocksDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlDeadlocksDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlDeadlocks.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlFunctionCallsDataPoint(ts, 1, "function-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlFunctionCallsDataPoint(ts, 3, "function-val-2", "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlFunctionCallsDataPoint(ts+1, 3, "function-val-2", "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlFunctionCalls.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlIndexScansDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val", "postgresql.index.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlIndexScansDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2", "postgresql.index.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlIndexScansDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2", "postgresql.index.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlIndexScans.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlIndexSizeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val", "postgresql.index.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlIndexSizeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2", "postgresql.index.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlIndexSizeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2", "postgresql.index.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlIndexSize.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlOperationsDataPoint(ts, 1, AttributeOperationIns, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlOperationsDataPoint(ts, 3, AttributeOperationUpd, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlOperationsDataPoint(ts+1, 3, AttributeOperationUpd, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlQueryConflictsDataPoint(ts, 1, AttributePostgresqlConflictTypeTablespace, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlQueryConflictsDataPoint(ts, 3, AttributePostgresqlConflictTypeLock, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlQueryConflictsDataPoint(ts+1, 3, AttributePostgresqlConflictTypeLock, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlQueryConflicts.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlQueryExecutionTimeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlQueryExecutionTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlReplicationDataDelayDataPoint(ts, 1, "replication_client-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlReplicationDataDelayDataPoint(ts, 3, "replication_client-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationDataDelayDataPoint(ts+1, 3, "replication_client-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationDataDelay.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlRollbacksDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlRollbacksDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlRollbacksDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlRollbacks.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlRowsDataPoint(ts, 1, AttributeStateDead, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlRowsDataPoint(ts, 3, AttributeStateLive, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlRowsDataPoint(ts+1, 3, AttributeStateLive, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlRows.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlSequentialScansDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlSequentialScansDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlSequentialScansDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlSequentialScans.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableCountDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTableCountDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableCountDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableSizeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTableSizeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableSizeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableVacuumCountDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableVacuumCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTempIoDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTempIoDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTempIoDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTempIo.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTempFilesDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTempFilesDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTempFilesDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTempFiles.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTupDeletedDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTupDeletedDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTupDeletedDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTupDeleted.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTupFetchedDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTupFetchedDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTupFetchedDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTupFetched.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTupInsertedDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTupInsertedDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTupInsertedDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTupInserted.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTupReturnedDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTupReturnedDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTupReturnedDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTupReturned.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlTupUpdatedDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlTupUpdatedDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTupUpdatedDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTupUpdated.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlVectorInsertDurationDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlVectorInsertDurationDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlVectorInsertDurationDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlVectorInsertDuration.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 1, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlVectorInsertRowsDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlVectorInsertRowsDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlVectorInsertRows.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlVectorSearchCallsDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlVectorSearchCallsDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlVectorSearchCallsDataPoint(ts+1, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlVectorSearchCalls.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlVectorSearchDurationDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlVectorSearchDurationDataPoint(ts+1, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlVectorSearchDuration.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts, 1, AttributePostgresqlDistanceFunctionNameCosine, "db.namespace-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlVectorSearchRowsReturnedDataPoint(ts+1, 3, AttributePostgresqlDistanceFunctionNameL2, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlVectorSearchRowsReturned.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -349,12 +457,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlWalDelayDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlWalDelayDataPoint(ts, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlWalDelayDataPoint(ts+1, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlWalDelay.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordPostgresqlWalLagDataPoint(ts, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlWalLagDataPoint(ts+1, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlWalLag.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -458,7 +572,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.backends"], "Found a duplicate in the metrics slice: postgresql.backends")
 						validatedMetrics["postgresql.backends"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -516,7 +632,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.bgwriter.buffers.writes"], "Found a duplicate in the metrics slice: postgresql.bgwriter.buffers.writes")
 						validatedMetrics["postgresql.bgwriter.buffers.writes"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of buffers written.", mi.Description())
 						assert.Equal(t, "{buffers}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -560,7 +678,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.bgwriter.checkpoint.count"], "Found a duplicate in the metrics slice: postgresql.bgwriter.checkpoint.count")
 						validatedMetrics["postgresql.bgwriter.checkpoint.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of checkpoints performed.", mi.Description())
 						assert.Equal(t, "{checkpoints}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -604,7 +724,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.bgwriter.duration"], "Found a duplicate in the metrics slice: postgresql.bgwriter.duration")
 						validatedMetrics["postgresql.bgwriter.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total time spent writing and syncing files to disk by checkpoints.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -662,7 +784,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.blks_hit"], "Found a duplicate in the metrics slice: postgresql.blks_hit")
 						validatedMetrics["postgresql.blks_hit"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times disk blocks were found already in the buffer cache.", mi.Description())
 						assert.Equal(t, "{blks_hit}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -706,7 +830,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.blks_read"], "Found a duplicate in the metrics slice: postgresql.blks_read")
 						validatedMetrics["postgresql.blks_read"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of disk blocks read in this database.", mi.Description())
 						assert.Equal(t, "{blks_read}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -756,7 +882,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.blocks_read"], "Found a duplicate in the metrics slice: postgresql.blocks_read")
 						validatedMetrics["postgresql.blocks_read"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of blocks read.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -804,7 +932,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.commits"], "Found a duplicate in the metrics slice: postgresql.commits")
 						validatedMetrics["postgresql.commits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of commits.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -881,7 +1011,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.database.locks"], "Found a duplicate in the metrics slice: postgresql.database.locks")
 						validatedMetrics["postgresql.database.locks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of database locks, including those held by the receiver's own connections.", mi.Description())
 						assert.Equal(t, "{lock}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -929,7 +1061,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.db_size"], "Found a duplicate in the metrics slice: postgresql.db_size")
 						validatedMetrics["postgresql.db_size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The database disk usage.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -973,7 +1107,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.deadlocks"], "Found a duplicate in the metrics slice: postgresql.deadlocks")
 						validatedMetrics["postgresql.deadlocks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of deadlocks.", mi.Description())
 						assert.Equal(t, "{deadlock}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1020,7 +1156,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.function.calls"], "Found a duplicate in the metrics slice: postgresql.function.calls")
 						validatedMetrics["postgresql.function.calls"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.", mi.Description())
 						assert.Equal(t, "{call}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1072,7 +1210,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.index.scans"], "Found a duplicate in the metrics slice: postgresql.index.scans")
 						validatedMetrics["postgresql.index.scans"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of index scans on a table.", mi.Description())
 						assert.Equal(t, "{scans}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1124,7 +1264,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.index.size"], "Found a duplicate in the metrics slice: postgresql.index.size")
 						validatedMetrics["postgresql.index.size"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of the index on disk.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1176,7 +1318,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.operations"], "Found a duplicate in the metrics slice: postgresql.operations")
 						validatedMetrics["postgresql.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of db row operations.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1227,7 +1371,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.query.conflicts"], "Found a duplicate in the metrics slice: postgresql.query.conflicts")
 						validatedMetrics["postgresql.query.conflicts"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.", mi.Description())
 						assert.Equal(t, "{query}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1273,7 +1419,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.query.execution.time"], "Found a duplicate in the metrics slice: postgresql.query.execution.time")
 						validatedMetrics["postgresql.query.execution.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The total execution time of SQL statements currently tracked by pg_stat_statements for the database.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1315,7 +1463,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.replication.data_delay"], "Found a duplicate in the metrics slice: postgresql.replication.data_delay")
 						validatedMetrics["postgresql.replication.data_delay"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of data delayed in replication.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1357,7 +1507,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.rollbacks"], "Found a duplicate in the metrics slice: postgresql.rollbacks")
 						validatedMetrics["postgresql.rollbacks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of rollbacks.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1407,7 +1559,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.rows"], "Found a duplicate in the metrics slice: postgresql.rows")
 						validatedMetrics["postgresql.rows"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of rows in the database.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1458,7 +1612,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.sequential_scans"], "Found a duplicate in the metrics slice: postgresql.sequential_scans")
 						validatedMetrics["postgresql.sequential_scans"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of sequential scans.", mi.Description())
 						assert.Equal(t, "{sequential_scan}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1504,7 +1660,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.table.count"], "Found a duplicate in the metrics slice: postgresql.table.count")
 						validatedMetrics["postgresql.table.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of user tables in a database.", mi.Description())
 						assert.Equal(t, "{table}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1551,7 +1709,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.table.size"], "Found a duplicate in the metrics slice: postgresql.table.size")
 						validatedMetrics["postgresql.table.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total disk space used by a table, including its indexes and TOAST data.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1600,7 +1760,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.table.vacuum.count"], "Found a duplicate in the metrics slice: postgresql.table.vacuum.count")
 						validatedMetrics["postgresql.table.vacuum.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times a table has manually been vacuumed.", mi.Description())
 						assert.Equal(t, "{vacuum}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1646,7 +1808,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.temp.io"], "Found a duplicate in the metrics slice: postgresql.temp.io")
 						validatedMetrics["postgresql.temp.io"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total amount of data written to temporary files by queries.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1690,7 +1854,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.temp_files"], "Found a duplicate in the metrics slice: postgresql.temp_files")
 						validatedMetrics["postgresql.temp_files"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of temp files.", mi.Description())
 						assert.Equal(t, "{temp_file}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1734,7 +1900,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.tup_deleted"], "Found a duplicate in the metrics slice: postgresql.tup_deleted")
 						validatedMetrics["postgresql.tup_deleted"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows deleted by queries in the database.", mi.Description())
 						assert.Equal(t, "{tup_deleted}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1778,7 +1946,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.tup_fetched"], "Found a duplicate in the metrics slice: postgresql.tup_fetched")
 						validatedMetrics["postgresql.tup_fetched"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows fetched by queries in the database.", mi.Description())
 						assert.Equal(t, "{tup_fetched}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1822,7 +1992,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.tup_inserted"], "Found a duplicate in the metrics slice: postgresql.tup_inserted")
 						validatedMetrics["postgresql.tup_inserted"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows inserted by queries in the database.", mi.Description())
 						assert.Equal(t, "{tup_inserted}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1866,7 +2038,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.tup_returned"], "Found a duplicate in the metrics slice: postgresql.tup_returned")
 						validatedMetrics["postgresql.tup_returned"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows returned by queries in the database.", mi.Description())
 						assert.Equal(t, "{tup_returned}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1910,7 +2084,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.tup_updated"], "Found a duplicate in the metrics slice: postgresql.tup_updated")
 						validatedMetrics["postgresql.tup_updated"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows updated by queries in the database.", mi.Description())
 						assert.Equal(t, "{tup_updated}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1954,7 +2130,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.vector.insert.duration"], "Found a duplicate in the metrics slice: postgresql.vector.insert.duration")
 						validatedMetrics["postgresql.vector.insert.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The cumulative execution time of statements that insert vectors into pgvector tables.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1998,7 +2176,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.vector.insert.rows"], "Found a duplicate in the metrics slice: postgresql.vector.insert.rows")
 						validatedMetrics["postgresql.vector.insert.rows"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of vectors inserted into pgvector tables.", mi.Description())
 						assert.Equal(t, "{vectors}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2045,7 +2225,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.vector.search.calls"], "Found a duplicate in the metrics slice: postgresql.vector.search.calls")
 						validatedMetrics["postgresql.vector.search.calls"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of vector similarity search operations executed, grouped by the distance function used.", mi.Description())
 						assert.Equal(t, "{search}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2094,7 +2276,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.vector.search.duration"], "Found a duplicate in the metrics slice: postgresql.vector.search.duration")
 						validatedMetrics["postgresql.vector.search.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The cumulative execution time of vector similarity searches, grouped by the distance function used.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2143,7 +2327,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.vector.search.rows_returned"], "Found a duplicate in the metrics slice: postgresql.vector.search.rows_returned")
 						validatedMetrics["postgresql.vector.search.rows_returned"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The cumulative number of rows returned by vector similarity searches, grouped by the distance function used.", mi.Description())
 						assert.Equal(t, "{rows}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2202,7 +2388,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.wal.delay"], "Found a duplicate in the metrics slice: postgresql.wal.delay")
 						validatedMetrics["postgresql.wal.delay"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2247,7 +2435,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["postgresql.wal.lag"], "Found a duplicate in the metrics slice: postgresql.wal.lag")
 						validatedMetrics["postgresql.wal.lag"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

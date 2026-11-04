@@ -366,7 +366,17 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md := pmetric.NewMetrics()
 			metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-			tt.metricFunc().CopyTo(metrics.AppendEmpty())
+			metric := tt.metricFunc()
+			var attrs pcommon.Map
+			if metric.Type() == pmetric.MetricTypeGauge {
+				attrs = metric.Gauge().DataPoints().At(0).Attributes()
+			} else {
+				attrs = metric.Sum().DataPoints().At(0).Attributes()
+			}
+			attrs.PutStr("_foo", "leading")
+			attrs.PutStr("a__b", "consecutive")
+			attrs.PutStr("__custom__", "reserved")
+			metric.CopyTo(metrics.AppendEmpty())
 
 			tsMap, symbolsTable, err := FromMetricsV2(md, Settings{TranslationStrategy: tt.strategy})
 			require.NoError(t, err)
@@ -380,6 +390,13 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			require.NotNil(t, tsFound)
 
 			symbols := symbolsTable.Symbols()
+			labels := make(map[string]string)
+			for i := 0; i < len(tsFound.LabelsRefs); i += 2 {
+				labels[symbols[tsFound.LabelsRefs[i]]] = symbols[tsFound.LabelsRefs[i+1]]
+			}
+			require.Equal(t, "leading", labels["_foo"])
+			require.Equal(t, "consecutive", labels["a__b"])
+			require.Equal(t, "reserved", labels["__custom__"])
 			actualName := getMetricNameV2(t, tsFound, symbols)
 			require.Equal(t, tt.expectedName, actualName)
 

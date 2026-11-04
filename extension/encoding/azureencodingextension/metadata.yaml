@@ -14,6 +14,7 @@ status:
   codeowners:
     active: [constanca-m]
     emeritus: [axw]
+    seeking_new: true
   distributions: [contrib]
 
 feature_gates:

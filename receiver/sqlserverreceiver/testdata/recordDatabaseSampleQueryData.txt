@@ -24,7 +24,7 @@
     "percent_complete": "0",
     "estimated_completion_time": "0",
     "cpu_time": "6",
-    "session_duration": "720456",
+    "session_duration": "720",
     "total_elapsed_time": "6",
     "reads": "0",
     "writes": "0",

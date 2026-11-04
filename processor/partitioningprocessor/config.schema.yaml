@@ -1,0 +1,8 @@
+description: Config is the configuration for the partitioning processor.
+type: object
+properties:
+  keys:
+    description: Keys maps partition key names to OTTL value expressions. Each expression is evaluated against each incoming item; items that produce the same set of values are collected into the same partition, which is forwarded downstream with the key/value pairs added to the outgoing request metadata.
+    type: object
+    additionalProperties:
+      type: string

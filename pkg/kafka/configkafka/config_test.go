@@ -56,6 +56,7 @@ func TestClientConfig(t *testing.T) {
 				RackID:          "rack1",
 				UseLeaderEpoch:  true,
 				ConnIdleTimeout: 5 * time.Minute,
+				DialTimeout:     30 * time.Second,
 			},
 		},
 
@@ -96,6 +97,13 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"dial_timeout": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.DialTimeout = 30 * time.Second
+				return cfg
+			}(),
+		},
 		"metadata_retry_backoff": {
 			// Only backoff is configured, so the retry defaults must match the
 			// franz-go defaults these fields were unwired to.
@@ -112,6 +120,7 @@ func TestClientConfig(t *testing.T) {
 				},
 				UseLeaderEpoch:  true,
 				ConnIdleTimeout: 9 * time.Minute,
+				DialTimeout:     10 * time.Second,
 			},
 		},
 
@@ -143,6 +152,9 @@ func TestClientConfig(t *testing.T) {
 		"sasl_and_kerberos": {
 			expectedErr: "auth: only one of sasl or kerberos authentication can be configured",
 		},
+		"invalid_dial_timeout": {
+			expectedErr: "dial_timeout (-1s) must be positive",
+		},
 	})
 }
 
@@ -164,10 +176,11 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   false,
 					Interval: 10 * time.Minute,
 				},
-				MinFetchSize:          10,
-				MaxFetchSize:          4096,
-				MaxFetchWait:          1 * time.Second,
-				MaxPartitionFetchSize: 4096,
+				MinFetchSize:            10,
+				MaxFetchSize:            4096,
+				MaxFetchWait:            1 * time.Second,
+				MaxPartitionFetchSize:   4096,
+				MaxDecompressBatchBytes: 536870912, // 512 MiB
 			},
 		},
 		"group_rebalance_strategies": {
@@ -190,11 +203,26 @@ func TestConsumerConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
-				MinFetchSize:          0,
-				MaxFetchSize:          1048576,
-				MaxFetchWait:          250 * time.Millisecond,
-				MaxPartitionFetchSize: 1048576,
+				MinFetchSize:            0,
+				MaxFetchSize:            1048576,
+				MaxFetchWait:            250 * time.Millisecond,
+				MaxPartitionFetchSize:   1048576,
+				MaxDecompressBatchBytes: 1073741824, // 1 GiB default
 			},
+		},
+		"min_valid_max_decompress_batch_bytes": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.MaxDecompressBatchBytes = 1
+				return cfg
+			}(),
+		},
+		"max_valid_max_decompress_batch_bytes": {
+			expected: func() ConsumerConfig {
+				cfg := NewDefaultConsumerConfig()
+				cfg.MaxDecompressBatchBytes = math.MaxInt32
+				return cfg
+			}(),
 		},
 
 		// Invalid configurations
@@ -206,6 +234,12 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"negative_min_fetch_size": {
 			expectedErr: "min_fetch_size (-100) must be non-negative",
+		},
+		"negative_max_decompress_batch_bytes": {
+			expectedErr: "max_decompress_batch_bytes (-100) must be between 1 and 2147483647",
+		},
+		"zero_max_decompress_batch_bytes": {
+			expectedErr: "max_decompress_batch_bytes (0) must be between 1 and 2147483647",
 		},
 		"empty_group_rebalance_strategies_entry": {
 			expectedErr: "group_rebalance_strategies entries cannot be empty",
@@ -349,6 +383,27 @@ func TestProducerConfigInt32Overflow(t *testing.T) {
 		cfg.MaxBrokerWriteBytes = overflow
 		require.EqualError(t, cfg.Validate(),
 			fmt.Sprintf("max_broker_write_bytes (%d) must not exceed %d", overflow, math.MaxInt32))
+	})
+}
+
+// TestConsumerConfigInt32Overflow verifies that max_decompress_batch_bytes
+// exceeding the int32 range used by franz-go is rejected. Values above
+// math.MaxInt32 are only representable on platforms where int is 64-bit,
+// so this is skipped elsewhere.
+func TestConsumerConfigInt32Overflow(t *testing.T) {
+	if strconv.IntSize < 64 {
+		t.Skip("int is not wide enough to exceed math.MaxInt32 on this architecture")
+	}
+	// Use a runtime int64 value so the conversion to int is not a compile-time
+	// constant (which would overflow int and fail to build on 32-bit platforms).
+	maxInt32 := int64(math.MaxInt32)
+	overflow := int(maxInt32 + 1)
+
+	t.Run("max_decompress_batch_bytes", func(t *testing.T) {
+		cfg := NewDefaultConsumerConfig()
+		cfg.MaxDecompressBatchBytes = overflow
+		require.EqualError(t, cfg.Validate(),
+			fmt.Sprintf("max_decompress_batch_bytes (%d) must be between 1 and %d", overflow, math.MaxInt32))
 	})
 }
 

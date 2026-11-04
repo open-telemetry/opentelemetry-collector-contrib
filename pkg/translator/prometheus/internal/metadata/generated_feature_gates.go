@@ -6,10 +6,19 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var PkgPrometheusKeepIdentifyingResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.prometheus.KeepIdentifyingResourceAttributes",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Preserve service.name, service.namespace, and service.instance.id as labels on target_info in addition to job and instance."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48890"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.PermissiveLabelSanitization",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 	featuregate.WithRegisterFromVersion("v0.55.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )
