@@ -119,18 +119,18 @@ happens on failure:
 
 * `on_decode_error` applies when the configured encoding fails to decode a message. The default `ignore`
   acknowledges and drops the message so one undecodable message cannot occupy redelivery capacity forever;
-  with `propagate` the message is not acknowledged and is redelivered after the ack deadline expires; monitor the
-  `receiver.googlecloudpubsub.encoding_error` metric to detect this. Note that ack deadline expiry does *not*
-  count toward a subscription dead-letter policy's delivery attempts, so an undecodable message is redelivered
-  forever. Use `ignore` to acknowledge and drop such messages, or `nack` to negatively acknowledge them.
+  with `propagate` the message is not acknowledged and is redelivered after the ack deadline expires; `nack`
+  negatively acknowledges it so it is redelivered immediately. Monitor the
+  `receiver.googlecloudpubsub.encoding_error` metric to detect decode failures.
 * `on_pipeline_error` applies when the downstream pipeline returns an error for a decoded message. The default
   `ack` acknowledges and drops the message, `nack` negatively acknowledges it.
 
-A `nack` (a modify-ack-deadline of 0) makes Pub/Sub redeliver the message immediately, and it counts toward
-the `maxDeliveryAttempts` of a subscription [dead-letter policy](https://cloud.google.com/pubsub/docs/handling-failures).
-**Only use `nack` with a subscription retry policy (exponential backoff) and/or a dead-letter topic
-configured**: on a subscription with the default immediate-retry policy and no dead-letter topic, a message
-that keeps failing is redelivered in a hot loop.
+Both an ack deadline expiry and a `nack` (a modify-ack-deadline of 0) count as a delivery attempt toward the
+`maxDeliveryAttempts` of a subscription [dead-letter policy](https://cloud.google.com/pubsub/docs/handling-failures);
+without a dead-letter topic, a message that keeps failing is redelivered forever. **Only use `nack` with a
+subscription retry policy (exponential backoff) and/or a dead-letter topic configured**: on a subscription with
+the default immediate-retry policy and no dead-letter topic, a message that keeps failing is redelivered in a
+hot loop.
 
 ### Flow control
 

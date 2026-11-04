@@ -281,13 +281,6 @@ func TestFinalFlushSplitsAckBatches(t *testing.T) {
 	assert.Equal(t, []int{ackIDBatchSize, 1}, nackSizes)
 }
 
-func TestSplitAckIDs(t *testing.T) {
-	assert.Nil(t, splitAckIDs(nil, 3))
-	assert.Equal(t, [][]string{{"a", "b"}}, splitAckIDs([]string{"a", "b"}, 3))
-	assert.Equal(t, [][]string{{"a", "b", "c"}}, splitAckIDs([]string{"a", "b", "c"}, 3))
-	assert.Equal(t, [][]string{{"a", "b", "c"}, {"d"}}, splitAckIDs([]string{"a", "b", "c", "d"}, 3))
-}
-
 // TestCancelNowSendsNothingOnTheStream verifies the shutdown sequence: once
 // cancelled, the request goroutine sends nothing on the stream, and the pending
 // acknowledgements go out exactly once over the unary RPC after the goroutines

@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
@@ -75,8 +76,9 @@ func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 	srv := pstest.NewServer()
 	settings := receivertest.NewNopSettings(metadata.Type)
 	return srv, &pubsubReceiver{
-		settings:  settings,
-		userAgent: "test-user-agent",
+		settings:   settings,
+		userAgent:  "test-user-agent",
+		decodeWarn: rate.Sometimes{Interval: decodeWarnInterval},
 
 		config: &Config{
 			Endpoint:  srv.Addr,

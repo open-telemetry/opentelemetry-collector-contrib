@@ -10,6 +10,7 @@ import (
 	"io"
 	"math"
 	"math/rand/v2"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -245,7 +246,7 @@ func (handler *StreamHandler) finalFlush() {
 	// detached context: the handler contexts are canceled (or canceling) at this point
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	for _, batch := range splitAckIDs(acks, ackIDBatchSize) {
+	for batch := range slices.Chunk(acks, ackIDBatchSize) {
 		if err := handler.client.Acknowledge(ctx, &pubsubpb.AcknowledgeRequest{
 			Subscription: handler.subscription,
 			AckIds:       batch,
@@ -254,7 +255,7 @@ func (handler *StreamHandler) finalFlush() {
 				zap.Int("count", len(batch)), zap.Error(err))
 		}
 	}
-	for _, batch := range splitAckIDs(nacks, ackIDBatchSize) {
+	for batch := range slices.Chunk(nacks, ackIDBatchSize) {
 		if err := handler.client.ModifyAckDeadline(ctx, &pubsubpb.ModifyAckDeadlineRequest{
 			Subscription:       handler.subscription,
 			AckIds:             batch,
@@ -264,19 +265,6 @@ func (handler *StreamHandler) finalFlush() {
 				zap.Int("count", len(batch)), zap.Error(err))
 		}
 	}
-}
-
-// splitAckIDs cuts ids into consecutive batches of at most size elements.
-func splitAckIDs(ids []string, size int) [][]string {
-	var batches [][]string
-	for len(ids) > size {
-		batches = append(batches, ids[:size])
-		ids = ids[size:]
-	}
-	if len(ids) > 0 {
-		batches = append(batches, ids)
-	}
-	return batches
 }
 
 func (handler *StreamHandler) Wait() {

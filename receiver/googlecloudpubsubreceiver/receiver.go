@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
@@ -51,9 +52,9 @@ type pubsubReceiver struct {
 	telemetryBuilder   *metadata.TelemetryBuilder
 
 	// decodeFailures counts decode failures over the lifetime of the receiver, and
-	// lastDecodeWarn rate limits the decode failure warning to once per interval.
+	// decodeWarn rate limits the decode failure warning to once per decodeWarnInterval.
 	decodeFailures atomic.Int64
-	lastDecodeWarn atomic.Int64
+	decodeWarn     rate.Sometimes
 }
 
 // decodeWarnInterval is the minimum time between two decode failure warnings.
@@ -266,26 +267,22 @@ func (receiver *pubsubReceiver) handleDecodeError(ctx context.Context, signal st
 // flooding the log.
 func (receiver *pubsubReceiver) logDecodeError(signal string, message *pubsubpb.ReceivedMessage, err error) {
 	total := receiver.decodeFailures.Add(1)
-	now := time.Now().UnixNano()
-	last := receiver.lastDecodeWarn.Load()
-	if now-last < decodeWarnInterval.Nanoseconds() || !receiver.lastDecodeWarn.CompareAndSwap(last, now) {
-		return
-	}
-	receiver.settings.Logger.Warn("failed to decode pubsub message",
-		zap.String("signal", signal),
-		zap.String("message_id", message.Message.MessageId),
-		zap.Any("attributes", message.Message.Attributes),
-		zap.Int64("total_failed", total),
-		zap.Error(err),
-	)
+	receiver.decodeWarn.Do(func() {
+		receiver.settings.Logger.Warn("failed to decode pubsub message",
+			zap.String("signal", signal),
+			zap.String("message_id", message.Message.MessageId),
+			zap.Any("attributes", message.Message.Attributes),
+			zap.Int64("total_failed", total),
+			zap.Error(err),
+		)
+	})
 }
 
 // handlePipelineError applies the on_pipeline_error policy to a message the
 // downstream consumer rejected. Only permanent errors are governed by the
 // policy: transient rejections (a full sending queue, memory limiter refusal)
 // and shutdown cancellations leave the message unacknowledged, so it is
-// redelivered after the ack deadline instead of being dropped or counted
-// toward a dead letter policy.
+// redelivered after the ack deadline instead of being dropped.
 func (receiver *pubsubReceiver) handlePipelineError(err error) error {
 	if err == nil {
 		return nil
