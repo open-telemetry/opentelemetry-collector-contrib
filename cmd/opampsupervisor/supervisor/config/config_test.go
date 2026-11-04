@@ -458,6 +458,7 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					OpAMPServerSocket: &confignet.AddrConfig{
 						Transport: confignet.TransportTypeUnix,
 						Endpoint:  "/tmp/opamp.sock",
@@ -557,6 +558,7 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					OpAMPServerSocket: &confignet.AddrConfig{
 						Transport: confignet.TransportTypeUnix,
 						Endpoint:  "/tmp/opamp.sock",
