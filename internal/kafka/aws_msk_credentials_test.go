@@ -214,7 +214,6 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 			}
 			return aws.Credentials{AccessKeyID: fmt.Sprintf("AKID%d", call), SecretAccessKey: "SECRET", SessionToken: "SESSION_TOKEN", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
 		}), zap.New(logs))
-		provider.retryDelay = func() time.Duration { return 45 * time.Second }
 		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
 		originalLoader := loadAWSCredentialsProvider
 		t.Cleanup(func() { loadAWSCredentialsProvider = originalLoader })
@@ -255,8 +254,10 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 			fallback, retrieveErr := cache.Retrieve(t.Context())
 			require.NoError(t, retrieveErr)
 			assert.Equal(t, "AKID1", fallback.AccessKeyID)
-			retryIn := min(45*time.Second, time.Until(fallbackExpiry))
-			assert.Equal(t, time.Now().Add(retryIn), fallback.Expires)
+			retryIn := time.Until(fallback.Expires)
+			remaining := time.Until(fallbackExpiry)
+			require.GreaterOrEqual(t, retryIn, min(30*time.Second, remaining))
+			require.LessOrEqual(t, retryIn, min(60*time.Second, remaining))
 			before := calls.Load()
 			authenticate("AKID1")
 			assert.Equal(t, before, calls.Load(), "fallback must be cached until its retry deadline")

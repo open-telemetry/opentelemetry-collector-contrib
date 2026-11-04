@@ -71,16 +71,12 @@ type awsMSKRefreshProvider struct {
 
 	actualExpiry         time.Time
 	skipExpiryAdjustment bool
-	retryDelay           func() time.Duration
 }
 
 func newAWSMSKRefreshProvider(provider aws.CredentialsProvider, logger *zap.Logger) *awsMSKRefreshProvider {
 	return &awsMSKRefreshProvider{
 		provider: provider,
 		logger:   logger.Named("aws_msk_credentials"),
-		retryDelay: func() time.Duration {
-			return 30*time.Second + time.Duration(rand.Int64N(int64(30*time.Second)+1))
-		},
 	}
 }
 
@@ -122,7 +118,7 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 	if !current.HasKeys() || !current.CanExpire || !fallbackExpiry.After(now) {
 		return aws.Credentials{}, refreshErr
 	}
-	retryIn := min(p.retryDelay(), fallbackExpiry.Sub(now))
+	retryIn := min(30*time.Second+time.Duration(rand.Int64N(int64(30*time.Second)+1)), fallbackExpiry.Sub(now))
 	current.Expires = now.Add(retryIn)
 	// This expiry is already the next retry deadline, capped before the original
 	// AWS expiry to leave time for broker authentication. Subtracting the SDK
