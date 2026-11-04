@@ -19,8 +19,7 @@ import (
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/internal/metadata"
 )
@@ -205,22 +204,14 @@ func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
 	}
 	attrMap.PutStr(string(conventionsv125.DBConnectionStringKey), "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;")
 	attrMap.PutStr(string(conventionsv125.DBUserKey), "billing_user")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.host.ip", "192.0.3.122")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkLocalAddressKey), "192.0.3.122")
-	}
-	attrMap.PutInt(string(conventionsv125.NetHostPortKey), 51306)
-	attrMap.PutStr(string(conventionsv125.NetPeerNameKey), "shopdb.example.com")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "192.0.2.12")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.0.2.12")
-	}
-	attrMap.PutInt(string(conventionsv125.NetPeerPortKey), 3306)
-	attrMap.PutStr(string(conventionsv125.NetTransportKey), "IP.TCP")
+	attrMap.PutStr(string(conventions.NetworkLocalAddressKey), "192.0.3.122")
+	// This is a client span, so the peer name and port map to server.*. The local
+	// (host) port has no server.* role here and would collide with the peer port,
+	// so it is not emitted.
+	attrMap.PutStr(string(conventions.ServerAddressKey), "shopdb.example.com")
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.0.2.12")
+	attrMap.PutInt(string(conventions.ServerPortKey), 3306)
+	attrMap.PutStr(string(conventions.NetworkTransportKey), "tcp")
 	attrMap.PutStr(string(conventionsv125.DBNameKey), "shopdb")
 	attrMap.PutStr(string(conventionsv125.DBStatementKey), "SELECT * FROM orders WHERE order_id = 'o4711'")
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
@@ -234,15 +225,10 @@ func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.DBSystemNameKey), "mongodb")
 	}
 	attrMap.PutStr(string(conventionsv125.DBUserKey), "the_user")
-	attrMap.PutStr(string(conventionsv125.NetPeerNameKey), "mongodb0.example.com")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "192.0.2.14")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.0.2.14")
-	}
-	attrMap.PutInt(string(conventionsv125.NetPeerPortKey), 27017)
-	attrMap.PutStr(string(conventionsv125.NetTransportKey), "IP.TCP")
+	attrMap.PutStr(string(conventions.ServerAddressKey), "mongodb0.example.com")
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.0.2.14")
+	attrMap.PutInt(string(conventions.ServerPortKey), 27017)
+	attrMap.PutStr(string(conventions.NetworkTransportKey), "tcp")
 	attrMap.PutStr(string(conventionsv125.DBNameKey), "shopDb")
 	attrMap.PutStr(string(conventionsv125.DBOperationKey), "findAndModify")
 	attrMap.PutStr(string(conventionsv125.DBMongoDBCollectionKey), "products")
@@ -268,12 +254,7 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerHTTP.Value.AsString())
 	attrMap.PutStr(string(conventionsv125.HTTPMethodKey), http.MethodPost)
 	attrMap.PutStr(string(conventionsv125.HTTPSchemeKey), "https")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("http.host", "api.opentelemetry.io")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.ServerAddressKey), "api.opentelemetry.io")
-	}
+	attrMap.PutStr(string(conventions.ServerAddressKey), "api.opentelemetry.io")
 	attrMap.PutStr(string(conventionsv125.HTTPTargetKey), "/blog/posts")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
@@ -283,7 +264,12 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 201)
+		}
 	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
@@ -334,7 +320,12 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv125.HTTPMethodKey), http.MethodGet)
 	attrMap.PutStr(string(conventionsv125.HTTPURLKey), "https://opentelemetry.io/registry/")
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 200)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 200)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 200)
+		}
 		attrMap.PutStr("http.status_text", "More Than OK")
 	}
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
@@ -343,13 +334,8 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
 func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv125.HTTPMethodKey), http.MethodPost)
 	attrMap.PutStr(string(conventionsv125.HTTPSchemeKey), "https")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("http.server_name", "api22.opentelemetry.io")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.ServerAddressKey), "api22.opentelemetry.io")
-	}
-	attrMap.PutInt(string(conventionsv125.NetHostPortKey), 443)
+	attrMap.PutStr(string(conventions.ServerAddressKey), "api22.opentelemetry.io")
+	attrMap.PutInt(string(conventions.ServerPortKey), 443)
 	attrMap.PutStr(string(conventionsv125.HTTPTargetKey), "/blog/posts")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
@@ -359,7 +345,12 @@ func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 201)
+		}
 	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv118.HTTPUserAgentKey),
@@ -390,12 +381,7 @@ func appendMessagingProducerAttributes(attrMap pcommon.Map) {
 	}
 	attrMap.PutStr(string(conventions.MessagingMessageIDKey), "AA7C5438-D93A-43C8-9961-55613204648F")
 	attrMap.PutInt("messaging.sequence", 1)
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "10.10.212.33")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "10.10.212.33")
-	}
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "10.10.212.33")
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
@@ -408,45 +394,20 @@ func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.MessagingDestinationNameKey), "infrastructure-events-zone1")
 	}
 	attrMap.PutStr(string(conventionsv125.MessagingOperationKey), "receive")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
-	}
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
 func appendGRPCClientAttributes(attrMap pcommon.Map) {
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventionsv138.RPCServiceKey), "PullRequestsService")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
-	}
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
-	}
-	attrMap.PutInt(string(conventionsv125.NetHostPortKey), 8443)
+	attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
+	attrMap.PutInt(string(conventions.ServerPortKey), 8443)
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
 func appendGRPCServerAttributes(attrMap pcommon.Map) {
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventionsv138.RPCServiceKey), "PullRequestsService")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
-	}
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "192.168.1.70")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.168.1.70")
-	}
+	attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.168.1.70")
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
@@ -458,20 +419,10 @@ func appendInternalAttributes(attrMap pcommon.Map) {
 func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventionsv125.HTTPMethodKey), http.MethodPost)
 	attrMap.PutStr(string(conventionsv125.HTTPSchemeKey), "https")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("http.host", "api.opentelemetry.io")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.ServerAddressKey), "api.opentelemetry.io")
-	}
+	attrMap.PutStr(string(conventions.ServerAddressKey), "api.opentelemetry.io")
 	attrMap.PutStr(string(conventionsv125.NetHostNameKey), "api22.opentelemetry.io")
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.host.ip", "2600:1700:1f00:11c0:1ced:afa5:fd88:9d48")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkLocalAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd88:9d48")
-	}
-	attrMap.PutInt(string(conventionsv125.NetHostPortKey), 443)
+	attrMap.PutStr(string(conventions.NetworkLocalAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd88:9d48")
+	attrMap.PutInt(string(conventions.ServerPortKey), 443)
 	attrMap.PutStr(string(conventionsv125.HTTPTargetKey), "/blog/posts")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventionsv119.HTTPFlavorKey), "2")
@@ -481,7 +432,12 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 		attrMap.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
 	}
 	if includeStatus {
-		attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventionsv125.HTTPStatusCodeKey), 201)
+		}
+		if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
+			attrMap.PutInt(string(conventions.HTTPResponseStatusCodeKey), 201)
+		}
 		attrMap.PutStr("http.status_text", "Created")
 	}
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0HTTPConventionsFeatureGate.IsEnabled() {
@@ -499,19 +455,9 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.ClientAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
 	}
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventionsv138.PeerServiceKey), "IdentifyImageService")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.ServicePeerNameKey), "IdentifyImageService")
-	}
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr("net.peer.ip", "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
-	}
-	attrMap.PutInt(string(conventionsv125.NetPeerPortKey), 39111)
+	attrMap.PutStr(string(conventions.ServicePeerNameKey), "IdentifyImageService")
+	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
+	attrMap.PutInt(string(conventions.ClientPortKey), 39111)
 	attrMap.PutDouble("ai-sampler.weight", 0.07)
 	attrMap.PutBool("ai-sampler.absolute", false)
 	attrMap.PutInt("ai-sampler.maxhops", 6)

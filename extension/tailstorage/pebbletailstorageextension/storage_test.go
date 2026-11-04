@@ -302,7 +302,7 @@ func TestStorageRecordsReadPathErrors(t *testing.T) {
 			}
 			s.newIter = tc.newIter
 
-			_ = s.readByTracePrefix([]byte("trace-prefix"))
+			_, _ = s.readByTracePrefix([]byte("trace-prefix"))
 
 			var md metricdata.ResourceMetrics
 			require.NoError(t, tel.reader.Collect(t.Context(), &md))

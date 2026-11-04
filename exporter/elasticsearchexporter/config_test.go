@@ -141,6 +141,9 @@ func TestConfig(t *testing.T) {
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
 				},
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
 			},
 		},
 		{
@@ -215,6 +218,9 @@ func TestConfig(t *testing.T) {
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
 				},
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
 			},
 		},
 		{
@@ -288,6 +294,9 @@ func TestConfig(t *testing.T) {
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
+				},
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
 				},
 			},
 		},

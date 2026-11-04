@@ -41,12 +41,7 @@ func newMetricsConnector(
 		return nil, errUnexpectedConsumer
 	}
 
-	r, err := newRouter(
-		cfg.Table,
-		cfg.DefaultPipelines,
-		mr.Consumer,
-		set.TelemetrySettings,
-	)
+	r, err := newRouter(cfg, mr.Consumer, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}

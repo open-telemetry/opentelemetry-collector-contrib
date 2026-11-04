@@ -1,5 +1,5 @@
-googleclientauth:
-googleclientauth/customname:
+google_client_auth:
+google_client_auth/customname:
   project: my-project
   scopes:
   - "https://www.something.com/hello"
