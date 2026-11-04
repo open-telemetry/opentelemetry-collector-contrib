@@ -662,6 +662,16 @@ metrics:
     attributes: []
 
 feature_gates:
+  - id: receiver.kubelet_stats.cpuUtilizationPrecision
+    stage: alpha
+    description: >-
+      When enabled, the pod and container cpu utilization metrics
+      (*.cpu.node.utilization, *.cpu_limit_utilization and *.cpu_request_utilization)
+      are computed from integer nanocore values and rounded to the number of
+      significant digits justified by the inputs, removing float64 artifacts
+      from the emitted values.
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47988
   - id: receiver.kubeletstats.cpuUsageScrapeBased
     stage: beta
     description: >-
