@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
@@ -207,4 +209,100 @@ func generateSelfSignedPEM(t *testing.T) (certPem, keyPem []byte) {
 	certPem = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
 	keyPem = pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDer})
 	return certPem, keyPem
+}
+
+// TestStartWarnsUnsupportedTLSSettings checks that tls settings the prometheus
+// scrape config cannot express are named in a warning when the receiver starts.
+func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
+	caPem, err := os.ReadFile("./testdata/test_cert.pem")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		tls      configtls.ClientConfig
+		wantKeys []any
+	}{
+		{
+			name: "forwarded settings only",
+			tls: configtls.ClientConfig{
+				Config:     configtls.Config{CAPem: configopaque.String(caPem), MinVersion: "1.3"},
+				ServerName: "example.com",
+			},
+		},
+		{
+			name: "system pool without a CA",
+			tls: configtls.ClientConfig{
+				Insecure: false,
+				Config:   configtls.Config{IncludeSystemCACertsPool: true},
+			},
+		},
+		{
+			name: "insecure http ignores all tls settings",
+			tls: configtls.ClientConfig{
+				Insecure: true,
+				Config:   configtls.Config{CipherSuites: []string{"TLS_AES_128_GCM_SHA256"}},
+			},
+		},
+		{
+			name: "reload_interval is covered by prometheus file reloads",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAPem: configopaque.String(caPem), ReloadInterval: time.Minute},
+			},
+		},
+		{
+			name: "insecure cipher suites without cipher_suites",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAPem: configopaque.String(caPem), IncludeInsecureCipherSuites: true},
+			},
+		},
+		{
+			name: "tpm",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAPem: configopaque.String(caPem), TPMConfig: configtls.TPMConfig{Enabled: true}},
+			},
+			wantKeys: []any{"tpm"},
+		},
+		{
+			name: "every unsupported setting",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{
+					CAPem:                       configopaque.String(caPem),
+					CipherSuites:                []string{"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"},
+					IncludeInsecureCipherSuites: true,
+					CurvePreferences:            []string{"X25519"},
+					IncludeSystemCACertsPool:    true,
+					ReloadInterval:              time.Minute,
+					TPMConfig:                   configtls.TPMConfig{Enabled: true},
+				},
+			},
+			wantKeys: []any{
+				"cipher_suites", "include_insecure_cipher_suites", "curve_preferences",
+				"include_system_ca_certs_pool", "tpm",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.Endpoint = "localhost:1234"
+			cfg.ClientConfig.TLS = tt.tls
+
+			core, logs := observer.New(zapcore.WarnLevel)
+			set := receivertest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+			r, err := NewFactory().CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
+			require.NoError(t, err)
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, r.Shutdown(t.Context()))
+
+			warned := logs.FilterMessageSnippet("tls settings have no equivalent").All()
+			if tt.wantKeys == nil {
+				assert.Empty(t, warned)
+				return
+			}
+			require.Len(t, warned, 1)
+			assert.Equal(t, tt.wantKeys, warned[0].ContextMap()["settings"])
+		})
+	}
 }

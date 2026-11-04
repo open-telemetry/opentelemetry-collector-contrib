@@ -33,6 +33,39 @@
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
     ) AS wait_type,
+    -- wait_event_type is the top-level classification from EVENT_NAME's second
+    -- path segment ('io' | 'lock' | 'synch'). Gated on the exact same
+    -- conditions as session_status above so this only reports a real category
+    -- while session_status = 'waiting'; it reports 'CPU' in lockstep with
+    -- 'running', and 'other' in lockstep with 'other'. A NULL wait.event_name
+    -- on a genuinely waiting row is guarded by the outer COALESCE so this
+    -- column is never NULL.
+    CASE
+        WHEN wait.thread_id IS NOT NULL AND wait.end_event_id IS NULL THEN
+            COALESCE(
+                IF(thread.processlist_state = 'User sleep', 'User sleep',
+                   SUBSTRING_INDEX(SUBSTRING_INDEX(wait.event_name, '/', 2), '/', -1)),
+                'other'
+            )
+        WHEN statement.thread_id IS NOT NULL
+             AND COALESCE(statement.sql_text, thread.processlist_info) <> '' THEN 'CPU'
+        ELSE 'other'
+    END AS wait_event_type,
+    -- wait_event is everything after the category segment of EVENT_NAME
+    -- (subsystem/component/instrument), e.g. 'table/sql/handler',
+    -- 'mutex/innodb/checkpoint_state'. Same session_status-aligned gating and
+    -- NULL-safety as wait_event_type above.
+    CASE
+        WHEN wait.thread_id IS NOT NULL AND wait.end_event_id IS NULL THEN
+            COALESCE(
+                IF(thread.processlist_state = 'User sleep', 'User sleep',
+                   SUBSTRING(wait.event_name, LENGTH(SUBSTRING_INDEX(wait.event_name, '/', 2)) + 2)),
+                'other'
+            )
+        WHEN statement.thread_id IS NOT NULL
+             AND COALESCE(statement.sql_text, thread.processlist_info) <> '' THEN 'CPU'
+        ELSE 'other'
+    END AS wait_event,
     COALESCE(
         -- Tier 1: completed wait event — TIMER_WAIT is populated (exact, picosecond precision)
         wait.timer_wait / 1e12,

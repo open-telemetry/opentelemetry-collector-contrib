@@ -25,6 +25,8 @@ sql_server/named:
     collection_interval: 80s
   query_sample_collection:
     max_rows_per_query: 1450
+  databases: [sales, hr]
+  exclude_databases: [hr]
   events:
     db.server.query_sample:
       enabled: true

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/semate
 go 1.26.0
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/google/uuid v1.6.0
 	github.com/influxdata/influxdb-observability/common v0.5.12
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.12
@@ -30,7 +30,6 @@ require go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 //
 
 require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
-	github.com/cenkalti/backoff/v7 v7.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4 // indirect
