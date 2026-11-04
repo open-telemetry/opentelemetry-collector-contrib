@@ -5,6 +5,8 @@ package libhoneyreceiver
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1290,4 +1292,139 @@ func TestMsgpackEmptyArray(t *testing.T) {
 	recv.handleEvent(resp, req)
 
 	assert.Equal(t, http.StatusOK, resp.Code, "Expected 200 OK for empty array")
+}
+
+// repeatedByteReader generates a stream of identical bytes up to 'remaining'
+type repeatedByteReader struct {
+	remaining int64
+}
+
+func (r *repeatedByteReader) Read(p []byte) (int, error) {
+	if r.remaining == 0 {
+		return 0, io.EOF
+	}
+	if int64(len(p)) > r.remaining {
+		p = p[:r.remaining]
+	}
+	for i := range p {
+		p[i] = 'A'
+	}
+	r.remaining -= int64(len(p))
+	return len(p), nil
+}
+
+func makeGzip(t *testing.T, size int64) []byte {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	_, err := io.Copy(zw, &repeatedByteReader{remaining: size})
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
+func makeDeflate(t *testing.T, size int64) []byte {
+	var buf bytes.Buffer
+	zw, err := flate.NewWriter(&buf, flate.DefaultCompression)
+	require.NoError(t, err)
+	_, err = io.Copy(zw, &repeatedByteReader{remaining: size})
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
+func makeZstd(t *testing.T, size int64) []byte {
+	var buf bytes.Buffer
+	zw, err := zstd.NewWriter(&buf)
+	require.NoError(t, err)
+	_, err = io.Copy(zw, &repeatedByteReader{remaining: size})
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
+// TestReceiverDecompressionLimits ensures that decompressed payloads exceeding
+// the maxDecodedBodySize limit are rejected to prevent OOM vulnerabilities.
+func TestReceiverDecompressionLimits(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	getOrInsertDefault(t, &cfg.HTTP)
+
+	// EXPLICITLY set the config limit to 1MB for the test
+	cfg.HTTP.Get().ServerConfig.MaxRequestBodySize = 1024 * 1024
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	r, err := newLibhoneyReceiver(cfg, &set)
+	require.NoError(t, err)
+
+	sink := &consumertest.LogsSink{}
+	r.registerLogConsumer(sink)
+
+	// Now the limit dynamically picks up your 1MB config!
+	limit := cfg.HTTP.Get().ServerConfig.MaxRequestBodySize
+
+	tests := []struct {
+		name             string
+		encoding         string
+		payload          []byte
+		expectedStatus   int
+		expectedErrMatch string
+	}{
+		{
+			name:             "gzip_exact_limit",
+			encoding:         "gzip",
+			payload:          makeGzip(t, limit),
+			expectedStatus:   http.StatusBadRequest,
+			expectedErrMatch: "failed to decode events",
+		},
+		{
+			name:             "gzip_one_byte_over",
+			encoding:         "gzip",
+			payload:          makeGzip(t, limit+1),
+			expectedStatus:   http.StatusBadRequest,
+			expectedErrMatch: "exceeds limit",
+		},
+		{
+			name:             "deflate_exact_limit",
+			encoding:         "deflate",
+			payload:          makeDeflate(t, limit),
+			expectedStatus:   http.StatusBadRequest,
+			expectedErrMatch: "failed to decode events",
+		},
+		{
+			name:             "deflate_one_byte_over",
+			encoding:         "deflate",
+			payload:          makeDeflate(t, limit+1),
+			expectedStatus:   http.StatusBadRequest,
+			expectedErrMatch: "exceeds limit",
+		},
+		{
+			name:             "zstd_exact_limit",
+			encoding:         "zstd",
+			payload:          makeZstd(t, limit),
+			expectedStatus:   http.StatusBadRequest,
+			expectedErrMatch: "window size exceeded",
+		},
+		{
+			name:             "zstd_one_byte_over",
+			encoding:         "zstd",
+			payload:          makeZstd(t, limit+1),
+			expectedStatus:   http.StatusBadRequest,
+			expectedErrMatch: "window size exceeded",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/1/events/test", bytes.NewReader(tt.payload))
+			req.Header.Set("Content-Type", "application/json")
+			if tt.encoding != "" {
+				req.Header.Set("Content-Encoding", tt.encoding)
+			}
+
+			resp := httptest.NewRecorder()
+			r.handleEvent(resp, req)
+
+			assert.Equal(t, tt.expectedStatus, resp.Code)
+			assert.Contains(t, resp.Body.String(), tt.expectedErrMatch)
+		})
+	}
 }
