@@ -1306,6 +1306,45 @@ For the latest benchmark results, see the [GitHub Actions workflow runs](https:/
 
 The processor emits internal telemetry to observe resource detection. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
 
+## Detecting `host.id`
+
+The [`host.id` semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md) defines a priority order for its value: cloud instance ID, VM vendor ID, OS machine ID, then a user-provided value. The processor does not detect `host.id` by default. To follow this order, use the configuration for your environment and keep only the detectors for your platform.
+
+In Kubernetes:
+
+```yaml
+processors:
+  resource_detection:
+    detectors: [eks, ec2, azure, gcp, k8s_api, env]
+    override: false
+    eks:
+      resource_attributes:
+        host.id:
+          enabled: true
+    k8s_api:
+      resource_attributes:
+        host.id:
+          enabled: true
+```
+
+Outside Kubernetes:
+
+```yaml
+processors:
+  resource_detection:
+    detectors: [ec2, azure, gcp, system, env]
+    override: false
+    system:
+      resource_attributes:
+        host.id:
+          enabled: true
+```
+
+* The [first detector to insert an attribute wins](#ordering), so `env` is last and only applies to attributes that no other detector provides.
+* `override: false` keeps a `host.id` that is already set on the telemetry.
+* `k8s_api` requires the `K8S_NODE_NAME` environment variable and the permissions listed in [K8S API Metadata](#k8s-api-metadata).
+* `system` reads the container's machine ID when the Collector runs in a container, so leave it out and set `host.id` through `env` instead.
+
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
