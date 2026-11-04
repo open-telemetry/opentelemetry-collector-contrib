@@ -6,6 +6,6 @@ subtext: |
   Both the logs and the metrics receiver only collect while they hold the lease
   managed by the `k8sleaderelector` extension. Logs additionally need a storage
   extension that several collectors can use at once, such as `redis_storage`,
-  otherwise a new leader restarts from `start_from`/`initial_lookback`; the
-  receiver warns when leader election is configured without one.
+  otherwise a new leader restarts from `start_from`/`initial_lookback`;
+  configuring it without one is rejected at startup.
 change_logs: [user]

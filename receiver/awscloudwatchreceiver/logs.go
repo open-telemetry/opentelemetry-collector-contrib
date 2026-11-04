@@ -31,6 +31,12 @@ const (
 	maxLogGroupsPerDiscovery = int32(50)
 )
 
+// errLeaderElectionWithoutStorage rejects leader election for logs without shared
+// checkpoints: a new leader would restart from the configured start time, which
+// duplicates or skips events on every failover.
+var errLeaderElectionWithoutStorage = errors.New(
+	"logs collection with k8s_leader_elector requires a storage extension that several collectors can use at the same time")
+
 type logsReceiver struct {
 	settings                      receiver.Settings
 	region                        string
@@ -53,6 +59,9 @@ type logsReceiver struct {
 	// mu guards the polling lifecycle, which leader election may stop and start repeatedly.
 	mu         sync.Mutex
 	pollCancel context.CancelFunc
+	// shutdown stops leadership callbacks from starting a new loop after Shutdown. The
+	// extension keeps them registered, and extensions shut down after receivers.
+	shutdown bool
 }
 
 type client interface {
@@ -183,8 +192,7 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 			return err
 		}
 		if l.storageID == nil {
-			l.settings.Logger.Warn("leader election is enabled without a storage extension: a new leader restarts " +
-				"from the configured start time, which duplicates or skips log events on failover")
+			return errLeaderElectionWithoutStorage
 		}
 		// The extension invokes the start callback inline when this instance is already the leader.
 		elector.SetCallBackFuncs(l.startCollecting, l.stopCollecting)
@@ -200,7 +208,7 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 func (l *logsReceiver) startCollecting(ctx context.Context) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.pollCancel != nil || ctx.Err() != nil {
+	if l.shutdown || l.pollCancel != nil || ctx.Err() != nil {
 		return
 	}
 
@@ -225,6 +233,9 @@ func (l *logsReceiver) stopCollecting() {
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	l.settings.Logger.Debug("shutting down logs receiver")
+	l.mu.Lock()
+	l.shutdown = true
+	l.mu.Unlock()
 	l.stopCollecting()
 
 	if l.cloudwatchCheckpointPersister != nil {
