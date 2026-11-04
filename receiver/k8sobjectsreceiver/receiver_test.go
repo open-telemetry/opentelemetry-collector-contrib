@@ -5,8 +5,10 @@ package k8sobjectsreceiver
 
 import (
 	"errors"
+	"math"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -26,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
 	k8s_testing "k8s.io/client-go/testing"
@@ -956,6 +959,7 @@ func TestCacheSyncFailureErrorModes(t *testing.T) {
 			assert.Len(t, logs.FilterMessageSnippet(syncErrMsg).All(), tt.expectLogs)
 			if tt.expectError {
 				require.ErrorContains(t, err, syncErrMsg)
+				assert.Empty(t, r.(*k8sobjectsreceiver).stopperChanList, "propagate must not schedule a background retry")
 				return
 			}
 			require.NoError(t, err)
@@ -971,6 +975,93 @@ func TestCacheSyncFailureErrorModes(t *testing.T) {
 			assert.Eventually(t, func() bool { return consumer.Count() == 1 }, 5*time.Second, 10*time.Millisecond)
 		})
 	}
+}
+
+func TestCacheSyncFailureRecovers(t *testing.T) {
+	enableInformerObserver(t)
+
+	for _, errorMode := range []ErrorMode{IgnoreError, SilentError} {
+		t.Run(string(errorMode), func(t *testing.T) {
+			var apiDown atomic.Bool
+			apiDown.Store(true)
+			mockClient := newMockDynamicClient()
+			mockClient.createPods(generatePod("pod1", "default", nil, "1"))
+			mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+				if apiDown.Load() {
+					return true, nil, errors.New("simulated apiserver failure")
+				}
+				return false, nil, nil
+			})
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+			rCfg.makeDiscoveryClient = getMockDiscoveryClient
+			rCfg.ErrorMode = errorMode
+			rCfg.CacheSyncTimeout = 200 * time.Millisecond
+			rCfg.Objects = []*K8sObjectsConfig{
+				{Name: "pods", Mode: k8sinventory.PullMode, Interval: time.Hour},
+			}
+
+			core, logs := observer.New(zap.InfoLevel)
+			settings := receivertest.NewNopSettings(metadata.Type)
+			settings.Logger = zap.New(core)
+			consumer := newMockLogConsumer()
+			r, err := newReceiver(settings, rCfg, consumer)
+			require.NoError(t, err)
+			r.(*k8sobjectsreceiver).startRetryBackoff = wait.Backoff{Duration: 10 * time.Millisecond, Factor: 1, Steps: math.MaxInt32}
+			t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
+
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+			assert.Zero(t, consumer.Count())
+
+			apiDown.Store(false)
+			assert.Eventually(t, func() bool { return consumer.Count() == 1 }, 15*time.Second, 50*time.Millisecond)
+			assert.Len(t, logs.FilterMessage("observer started after retry").All(), 1)
+		})
+	}
+}
+
+func TestCacheSyncRetryStopsOnShutdown(t *testing.T) {
+	enableInformerObserver(t)
+
+	mockClient := newMockDynamicClient()
+	mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("simulated apiserver failure")
+	})
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = IgnoreError
+	rCfg.CacheSyncTimeout = 50 * time.Millisecond
+	rCfg.Objects = []*K8sObjectsConfig{
+		{Name: "pods", Mode: k8sinventory.WatchMode},
+	}
+
+	core, logs := observer.New(zap.DebugLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	r, err := newReceiver(settings, rCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	r.(*k8sobjectsreceiver).startRetryBackoff = wait.Backoff{Duration: 10 * time.Millisecond, Factor: 1, Steps: math.MaxInt32}
+
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	retries := func() int { return logs.FilterMessage("retrying observer start").Len() }
+	require.Eventually(t, func() bool { return retries() > 0 }, 5*time.Second, 10*time.Millisecond)
+
+	// Shutdown waits on the receiver WaitGroup, so returning proves the retry goroutine exited.
+	done := make(chan error, 1)
+	go func() { done <- r.Shutdown(t.Context()) }()
+	select {
+	case err = <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return while observer start was being retried")
+	}
+
+	after := retries()
+	time.Sleep(200 * time.Millisecond)
+	assert.Equal(t, after, retries(), "no retries expected after Shutdown")
 }
 
 func TestSharedInformerFactoryDedupesListAndWatch(t *testing.T) {

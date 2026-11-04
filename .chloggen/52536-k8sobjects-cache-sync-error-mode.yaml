@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/k8s_objects
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Respect `error_mode` when an object fails to start, such as on an informer cache sync timeout, instead of always failing receiver startup.
+note: Respect `error_mode` when an object fails to start, such as on an informer cache sync timeout, instead of always failing receiver startup. With `ignore` or `silent`, the object is retried in the background with backoff and resumes collection once it starts.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52536]

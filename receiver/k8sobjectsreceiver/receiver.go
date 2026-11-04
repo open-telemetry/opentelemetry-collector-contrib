@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 
@@ -47,6 +49,8 @@ type k8sobjectsreceiver struct {
 	observerFunc    func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
 	stopped         bool
+	// startRetryBackoff paces background retries of observers that failed to start under ignore/silent error_mode.
+	startRetryBackoff wait.Backoff
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -83,6 +87,13 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		consumer: consumer,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
+		startRetryBackoff: wait.Backoff{
+			Duration: time.Second,
+			Factor:   2,
+			Jitter:   0.1,
+			Steps:    math.MaxInt32,
+			Cap:      time.Minute,
+		},
 	}
 
 	kr.observerFunc = getObserverFunc(kr)
@@ -396,13 +407,53 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, reg *informer.FactoryRe
 
 	stopChan, err := kr.startObserver(ctx, obs, object)
 	if err != nil {
-		return err
+		if kr.config.ErrorMode == PropagateError {
+			return err
+		}
+		stopChan = kr.retryObserver(ctx, obs, object)
 	}
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 	kr.mu.Unlock()
 
-	return nil
+	return err
+}
+
+// retryObserver keeps retrying obs.Start with backoff in the background so an
+// object whose start failed (e.g. cache sync timeout) resumes collection once
+// the API server recovers. It exits when the returned channel is closed or ctx is done.
+func (kr *k8sobjectsreceiver) retryObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) chan struct{} {
+	stopChan := make(chan struct{})
+	backoff := kr.startRetryBackoff
+	kr.wg.Go(func() {
+		for {
+			timer := time.NewTimer(backoff.Step())
+			select {
+			case <-timer.C:
+			case <-stopChan:
+				timer.Stop()
+				return
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			}
+
+			observerStopChan, err := obs.Start(ctx, &kr.wg)
+			if err != nil {
+				kr.setting.Logger.Debug("retrying observer start",
+					zap.String("object", object.Name), zap.Error(err))
+				continue
+			}
+			kr.setting.Logger.Info("observer started after retry", zap.String("object", object.Name))
+			select {
+			case <-stopChan:
+				close(observerStopChan)
+			case <-ctx.Done():
+			}
+			return
+		}
+	})
+	return stopChan
 }
 
 func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
