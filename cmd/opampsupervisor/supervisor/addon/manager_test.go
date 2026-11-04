@@ -114,17 +114,17 @@ func TestManagerReconcile(t *testing.T) {
 
 	// First pass: both are configured, even with no configuration, and started.
 	// b's first start asks for a Collector restart.
-	effect, err := m.Reconcile(ctx, map[string][]byte{"restarting:b": []byte("v1")})
+	result, err := m.Reconcile(ctx, map[string][]byte{"restarting:b": []byte("v1")})
 	require.NoError(t, err)
-	assert.True(t, effect.RestartAgent)
+	assert.True(t, result.Effect.RestartAgent)
 	assert.Equal(t, [][]byte{nil}, a.configs)
 	assert.Equal(t, [][]byte{[]byte("v1")}, b.configs)
 	assert.Equal(t, 1, a.starts)
 
 	// Unchanged offer: no Configure, Start is called again but changes nothing.
-	effect, err = m.Reconcile(ctx, map[string][]byte{"restarting:b": []byte("v1")})
+	result, err = m.Reconcile(ctx, map[string][]byte{"restarting:b": []byte("v1")})
 	require.NoError(t, err)
-	assert.False(t, effect.RestartAgent, "an unchanged offer must not restart the Collector")
+	assert.False(t, result.Effect.RestartAgent, "an unchanged offer must not restart the Collector")
 	assert.Len(t, b.configs, 1)
 	assert.Equal(t, 2, b.starts)
 
@@ -155,16 +155,27 @@ func TestManagerReconcileIsolatesFailures(t *testing.T) {
 	require.NoError(t, m.Load(ctx, "file:healthy", t.TempDir()))
 	f.addons["file:broken"].configureErr = errors.New("boom")
 
-	_, err = m.Reconcile(ctx, nil)
+	result, err := m.Reconcile(ctx, map[string][]byte{"file:broken": []byte("v1"), "file:healthy": []byte("v1")})
 	require.ErrorContains(t, err, `configure addon "file:broken": boom`)
+	require.Len(t, result.ConfigErrors, 1)
+	require.EqualError(t, result.ConfigErrors["file:broken"], "boom")
+	// Only the addon that accepted its configuration reports one as applied.
+	assert.Equal(t, map[string][]byte{"file:healthy": []byte("v1")}, m.AppliedConfigs())
 	assert.True(t, f.addons["file:healthy"].started)
 	assert.False(t, f.addons["file:broken"].started, "an addon that failed to configure must not be started")
 
 	// The failed addon is retried on the next pass.
 	f.addons["file:broken"].configureErr = nil
+	result, err = m.Reconcile(ctx, map[string][]byte{"file:broken": []byte("v1"), "file:healthy": []byte("v1")})
+	require.NoError(t, err)
+	assert.Empty(t, result.ConfigErrors)
+	assert.True(t, f.addons["file:broken"].started)
+	assert.Equal(t, map[string][]byte{"file:broken": []byte("v1"), "file:healthy": []byte("v1")}, m.AppliedConfigs())
+
+	// Withdrawn configuration is no longer reported as applied.
 	_, err = m.Reconcile(ctx, nil)
 	require.NoError(t, err)
-	assert.True(t, f.addons["file:broken"].started)
+	assert.Empty(t, m.AppliedConfigs())
 }
 
 func TestManagerLoadReplacesAndUnloadShutsDown(t *testing.T) {

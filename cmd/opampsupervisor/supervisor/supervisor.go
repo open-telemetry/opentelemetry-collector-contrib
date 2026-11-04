@@ -250,6 +250,13 @@ type Supervisor struct {
 	// addons holds the supported addon types and the installed addons. nil
 	// when the packages capability is disabled.
 	addons *addon.Manager
+	// addonConfigErr is set while an addon rejects the configuration offered
+	// in the current remote config. See reportAddonConfigErrors.
+	addonConfigErr atomic.Pointer[addonConfigError]
+	// addonEffectiveMu guards addonEffective, the addon configurations last
+	// included in the effective config.
+	addonEffectiveMu sync.Mutex
+	addonEffective   map[string][]byte
 }
 
 func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor, opts ...Option) (*Supervisor, error) {
@@ -1778,6 +1785,11 @@ func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
+	return s.withAddonEffectiveConfig(s.collectorEffectiveConfigMsg())
+}
+
+// collectorEffectiveConfigMsg returns the Collector's own effective config.
+func (s *Supervisor) collectorEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	if cfg, ok := s.effectiveConfig.Load().(*protobufs.EffectiveConfig); ok && cfg != nil {
 		return cfg
 	}
@@ -2521,6 +2533,16 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 		return
 	}
 	remoteConfig := s.remoteConfig.Load()
+
+	// The Collector applying its part of a remote config does not make the
+	// whole config applied while an addon rejects its part of the same config.
+	if status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
+		if addonErr := s.addonConfigErr.Load(); addonErr != nil && bytes.Equal(addonErr.hash, remoteConfig.GetConfigHash()) {
+			status = protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+			errorMessage = addonErr.message
+		}
+	}
+
 	rcs := &protobufs.RemoteConfigStatus{
 		LastRemoteConfigHash: remoteConfig.GetConfigHash(),
 		Status:               status,

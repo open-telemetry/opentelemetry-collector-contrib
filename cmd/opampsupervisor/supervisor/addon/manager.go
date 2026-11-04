@@ -153,14 +153,25 @@ func (m *Manager) Load(ctx context.Context, packageName, dir string) error {
 	return nil
 }
 
+// ReconcileResult is the outcome of a Reconcile.
+type ReconcileResult struct {
+	// Effect combines the effects of every addon.
+	Effect Effect
+	// ConfigErrors maps the names of addons that rejected their configuration
+	// to the error Configure returned. Such an addon keeps the configuration it
+	// had and is not started.
+	ConfigErrors map[string]error
+}
+
 // Reconcile configures and starts every loaded addon. configs maps package
 // names to the configuration offered for them; an addon absent from configs is
 // configured with nil. Configure is only called when an addon's configuration
 // differs from what was last applied, so an unchanged offer is a no-op.
 //
 // Addons are independent: a failure in one does not stop the others. The
-// returned Effect combines the effects of every addon.
-func (m *Manager) Reconcile(ctx context.Context, configs map[string][]byte) (Effect, error) {
+// returned error joins every failure, including those in the result's
+// ConfigErrors.
+func (m *Manager) Reconcile(ctx context.Context, configs map[string][]byte) (ReconcileResult, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -179,7 +190,7 @@ func (m *Manager) Reconcile(ctx context.Context, configs map[string][]byte) (Eff
 	sort.Strings(names)
 
 	var (
-		effect Effect
+		result ReconcileResult
 		errs   []error
 	)
 	for _, name := range names {
@@ -189,10 +200,14 @@ func (m *Manager) Reconcile(ctx context.Context, configs map[string][]byte) (Eff
 		if !inst.configured || !bytes.Equal(inst.lastConfig, body) {
 			e, err := inst.addon.Configure(ctx, body)
 			if err != nil {
+				if result.ConfigErrors == nil {
+					result.ConfigErrors = map[string]error{}
+				}
+				result.ConfigErrors[name] = err
 				errs = append(errs, fmt.Errorf("configure addon %q: %w", name, err))
 				continue
 			}
-			effect = effect.Merge(e)
+			result.Effect = result.Effect.Merge(e)
 			inst.configured = true
 			inst.lastConfig = bytes.Clone(body)
 		}
@@ -202,10 +217,25 @@ func (m *Manager) Reconcile(ctx context.Context, configs map[string][]byte) (Eff
 			errs = append(errs, fmt.Errorf("start addon %q: %w", name, err))
 			continue
 		}
-		effect = effect.Merge(e)
+		result.Effect = result.Effect.Merge(e)
 	}
 
-	return effect, errors.Join(errs...)
+	return result, errors.Join(errs...)
+}
+
+// AppliedConfigs returns the configuration each loaded addon runs with, keyed
+// by package name. Addons that have no configuration applied are omitted.
+func (m *Manager) AppliedConfigs() map[string][]byte {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	configs := map[string][]byte{}
+	for name, inst := range m.instances {
+		if inst.configured && inst.lastConfig != nil {
+			configs[name] = bytes.Clone(inst.lastConfig)
+		}
+	}
+	return configs
 }
 
 // Get returns the loaded addon with the given name and the directory it is

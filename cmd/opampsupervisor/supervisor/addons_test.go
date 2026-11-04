@@ -9,11 +9,15 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -48,11 +52,17 @@ func newAddonTestSupervisorWithConfig(t *testing.T, cfg config.Supervisor, extra
 	s := &Supervisor{
 		config:            cfg,
 		telemetrySettings: newNopTelemetrySettings(),
-		persistentState:   &persistentState{InstanceID: uuid.New()},
-		hasNewConfig:      make(chan struct{}, 1),
+		persistentState: &persistentState{
+			InstanceID: uuid.New(),
+			configPath: filepath.Join(cfg.Storage.Directory, persistentStateFileName),
+		},
+		hasNewConfig:    make(chan struct{}, 1),
+		effectiveConfig: &atomic.Value{},
+		cfgState:        &atomic.Value{},
 	}
 	s.runCtx, s.runCtxCancel = context.WithCancel(t.Context())
 	t.Cleanup(s.runCtxCancel)
+	recordReports(s)
 
 	var err error
 	s.addons, err = addon.NewManager(zap.NewNop(), append(builtinAddonFactories(), extra...)...)
@@ -62,6 +72,50 @@ func newAddonTestSupervisorWithConfig(t *testing.T, cfg config.Supervisor, extra
 
 	t.Cleanup(func() { s.stopAddons(t.Context()) })
 	return s
+}
+
+// reports records what the Supervisor tells the OpAMP server.
+type reports struct {
+	mu               sync.Mutex
+	statuses         []*protobufs.RemoteConfigStatus
+	effectiveUpdates int
+}
+
+// last returns the most recently reported remote config status.
+func (r *reports) last() *protobufs.RemoteConfigStatus {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(r.statuses) == 0 {
+		return nil
+	}
+	return r.statuses[len(r.statuses)-1]
+}
+
+func (r *reports) updates() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.effectiveUpdates
+}
+
+// recordReports gives s an OpAMP client that records what it reports.
+func recordReports(s *Supervisor) *reports {
+	r := &reports{}
+	s.opampClient = &mockOpAMPClient{
+		setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+			r.mu.Lock()
+			defer r.mu.Unlock()
+			r.statuses = append(r.statuses, rcs)
+			return nil
+		},
+		updateEffectiveConfigFunc: func(context.Context) error {
+			r.mu.Lock()
+			defer r.mu.Unlock()
+			r.effectiveUpdates++
+			return nil
+		},
+		setHealthFunc: func(*protobufs.ComponentHealth) {},
+	}
+	return r
 }
 
 // installPackage drives the packageManager through the call sequence the
@@ -105,10 +159,19 @@ func setAddonConfigs(s *Supervisor, configs map[string]string) {
 
 func addonRemoteConfig(configs map[string]string) *protobufs.AgentRemoteConfig {
 	configMap := map[string]*protobufs.AgentConfigObject{}
+	names := make([]string, 0, len(configs))
 	for name, body := range configs {
 		configMap[name] = &protobufs.AgentConfigObject{Body: []byte(body), ContentType: "text/plain", Role: addonConfigRole}
+		names = append(names, name)
 	}
-	return &protobufs.AgentRemoteConfig{Config: &protobufs.AgentConfigMap{ConfigMap: configMap}}
+	// A deterministic hash, so that distinct offers are distinct configs the
+	// way a server would hash them.
+	sort.Strings(names)
+	h := sha256.New()
+	for _, name := range names {
+		h.Write([]byte(name + "=" + configs[name] + "\n"))
+	}
+	return &protobufs.AgentRemoteConfig{Config: &protobufs.AgentConfigMap{ConfigMap: configMap}, ConfigHash: h.Sum(nil)}
 }
 
 func tarGz(t *testing.T, files map[string]string) []byte {
@@ -641,4 +704,135 @@ func TestHeldBackRestartSurvivesCancelledMessageContext(t *testing.T) {
 	conf, err := os.ReadFile(filepath.Join(dir, "state"))
 	require.NoError(t, err)
 	assert.Contains(t, string(conf), "state = disabled", "the addon must still be reconciled")
+}
+
+// --- reporting addon configuration to the server ---
+
+// flakyFactory is an addon type whose addons reject non-empty configuration
+// while reject is set.
+type flakyFactory struct{ reject *atomic.Bool }
+
+func (flakyFactory) Type() addon.Type { return "flaky" }
+
+func (flakyFactory) Install(context.Context, addon.InstallSettings) error { return nil }
+
+func (f flakyFactory) Create(context.Context, addon.Settings) (addon.Addon, error) {
+	return &flakyAddon{reject: f.reject}, nil
+}
+
+type flakyAddon struct{ reject *atomic.Bool }
+
+func (a *flakyAddon) Configure(_ context.Context, body []byte) (addon.Effect, error) {
+	if body != nil && a.reject.Load() {
+		return addon.Effect{}, errors.New("invalid configuration")
+	}
+	return addon.Effect{}, nil
+}
+
+func (*flakyAddon) Start(context.Context) (addon.Effect, error) { return addon.Effect{}, nil }
+
+func (*flakyAddon) Shutdown(context.Context) error { return nil }
+
+// TestAddonConfigReportedInEffectiveConfig checks that the configuration each
+// addon runs with is reported in the effective config, under the key and role
+// it was offered with, alongside the Collector's own effective config.
+func TestAddonConfigReportedInEffectiveConfig(t *testing.T) {
+	s := newAddonTestSupervisor(t, customRulesFactory{})
+	ctx := t.Context()
+
+	collectorConfig := &protobufs.EffectiveConfig{ConfigMap: &protobufs.AgentConfigMap{
+		ConfigMap: map[string]*protobufs.AgentConfigObject{"": {Body: []byte("receivers: {}\n")}},
+	}}
+	s.effectiveConfig.Store(collectorConfig)
+
+	require.NoError(t, installPackage(s.packages, "custom_rules:base",
+		tarGz(t, map[string]string{"rules.yaml": "rules: []\n"}), "https://example.invalid/rules.tar.gz", "1"))
+
+	r := recordReports(s)
+	setAddonConfigs(s, map[string]string{"custom_rules:base": "enabled"})
+	s.reconcileAddons(ctx)
+	assert.Equal(t, 1, r.updates(), "an applied addon configuration must update the effective config")
+
+	effective := s.createEffectiveConfigMsg().GetConfigMap().GetConfigMap()
+	require.Contains(t, effective, "")
+	assert.Equal(t, "receivers: {}\n", string(effective[""].GetBody()))
+	require.Contains(t, effective, "custom_rules:base")
+	assert.Equal(t, "enabled", string(effective["custom_rules:base"].GetBody()))
+	assert.Equal(t, "text/plain", effective["custom_rules:base"].GetContentType())
+	assert.Equal(t, addonConfigRole, effective["custom_rules:base"].GetRole())
+	assert.Len(t, collectorConfig.GetConfigMap().GetConfigMap(), 1, "the Collector's effective config must not be modified")
+
+	// Unchanged: no update.
+	s.reconcileAddons(ctx)
+	assert.Equal(t, 1, r.updates())
+
+	// Withdrawn: the entry goes away.
+	setAddonConfigs(s, map[string]string{})
+	s.reconcileAddons(ctx)
+	assert.Equal(t, 2, r.updates())
+	assert.NotContains(t, s.createEffectiveConfigMsg().GetConfigMap().GetConfigMap(), "custom_rules:base")
+}
+
+// TestAddonConfigRejectionReportedAsFailedStatus checks that an addon rejecting
+// its configuration is reported as a FAILED remote config status, that the
+// Collector applying its part of the same config does not hide it, and that the
+// config is reported applied once the addon accepts it.
+func TestAddonConfigRejectionReportedAsFailedStatus(t *testing.T) {
+	reject := &atomic.Bool{}
+	reject.Store(true)
+	s := newAddonTestSupervisor(t, flakyFactory{reject: reject})
+	ctx := t.Context()
+
+	require.NoError(t, installPackage(s.packages, "flaky:x", []byte("x"), "https://example.invalid/x", "1"))
+	r := recordReports(s)
+	setAddonConfigs(s, map[string]string{"flaky:x": "v1"})
+	hash := s.remoteConfig.Load().GetConfigHash()
+
+	s.reconcileAddons(ctx)
+	last := r.last()
+	require.NotNil(t, last)
+	assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, last.GetStatus())
+	assert.Equal(t, hash, last.GetLastRemoteConfigHash())
+	assert.Contains(t, last.GetErrorMessage(), `"flaky:x"`)
+	assert.Contains(t, last.GetErrorMessage(), "invalid configuration")
+
+	// The Collector applying its part of the config must not report it applied.
+	s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+	assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, r.last().GetStatus())
+	assert.Contains(t, r.last().GetErrorMessage(), `"flaky:x"`)
+
+	// Once the addon accepts the same config, it is applied.
+	reject.Store(false)
+	s.reconcileAddons(ctx)
+	assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, r.last().GetStatus())
+	assert.Empty(t, r.last().GetErrorMessage())
+	assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+		s.persistentState.GetLastRemoteConfigStatus().GetStatus(), "the persisted status must follow")
+}
+
+// TestAddonConfigErrorDoesNotOutliveItsConfig checks that a rejection is tied
+// to the config it was found in: a new config is reported on its own merits.
+func TestAddonConfigErrorDoesNotOutliveItsConfig(t *testing.T) {
+	reject := &atomic.Bool{}
+	reject.Store(true)
+	s := newAddonTestSupervisor(t, flakyFactory{reject: reject})
+	ctx := t.Context()
+
+	require.NoError(t, installPackage(s.packages, "flaky:x", []byte("x"), "https://example.invalid/x", "1"))
+	r := recordReports(s)
+	setAddonConfigs(s, map[string]string{"flaky:x": "v1"})
+	s.reconcileAddons(ctx)
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, r.last().GetStatus())
+
+	// A new config arrives and is reported applied before addons are reconciled,
+	// as processRemoteConfigMessage does when the Collector config is unchanged.
+	reject.Store(false)
+	setAddonConfigs(s, map[string]string{"flaky:x": "v2"})
+	s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+	assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, r.last().GetStatus(),
+		"the previous config's rejection must not apply to a new config")
+
+	s.reconcileAddons(ctx)
+	assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, r.last().GetStatus())
+	assert.Equal(t, s.remoteConfig.Load().GetConfigHash(), r.last().GetLastRemoteConfigHash())
 }
