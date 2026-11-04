@@ -968,6 +968,29 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 	}
 }
 
+func TestAddExponentialHistogramSeries_RejectMixedIntFloat(t *testing.T) {
+	const metricName = "request_duration_seconds"
+	lbls := labels.FromMap(map[string]string{"a": "A"})
+	h := &histogram.Histogram{Count: 1, Sum: 1}
+	fh := &histogram.FloatHistogram{Count: 1, Sum: 1}
+
+	t.Run("float after integer", func(t *testing.T) {
+		mp := newMetricFamily(metricName, mc, zap.NewNop(), true, false)
+		sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
+		require.NoError(t, mp.addExponentialHistogramSeries(sRef, metricName, lbls, 11, h, nil))
+		err := mp.addExponentialHistogramSeries(sRef, metricName, lbls, 11, nil, fh)
+		require.ErrorContains(t, err, "already has integer counts")
+	})
+
+	t.Run("integer after float", func(t *testing.T) {
+		mp := newMetricFamily(metricName, mc, zap.NewNop(), true, false)
+		sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
+		require.NoError(t, mp.addExponentialHistogramSeries(sRef, metricName, lbls, 11, nil, fh))
+		err := mp.addExponentialHistogramSeries(sRef, metricName, lbls, 11, h, nil)
+		require.ErrorContains(t, err, "already has float counts")
+	})
+}
+
 func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	type scrape struct {
 		at     int64
