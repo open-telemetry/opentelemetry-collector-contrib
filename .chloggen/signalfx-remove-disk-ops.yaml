@@ -1,7 +1,7 @@
 change_type: breaking
 component: exporter/signalfx
 note: "Stop producing `disk_ops.total` and `disk_ops.pending` metrics with the default translation rules."
-issues: [TBD]
+issues: [52729]
 subtext: |
   Use `system.disk.operations` instead of `disk_ops.total`. It is sent by default as a cumulative counter, so the per-period
   number of operations on a host can be charted with SignalFlow, for example:
