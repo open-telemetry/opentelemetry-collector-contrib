@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/file
+note: Log the first periodic flush error for each output file writer.
+issues: [52574]
+change_logs: [user]
