@@ -69,6 +69,7 @@ func newLeaderElectedLogsReceiver(t *testing.T, cfg *Config, sink *consumertest.
 		},
 	}, sink)
 	rcvr.client = defaultMockClient()
+	rcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(newMockStorageClient(), zap.NewNop())
 	return rcvr
 }
 
@@ -85,6 +86,8 @@ func leaderElectedLogsConfig() *Config {
 	}
 	electorID := component.MustNewID("k8s_leader_elector")
 	cfg.K8sLeaderElector = &electorID
+	storageID := component.MustNewID("file_storage")
+	cfg.StorageID = &storageID
 	return cfg
 }
 
@@ -217,6 +220,7 @@ func TestStoppingCollectionDoesNotLogPollErrors(t *testing.T) {
 	core, logs := observer.New(zapcore.ErrorLevel)
 	cfg := leaderElectedLogsConfig()
 	cfg.K8sLeaderElector = nil
+	cfg.StorageID = nil
 
 	client := &blockingClient{started: make(chan struct{})}
 	sink := &consumertest.LogsSink{}
@@ -232,4 +236,32 @@ func TestStoppingCollectionDoesNotLogPollErrors(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(t.Context()))
 
 	require.Zero(t, logs.Len(), "canceling an in-flight poll is not an error: %v", logs.All())
+}
+
+func TestLogsStartRejectsLeaderElectionWithoutStorage(t *testing.T) {
+	le := &k8sleaderelectortest.FakeLeaderElection{}
+	host := &k8sleaderelectortest.FakeHost{FakeLeaderElection: le}
+	cfg := leaderElectedLogsConfig()
+	cfg.StorageID = nil
+
+	rcvr := newLeaderElectedLogsReceiver(t, cfg, &consumertest.LogsSink{})
+
+	require.ErrorIs(t, rcvr.Start(t.Context(), host), errLeaderElectionWithoutStorage)
+}
+
+func TestLeadershipAfterShutdownDoesNotRestartPolling(t *testing.T) {
+	le := &k8sleaderelectortest.FakeLeaderElection{}
+	host := &k8sleaderelectortest.FakeHost{FakeLeaderElection: le}
+	sink := &consumertest.LogsSink{}
+	rcvr := newLeaderElectedLogsReceiver(t, leaderElectedLogsConfig(), sink)
+
+	require.NoError(t, rcvr.Start(t.Context(), host))
+	require.NoError(t, rcvr.Shutdown(t.Context()))
+
+	// The extension keeps callbacks registered, so leadership can still arrive after the
+	// receiver has shut down and closed its checkpoint storage.
+	le.InvokeOnLeading()
+	require.Never(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 200*time.Millisecond, 10*time.Millisecond, "a shut-down receiver must not start polling again")
 }

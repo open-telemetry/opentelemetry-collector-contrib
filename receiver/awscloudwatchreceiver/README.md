@@ -266,7 +266,7 @@ leader that cannot read the previous leader's checkpoint restarts from
 on its database file, so the standby replica fails to start with
 `failed to start "aws_cloudwatch" receiver: timeout` instead of waiting to take over.
 
-The receiver logs a warning when leader election is enabled without a storage extension.
+Configuring leader election for logs without a storage extension is rejected at startup.
 
 ## Sample Configs
 
