@@ -33,6 +33,10 @@ type Config struct {
 	Logs         LogsConfig    `mapstructure:"logs"`
 	Metrics      MetricsConfig `mapstructure:"metrics"`
 	StorageID    *component.ID `mapstructure:"storage"`
+	// K8sLeaderElector references the k8sleaderelector extension. When set, the receiver only
+	// collects while it holds the lease, so several collector replicas can run the same
+	// configuration without duplicating CloudWatch API calls.
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 }
 
 // MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver.
