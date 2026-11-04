@@ -5,6 +5,7 @@ package prometheusexporter
 
 import (
 	"log"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -725,6 +726,48 @@ func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 		require.Equal(t, ts2.Unix(), dp.Timestamp().AsTime().Unix())
 	})
 
+	for _, tt := range []struct {
+		name             string
+		prevScale, scale int32
+	}{
+		{name: "DownscalePreviousUnalignedBuckets", prevScale: 20, scale: 18},
+		{name: "DownscaleCurrentUnalignedBuckets", prevScale: 18, scale: 20},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			startTs := time.Now().Add(-3 * time.Second)
+			ts1 := startTs.Add(time.Second)
+			ts2 := ts1.Add(time.Second)
+			counts := []uint64{3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+			rm := pmetric.NewResourceMetrics()
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			appendDeltaNative(startTs, ts1, tt.prevScale, -6, slices.Clone(counts), -6, slices.Clone(counts), 0, 116, 0, false, 0, false, 0, ilm.Metrics())
+			m2 := appendDeltaNative(ts1, ts2, tt.scale, -6, slices.Clone(counts), -6, slices.Clone(counts), 0, 116, 0, false, 0, false, 0, ilm.Metrics())
+
+			a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+			require.Equal(t, 2, a.Accumulate(rm))
+			sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), m2, m2.ExponentialHistogram().DataPoints().At(0).Attributes(), pcommon.NewMap())
+			got, ok := a.registeredMetrics.Load(sig)
+			require.True(t, ok)
+			dp := got.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+			require.Equal(t, int32(18), dp.Scale())
+			// The higher-scale buckets downscale to offset -2 with counts [4, 14, 30, 10].
+			want := []uint64{3, 1, 2, 3, 8, 19, 36, 17, 8, 9, 10}
+			require.Equal(t, int32(-6), dp.Positive().Offset())
+			require.Equal(t, want, dp.Positive().BucketCounts().AsRaw())
+			require.Equal(t, int32(-6), dp.Negative().Offset())
+			require.Equal(t, want, dp.Negative().BucketCounts().AsRaw())
+			require.Equal(t, uint64(232), dp.Count())
+			population := dp.ZeroCount()
+			for _, buckets := range [][]uint64{dp.Positive().BucketCounts().AsRaw(), dp.Negative().BucketCounts().AsRaw()} {
+				for _, count := range buckets {
+					population += count
+				}
+			}
+			require.Equal(t, dp.Count(), population)
+		})
+	}
+
 	t.Run("CumulativeKeepLatest", func(t *testing.T) {
 		rm := pmetric.NewResourceMetrics()
 		ilm := rm.ScopeMetrics().AppendEmpty()
@@ -807,6 +850,60 @@ func TestAccumulateDeltaToCumulativeExponentialHistogram(t *testing.T) {
 		require.Equal(t, uint64(3), dp.Positive().BucketCounts().At(0))
 		require.Equal(t, ts3.Unix(), dp.Timestamp().AsTime().Unix())
 	})
+}
+
+func TestDownscaleBucketSide(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name        string
+		offset      int32
+		counts      []uint64
+		targetScale int32
+		wantOffset  int32
+		wantCounts  []uint64
+	}{
+		{
+			name: "negative unaligned offset", offset: -1, counts: []uint64{100, 7, 3, 2000}, targetScale: 18,
+			wantOffset: -1, wantCounts: []uint64{100, 2010},
+		},
+		{
+			name: "positive unaligned offset", offset: 1, counts: []uint64{100, 7, 3, 2000}, targetScale: 18,
+			wantOffset: 0, wantCounts: []uint64{110, 2000},
+		},
+		{
+			name: "negative aligned offset", offset: -4, counts: []uint64{100, 7, 3, 2000, 5}, targetScale: 18,
+			wantOffset: -1, wantCounts: []uint64{2110, 5},
+		},
+		{
+			name: "positive aligned offset", offset: 4, counts: []uint64{100, 7, 3, 2000, 5}, targetScale: 18,
+			wantOffset: 1, wantCounts: []uint64{2110, 5},
+		},
+		{
+			name: "single unaligned bucket", offset: -1, counts: []uint64{100}, targetScale: 18,
+			wantOffset: -1, wantCounts: []uint64{100},
+		},
+		{
+			name: "empty buckets", offset: -1, targetScale: 18,
+			wantOffset: -1,
+		},
+		{
+			name: "same scale", offset: -1, counts: []uint64{100, 7, 3, 2000}, targetScale: 20,
+			wantOffset: -1, wantCounts: []uint64{100, 7, 3, 2000},
+		},
+		{
+			name: "higher target scale", offset: -1, counts: []uint64{100, 7, 3, 2000}, targetScale: 21,
+			wantOffset: -1, wantCounts: []uint64{100, 7, 3, 2000},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			original := slices.Clone(tt.counts)
+			offset, counts := downscaleBucketSide(tt.offset, tt.counts, 20, tt.targetScale)
+			require.Equal(t, tt.wantOffset, offset)
+			require.Equal(t, tt.wantCounts, counts)
+			require.Equal(t, original, tt.counts, "downscaling must not mutate input buckets")
+		})
+	}
 }
 
 func TestAccumulateExponentialHistogramZeroThresholds(t *testing.T) {

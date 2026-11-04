@@ -5,7 +5,6 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 
 	"github.com/expr-lang/expr"
@@ -20,10 +19,11 @@ type rule struct {
 	program *vm.Program
 }
 
-// ruleRe is used to verify the rule starts type check.
-var ruleRe = regexp.MustCompile(
-	fmt.Sprintf(`^type\s*==\s*(%q|%q|%q|%q|%q|%q|%q|%q)`, observer.PodType, observer.K8sServiceType, observer.K8sIngressType, observer.PortType, observer.PodContainerType, observer.HostPortType, observer.ContainerType, observer.K8sNodeType),
-)
+// ruleRe is used to verify the rule starts type check. It doesn't validate a fixed list of known
+// `observer.EndpointType` because hard coding the valid values here prevents new types of
+// `observer.EndpointDetails`, which carry the value pair with "type", from being created in
+// downstream distributions.
+var ruleRe = regexp.MustCompile(`^type\s*==\s*"([a-z0-9]+((\.|_)[a-z0-9]+)*)"`)
 
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {
