@@ -808,20 +808,62 @@ func TestLogTransform_ZeroDurations(t *testing.T) {
 		}
 	})
 
-	t.Run("instantaneous spans do not flag the rest of the group", func(t *testing.T) {
-		// A quarter of the group is instantaneous, so q1 floors at 1ns and the
-		// resulting spread is wide enough to put the threshold beyond every
-		// span, including one at 5s. Instantaneous spans widen the spread rather
-		// than breaking the transform.
+	t.Run("instantaneous spans do not hide a slow span", func(t *testing.T) {
+		// Two zeros would put q1 on the 1ns floor and the IQR threshold centuries
+		// out. Left out of the spread, q1 = 20ms and q3 = 40ms give 113ms.
 		durations := []time.Duration{
 			0, 0, 10 * ms, 20 * ms, 30 * ms, 40 * ms, 5000 * ms,
 		}
 
-		outlierIndices, normalIndices, median := runDetector(t, durations, OutlierMethodIQR, 1.5, 0.1, DurationTransformLog)
+		for _, tt := range []struct {
+			method     OutlierMethod
+			multiplier float64
+		}{
+			{OutlierMethodIQR, 1.5},
+			{OutlierMethodMAD, 3.0},
+		} {
+			t.Run(string(tt.method), func(t *testing.T) {
+				outlierIndices, normalIndices, median := runDetector(t, durations, tt.method, tt.multiplier, 0.1, DurationTransformLog)
 
-		assert.Equal(t, 20*ms, median)
-		assert.Empty(t, outlierIndices)
-		assert.Len(t, normalIndices, 7)
+				assert.Equal(t, 20*ms, median)
+				assert.Equal(t, []int{6}, outlierIndices)
+				assert.ElementsMatch(t, []int{0, 1, 2, 3, 4, 5}, normalIndices)
+			})
+		}
+	})
+
+	t.Run("mostly instantaneous spans do not collapse MAD", func(t *testing.T) {
+		// With zeros in the sample, the median and MAD would both be zero and every
+		// span that took time would be flagged. Without them the median is 20ms,
+		// the MAD is ln(2), and the threshold inverts to about 436ms.
+		durations := []time.Duration{
+			0, 0, 0, 0, 10 * ms, 20 * ms, 5000 * ms,
+		}
+
+		outlierIndices, normalIndices, median := runDetector(t, durations, OutlierMethodMAD, 3.0, 0.1, DurationTransformLog)
+
+		assert.Equal(t, time.Duration(0), median)
+		assert.Equal(t, []int{6}, outlierIndices)
+		assert.Len(t, normalIndices, 6)
+	})
+
+	t.Run("minimum threshold follows the measured spans", func(t *testing.T) {
+		// Most of the group is zero, so the group median is zero. The remaining
+		// spans have no spread, which leaves the minimum threshold to decide:
+		// 10ms * 1.1 = 11ms keeps the 10.5ms span normal.
+		durations := []time.Duration{
+			0, 0, 0, 0, 0, 0, 10 * ms, 10 * ms, 10 * ms, 10 * ms, 10500 * time.Microsecond,
+		}
+
+		for _, method := range []OutlierMethod{OutlierMethodIQR, OutlierMethodMAD} {
+			t.Run(string(method), func(t *testing.T) {
+				outlierIndices, normalIndices, median := runDetector(t, durations, method, 3.0, 0.1, DurationTransformLog)
+
+				assert.Equal(t, time.Duration(0), median)
+				assert.Empty(t, outlierIndices)
+				assert.Len(t, normalIndices, 11)
+			})
+		}
 	})
 }
 
@@ -928,25 +970,31 @@ func TestAnalyzeOutliers_UnfinishedSpansDoNotSuppressDetection(t *testing.T) {
 
 	// Three unfinished spans sort to the bottom of a group of eight, which puts
 	// one of them on Q1. Read as negative durations they would stretch the IQR
-	// across eighteen orders of magnitude and hide the genuinely slow span;
-	// clamped to zero they leave Q1 at zero and the spread usable.
+	// across eighteen orders of magnitude and hide the genuinely slow span.
+	// Clamped to zero, they leave Q1 at zero untransformed and out of the spread
+	// under log.
 	nodes := []*spanNode{
 		newSpan(0), newSpan(0), newSpan(0),
 		finished(10 * ms), finished(10 * ms), finished(10 * ms), finished(10 * ms),
 		finished(500 * ms),
 	}
 
-	result := analyzeOutliers(nodes, OutlierAnalysisConfig{
-		IQRMultiplier:                  1.5,
-		MADMultiplier:                  3.0,
-		MinGroupSize:                   4,
-		CorrelationMinOccurrence:       0.5,
-		CorrelationMaxNormalOccurrence: 0.5,
-		MaxCorrelatedAttributes:        5,
-		MinOutlierThresholdPercent:     0.1,
-	})
+	for _, transform := range []DurationTransform{DurationTransformNone, DurationTransformLog} {
+		t.Run(string(transform), func(t *testing.T) {
+			result := analyzeOutliers(nodes, OutlierAnalysisConfig{
+				DurationTransform:              transform,
+				IQRMultiplier:                  1.5,
+				MADMultiplier:                  3.0,
+				MinGroupSize:                   4,
+				CorrelationMinOccurrence:       0.5,
+				CorrelationMaxNormalOccurrence: 0.5,
+				MaxCorrelatedAttributes:        5,
+				MinOutlierThresholdPercent:     0.1,
+			})
 
-	require.NotNil(t, result)
-	assert.Equal(t, 10*ms, result.median)
-	assert.Equal(t, []int{7}, result.outlierIndices)
+			require.NotNil(t, result)
+			assert.Equal(t, 10*ms, result.median)
+			assert.Equal(t, []int{7}, result.outlierIndices)
+		})
+	}
 }

@@ -382,6 +382,9 @@ Use `log` for heavy-tailed latency, where durations within a group span orders
 of magnitude. Measuring spread in absolute time lets the tail inflate the
 threshold meant to exclude it, so a large share of the upper tail gets flagged.
 
+Zero-duration spans have no logarithm, so `log` leaves them out of the spread
+and classifies them as normal.
+
 #### How It Works
 
 **IQR (Interquartile Range) Method:**
