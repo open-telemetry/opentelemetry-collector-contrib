@@ -500,6 +500,11 @@ func Test_extractTimestampFromKeyVal(t *testing.T) {
 			want: time.Date(2026, 10, 5, 12, 5, 34, 123789000, time.UTC),
 		},
 		{
+			name: "timestamp_micros that disagrees with timestamp is ignored",
+			kv:   map[string]string{"timestamp": "2026-10-05T12:05:35.456Z", "timestamp_micros": "1791201934123789"},
+			want: time.Date(2026, 10, 5, 12, 5, 35, 456000000, time.UTC),
+		},
+		{
 			name: "malformed timestamp_micros falls back to timestamp",
 			kv:   map[string]string{"timestamp": "2026-10-05T12:05:34.123Z", "timestamp_micros": "nope"},
 			want: time.Date(2026, 10, 5, 12, 5, 34, 123000000, time.UTC),

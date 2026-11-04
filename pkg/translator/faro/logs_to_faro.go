@@ -363,9 +363,12 @@ func extractTimestampFromKeyVal(kv map[string]string) (time.Time, error) {
 		return timestamp, err
 	}
 	// The timestamp key keeps milliseconds only. The timestamp_micros key,
-	// when present, holds the sub-millisecond part too.
+	// when present, holds the sub-millisecond part too. Ignore it when it
+	// disagrees with timestamp, for example after a processor edited timestamp.
 	if micros, microsErr := strconv.ParseInt(kv[faroTimestampMicros], 10, 64); microsErr == nil {
-		timestamp = time.UnixMicro(micros).UTC()
+		if withMicros := time.UnixMicro(micros).UTC(); withMicros.UnixMilli() == timestamp.UnixMilli() {
+			timestamp = withMicros
+		}
 	}
 	return timestamp, nil
 }
