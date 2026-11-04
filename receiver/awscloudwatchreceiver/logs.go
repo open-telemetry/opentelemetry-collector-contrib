@@ -43,6 +43,7 @@ type logsReceiver struct {
 	groupRequests                 []groupRequest
 	autodiscover                  *AutodiscoverConfig
 	client                        client
+	stsClient                     stsClient
 	consumer                      consumer.Logs
 	wg                            *sync.WaitGroup
 	doneChan                      chan bool
@@ -54,6 +55,10 @@ type logsReceiver struct {
 type client interface {
 	DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
 	FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error)
+}
+
+type stsClient interface {
+	GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
 }
 
 type streamNames struct {
@@ -223,6 +228,11 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 }
 
 func (l *logsReceiver) poll(ctx context.Context) error {
+	if err := l.ensureSession(); err != nil {
+		return err
+	}
+	l.resolveAccountID(ctx)
+
 	var errs error
 	currentGroups := make(map[string]bool)
 	endTime := nowFunc()
@@ -506,12 +516,22 @@ func (l *logsReceiver) ensureSession() error {
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
-
-	stsClient := sts.NewFromConfig(cfg)
-	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	if stsClient != nil && *stsResult.Account != "" {
-		l.accountID = *stsResult.Account
-	}
+	l.stsClient = sts.NewFromConfig(cfg)
 
 	return err
+}
+
+// resolveAccountID looks up the account ID of the credentials in use. A failed
+// lookup doesn't stop log collection and is tried again on the next poll.
+func (l *logsReceiver) resolveAccountID(ctx context.Context) {
+	if l.accountID != "" || l.stsClient == nil {
+		return
+	}
+
+	out, err := l.stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		l.settings.Logger.Warn("unable to get AWS account ID", zap.Error(err))
+		return
+	}
+	l.accountID = aws.ToString(out.Account)
 }

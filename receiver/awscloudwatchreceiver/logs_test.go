@@ -5,6 +5,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -231,6 +233,63 @@ func TestWithAccountId(t *testing.T) {
 	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed-with-accountid.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
+}
+
+func TestAccountIDLookupRetriedOnNextPoll(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			"log-group-1": {},
+			"log-group-2": {},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	logsRcvr.client = defaultMockClient()
+
+	sc := &mockSTSClient{}
+	sc.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		(*sts.GetCallerIdentityOutput)(nil), errors.New("connection refused"),
+	).Once()
+	sc.On("GetCallerIdentity", mock.Anything, mock.Anything, mock.Anything).Return(
+		&sts.GetCallerIdentityOutput{Account: aws.String("111111111111")}, nil,
+	).Once()
+	logsRcvr.stsClient = sc
+
+	accountIDs := func() []string {
+		var ids []string
+		for _, logs := range sink.AllLogs() {
+			for i := range logs.ResourceLogs().Len() {
+				id := ""
+				if v, ok := logs.ResourceLogs().At(i).Resource().Attributes().Get("cloud.account.id"); ok {
+					id = v.Str()
+				}
+				ids = append(ids, id)
+			}
+		}
+		return ids
+	}
+
+	// The first lookup fails. It runs once for the poll, not once per log group, and the logs are still collected.
+	require.NoError(t, logsRcvr.poll(t.Context()))
+	sc.AssertNumberOfCalls(t, "GetCallerIdentity", 1)
+	require.Equal(t, 8, sink.LogRecordCount())
+	require.Equal(t, []string{"", "", "", ""}, accountIDs())
+
+	sink.Reset()
+	require.NoError(t, logsRcvr.poll(t.Context()))
+	sc.AssertNumberOfCalls(t, "GetCallerIdentity", 2)
+	require.Equal(t, []string{"111111111111", "111111111111", "111111111111", "111111111111"}, accountIDs())
+
+	// Once known, the account ID isn't looked up again.
+	require.NoError(t, logsRcvr.poll(t.Context()))
+	sc.AssertNumberOfCalls(t, "GetCallerIdentity", 2)
 }
 
 func TestPrefixedNamedStreamsConfig(t *testing.T) {
@@ -1161,4 +1220,13 @@ func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlo
 func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
+}
+
+type mockSTSClient struct {
+	mock.Mock
+}
+
+func (m *mockSTSClient) GetCallerIdentity(ctx context.Context, params *sts.GetCallerIdentityInput, optFns ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error) {
+	args := m.Called(ctx, params, optFns)
+	return args.Get(0).(*sts.GetCallerIdentityOutput), args.Error(1)
 }
