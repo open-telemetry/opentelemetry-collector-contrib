@@ -11,7 +11,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -26,10 +28,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
@@ -533,6 +538,385 @@ func TestWAL_IdleFlush(t *testing.T) {
 	}, 5*time.Second, 10*time.Millisecond, "buffered WAL entry was not flushed while idle")
 }
 
+// decodeWriteRequest unpacks a snappy-compressed remote-write body.
+func decodeWriteRequest(tb testing.TB, body []byte) *prompb.WriteRequest {
+	tb.Helper()
+	var unzipped []byte
+	dest, err := snappy.Decode(unzipped, body)
+	require.NoError(tb, err)
+	req := &prompb.WriteRequest{}
+	require.NoError(tb, proto.Unmarshal(dest, req))
+	return req
+}
+
+// TestWALUnblocksAfterPayloadRejection is the regression test for the WAL
+// head-of-line block: a record whose content the endpoint rejects
+// must be dropped so the records queued behind it can still be delivered.
+//
+// The endpoint here behaves like Mimir with a sample that fell outside its
+// in-order acceptance window: the stale sample is rejected permanently, and any
+// request carrying it is rejected whole. Before the fix the read loop rewound to
+// that record forever, so every later record was resent alongside it and nothing
+// was ever accepted again.
+func TestWALUnblocksAfterPayloadRejection(t *testing.T) {
+	const staleTimestamp, freshTimestamp = int64(100), int64(200)
+
+	accepted := &sync.Map{}
+	rejections := &atomic.Int64{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		req := decodeWriteRequest(t, body)
+
+		var timestamps []int64
+		for _, ts := range req.Timeseries {
+			for _, s := range ts.Samples {
+				timestamps = append(timestamps, s.Timestamp)
+			}
+		}
+		if slices.Contains(timestamps, staleTimestamp) {
+			rejections.Add(1)
+			http.Error(w, "err-mimir-sample-timestamp-too-old", http.StatusBadRequest)
+			return
+		}
+		for _, got := range timestamps {
+			accepted.Store(got, struct{}{})
+		}
+	}))
+
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory:         t.TempDir(),
+			BufferSize:        1,
+			TruncateFrequency: 100 * time.Millisecond,
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.HTTP = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, prwe.Shutdown(context.Background())) //nolint:usetesting
+		server.Close()
+	})
+
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: staleTimestamp}},
+		},
+	}
+	require.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	// Wait until the stale record has actually been rejected at least once.
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Positive(c, rejections.Load())
+	}, 5*time.Second, 10*time.Millisecond, "stale record was never rejected")
+
+	// A fresh record is written behind the rejected one.
+	metrics["test_metric"].Samples[0].Timestamp = freshTimestamp
+	require.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, ok := accepted.Load(freshTimestamp)
+		assert.True(c, ok)
+	}, 10*time.Second, 20*time.Millisecond,
+		"record queued behind the rejected one never reached the endpoint: the WAL head is blocked")
+}
+
+// TestWALRetainsBatchUnlessPayloadRejected covers the other direction end to end: a
+// 5xx outage that outlasts the retry budget must not drop the record. It has to
+// survive in the WAL and be delivered once the endpoint recovers. A 429 must be
+// retained the same way, including with the RetryOn429 feature gate off, and so
+// must a 4xx that rejects every request, such as a bad credential or endpoint.
+func TestWALRetainsBatchUnlessPayloadRejected(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		status int
+	}{
+		{name: "service_unavailable", status: http.StatusServiceUnavailable},
+		{name: "too_many_requests_with_gate_off", status: http.StatusTooManyRequests},
+		{name: "unauthorized", status: http.StatusUnauthorized},
+		{name: "not_found", status: http.StatusNotFound},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			testWALRetainsBatchOnStatus(t, tt.status)
+		})
+	}
+}
+
+func testWALRetainsBatchOnStatus(t *testing.T, status int) {
+	require.False(t, metadata.ExporterPrometheusremotewritexporterRetryOn429FeatureGate.IsEnabled())
+	const timestamp = int64(100)
+
+	down := &atomic.Bool{}
+	down.Store(true)
+	attempts := &atomic.Int64{}
+	accepted := &atomic.Int64{}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts.Add(1)
+		if down.Load() {
+			http.Error(w, http.StatusText(status), status)
+			return
+		}
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		req := decodeWriteRequest(t, body)
+		for i := range req.Timeseries {
+			for _, sample := range req.Timeseries[i].Samples {
+				if sample.Timestamp == timestamp {
+					accepted.Add(1)
+				}
+			}
+		}
+	}))
+
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory:         t.TempDir(),
+			BufferSize:        1,
+			TruncateFrequency: 100 * time.Millisecond,
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+		// A finite, short retry budget, so execute() gives up quickly and
+		// reports the 503 as a permanent error.
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     10 * time.Millisecond,
+			MaxElapsedTime:  50 * time.Millisecond,
+			Multiplier:      1.5,
+		},
+	}
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.HTTP = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, prwe.Shutdown(context.Background())) //nolint:usetesting
+		server.Close()
+	})
+
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: timestamp}},
+		},
+	}
+	require.NoError(t, prwe.handleExport(t.Context(), metrics, nil))
+
+	// The outage outlasts the retry budget several times over.
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Positive(c, attempts.Load())
+	}, 5*time.Second, 10*time.Millisecond, "record was never attempted")
+	time.Sleep(time.Second)
+
+	down.Store(false)
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Positive(c, accepted.Load())
+	}, 10*time.Second, 20*time.Millisecond,
+		"record was discarded during a retryable outage instead of being replayed")
+}
+
+// TestExportThenFrontTruncateWAL_RetentionByErrorKind pins down why this fix
+// classifies on the rejection itself rather than on consumererror.IsPermanent.
+// IsPermanent is also true for a cancelled export and for a batch that mixes a
+// rejected request with a retryable one, and in both cases the data was never
+// accepted, so truncating it loses writes the WAL exists to protect.
+func TestExportThenFrontTruncateWAL_RetentionByErrorKind(t *testing.T) {
+	rejected := func() error {
+		err := &payloadRejectionError{StatusCode: 400, sampleCount: 1, err: errors.New("remote write request failed")}
+		return consumererror.NewPermanent(err)
+	}
+
+	tests := []struct {
+		name               string
+		sinkErr            error
+		cancelDuringExport bool
+		wantTruncate       bool
+		wantBatches        int64
+		wantSamples        int64
+	}{
+		{
+			// The batch holds two requests; the one the endpoint accepted is not counted.
+			name:         "rejected payload is dropped",
+			sinkErr:      rejected(),
+			wantTruncate: true,
+			wantBatches:  1,
+			wantSamples:  1,
+		},
+		{
+			name:         "every rejected request is counted",
+			sinkErr:      multierr.Append(rejected(), rejected()),
+			wantTruncate: true,
+			wantBatches:  2,
+			wantSamples:  2,
+		},
+		{
+			name:         "cancelled export is retained",
+			sinkErr:      consumererror.NewPermanent(context.Canceled),
+			wantTruncate: false,
+		},
+		{
+			// A cancelled export can skip requests without reporting an error for them.
+			name:               "rejection during a cancelled export is retained",
+			sinkErr:            rejected(),
+			cancelDuringExport: true,
+			wantTruncate:       false,
+		},
+		{
+			name:         "batch mixing a rejection and a retryable failure is retained",
+			sinkErr:      multierr.Append(rejected(), errors.New("remote write request failed")),
+			wantTruncate: false,
+		},
+		{
+			name:         "retryable failure is retained",
+			sinkErr:      errors.New("remote write request failed"),
+			wantTruncate: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tel := componenttest.NewTelemetry()
+			t.Cleanup(func() {
+				require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
+			})
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			pwal, err := newWAL(&WALConfig{Directory: t.TempDir()},
+				metadatatest.NewSettings(tel),
+				func(context.Context, []*prompb.WriteRequest) error {
+					if tt.cancelDuringExport {
+						cancel()
+					}
+					return tt.sinkErr
+				})
+			require.NoError(t, err)
+			require.NoError(t, pwal.retrieveWALIndices())
+			t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+			request := func(timestamp int64) *prompb.WriteRequest {
+				return &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{{
+					Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+					Samples: []prompb.Sample{{Value: 1, Timestamp: timestamp}},
+				}}}
+			}
+			reqL := []*prompb.WriteRequest{request(100), request(200)}
+			require.NoError(t, pwal.persistToWAL(ctx, reqL))
+			for range reqL {
+				_, err = pwal.readPrompbFromWAL(ctx, pwal.rWALIndex.Load())
+				require.NoError(t, err)
+			}
+
+			exportErr := pwal.exportThenFrontTruncateWAL(ctx, reqL)
+
+			pwal.mu.Lock()
+			first, fErr := pwal.wal.FirstIndex()
+			last, lErr := pwal.wal.LastIndex()
+			pwal.mu.Unlock()
+			require.NoError(t, fErr)
+			require.NoError(t, lErr)
+
+			if tt.wantTruncate {
+				assert.NoError(t, exportErr, "a rejected batch is handled, not reported upwards")
+				assert.Greater(t, first, last,
+					"the rejected record must be truncated so it stops blocking the WAL head")
+				// A drop is otherwise invisible: PushMetrics already returned
+				// success when the record was persisted, so nothing upstream
+				// can account for it.
+				assertSendFailed(t, tel, tt.wantBatches, tt.wantSamples)
+				return
+			}
+			assert.Error(t, exportErr, "a batch that was never accepted must be reported upwards")
+			assert.Equal(t, uint64(1), first, "the record must be retained for a later retry")
+			assertNoSendFailed(t, tel)
+		})
+	}
+}
+
+func TestAllPayloadRejections(t *testing.T) {
+	rejection := func() error {
+		return &payloadRejectionError{StatusCode: 400, err: errors.New("remote write request failed")}
+	}
+	transient := errors.New("connection refused")
+
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: false},
+		{name: "bare rejection", err: rejection(), want: true},
+		{name: "bare transient", err: transient, want: false},
+		{
+			name: "permanent-wrapped rejection",
+			err:  consumererror.NewPermanent(rejection()),
+			want: true,
+		},
+		{
+			name: "permanent-wrapped transient",
+			err:  consumererror.NewPermanent(transient),
+			want: false,
+		},
+		{
+			name: "multierr of rejection only",
+			err:  multierr.Append(rejection(), rejection()),
+			want: true,
+		},
+		{
+			name: "multierr mixing rejection and transient",
+			err:  multierr.Append(rejection(), consumererror.NewPermanent(transient)),
+			want: false,
+		},
+		{
+			name: "nested multierr of rejection only",
+			err: multierr.Append(
+				multierr.Append(rejection(), rejection()),
+				rejection(),
+			),
+			want: true,
+		},
+		{
+			name: "permanent wrapper hiding a transient error in a multierr",
+			err:  consumererror.NewPermanent(multierr.Append(rejection(), transient)),
+			want: false,
+		},
+		{
+			name: "requests left unsent after a rejection",
+			err:  appendUnsentRequestsError(t.Context(), consumererror.NewPermanent(rejection()), 1, 2),
+			want: false,
+		},
+		{
+			name: "nested multierr hiding a transient error",
+			err: multierr.Append(
+				multierr.Append(rejection(), transient),
+				rejection(),
+			),
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, allPayloadRejections(tt.err))
+		})
+	}
+}
+
 // TestWAL_NoFlushAfterExportError verifies that, when the export of the buffered entries fails,
 // the entries are not exported a second time by the flush that runs when the read loop returns.
 // The entries are not truncated from the WAL, so they are read again when the loop restarts.
@@ -564,4 +948,140 @@ func TestWAL_NoFlushAfterExportError(t *testing.T) {
 	last, err := pwal.wal.LastIndex()
 	require.NoError(t, err)
 	assert.Equal(t, first, last, "the failed entries must stay in the WAL")
+}
+
+// assertSendFailed checks both drop counters carry the expected totals.
+func assertSendFailed(t *testing.T, tel *componenttest.Telemetry, batches, samples int64) {
+	t.Helper()
+	attrs := attribute.NewSet(attribute.String("exporter", metadata.Type.String()))
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalSendFailedBatches(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: batches, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualExporterPrometheusremotewriteWalSendFailedSamples(t, tel,
+		[]metricdata.DataPoint[int64]{{Value: samples, Attributes: attrs}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// assertNoSendFailed checks nothing was recorded as dropped. A counter that was
+// never incremented is absent from the reader rather than present at zero.
+func assertNoSendFailed(t *testing.T, tel *componenttest.Telemetry) {
+	t.Helper()
+	for _, name := range []string{
+		"otelcol_exporter_prometheusremotewrite_wal_send_failed_batches",
+		"otelcol_exporter_prometheusremotewrite_wal_send_failed_samples",
+	} {
+		_, err := tel.GetMetric(name)
+		assert.Error(t, err, "%s must not be recorded for a batch that is retained", name)
+	}
+}
+
+func TestRejectedTotals(t *testing.T) {
+	rejected := func(samples int) error {
+		return consumererror.NewPermanent(&payloadRejectionError{
+			StatusCode: 400, sampleCount: samples, err: errors.New("remote write request failed"),
+		})
+	}
+	transient := errors.New("connection refused")
+
+	tests := []struct {
+		name         string
+		err          error
+		wantRequests int
+		wantSamples  int
+	}{
+		{name: "nil", err: nil},
+		{name: "transient only", err: transient},
+		{name: "one rejection", err: rejected(3), wantRequests: 1, wantSamples: 3},
+		{
+			name:         "rejections across a multierr",
+			err:          multierr.Append(rejected(3), rejected(4)),
+			wantRequests: 2,
+			wantSamples:  7,
+		},
+		{
+			name:         "permanent wrapper around a multierr",
+			err:          consumererror.NewPermanent(multierr.Append(rejected(3), rejected(4))),
+			wantRequests: 2,
+			wantSamples:  7,
+		},
+		{
+			name:         "nested multierr skips non-rejections",
+			err:          multierr.Append(multierr.Append(rejected(2), transient), rejected(5)),
+			wantRequests: 2,
+			wantSamples:  7,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests, samples := rejectedTotals(tt.err)
+			assert.Equal(t, tt.wantRequests, requests)
+			assert.Equal(t, tt.wantSamples, samples)
+		})
+	}
+}
+
+// TestWALCountsOnlyRejectedRequests drives the real export path: of two requests
+// in one batch the endpoint accepts one and rejects the other, so only the
+// rejected request and its samples may be reported as dropped.
+func TestWALCountsOnlyRejectedRequests(t *testing.T) {
+	const rejectedTimestamp, acceptedTimestamp = int64(100), int64(200)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		req := decodeWriteRequest(t, body)
+		for i := range req.Timeseries {
+			for _, sample := range req.Timeseries[i].Samples {
+				if sample.Timestamp == rejectedTimestamp {
+					http.Error(w, "err-mimir-sample-out-of-bounds", http.StatusBadRequest)
+					return
+				}
+			}
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, tel.Shutdown(context.Background())) //nolint:usetesting
+	})
+
+	cfg := &Config{
+		WAL:                 configoptional.Some(WALConfig{Directory: t.TempDir()}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.HTTP = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	prwe, err := newPRWExporter(cfg, metadatatest.NewSettings(tel))
+	require.NoError(t, err)
+	// Start is skipped so the WAL's own read loop does not race this test.
+	prwe.client = http.DefaultClient
+	pwal := prwe.wal
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { assert.NoError(t, pwal.stop()) })
+
+	series := func(timestamp int64, samples int) prompb.TimeSeries {
+		ts := prompb.TimeSeries{Labels: []prompb.Label{{Name: "__name__", Value: "test_metric"}}}
+		for range samples {
+			ts.Samples = append(ts.Samples, prompb.Sample{Value: 1, Timestamp: timestamp})
+		}
+		return ts
+	}
+	reqL := []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{series(rejectedTimestamp, 3)}},
+		{Timeseries: []prompb.TimeSeries{series(acceptedTimestamp, 2)}},
+	}
+	ctx := t.Context()
+	require.NoError(t, pwal.persistToWAL(ctx, reqL))
+	for range reqL {
+		_, err = pwal.readPrompbFromWAL(ctx, pwal.rWALIndex.Load())
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, pwal.exportThenFrontTruncateWAL(ctx, reqL))
+	assertSendFailed(t, tel, 1, 3)
 }
