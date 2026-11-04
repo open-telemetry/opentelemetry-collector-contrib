@@ -10,7 +10,7 @@ component: processor/tail_sampling
 note: Reduce allocations when splitting incoming batches by trace ID by moving resources, scopes and spans instead of copying them where possible.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [0] # TODO: replace with the tracking issue or PR number
+issues: [52768]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
