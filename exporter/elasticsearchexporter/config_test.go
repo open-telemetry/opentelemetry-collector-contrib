@@ -30,17 +30,14 @@ func TestConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
-	defaultCfg.(*Config).Retry.RetryOnDocumentStatus = defaultCfg.(*Config).Retry.RetryOnStatus
 
 	defaultLogstashFormatCfg := createDefaultConfig()
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
-	defaultLogstashFormatCfg.(*Config).Retry.RetryOnDocumentStatus = defaultLogstashFormatCfg.(*Config).Retry.RetryOnStatus
 
 	defaultRawCfg := createDefaultConfig()
 	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
-	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
 
 	defaultCompression := configcompression.TypeGzip
 
@@ -121,6 +118,9 @@ func TestConfig(t *testing.T) {
 					RetryOnDocumentStatus: []int{
 						http.StatusTooManyRequests,
 						http.StatusInternalServerError,
+						http.StatusBadGateway,
+						http.StatusServiceUnavailable,
+						http.StatusGatewayTimeout,
 					},
 				},
 				Mapping: MappingsSettings{
@@ -199,12 +199,18 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:               true,
-					MaxRetries:            5,
-					InitialInterval:       100 * time.Millisecond,
-					MaxInterval:           1 * time.Minute,
-					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
-					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:         true,
+					MaxRetries:      5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+						http.StatusBadGateway,
+						http.StatusServiceUnavailable,
+						http.StatusGatewayTimeout,
+					},
 				},
 				Mapping: MappingsSettings{
 					Mode:         "otel",
@@ -276,12 +282,18 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:               true,
-					MaxRetries:            5,
-					InitialInterval:       100 * time.Millisecond,
-					MaxInterval:           1 * time.Minute,
-					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
-					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:         true,
+					MaxRetries:      5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+						http.StatusBadGateway,
+						http.StatusServiceUnavailable,
+						http.StatusGatewayTimeout,
+					},
 				},
 				Mapping: MappingsSettings{
 					Mode:         "otel",
@@ -611,7 +623,6 @@ func TestParseCloudID(t *testing.T) {
 
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 	for _, fn := range fns {
 		fn(cfg)
 	}

@@ -365,10 +365,9 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 | `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
 
 - `retry`: Elasticsearch bulk request retry settings.
-  The default is at-least-once delivery: transport errors, including client timeouts, and HTTP status codes 429, 500, 502, 503, and 504 are retried.
+  The default is at-least-once delivery. HTTP client timeouts and other transport errors are retried. A bulk HTTP status of 400, 401, 403, 404, 409, 429, 500, 502, 503, or 504 retries the whole request. Inside an HTTP 200 response, document status codes 429, 500, 502, 503, and 504 are retried.
   Retrying an HTTP client timeout or status 500, 502, 503, or 504 can index the same documents twice when the first `_bulk` request was applied and its response was lost.
-  HTTP client timeouts are all retried. Set `retry_on_status` to `[429]` so status codes 500, 502, 503, and 504 are not retried.
-  When `retry_on_document_status` is unset, `retry_on_status` also applies to document-level retries.
+  HTTP client timeouts are all retried. `retry_on_document_status` does not follow `retry_on_status`.
 
   ```yaml
   retry:
@@ -376,7 +375,8 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
     max_retries: 2
     initial_interval: 100ms
     max_interval: 1m
-    retry_on_status: [429, 500, 502, 503, 504]
+    retry_on_status: [400, 401, 403, 404, 409, 429, 500, 502, 503, 504]
+    retry_on_document_status: [429, 500, 502, 503, 504]
   ```
 
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, for example during shutdown, it is not retried. HTTP client timeouts are all retried. Other transport errors are retried.
@@ -384,8 +384,8 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429, 500, 502, 503, 504]): Status codes that trigger request level retries.
-  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
+  - `retry_on_status` (default=[400, 401, 403, 404, 409, 429, 500, 502, 503, 504]): Status codes that retry the whole bulk HTTP request.
+  - `retry_on_document_status` (default=[429, 500, 502, 503, 504]): Status codes that retry failed documents in a successful bulk HTTP response. This does not follow `retry_on_status`. Set to `[]` to disable document level retries by status code.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.

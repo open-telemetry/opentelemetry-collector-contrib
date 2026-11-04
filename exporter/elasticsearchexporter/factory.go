@@ -66,9 +66,21 @@ func createDefaultConfig() component.Config {
 			MaxRetries:      0, // default is set in exporter code
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
-			// At-least-once: retry rate limiting and transient server errors.
-			// 5xx retries can duplicate documents if Elasticsearch accepted the bulk request.
+			// Request-level retries. A non-2xx bulk HTTP status has no per-document results.
 			RetryOnStatus: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusConflict,
+				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
+			},
+			// Document-level retries for item statuses inside an HTTP 200 bulk response.
+			RetryOnDocumentStatus: []int{
 				http.StatusTooManyRequests,
 				http.StatusInternalServerError,
 				http.StatusBadGateway,
