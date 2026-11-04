@@ -55,14 +55,19 @@ func parseIP(strIP string) (netip.Addr, error) {
 // ipFromAttributes extracts an IP address from the given attributes based on the specified fields.
 // It returns the first IP address if found, or an error if no valid IP address is found.
 func ipFromAttributes(attributes []attribute.Key, resource pcommon.Map) (netip.Addr, error) {
+	var parseErr error
 	for _, attr := range attributes {
 		if ipField, found := resource.Get(string(attr)); found {
 			ipAttribute, err := parseIP(ipField.AsString())
-			if err != nil {
-				return netip.Addr{}, err
+			if err == nil {
+				return ipAttribute, nil
 			}
-			return ipAttribute, nil
+			parseErr = multierr.Append(parseErr, err)
 		}
+	}
+
+	if parseErr != nil {
+		return netip.Addr{}, parseErr
 	}
 
 	return netip.Addr{}, errIPNotFound
@@ -97,15 +102,10 @@ func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon
 			return nil
 		}
 
-		switch g.cfg.ErrorMode {
-		case ottl.IgnoreError:
-			g.logger.Warn("failed to parse IP address, ignoring", zap.Error(err))
-			return nil
-		case ottl.SilentError:
-			return nil
-		default:
-			return err
+		if g.cfg.ErrorMode != ottl.SilentError {
+			g.logger.Warn("failed to parse IP address", zap.Error(err))
 		}
+		return nil
 	}
 
 	attributes, err := g.geoLocation(ctx, ipAddr)

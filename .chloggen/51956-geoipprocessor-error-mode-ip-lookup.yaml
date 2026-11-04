@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/geoip
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Apply error_mode configuration to IP extraction and lookup failures.
+note: Fall back to subsequent attributes and log a warning on unparseable IP values without dropping telemetry batches.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51956]

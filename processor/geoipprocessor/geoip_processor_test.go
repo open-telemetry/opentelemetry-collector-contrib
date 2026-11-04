@@ -331,7 +331,9 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 				m.PutStr("source.address", "1.2.3.999")
 				return m
 			}(),
-			expectErr: true,
+			expectErr:      false,
+			expectLogsWarn: 1,
+			expectedLogMsg: "failed to parse IP address",
 		},
 		{
 			name:      "propagate domain name",
@@ -341,7 +343,9 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 				m.PutStr("source.address", "example.com")
 				return m
 			}(),
-			expectErr: true,
+			expectErr:      false,
+			expectLogsWarn: 1,
+			expectedLogMsg: "failed to parse IP address",
 		},
 		{
 			name:      "propagate unspecified IP",
@@ -351,10 +355,9 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 				m.PutStr("source.address", "0.0.0.0")
 				return m
 			}(),
-			expectErr: true,
-			errCheck: func(err error) bool {
-				return errors.Is(err, errUnspecifiedIP)
-			},
+			expectErr:      false,
+			expectLogsWarn: 1,
+			expectedLogMsg: "failed to parse IP address",
 		},
 		// ignore error mode
 		{
@@ -373,7 +376,7 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 			}(),
 			expectErr:      false,
 			expectLogsWarn: 1,
-			expectedLogMsg: "failed to parse IP address, ignoring",
+			expectedLogMsg: "failed to parse IP address",
 		},
 		{
 			name:      "ignore domain name",
@@ -385,7 +388,7 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 			}(),
 			expectErr:      false,
 			expectLogsWarn: 1,
-			expectedLogMsg: "failed to parse IP address, ignoring",
+			expectedLogMsg: "failed to parse IP address",
 		},
 		{
 			name:      "ignore unspecified IP",
@@ -397,7 +400,7 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 			}(),
 			expectErr:      false,
 			expectLogsWarn: 1,
-			expectedLogMsg: "failed to parse IP address, ignoring",
+			expectedLogMsg: "failed to parse IP address",
 		},
 		// silent error mode
 		{
@@ -477,6 +480,44 @@ func TestProcessor_ProcessAttributes_ErrorMode(t *testing.T) {
 	}
 }
 
+func TestProcessor_ProcessAttributes_Fallback(t *testing.T) {
+	core, recorded := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+
+	var resolvedIP netip.Addr
+	mockProvider := &providerMock{
+		LocationF: func(_ context.Context, ip netip.Addr) (attribute.Set, error) {
+			resolvedIP = ip
+			return attribute.NewSet(attribute.String("geolocation.country_iso_code", "US")), nil
+		},
+		CloseF: func(context.Context) error { return nil },
+	}
+
+	proc := &geoIPProcessor{
+		cfg: &Config{
+			Attributes: defaultAttributes,
+			ErrorMode:  ottl.PropagateError,
+		},
+		providers: []provider.GeoIPProvider{mockProvider},
+		logger:    logger,
+	}
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("client.address", "example.com")
+	attrs.PutStr("source.address", "1.2.3.4")
+
+	err := proc.processAttributes(t.Context(), attrs)
+	require.NoError(t, err)
+	assert.Equal(t, netip.MustParseAddr("1.2.3.4"), resolvedIP)
+
+	country, ok := attrs.Get("geolocation.country_iso_code")
+	require.True(t, ok)
+	assert.Equal(t, "US", country.AsString())
+
+	// No warning should be logged because a subsequent attribute resolved to a valid IP
+	assert.Equal(t, 0, recorded.FilterLevelExact(zap.WarnLevel).Len())
+}
+
 func TestProcessor_Signals_ErrorMode(t *testing.T) {
 	for _, errorMode := range []ottl.ErrorMode{ottl.PropagateError, ottl.IgnoreError, ottl.SilentError} {
 		t.Run(string(errorMode), func(t *testing.T) {
@@ -505,15 +546,11 @@ func TestProcessor_Signals_ErrorMode(t *testing.T) {
 			rl.Resource().Attributes().PutStr("source.address", "invalid-ip-or-domain")
 
 			err = logsProc.ConsumeLogs(t.Context(), ld)
-			if errorMode == ottl.PropagateError {
-				require.Error(t, err)
+			require.NoError(t, err)
+			if errorMode == ottl.SilentError {
+				assert.Equal(t, 0, recorded.Len())
 			} else {
-				require.NoError(t, err)
-				if errorMode == ottl.IgnoreError {
-					assert.Equal(t, 1, recorded.FilterLevelExact(zap.WarnLevel).Len())
-				} else {
-					assert.Equal(t, 0, recorded.Len())
-				}
+				assert.Equal(t, 1, recorded.FilterLevelExact(zap.WarnLevel).Len())
 			}
 		})
 	}
