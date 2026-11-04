@@ -311,35 +311,37 @@ func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
 	}
 }
 
-// TestTLSSettingsAreClassified fails when configtls.ClientConfig gains a
-// setting that this receiver does not handle. Every tls key must be in exactly
-// one of the sets below. When this test fails after a configtls update, either
-// forward the new setting in getPrometheusConfig, or add it to
-// unsupportedTLSSettings in receiver.go, and document it in the README.
-func TestTLSSettingsAreClassified(t *testing.T) {
-	// forwarded settings reach the prometheus scrape TLS config.
-	forwarded := []string{
+// The tls keys of configtls.ClientConfig, by how this receiver handles them.
+// TestTLSSettingsAreClassified checks that every key is in exactly one set,
+// and TestForwardedTLSSettingsSurviveReload checks every forwarded key.
+var (
+	// forwardedTLSKeys reach the prometheus scrape TLS config.
+	forwardedTLSKeys = []string{
 		"ca_file", "ca_pem", "cert_file", "cert_pem", "key_file", "key_pem",
 		"server_name_override", "insecure_skip_verify", "min_version", "max_version",
 	}
-	// warnedUnsupported settings have no prometheus equivalent and are named
-	// in the start-time warning from unsupportedTLSSettings.
-	warnedUnsupported := []string{
+	// warnedUnsupportedTLSKeys have no prometheus equivalent and are named in
+	// the start-time warning from unsupportedTLSSettings.
+	warnedUnsupportedTLSKeys = []string{
 		"cipher_suites", "include_insecure_cipher_suites", "curve_preferences",
 		"include_system_ca_certs_pool", "tpm",
 	}
-	// coveredByPrometheus settings are not forwarded or warned about because
+	// coveredByPrometheusTLSKeys are not forwarded or warned about because
 	// prometheus already provides the behavior: it re-reads changed
 	// certificate, key and CA files, which is what reload_interval does.
-	coveredByPrometheus := []string{"reload_interval"}
-	// controlsScheme settings select between an http and an https scrape.
-	controlsScheme := []string{"insecure"}
+	coveredByPrometheusTLSKeys = []string{"reload_interval"}
+	// controlsSchemeTLSKeys select between an http and an https scrape.
+	controlsSchemeTLSKeys = []string{"insecure"}
+)
 
+// TestTLSSettingsAreClassified fails when configtls.ClientConfig gains a
+// setting that this receiver does not handle.
+func TestTLSSettingsAreClassified(t *testing.T) {
 	classes := map[string][]string{
-		"forwarded":           forwarded,
-		"warnedUnsupported":   warnedUnsupported,
-		"coveredByPrometheus": coveredByPrometheus,
-		"controlsScheme":      controlsScheme,
+		"forwardedTLSKeys":           forwardedTLSKeys,
+		"warnedUnsupportedTLSKeys":   warnedUnsupportedTLSKeys,
+		"coveredByPrometheusTLSKeys": coveredByPrometheusTLSKeys,
+		"controlsSchemeTLSKeys":      controlsSchemeTLSKeys,
 	}
 	classOf := map[string]string{}
 	for class, keys := range classes {
@@ -351,7 +353,7 @@ func TestTLSSettingsAreClassified(t *testing.T) {
 		}
 	}
 
-	keys := tlsKeys(reflect.TypeFor[configtls.ClientConfig]())
+	keys := configKeys(reflect.TypeFor[configtls.ClientConfig]())
 	for _, key := range keys {
 		if _, ok := classOf[key]; !ok {
 			t.Errorf("tls key %q is not classified: forward it in getPrometheusConfig or add it to "+
@@ -366,23 +368,70 @@ func TestTLSSettingsAreClassified(t *testing.T) {
 	}
 }
 
-// tlsKeys returns the mapstructure keys of typ, descending into squashed
-// embedded structs.
-func tlsKeys(typ reflect.Type) []string {
+// configKeys returns the config keys that confmap decodes into the struct
+// type typ. It follows mapstructure: the key is the name in the mapstructure
+// tag, or the exact field name when the tag has no name, fields with the
+// squash option are flattened into the parent, and other unexported fields
+// are skipped.
+func configKeys(typ reflect.Type) []string {
 	var keys []string
 	for field := range typ.Fields() {
-		tag, ok := field.Tag.Lookup("mapstructure")
-		if !ok || tag == "-" {
+		name, opts, _ := strings.Cut(field.Tag.Get("mapstructure"), ",")
+		if slices.Contains(strings.Split(opts, ","), "squash") {
+			fieldType := field.Type
+			if fieldType.Kind() == reflect.Pointer {
+				fieldType = fieldType.Elem()
+			}
+			keys = append(keys, configKeys(fieldType)...)
 			continue
 		}
-		name, opts, _ := strings.Cut(tag, ",")
-		if name == "" && slices.Contains(strings.Split(opts, ","), "squash") {
-			keys = append(keys, tlsKeys(field.Type)...)
+		if !field.IsExported() {
 			continue
+		}
+		if name == "" {
+			name = field.Name
 		}
 		keys = append(keys, name)
 	}
 	return keys
+}
+
+// TestConfigKeysMatchConfmap checks that configKeys names the same keys that
+// confmap accepts, including for untagged fields.
+func TestConfigKeysMatchConfmap(t *testing.T) {
+	type inner struct {
+		Inner string `mapstructure:"inner"`
+	}
+	type sample struct {
+		Tagged    string `mapstructure:"tagged"`
+		OmitEmpty string `mapstructure:",omitempty"`
+		Untagged  string
+		inner     `mapstructure:",squash"`
+		Nested    inner
+		hidden    string
+	}
+
+	keys := configKeys(reflect.TypeFor[sample]())
+	require.Equal(t, []string{"tagged", "OmitEmpty", "Untagged", "inner", "Nested"}, keys)
+
+	raw := map[string]any{}
+	for _, key := range keys {
+		raw[key] = "x"
+	}
+	raw["Nested"] = map[string]any{"inner": "x"}
+	var got sample
+	require.NoError(t, confmap.NewFromStringMap(raw).Unmarshal(&got))
+	assert.Equal(t, sample{
+		Tagged: "x", OmitEmpty: "x", Untagged: "x",
+		inner: inner{Inner: "x"}, Nested: inner{Inner: "x"},
+	}, got)
+
+	// Keys are matched case-sensitively, and unexported fields are not keys.
+	for _, key := range []string{"untagged", "hidden"} {
+		var s sample
+		assert.Error(t, confmap.NewFromStringMap(map[string]any{key: "x"}).Unmarshal(&s), key)
+		assert.Empty(t, s.hidden)
+	}
 }
 
 // TestForwardedTLSSettingsSurviveReload checks that every forwarded tls key
@@ -404,7 +453,8 @@ func TestForwardedTLSSettingsSurviveReload(t *testing.T) {
 	// Every case sets insecure to false so the scrape uses https and the tls
 	// settings are forwarded.
 	tests := []struct {
-		name string
+		// keys are the tls keys that the case sets.
+		keys []string
 		cfg  configtls.Config
 		// serverName and insecureSkipVerify are configtls.ClientConfig fields.
 		serverName         string
@@ -412,49 +462,65 @@ func TestForwardedTLSSettingsSurviveReload(t *testing.T) {
 		want               configutil.TLSConfig
 	}{
 		{
-			name: "ca_file",
+			keys: []string{"ca_file"},
 			cfg:  configtls.Config{CAFile: caFile},
 			want: configutil.TLSConfig{CAFile: caFile},
 		},
 		{
-			name: "ca_pem",
+			keys: []string{"ca_pem"},
 			cfg:  configtls.Config{CAPem: configopaque.String(caPem)},
 			want: configutil.TLSConfig{CA: string(caPem)},
 		},
 		{
-			name: "cert_file and key_file",
+			keys: []string{"cert_file", "key_file"},
 			cfg:  configtls.Config{CertFile: certFile, KeyFile: keyFile},
 			want: configutil.TLSConfig{CertFile: certFile, KeyFile: keyFile},
 		},
 		{
-			name: "cert_pem and key_pem",
+			keys: []string{"cert_pem", "key_pem"},
 			cfg:  configtls.Config{CertPem: configopaque.String(certPem), KeyPem: configopaque.String(keyPem)},
 			want: configutil.TLSConfig{Cert: string(certPem), Key: configutil.Secret(keyPem)},
 		},
 		{
-			name: "cert_file and key_pem",
+			keys: []string{"cert_file", "key_pem"},
 			cfg:  configtls.Config{CertFile: certFile, KeyPem: configopaque.String(keyPem)},
 			want: configutil.TLSConfig{CertFile: certFile, Key: configutil.Secret(keyPem)},
 		},
 		{
-			name:       "server_name_override",
+			keys:       []string{"server_name_override"},
 			serverName: "example.com",
 			want:       configutil.TLSConfig{ServerName: "example.com"},
 		},
 		{
-			name:               "insecure_skip_verify",
+			keys:               []string{"insecure_skip_verify"},
 			insecureSkipVerify: true,
 			want:               configutil.TLSConfig{InsecureSkipVerify: true},
 		},
 		{
-			name: "min_version and max_version",
+			keys: []string{"min_version", "max_version"},
 			cfg:  configtls.Config{MinVersion: "1.1", MaxVersion: "1.2"},
 			want: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS11"], MaxVersion: configutil.TLSVersions["TLS12"]},
 		},
 	}
 
+	// The cases must cover exactly the forwarded keys.
+	var covered []string
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		for _, key := range tt.keys {
+			if !slices.Contains(forwardedTLSKeys, key) {
+				t.Errorf("case %v sets tls key %q, which is not in forwardedTLSKeys", tt.keys, key)
+			}
+		}
+		covered = append(covered, tt.keys...)
+	}
+	for _, key := range forwardedTLSKeys {
+		if !slices.Contains(covered, key) {
+			t.Errorf("forwarded tls key %q has no case in this test", key)
+		}
+	}
+
+	for _, tt := range tests {
+		t.Run(strings.Join(tt.keys, "+"), func(t *testing.T) {
 			clientConfig := confighttp.NewDefaultClientConfig()
 			clientConfig.Endpoint = "localhost:1234"
 			clientConfig.TLS = configtls.ClientConfig{
