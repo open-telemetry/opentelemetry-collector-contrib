@@ -341,3 +341,89 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 		})
 	}
 }
+
+func TestOpenTelemetryTraceStateZeroCount(t *testing.T) {
+	for _, tc := range []struct {
+		in        string
+		zeroCount bool
+		out       string
+		err       bool
+	}{
+		{in: "zc:1", zeroCount: true, out: "zc:1"},
+		{in: "rv:10000000000000;zc:1;a:b", zeroCount: true, out: "rv:10000000000000;zc:1;a:b"},
+		{in: "a:b;zc:1", zeroCount: true, out: "zc:1;a:b"},
+		{in: "th:8", out: "th:8"},
+		{in: "zc:", err: true},
+		{in: "zc:0", err: true},
+		{in: "zc:true", err: true},
+	} {
+		t.Run(testName(tc.in), func(t *testing.T) {
+			otts, err := NewOpenTelemetryTraceState(tc.in)
+			if tc.err {
+				require.Error(t, err)
+				require.False(t, otts.ZeroCount())
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.zeroCount, otts.ZeroCount())
+			require.True(t, otts.HasAnyValue())
+
+			var w strings.Builder
+			require.NoError(t, otts.Serialize(&w))
+			require.Equal(t, tc.out, w.String())
+		})
+	}
+}
+
+func TestOpenTelemetryTraceStateZeroCountOnly(t *testing.T) {
+	otts, err := NewOpenTelemetryTraceState("zc:1")
+	require.NoError(t, err)
+	require.True(t, otts.HasAnyValue())
+	require.Empty(t, otts.TValue())
+	require.Zero(t, otts.AdjustedCount())
+}
+
+func TestOpenTelemetryTraceStateZeroCountBlocksTValueUpdate(t *testing.T) {
+	otts, err := NewOpenTelemetryTraceState("zc:1;a:b")
+	require.NoError(t, err)
+
+	th, err := ProbabilityToThreshold(0.5)
+	require.NoError(t, err)
+
+	require.ErrorIs(t, otts.UpdateTValueWithSampling(th), ErrZeroCount)
+	require.Empty(t, otts.TValue())
+	require.True(t, otts.ZeroCount())
+
+	var w strings.Builder
+	require.NoError(t, otts.Serialize(&w))
+	require.Equal(t, "zc:1;a:b", w.String())
+
+}
+
+func TestOpenTelemetryTraceStateZeroCountWithTValue(t *testing.T) {
+	// The flags are mutually exclusive, but if both arrive they are
+	// both preserved, and updating the threshold is still refused.
+	otts, err := NewOpenTelemetryTraceState("zc:1;th:8")
+	require.NoError(t, err)
+	require.True(t, otts.ZeroCount())
+	require.Equal(t, "8", otts.TValue())
+
+	th, err := ProbabilityToThreshold(0.25)
+	require.NoError(t, err)
+	require.ErrorIs(t, otts.UpdateTValueWithSampling(th), ErrZeroCount)
+	require.Equal(t, "8", otts.TValue())
+
+	var w strings.Builder
+	require.NoError(t, otts.Serialize(&w))
+	require.Equal(t, "th:8;zc:1", w.String())
+}
+
+func TestW3CTraceStateZeroCount(t *testing.T) {
+	w3c, err := NewW3CTraceState("ot=zc:1;rv:6e6d1a75832a2f,vendor=abc")
+	require.NoError(t, err)
+	require.True(t, w3c.OTelValue().ZeroCount())
+
+	var w strings.Builder
+	require.NoError(t, w3c.Serialize(&w))
+	require.Equal(t, "ot=rv:6e6d1a75832a2f;zc:1,vendor=abc", w.String())
+}

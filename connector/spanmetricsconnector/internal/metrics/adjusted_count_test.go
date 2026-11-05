@@ -77,6 +77,72 @@ func TestGetStochasticAdjustedCount(t *testing.T) {
 	}
 }
 
+func TestGetStochasticAdjustedCount_ZeroCount(t *testing.T) {
+	tests := []struct {
+		name       string
+		tracestate string
+		wantCount  uint64
+		wantAdjust bool
+	}{
+		{
+			name:       "zero count flag without th",
+			tracestate: "ot=zc:1",
+			wantCount:  0,
+			wantAdjust: true,
+		},
+		{
+			name:       "zero count flag with rv",
+			tracestate: "ot=rv:abcdabcdabcdff;zc:1",
+			wantCount:  0,
+			wantAdjust: true,
+		},
+		{
+			name:       "zero count flag with other vendor",
+			tracestate: "ot=zc:1,vendor=abc",
+			wantCount:  0,
+			wantAdjust: true,
+		},
+		{
+			name:       "zero count flag after another vendor",
+			tracestate: "vendor=abc,ot=zc:1",
+			wantCount:  0,
+			wantAdjust: true,
+		},
+		{
+			// zc and th are mutually exclusive; if both arrive, th is used.
+			name:       "zero count flag with th uses th",
+			tracestate: "ot=th:0;zc:1",
+			wantCount:  1,
+			wantAdjust: true,
+		},
+		{
+			name:       "invalid zero count value is ignored",
+			tracestate: "ot=zc:0",
+			wantCount:  1,
+			wantAdjust: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.TraceState().FromRaw(tt.tracestate)
+
+			count, adjusted := GetStochasticAdjustedCount(&span)
+			assert.Equal(t, tt.wantCount, count)
+			assert.Equal(t, tt.wantAdjust, adjusted)
+
+			// The cached path must agree with the uncached path.
+			cache := NewAdjustedCountCache()
+			for range 2 {
+				count, adjusted = GetStochasticAdjustedCountWithCache(&span, &cache)
+				assert.Equal(t, tt.wantCount, count)
+				assert.Equal(t, tt.wantAdjust, adjusted)
+			}
+		})
+	}
+}
+
 func TestGetStochasticAdjustedCount_StatisticalBehavior(t *testing.T) {
 	// Use a fixed seed source for deterministic test results.
 	// Prod adds the counter in the pool; we supply only the base.

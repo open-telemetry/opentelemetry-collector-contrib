@@ -560,6 +560,26 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			sf: func(SamplerMode) (bool, float64, string) { return false, 0, "" },
 		},
 		{
+			// The zero-count flag is mutually exclusive with th, so
+			// a sampled item keeps its tracestate unmodified.
+			name: "50 percent sampled with zero count",
+			cfg: &Config{
+				SamplingPercentage: 50,
+			},
+			ts:  "ot=zc:1",
+			log: "zero-count flag",
+			sf:  func(SamplerMode) (bool, float64, string) { return true, 0, "ot=zc:1" },
+		},
+		{
+			name: "50 percent sampled with zero count and rvalue",
+			cfg: &Config{
+				SamplingPercentage: 50,
+			},
+			ts:  "ot=rv:FD70A3D70A3D71;zc:1",
+			log: "zero-count flag",
+			sf:  func(SamplerMode) (bool, float64, string) { return true, 0, "ot=rv:FD70A3D70A3D71;zc:1" },
+		},
+		{
 			name: "1 percent sampled",
 			cfg: &Config{
 				SamplingPercentage: 1,

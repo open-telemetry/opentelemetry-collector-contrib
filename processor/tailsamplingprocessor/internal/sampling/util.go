@@ -113,6 +113,8 @@ func SetBoolAttrOnScopeSpans(data ptrace.Traces, attrName string, attrValue bool
 // field on every span in td to encode the given effective sampling
 // threshold. Spans whose existing th is already stricter are left
 // unchanged (UpdateTValueWithSampling refuses to lower probability).
+// Spans carrying the zero-count flag (`zc`) are also left unchanged,
+// since `zc` and `th` are mutually exclusive.
 // Spans with unparseable tracestate are counted via
 // unparseableTracestate and skipped.
 func WriteEffectiveThreshold(ctx context.Context, td ptrace.Traces, th sampling.Threshold, unparseableTracestate metric.Int64Counter) {
@@ -125,10 +127,12 @@ func WriteEffectiveThreshold(ctx context.Context, td ptrace.Traces, th sampling.
 					continue
 				}
 				if err := ts.OTelValue().UpdateTValueWithSampling(th); err != nil {
-					// UpdateTValueWithSampling only returns
-					// ErrInconsistentSampling: the existing
+					// UpdateTValueWithSampling returns
+					// ErrInconsistentSampling when the existing
 					// threshold is stricter and the spec forbids
-					// lowering it. Leave the span as-is.
+					// lowering it, and ErrZeroCount when the span
+					// carries the zero-count flag, which is mutually
+					// exclusive with th. Leave the span as-is.
 					continue
 				}
 				var w strings.Builder
