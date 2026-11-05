@@ -209,8 +209,8 @@ func (b *bearerTokenAuth) authorizationValue() string {
 	return ""
 }
 
-// GetToken returns an access token with a valid token for authorization.
-// Implements tokenSource interface.
+// Token returns the first configured token, without the scheme, so the extension
+// can be used as an OAuth2 token source (e.g. Kafka `oauthbearer_token_source`).
 func (b *bearerTokenAuth) Token(context.Context) (*oauth2.Token, error) {
 	tokens, _ := b.tokensAtomic.Load().([]string)
 	if len(tokens) == 0 || tokens[0] == "" {
