@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/google_cloud_spanner
+note: Add user split points metrics (`user_split_points/split_points_count`) with `table_name`, `index_name`, `initiator`, `split_key`, and `expire_time` labels (including `hide_split_stats_keys` PII masking support for `split_key`) in `googlecloudspannerreceiver`.
+issues: [52151]
+subtext: ""
+change_logs: []

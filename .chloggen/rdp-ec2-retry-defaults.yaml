@@ -1,5 +1,0 @@
-change_type: enhancement
-component: processor/resource_detection
-note: Define EC2 retry defaults locally instead of importing them from the AWS SDK. Defaults remain 3 attempts and 20s maximum backoff.
-issues: [47218]
-change_logs: [user]
