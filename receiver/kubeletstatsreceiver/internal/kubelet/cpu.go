@@ -71,8 +71,8 @@ func addCPUUtilizationMetrics(
 	nodeCPULimit float64,
 ) {
 	utilization := floatUtilization
-	if metadata.ReceiverKubeletStatsCPUUtilizationPrecisionFeatureGate.IsEnabled() {
-		utilization = preciseUtilization
+	if metadata.ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate.IsEnabled() {
+		utilization = roundedUtilization
 	}
 	if nodeCPULimit > 0 {
 		cpuMetrics.NodeUtilization(mb, currentTime, utilization(usageCores, nodeCPULimit))
@@ -89,7 +89,7 @@ func floatUtilization(usageCores, limitCores float64) float64 {
 	return usageCores / limitCores
 }
 
-// preciseUtilization computes usageCores/limitCores from integer nanocore values and
+// roundedUtilization computes usageCores/limitCores from integer nanocore values and
 // rounds the result to the number of significant digits justified by the inputs
 // (see precision.Ratio), avoiding float64 artifacts such as 0.30000000000000004.
 //
@@ -99,7 +99,7 @@ func floatUtilization(usageCores, limitCores float64) float64 {
 // which have millicore resolution, and usage originates from integer nanocore or
 // nanosecond values reported by the kubelet. The final result is still rounded by
 // precision.Ratio, so it may differ slightly from the exact float64 quotient.
-func preciseUtilization(usageCores, limitCores float64) float64 {
+func roundedUtilization(usageCores, limitCores float64) float64 {
 	usageNanoCores := uint64(math.Round(usageCores * nanoCoresPerCore))
 	limitNanoCores := uint64(math.Round(limitCores*milliCoresPerCore)) * nanoCoresPerMilli
 	return precision.Ratio(usageNanoCores, limitNanoCores)

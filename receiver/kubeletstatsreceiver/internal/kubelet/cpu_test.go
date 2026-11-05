@@ -93,7 +93,7 @@ func TestScrapeBasedCPUUsage_DisabledGateUsesUsageNanoCores(t *testing.T) {
 	require.InDelta(t, 1.5, usageMetrics[0].Gauge().DataPoints().At(0).DoubleValue(), 1e-9)
 }
 
-func TestPreciseUtilization(t *testing.T) {
+func TestRoundedUtilization(t *testing.T) {
 	tests := []struct {
 		name       string
 		usageCores float64
@@ -128,12 +128,12 @@ func TestPreciseUtilization(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, preciseUtilization(tt.usageCores, tt.limitCores))
+			require.Equal(t, tt.expected, roundedUtilization(tt.usageCores, tt.limitCores))
 		})
 	}
 }
 
-func TestCPUUtilizationPrecisionFeatureGate(t *testing.T) {
+func TestCPUUtilizationRoundingFeatureGate(t *testing.T) {
 	newPodMetrics := func() pmetric.Metrics {
 		cfg := metadata.NewDefaultMetricsBuilderConfig()
 		cfg.Metrics.K8sPodCPUNodeUtilization.Enabled = true
@@ -141,7 +141,7 @@ func TestCPUUtilizationPrecisionFeatureGate(t *testing.T) {
 		cfg.Metrics.K8sPodCPURequestUtilization.Enabled = true
 		mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
 		// 0.3 cores used against a 100m limit/request and a 0.1 core node: the float64
-		// quotient is 2.9999999999999996, the precise one is 3.
+		// quotient is 2.9999999999999996, the rounded one is 3.
 		r := resources{cpuLimit: 0.1, cpuRequest: 0.1}
 		addCPUUtilizationMetrics(mb, metadata.PodCPUMetrics, float64(300_000_000)/nanoCoresPerCore, pcommon.Timestamp(0), r, 0.1)
 		return mb.Emit()
@@ -157,7 +157,7 @@ func TestCPUUtilizationPrecisionFeatureGate(t *testing.T) {
 	names := []string{"k8s.pod.cpu.node.utilization", "k8s.pod.cpu_limit_utilization", "k8s.pod.cpu_request_utilization"}
 
 	t.Run("disabled", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsCPUUtilizationPrecisionFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate, false)()
 		values := utilizationValues(newPodMetrics())
 		for _, name := range names {
 			require.Contains(t, values, name)
@@ -166,7 +166,7 @@ func TestCPUUtilizationPrecisionFeatureGate(t *testing.T) {
 	})
 
 	t.Run("enabled", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsCPUUtilizationPrecisionFeatureGate, true)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate, true)()
 		values := utilizationValues(newPodMetrics())
 		for _, name := range names {
 			require.Contains(t, values, name)
