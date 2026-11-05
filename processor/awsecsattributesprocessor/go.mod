@@ -6,15 +6,15 @@ require (
 	github.com/moby/moby/api v1.56.1
 	github.com/moby/moby/client v0.6.2
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/component v1.70.1-0.20261105173835-af10ae56e4a9
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/confmap v1.70.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/consumer v1.70.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/confmap v1.70.1-0.20261105173835-af10ae56e4a9
+	go.opentelemetry.io/collector/consumer v1.70.1-0.20261105173835-af10ae56e4a9
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/pdata v1.70.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/pdata v1.70.1-0.20261105173835-af10ae56e4a9
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/processor v1.70.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/processor v1.70.1-0.20261105173835-af10ae56e4a9
 	go.opentelemetry.io/collector/processor/processorhelper v0.164.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.164.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/processor/processortest v0.164.1-0.20261102165206-9372e2e353df
@@ -52,10 +52,10 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.164.1-0.20261102165206-9372e2e353df // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261102165206-9372e2e353df // indirect
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261105173835-af10ae56e4a9 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.164.1-0.20261102165206-9372e2e353df // indirect
-	go.opentelemetry.io/collector/pipeline v1.70.1-0.20261102165206-9372e2e353df // indirect
+	go.opentelemetry.io/collector/pipeline v1.70.1-0.20261105173835-af10ae56e4a9 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261102165206-9372e2e353df // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
