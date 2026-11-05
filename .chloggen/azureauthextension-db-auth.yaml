@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: extension/azure_auth
+
+note: Implement the database credential provider interface for Azure authentication extensions.
+
+issues: [50294]
+
+subtext:
+
+change_logs: [user]

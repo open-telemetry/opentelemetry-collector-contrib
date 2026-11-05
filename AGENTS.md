@@ -31,6 +31,12 @@ Non-exhaustively, the important points are:
 
 * Whenever applicable, all code changes should have tests that actually validate the changes.
 
+## Changelog entries
+
+Keep the `subtext` field of a changelog entry minimal. It should only be used to call out the
+exact names of breaking changes or other important clarifications a reader must know. Do not use it
+to explain "why" a general bug fix or feature was added. Verbose subtext overloads the changelog.
+
 ## Commit formatting
 
 We appreciate it if users disclose the use of AI tools when the significant part of a commit is

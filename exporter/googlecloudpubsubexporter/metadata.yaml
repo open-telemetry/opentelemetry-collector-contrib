@@ -7,7 +7,15 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [alexvanboxel]
+    active: [alexvanboxel, braydonk, dpaasman00]
+
+sending_queue:
+  support: has_overrides
+  rationale: "Sending queue is disabled by default."
+  overrides:
+    enabled: false
+    batch:
+      enabled: false
 
 tests:
   goleak:

@@ -45,7 +45,7 @@ func newLikeGetterLogContext(attributeCount int) *ottllog.TransformContext {
 	for i := range attributeCount {
 		logRecord.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("value_%d", i))
 	}
-	return ottllog.NewTransformContextPtr(resourceLogs, scopeLogs, logRecord)
+	return ottllog.NewTransformContext(resourceLogs, scopeLogs, logRecord)
 }
 
 func BenchmarkLikeGetterStatements(b *testing.B) {

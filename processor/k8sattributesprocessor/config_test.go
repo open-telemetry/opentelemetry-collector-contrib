@@ -14,12 +14,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, true)()
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -476,6 +478,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_pod_delete_grace_period"),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_kubelet_request_timeout"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -499,9 +504,23 @@ func TestLoadConfig(t *testing.T) {
 			}
 
 			assert.NoError(t, confmap.Validate(cfg))
+			if expected, ok := tt.expected.(*Config); ok && expected.Kubelet == (KubeletConfig{}) {
+				expected.Kubelet = KubeletConfig{PollInterval: 10 * time.Second, RequestTimeout: 10 * time.Second}
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestValidateKubeletRequiresFeatureGate(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, false)()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Filter.Node = "node-a"
+	cfg.Kubelet.Enabled = true
+
+	err := cfg.Validate()
+	require.EqualError(t, err, "kubelet.enabled requires feature gate processor.k8sattributes.EnableKubeletPodSource")
 }
 
 func TestConfigValidateDuplicatePodAssociations(t *testing.T) {
@@ -582,6 +601,55 @@ func TestConfigValidateDuplicatePodAssociations(t *testing.T) {
 	}
 }
 
+func TestConfigValidateExcludePodNameRegex(t *testing.T) {
+	tests := []struct {
+		name    string
+		pods    []ExcludePodConfig
+		wantErr bool
+	}{
+		{
+			name:    "no excludes",
+			pods:    nil,
+			wantErr: false,
+		},
+		{
+			name:    "valid pattern",
+			pods:    []ExcludePodConfig{{Name: "jaeger-agent"}},
+			wantErr: false,
+		},
+		{
+			name:    "valid pattern with metacharacters",
+			pods:    []ExcludePodConfig{{Name: `^kube-(proxy|dns)-.*$`}},
+			wantErr: false,
+		},
+		{
+			name:    "unterminated character class",
+			pods:    []ExcludePodConfig{{Name: "[unclosed"}},
+			wantErr: true,
+		},
+		{
+			name:    "invalid pattern among valid ones",
+			pods:    []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "*invalid"}},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Exclude:   ExcludeConfig{Pods: tt.pods},
+			}
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestFilterConfigInvalidEnvVar(t *testing.T) {
 	f := FilterConfig{
 		Namespace:      "ns2",
@@ -590,4 +658,17 @@ func TestFilterConfigInvalidEnvVar(t *testing.T) {
 		Fields:         []FieldFilterConfig{},
 	}
 	assert.Error(t, confmap.Validate(f))
+}
+
+func TestValidateKubeletRequestTimeout(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ProcessorK8sattributesEnableKubeletPodSourceFeatureGate, true)()
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Filter.Node = "node-a"
+	cfg.Kubelet.Enabled = true
+	cfg.Kubelet.RequestTimeout = 0
+	require.EqualError(t, confmap.Validate(cfg), "kubelet.request_timeout must be greater than 0")
+
+	cfg.Kubelet.RequestTimeout = 5 * time.Second
+	require.NoError(t, confmap.Validate(cfg))
 }

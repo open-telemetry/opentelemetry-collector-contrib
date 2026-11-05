@@ -12,20 +12,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type DeleteMatchingKeysArguments[K any] struct {
+type deleteMatchingKeysArguments[K any] struct {
 	Target  ottl.PMapGetSetter[K]
 	Pattern ottl.StringGetter[K]
 }
 
+// NewDeleteMatchingKeysFactory returns a factory for the delete_matching_keys OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#delete_matching_keys
 func NewDeleteMatchingKeysFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("delete_matching_keys", &DeleteMatchingKeysArguments[K]{}, createDeleteMatchingKeysFunction[K])
+	return ottl.NewFactory("delete_matching_keys", &deleteMatchingKeysArguments[K]{}, createDeleteMatchingKeysFunction[K])
 }
 
 func createDeleteMatchingKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*DeleteMatchingKeysArguments[K])
+	args, ok := oArgs.(*deleteMatchingKeysArguments[K])
 
 	if !ok {
-		return nil, errors.New("DeleteMatchingKeysFactory args must be of type *DeleteMatchingKeysArguments[K]")
+		return nil, errors.New("DeleteMatchingKeysFactory args must be of type *deleteMatchingKeysArguments[K]")
 	}
 
 	return deleteMatchingKeys(args.Target, args.Pattern)
@@ -46,7 +48,7 @@ func deleteMatchingKeys[K any](target ottl.PMapGetSetter[K], pattern ottl.String
 			return nil, err
 		}
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
-			return cp.MatchString(key)
+			return compiledPattern.matchString(cp, key)
 		})
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil

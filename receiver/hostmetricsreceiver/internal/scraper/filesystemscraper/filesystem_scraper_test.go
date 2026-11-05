@@ -385,6 +385,15 @@ func TestScrape(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Skip empty partitions",
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{{}, {}}, nil
+			},
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
+				return nil, errors.New("usage should not be called for empty partitions")
+			},
+		},
 	}
 
 	for _, test := range testCases {

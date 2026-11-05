@@ -1,0 +1,6 @@
+type: resourcedetectionprocessor/env
+sem_conv_version: 1.43.0
+
+parent: resourcedetection
+
+resource_attributes: {}

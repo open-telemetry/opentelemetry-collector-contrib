@@ -90,3 +90,24 @@ file/group_by_empty_resource_attribute:
   group_by:
     enabled: true
     resource_attribute: ""
+
+file/group_by_zero_max_open_files:
+  path: ./group_by/*.json
+  group_by:
+    enabled: true
+    max_open_files: 0
+
+file/rotation_negative_max_megabytes:
+  path: ./foo
+  rotation:
+    max_megabytes: -1
+
+file/rotation_negative_max_days:
+  path: ./foo
+  rotation:
+    max_days: -1
+
+file/rotation_negative_max_backups:
+  path: ./foo
+  rotation:
+    max_backups: -1

@@ -324,7 +324,7 @@ func Test_IndexFactory(t *testing.T) {
 		factory := NewIndexFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &IndexArguments[any]{}, args)
+		assert.IsType(t, &indexArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Value"})
 	})
 
@@ -332,7 +332,7 @@ func Test_IndexFactory(t *testing.T) {
 		factory := NewIndexFactory[any]()
 		args := factory.CreateDefaultArguments()
 		// Set up the arguments appropriately
-		indexArgs, ok := args.(*IndexArguments[any])
+		indexArgs, ok := args.(*indexArguments[any])
 		require.True(t, ok)
 		indexArgs.Target = ottl.StandardGetSetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -354,6 +354,27 @@ func Test_IndexFactory(t *testing.T) {
 		// This tests the error case in createIndexFunction
 		_, err := createIndexFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.Error(t, err)
-		assert.ErrorContains(t, err, "IndexFactory args must be of type *IndexArguments[K]")
+		assert.ErrorContains(t, err, "IndexFactory args must be of type *indexArguments[K]")
 	})
+}
+
+func BenchmarkIndex(b *testing.B) {
+	sourceExpr := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return []any{"hello", "world", "opentelemetry"}, nil
+		},
+	}
+	valueExpr := ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "world", nil
+		},
+	}
+	exprFunc := index[any](ottl.NewValueComparator(), sourceExpr, valueExpr)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

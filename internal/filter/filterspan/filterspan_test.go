@@ -174,7 +174,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, expr)
 
-			tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
+			tCtx := ottlspan.NewTransformContext(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
 			defer tCtx.Close()
 
 			val, err := expr.Eval(t.Context(), tCtx)
@@ -195,7 +195,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), emptySpan)
+	tCtx := ottlspan.NewTransformContext(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), emptySpan)
 	defer tCtx.Close()
 	val, err := mp.Eval(t.Context(), tCtx)
 	require.NoError(t, err)
@@ -285,7 +285,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			tCtx := ottlspan.NewTransformContextPtr(rs, rs.ScopeSpans().At(0), span)
+			tCtx := ottlspan.NewTransformContext(rs, rs.ScopeSpans().At(0), span)
 			defer tCtx.Close()
 			val, err := mp.Eval(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -1208,7 +1208,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			scope.SetName("scope")
 			scope.SetVersion("0.1.0")
 
-			tCtx := ottlspan.NewTransformContextPtr(rs, rs.ScopeSpans().At(0), span)
+			tCtx := ottlspan.NewTransformContext(rs, rs.ScopeSpans().At(0), span)
 			defer tCtx.Close()
 
 			boolExpr, err := NewSkipExpr(tt.condition)
@@ -1273,7 +1273,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 		span.Attributes().PutStr("keyExists", "present")
 		span.SetKind(ptrace.SpanKindClient)
 
-		tCtx := ottlspan.NewTransformContextPtr(rs, rs.ScopeSpans().At(0), span)
+		tCtx := ottlspan.NewTransformContext(rs, rs.ScopeSpans().At(0), span)
 		defer tCtx.Close()
 
 		b.Run(tt.name, func(b *testing.B) {

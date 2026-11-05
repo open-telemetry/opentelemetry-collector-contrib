@@ -32,7 +32,7 @@ func TestGenerateParentSpan(t *testing.T) {
 	fillSpan(traceID, pcommon.SpanID([8]byte{}), "/gotest-parent", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.True(t, span.ParentSpanID().IsEmpty())
-	assert.Equal(t, 11, span.Attributes().Len())
+	assert.Equal(t, 12, span.Attributes().Len())
 	assert.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
 }
 
@@ -53,7 +53,7 @@ func TestGenerateChildSpan(t *testing.T) {
 	fillSpan(traceID, parentID, "get_test_info", spanInputs, random, span)
 	assert.Equal(t, traceID, span.TraceID())
 	assert.Equal(t, parentID, span.ParentSpanID())
-	assert.Equal(t, 12, span.Attributes().Len())
+	assert.Equal(t, 11, span.Attributes().Len())
 	assert.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
 }
 
@@ -135,7 +135,7 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 		absentKeys   []string
 	}{
 		{
-			name:         "default_v0_only",
+			name:         "v0_only",
 			dontEmitV0:   false,
 			emitV1:       false,
 			expectedKeys: []string{"messaging.destination"},
@@ -149,7 +149,7 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 			absentKeys:   []string{},
 		},
 		{
-			name:         "v1_only",
+			name:         "default_v1_only",
 			dontEmitV0:   true,
 			emitV1:       true,
 			expectedKeys: []string{"messaging.destination.name"},
@@ -159,12 +159,14 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			prevDontEmit := metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.IsEnabled()
+			prevEmitV1 := metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.IsEnabled()
 			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), tc.dontEmitV0))
 			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), tc.emitV1))
 
 			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), false))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetDontEmitV0MessagingConventionsFeatureGate.ID(), prevDontEmit))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.InternalCoreinternalGoldendatasetEmitV1MessagingConventionsFeatureGate.ID(), prevEmitV1))
 			})
 
 			random := rand.Reader
@@ -189,6 +191,82 @@ func TestGenerateMessagingProducerSpanFeatureGates(t *testing.T) {
 			for _, k := range tc.absentKeys {
 				_, ok := attrs.Get(k)
 				assert.False(t, ok, "Expected attribute %s to be absent", k)
+			}
+		})
+	}
+}
+
+func TestNetworkV1Attributes(t *testing.T) {
+	// net.host.port, net.peer.name, net.peer.port and net.transport (semconv v1.25.0)
+	// are emitted as their v1.40.0 equivalents. On client spans the peer maps to
+	// server.*; on server spans the host port maps to server.port and the peer port
+	// to client.port.
+	testCases := []struct {
+		name           string
+		appendAttrs    func(pcommon.Map)
+		expectedValues map[string]any
+	}{
+		{
+			name:        "database_sql_client",
+			appendAttrs: appendDatabaseSQLAttributes,
+			expectedValues: map[string]any{
+				"server.address":    "shopdb.example.com",
+				"server.port":       int64(3306),
+				"network.transport": "tcp",
+			},
+		},
+		{
+			name:        "database_nosql_client",
+			appendAttrs: appendDatabaseNoSQLAttributes,
+			expectedValues: map[string]any{
+				"server.address":    "mongodb0.example.com",
+				"server.port":       int64(27017),
+				"network.transport": "tcp",
+			},
+		},
+		{
+			name:        "http_server",
+			appendAttrs: func(m pcommon.Map) { appendHTTPServerAttributes(true, m) },
+			expectedValues: map[string]any{
+				"server.port": int64(443),
+			},
+		},
+		{
+			name:        "grpc_client",
+			appendAttrs: appendGRPCClientAttributes,
+			expectedValues: map[string]any{
+				"server.port": int64(8443),
+			},
+		},
+		{
+			name:        "max_count_server",
+			appendAttrs: func(m pcommon.Map) { appendMaxCountAttributes(true, m) },
+			expectedValues: map[string]any{
+				"server.port": int64(443),
+				"client.port": int64(39111),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			attrs := pcommon.NewMap()
+			tc.appendAttrs(attrs)
+
+			for _, k := range []string{"net.host.port", "net.peer.name", "net.peer.port", "net.transport"} {
+				_, ok := attrs.Get(k)
+				assert.False(t, ok, "Expected attribute %s to be absent", k)
+			}
+			for k, want := range tc.expectedValues {
+				v, ok := attrs.Get(k)
+				if assert.True(t, ok, "Expected attribute %s to be present", k) {
+					switch expected := want.(type) {
+					case int64:
+						assert.Equal(t, expected, v.Int(), "Unexpected value for attribute %s", k)
+					case string:
+						assert.Equal(t, expected, v.Str(), "Unexpected value for attribute %s", k)
+					}
+				}
 			}
 		})
 	}

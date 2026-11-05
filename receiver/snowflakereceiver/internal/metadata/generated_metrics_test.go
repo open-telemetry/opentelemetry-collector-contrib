@@ -112,186 +112,279 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "service_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 3, "service_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts+1, 3, "service_type-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeBillingCloudServiceTotal.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "service_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 3, "service_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts+1, 3, "service_type-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeBillingTotalCreditTotal.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "service_type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 3, "service_type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts+1, 3, "service_type-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeBillingVirtualWarehouseTotal.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeBillingWarehouseCloudServiceTotal.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeBillingWarehouseTotalCreditTotal.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeDatabaseBytesScannedAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeDatabaseQueryCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "error_message-val", "reported_client_type-val", "is_success-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeLoginsTotalDataPoint(ts, 3, "error_message-val-2", "reported_client_type-val-2", "is_success-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeLoginsTotalDataPoint(ts+1, 3, "error_message-val-2", "reported_client_type-val-2", "is_success-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeLoginsTotal.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "pipe_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 3, "pipe_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts+1, 3, "pipe_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakePipeCreditsUsedTotal.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBlockedDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryBlockedDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryBlocked.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryBytesDeletedAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryBytesSpilledLocalAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryBytesSpilledRemoteAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryBytesWrittenAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryCompilationTimeAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryDataScannedCacheAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryExecutedDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryExecutedDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryExecuted.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryExecutionTimeAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryPartitionsScannedAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryQueuedOverload.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 3, "warehouse_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts+1, 3, "warehouse_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueryQueuedProvision.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueuedOverloadTimeAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueuedProvisioningTimeAvg.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeQueuedRepairTimeAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeRowsDeletedAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeRowsInsertedAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeRowsProducedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeRowsProducedAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeRowsUnloadedAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeRowsUpdatedAvg.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "user_name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeSessionIDCountDataPoint(ts, 3, "user_name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeSessionIDCountDataPoint(ts+1, 3, "user_name-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeSessionIDCount.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -307,6 +400,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts+1, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+				assert.Equal(t, 2, mb.metricSnowflakeTotalElapsedTimeAvg.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -393,7 +489,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.billing.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.cloud_service.total")
 						validatedMetrics["snowflake.billing.cloud_service.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reported total credits used in the cloud service over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -433,7 +531,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.billing.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.total_credit.total")
 						validatedMetrics["snowflake.billing.total_credit.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reported total credits used across account over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -473,7 +573,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.billing.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.virtual_warehouse.total")
 						validatedMetrics["snowflake.billing.virtual_warehouse.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Reported total credits used by virtual warehouse service over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -513,7 +615,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.billing.warehouse.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.cloud_service.total")
 						validatedMetrics["snowflake.billing.warehouse.cloud_service.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Credits used across cloud service for given warehouse over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -553,7 +657,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.billing.warehouse.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.total_credit.total")
 						validatedMetrics["snowflake.billing.warehouse.total_credit.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total credits used associated with given warehouse over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -593,7 +699,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.virtual_warehouse.total")
 						validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total credits used by virtual warehouse service for given warehouse over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -651,7 +759,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.database.bytes_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.database.bytes_scanned.avg")
 						validatedMetrics["snowflake.database.bytes_scanned.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average bytes scanned in a database over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -721,7 +831,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.database.query.count"], "Found a duplicate in the metrics slice: snowflake.database.query.count")
 						validatedMetrics["snowflake.database.query.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total query count for database over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -779,7 +891,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.logins.total"], "Found a duplicate in the metrics slice: snowflake.logins.total")
 						validatedMetrics["snowflake.logins.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total login attempts for account over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -823,7 +937,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.pipe.credits_used.total"], "Found a duplicate in the metrics slice: snowflake.pipe.credits_used.total")
 						validatedMetrics["snowflake.pipe.credits_used.total"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Snow pipe credits contotaled over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{credits}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -863,7 +979,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.blocked"], "Found a duplicate in the metrics slice: snowflake.query.blocked")
 						validatedMetrics["snowflake.query.blocked"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Blocked query count for warehouse over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -921,7 +1039,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.bytes_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_deleted.avg")
 						validatedMetrics["snowflake.query.bytes_deleted.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average bytes deleted in database over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -991,7 +1111,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.local.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.local.avg")
 						validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1061,7 +1183,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.remote.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.remote.avg")
 						validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1131,7 +1255,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.bytes_written.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_written.avg")
 						validatedMetrics["snowflake.query.bytes_written.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average bytes written by database over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1201,7 +1327,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.compilation_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.compilation_time.avg")
 						validatedMetrics["snowflake.query.compilation_time.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average time taken to compile query over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1271,7 +1399,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.data_scanned_cache.avg"], "Found a duplicate in the metrics slice: snowflake.query.data_scanned_cache.avg")
 						validatedMetrics["snowflake.query.data_scanned_cache.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average percentage of data scanned from cache over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1323,7 +1453,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.executed"], "Found a duplicate in the metrics slice: snowflake.query.executed")
 						validatedMetrics["snowflake.query.executed"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Executed query count for warehouse over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1381,7 +1513,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.execution_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.execution_time.avg")
 						validatedMetrics["snowflake.query.execution_time.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average time spent executing queries in database over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1451,7 +1585,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.partitions_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.query.partitions_scanned.avg")
 						validatedMetrics["snowflake.query.partitions_scanned.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of partitions scanned during query so far over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1503,7 +1639,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.queued_overload"], "Found a duplicate in the metrics slice: snowflake.query.queued_overload")
 						validatedMetrics["snowflake.query.queued_overload"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Overloaded query count for warehouse over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1543,7 +1681,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.query.queued_provision"], "Found a duplicate in the metrics slice: snowflake.query.queued_provision")
 						validatedMetrics["snowflake.query.queued_provision"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of compute resources queued for provisioning over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1601,7 +1741,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.queued_overload_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_overload_time.avg")
 						validatedMetrics["snowflake.queued_overload_time.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1671,7 +1813,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.queued_provisioning_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_provisioning_time.avg")
 						validatedMetrics["snowflake.queued_provisioning_time.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1741,7 +1885,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.queued_repair_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_repair_time.avg")
 						validatedMetrics["snowflake.queued_repair_time.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1811,7 +1957,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.rows_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_deleted.avg")
 						validatedMetrics["snowflake.rows_deleted.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows deleted from a table (or tables) over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{rows}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1881,7 +2029,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.rows_inserted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_inserted.avg")
 						validatedMetrics["snowflake.rows_inserted.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of rows inserted into a table (or tables) over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{rows}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1951,7 +2101,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.rows_produced.avg"], "Found a duplicate in the metrics slice: snowflake.rows_produced.avg")
 						validatedMetrics["snowflake.rows_produced.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average number of rows produced by statement over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{rows}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2021,7 +2173,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.rows_unloaded.avg"], "Found a duplicate in the metrics slice: snowflake.rows_unloaded.avg")
 						validatedMetrics["snowflake.rows_unloaded.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average number of rows unloaded during data export over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{rows}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2091,7 +2245,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.rows_updated.avg"], "Found a duplicate in the metrics slice: snowflake.rows_updated.avg")
 						validatedMetrics["snowflake.rows_updated.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average number of rows updated in a table over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "{rows}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2143,7 +2299,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.session_id.count"], "Found a duplicate in the metrics slice: snowflake.session_id.count")
 						validatedMetrics["snowflake.session_id.count"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Distinct session id's associated with snowflake username over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2237,7 +2395,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["snowflake.total_elapsed_time.avg"], "Found a duplicate in the metrics slice: snowflake.total_elapsed_time.avg")
 						validatedMetrics["snowflake.total_elapsed_time.avg"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average elapsed time over the last 24 hour window.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

@@ -8,11 +8,14 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -686,4 +689,67 @@ func TestTranslateSeriesV2StartTimestampOrdering(t *testing.T) {
 			tt.expect(t, results)
 		})
 	}
+}
+
+// A declared interval sets the window, including on a stream's first point.
+func TestTranslateSeriesIntervalSetsStartTimestamp(t *testing.T) {
+	const (
+		ts       = int64(1636629071)
+		interval = int64(10)
+	)
+	wantStart := pcommon.Timestamp((ts - interval) * time.Second.Nanoseconds())
+	wantTs := pcommon.Timestamp(ts * time.Second.Nanoseconds())
+
+	t.Run("v1 first point of a stream", func(t *testing.T) {
+		mt := createMetricsTranslator()
+		result := mt.TranslateSeriesV1(SeriesList{
+			Series: []datadogV1.Series{
+				{
+					Metric:   "TestRate",
+					Host:     new("Host1"),
+					Type:     new(TypeRate),
+					Interval: *datadog.NewNullableInt64(new(interval)),
+					Points:   testPointsToDatadogPoints([]testPoint{{ts, 1.0}}),
+				},
+			},
+		})
+		dp := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, wantTs, dp.Timestamp())
+		// Without the declared interval this is 0 and no interval can be inferred.
+		require.Equal(t, wantStart, dp.StartTimestamp())
+		// Value scaling by the interval is unchanged.
+		require.InEpsilon(t, float64(interval), dp.DoubleValue(), 1e-9)
+	})
+
+	t.Run("v2 first point of a stream", func(t *testing.T) {
+		mt := createMetricsTranslator()
+		result := mt.TranslateSeriesV2([]*gogen.MetricPayload_MetricSeries{
+			{
+				Metric:    "TestRate",
+				Type:      gogen.MetricPayload_RATE,
+				Interval:  interval,
+				Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+				Points:    []*gogen.MetricPayload_MetricPoint{{Timestamp: ts, Value: 1.0}},
+			},
+		})
+		dp := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, wantTs, dp.Timestamp())
+		require.Equal(t, wantStart, dp.StartTimestamp())
+		require.InEpsilon(t, float64(interval), dp.DoubleValue(), 1e-9)
+	})
+
+	t.Run("no declared interval falls back to inter-arrival tracking", func(t *testing.T) {
+		mt := createMetricsTranslator()
+		mk := func(at int64) SeriesList {
+			return SeriesList{Series: []datadogV1.Series{{
+				Metric: "TestCount", Host: new("Host1"), Type: new(TypeCount),
+				Points: testPointsToDatadogPoints([]testPoint{{at, 1.0}}),
+			}}}
+		}
+		_ = mt.TranslateSeriesV1(mk(ts))
+		second := mt.TranslateSeriesV1(mk(ts + 30))
+		dp := second.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, pcommon.Timestamp(ts*time.Second.Nanoseconds()), dp.StartTimestamp(),
+			"series without a declared interval must still use the previous timestamp")
+	})
 }

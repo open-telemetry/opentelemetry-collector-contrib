@@ -17,6 +17,8 @@
 | ------------------------ | ------------------------ | ----------------- |
 | traces | metrics | [alpha] |
 | traces | logs | [alpha] |
+| logs | logs | [alpha] |
+| logs | metrics | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type

@@ -26,19 +26,18 @@ func NewFactory() receiver.Factory {
 	)
 }
 
+// defaultResourceCacheSize is the default number of job/instance pairs kept in the resource cache.
+const defaultResourceCacheSize = 1000
+
 func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = "localhost:9090"
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = netAddr
 	return &Config{
-		ServerConfig: serverConfig,
+		ServerConfig:      serverConfig,
+		ResourceCacheSize: defaultResourceCacheSize,
 	}
 }
 

@@ -12,7 +12,8 @@ status:
       date: "2026-05-29"
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, crobert-1]
+    active: [crobert-1]
+    emeritus: [dmitryax]
 
 feature_gates:
   - id: exporter.signalfx.consumeEntityEvents
@@ -20,6 +21,9 @@ feature_gates:
     description: Process entity events from logs pipeline and convert to dimension property updates
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45595
+
+sending_queue:
+  support: default
 
 tests:
   config:

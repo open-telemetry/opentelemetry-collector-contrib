@@ -25,9 +25,6 @@ exclusions:
       - name: connector.servicegraph.legacyLatencyUnitMs
         validation:
           enabled: false
-      - name: connector.servicegraph.virtualNode
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
     feature_gates:
       - name: connector.spanmetrics.excludeResourceMetrics
@@ -60,6 +57,10 @@ exclusions:
     lifecycle_test:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+    feature_gates:
+      - name: exporter.xray.allowDot
+        validation:
+          enabled: false
     goleak:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
@@ -361,9 +362,6 @@ exclusions:
       - name: ottl.functions.enableLambda
         validation:
           enabled: false
-      - name: ottl.set.allowNil
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
     feature_gates:
       - name: logs.assignKeys
@@ -393,9 +391,6 @@ exclusions:
         validation:
           enabled: false
       - name: filelog.mtimeSortType
-        validation:
-          enabled: false
-      - name: filelog.protobufCheckpointEncoding
         validation:
           enabled: false
       - name: filelog.requireExplicitTopN
@@ -430,6 +425,9 @@ exclusions:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
     feature_gates:
+      - name: pkg.translator.prometheus.CorrectUCUMUnits
+        validation:
+          enabled: false
       - name: pkg.translator.prometheus.PermissiveLabelSanitization
         validation:
           enabled: false
@@ -473,6 +471,9 @@ exclusions:
         validation:
           enabled: false
       - name: processor.k8sattributes.EmitV1K8sConventions
+        validation:
+          enabled: false
+      - name: processor.k8sattributes.EnableKubeletPodSource
         validation:
           enabled: false
       - name: processor.k8sattributes.ShareProcessorBetweenPipelines
@@ -656,10 +657,6 @@ exclusions:
       enabled: false
     shutdown_test:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
-    # TODO: Update the exporter to pass the tests
-    lifecycle_test:
-      enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
     lifecycle_test:
       enabled: false
@@ -744,9 +741,8 @@ exclusions:
       enabled: false
     goleak:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
     feature_gates:
-      - name: receiver.kafkametricsreceiver.UseFranzGo
+      - name: receiver.k8sobjects.useInformerObserver
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
@@ -774,9 +770,6 @@ exclusions:
       - name: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
         validation:
           enabled: false
-      - name: receiver.prometheusreceiver.IgnoreScopeInfoMetric
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
     # TODO: Update the receiver to pass the tests
     lifecycle_test:
@@ -794,3 +787,10 @@ exclusions:
       - name: domainControllers.autodiscovery
         validation:
           enabled: false
+
+stability:
+  coverage:
+    development: 25
+    alpha: 15
+    beta: 20
+    stable: 85

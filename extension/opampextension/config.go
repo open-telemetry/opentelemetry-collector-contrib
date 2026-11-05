@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -37,6 +38,27 @@ type Config struct {
 
 	// Capabilities contains options to enable a particular OpAMP capability
 	Capabilities Capabilities `mapstructure:"capabilities"`
+
+	// ReportsRawConfig additionally reports the raw, unexpanded Collector
+	// configuration (before environment variable and other provider references
+	// are expanded) alongside the effective configuration. (default: false)
+	//
+	// The raw configuration is reported under the "raw" key of the OpAMP
+	// effective config map; the fully expanded effective configuration is left
+	// unchanged under the "" (empty) key. Requires the
+	// reports_effective_config capability.
+	//
+	// WARNING: the raw configuration can expose secrets that are written
+	// directly in the configuration files. Values sourced from provider
+	// references (for example ${env:TOKEN}) retain their unexpanded form in
+	// the raw configuration, so they are not exposed. Configuration fields
+	// using types meant for opaque information (such as configopaque.String,
+	// commonly used for password fields) are redacted; consult your
+	// components' documentation or source to verify which fields are
+	// automatically redacted. Only enable this if you trust the OpAMP server
+	// with the full contents of your configuration files. It is disabled by
+	// default for this reason.
+	ReportsRawConfig bool `mapstructure:"reports_raw_config"`
 
 	// Agent descriptions contains options to modify the AgentDescription message
 	AgentDescription AgentDescription `mapstructure:"agent_description"`
@@ -69,6 +91,9 @@ type Capabilities struct {
 	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
 	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
 	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
+	// ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability, allowing the server to
+	// adjust the agent's heartbeat interval via ConnectionSettingsOffers. (default: true)
+	ReportsHeartbeat bool `mapstructure:"reports_heartbeat"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -87,6 +112,9 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 	if caps.AcceptsRestartCommand {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
 	}
+	if caps.ReportsHeartbeat {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+	}
 
 	return agentCapabilities
 }
@@ -96,6 +124,12 @@ type commonFields struct {
 	TLS      configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	Headers  map[string]configopaque.String `mapstructure:"headers,omitempty"`
 	Auth     component.ID                   `mapstructure:"auth,omitempty"`
+	// Socket, when set, makes the client dial the OpAMP server over a local IPC
+	// socket instead of TCP: a Unix domain socket (transport "unix") or a
+	// Windows named pipe (transport "npipe"). The Endpoint above then only
+	// supplies the URL scheme, request path, and Host header, and its host:port
+	// is otherwise ignored.
+	Socket *confignet.AddrConfig `mapstructure:"socket,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -109,6 +143,16 @@ func (c *commonFields) Scheme() string {
 func (c *commonFields) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("opamp server endpoint must be provided")
+	}
+	if c.Socket != nil {
+		switch c.Socket.Transport {
+		case confignet.TransportTypeUnix, confignet.TransportTypeNpipe:
+		default:
+			return fmt.Errorf("socket::transport must be %q or %q", confignet.TransportTypeUnix, confignet.TransportTypeNpipe)
+		}
+		if c.Socket.Endpoint == "" {
+			return errors.New("socket::endpoint must be provided")
+		}
 	}
 	return nil
 }
@@ -188,6 +232,17 @@ func (s OpAMPServer) GetEndpoint() string {
 	return ""
 }
 
+// GetSocket returns the configured local IPC socket address, or nil if not
+// configured.
+func (s OpAMPServer) GetSocket() *confignet.AddrConfig {
+	if s.WS != nil {
+		return s.WS.Socket
+	} else if s.HTTP != nil {
+		return s.HTTP.Socket
+	}
+	return nil
+}
+
 func (s OpAMPServer) GetAuthExtensionID() component.ID {
 	if s.WS != nil {
 		return s.WS.Auth
@@ -226,6 +281,10 @@ func (cfg *Config) Validate() error {
 		if err := cfg.Server.HTTP.Validate(); err != nil {
 			return err
 		}
+	}
+
+	if cfg.ReportsRawConfig && !cfg.Capabilities.ReportsEffectiveConfig {
+		return errors.New("reports_raw_config requires reports_effective_config to be enabled")
 	}
 
 	if cfg.InstanceUID != "" {

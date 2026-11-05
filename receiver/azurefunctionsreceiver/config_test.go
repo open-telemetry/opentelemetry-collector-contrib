@@ -25,19 +25,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultServerConfig.WriteTimeout = 0
-	defaultServerConfig.ReadHeaderTimeout = 0
-	defaultServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	defaultServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
 
 	noAuthServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	noAuthServerConfig.WriteTimeout = 0
-	noAuthServerConfig.ReadHeaderTimeout = 0
-	noAuthServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	noAuthServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	noAuthServerConfig.NetAddr = confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}
 
 	tests := []struct {
@@ -77,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "metrics_only"),
 			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				HTTP: &defaultServerConfig,
 				Auth: component.MustNewID("azureauth"),
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
@@ -91,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "logs_and_metrics"),
 			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				HTTP: &defaultServerConfig,
 				Auth: component.MustNewID("azureauth"),
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{

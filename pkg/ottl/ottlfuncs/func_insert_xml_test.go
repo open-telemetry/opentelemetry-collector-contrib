@@ -121,7 +121,7 @@ func Test_InsertXML(t *testing.T) {
 			f := NewInsertXMLFactory[any]()
 			exprFunc, err := f.CreateFunction(
 				ottl.FunctionContext{},
-				&InsertXMLArguments[any]{
+				&insertXMLArguments[any]{
 					Target: ottl.StandardStringGetter[any]{
 						Getter: func(context.Context, any) (any, error) {
 							return tt.document, nil
@@ -159,7 +159,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &InsertXMLArguments[any]{
+		fCtx, &insertXMLArguments[any]{
 			XPath: "!",
 		},
 	)
@@ -168,7 +168,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 
 	// Invalid XML target should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &InsertXMLArguments[any]{
+		fCtx, &insertXMLArguments[any]{
 			Target: invalidXMLGetter(),
 			XPath:  "/",
 		},
@@ -180,7 +180,7 @@ func TestCreateInsertXMLFunc(t *testing.T) {
 
 	// Invalid XML subdoc should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &InsertXMLArguments[any]{
+		fCtx, &insertXMLArguments[any]{
 			Target: ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return "<a/>", nil
@@ -206,14 +206,14 @@ func Test_InsertXMLFactory(t *testing.T) {
 		factory := NewInsertXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &InsertXMLArguments[any]{}, args)
+		assert.IsType(t, &insertXMLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "XPath", "SubDocument"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewInsertXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		insertXMLArgs, ok := args.(*InsertXMLArguments[any])
+		insertXMLArgs, ok := args.(*insertXMLArguments[any])
 		require.True(t, ok)
 		insertXMLArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -236,4 +236,23 @@ func Test_InsertXMLFactory(t *testing.T) {
 		_, err := createInsertXMLFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.ErrorContains(t, err, "InsertXML args must be of type *InsertXMLAguments[K]")
 	})
+}
+
+func BenchmarkInsertXML(b *testing.B) {
+	exprFunc := insertXML[any](
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return `<a></a>`, nil },
+		},
+		"/a",
+		ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) { return `<b/>`, nil },
+		},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -486,7 +486,7 @@ func Test_aggregateOnAttributeValues(t *testing.T) {
 			evaluate, err := AggregateOnAttributeValue(tt.t, tt.attribute, tt.values, tt.newValue)
 			require.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.input)
 			_, err = evaluate(t.Context(), tCtx)
 			tCtx.Close()
 			require.NoError(t, err)
@@ -658,4 +658,23 @@ func getTestExponentialHistogramMetricMultipleAggregateOnAttributeValue() pmetri
 	input2.SetSum(12.66)
 	input2.Attributes().PutStr("test", "test2")
 	return metricInput
+}
+
+func BenchmarkAggregateOnAttributeValue(b *testing.B) {
+	expr, err := AggregateOnAttributeValue(aggregateutil.Sum, "test", []string{"test1", "test2"}, "test_new")
+	if err != nil {
+		b.Fatal(err)
+	}
+	template := getTestSumMetricMultipleAggregateOnAttributeValue()
+	metric := pmetric.NewMetric()
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
 }

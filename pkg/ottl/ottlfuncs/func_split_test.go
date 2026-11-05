@@ -129,14 +129,14 @@ func Test_SplitFactory(t *testing.T) {
 		factory := NewSplitFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &SplitArguments[any]{}, args)
+		assert.IsType(t, &splitArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Delimiter"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewSplitFactory[any]()
 		args := factory.CreateDefaultArguments()
-		splitArgs, ok := args.(*SplitArguments[any])
+		splitArgs, ok := args.(*splitArguments[any])
 		require.True(t, ok)
 		splitArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -156,6 +156,28 @@ func Test_SplitFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createSplitFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "SplitFactory args must be of type *SplitArguments[K]")
+		assert.ErrorContains(t, err, "SplitFactory args must be of type *splitArguments[K]")
 	})
+}
+
+func BenchmarkSplit(b *testing.B) {
+	exprFunc := split[any](
+		&ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "A|B|C|D|E", nil
+			},
+		},
+		&ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "|", nil
+			},
+		},
+	)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

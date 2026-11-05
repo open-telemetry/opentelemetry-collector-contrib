@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/internal/metadata"
 )
 
 const (
@@ -31,23 +33,38 @@ const (
 	sizeCheckInterval = time.Second
 )
 
-var errStorageLimitReached = errors.New("pebble tail storage size limit reached")
+type storageIter interface {
+	SeekPrefixGE([]byte) bool
+	Valid() bool
+	Next() bool
+	ValueAndErr() ([]byte, error)
+	Error() error
+	Close() error
+}
+
+var (
+	errStorageLimitReached = errors.New("pebble tail storage size limit reached")
+	errReadErrorDropTrace  = errors.New("pebble tail storage read error, trace dropped")
+)
 
 type storage struct {
 	db               *pebble.DB
 	logger           *zap.Logger
+	telemetry        *metadata.TelemetryBuilder
 	maxSize          uint64
+	onReadError      ReadErrorPolicy
 	nextSeq          atomic.Uint64
 	lastObservedSize atomic.Uint64
 	unmarshaler      ptrace.Unmarshaler
 	marshaler        ptrace.Marshaler
+	newIter          func() (storageIter, error)
 
 	diskUsage            func() uint64
 	stopSizeMonitor      context.CancelFunc
 	sizeMonitorWaitGroup sync.WaitGroup
 }
 
-func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage, error) {
+func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger, telemetry *metadata.TelemetryBuilder) (*storage, error) {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -60,9 +77,17 @@ func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger) (*storage,
 	s := &storage{
 		db:          db,
 		logger:      logger,
+		telemetry:   telemetry,
 		maxSize:     uint64(cfg.MaxStorageSizeMiB) << 20,
+		onReadError: cfg.OnReadError,
 		marshaler:   &ptrace.ProtoMarshaler{},
 		unmarshaler: &ptrace.ProtoUnmarshaler{},
+	}
+	if s.onReadError == "" {
+		s.onReadError = ReadErrorPolicyDropTrace
+	}
+	s.newIter = func() (storageIter, error) {
+		return s.db.NewIter(nil)
 	}
 	s.diskUsage = func() uint64 {
 		return s.db.Metrics().DiskSpaceUsage()
@@ -137,15 +162,36 @@ func (s *storage) Append(traceID pcommon.TraceID, td ptrace.Traces) error {
 
 func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	prefix := tracePrefix(traceID)
-	out := s.readByTracePrefix(prefix[:])
-	if out.ResourceSpans().Len() == 0 {
+	out, readFailed := s.readByTracePrefix(prefix[:])
+	if !readFailed && out.ResourceSpans().Len() == 0 {
 		return out, nil
 	}
 	end := tracePrefixUpperBound(prefix)
 	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
 		return ptrace.NewTraces(), fmt.Errorf("pebble DeleteRange error: %w", err)
 	}
-	return out, nil
+	if !readFailed {
+		return out, nil
+	}
+	switch s.onReadError {
+	case ReadErrorPolicyReturnPartial:
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrorPartialReturns.Add(context.Background(), 1)
+		}
+		s.logger.Warn("returning partial trace after tail storage read error",
+			zap.Stringer("trace_id", traceID),
+			zap.String("on_read_error", string(ReadErrorPolicyReturnPartial)),
+			zap.Int("resource_spans", out.ResourceSpans().Len()))
+		return out, nil
+	default:
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrorTraceDrops.Add(context.Background(), 1)
+		}
+		s.logger.Warn("dropping trace after tail storage read error",
+			zap.Stringer("trace_id", traceID),
+			zap.String("on_read_error", string(ReadErrorPolicyDropTrace)))
+		return ptrace.NewTraces(), errReadErrorDropTrace
+	}
 }
 
 func (s *storage) Delete(traceID pcommon.TraceID) error {
@@ -159,30 +205,40 @@ func (s *storage) Delete(traceID pcommon.TraceID) error {
 	return nil
 }
 
-func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
-	iter, err := s.db.NewIter(nil)
+func (s *storage) readByTracePrefix(prefix []byte) (ptrace.Traces, bool) {
+	iter, err := s.newIter()
 	if err != nil {
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+		}
 		s.logger.Warn("failed to create tail storage iterator", zap.Error(err))
-		return ptrace.NewTraces()
+		return ptrace.NewTraces(), true
 	}
 	defer iter.Close()
 
-	// SeekPrefixGE enables prefix bloom filter usage when configured in Pebble options.
-	if ok := iter.SeekPrefixGE(prefix); !ok {
-		return ptrace.NewTraces()
-	}
-
+	failed := false
 	result := ptrace.NewTraces()
-	for ; iter.Valid(); iter.Next() {
+	// SeekPrefixGE enables prefix bloom filter usage when configured in Pebble options.
+	// Do not return early when the seek fails: SeekPrefixGE also returns false on
+	// iterator errors, which must be surfaced by the iter.Error() check below.
+	for valid := iter.SeekPrefixGE(prefix); valid; valid = iter.Next() {
 		val, err := iter.ValueAndErr()
 		if err != nil {
+			if s.telemetry != nil {
+				s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+			}
 			s.logger.Warn("failed to read trace payload from tail storage", zap.Error(err))
+			failed = true
 			continue
 		}
 
 		td, err := s.unmarshaler.UnmarshalTraces(val)
 		if err != nil {
+			if s.telemetry != nil {
+				s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+			}
 			s.logger.Warn("failed to unmarshal trace payload from tail storage", zap.Error(err))
+			failed = true
 			continue
 		}
 
@@ -194,10 +250,14 @@ func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
 	}
 
 	if err := iter.Error(); err != nil {
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+		}
 		s.logger.Warn("tail storage iterator error", zap.Error(err))
+		failed = true
 	}
 
-	return result
+	return result, failed
 }
 
 func tracePrefix(traceID pcommon.TraceID) (prefix [traceIDBytes + 1]byte) {

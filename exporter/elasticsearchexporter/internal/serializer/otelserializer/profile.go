@@ -12,20 +12,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/lru"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 )
 
 const (
-	AllEventsIndex   = "profiling-events-all"
-	StackTraceIndex  = "profiling-stacktraces"
-	StackFrameIndex  = "profiling-stackframes"
-	ExecutablesIndex = "profiling-executables"
+	AllEventsIndex   = "profiling-events-all.otel-default"
+	StackTraceIndex  = "profiling-stacktraces.otel-default"
+	StackFrameIndex  = "profiling-stackframes.otel-default"
+	ExecutablesIndex = "profiling-executables.otel-default"
 
-	ExecutablesSymQueueIndex = "profiling-sq-executables"
-	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
-
-	HostsMetadataIndex = "profiling-hosts"
+	HostsMetadataIndex = "profiling-hosts.otel-default"
 )
+
+var downsampledEventIndices = serializer.DownsampledEventIndices(".otel-default")
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
 func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
@@ -57,7 +57,10 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 				if err != nil {
 					return err
 				}
-				err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON)
+				err = serializer.IndexDownsampledEvent(event.Count, downsampledEventIndices, func(count uint16, index string) error {
+					event.Count = count
+					return pushDataAsJSON(event, "", index)
+				})
 				if err != nil {
 					return err
 				}
@@ -65,6 +68,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 
 			if payload.StackTrace.DocID != "" {
 				if !tracesSet.CheckAndAdd(payload.StackTrace.DocID) {
+					// TODO: on error, the document ID remains in the LRU and will not be sent again for
+					// knownDocsRefreshInterval (24 hours). Ideally, we'd remove it from the LRU on failure.
 					err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex)
 					if err != nil {
 						return err
@@ -85,6 +90,8 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 			for j := range payload.StackFrames {
 				stackFrame := &payload.StackFrames[j]
 				if !framesSet.CheckAndAdd(stackFrame.DocID) {
+					// TODO: if the push fails, the document ID remains in the LRU and will not be sent again for
+					// knownDocsRefreshInterval (24 hours). Ideally, we'd remove it from the LRU on failure.
 					err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex)
 					if err != nil {
 						return err
@@ -118,29 +125,10 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 		return err
 	}
 
-	err = s.knownUnsymbolizedFrames.WithLock(func(unsymbolizedFramesSet lru.LockedLRUSet) error {
-		for i := range data {
-			payload := &data[i]
-			for _, frame := range payload.UnsymbolizedLeafFrames {
-				if !unsymbolizedFramesSet.CheckAndAdd(frame.DocID) {
-					err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
 	err = s.knownHosts.WithLock(func(hostMetadata lru.LockedLRUSet) error {
 		for i := range data {
 			payload := &data[i]
-			hostID := payload.ResourceAttrs.HostID
+			hostID := payload.ResourceAttrs.HostID()
 			if hostID == "" {
 				continue
 			}
@@ -154,25 +142,7 @@ func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource 
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-
-	return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
-		for i := range data {
-			payload := &data[i]
-			for _, executable := range payload.UnsymbolizedExecutables {
-				if !unsymbolizedExecutablesSet.CheckAndAdd(executable.DocID) {
-					err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-
-		return nil
-	})
+	return err
 }
 
 func toJSON(d any) (*bytes.Buffer, error) {
@@ -188,38 +158,26 @@ func (s *Serializer) createLRUs() error {
 	s.loadLRUsOnce.Do(func() {
 		var err error
 
-		// Create LRUs with MinILMRolloverTime as lifetime to avoid losing data by ILM roll-over.
-		s.knownTraces, err = lru.NewLRUSet(knownTracesCacheSize, minILMRolloverTime)
+		// Expire LRU entries so documents still in use are re-written before data retention deletes them.
+		s.knownTraces, err = lru.NewLRUSet(knownTracesCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create traces LRU: %w", err)
 			return
 		}
 
-		s.knownFrames, err = lru.NewLRUSet(knownFramesCacheSize, minILMRolloverTime)
+		s.knownFrames, err = lru.NewLRUSet(knownFramesCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create frames LRU: %w", err)
 			return
 		}
 
-		s.knownExecutables, err = lru.NewLRUSet(knownExecutablesCacheSize, minILMRolloverTime)
+		s.knownExecutables, err = lru.NewLRUSet(knownExecutablesCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create executables LRU: %w", err)
 			return
 		}
 
-		s.knownUnsymbolizedFrames, err = lru.NewLRUSet(knownUnsymbolizedFramesCacheSize, minILMRolloverTime)
-		if err != nil {
-			s.lruErr = fmt.Errorf("failed to create unsymbolized frames LRU: %w", err)
-			return
-		}
-
-		s.knownUnsymbolizedExecutables, err = lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
-		if err != nil {
-			s.lruErr = fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
-			return
-		}
-
-		s.knownHosts, err = lru.NewLRUSet(knownHostsCacheSize, minILMRolloverTime)
+		s.knownHosts, err = lru.NewLRUSet(knownHostsCacheSize, knownDocsRefreshInterval)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create hosts LRU: %w", err)
 			return

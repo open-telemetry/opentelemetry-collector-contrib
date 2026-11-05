@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.uber.org/zap"
@@ -33,7 +34,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type messenger[T any] interface {
@@ -329,7 +329,7 @@ func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.
 			for _, resourceLogs := range ld.ResourceLogs().All() {
 				var key []byte
 				if e.config.PartitionLogsByResourceAttributes {
-					hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+					hash := xhash.MapHash(resourceLogs.Resource().Attributes())
 					key = hash[:]
 				}
 				resourceLogs.CopyTo(target)
@@ -402,7 +402,7 @@ func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]by
 		for _, resourceMetrics := range md.ResourceMetrics().All() {
 			var key []byte
 			if e.config.PartitionMetricsByResourceAttributes {
-				hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+				hash := xhash.MapHash(resourceMetrics.Resource().Attributes())
 				key = hash[:]
 			}
 			resourceMetrics.CopyTo(target)

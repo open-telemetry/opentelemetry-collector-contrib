@@ -9,5 +9,8 @@ status:
   codeowners:
     active: [jacobmarble]
 
+sending_queue:
+  support: default
+
 tests:
   expect_consumer_error: true
