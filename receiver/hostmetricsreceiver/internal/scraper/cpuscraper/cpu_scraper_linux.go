@@ -12,7 +12,6 @@ import (
 
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/tklauser/go-sysconf"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
@@ -22,17 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
-// USER_HZ: hardcoded at 100 in the Linux kernel since 2.6 for /proc/stat ABI stability.
-const defaultTicksPerSecond = 100
-
-func clockTicksPerSecond() uint64 {
-	clkTck, err := sysconf.Sysconf(sysconf.SC_CLK_TCK)
-	if err != nil || clkTck <= 0 {
-		return defaultTicksPerSecond
-	}
-	return uint64(clkTck)
-}
-
 func newCPUEmitter() func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
 	if hostmetricsmetadata.ReceiverHostmetricsreceiverUseCPUTicksFeatureGate.IsEnabled() {
 		return newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
@@ -41,7 +29,7 @@ func newCPUEmitter() func(context.Context, pcommon.Timestamp, *metadata.MetricsB
 }
 
 func newCputicksEmitter(readTicks func(context.Context, bool) ([]cpu.ExTimesStat, error)) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
-	tickDuration := time.Second / time.Duration(clockTicksPerSecond())
+	tickDuration := time.Duration(float64(time.Second) / cpu.ClocksPerSec)
 	var prevTicks map[string]cpu.ExTimesStat
 	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
 		ticks, err := readTicks(ctx, true)
