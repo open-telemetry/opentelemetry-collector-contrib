@@ -93,10 +93,12 @@ func floatUtilization(usageCores, limitCores float64) float64 {
 // rounds the result to the number of significant digits justified by the inputs
 // (see precision.Ratio), avoiding float64 artifacts such as 0.30000000000000004.
 //
-// Converting back to integers is lossless for the inputs used here: CPU limits,
+// Converting back to integers recovers the original values for the inputs used
+// here, because the rounding only undoes float64 representation error: CPU limits,
 // requests and node capacity originate from Kubernetes resource.Quantity values,
 // which have millicore resolution, and usage originates from integer nanocore or
-// nanosecond values reported by the kubelet.
+// nanosecond values reported by the kubelet. The final result is still rounded by
+// precision.Ratio, so it may differ slightly from the exact float64 quotient.
 func preciseUtilization(usageCores, limitCores float64) float64 {
 	usageNanoCores := uint64(math.Round(usageCores * nanoCoresPerCore))
 	limitNanoCores := uint64(math.Round(limitCores*milliCoresPerCore)) * nanoCoresPerMilli
