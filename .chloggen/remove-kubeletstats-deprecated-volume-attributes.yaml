@@ -1,6 +1,0 @@
-change_type: breaking
-component: receiver/kubelet_stats
-note: Remove the deprecated `aws.volume.id`, `fs.type`, `gce.pd.name`, `glusterfs.endpoints.name`, `glusterfs.path` and `partition` resource attributes.
-issues: [40477]
-subtext:
-change_logs: [user]

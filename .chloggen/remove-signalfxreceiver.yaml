@@ -1,0 +1,11 @@
+change_type: breaking
+
+component: all
+
+note: Remove the deprecated SignalFx receiver. Use the OTLP receiver instead.
+
+issues: [51934]
+
+subtext:
+
+change_logs: [user, api]

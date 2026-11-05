@@ -64,7 +64,40 @@ processors:
 
     # Observations a baseline must accumulate before spans are labeled against it.
     warmup_count: 30
+
+    # If non-empty, only spans whose kind matches one of these values (plus any
+    # matched by always_include_root_spans) are tracked and labeled. Accepted
+    # values (case-insensitive): INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER.
+    # Default: empty, meaning no span_kind-based filtering.
+    span_kinds: [SERVER, CONSUMER]
+
+    # If true, every root span (a span with no parent span ID) is tracked and
+    # labeled regardless of its kind, in addition to any spans matched by
+    # span_kinds. A value of false does not drop or exclude root spans — it
+    # just means they get no special treatment and are evaluated the same as
+    # any other span, purely via span_kinds (or the unfiltered default below,
+    # if span_kinds is also empty). Default: false.
+    always_include_root_spans: false
 ```
+
+## Filtering which spans are evaluated
+
+By default, with both `span_kinds` and `always_include_root_spans` left unset, every span —
+including root spans — is tracked and eligible for labeling; neither option excludes anything on
+its own. Setting either option switches the processor into filtering mode, where a span is tracked
+only if it matches one of the two criteria below:
+
+| `span_kinds`        | `always_include_root_spans` | Spans tracked                                   |
+| ------------------- | ---------------------------- | ------------------------------------------------ |
+| empty               | `false`                       | every span (no filtering; the default)           |
+| empty               | `true`                        | root spans only                                  |
+| non-empty           | `false`                       | spans whose kind is listed, root or not           |
+| non-empty           | `true`                        | spans whose kind is listed, plus all root spans   |
+
+Spans that don't match are passed through unmodified and never contribute to a baseline. Note the
+second row: setting `always_include_root_spans: true` by itself does not add root spans on top of
+"track everything" — since `span_kinds` contributes no matches when it's empty, the processor
+narrows to root spans only. Set `span_kinds` too if you want root spans plus specific kinds.
 
 ## Warnings
 

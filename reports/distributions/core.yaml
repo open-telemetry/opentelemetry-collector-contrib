@@ -16,8 +16,11 @@ components:
         - filter
         - probabilistic_sampler
         - resource
+        - resource_detection
         - span
+        - transform
     receiver:
+        - file_log
         - host_metrics
         - jaeger
         - kafka

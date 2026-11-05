@@ -188,6 +188,10 @@ Additionally, all Kafka message headers are included in the request metadata.
 
 This metadata can then be used throughout the pipeline, for example to set attributes using the [attributes processor](../../processor/attributesprocessor/README.md).
 
+Encoding extensions can implement the [message decoder interfaces](../../extension/encoding/message.go)
+to receive Kafka headers and record metadata through `encoding.WithMessageMetadata`, independently of `header_extraction`.
+The receiver prefers these interfaces when implemented and otherwise uses the existing byte-only unmarshaler.
+
 ### Trace context propagation
 
 The receiver extracts the trace context from record headers, using the propagators configured in `service::telemetry::traces::propagators`. The receiver span starts a new trace and links to the extracted trace context. Propagators are only installed when `service::telemetry::traces` also has processors configured, so without them, no trace context is extracted.
@@ -333,7 +337,11 @@ Each partition has one worker and one mailbox. `max_prefetch.batches` is how man
 
 `max_in_flight.window: cross_fetch` lets the worker take the next batch while calls from earlier batches still run, up to `records` and `bytes` for the whole partition. Use it when the next consumer holds Consume open until it has aggregated enough data, for example an exporter with `sending_queue.wait_for_result: true` and `batch.min_size` set. With `per_fetch`, such a consumer never sees more than one fetched batch at once and flushes undersized batches on its timeout. Marking is the same in both modes: the worker marks only the contiguous accepted prefix, in fetch order. The cost is a larger replay window. Records that finished above a slow or failed record stay unmarked, and a crash or rebalance replays them. After a revoke, data already accepted by a batching exporter can still export while the next owner replays it. Under `wait_for_result`, the sending queue also limits the window, so `sending_queue.queue_size` must exceed `batch.min_size` by at least the largest record.
 
-Unmarshal must be safe for concurrent calls. The receiver uses one unmarshaler for all workers. It cannot clone encoding extensions. Independent workers call Unmarshal at the same time across partitions. `max_in_flight.records` above 1 does the same inside a partition. 
+Encoding extensions must support concurrent calls to their message decoding or
+byte-only unmarshal methods. The receiver shares the extension across workers;
+message context, metadata options, and decoding state must remain local to each
+call. Independent workers can decode at the same time across partitions.
+`max_in_flight.records` above 1 also permits concurrent decoding inside a partition.
 
 > **WARNING**: Built-in `text` and `text_*` encodings keep one decoder and are not concurrent-safe. Encoding extensions must be concurrent-safe as well.
 
