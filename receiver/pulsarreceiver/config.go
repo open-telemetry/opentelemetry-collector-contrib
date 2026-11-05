@@ -75,24 +75,44 @@ type OAuth2 struct {
 }
 
 var (
-	errMissingSubscription = errors.New("subscription cannot be empty")
-	errUnsupportedEncoding = errors.New("unsupported encoding")
+	errMissingSubscription    = errors.New("subscription cannot be empty")
+	errUnsupportedEncoding    = errors.New("unsupported encoding")
+	errMultipleAuthMechanisms = errors.New("cannot configure multiple auth mechanisms")
 )
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	var errs []error
+
 	if cfg.Subscription == "" {
-		return errMissingSubscription
+		errs = append(errs, errMissingSubscription)
 	}
 	switch cfg.Encoding {
 	case defaultEncoding, "jaeger_proto", "jaeger_json", "zipkin_proto", "zipkin_json", "zipkin_thrift":
 	default:
-		return fmt.Errorf("%w: %q", errUnsupportedEncoding, cfg.Encoding)
+		errs = append(errs, fmt.Errorf("encoding %q: %w", cfg.Encoding, errUnsupportedEncoding))
 	}
 
-	return nil
+	authCount := 0
+	if cfg.Authentication.TLS.HasValue() {
+		authCount++
+	}
+	if cfg.Authentication.Token.HasValue() {
+		authCount++
+	}
+	if cfg.Authentication.OAuth2.HasValue() {
+		authCount++
+	}
+	if cfg.Authentication.Athenz.HasValue() {
+		authCount++
+	}
+	if authCount > 1 {
+		errs = append(errs, errMultipleAuthMechanisms)
+	}
+
+	return errors.Join(errs...)
 }
 
 func (cfg *Config) auth() pulsar.Authentication {

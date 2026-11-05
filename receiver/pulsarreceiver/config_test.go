@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -49,9 +50,10 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		name        string
-		cfg         *Config
-		expectedErr error
+		name         string
+		cfg          *Config
+		expectedErr  error
+		expectedErrs []error
 	}{
 		{
 			name: "valid config",
@@ -204,7 +206,7 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "valid multiple auth tls and token (precedence preserved)",
+			name: "multiple auth tls and token",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -215,9 +217,10 @@ func TestValidate(t *testing.T) {
 					Token: configoptional.Some(Token{Token: "token-value"}),
 				},
 			},
+			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "valid multiple auth token and oauth2 (precedence preserved)",
+			name: "multiple auth token and oauth2",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -228,9 +231,10 @@ func TestValidate(t *testing.T) {
 					OAuth2: configoptional.Some(OAuth2{ClientID: "client-id"}),
 				},
 			},
+			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "valid multiple auth oauth2 and athenz (precedence preserved)",
+			name: "multiple auth oauth2 and athenz",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -241,9 +245,10 @@ func TestValidate(t *testing.T) {
 					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
 				},
 			},
+			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "valid multiple auth tls and athenz (precedence preserved)",
+			name: "multiple auth tls and athenz",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -254,9 +259,10 @@ func TestValidate(t *testing.T) {
 					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
 				},
 			},
+			expectedErr: errMultipleAuthMechanisms,
 		},
 		{
-			name: "valid multiple auth all (precedence preserved)",
+			name: "multiple auth all",
 			cfg: &Config{
 				Endpoint:     "pulsar://localhost:6650",
 				Topic:        "test-topic",
@@ -269,15 +275,36 @@ func TestValidate(t *testing.T) {
 					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
 				},
 			},
+			expectedErr: errMultipleAuthMechanisms,
+		},
+		{
+			name: "multiple errors returned together",
+			cfg: &Config{
+				Endpoint:     "pulsar://localhost:6650",
+				Topic:        "test-topic",
+				Subscription: "",
+				Encoding:     "invalid_encoding",
+				Authentication: Authentication{
+					TLS:   configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"}),
+					Token: configoptional.Some(Token{Token: "token-value"}),
+				},
+			},
+			expectedErrs: []error{errMissingSubscription, errUnsupportedEncoding, errMultipleAuthMechanisms},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.cfg.Validate()
-			if tt.expectedErr != nil {
+			switch {
+			case len(tt.expectedErrs) > 0:
+				require.Error(t, err)
+				for _, exp := range tt.expectedErrs {
+					require.ErrorIs(t, err, exp)
+				}
+			case tt.expectedErr != nil:
 				require.ErrorIs(t, err, tt.expectedErr)
-			} else {
+			default:
 				require.NoError(t, err)
 			}
 		})
@@ -294,31 +321,218 @@ func TestClientOptions(t *testing.T) {
 	assert.Equal(t, "pulsar://custom:6650", opts.URL)
 }
 
+func TestAuth(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      *Config
+		expected any
+	}{
+		{
+			name: "no auth",
+			cfg:  &Config{},
+		},
+		{
+			name: "tls auth",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS: configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"}),
+				},
+			},
+			expected: pulsar.NewAuthenticationTLS("cert.pem", "key.pem"),
+		},
+		{
+			name: "token auth",
+			cfg: &Config{
+				Authentication: Authentication{
+					Token: configoptional.Some(Token{Token: "token-value"}),
+				},
+			},
+			expected: pulsar.NewAuthenticationToken("token-value"),
+		},
+		{
+			name: "oauth2 auth",
+			cfg: &Config{
+				Authentication: Authentication{
+					OAuth2: configoptional.Some(OAuth2{
+						IssuerURL: "https://auth.example.com",
+						ClientID:  "client-id",
+					}),
+				},
+			},
+			expected: pulsar.NewAuthenticationOAuth2(map[string]string{
+				"type":      "client_credentials",
+				"issuerUrl": "https://auth.example.com",
+				"clientId":  "client-id",
+			}),
+		},
+		{
+			name: "athenz auth",
+			cfg: &Config{
+				Authentication: Authentication{
+					Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
+				},
+			},
+			expected: pulsar.NewAuthenticationAthenz(map[string]string{
+				"providerDomain": "example.com",
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.cfg.auth()
+			if tt.expected == nil {
+				assert.Nil(t, got)
+			} else {
+				assert.IsType(t, tt.expected, got)
+			}
+		})
+	}
+}
+
 func TestAuthPrecedence(t *testing.T) {
-	// TLS takes precedence over Token
-	cfg := &Config{
-		Authentication: Authentication{
-			TLS:   configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"}),
-			Token: configoptional.Some(Token{Token: "token-value"}),
-		},
-	}
-	assert.NotNil(t, cfg.auth())
+	tlsAuth := configoptional.Some(TLS{CertFile: "cert.pem", KeyFile: "key.pem"})
+	tokenAuth := configoptional.Some(Token{Token: "token-value"})
+	oauth2Auth := configoptional.Some(OAuth2{IssuerURL: "https://auth.example.com", ClientID: "client-id"})
+	athenzAuth := configoptional.Some(Athenz{ProviderDomain: "example.com"})
 
-	// Token takes precedence over OAuth2
-	cfg = &Config{
-		Authentication: Authentication{
-			Token:  configoptional.Some(Token{Token: "token-value"}),
-			OAuth2: configoptional.Some(OAuth2{ClientID: "client-id"}),
-		},
-	}
-	assert.NotNil(t, cfg.auth())
+	expectedTLS := pulsar.NewAuthenticationTLS("cert.pem", "key.pem")
+	expectedToken := pulsar.NewAuthenticationToken("token-value")
+	expectedOAuth2 := pulsar.NewAuthenticationOAuth2(map[string]string{
+		"type":      "client_credentials",
+		"issuerUrl": "https://auth.example.com",
+		"clientId":  "client-id",
+	})
 
-	// OAuth2 takes precedence over Athenz
-	cfg = &Config{
-		Authentication: Authentication{
-			OAuth2: configoptional.Some(OAuth2{IssuerURL: "https://auth.example.com", ClientID: "client-id"}),
-			Athenz: configoptional.Some(Athenz{ProviderDomain: "example.com"}),
+	tests := []struct {
+		name     string
+		cfg      *Config
+		expected any
+	}{
+		// Pairwise combinations
+		{
+			name: "tls takes precedence over token",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:   tlsAuth,
+					Token: tokenAuth,
+				},
+			},
+			expected: expectedTLS,
+		},
+		{
+			name: "tls takes precedence over oauth2",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:    tlsAuth,
+					OAuth2: oauth2Auth,
+				},
+			},
+			expected: expectedTLS,
+		},
+		{
+			name: "tls takes precedence over athenz",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:    tlsAuth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedTLS,
+		},
+		{
+			name: "token takes precedence over oauth2",
+			cfg: &Config{
+				Authentication: Authentication{
+					Token:  tokenAuth,
+					OAuth2: oauth2Auth,
+				},
+			},
+			expected: expectedToken,
+		},
+		{
+			name: "token takes precedence over athenz",
+			cfg: &Config{
+				Authentication: Authentication{
+					Token:  tokenAuth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedToken,
+		},
+		{
+			name: "oauth2 takes precedence over athenz",
+			cfg: &Config{
+				Authentication: Authentication{
+					OAuth2: oauth2Auth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedOAuth2,
+		},
+		// 3-way combinations
+		{
+			name: "tls takes precedence over token and oauth2",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:    tlsAuth,
+					Token:  tokenAuth,
+					OAuth2: oauth2Auth,
+				},
+			},
+			expected: expectedTLS,
+		},
+		{
+			name: "tls takes precedence over token and athenz",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:    tlsAuth,
+					Token:  tokenAuth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedTLS,
+		},
+		{
+			name: "tls takes precedence over oauth2 and athenz",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:    tlsAuth,
+					OAuth2: oauth2Auth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedTLS,
+		},
+		{
+			name: "token takes precedence over oauth2 and athenz",
+			cfg: &Config{
+				Authentication: Authentication{
+					Token:  tokenAuth,
+					OAuth2: oauth2Auth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedToken,
+		},
+		// All 4
+		{
+			name: "tls takes precedence over all other auth mechanisms",
+			cfg: &Config{
+				Authentication: Authentication{
+					TLS:    tlsAuth,
+					Token:  tokenAuth,
+					OAuth2: oauth2Auth,
+					Athenz: athenzAuth,
+				},
+			},
+			expected: expectedTLS,
 		},
 	}
-	assert.NotNil(t, cfg.auth())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.IsType(t, tt.expected, tt.cfg.auth())
+		})
+	}
 }
