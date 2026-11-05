@@ -355,12 +355,13 @@ Connection options:
 
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
+- `auth` (optional): Authenticator extension that supplies a JWT. Requires TLS. See [JWT authentication](#jwt-authentication).
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = default): The database name. Overrides the database defined in `endpoint` when this setting is not equal to `default`.
 - `connection_params` (default = {}). Extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map. Parameters can be either driver parameters (e.g., `connection_open_strategy`, `max_open_conns`) that control client-side behavior, or ClickHouse session settings (e.g., `max_execution_time`) that are passed to the server. See the [driver parameters list](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#Options) for recognized driver options; all others are treated as session settings.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
-- `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
+- `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 - `tls` Advanced TLS configuration (See [TLS](#tls)).
 
 Additional DSN features:
@@ -449,6 +450,32 @@ exporters:
 ```
 
 The available `tls` options are inherited from [OpenTelemetry's TLS config structure](https://pkg.go.dev/go.opentelemetry.io/collector/config/configtls#ClientConfig), more options are available than shown in this example.
+
+## JWT authentication
+
+Use a collector auth extension to supply a JWT. Requires TLS (`https://` or `secure=true`). Works with [`bearertokenauth`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/bearertokenauthextension) and [`oauth2clientauth`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/oauth2clientauthextension). JWT takes precedence over `username`/`password`.
+
+```yaml
+extensions:
+  bearertokenauth:
+    filename: /var/run/secrets/clickhouse/jwt
+
+exporters:
+  clickhouse:
+    endpoint: https://xxx.us-east-1.aws.clickhouse.cloud:8443
+    database: default
+    tls:
+      insecure: false
+    auth:
+      authenticator: bearertokenauth
+
+service:
+  extensions: [bearertokenauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [clickhouse]
+```
 
 ## Schema management
 
