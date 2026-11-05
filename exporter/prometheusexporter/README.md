@@ -42,6 +42,16 @@ The following settings can be optionally configured:
   - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.
   - `NoTranslation`: Bypasses all metric and label name translation, passing them through unaltered.
 
+As required by the [OpenTelemetry specification](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#interaction-with-translation-strategy),
+`translation_strategy` is applied before HTTP content negotiation. The final metric and label
+names must also comply with the escaping scheme of the selected `Accept` header entry, even when
+`NoUTF8EscapingWithSuffixes` or `NoTranslation` is configured. If that entry has no escaping scheme,
+or no `Accept` header is provided, names are escaped using underscores. Escaping parameters on
+unsupported format entries do not apply to the selected format.
+
+To preserve UTF-8 names with a scraper that requests `escaping=allow-utf-8` for OpenMetrics,
+set `enable_open_metrics: true` and use `NoUTF8EscapingWithSuffixes` or `NoTranslation`.
+
 Example:
 
 ```yaml
