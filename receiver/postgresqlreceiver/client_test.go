@@ -189,6 +189,265 @@ func TestGetExecutionTimeStats(t *testing.T) {
 	}
 }
 
+func TestGetBackends(t *testing.T) {
+	const (
+		selectDatname       = "SELECT datname"
+		selectBackendType   = ", coalesce(backend_type, 'unknown') as backend_type"
+		selectState         = ", coalesce(state, 'unknown') as state"
+		waitEventTypeExpr   = "CASE WHEN backend_type IS NULL THEN 'unknown' ELSE coalesce(wait_event_type, 'none') END"
+		selectWaitEventType = ", " + waitEventTypeExpr + " as wait_event_type"
+		fromActivity        = ", count(*) as count from pg_stat_activity"
+	)
+	allGrouping := backendGrouping{backendType: true, state: true, waitEventType: true}
+	allSQL := selectDatname + selectBackendType + selectState + selectWaitEventType + fromActivity
+	allGroupBy := " GROUP BY datname, backend_type, state, " + waitEventTypeExpr + ";"
+	allColumns := []string{"datname", "backend_type", "state", "wait_event_type", "count"}
+
+	tests := []struct {
+		name        string
+		databases   []string
+		grouping    backendGrouping
+		expectedSQL string
+		rows        *sqlmock.Rows
+		queryErr    error
+		expected    map[databaseName][]backendStateCount
+		wantErr     bool
+	}{
+		{
+			// The default query is the same as before the breakdown existed.
+			name:        "no grouping counts backends per database only",
+			grouping:    backendGrouping{},
+			expectedSQL: "SELECT datname, count(*) as count from pg_stat_activity GROUP BY datname;",
+			rows: sqlmock.NewRows([]string{"datname", "count"}).
+				AddRow("otel", 12).
+				AddRow("telemetry", 1),
+			expected: map[databaseName][]backendStateCount{
+				"otel":      {{count: 12}},
+				"telemetry": {{count: 1}},
+			},
+		},
+		{
+			name:        "no grouping filtered by database",
+			databases:   []string{"otel"},
+			grouping:    backendGrouping{},
+			expectedSQL: "SELECT datname, count(*) as count from pg_stat_activity WHERE datname IN ('otel') GROUP BY datname;",
+			rows:        sqlmock.NewRows([]string{"datname", "count"}).AddRow("otel", 12),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{count: 12}},
+			},
+		},
+		{
+			name:        "backend type only",
+			grouping:    backendGrouping{backendType: true},
+			expectedSQL: selectDatname + selectBackendType + fromActivity + " GROUP BY datname, backend_type;",
+			rows: sqlmock.NewRows([]string{"datname", "backend_type", "count"}).
+				AddRow("otel", "client backend", 10).
+				AddRow("otel", "autovacuum worker", 2),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{backendType: "client backend", count: 10},
+					{backendType: "autovacuum worker", count: 2},
+				},
+			},
+		},
+		{
+			name:        "state only",
+			grouping:    backendGrouping{state: true},
+			expectedSQL: selectDatname + selectState + fromActivity + " GROUP BY datname, state;",
+			rows: sqlmock.NewRows([]string{"datname", "state", "count"}).
+				AddRow("otel", "active", 5).
+				AddRow("otel", "idle", 7),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{state: "active", count: 5},
+					{state: "idle", count: 7},
+				},
+			},
+		},
+		{
+			name:        "wait event type only",
+			grouping:    backendGrouping{waitEventType: true},
+			expectedSQL: selectDatname + selectWaitEventType + fromActivity + " GROUP BY datname, " + waitEventTypeExpr + ";",
+			rows: sqlmock.NewRows([]string{"datname", "wait_event_type", "count"}).
+				AddRow("otel", "none", 4).
+				AddRow("otel", "Lock", 8),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{waitEventType: "none", count: 4},
+					{waitEventType: "Lock", count: 8},
+				},
+			},
+		},
+		{
+			// Hidden backends report "unknown", not "none".
+			name:        "wait event type of hidden backends is unknown",
+			grouping:    backendGrouping{waitEventType: true},
+			expectedSQL: selectDatname + selectWaitEventType + fromActivity + " GROUP BY datname, " + waitEventTypeExpr + ";",
+			rows: sqlmock.NewRows([]string{"datname", "wait_event_type", "count"}).
+				AddRow("otel", "none", 1).
+				AddRow("otel", "unknown", 3),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{waitEventType: "none", count: 1},
+					{waitEventType: "unknown", count: 3},
+				},
+			},
+		},
+		{
+			name:        "state and wait event type",
+			grouping:    backendGrouping{state: true, waitEventType: true},
+			expectedSQL: selectDatname + selectState + selectWaitEventType + fromActivity + " GROUP BY datname, state, " + waitEventTypeExpr + ";",
+			rows: sqlmock.NewRows([]string{"datname", "state", "wait_event_type", "count"}).
+				AddRow("otel", "active", "Lock", 3),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{state: "active", waitEventType: "Lock", count: 3}},
+			},
+		},
+		{
+			name:        "groups backends by backend type, state and wait event type",
+			grouping:    allGrouping,
+			expectedSQL: allSQL + allGroupBy,
+			rows: sqlmock.NewRows(allColumns).
+				AddRow("otel", "client backend", "active", "none", 3).
+				AddRow("otel", "client backend", "idle", "Client", 7).
+				AddRow("otel", "autovacuum worker", "active", "none", 2).
+				AddRow("telemetry", "client backend", "idle in transaction", "Lock", 1),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {
+					{backendType: "client backend", state: "active", waitEventType: "none", count: 3},
+					{backendType: "client backend", state: "idle", waitEventType: "Client", count: 7},
+					{backendType: "autovacuum worker", state: "active", waitEventType: "none", count: 2},
+				},
+				"telemetry": {
+					{backendType: "client backend", state: "idle in transaction", waitEventType: "Lock", count: 1},
+				},
+			},
+		},
+		{
+			name:        "full grouping filtered by database",
+			databases:   []string{"otel"},
+			grouping:    allGrouping,
+			expectedSQL: allSQL + " WHERE datname IN ('otel')" + allGroupBy,
+			rows: sqlmock.NewRows(allColumns).
+				AddRow("otel", "client backend", "active", "none", 2),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{backendType: "client backend", state: "active", waitEventType: "none", count: 2}},
+			},
+		},
+		{
+			name:        "rows with empty datname are skipped",
+			grouping:    allGrouping,
+			expectedSQL: allSQL + allGroupBy,
+			rows: sqlmock.NewRows(allColumns).
+				AddRow("", "client backend", "active", "none", 9).
+				AddRow("otel", "client backend", "active", "none", 1),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{backendType: "client backend", state: "active", waitEventType: "none", count: 1}},
+			},
+		},
+		{
+			name:        "query error",
+			grouping:    allGrouping,
+			expectedSQL: allSQL + allGroupBy,
+			queryErr:    errors.New("permission denied for view pg_stat_activity"),
+			expected:    nil,
+			wantErr:     true,
+		},
+		{
+			// A bad row must not leak values into the next row, which reuses the scan destinations.
+			name:        "row scan error skips only the bad row",
+			grouping:    allGrouping,
+			expectedSQL: allSQL + allGroupBy,
+			rows: sqlmock.NewRows(allColumns).
+				AddRow("otel", "client backend", "active", "none", "not-a-number").
+				AddRow("otel", "autovacuum worker", "idle", "IO", 2),
+			expected: map[databaseName][]backendStateCount{
+				"otel": {{backendType: "autovacuum worker", state: "idle", waitEventType: "IO", count: 2}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			if tc.queryErr != nil {
+				mock.ExpectQuery(tc.expectedSQL).WillReturnError(tc.queryErr)
+			} else {
+				mock.ExpectQuery(tc.expectedSQL).WillReturnRows(tc.rows)
+			}
+
+			backends, err := client.getBackends(t.Context(), tc.databases, tc.grouping)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tc.expected, backends)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestFilterQueryByDatabases(t *testing.T) {
+	tests := []struct {
+		name      string
+		baseQuery string
+		databases []string
+		groupBy   []string
+		expected  string
+	}{
+		{
+			name:      "no databases and no group by",
+			baseQuery: "SELECT datname FROM pg_stat_database",
+			expected:  "SELECT datname FROM pg_stat_database;",
+		},
+		{
+			name:      "no databases with group by",
+			baseQuery: "SELECT datname, count(*) FROM pg_stat_activity",
+			groupBy:   []string{"datname"},
+			expected:  "SELECT datname, count(*) FROM pg_stat_activity GROUP BY datname;",
+		},
+		{
+			name:      "single database",
+			baseQuery: "SELECT datname FROM pg_stat_database",
+			databases: []string{"otel"},
+			expected:  "SELECT datname FROM pg_stat_database WHERE datname IN ('otel');",
+		},
+		{
+			name:      "multiple databases with group by",
+			baseQuery: "SELECT datname, count(*) FROM pg_stat_activity",
+			databases: []string{"otel", "open"},
+			groupBy:   []string{"datname"},
+			expected:  "SELECT datname, count(*) FROM pg_stat_activity WHERE datname IN ('otel','open') GROUP BY datname;",
+		},
+		{
+			name:      "existing WHERE clause is extended with AND",
+			baseQuery: "SELECT datname FROM pg_catalog.pg_database WHERE datistemplate = false",
+			databases: []string{"otel"},
+			expected:  "SELECT datname FROM pg_catalog.pg_database WHERE datistemplate = false AND datname IN ('otel');",
+		},
+		{
+			name:      "multi-column group by",
+			baseQuery: "SELECT datname, state, count(*) FROM pg_stat_activity",
+			databases: []string{"otel"},
+			groupBy:   []string{"datname", "state"},
+			expected:  "SELECT datname, state, count(*) FROM pg_stat_activity WHERE datname IN ('otel') GROUP BY datname, state;",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, filterQueryByDatabases(tc.baseQuery, tc.databases, tc.groupBy...))
+		})
+	}
+}
+
 func TestGetTableCount(t *testing.T) {
 	const countSQLPre14 = `SELECT count(*) FROM pg_class
 WHERE relkind IN ('r', 'm')

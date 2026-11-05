@@ -14,7 +14,7 @@ metrics:
 
 ### postgresql.backends
 
-The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+The number of backend processes associated with each database, optionally broken down by backend type, connection state and wait event type. Counts all backend types, including non-client backends such as autovacuum and parallel workers.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -25,6 +25,9 @@ The number of backend processes associated with each database. Counts backends a
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| postgresql.backend.type | The type of backend process, e.g. client backend, autovacuum worker, walsender, or logical replication worker. Reports "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role. | Any Str | Opt-In | - |
+| postgresql.backend.state | The connection state of the backend, e.g. active, idle, or idle in transaction. Reports "unknown" when the state is not available, which happens when the monitoring user lacks the pg_monitor role. | Any Str | Opt-In | - |
+| postgresql.backend.wait_event.type | The type of event for which the backend is waiting, e.g. Lock or IO. Reports "none" when the backend is not waiting, and "unknown" when the type is not available, which happens when the monitoring user lacks the pg_monitor role. | Any Str | Opt-In | - |
 
 ### postgresql.bgwriter.buffers.allocated
 

@@ -82,6 +82,8 @@ type postgreSQLScraper struct {
 	serverEndpoint         serverEndpoint
 	lastExecutionTimestamp time.Time
 	dbVersion              string
+	// backendGrouping follows the attributes enabled on postgresql.backends.
+	backendGrouping backendGrouping
 }
 
 type errsMux struct {
@@ -155,6 +157,7 @@ func newPostgreSQLScraper(
 		serviceInstanceID:  serviceInstanceID,
 		serverEndpoint:     endpoint,
 		useOTelSemconv:     useOTelSemconv,
+		backendGrouping:    backendGroupingFor(mbConfig.Metrics.PostgresqlBackends.EnabledAttributes),
 	}, nil
 }
 
@@ -206,6 +209,16 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	return config
 }
 
+// backendGroupingFor returns the grouping that gives one row per postgresql.backends data point,
+// so aggregation_strategy never merges rows.
+func backendGroupingFor(attributes []metadata.PostgresqlBackendsMetricAttributeKey) backendGrouping {
+	return backendGrouping{
+		backendType:   slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendType),
+		state:         slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendState),
+		waitEventType: slices.Contains(attributes, metadata.PostgresqlBackendsMetricAttributeKeyPostgresqlBackendWaitEventType),
+	}
+}
+
 func legacyMetricAttributes[T ~string](attributes []T) []T {
 	filtered := slices.DeleteFunc(slices.Clone(attributes), func(attr T) bool {
 		return slices.Contains(semconvModeMetricAttributeNames[:], string(attr))
@@ -218,7 +231,7 @@ func legacyMetricAttributes[T ~string](attributes []T) []T {
 
 type dbRetrieval struct {
 	sync.RWMutex
-	backendCountByDB map[databaseName]int64
+	backendStateMap  map[databaseName][]backendStateCount
 	dbSizeMap        map[databaseName]int64
 	dbStats          map[databaseName]databaseStats
 	dbConflictStats  map[databaseName]databaseConflictStats
@@ -257,7 +270,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs errsMux
 	r := &dbRetrieval{
-		backendCountByDB: make(map[databaseName]int64),
+		backendStateMap:  make(map[databaseName][]backendStateCount),
 		dbSizeMap:        make(map[databaseName]int64),
 		dbStats:          make(map[databaseName]databaseStats),
 		dbConflictStats:  make(map[databaseName]databaseConflictStats),
@@ -772,8 +785,8 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
 	dbName := databaseName(db)
 	p.mb.RecordPostgresqlTableCountDataPoint(now, numTables, db)
-	if backendCount, ok := r.backendCountByDB[dbName]; ok {
-		p.mb.RecordPostgresqlBackendsDataPoint(now, backendCount, db)
+	for _, bs := range r.backendStateMap[dbName] {
+		p.mb.RecordPostgresqlBackendsDataPoint(now, bs.count, db, bs.backendType, bs.state, bs.waitEventType)
 	}
 	if size, ok := r.dbSizeMap[dbName]; ok {
 		p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
@@ -1373,7 +1386,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	r.Unlock()
 }
 
-func (*postgreSQLScraper) retrieveBackends(
+func (p *postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	client client,
@@ -1382,13 +1395,13 @@ func (*postgreSQLScraper) retrieveBackends(
 	errs *errsMux,
 ) {
 	defer wg.Done()
-	backendCountByDB, err := client.getBackends(ctx, databases)
+	backendStateByDB, err := client.getBackends(ctx, databases, p.backendGrouping)
 	if err != nil {
 		errs.addPartial(err)
 		return
 	}
 	r.Lock()
-	r.backendCountByDB = backendCountByDB
+	r.backendStateMap = backendStateByDB
 	r.Unlock()
 }
 
