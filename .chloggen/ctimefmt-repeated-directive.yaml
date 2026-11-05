@@ -8,7 +8,6 @@ component: internal/coreinternal
 note: Fix strptime time parsing never returning for a format that repeats a directive, such as `%H %H`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-# TODO: replace with the tracking issue number before pushing.
 issues: [52627]
 
 change_logs: [user]
