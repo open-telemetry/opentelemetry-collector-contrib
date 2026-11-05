@@ -7,8 +7,8 @@ note: Default to at-least-once retries on transport errors, client timeouts, bul
 issues: [52551]
 
 subtext: |
-  HTTP client timeouts are all retried.
+  HTTP client timeouts are always retried. This is not configurable and cannot be reverted.
   `retry::retry_on_document_status` does not follow `retry::retry_on_status`.
-  To keep the previous behavior, set both `retry::retry_on_status` and `retry::retry_on_document_status` to `[429]`.
+  To keep the previous status codes, set both `retry::retry_on_status` and `retry::retry_on_document_status` to `[429]`.
 
 change_logs: [user]
