@@ -622,12 +622,17 @@ func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 // autoIncrementColumnMaxValueCase picks the max value an auto_increment
 // column can hold, based on its integer type and whether it's unsigned.
 // https://dev.mysql.com/doc/refman/8.4/en/integer-types.html
+//
+// The BIGINT UNSIGNED max is cast to DECIMAL(20,0): on MySQL 5.7 the CASE's
+// result type is decided across all branches as a signed BIGINT, so the
+// literal 18446744073709551615 overflows and comes back as -1 unless it's
+// forced wider first.
 const autoIncrementColumnMaxValueCase = `CASE
 	WHEN c.DATA_TYPE = 'tinyint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 255, 127)
 	WHEN c.DATA_TYPE = 'smallint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 65535, 32767)
 	WHEN c.DATA_TYPE = 'mediumint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 16777215, 8388607)
 	WHEN c.DATA_TYPE = 'int' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 4294967295, 2147483647)
-	WHEN c.DATA_TYPE = 'bigint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 18446744073709551615, 9223372036854775807)
+	WHEN c.DATA_TYPE = 'bigint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', CAST(18446744073709551615 AS DECIMAL(20,0)), 9223372036854775807)
 	ELSE NULL
 END`
 
@@ -657,6 +662,7 @@ func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
 		"ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME " +
 		"WHERE c.EXTRA LIKE '%auto_increment%' " +
 		"AND t.AUTO_INCREMENT IS NOT NULL " +
+		"AND c.DATA_TYPE IN ('tinyint', 'smallint', 'mediumint', 'int', 'bigint') " +
 		"AND c.TABLE_SCHEMA NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');"
 	rows, err := c.client.Query(query)
 	if err != nil {
