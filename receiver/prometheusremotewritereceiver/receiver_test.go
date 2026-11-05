@@ -552,21 +552,25 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 	// A refused histogram has no data point, so its exemplars must not land on an earlier one.
 	prwReceiver := setupMetricsReceiver(t)
 
-	series := func(regionRef uint32, deltas []int64, exemplars []writev2.Exemplar) writev2.TimeSeries {
+	series := func(regionRef uint32, histograms []writev2.Histogram, exemplars []writev2.Exemplar) writev2.TimeSeries {
 		return writev2.TimeSeries{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
 			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, regionRef},
-			Histograms: exemplarHistogram(deltas),
+			Histograms: histograms,
 			Exemplars:  exemplars,
 		}
 	}
 
+	// Prometheus accepts a bucket past the overflow bucket at index 1025, so the request still
+	// succeeds, but no data point can hold it and the converter drops the histogram.
+	pastOverflow := exemplarHistogram([]int64{1, 1})
+	pastOverflow[0].PositiveSpans = []writev2.BucketSpan{{Offset: 2000, Length: 2}}
+
 	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
 		Symbols: exemplarSymbols,
 		Timeseries: []writev2.TimeSeries{
-			series(8, []int64{1, 1}, nil),
-			// The second bucket resolves to a negative count, so the converter drops it.
-			series(9, []int64{1, -5}, theExemplar()),
+			series(8, exemplarHistogram([]int64{1, 1}), nil),
+			series(9, pastOverflow, theExemplar()),
 		},
 	})
 	require.NoError(t, err)
@@ -620,7 +624,8 @@ func TestMalformedNHCBIsNotTruncated(t *testing.T) {
 	// shape have no translation. Reading as far as the shorter of the two and reporting what
 	// that produced would drop observations the sender wrote, with a count that agrees with
 	// the buckets and says nothing about what went missing. A negative range is refused for
-	// the same reason: these bounds describe no bucket it could go in.
+	// the same reason: these bounds describe no bucket it could go in. Prometheus refuses these
+	// shapes too, so the request fails.
 	for _, tc := range []struct {
 		name      string
 		bounds    []float64
@@ -696,7 +701,7 @@ func TestMalformedNHCBIsNotTruncated(t *testing.T) {
 					},
 				},
 			})
-			require.NoError(t, err)
+			require.ErrorContains(t, err, "invalid histogram for metric")
 			assert.Equal(t, 0, stats.Histograms, "a histogram that was not translated is not written")
 			assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
 				"a shape with no translation leaves nothing behind")
@@ -707,7 +712,8 @@ func TestMalformedNHCBIsNotTruncated(t *testing.T) {
 func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
 	// Deltas are cumulative, so a run of them can go below zero. A bucket holds a count of
 	// observations, which cannot, so the conversion to uint64 would turn one into a very large
-	// population, and the data point count comes from those buckets.
+	// population, and the data point count comes from those buckets. Prometheus refuses a
+	// negative population too, so the request fails.
 	for _, tc := range []struct {
 		name   string
 		deltas []int64
@@ -741,7 +747,7 @@ func TestNHCBNegativeBucketPopulationIsDropped(t *testing.T) {
 					},
 				},
 			})
-			require.NoError(t, err)
+			require.ErrorContains(t, err, "invalid histogram for metric")
 			assert.Equal(t, 0, stats.Histograms)
 			assert.Equal(t, 0, metrics.ResourceMetrics().Len(),
 				"a negative bucket population is not published")
@@ -1565,14 +1571,7 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  true,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
-			// Rejected before the resource, scope and metric are built, so nothing is emitted.
-			expectedMetrics: pmetric.NewMetrics(),
+			expectError: `invalid histogram for metric "test_metric": positive side: bucket number 3 has observation count of -156: histogram has a bucket whose observation count is negative`,
 		},
 		{
 			name: "nhcb histogram - all observations outside the buckets leave a zero count and sum",
@@ -2750,7 +2749,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
-			name: "exponential histogram - malformed negative spans drop the histogram",
+			name: "exponential histogram - malformed negative spans fail the request",
 			// Both ranges are validated. The positive one is well formed here, so this is the
 			// only shape that reaches the negative range's error path.
 			request: &writev2.Request{
@@ -2785,10 +2784,7 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
-			},
-			expectedMetrics: pmetric.NewMetrics(),
+			expectError: `invalid histogram for metric "test_metric": negative side: spans need 3 buckets, have 2 buckets: histogram spans specify different number of buckets than provided`,
 		},
 		{
 			name: "exponential histogram - trailing empty span is not materialized",
@@ -3045,7 +3041,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
-			name: "exponential histogram - negative offset after the first span is dropped",
+			name: "exponential histogram - negative offset after the first span fails the request",
 			// Prometheus only allows the first span of a list to move backwards.
 			request: &writev2.Request{
 				Symbols: []string{
@@ -3076,13 +3072,10 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
-			},
-			expectedMetrics: pmetric.NewMetrics(),
+			expectError: `invalid histogram for metric "test_metric": positive side: span number 2 with offset -1: histogram has a span whose offset is negative`,
 		},
 		{
-			name: "exponential histogram - spans longer than the bucket values are dropped",
+			name: "exponential histogram - spans longer than the bucket values fail the request",
 			// The span promises three buckets and the histogram carries two deltas, so the
 			// third bucket has no value to read.
 			request: &writev2.Request{
@@ -3114,10 +3107,7 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
-			},
-			expectedMetrics: pmetric.NewMetrics(),
+			expectError: `invalid histogram for metric "test_metric": positive side: spans need 3 buckets, have 2 buckets: histogram spans specify different number of buckets than provided`,
 		},
 		{
 			name: "multiple histogram metrics with exemplars",
@@ -4823,7 +4813,6 @@ func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
 				},
 			},
 		})
-		require.NoError(t, err)
 
 		// Worked out from the request on its own, so that a shape the converter should have
 		// refused cannot pass by producing output that is merely self consistent.
@@ -4858,6 +4847,13 @@ func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
 				translatable = false
 			}
 		}
+
+		// A shape the converter refuses fails the request exactly when Prometheus' own validation
+		// refuses it too. The count is rebuilt here rather than checked, so Prometheus is given
+		// one that cannot disagree with the buckets.
+		structural := histogram.ToIntHistogram()
+		structural.Count, structural.Sum = math.MaxUint64, math.NaN()
+		require.Equal(t, !translatable && structural.Validate() != nil, err != nil, "iteration %d: %v", n, err)
 
 		rms := metrics.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
@@ -4909,20 +4905,22 @@ func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
 func TestCustomBoundsThatCannotDescribeABucketAreRejected(t *testing.T) {
 	// The bounds are copied into ExplicitBounds unchanged, and a bucket between two bounds that
 	// do not increase, or either side of an infinity, can hold nothing. A stale marker copies
-	// them too, so it is checked the same way.
+	// them too, so it is checked the same way. Prometheus refuses all of these except a first
+	// bound of -Inf, and the ones it refuses fail the request.
 	stale := math.Float64frombits(value.StaleNaN)
 	for _, tc := range []struct {
-		name   string
-		bounds []float64
-		sum    float64
+		name              string
+		bounds            []float64
+		sum               float64
+		prometheusRefuses bool
 	}{
 		{name: "leading -Inf", bounds: []float64{math.Inf(-1), 1}, sum: 1},
-		{name: "trailing +Inf", bounds: []float64{1, math.Inf(1)}, sum: 1},
-		{name: "NaN bound", bounds: []float64{1, math.NaN()}, sum: 1},
-		{name: "bounds out of order", bounds: []float64{5, 1}, sum: 1},
-		{name: "repeated bound", bounds: []float64{1, 1}, sum: 1},
+		{name: "trailing +Inf", bounds: []float64{1, math.Inf(1)}, sum: 1, prometheusRefuses: true},
+		{name: "NaN bound", bounds: []float64{1, math.NaN()}, sum: 1, prometheusRefuses: true},
+		{name: "bounds out of order", bounds: []float64{5, 1}, sum: 1, prometheusRefuses: true},
+		{name: "repeated bound", bounds: []float64{1, 1}, sum: 1, prometheusRefuses: true},
 		{name: "stale marker, -Inf bound", bounds: []float64{math.Inf(-1), 1}, sum: stale},
-		{name: "stale marker, bounds out of order", bounds: []float64{5, 1, 3}, sum: stale},
+		{name: "stale marker, bounds out of order", bounds: []float64{5, 1, 3}, sum: stale, prometheusRefuses: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			prwReceiver := setupMetricsReceiver(t)
@@ -4950,7 +4948,11 @@ func TestCustomBoundsThatCannotDescribeABucketAreRejected(t *testing.T) {
 					},
 				},
 			})
-			require.NoError(t, err)
+			if tc.prometheusRefuses {
+				require.ErrorContains(t, err, "invalid histogram for metric")
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
 			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "bounds are checked before anything is built")
 		})
@@ -4960,7 +4962,8 @@ func TestCustomBoundsThatCannotDescribeABucketAreRejected(t *testing.T) {
 func TestBoundsOnASchemaWithoutThemAreRejected(t *testing.T) {
 	// Only the custom bucket schema separates its buckets with explicit bounds. On any other one
 	// they are wire data the translation never looks at, so the histogram is refused rather than
-	// carried across without them.
+	// carried across without them. Prometheus refuses them on these schemas too, so the request
+	// fails.
 	for _, tc := range []struct {
 		name   string
 		bounds []float64
@@ -4994,9 +4997,188 @@ func TestBoundsOnASchemaWithoutThemAreRejected(t *testing.T) {
 					},
 				},
 			})
-			require.NoError(t, err)
+			require.ErrorContains(t, err, "invalid histogram for metric")
 			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
 			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "the schema is checked before anything is built")
+		})
+	}
+}
+
+func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
+	// A histogram the converter refuses fails the request when Prometheus' own validation refuses
+	// it too, and is only dropped when Prometheus accepts it.
+	for _, tc := range []struct {
+		name      string
+		histogram writev2.Histogram
+		status    int
+	}{
+		{
+			name: "a negative bucket population",
+			histogram: writev2.Histogram{
+				Count:          &writev2.Histogram_CountInt{CountInt: 1},
+				Sum:            1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{2, -5},
+			},
+			status: http.StatusBadRequest,
+		},
+		{
+			name: "spans longer than the bucket values",
+			histogram: writev2.Histogram{
+				Count:          &writev2.Histogram_CountInt{CountInt: 5},
+				Sum:            1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
+				PositiveDeltas: []int64{5},
+			},
+			status: http.StatusBadRequest,
+		},
+		{
+			name: "custom bounds out of order",
+			histogram: writev2.Histogram{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountInt{CountInt: 4},
+				Sum:            2,
+				CustomValues:   []float64{5, 1},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{2, 0},
+			},
+			status: http.StatusBadRequest,
+		},
+		{
+			name: "a first custom bound of -Inf",
+			histogram: writev2.Histogram{
+				Schema:         -53,
+				Count:          &writev2.Histogram_CountInt{CountInt: 2},
+				Sum:            2,
+				CustomValues:   []float64{math.Inf(-1), 1},
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}},
+				PositiveDeltas: []int64{1, 0},
+			},
+			status: http.StatusNoContent,
+		},
+		{
+			name: "a bucket past the overflow bucket",
+			histogram: writev2.Histogram{
+				Count:          &writev2.Histogram_CountInt{CountInt: 1},
+				Sum:            1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 2000, Length: 1}},
+				PositiveDeltas: []int64{1},
+			},
+			status: http.StatusNoContent,
+		},
+		{
+			name: "more buckets than a data point holds",
+			histogram: writev2.Histogram{
+				Schema:         8,
+				Count:          &writev2.Histogram_CountInt{CountInt: 2},
+				Sum:            1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: -10000, Length: 1}, {Offset: 19999, Length: 1}},
+				PositiveDeltas: []int64{1, 0},
+			},
+			status: http.StatusNoContent,
+		},
+		{
+			name: "a bucket index no OTLP offset can express",
+			histogram: writev2.Histogram{
+				Count:          &writev2.Histogram_CountInt{CountInt: 1},
+				Sum:            1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: math.MinInt32, Length: 1}},
+				PositiveDeltas: []int64{1},
+			},
+			status: http.StatusNoContent,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			histogram := tc.histogram
+			histogram.Timestamp = 1
+			assert.Equal(t, tc.status == http.StatusBadRequest, histogram.ToIntHistogram().Validate() != nil,
+				"the request fails exactly when Prometheus refuses the histogram")
+
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{histogram},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			assert.Equal(t, tc.status, resp.StatusCode)
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, 0, written.Histograms, "the histogram is not written either way")
+			assert.Empty(t, sink.AllMetrics())
+		})
+	}
+}
+
+func TestRefusedRequestReportsNothingWritten(t *testing.T) {
+	// A refused request is not passed on, so the Written headers report zero, including for the
+	// series in it that translated.
+	gauge := writev2.TimeSeries{
+		Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+		LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+		Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+	}
+	for _, tc := range []struct {
+		name    string
+		refused writev2.TimeSeries
+	}{
+		{
+			name: "a histogram Prometheus refuses",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Histograms: []writev2.Histogram{{
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      1,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+					PositiveDeltas: []int64{2, -5},
+				}},
+			},
+		},
+		{
+			name: "a series without a metric name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_gauge", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"test_histogram", // 7
+				},
+				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
+			})
+			defer resp.Body.Close()
+
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			for _, header := range []string{
+				"X-Prometheus-Remote-Write-Samples-Written",
+				"X-Prometheus-Remote-Write-Histograms-Written",
+				"X-Prometheus-Remote-Write-Exemplars-Written",
+			} {
+				assert.Equal(t, "0", resp.Header.Get(header), header)
+			}
+			assert.Empty(t, sink.AllMetrics())
 		})
 	}
 }
@@ -5949,6 +6131,19 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 }
 
 // setupMetricsReceiverWithConsumer creates a receiver with a custom consumer for testing.
+// sendPRW passes a remote write 2.0 request to handlePRW. It is called without the confighttp
+// middleware, so the body is not compressed.
+func sendPRW(t *testing.T, prwReceiver *prometheusRemoteWriteReceiver, request *writev2.Request) *http.Response {
+	t.Helper()
+	pBuf := proto.NewBuffer(nil)
+	require.NoError(t, pBuf.Marshal(request))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+	w := httptest.NewRecorder()
+	prwReceiver.handlePRW(w, req)
+	return w.Result()
+}
+
 func setupMetricsReceiverWithConsumer(t *testing.T, nextConsumer consumer.Metrics) *prometheusRemoteWriteReceiver {
 	t.Helper()
 	return setupMetricsReceiverWithConfig(t, createDefaultConfig().(*Config), nextConsumer)
