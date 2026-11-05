@@ -761,18 +761,26 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
-	t.Run("do not retry invalid request", func(t *testing.T) {
-		attempts := &atomic.Int64{}
+	t.Run("retry invalid request", func(t *testing.T) {
+		var attempts atomic.Int64
 		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
-		exporter := newTestLogsExporter(t, server.URL)
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
-
-		time.Sleep(200 * time.Millisecond)
-		assert.Equal(t, int64(1), attempts.Load())
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Retry.InitialInterval = time.Millisecond
+			cfg.Retry.MaxInterval = 5 * time.Millisecond
+			cfg.QueueBatchConfig.Get().WaitForResult = true
+		})
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		scopeLogs.LogRecords().AppendEmpty()
+		logs.MarkReadOnly()
+		err := exporter.ConsumeLogs(t.Context(), logs)
+		require.Error(t, err)
+		assert.Equal(t, int64(defaultMaxRetries+1), attempts.Load())
 	})
 
 	t.Run("retry single item", func(t *testing.T) {
