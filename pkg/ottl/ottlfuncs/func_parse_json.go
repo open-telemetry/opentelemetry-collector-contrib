@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/goccy/go-json"
@@ -48,27 +49,9 @@ func createParseJSONFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	JSON objects -> map[string]any
 func parseJSON[K any](target ottl.StringGetter[K], parseInts bool) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		targetVal, err := target.Get(ctx, tCtx)
+		parsedValue, err := unmarshalJSON(ctx, tCtx, target, parseInts)
 		if err != nil {
 			return nil, err
-		}
-		var parsedValue any
-
-		// when parseInts is disabled, `int` and `float` will be parsed as `float64`.
-		// when it is enabled, they will be parsed as `json.Number`, later the parser
-		// will convert them to `int` or `float64` according to the field type.
-		if parseInts {
-			d := json.NewDecoder(strings.NewReader(targetVal))
-			d.UseNumber()
-			err = d.Decode(&parsedValue)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			err = json.Unmarshal([]byte(targetVal), &parsedValue)
-			if err != nil {
-				return nil, err
-			}
 		}
 
 		switch v := parsedValue.(type) {
@@ -90,6 +73,45 @@ func parseJSON[K any](target ottl.StringGetter[K], parseInts bool) ottl.ExprFunc
 			return nil, fmt.Errorf("could not convert parsed value of type %T to JSON object", v)
 		}
 	}
+}
+
+func unmarshalJSON[K any](ctx context.Context, tCtx K, target ottl.StringGetter[K], parseInts bool) (any, error) {
+	targetVal, err := target.Get(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	var parsedValue any
+
+	// when parseInts is disabled, `int` and `float` will be parsed as `float64`.
+	// when it is enabled, they will be parsed as `json.Number`, later the parser
+	// will convert them to `int` or `float64` according to the field type.
+	if !parseInts {
+		err := json.Unmarshal([]byte(targetVal), &parsedValue)
+		if err != nil {
+			return nil, err
+		}
+
+		return parsedValue, nil
+	}
+
+	d := json.NewDecoder(strings.NewReader(targetVal))
+	d.UseNumber()
+	err = d.Decode(&parsedValue)
+	if err != nil {
+		return nil, err
+	}
+
+	// the decoder stops after the first value, so a second one needed
+	// to reject data the same way `json.Unmarshal` does.
+	var extra any
+	if err := d.Decode(&extra); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return nil, errors.New("unexpected data after JSON value")
+		}
+		return nil, err
+	}
+
+	return parsedValue, nil
 }
 
 func convertNumbers(parsedValue map[string]any) {

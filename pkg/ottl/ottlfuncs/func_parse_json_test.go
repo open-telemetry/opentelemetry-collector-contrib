@@ -227,6 +227,27 @@ func Test_ParseJSON(t *testing.T) {
 	}
 }
 
+func Test_ParseJSON_TrailingData(t *testing.T) {
+	for _, input := range []string{
+		`{"a":1}{"b":2}`,
+		`{"a":1} [1,2,3]`,
+		`{} {}`,
+	} {
+		t.Run(input, func(t *testing.T) {
+			target := ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return input, nil
+				},
+			}
+
+			for _, parseInts := range []bool{true, false} {
+				_, err := parseJSON(target, parseInts)(t.Context(), nil)
+				assert.Error(t, err, "expected error for input: %s with parseInts=%v", input, parseInts)
+			}
+		})
+	}
+}
+
 func Test_ParseJSON_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
