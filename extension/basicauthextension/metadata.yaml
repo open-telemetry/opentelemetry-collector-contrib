@@ -1,5 +1,6 @@
 display_name: Basic Auth Authenticator Extension
-type: basicauth
+type: basic_auth
+deprecated_type: basicauth
 
 status:
   class: extension

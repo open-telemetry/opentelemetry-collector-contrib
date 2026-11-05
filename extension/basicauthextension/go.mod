@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.1-0.20261102165206-9372e2e353df
 	go.opentelemetry.io/collector/extension/extensiontest v0.164.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/extension/xextension v0.164.1-0.20261102165206-9372e2e353df
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/grpc v1.85.0
