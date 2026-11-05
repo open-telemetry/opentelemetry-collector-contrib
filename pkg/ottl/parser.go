@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/metadata"
@@ -474,12 +475,27 @@ func newParser[G any]() *participle.Parser[G] {
 	return parser
 }
 
+// SequenceTelemetry holds the optional metrics recorded by a StatementSequence or a ConditionSequence.
+// Metrics left unset are not recorded. Fields may be added over time, so always use keyed fields.
+type SequenceTelemetry struct {
+	// FailureCounter is incremented by 1 each time a call to StatementSequence.Execute or
+	// ConditionSequence.Eval encounters at least one error, regardless of the ErrorMode.
+	// A call in which several statements or conditions fail is counted once.
+	// The counter measures OTTL executions only, not records: Execute and Eval are called once per
+	// item of the OTTL context being processed (e.g. per span, per resource), so the rate depends
+	// on that context.
+	FailureCounter metric.Int64Counter
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // StatementSequence represents a list of statements that will be executed sequentially for a TransformContext
 // and will handle errors based on an ErrorMode.
 type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
+	telemetry         SequenceTelemetry
 }
 
 // StatementSequenceOption is an option for a StatementSequence
@@ -489,6 +505,13 @@ type StatementSequenceOption[K any] func(*StatementSequence[K])
 func WithStatementSequenceErrorMode[K any](errorMode ErrorMode) StatementSequenceOption[K] {
 	return func(s *StatementSequence[K]) {
 		s.errorMode = errorMode
+	}
+}
+
+// WithStatementSequenceTelemetry sets the metrics recorded by a StatementSequence.
+func WithStatementSequenceTelemetry[K any](telemetry SequenceTelemetry) StatementSequenceOption[K] {
+	return func(s *StatementSequence[K]) {
+		s.telemetry = telemetry
 	}
 }
 
@@ -511,13 +534,23 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `propagate`, errors cause the execution to halt and the error is returned.
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
+// When SequenceTelemetry.FailureCounter is set, the counter is incremented once per call that had at least one error.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	}
+	var failed bool
+	if s.telemetry.FailureCounter != nil {
+		defer func() {
+			if failed {
+				s.telemetry.FailureCounter.Add(ctx, 1)
+			}
+		}()
+	}
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
+			failed = true
 			if s.errorMode == PropagateError {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
@@ -538,6 +571,7 @@ type ConditionSequence[K any] struct {
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 	logicOp           LogicOperation
+	telemetry         SequenceTelemetry
 }
 
 // ConditionSequenceOption is an option for a ConditionSequence
@@ -556,6 +590,13 @@ func WithConditionSequenceErrorMode[K any](errorMode ErrorMode) ConditionSequenc
 func WithLogicOperation[K any](logicOp LogicOperation) ConditionSequenceOption[K] {
 	return func(c *ConditionSequence[K]) {
 		c.logicOp = logicOp
+	}
+}
+
+// WithConditionSequenceTelemetry sets the metrics recorded by a ConditionSequence.
+func WithConditionSequenceTelemetry[K any](telemetry SequenceTelemetry) ConditionSequenceOption[K] {
+	return func(c *ConditionSequence[K]) {
+		c.telemetry = telemetry
 	}
 }
 
@@ -583,14 +624,24 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 // When the ErrorMode of the ConditionSequence is `ignore`, errors are logged and cause the evaluation to continue to the next condition.
 // When the ErrorMode of the ConditionSequence is `silent`, errors are not logged and cause the evaluation to continue to the next condition.
 // When using the AND LogicOperation with the `ignore` ErrorMode the sequence will evaluate to false if all conditions error.
+// When SequenceTelemetry.FailureCounter is set, the counter is incremented once per call that had at least one error.
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
+	var failed bool
+	if c.telemetry.FailureCounter != nil {
+		defer func() {
+			if failed {
+				c.telemetry.FailureCounter.Add(ctx, 1)
+			}
+		}()
+	}
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
 		if c.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
 			c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), newTransformContextField(tCtx))
 		}
 		if err != nil {
+			failed = true
 			if c.errorMode == PropagateError {
 				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
 				return false, err
