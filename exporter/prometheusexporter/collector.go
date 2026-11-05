@@ -549,19 +549,20 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		// map ensures no duplicate label name
 		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
 
-		// Use resource attributes (other than those used for job+instance) as the
-		// metric labels for the target info metric
+		// Use resource attributes as labels for the target info metric.
 		attributes := pcommon.NewMap()
 		rAttributes.CopyTo(attributes)
-		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
-			switch k {
-			case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
-				// Remove resource attributes used for job + instance
-				return true
-			default:
-				return false
-			}
-		})
+		if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+			attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
+				switch k {
+				case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
+					// Remove resource attributes used for job + instance
+					return true
+				default:
+					return false
+				}
+			})
+		}
 
 		var multiErrs error
 		for k, v := range attributes.All() {

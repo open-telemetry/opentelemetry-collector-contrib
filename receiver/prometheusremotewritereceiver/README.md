@@ -118,7 +118,7 @@ Without metadata, every series arrives untyped, and the ones carrying samples, i
 
 ### Only integer, counter flavored Native Histograms are translated
 
-The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or buckets do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name.
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or buckets do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name. If Prometheus' own validation refuses such a histogram too, for example because its spans and buckets disagree or a bucket count is negative, the request is answered with `400 Bad Request` and none of it is passed on.
 
 The data point count is rebuilt from the buckets the translation emitted, rather than copied from the count Prometheus sent. Those differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket, so a count here can be lower than the one in Prometheus. When nothing could be represented the count is zero and so is the sum, which is what OpenTelemetry requires of a data point that recorded nothing.
 
