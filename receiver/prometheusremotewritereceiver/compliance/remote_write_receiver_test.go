@@ -110,7 +110,7 @@ func TestMain(m *testing.M) {
 	// Skip known compliance gaps in receiver/prometheusremotewritereceiver:
 	// - out_of_order_rejected (SHOULD): the receiver is a stateless translator and does not track series timestamps across requests.
 	// - invalid_utf8_* (MUST): symbol table entries are not validated for UTF-8 before constructing labels.
-	// - bad_count_*, invalid_rejected/* (MUST) and float/*, float_histogram_*, reset_hint_gauge_* (MUST/SHOULD): float and gauge histograms are intentionally dropped without incrementing Histograms-Written, and invalid histograms are dropped or normalized with 204 instead of rejected with 400.
+	// - bad_count_* (MUST) and float/*, float_histogram_*, reset_hint_gauge_* (MUST/SHOULD): float and gauge histograms are intentionally dropped without incrementing Histograms-Written, and a count that disagrees with the buckets is rebuilt from them with 204 instead of rejected with 400.
 	// - exemplars/validation/* (MUST/SHOULD): invalid exemplar label refs are dropped instead of rejected with 400.
 	// - summary_* (MUST/SHOULD): summaries are intentionally unsupported and dropped.
 	// - metadata_without_data (SHOULD): series with only metadata and no data points return 204 instead of 400.
@@ -123,7 +123,6 @@ func TestMain(m *testing.M) {
 		"TestRemoteWriteReceiver/otelcol-contrib/histograms/bad_count_histogram",
 		"TestRemoteWriteReceiver/otelcol-contrib/histograms/float/.*",
 		"TestRemoteWriteReceiver/otelcol-contrib/histograms/reset_hints_and_schemas/reset_hint_gauge_schema_5",
-		"TestRemoteWriteReceiver/otelcol-contrib/histograms/invalid_rejected/.*",
 		"TestRemoteWriteReceiver/otelcol-contrib/exemplars/validation/.*",
 		"TestRemoteWriteReceiver/otelcol-contrib/metadata/summary_metadata_type",
 		"TestRemoteWriteReceiver/otelcol-contrib/combined/edge_cases/metadata_without_data",

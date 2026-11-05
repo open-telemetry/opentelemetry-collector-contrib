@@ -9,7 +9,8 @@ status:
   distributions: [core, contrib, k8s]
   warnings: [Identity Conflict]
   codeowners:
-    active: [dmitryax]
+    active: [jinja2, jkoronaAtCisco]
+    emeritus: [dmitryax]
 
 tests:
   config:
