@@ -11,8 +11,8 @@ status:
     beta: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, TylerHelmuth, ChrsMark, krisztianfekete]
-    emeritus: [hvaghani221]
+    active: [TylerHelmuth, ChrsMark, krisztianfekete, jinja2]
+    emeritus: [hvaghani221, dmitryax]
 
 feature_gates:
   - id: receiver.k8sobjects.useInformerObserver

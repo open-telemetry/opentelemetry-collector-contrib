@@ -65,11 +65,21 @@ properties:
   connection_pool:
     description: ConnectionPool tunes the shared database connection pool used by all scrapers of this receiver.
     $ref: connection_pool
+  databases:
+    description: Databases limits the per-database metrics and the events to the listed databases. Empty reports on every database.
+    type: array
+    items:
+      type: string
   datasource:
     type: string
   db_auth:
     description: DBAuth optionally references a database credential provider extension. When set, the provider supplies the secret at connection time. Username remains available as provider input; a static password cannot be set.
     $ref: /config/configdbauth.id
+  exclude_databases:
+    description: ExcludeDatabases lists databases left out of the per-database metrics and the events. A database in both lists is excluded.
+    type: array
+    items:
+      type: string
   instance_name:
     type: string
   password:
