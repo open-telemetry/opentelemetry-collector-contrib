@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	dynsampler "github.com/honeycombio/dynsampler-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -230,4 +231,64 @@ func TestDynsamplerWrapper_StopIsIdempotent(t *testing.T) {
 		require.NoError(t, s.Stop())
 		require.NoError(t, s.Stop())
 	}
+}
+
+func TestEMAThroughput_SetGoalThroughputPerSec(t *testing.T) {
+	s, err := NewEMAThroughput(EMAThroughputConfig{
+		GoalThroughputPerSec: 100,
+		AdjustmentInterval:   15 * time.Second,
+		Weight:               0.5,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.Start())
+	t.Cleanup(func() { _ = s.Stop() })
+
+	setter, ok := s.(ThroughputGoalSetter)
+	require.True(t, ok)
+	setter.SetGoalThroughputPerSec(250)
+
+	w, ok := s.(*dynsamplerWrapper)
+	require.True(t, ok)
+	inner, ok := w.inner.(*dynsampler.EMAThroughput)
+	require.True(t, ok)
+	assert.Equal(t, 250, inner.GoalThroughputPerSec)
+}
+
+func TestWindowedThroughput_SetGoalThroughputPerSec(t *testing.T) {
+	s, err := NewWindowedThroughput(WindowedThroughputConfig{
+		GoalThroughputPerSec: 100,
+		UpdateFrequency:      time.Second,
+		LookbackFrequency:    30 * time.Second,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.Start())
+	t.Cleanup(func() { _ = s.Stop() })
+
+	setter, ok := s.(ThroughputGoalSetter)
+	require.True(t, ok)
+	setter.SetGoalThroughputPerSec(250)
+
+	w, ok := s.(*dynsamplerWrapper)
+	require.True(t, ok)
+	inner, ok := w.inner.(*dynsampler.WindowedThroughput)
+	require.True(t, ok)
+	assert.Equal(t, float64(250), inner.GoalThroughputPerSec)
+}
+
+func TestEMAPercentage_SetGoalThroughputPerSec_NoOp(t *testing.T) {
+	s, err := NewEMAPercentage(EMAPercentageConfig{
+		GoalSamplingPercentage: 10,
+		AdjustmentInterval:     15 * time.Second,
+		Weight:                 0.5,
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.Start())
+	t.Cleanup(func() { _ = s.Stop() })
+
+	setter, ok := s.(ThroughputGoalSetter)
+	require.True(t, ok)
+	assert.NotPanics(t, func() { setter.SetGoalThroughputPerSec(250) })
+
+	rate := s.GetSampleRate("svc-a", 1)
+	assert.GreaterOrEqual(t, rate, 1)
 }

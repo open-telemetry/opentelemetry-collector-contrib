@@ -15,6 +15,7 @@ status:
   codeowners:
     active: [ constanca-m ]
     emeritus: [ alexvanboxel ]
+    seeking_new: true
 
 feature_gates:
   - id: extension.encoding.googlecloudlogentryencoding.DontEmitV0RPCConventions

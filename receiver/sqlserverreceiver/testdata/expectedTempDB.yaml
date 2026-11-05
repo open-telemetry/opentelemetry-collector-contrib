@@ -1,0 +1,70 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
+            name: sqlserver.database.tempdb.space
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16384"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4096"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: internal_objects
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "128"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: mixed_extents
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "8192"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: user_objects
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2048"
+                  attributes:
+                    - key: tempdb.state
+                      value:
+                        stringValue: version_store
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: kBy
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

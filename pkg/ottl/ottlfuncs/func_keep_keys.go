@@ -10,11 +10,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 type keepKeysArguments[K any] struct {
 	Target ottl.PMapGetSetter[K]
-	Keys   []ottl.StringGetter[K]
+	Keys   slicegetter.SliceGetter[K, ottl.StringGetter[K]]
 }
 
 // NewKeepKeysFactory returns a factory for the keep_keys OTTL function.
@@ -30,19 +31,23 @@ func createKeepKeysFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("KeepKeysFactory args must be of type *keepKeysArguments[K]")
 	}
 
-	return keepKeys(args.Target, args.Keys), nil
+	return keepKeys(args.Target, &args.Keys)
 }
 
-func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) ottl.ExprFunc[K] {
-	// Check if all keys are literals and pre-build the key set if so
-	literalKeySet := make(map[string]struct{}, len(keys))
-	for _, key := range keys {
-		k, isLiteral := ottl.GetLiteralValue(key)
-		if !isLiteral {
-			literalKeySet = nil
-			break
+func keepKeys[K any](target ottl.PMapGetSetter[K], keys *slicegetter.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
+	var literalKeySet map[string]struct{}
+	keySetCapacity, _ := keys.Len()
+	if literalValues, allLiteral := slicegetter.GetLiteralValues(keys, func(key ottl.StringGetter[K]) (string, bool) {
+		return ottl.GetLiteralValue[K, string](key)
+	}); allLiteral {
+		if literalValues == nil {
+			return nil, errors.New("keys cannot be nil")
 		}
-		literalKeySet[k] = struct{}{}
+
+		literalKeySet = make(map[string]struct{}, len(literalValues))
+		for _, key := range literalValues {
+			literalKeySet[key] = struct{}{}
+		}
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -51,19 +56,28 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 			return nil, err
 		}
 
-		var keySet map[string]struct{}
-		if literalKeySet != nil {
-			// Use pre-built key set for literal keys
-			keySet = literalKeySet
-		} else {
-			// Build key set at runtime for dynamic keys
-			keySet = make(map[string]struct{}, len(keys))
-			for _, key := range keys {
+		keySet := literalKeySet
+		if keySet == nil {
+			keySet = make(map[string]struct{}, keySetCapacity)
+
+			var keyErr error
+			nonNil, err := keys.Range(ctx, tCtx, func(key ottl.StringGetter[K]) bool {
 				k, err := key.Get(ctx, tCtx)
 				if err != nil {
-					return nil, err
+					keyErr = err
+					return false
 				}
 				keySet[k] = struct{}{}
+				return true
+			})
+			if err != nil {
+				return nil, err
+			}
+			if keyErr != nil {
+				return nil, keyErr
+			}
+			if !nonNil {
+				return nil, errors.New("keys cannot be nil")
 			}
 		}
 
@@ -75,5 +89,5 @@ func keepKeys[K any](target ottl.PMapGetSetter[K], keys []ottl.StringGetter[K]) 
 			val.Clear()
 		}
 		return nil, target.Set(ctx, tCtx, val)
-	}
+	}, nil
 }

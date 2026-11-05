@@ -396,15 +396,6 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return errors.New("accepts_packages capability is not yet fully implemented")
 	}
 
-	if s.config.Capabilities.ReportsRemoteConfig { //nolint:staticcheck // SA1019: deprecated field is read only to warn about its use
-		s.telemetrySettings.Logger.Error(
-			"The reports_remote_config capability is deprecated and has no effect. " +
-				"Remote config status is reported whenever accepts_remote_config is enabled. " +
-				"Remove reports_remote_config from the supervisor config; it will be removed in a future release. " +
-				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763 for details.",
-		)
-	}
-
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}

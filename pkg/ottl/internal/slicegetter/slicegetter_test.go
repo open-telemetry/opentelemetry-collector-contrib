@@ -75,8 +75,6 @@ func TestSetReflectValue_foldsLiteralSources(t *testing.T) {
 		{name: "coerced items", getter: &testGetter{value: []any{"a", "b"}}, wantFolded: true, wantLen: 2},
 		{name: "typed items", getter: &testGetter{value: []Getter[any]{newTestLiteral("a")}}, wantFolded: true, wantLen: 1},
 		{name: "nil", getter: &testGetter{}},
-		{name: "not a slice", getter: &testGetter{value: "a"}},
-		{name: "get error", getter: &testGetter{err: errors.New("boom")}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -86,6 +84,35 @@ func TestSetReflectValue_foldsLiteralSources(t *testing.T) {
 			assert.Equal(t, tt.wantLen, length)
 		})
 	}
+}
+
+func TestSetReflectValue_invalidLiteralSources(t *testing.T) {
+	tests := []struct {
+		name    string
+		getter  *testGetter
+		wantErr string
+	}{
+		{name: "not a slice", getter: &testGetter{value: "a"}, wantErr: "expected a slice, got string"},
+		{name: "non-slice pcommon.Value", getter: &testGetter{value: pcommon.NewValueStr("a")}, wantErr: `expected a slice, got "Str"`},
+		{name: "get error", getter: &testGetter{err: errors.New("boom")}, wantErr: "boom"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var sg SliceGetter[any, Getter[any]]
+			source := NewRuntimeSliceSource[any](tt.getter, true, reflect.TypeFor[Getter[any]](), buildGetterItem, newTestLiteral)
+			require.EqualError(t, SetReflectValue(&sg, reflect.ValueOf(source)), tt.wantErr)
+			assert.Nil(t, sg.runtimeSlice)
+		})
+	}
+}
+
+func TestSetReflectValue_nonLiteralSourcesDeferErrors(t *testing.T) {
+	getter := &testGetter{value: "a"}
+	sg := newTestSliceGetter[Getter[any]](getter, false)
+	assert.Zero(t, getter.gets)
+
+	_, err := sg.Get(t.Context(), nil)
+	require.EqualError(t, err, "expected a slice, got string")
 }
 
 func TestSliceGetter_runtimeSource(t *testing.T) {
@@ -148,6 +175,41 @@ func TestGetLiteralValues(t *testing.T) {
 	vals, ok = GetScalarLiteralValues(NewTestingSliceGetter[any](false, []string{"a"}))
 	require.False(t, ok)
 	assert.Nil(t, vals)
+}
+
+func TestLiteralValues_nilVsEmpty(t *testing.T) {
+	identity := func(v string) (string, bool) { return v, true }
+	for _, tt := range []struct {
+		name  string
+		slice func() *SliceGetter[any, string]
+		empty bool
+	}{
+		{name: "typed nil", slice: func() *SliceGetter[any, string] { return NewTestingSliceGetter[any](true, []string(nil)) }},
+		{name: "typed empty", slice: func() *SliceGetter[any, string] { return NewTestingSliceGetter[any](true, []string{}) }, empty: true},
+		{name: "folded nil", slice: func() *SliceGetter[any, string] { return newTestSliceGetter[string](&testGetter{}, true) }},
+		{name: "folded empty", slice: func() *SliceGetter[any, string] {
+			return newTestSliceGetter[string](&testGetter{value: []any{}}, true)
+		}, empty: true},
+		{name: "folded empty pcommon slice", slice: func() *SliceGetter[any, string] {
+			return newTestSliceGetter[string](&testGetter{value: pcommon.NewSlice()}, true)
+		}, empty: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			scalar, ok := GetScalarLiteralValues(tt.slice())
+			require.True(t, ok)
+			literal, ok := GetLiteralValues(tt.slice(), identity)
+			require.True(t, ok)
+
+			for _, vals := range [][]string{scalar, literal} {
+				if tt.empty {
+					require.NotNil(t, vals)
+					assert.Empty(t, vals)
+				} else {
+					assert.Nil(t, vals)
+				}
+			}
+		})
+	}
 }
 
 func TestNewTestingSliceGetter(t *testing.T) {

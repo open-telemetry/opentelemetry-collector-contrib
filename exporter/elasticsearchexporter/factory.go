@@ -71,7 +71,6 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:         "otel",
 			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
@@ -86,6 +85,9 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInputRateLimit: time.Second,
 		},
 		IncludeSourceOnError: nil,
+		VersionDetection: VersionDetectionSettings{
+			Enabled: true,
+		},
 	}
 }
 
@@ -99,7 +101,6 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.LogsIndex)
@@ -129,7 +130,6 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex)
@@ -158,7 +158,6 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.TracesIndex)
@@ -192,7 +191,6 @@ func createProfilesExporter(
 ) (xexporter.Profiles, error) {
 	cf := cfg.(*Config)
 
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, "")

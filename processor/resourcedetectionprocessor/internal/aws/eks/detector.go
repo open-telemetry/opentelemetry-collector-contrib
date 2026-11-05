@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_aws_eks) && !omit_detector_aws_eks
+
 package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 
 import (
@@ -16,9 +18,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	imdsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -26,8 +29,6 @@ import (
 )
 
 const (
-	// TypeStr is type of detector.
-	TypeStr = "eks"
 	// Environment variable that is set when running on Kubernetes.
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	// EKS cluster version string identifier.
@@ -83,7 +84,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	}
 
 	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName)
+	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName, k8sconfig.FromConfigTypes(cfg.APIConfig))
 	if err != nil {
 		return nil, err
 	}
