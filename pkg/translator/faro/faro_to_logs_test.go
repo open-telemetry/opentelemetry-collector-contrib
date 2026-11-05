@@ -214,7 +214,6 @@ func TestTranslateMobileMetadataToLogsAndBack(t *testing.T) {
 					ConnectionType:    "cell",
 					ConnectionSubtype: "nr",
 					CarrierName:       "TestCarrier",
-					Reachable:         new(true),
 				},
 			},
 		},
@@ -227,7 +226,6 @@ func TestTranslateMobileMetadataToLogsAndBack(t *testing.T) {
 					IsCharging:   new(false),
 					LowPowerMode: new(false),
 				},
-				Network: faroTypes.Network{Reachable: new(false)},
 			},
 		},
 		{
