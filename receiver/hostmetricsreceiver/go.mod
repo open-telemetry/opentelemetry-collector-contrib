@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/google/go-cmp v0.7.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv v0.164.1
@@ -11,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.164.1
 	github.com/prometheus/procfs v0.23.0
-	github.com/shirou/gopsutil/v4 v4.26.9
+	github.com/shirou/gopsutil/v4 v4.26.10
 	github.com/stretchr/testify v1.12.1
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
@@ -51,7 +52,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/ebitengine/purego v0.11.1 // indirect
+	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

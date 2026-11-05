@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -559,21 +561,24 @@ func (c *prometheusConverter) addResourceTargetInfo(resource pcommon.Resource, s
 	}
 
 	attributes := resource.Attributes()
-	identifyingAttrs := []string{
-		string(conventions.ServiceNamespaceKey),
-		string(conventions.ServiceNameKey),
-		string(conventions.ServiceInstanceIDKey),
-	}
-	nonIdentifyingAttrsCount := attributes.Len()
-	for _, a := range identifyingAttrs {
-		_, haveAttr := attributes.Get(a)
-		if haveAttr {
-			nonIdentifyingAttrsCount--
+	var identifyingAttrs []string
+	if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+		identifyingAttrs = []string{
+			string(conventions.ServiceNamespaceKey),
+			string(conventions.ServiceNameKey),
+			string(conventions.ServiceInstanceIDKey),
 		}
-	}
-	if nonIdentifyingAttrsCount == 0 {
-		// If we only have job + instance, then target_info isn't useful, so don't add it.
-		return nil
+		nonIdentifyingAttrsCount := attributes.Len()
+		for _, a := range identifyingAttrs {
+			_, haveAttr := attributes.Get(a)
+			if haveAttr {
+				nonIdentifyingAttrsCount--
+			}
+		}
+		if nonIdentifyingAttrsCount == 0 {
+			// If we only have job + instance, then target_info isn't useful, so don't add it.
+			return nil
+		}
 	}
 
 	name := otlptranslator.TargetInfoMetricName

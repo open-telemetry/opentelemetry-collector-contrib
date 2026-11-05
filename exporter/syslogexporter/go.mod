@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslog
 go 1.26.0
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/leodido/go-syslog/v4 v4.6.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.70.1-0.20261102165206-9372e2e353df
@@ -24,7 +24,6 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
-	github.com/cenkalti/backoff/v7 v7.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
