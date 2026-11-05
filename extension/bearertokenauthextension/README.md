@@ -99,6 +99,9 @@ For example, the [Kafka exporter](../../exporter/kafkaexporter/README.md) and
 extensions:
   bearertokenauth:
     filename: /var/run/secrets/tokens/kafka-token
+    retry_on_failure:
+      enabled: true
+    wait_for_token_file: true
 
 exporters:
   kafka:
