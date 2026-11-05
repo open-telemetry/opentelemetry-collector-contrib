@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
-func newCPUEmitter(_ *Config) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
+func newCPUEmitter() func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
 	return newGopsutilEmitter(cpu.TimesWithContext)
 }
 

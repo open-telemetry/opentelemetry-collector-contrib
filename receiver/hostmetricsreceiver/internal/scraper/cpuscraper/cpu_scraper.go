@@ -48,7 +48,7 @@ func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *c
 		settings:       settings,
 		config:         cfg,
 		bootTime:       host.BootTimeWithContext,
-		emitCPUMetrics: newCPUEmitter(cfg),
+		emitCPUMetrics: newCPUEmitter(),
 		now:            time.Now,
 	}
 }

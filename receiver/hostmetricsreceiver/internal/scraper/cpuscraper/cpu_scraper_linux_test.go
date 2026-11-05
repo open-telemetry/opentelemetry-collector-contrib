@@ -127,7 +127,7 @@ func TestCputicksEmitter(t *testing.T) {
 
 	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
-		&Config{MetricsBuilderConfig: cfg, rootPath: root})
+		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -185,7 +185,7 @@ func TestCputicksEmitter_Utilization(t *testing.T) {
 
 	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
-		&Config{MetricsBuilderConfig: cfg, rootPath: root})
+		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -225,7 +225,7 @@ func TestCputicksEmitter_NewCPUAppears(t *testing.T) {
 
 	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
-		&Config{MetricsBuilderConfig: cfg, rootPath: root})
+		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -254,7 +254,7 @@ func TestCputicksEmitter_CPUDisappears(t *testing.T) {
 
 	t.Setenv("HOST_PROC", procDir)
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
-		&Config{MetricsBuilderConfig: cfg, rootPath: root})
+		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())

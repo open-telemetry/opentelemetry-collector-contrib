@@ -33,7 +33,7 @@ func clockTicksPerSecond() uint64 {
 	return uint64(clkTck)
 }
 
-func newCPUEmitter(_ *Config) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
+func newCPUEmitter() func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
 	if hostmetricsmetadata.ReceiverHostmetricsreceiverUseCPUTicksFeatureGate.IsEnabled() {
 		return newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
 	}
