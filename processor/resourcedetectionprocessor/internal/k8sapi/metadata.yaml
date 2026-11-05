@@ -4,6 +4,12 @@ sem_conv_version: 1.43.0
 parent: resourcedetection
 
 resource_attributes:
+  host.id:
+    semantic_convention:
+      ref: host.md#host-id
+    description: The machine ID reported by the kubelet of the K8s node (node.status.nodeInfo.machineID).
+    type: string
+    enabled: false
   k8s.cluster.uid:
     semantic_convention:
       ref: k8s.md#k8s-cluster-uid

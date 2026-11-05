@@ -175,6 +175,43 @@ func TestIngestedDataRecordCount(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestIngestDataPropagatesContext(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	ingestor := &mockingestor{}
+	adxDataProducer := &adxDataProducer{
+		ingestor: ingestor,
+		logger:   logger,
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	// Metrics
+	err := adxDataProducer.metricsDataPusher(ctx, createMetricsData(1))
+	require.NoError(t, err)
+	require.NotNil(t, ingestor.lastCtx)
+	deadline, ok := ingestor.lastCtx.Deadline()
+	assert.True(t, ok, "context passed to ingestor should have deadline")
+	expectedDeadline, _ := ctx.Deadline()
+	assert.Equal(t, expectedDeadline, deadline)
+
+	// Logs
+	err = adxDataProducer.logsDataPusher(ctx, createLogsData())
+	require.NoError(t, err)
+	require.NotNil(t, ingestor.lastCtx)
+	deadline, ok = ingestor.lastCtx.Deadline()
+	assert.True(t, ok, "context passed to ingestor for logs should have deadline")
+	assert.Equal(t, expectedDeadline, deadline)
+
+	// Traces
+	err = adxDataProducer.tracesDataPusher(ctx, createTracesData())
+	require.NoError(t, err)
+	require.NotNil(t, ingestor.lastCtx)
+	deadline, ok = ingestor.lastCtx.Deadline()
+	assert.True(t, ok, "context passed to ingestor for traces should have deadline")
+	assert.Equal(t, expectedDeadline, deadline)
+}
+
 func TestCreateKcsb(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -249,9 +286,11 @@ func TestCreateKcsb(t *testing.T) {
 
 type mockingestor struct {
 	records []string
+	lastCtx context.Context
 }
 
-func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
+func (m *mockingestor) FromReader(ctx context.Context, reader io.Reader, _ ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
+	m.lastCtx = ctx
 	bufbytes, _ := io.ReadAll(reader)
 	metricjson := string(bufbytes)
 	m.SetRecords(strings.Split(metricjson, "\n"))

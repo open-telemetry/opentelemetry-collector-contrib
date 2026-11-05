@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,64 @@ func TestTranslateToLogs(t *testing.T) {
 	}
 }
 
+func TestTranslateToLogsTimestampMicros(t *testing.T) {
+	testcases := []struct {
+		name          string
+		timestamp     time.Time
+		wantMicros    string
+		wantRoundTrip time.Time
+	}{
+		{
+			name:          "sub-millisecond precision adds timestamp_micros",
+			timestamp:     time.Date(2026, 10, 5, 12, 5, 34, 123789000, time.UTC),
+			wantMicros:    "1791201934123789",
+			wantRoundTrip: time.Date(2026, 10, 5, 12, 5, 34, 123789000, time.UTC),
+		},
+		{
+			name:          "millisecond precision omits timestamp_micros",
+			timestamp:     time.Date(2026, 10, 5, 12, 5, 34, 123000000, time.UTC),
+			wantRoundTrip: time.Date(2026, 10, 5, 12, 5, 34, 123000000, time.UTC),
+		},
+		{
+			name:          "sub-microsecond precision only omits timestamp_micros",
+			timestamp:     time.Date(2026, 10, 5, 12, 5, 34, 123000456, time.UTC),
+			wantRoundTrip: time.Date(2026, 10, 5, 12, 5, 34, 123000000, time.UTC),
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := faroTypes.Payload{
+				Logs:         []faroTypes.Log{{Message: "log", Timestamp: tt.timestamp}},
+				Exceptions:   []faroTypes.Exception{{Type: "Error", Value: "failed", Timestamp: tt.timestamp}},
+				Measurements: []faroTypes.Measurement{{Type: "custom", Values: map[string]float64{"duration": 1}, Timestamp: tt.timestamp}},
+				Events:       []faroTypes.Event{{Name: "event", Timestamp: tt.timestamp}},
+			}
+
+			logs, err := TranslateToLogs(t.Context(), payload)
+			require.NoError(t, err)
+			records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			require.Equal(t, 4, records.Len())
+			for i := range records.Len() {
+				kv, parseErr := parseLogfmtLine(records.At(i).Body().Str())
+				require.NoError(t, parseErr)
+				assert.Equal(t, "2026-10-05T12:05:34.123Z", kv[faroTimestamp])
+				micros, ok := kv[faroTimestampMicros]
+				assert.Equal(t, tt.wantMicros != "", ok, "timestamp_micros present")
+				assert.Equal(t, tt.wantMicros, micros)
+			}
+
+			payloads, err := TranslateFromLogs(t.Context(), logs)
+			require.NoError(t, err)
+			require.Len(t, payloads, 1)
+			assert.Equal(t, tt.wantRoundTrip, payloads[0].Logs[0].Timestamp)
+			assert.Equal(t, tt.wantRoundTrip, payloads[0].Exceptions[0].Timestamp)
+			assert.Equal(t, tt.wantRoundTrip, payloads[0].Measurements[0].Timestamp)
+			assert.Equal(t, tt.wantRoundTrip, payloads[0].Events[0].Timestamp)
+		})
+	}
+}
+
 func TestTranslateFromFaroToOTLPAndBack(t *testing.T) {
 	faroPayload := PayloadFromFile(t, "general/payload.json")
 	// Translate from faro payload to otlp logs
@@ -128,6 +187,76 @@ func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
 
 	// Compare the original otlp traces with the translated otlp traces
 	require.Equal(t, expectedTraces, traces)
+}
+
+func TestTranslateMobileMetadataToLogsAndBack(t *testing.T) {
+	testcases := []struct {
+		name string
+		meta faroTypes.Meta
+	}{
+		{
+			name: "all mobile fields set",
+			meta: faroTypes.Meta{
+				App: faroTypes.App{Name: "testapp"},
+				Device: faroTypes.Device{
+					Arch:          "arm64-v8a",
+					ScreenWidth:   1080,
+					ScreenHeight:  2400,
+					ScreenDensity: 2.625,
+					MemoryTotal:   7621,
+					BatteryLevel:  new(42),
+					IsCharging:    new(true),
+					LowPowerMode:  new(true),
+					ThermalState:  faroTypes.DeviceThermalStateCritical,
+				},
+				OS: faroTypes.OS{Name: "Android", APILevel: 34},
+				Network: faroTypes.Network{
+					ConnectionType:    "cell",
+					ConnectionSubtype: "nr",
+					CarrierName:       "TestCarrier",
+					Reachable:         new(true),
+				},
+			},
+		},
+		{
+			name: "pointer fields set to 0 and false",
+			meta: faroTypes.Meta{
+				App: faroTypes.App{Name: "testapp"},
+				Device: faroTypes.Device{
+					BatteryLevel: new(0),
+					IsCharging:   new(false),
+					LowPowerMode: new(false),
+				},
+				Network: faroTypes.Network{Reachable: new(false)},
+			},
+		},
+		{
+			name: "no network",
+			meta: faroTypes.Meta{
+				App:    faroTypes.App{Name: "testapp"},
+				Device: faroTypes.Device{Arch: "arm64"},
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := faroTypes.Payload{
+				Logs: []faroTypes.Log{{
+					Message:   "hello",
+					LogLevel:  faroTypes.LogLevelInfo,
+					Timestamp: time.Date(2026, 10, 21, 10, 0, 0, 0, time.UTC),
+				}},
+				Meta: tt.meta,
+			}
+			logs, err := TranslateToLogs(t.Context(), payload)
+			require.NoError(t, err)
+
+			payloads, err := TranslateFromLogs(t.Context(), logs)
+			require.NoError(t, err)
+			require.Len(t, payloads, 1)
+			require.Equal(t, payload, payloads[0])
+		})
+	}
 }
 
 func TestDrainExceptionValue(t *testing.T) {
