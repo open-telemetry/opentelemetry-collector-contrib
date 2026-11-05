@@ -114,8 +114,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.159.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.164.1-0.20261102165206-9372e2e353df
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.164.1-0.20261102165206-9372e2e353df
+- gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.164.1-0.20261105184035-79bf8a49d2e4
+- gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.164.1-0.20261105184035-79bf8a49d2e4
   - gomod: go.opentelemetry.io/collector/processor/queuebatchprocessor v0.164.1-0.20261105184035-79bf8a49d2e4
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/adaptivetailsamplingprocessor v0.164.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.164.1
