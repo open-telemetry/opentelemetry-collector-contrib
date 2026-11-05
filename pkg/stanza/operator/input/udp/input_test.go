@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -285,8 +286,7 @@ func TestInputResolveNamesFalse(t *testing.T) {
 			cfg := NewConfigWithID("test_input")
 			cfg.ListenAddress = "127.0.0.1:0"
 			cfg.AddAttributes = true
-			resolveNames := false
-			cfg.ResolveNames = &resolveNames
+			cfg.ResolveNames = configoptional.Some(false)
 
 			set := componenttest.NewNopTelemetrySettings()
 			op, err := cfg.Build(set)
@@ -348,8 +348,7 @@ func TestInputZeroDNSCallsWhenResolveNamesFalse(t *testing.T) {
 	cfg := NewConfigWithID("test_input")
 	cfg.ListenAddress = "127.0.0.1:0"
 	cfg.AddAttributes = true
-	resolveNames := false
-	cfg.ResolveNames = &resolveNames
+	cfg.ResolveNames = configoptional.Some(false)
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -402,8 +401,7 @@ func TestInputSlowResolverDoesNotBlockWhenResolveNamesFalse(t *testing.T) {
 	cfg := NewConfigWithID("test_input")
 	cfg.ListenAddress = "127.0.0.1:0"
 	cfg.AddAttributes = true
-	resolveNames := false
-	cfg.ResolveNames = &resolveNames
+	cfg.ResolveNames = configoptional.Some(false)
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -452,8 +450,7 @@ func TestInputSlowResolverBlocksWhenResolveNamesTrue(t *testing.T) {
 	cfg := NewConfigWithID("test_input")
 	cfg.ListenAddress = "127.0.0.1:0"
 	cfg.AddAttributes = true
-	resolveNames := true
-	cfg.ResolveNames = &resolveNames
+	cfg.ResolveNames = configoptional.Some(true)
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -515,8 +512,7 @@ func TestInputResolveNamesTrue(t *testing.T) {
 	cfg := NewConfigWithID("test_input")
 	cfg.ListenAddress = "127.0.0.1:0"
 	cfg.AddAttributes = true
-	resolveNames := true
-	cfg.ResolveNames = &resolveNames
+	cfg.ResolveNames = configoptional.Some(true)
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -570,8 +566,7 @@ func TestInputDNSUnresolvable(t *testing.T) {
 	cfg := NewConfigWithID("test_input")
 	cfg.ListenAddress = "127.0.0.1:0"
 	cfg.AddAttributes = true
-	resolveNames := true
-	cfg.ResolveNames = &resolveNames
+	cfg.ResolveNames = configoptional.Some(true)
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -685,8 +680,7 @@ func TestInputIPv6(t *testing.T) {
 			cfg := NewConfigWithID("test_input")
 			cfg.ListenAddress = "[::1]:0"
 			cfg.AddAttributes = true
-			resolveVal := resolve
-			cfg.ResolveNames = &resolveVal
+			cfg.ResolveNames = configoptional.Some(resolve)
 
 			set := componenttest.NewNopTelemetrySettings()
 			op, err := cfg.Build(set)

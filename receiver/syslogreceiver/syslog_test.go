@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -97,22 +98,20 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, subUDPFalse.Unmarshal(cfgUDPFalse))
 	assert.NoError(t, confmap.Validate(cfgUDPFalse))
-	resolveFalse := false
 	expectedUDPFalse := testdataUDPConfig()
 	expectedUDPFalse.RetryOnFailure = consumerretry.NewDefaultConfig()
 	expectedUDPFalse.InputConfig.UDP.ListenAddress = "127.0.0.1:29022"
 	expectedUDPFalse.InputConfig.UDP.AddAttributes = true
-	expectedUDPFalse.InputConfig.UDP.ResolveNames = &resolveFalse
+	expectedUDPFalse.InputConfig.UDP.ResolveNames = configoptional.Some(false)
 	assert.Equal(t, expectedUDPFalse, cfgUDPFalse)
 }
 
 func TestSyslogWithUdpResolveNamesFalse(t *testing.T) {
 	listenAddress := "127.0.0.1:29022"
-	resolveFalse := false
 	cfg := testdataUDPConfig()
 	cfg.InputConfig.UDP.ListenAddress = listenAddress
 	cfg.InputConfig.UDP.AddAttributes = true
-	cfg.InputConfig.UDP.ResolveNames = &resolveFalse
+	cfg.InputConfig.UDP.ResolveNames = configoptional.Some(false)
 
 	numLogs := 3
 	f := NewFactory()

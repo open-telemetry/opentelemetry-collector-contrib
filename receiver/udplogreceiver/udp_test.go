@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -100,10 +101,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, subFalse.Unmarshal(cfgFalse))
 	assert.NoError(t, confmap.Validate(cfgFalse))
-	resolveFalse := false
 	expectedFalse := testdataConfigYaml("127.0.0.1:29018")
 	expectedFalse.InputConfig.AddAttributes = true
-	expectedFalse.InputConfig.ResolveNames = &resolveFalse
+	expectedFalse.InputConfig.ResolveNames = configoptional.Some(false)
 	assert.Equal(t, expectedFalse, cfgFalse)
 
 	// test resolve_names: true
@@ -112,10 +112,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, subTrue.Unmarshal(cfgTrue))
 	assert.NoError(t, confmap.Validate(cfgTrue))
-	resolveTrue := true
 	expectedTrue := testdataConfigYaml("127.0.0.1:29018")
 	expectedTrue.InputConfig.AddAttributes = true
-	expectedTrue.InputConfig.ResolveNames = &resolveTrue
+	expectedTrue.InputConfig.ResolveNames = configoptional.Some(true)
 	assert.Equal(t, expectedTrue, cfgTrue)
 }
 
@@ -123,8 +122,7 @@ func TestUdpResolveNamesFalse(t *testing.T) {
 	listenAddress := "127.0.0.1:29020"
 	cfg := testdataConfigYaml(listenAddress)
 	cfg.InputConfig.AddAttributes = true
-	resolveNames := false
-	cfg.InputConfig.ResolveNames = &resolveNames
+	cfg.InputConfig.ResolveNames = configoptional.Some(false)
 
 	numLogs := 3
 	f := NewFactory()

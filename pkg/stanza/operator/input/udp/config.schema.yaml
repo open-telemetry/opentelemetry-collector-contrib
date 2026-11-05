@@ -26,7 +26,7 @@ $defs:
       one_log_per_packet:
         type: boolean
       resolve_names:
-        x-pointer: true
+        x-optional: true
         type: boolean
     allOf:
       - $ref: /pkg/stanza/trim.config
