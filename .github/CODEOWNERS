@@ -249,7 +249,7 @@ processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @jinja2 @jkoronaAtCisco
 processor/rollingspanlatencyprocessor/                           @open-telemetry/collector-contrib-approvers @atoulme @rnterbush @pavankrish123
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13 @MikeGoldsmith
-processor/signingprocessor/                                      @open-telemetry/collector-contrib-approvers @hilmarf @jmacd
+processor/signingprocessor/                                      @open-telemetry/collector-contrib-approvers @hilmarf @jmacd @MJarmo
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/spanpruningprocessor/                                  @open-telemetry/collector-contrib-approvers @portertech @csmarchbanks
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
@@ -258,7 +258,7 @@ processor/telemetrypolicyprocessor/                              @open-telemetry
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/transformprocessor/internal/logparsingfuncs/           @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @Dylan-M
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @schmikei @rnishtala-sumo
-processor/verifyprocessor/                                       @open-telemetry/collector-contrib-approvers @hilmarf @jmacd
+processor/verifyprocessor/                                       @open-telemetry/collector-contrib-approvers @hilmarf @jmacd @MJarmo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/activedirectoryinvreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti @pankaj101A @jagan2221
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
