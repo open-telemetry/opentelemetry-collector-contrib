@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/kafka
+note: Pass message metadata to opt-in message encoding extensions for all signals.
+issues: [51752]
+change_logs: [user]
