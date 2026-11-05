@@ -32,7 +32,40 @@
             IF(thread.processlist_state = 'User sleep', 'User sleep',
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
-    ) AS wait_event,
+    ) AS wait_type,
+    -- wait_event_type is the top-level classification from EVENT_NAME's second
+    -- path segment ('io' | 'lock' | 'synch'). Gated on the exact same
+    -- conditions as session_status above so this only reports a real category
+    -- while session_status = 'waiting'; it reports 'CPU' in lockstep with
+    -- 'running', and 'other' in lockstep with 'other'. A NULL wait.event_name
+    -- on a genuinely waiting row is guarded by the outer COALESCE so this
+    -- column is never NULL.
+    CASE
+        WHEN wait.thread_id IS NOT NULL AND wait.end_event_id IS NULL THEN
+            COALESCE(
+                IF(thread.processlist_state = 'User sleep', 'User sleep',
+                   SUBSTRING_INDEX(SUBSTRING_INDEX(wait.event_name, '/', 2), '/', -1)),
+                'other'
+            )
+        WHEN statement.thread_id IS NOT NULL
+             AND COALESCE(statement.sql_text, thread.processlist_info) <> '' THEN 'CPU'
+        ELSE 'other'
+    END AS wait_event_type,
+    -- wait_event is everything after the category segment of EVENT_NAME
+    -- (subsystem/component/instrument), e.g. 'table/sql/handler',
+    -- 'mutex/innodb/checkpoint_state'. Same session_status-aligned gating and
+    -- NULL-safety as wait_event_type above.
+    CASE
+        WHEN wait.thread_id IS NOT NULL AND wait.end_event_id IS NULL THEN
+            COALESCE(
+                IF(thread.processlist_state = 'User sleep', 'User sleep',
+                   SUBSTRING(wait.event_name, LENGTH(SUBSTRING_INDEX(wait.event_name, '/', 2)) + 2)),
+                'other'
+            )
+        WHEN statement.thread_id IS NOT NULL
+             AND COALESCE(statement.sql_text, thread.processlist_info) <> '' THEN 'CPU'
+        ELSE 'other'
+    END AS wait_event,
     COALESCE(
         -- Tier 1: completed wait event — TIMER_WAIT is populated (exact, picosecond precision)
         wait.timer_wait / 1e12,
@@ -73,7 +106,13 @@
     -- Use CONVERT for MySQL 8.0+ which stores user variables as binary (VARBINARY);
     -- on MySQL 5.7 and MariaDB the value is VARCHAR, so CONVERT is a no-op.
     -- utf8mb4 is used instead of the deprecated utf8 alias.
-    COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent
+    COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent,
+    -- client_name is the client driver's self-reported identity
+    -- (e.g. "MySQL Connector/J", "libmysql"), joined on PROCESSLIST_ID (not
+    -- thread_id -- a different ID space) and filtered to one ATTR_NAME so
+    -- the join stays 1:1, same pattern as the user_variables_by_thread join
+    -- below for @traceparent.
+    COALESCE(attrs.ATTR_VALUE, '') AS client_name
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
@@ -83,6 +122,7 @@ FROM
     -- Both MySQL and MariaDB store user variable names in lowercase in VARIABLE_NAME
     -- regardless of how the client spelled them, so '= traceparent' matches any case.
     LEFT JOIN performance_schema.user_variables_by_thread AS uvt ON uvt.thread_id = thread.thread_id AND uvt.VARIABLE_NAME = 'traceparent'
+    LEFT JOIN performance_schema.session_connect_attrs AS attrs ON attrs.PROCESSLIST_ID = thread.PROCESSLIST_ID AND attrs.ATTR_NAME = '_client_name'
     {{- if .supportsProcesslist}}
     -- performance_schema.processlist.HOST returns "host:port" for TCP/IP connections,
     -- enabling population of client.port. Available MySQL 8.0.22+; lock-free unlike

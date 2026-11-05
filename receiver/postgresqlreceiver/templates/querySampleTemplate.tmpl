@@ -5,11 +5,15 @@ SELECT
     COALESCE(sa.client_hostname, '') AS client_hostname,
     COALESCE(sa.client_port::TEXT, '') AS client_port,
     COALESCE(sa.query_start::TEXT, '') AS query_start,
+    CASE WHEN sa.backend_start IS NOT NULL
+         THEN to_char(sa.backend_start AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+         ELSE '' END AS backend_start,
     COALESCE(sa.wait_event_type, '') AS wait_event_type,
     COALESCE(sa.wait_event, '') AS wait_event,
     COALESCE(sa.query_id::TEXT, '') AS query_id,
     COALESCE(sa.pid::TEXT, '') AS pid,
     COALESCE(sa.application_name::TEXT, '') AS application_name,
+    COALESCE(sa.backend_type, '') AS backend_type,
     EXTRACT(EPOCH FROM sa.query_start) AS _query_start_timestamp,
     sa.state,
     sa.query,

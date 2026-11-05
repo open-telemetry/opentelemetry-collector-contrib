@@ -32,7 +32,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49001
 
   - id: exporter.datadogexporter.AddUnits
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Datadog Exporter adds units to exported metrics.
     from_version: v0.157.0

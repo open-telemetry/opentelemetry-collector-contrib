@@ -43,6 +43,9 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		err = errors.New("must specify at least one scraper when using host_metrics receiver")
 	}
+	if cfg.MetadataCollectionInterval < 0 {
+		err = multierr.Append(err, errors.New("metadata_collection_interval must not be negative"))
+	}
 	return multierr.Append(err, gopsutilenv.ValidateRootPath(cfg.RootPath))
 }
 

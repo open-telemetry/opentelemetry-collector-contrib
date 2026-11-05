@@ -10,7 +10,8 @@ and converts them into otlp.
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkafkametrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkafkametrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkafkametrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkafkametrics) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kafkametrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kafkametrics&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dloucasfx](https://www.github.com/dloucasfx) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -82,10 +83,16 @@ Optional Settings (with defaults):
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
         - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. When disabled, the client does not make the initial request to broker at the startup.
+  - `full` (deprecated): No longer has any effect. Metadata is only fetched for
+    the topics the client scrapes.
   - `retry`
-    - `max` (default = 3): The number of retries to get metadata
-    - `backoff` (default = 250ms): How long to wait between metadata retries
+    - `max` (default = 20): The number of times to retry a retriable request.
+      Applies to the admin and offset fetch requests issued by the scrapers. It
+      does not apply to the client's internal metadata refresh, which caps
+      itself at 3 retries.
+    - `backoff` (default = 250ms): The minimum time to wait before retrying a
+      request. Each successive retry doubles the wait, with jitter applied,
+      capped at `max(5s, backoff)`.
 
 ## Examples:
 

@@ -2631,6 +2631,103 @@ func (ms *SqlserverTaskRateMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverTempdbAllocationWaitersCountMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.allocation.waiters.count metric.
+type SqlserverTempdbAllocationWaitersCountMetricAttributeKey string
+
+const (
+	SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType SqlserverTempdbAllocationWaitersCountMetricAttributeKey = "sqlserver.tempdb.allocation.page_type"
+)
+
+// SqlserverTempdbAllocationWaitersCountMetricConfig provides config for the sqlserver.tempdb.allocation.waiters.count metric.
+type SqlserverTempdbAllocationWaitersCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType:
+		default:
+			return fmt.Errorf("metric sqlserver.tempdb.allocation.waiters.count doesn't have an attribute %v, valid attributes: [sqlserver.tempdb.allocation.page_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverTempdbFileSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.file.size metric.
+type SqlserverTempdbFileSizeMetricAttributeKey string
+
+const (
+	SqlserverTempdbFileSizeMetricAttributeKeyFileType              SqlserverTempdbFileSizeMetricAttributeKey = "file_type"
+	SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID SqlserverTempdbFileSizeMetricAttributeKey = "sqlserver.tempdb.file.id"
+)
+
+// SqlserverTempdbFileSizeMetricConfig provides config for the sqlserver.tempdb.file.size metric.
+type SqlserverTempdbFileSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbFileSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverTempdbFileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID:
+		default:
+			return fmt.Errorf("metric sqlserver.tempdb.file.size doesn't have an attribute %v, valid attributes: [file_type, sqlserver.tempdb.file.id]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric.
 type SqlserverTransactionDelayMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2967,7 +3064,7 @@ func (ms *SqlserverWorktableCacheHitRatioMetricConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// MetricsConfig provides config for sqlserver metrics.
+// MetricsConfig provides config for sql_server metrics.
 type MetricsConfig struct {
 	SqlserverAccessScanRate                               SqlserverAccessScanRateMetricConfig                               `mapstructure:"sqlserver.access.scan.rate"`
 	SqlserverAttentionRate                                SqlserverAttentionRateMetricConfig                                `mapstructure:"sqlserver.attention.rate"`
@@ -3055,6 +3152,8 @@ type MetricsConfig struct {
 	SqlserverTableCount                                   SqlserverTableCountMetricConfig                                   `mapstructure:"sqlserver.table.count"`
 	SqlserverTaskCount                                    SqlserverTaskCountMetricConfig                                    `mapstructure:"sqlserver.task.count"`
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
+	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
+	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
@@ -3393,6 +3492,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
 		},
+		SqlserverTempdbAllocationWaitersCount: SqlserverTempdbAllocationWaitersCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey{SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType},
+		},
+		SqlserverTempdbFileSize: SqlserverTempdbFileSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
+		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,
 		},
@@ -3461,16 +3570,20 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// EventsConfig provides config for sqlserver events.
+// EventsConfig provides config for sql_server events.
 type EventsConfig struct {
-	DbServerQueryPlan    EventConfig `mapstructure:"db.server.query_plan"`
-	DbServerQuerySample  EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerTopProcedure EventConfig `mapstructure:"db.server.top_procedure"`
-	DbServerTopQuery     EventConfig `mapstructure:"db.server.top_query"`
+	DbServerProcedureDefinition EventConfig `mapstructure:"db.server.procedure_definition"`
+	DbServerQueryPlan           EventConfig `mapstructure:"db.server.query_plan"`
+	DbServerQuerySample         EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopProcedure        EventConfig `mapstructure:"db.server.top_procedure"`
+	DbServerTopQuery            EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerProcedureDefinition: EventConfig{
+			Enabled: false,
+		},
 		DbServerQueryPlan: EventConfig{
 			Enabled: false,
 		},
@@ -3484,6 +3597,41 @@ func DefaultEventsConfig() EventsConfig {
 			Enabled: false,
 		},
 	}
+}
+
+// DbSystemVersionResourceAttributeConfig provides config for the db.system.version resource attribute.
+type DbSystemVersionResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *DbSystemVersionResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // HostNameResourceAttributeConfig provides config for the host.name resource attribute.
@@ -3766,6 +3914,53 @@ func (rac *SqlserverDatabaseNameResourceAttributeConfig) Unmarshal(parser *confm
 	return nil
 }
 
+// SqlserverDbEditionResourceAttributeConfig provides config for the sqlserver.db.edition resource attribute.
+type SqlserverDbEditionResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	// Must be one of: standard, enterprise, express, azure_sql_database, managed_instance, unknown.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *SqlserverDbEditionResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (rac *SqlserverDbEditionResourceAttributeConfig) Validate() error {
+	if rac.OverrideValue != nil {
+		switch *rac.OverrideValue {
+		case "standard", "enterprise", "express", "azure_sql_database", "managed_instance", "unknown":
+		default:
+			return fmt.Errorf("override_value for sqlserver.db.edition must be one of [standard, enterprise, express, azure_sql_database, managed_instance, unknown], got %q", *rac.OverrideValue)
+		}
+	}
+	return nil
+}
+
 // SqlserverInstanceNameResourceAttributeConfig provides config for the sqlserver.instance.name resource attribute.
 type SqlserverInstanceNameResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -3801,8 +3996,9 @@ func (rac *SqlserverInstanceNameResourceAttributeConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// ResourceAttributesConfig provides config for sqlserver resource attributes.
+// ResourceAttributesConfig provides config for sql_server resource attributes.
 type ResourceAttributesConfig struct {
+	DbSystemVersion       DbSystemVersionResourceAttributeConfig       `mapstructure:"db.system.version"`
 	HostName              HostNameResourceAttributeConfig              `mapstructure:"host.name"`
 	ServerAddress         ServerAddressResourceAttributeConfig         `mapstructure:"server.address"`
 	ServerPort            ServerPortResourceAttributeConfig            `mapstructure:"server.port"`
@@ -3811,11 +4007,15 @@ type ResourceAttributesConfig struct {
 	ServiceNamespace      ServiceNamespaceResourceAttributeConfig      `mapstructure:"service.namespace"`
 	SqlserverComputerName SqlserverComputerNameResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName SqlserverDatabaseNameResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
+	SqlserverDbEdition    SqlserverDbEditionResourceAttributeConfig    `mapstructure:"sqlserver.db.edition"`
 	SqlserverInstanceName SqlserverInstanceNameResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		DbSystemVersion: DbSystemVersionResourceAttributeConfig{
+			Enabled: false,
+		},
 		HostName: HostNameResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -3840,6 +4040,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		SqlserverDatabaseName: SqlserverDatabaseNameResourceAttributeConfig{
 			Enabled: true,
 		},
+		SqlserverDbEdition: SqlserverDbEditionResourceAttributeConfig{
+			Enabled: false,
+		},
 		SqlserverInstanceName: SqlserverInstanceNameResourceAttributeConfig{
 			Enabled: false,
 		},
@@ -3850,6 +4053,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // For each enabled resource attribute with a non-nil OverrideValue,
 // the override replaces any existing value in the resource.
 func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
+	if rac.DbSystemVersion.Enabled && rac.DbSystemVersion.OverrideValue != nil {
+		res.Attributes().PutStr("db.system.version", *rac.DbSystemVersion.OverrideValue)
+	}
 	if rac.HostName.Enabled && rac.HostName.OverrideValue != nil {
 		res.Attributes().PutStr("host.name", *rac.HostName.OverrideValue)
 	}
@@ -3874,12 +4080,15 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	if rac.SqlserverDatabaseName.Enabled && rac.SqlserverDatabaseName.OverrideValue != nil {
 		res.Attributes().PutStr("sqlserver.database.name", *rac.SqlserverDatabaseName.OverrideValue)
 	}
+	if rac.SqlserverDbEdition.Enabled && rac.SqlserverDbEdition.OverrideValue != nil {
+		res.Attributes().PutStr("sqlserver.db.edition", *rac.SqlserverDbEdition.OverrideValue)
+	}
 	if rac.SqlserverInstanceName.Enabled && rac.SqlserverInstanceName.OverrideValue != nil {
 		res.Attributes().PutStr("sqlserver.instance.name", *rac.SqlserverInstanceName.OverrideValue)
 	}
 }
 
-// MetricsBuilderConfig is a configuration for sqlserver metrics builder.
+// MetricsBuilderConfig is a configuration for sql_server metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
@@ -3892,7 +4101,7 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
-// LogsBuilderConfig is a configuration for sqlserver logs builder.
+// LogsBuilderConfig is a configuration for sql_server logs builder.
 type LogsBuilderConfig struct {
 	Events             EventsConfig             `mapstructure:"events"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

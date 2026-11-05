@@ -31,7 +31,7 @@ type ProfileIDArguments[K any] struct {
 }
 
 func NewProfileIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory(profileIDFuncName, &ProfileIDArguments[K]{}, createProfileIDFunction[K])
+	return ottl.NewFactory(profileIDFuncName, &ProfileIDArguments[K]{}, createProfileIDFunction[K], ottl.WithExperimental[K]())
 }
 
 func createProfileIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

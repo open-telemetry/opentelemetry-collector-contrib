@@ -85,12 +85,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordDnscheckErrorDataPoint(ts, 1, "error.message-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordDnscheckErrorDataPoint(ts, 3, "error.message-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordDnscheckErrorDataPoint(ts+1, 3, "error.message-val-2")
+				assert.Equal(t, 2, mb.metricDnscheckError.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDnscheckStatusDataPoint(ts, 1, 9, "dns.resolved.all.ips-val", "dns.resolved.ip-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordDnscheckStatusDataPoint(ts, 3, 10, "dns.resolved.all.ips-val-2", "dns.resolved.ip-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordDnscheckStatusDataPoint(ts+1, 3, 10, "dns.resolved.all.ips-val-2", "dns.resolved.ip-val-2")
+				assert.Equal(t, 2, mb.metricDnscheckStatus.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -163,7 +169,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["dnscheck.error"], "Found a duplicate in the metrics slice: dnscheck.error")
 						validatedMetrics["dnscheck.error"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of errors recorded during the DNS check.", mi.Description())
 						assert.Equal(t, "{error}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -213,7 +221,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["dnscheck.status"], "Found a duplicate in the metrics slice: dnscheck.status")
 						validatedMetrics["dnscheck.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "1 if the DNS query returned successfully, 0 otherwise. The dns.resolved.ip and dns.resolved.all.ips attributes are only present when the value is 1 and the record type is A or AAAA.  The dns.rcode attribute is present whenever a response was received  from the server, including non-success responses such as NXDOMAIN,  SERVFAIL, or REFUSED; it is absent only when no response was received  at all (e.g. timeout or network unreachable).", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

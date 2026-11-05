@@ -13,7 +13,8 @@ status:
     development: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, TylerHelmuth, povilasv, ChrsMark]
+    active: [TylerHelmuth, povilasv, ChrsMark, jinja2]
+    emeritus: [dmitryax]
 
 sem_conv_version: 1.18.0
 

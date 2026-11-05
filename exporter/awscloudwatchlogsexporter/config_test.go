@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 1
+					queue.Batch = configoptional.Some(*queue.Batch.GetOrInsertDefault())
 					return queue
 				}()),
 			},
@@ -69,6 +70,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 1
+					queue.Batch = configoptional.Some(*queue.Batch.GetOrInsertDefault())
 					queue.QueueSize = 2
 					return queue
 				}()),
@@ -76,11 +78,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_queue_size"),
-			errorMessage: "`queue_size` must be positive",
+			errorMessage: "`queue_size`",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_num_consumers"),
-			errorMessage: "`num_consumers` must be positive",
+			errorMessage: "`num_consumers`",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),

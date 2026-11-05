@@ -86,6 +86,9 @@ kafka/regex_topic_with_exclusion:
 kafka/conn_idle_timeout:
   conn_idle_timeout: 5m
 
+kafka/dial_timeout:
+  dial_timeout: 30s
+
 kafka/valid_exclude_topics_logs:
   logs:
     topics:
@@ -104,6 +107,33 @@ kafka/partition_processing:
   partition_processing:
     independent: true
     max_buffered_batches: 2
+
+kafka/partition_processing_max_prefetch:
+  partition_processing:
+    independent: true
+    max_prefetch:
+      batches: 2
+
+kafka/partition_processing_max_prefetch_bytes:
+  partition_processing:
+    independent: true
+    max_prefetch:
+      batches: 2
+      bytes: 33554432
+
+kafka/non_independent_zero_max_buffered_batches:
+  partition_processing:
+    max_buffered_batches: 0
+
+kafka/partition_processing_max_in_flight:
+  partition_processing:
+    independent: true
+    max_prefetch:
+      batches: 1
+    max_in_flight:
+      records: 4
+      bytes: 33554432
+      window: cross_fetch
 
 kafka/invalid_exclude_topics_logs_non_regex:
   logs:
@@ -184,8 +214,52 @@ kafka/invalid_partition_processing_zero_buffered_batches:
     independent: true
     max_buffered_batches: 0
 
+kafka/invalid_partition_processing_zero_max_prefetch_batches:
+  partition_processing:
+    independent: true
+    max_prefetch:
+      batches: 0
+
+kafka/invalid_partition_processing_negative_max_prefetch_bytes:
+  partition_processing:
+    independent: true
+    max_prefetch:
+      bytes: -1
+
+kafka/invalid_partition_processing_max_buffered_batches_and_max_prefetch:
+  partition_processing:
+    independent: true
+    max_buffered_batches: 2
+    max_prefetch:
+      batches: 2
+
 kafka/invalid_partition_processing_manual_commit:
   autocommit:
     enable: false
   partition_processing:
     independent: true
+
+kafka/invalid_partition_processing_zero_max_in_flight:
+  partition_processing:
+    independent: true
+    max_in_flight:
+      records: 0
+
+kafka/invalid_partition_processing_negative_max_in_flight_bytes:
+  partition_processing:
+    independent: true
+    max_in_flight:
+      bytes: -1
+
+kafka/invalid_partition_processing_cross_fetch_without_bytes:
+  partition_processing:
+    independent: true
+    max_in_flight:
+      records: 4
+      window: cross_fetch
+
+kafka/invalid_partition_processing_unknown_window:
+  partition_processing:
+    independent: true
+    max_in_flight:
+      window: sliding

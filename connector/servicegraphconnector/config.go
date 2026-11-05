@@ -48,7 +48,7 @@ type Config struct {
 	MetricsFlushInterval *time.Duration `mapstructure:"metrics_flush_interval"`
 
 	// DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
-	// The default value is {"db.name"}.
+	// The default value is {"db.name", "db.namespace"}.
 	DatabaseNameAttributes []string `mapstructure:"database_name_attributes"`
 
 	// MetricsTimestampOffset is the offset to subtract from metric timestamps.

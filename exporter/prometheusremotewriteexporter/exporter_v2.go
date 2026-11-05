@@ -33,6 +33,9 @@ func (prwe *prwExporter) pushMetricsV2(ctx context.Context, md pmetric.Metrics) 
 
 // exportV2 sends a Snappy-compressed writev2.Request containing writev2.TimeSeries to a remote write endpoint.
 func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Request) error {
+	ctx, cancel := prwe.exportContext(ctx)
+	defer cancel()
+
 	input := make(chan *writev2.Request, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -61,7 +64,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 	}
 	wg.Wait()
 
-	return errs
+	return appendUnsentRequestsError(ctx, errs, len(input), len(requests))
 }
 
 func (prwe *prwExporter) handleRequestsV2(ctx context.Context, input chan *writev2.Request) error {
@@ -69,23 +72,23 @@ func (prwe *prwExporter) handleRequestsV2(ctx context.Context, input chan *write
 	buf := bufferPool.Get().(*buffer)
 	defer bufferPool.Put(buf)
 	for {
-		select {
-		case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
+		// Stop as soon as the context is done. The input channel is closed once it was filled, so
+		// receiving from it never blocks.
+		if ctx.Err() != nil {
 			return errs
+		}
+		request, ok := <-input
+		if !ok {
+			return errs
+		}
 
-		case request, ok := <-input:
-			if !ok {
-				return errs
-			}
+		reqBuf, errMarshal := buf.MarshalAndEncode(request)
+		if errMarshal != nil {
+			return multierr.Append(errs, errMarshal)
+		}
 
-			reqBuf, errMarshal := buf.MarshalAndEncode(request)
-			if errMarshal != nil {
-				return multierr.Append(errs, errMarshal)
-			}
-
-			if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
-				errs = multierr.Append(errs, errExecute)
-			}
+		if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+			errs = multierr.Append(errs, errExecute)
 		}
 	}
 }

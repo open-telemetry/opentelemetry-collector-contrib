@@ -908,6 +908,20 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
+| mysql.query_plan.source | The event the plan was reported for, so plans can be routed or dropped per source event. | Str: ``db.server.top_query``, ``db.server.query_sample`` | - |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
+
 ### db.server.query_sample
 
 Query sample collection enables monitoring of current running database statements.
@@ -920,7 +934,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | db.system.name | The name of the database system. | Str: ``mysql`` | - |
 | mysql.threads.thread_id | The unique identifier for the thread executing the statement. | Any Int | - |
 | user.name | The user associated with a foreground thread, empty for a background thread (originally processlist_user). | Any Str | - |
-| db.namespace | The default database for the thread, or empty if none has been selected (originally processlist_db). | Any Str | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
 | mysql.threads.processlist_command | The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle. | Any Str | - |
 | mysql.threads.processlist_state | An action, event, or state that indicates what the thread is doing. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
@@ -928,6 +942,8 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.event_id | The thread associated with the event and the thread current event number when the event starts. | Any Int | - |
+| mysql.wait_event.type | Top-level wait classification derived from the second path segment of the wait event name ('io', 'lock', 'synch'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.name. | Any Str | - |
+| mysql.wait_event.name | Detailed wait breakdown -- the wait event name with its category segment stripped (e.g. 'table/sql/handler', 'mutex/innodb/checkpoint_state'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.type. Distinct from mysql.wait_type, which reports the raw, unprocessed event name and is unchanged. | Any Str | - |
 | mysql.wait_type | The name of the instrument that produced the event. | Any Str | - |
 | mysql.session.status | Simplified session status, either 'waiting', 'running' or 'other'. | Any Str | - |
 | mysql.session.id | The unique identifier for the session associated with the event. | Any Int | - |
@@ -937,6 +953,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
+| mysql.client.name | The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side. | Any Str | - |
 
 ### db.server.top_query
 
@@ -948,12 +965,15 @@ This provides insights into query performance and resource usage, helping users 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
 | mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.events_statements_summary_by_digest.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str | - |
 | mysql.events_statements_summary_by_digest.count_star | The number of times the statement was executed, report in delta value. | Any Int | - |
 | mysql.events_statements_summary_by_digest.sum_timer_wait | The total time spent executing the statement, report in delta seconds. | Any Double | - |
+| mysql.events_statements_summary_by_digest.examined_rows | The number of rows examined by the statement, reported as a delta value. | Any Int | - |
+| mysql.events_statements_summary_by_digest.returned_rows | The number of rows returned by the statement, reported as a delta value. | Any Int | - |
 
 ## Resource Attributes
 

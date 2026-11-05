@@ -60,6 +60,7 @@ type redisClient struct {
 	client     *redis.Client
 	prefix     string
 	expiration time.Duration
+	logger     *zap.Logger
 }
 
 var _ storage.Client = redisClient{}
@@ -120,6 +121,60 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 	return err
 }
 
+// IncrementBy atomically adds delta to key and returns the new value.
+func (rc redisClient) IncrementBy(ctx context.Context, key string, delta int64) (int64, error) {
+	res, err := rc.BatchIncrementBy(ctx, map[string]int64{key: delta})
+	if err != nil {
+		return 0, err
+	}
+	return res[key], nil
+}
+
+// BatchIncrementBy atomically adds each delta to its key and returns the new values.
+// On error some increments may already be applied, so it is not safe to retry.
+func (rc redisClient) BatchIncrementBy(ctx context.Context, deltas map[string]int64) (map[string]int64, error) {
+	out := make(map[string]int64, len(deltas))
+	if len(deltas) == 0 {
+		return out, nil
+	}
+
+	p := rc.client.Pipeline()
+	incrs := make(map[string]*redis.IntCmd, len(deltas))
+	ttls := make(map[string]*redis.DurationCmd, len(deltas))
+	for k, d := range deltas {
+		incrs[k] = p.IncrBy(ctx, rc.prefix+k, d)
+		if rc.expiration > 0 {
+			ttls[k] = p.TTL(ctx, rc.prefix+k)
+		}
+	}
+	if _, err := p.Exec(ctx); err != nil {
+		return nil, err
+	}
+	for k, c := range incrs {
+		out[k] = c.Val()
+	}
+
+	// TTL is -1 for keys without expiry, usually just created by INCRBY. Avoids EXPIRE NX (Redis 7.0+).
+	var created []string
+	for k, c := range ttls {
+		if c.Val() == -1 {
+			created = append(created, k)
+		}
+	}
+	if len(created) > 0 {
+		ep := rc.client.Pipeline()
+		for _, k := range created {
+			ep.Expire(ctx, rc.prefix+k, rc.expiration)
+		}
+		if _, err := ep.Exec(ctx); err != nil {
+			// Not returned, a retry would double count.
+			rc.logger.Warn("failed to set expiration on new counter keys",
+				zap.Int("keys", len(created)), zap.Error(err))
+		}
+	}
+	return out, nil
+}
+
 func (redisClient) Close(context.Context) error {
 	return nil
 }
@@ -130,6 +185,7 @@ func (rs *redisStorage) GetClient(_ context.Context, kind component.Kind, ent co
 		client:     rs.client,
 		prefix:     rs.getPrefix(ent, kindString(kind), name),
 		expiration: rs.cfg.Expiration,
+		logger:     rs.logger,
 	}, nil
 }
 

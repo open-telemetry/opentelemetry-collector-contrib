@@ -2036,67 +2036,43 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expectedService string,
 	kvs map[string]*expectedValue,
 ) {
-	// Iterate over the received set of traces starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ts.AllTraces()) - 1; i >= 0; i-- {
-		traces := ts.AllTraces()[i]
-		for i := 0; i < traces.ResourceSpans().Len(); i++ {
-			resource := traces.ResourceSpans().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "span do not has 'service.name' attribute in resource")
-			if service.AsString() != expectedService {
-				continue
+	scanResourcesForAttributes(t, "spans", expectedService, kvs, func() []pcommon.Resource {
+		var resources []pcommon.Resource
+		for _, traces := range ts.AllTraces() {
+			for i := 0; i < traces.ResourceSpans().Len(); i++ {
+				resources = append(resources, traces.ResourceSpans().At(i).Resource())
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
 		}
-	}
-	t.Fatalf("no spans found for service %s", expectedService)
+		return resources
+	})
 }
 
 func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expectedService string,
 	kvs map[string]*expectedValue,
 ) {
-	// Iterate over the received set of metrics starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ms.AllMetrics()) - 1; i >= 0; i-- {
-		metrics := ms.AllMetrics()[i]
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			resource := metrics.ResourceMetrics().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "metric do not has 'service.name' attribute in resource")
-			if service.AsString() != expectedService {
-				continue
+	scanResourcesForAttributes(t, "metrics", expectedService, kvs, func() []pcommon.Resource {
+		var resources []pcommon.Resource
+		for _, metrics := range ms.AllMetrics() {
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				resources = append(resources, metrics.ResourceMetrics().At(i).Resource())
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
 		}
-	}
-	t.Fatalf("no metric found for service %s", expectedService)
+		return resources
+	})
 }
 
 func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedService string,
 	kvs map[string]*expectedValue,
 ) {
-	// Iterate over the received set of logs starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ls.AllLogs()) - 1; i >= 0; i-- {
-		logs := ls.AllLogs()[i]
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
-			resource := logs.ResourceLogs().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "log do not has 'service.name' attribute in resource")
-			if service.AsString() != expectedService {
-				continue
+	scanResourcesForAttributes(t, "logs", expectedService, kvs, func() []pcommon.Resource {
+		var resources []pcommon.Resource
+		for _, logs := range ls.AllLogs() {
+			for i := 0; i < logs.ResourceLogs().Len(); i++ {
+				resources = append(resources, logs.ResourceLogs().At(i).Resource())
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
-			return
 		}
-	}
-	t.Fatalf("no logs found for service %s", expectedService)
+		return resources
+	})
 }
 
 func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expectedService string,
@@ -2107,23 +2083,36 @@ func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expe
 	// TODO: Remove `t.Skip()` once #36127 is resolved
 	t.Skip("Skip profiles test")
 
-	// Iterate over the received set of profiles starting from the most recent entries due to a bug in the processor:
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
-	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
-	for i := len(ps.AllProfiles()) - 1; i >= 0; i-- {
-		profiles := ps.AllProfiles()[i]
-		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-			resource := profiles.ResourceProfiles().At(i).Resource()
-			service, exist := resource.Attributes().Get("service.name")
-			assert.True(t, exist, "profile do not has 'service.name' attribute in resource")
+	scanResourcesForAttributes(t, "profiles", expectedService, kvs, func() []pcommon.Resource {
+		var resources []pcommon.Resource
+		for _, profiles := range ps.AllProfiles() {
+			for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+				resources = append(resources, profiles.ResourceProfiles().At(i).Resource())
+			}
+		}
+		return resources
+	})
+}
+
+// scanResourcesForAttributes waits until the most recent resource of expectedService has all the expected attributes.
+// Telemetry received before the processor has cached the pod metadata is not annotated, so it retries
+// until newer telemetry is received.
+func scanResourcesForAttributes(t *testing.T, signal, expectedService string, kvs map[string]*expectedValue,
+	getResources func() []pcommon.Resource,
+) {
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		resources := getResources()
+		for i := len(resources) - 1; i >= 0; i-- {
+			service, exist := resources[i].Attributes().Get("service.name")
+			assert.True(c, exist, "%s do not has 'service.name' attribute in resource", signal)
 			if service.AsString() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
+			assert.NoError(c, resourceHasAttributes(resources[i], kvs))
 			return
 		}
-	}
-	t.Fatalf("no profiles found for service %s", expectedService)
+		assert.Failf(c, "no data found", "no %s found for service %s", signal, expectedService)
+	}, 10*time.Second, 1*time.Second)
 }
 
 func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedValue) error {
@@ -2784,4 +2773,70 @@ func TestE2E_SemConvBothSchema(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestE2E_KubeletPodMetadataSource(t *testing.T) {
+	testDir := filepath.Join("testdata", "e2e", "kubelet")
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	nsFile := filepath.Join(testDir, "namespace.yaml")
+	buf, err := os.ReadFile(nsFile)
+	require.NoErrorf(t, err, "failed to read namespace object file %s", nsFile)
+	nsObj, err := k8stest.CreateObject(k8sClient, buf)
+	require.NoErrorf(t, err, "failed to create k8s namespace from file %s", nsFile)
+
+	testNs := nsObj.GetName()
+	defer func() {
+		require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", testNs)
+	}()
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	tracesConsumer := new(consumertest.TracesSink)
+	logsConsumer := new(consumertest.LogsSink)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+	defer shutdownSinks()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete collector object %s", obj.GetName())
+		}
+	}()
+
+	createTeleOpts := &k8stest.TelemetrygenCreateOpts{
+		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
+		TestID:       testID,
+		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs),
+		DataTypes:    []string{"metrics", "logs", "traces"},
+	}
+	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
+	defer func() {
+		for _, obj := range telemetryGenObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete telemetrygen object %s", obj.GetName())
+		}
+	}()
+
+	for _, info := range telemetryGenObjInfos {
+		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
+	}
+
+	waitForData(t, 10, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+
+	attrs := map[string]*expectedValue{
+		"k8s.pod.name":        newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
+		"k8s.pod.uid":         newExpectedValue(regex, uidRe),
+		"k8s.namespace.name":  newExpectedValue(equal, testNs),
+		"k8s.node.name":       newExpectedValue(exist, ""),
+		"k8s.pod.start_time":  newExpectedValue(exist, ""),
+		"k8s.labels.app":      newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+		"k8s.deployment.name": newExpectedValue(shouldnotexist, ""),
+	}
+
+	scanTracesForAttributes(t, tracesConsumer, "test-traces-deployment", attrs)
+	scanMetricsForAttributes(t, metricsConsumer, "test-metrics-deployment", attrs)
+	scanLogsForAttributes(t, logsConsumer, "test-logs-deployment", attrs)
 }

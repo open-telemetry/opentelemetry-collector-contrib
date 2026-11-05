@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -136,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "wif"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "conn-string"),
 			expected: &Config{
-				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				Auth: Authentication{
 					Type:             "connection_string",

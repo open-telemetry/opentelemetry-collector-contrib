@@ -214,7 +214,7 @@ func TestHandleSeriesV3Payload_SketchInSeriesPayloadErrors(t *testing.T) {
 		MetricData: &intakev3.MetricData{
 			DictNameStr:        v3StringDict("test.dist1"),
 			DictTagsets:        []int64{0},
-			Types:              []uint64{uint64(intakev3.MetricType_Sketch) | uint64(intakev3.ValueType_Zero)},
+			Types:              []uint64{uint64(intakev3.MetricType_DDSketch) | uint64(intakev3.ValueType_Zero)},
 			NameRefs:           []int64{1},
 			TagsetRefs:         []int64{0},
 			ResourcesRefs:      []int64{0},
@@ -223,7 +223,7 @@ func TestHandleSeriesV3Payload_SketchInSeriesPayloadErrors(t *testing.T) {
 			Intervals:          []uint64{0},
 			NumPoints:          []uint64{1},
 			Timestamps:         []int64{1000},
-			SketchNumBins:      []uint64{0},
+			NumBins:            []uint64{0},
 			ValsSint64:         []int64{0},
 		},
 	}
