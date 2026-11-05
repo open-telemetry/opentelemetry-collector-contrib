@@ -10,7 +10,7 @@ component: pkg/kafka/configkafka
 note: Add `producer::max_inflight_requests_per_broker` to configure the number of produce requests kept in flight per broker.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [52780]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
