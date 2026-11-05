@@ -67,6 +67,9 @@ func createDefaultConfig() component.Config {
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
 			// Request-level retries. A non-2xx bulk HTTP status has no per-document results.
+			// Elasticsearch returns HTTP 200 for a parsed bulk body and reports a
+			// document problem, such as a mapping error, as item status 400.
+			// A request-level 400 is an unparseable bulk body, or a bad proxy.
 			RetryOnStatus: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
@@ -89,7 +92,6 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:         "otel",
 			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
@@ -120,7 +122,6 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.LogsIndex)
@@ -150,7 +151,6 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex)
@@ -179,7 +179,6 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.TracesIndex)
@@ -213,7 +212,6 @@ func createProfilesExporter(
 ) (xexporter.Profiles, error) {
 	cf := cfg.(*Config)
 
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, "")
