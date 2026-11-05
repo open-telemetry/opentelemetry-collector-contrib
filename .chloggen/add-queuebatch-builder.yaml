@@ -1,0 +1,4 @@
+change_type: enhancement
+component: cmd/otelcontribcol
+note: Add the queue_batch processor to the development distribution.
+issues: [0]
