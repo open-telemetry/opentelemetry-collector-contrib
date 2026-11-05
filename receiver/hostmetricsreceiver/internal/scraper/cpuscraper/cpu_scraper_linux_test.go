@@ -438,3 +438,53 @@ func TestCputicksEmitter_CPUTimeMatchesGopsutil(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 	), "/proc/stat:\n%s", stat.String())
 }
+
+func TestCputicksEmitter_UtilizationIndependentOfCounterPosition(t *testing.T) {
+	baselines := []uint64{0, 1, 987654321, 1 << 40, 1<<52 - 1}
+	for range 20 {
+		baselines = append(baselines, rand.Uint64N(1<<52))
+	}
+	expected := map[string]float64{
+		"user": float64(333) / float64(3333), "idle": float64(3000) / float64(3333),
+		"system": 0, "wait": 0, "interrupt": 0, "nice": 0, "softirq": 0, "steal": 0,
+	}
+	for _, base := range baselines {
+		t.Run(fmt.Sprintf("base=%d", base), func(t *testing.T) {
+			prev := cpu.ExTimesStat{CPU: "cpu0", User: base, System: base, Idle: base, Iowait: base}
+			curr := prev
+			curr.User += 333
+			curr.Idle += 3000
+			reads := [][]cpu.ExTimesStat{{prev}, {curr}}
+
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.SystemCPULogicalCount.Enabled = false
+			cfg.Metrics.SystemCPUUtilization.Enabled = true
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
+				&Config{MetricsBuilderConfig: cfg})
+			scraper.emitCPUMetrics = newCputicksEmitter(func(context.Context, bool) ([]cpu.ExTimesStat, error) {
+				ticks := reads[0]
+				reads = reads[1:]
+				return ticks, nil
+			})
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+			_, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			actual := map[string]float64{}
+			for _, m := range md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
+				if m.Name() != "system.cpu.utilization" {
+					continue
+				}
+				for _, dp := range m.Gauge().DataPoints().All() {
+					state, ok := dp.Attributes().Get("state")
+					require.True(t, ok)
+					actual[state.Str()] = dp.DoubleValue()
+				}
+			}
+			assert.Equal(t, expected, actual)
+		})
+	}
+}
