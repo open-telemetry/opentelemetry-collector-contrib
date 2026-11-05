@@ -10,8 +10,8 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/pdata v1.70.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261105184035-79bf8a49d2e4
+	go.opentelemetry.io/collector/pdata v1.70.1-0.20261105184035-79bf8a49d2e4
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
