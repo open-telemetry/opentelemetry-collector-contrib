@@ -132,7 +132,6 @@ components:
     - internal/aws
     - internal/collectd
     - internal/common
-    - internal/coreinternal
     - internal/datadog
     - internal/datadog/e2e
     - internal/docker
