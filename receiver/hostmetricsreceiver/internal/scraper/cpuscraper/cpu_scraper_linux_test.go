@@ -8,15 +8,19 @@ package cpuscraper
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
@@ -395,4 +399,42 @@ func TestCputicksEmitter_DecreasingCounter(t *testing.T) {
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
+}
+
+func TestCputicksEmitter_CPUTimeMatchesGopsutil(t *testing.T) {
+	procDir := filepath.Join(t.TempDir(), "proc")
+	require.NoError(t, os.MkdirAll(procDir, 0o755))
+
+	var stat strings.Builder
+	for _, name := range []string{"cpu ", "cpu0", "cpu1", "cpu2", "cpu3"} {
+		stat.WriteString(name)
+		for range 10 {
+			fmt.Fprintf(&stat, " %d", rand.Uint64N(1<<40))
+		}
+		stat.WriteString("\n")
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(procDir, "stat"), []byte(stat.String()), 0o600))
+	t.Setenv("HOST_PROC", procDir)
+
+	scrape := func(emitter func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error) pmetric.Metrics {
+		cfg := metadata.NewDefaultMetricsBuilderConfig()
+		cfg.Metrics.SystemCPULogicalCount.Enabled = false
+		cfg.Metrics.SystemCPUFrequency.Enabled = false
+		scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
+			&Config{MetricsBuilderConfig: cfg})
+		scraper.emitCPUMetrics = emitter
+		scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
+		require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+		md, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+		return md
+	}
+
+	expected := scrape(newGopsutilEmitter(cpu.TimesWithContext))
+	actual := scrape(newCputicksEmitter(cpu.NewExLinux().TimesWithContext))
+	require.NoError(t, pmetrictest.CompareMetrics(expected, actual,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	), "/proc/stat:\n%s", stat.String())
 }

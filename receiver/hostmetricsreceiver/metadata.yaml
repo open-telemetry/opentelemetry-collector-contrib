@@ -33,7 +33,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/semantic-conventions/issues/3041
     skip_strict_validation: true
   - id: receiver.hostmetricsreceiver.UseCPUTicks
-    description: Compute CPU time and utilization metrics on Linux from raw uint64 tick counts (gopsutil cpu.NewExLinux) instead of float64 seconds.
+    description: Compute CPU utilization on Linux from raw uint64 tick deltas (gopsutil cpu.NewExLinux) instead of float64 seconds.
     stage: alpha
     from_version: "v0.165.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46177

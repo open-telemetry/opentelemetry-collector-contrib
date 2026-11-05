@@ -8,14 +8,12 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/precision"
 	hostmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
@@ -29,7 +27,6 @@ func newCPUEmitter() func(context.Context, pcommon.Timestamp, *metadata.MetricsB
 }
 
 func newCputicksEmitter(readTicks func(context.Context, bool) ([]cpu.ExTimesStat, error)) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
-	tickDuration := time.Duration(float64(time.Second) / cpu.ClocksPerSec)
 	var prevTicks map[string]cpu.ExTimesStat
 	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
 		ticks, err := readTicks(ctx, true)
@@ -37,7 +34,7 @@ func newCputicksEmitter(readTicks func(context.Context, bool) ([]cpu.ExTimesStat
 			return err
 		}
 
-		recordTickTimes(now, ticks, tickDuration, mb)
+		recordTickTimes(now, ticks, mb)
 
 		if prevTicks != nil {
 			currTicks := make(map[string]cpu.ExTimesStat, len(ticks))
@@ -84,16 +81,9 @@ func tickDeltas(prev, curr cpu.ExTimesStat) cpu.ExTimesStat {
 	}
 }
 
-func recordTickTimes(now pcommon.Timestamp, ticks []cpu.ExTimesStat, tickDuration time.Duration, mb *metadata.MetricsBuilder) {
+func recordTickTimes(now pcommon.Timestamp, ticks []cpu.ExTimesStat, mb *metadata.MetricsBuilder) {
 	for _, t := range ticks {
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.User, tickDuration), t.CPU, metadata.AttributeStateUser)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.System, tickDuration), t.CPU, metadata.AttributeStateSystem)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.Idle, tickDuration), t.CPU, metadata.AttributeStateIdle)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.Irq, tickDuration), t.CPU, metadata.AttributeStateInterrupt)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.Nice, tickDuration), t.CPU, metadata.AttributeStateNice)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.Softirq, tickDuration), t.CPU, metadata.AttributeStateSoftirq)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.Steal, tickDuration), t.CPU, metadata.AttributeStateSteal)
-		mb.RecordSystemCPUTimeDataPoint(now, precision.Scale(t.Iowait, tickDuration), t.CPU, metadata.AttributeStateWait)
+		recordCPUTimeStateDataPoints(now, t.ToTimesStat(), mb)
 	}
 }
 
