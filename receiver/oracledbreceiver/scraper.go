@@ -614,7 +614,7 @@ func isWrappedDefinition(definition string) bool {
 	if idx := strings.IndexByte(firstLine, '\n'); idx >= 0 {
 		firstLine = firstLine[:idx]
 	}
-	return strings.Contains(strings.ToLower(firstLine), " wrapped")
+	return strings.HasSuffix(strings.TrimSpace(firstLine), " wrapped")
 }
 
 // groupSourceRowsByKey concatenates source lines per procedure into a definition map.

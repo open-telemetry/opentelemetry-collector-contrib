@@ -564,6 +564,37 @@ func TestProcedureDefinitionEmptyWhenWrapped(t *testing.T) {
 	t.Fatal("expected a db.server.procedure_definition event")
 }
 
+// A procedure whose name begins with "WRAPPED" must not be mistaken for an
+// Oracle-encrypted procedure. Only " wrapped" as the last token of the header
+// line (Oracle's wrap output format) triggers the empty-definition path.
+func TestProcedureDefinitionNotWrappedWhenNameContainsWrapped(t *testing.T) {
+	const ddl = "CREATE OR REPLACE PROCEDURE ADMIN.WRAPPED_ORDERS_REPORT AS BEGIN NULL; END;"
+	row := maps.Clone(procedureRow("ORCLPDB1", map[string]string{
+		"OBJECT_NAME":    "WRAPPED_ORDERS_REPORT",
+		"PROCEDURE_NAME": "ADMIN.WRAPPED_ORDERS_REPORT",
+	}))
+	wrappedNameRows := []metricRow{
+		{"OWNER": "ADMIN", "NAME": "WRAPPED_ORDERS_REPORT", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": ddl},
+	}
+	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{row}, wrappedNameRows), procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		if records.At(i).EventName() == "db.server.procedure_definition" {
+			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+			require.True(t, ok)
+			assert.Equal(t, ddl, def.Str(), "procedure named WRAPPED_* must not be treated as Oracle-encrypted")
+			return
+		}
+	}
+	t.Fatal("expected a db.server.procedure_definition event")
+}
+
 // When fetchProcedureDefinitions fails, no definition events must be emitted
 // (otherwise an empty definition is indistinguishable from a wrapped procedure),
 // and the error must surface via scrapeLogs.
