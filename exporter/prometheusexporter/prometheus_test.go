@@ -574,7 +574,7 @@ this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="
 				TranslationStrategy: noUTF8EscapingWithSuffixes,
 			},
 			extraHeaders: map[string]string{
-				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
+				"Accept": "text/plain;version=0.0.4;escaping=allow-utf-8",
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
@@ -608,7 +608,7 @@ this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-
 				TranslationStrategy: noTranslation,
 			},
 			extraHeaders: map[string]string{
-				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
+				"Accept": "text/plain;version=0.0.4;escaping=allow-utf-8",
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
