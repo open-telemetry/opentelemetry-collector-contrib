@@ -129,6 +129,7 @@ func TestCputicksEmitter(t *testing.T) {
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -187,6 +188,7 @@ func TestCputicksEmitter_Utilization(t *testing.T) {
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -227,6 +229,7 @@ func TestCputicksEmitter_NewCPUAppears(t *testing.T) {
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -256,6 +259,7 @@ func TestCputicksEmitter_CPUDisappears(t *testing.T) {
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
 		&Config{MetricsBuilderConfig: cfg})
 	scraper.emitCPUMetrics = newCputicksEmitter(cpu.NewExLinux().TimesWithContext)
+	scraper.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
