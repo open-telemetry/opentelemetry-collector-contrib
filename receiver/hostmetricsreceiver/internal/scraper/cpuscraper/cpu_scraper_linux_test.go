@@ -329,3 +329,66 @@ func TestCputicksEmitter_ZeroDelta(t *testing.T) {
 	}
 	t.Fatal("system.cpu.utilization metric not found")
 }
+
+func TestCputicksEmitter_DecreasingCounter(t *testing.T) {
+	tests := []struct {
+		name     string
+		prev     cpu.ExTimesStat
+		curr     cpu.ExTimesStat
+		expected map[string]float64
+	}{
+		{
+			name: "iowait decreases",
+			prev: cpu.ExTimesStat{CPU: "cpu0", User: 100, System: 100, Idle: 700, Iowait: 100},
+			curr: cpu.ExTimesStat{CPU: "cpu0", User: 150, System: 150, Idle: 800, Iowait: 90},
+			expected: map[string]float64{
+				"user": 0.25, "system": 0.25, "idle": 0.5, "wait": 0,
+				"interrupt": 0, "nice": 0, "softirq": 0, "steal": 0,
+			},
+		},
+		{
+			name: "all counters decrease",
+			prev: cpu.ExTimesStat{CPU: "cpu0", User: 500, Nice: 50, System: 500, Idle: 900, Iowait: 100, Irq: 10, Softirq: 10, Steal: 5},
+			curr: cpu.ExTimesStat{CPU: "cpu0", User: 1, Nice: 1, System: 1, Idle: 1, Iowait: 1, Irq: 1, Softirq: 1, Steal: 1},
+			expected: map[string]float64{
+				"user": 0, "system": 0, "idle": 0, "wait": 0,
+				"interrupt": 0, "nice": 0, "softirq": 0, "steal": 0,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			cfg.Metrics.SystemCPULogicalCount.Enabled = false
+			cfg.Metrics.SystemCPUUtilization.Enabled = true
+
+			reads := [][]cpu.ExTimesStat{{tt.prev}, {tt.curr}}
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
+				&Config{MetricsBuilderConfig: cfg})
+			scraper.emitCPUMetrics = newCputicksEmitter(func(_ context.Context, _ bool) ([]cpu.ExTimesStat, error) {
+				ticks := reads[0]
+				reads = reads[1:]
+				return ticks, nil
+			})
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+			_, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+
+			actual := map[string]float64{}
+			for _, m := range md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
+				if m.Name() != "system.cpu.utilization" {
+					continue
+				}
+				for _, dp := range m.Gauge().DataPoints().All() {
+					state, ok := dp.Attributes().Get("state")
+					require.True(t, ok)
+					actual[state.Str()] = dp.DoubleValue()
+				}
+			}
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}

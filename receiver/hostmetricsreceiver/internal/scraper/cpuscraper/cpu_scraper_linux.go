@@ -72,8 +72,28 @@ func newCputicksEmitter(readTicks func(context.Context, bool) ([]cpu.ExTimesStat
 	}
 }
 
-func totalTicks(s cpu.ExTimesStat) uint64 {
-	return s.User + s.Nice + s.System + s.Idle + s.Iowait + s.Irq + s.Softirq + s.Steal
+// tickDelta returns 0 when a counter decreases. The kernel can report a lower
+// value than the previous read, in particular for iowait, and uint64
+// subtraction would wrap around to a huge delta.
+func tickDelta(curr, prev uint64) uint64 {
+	if curr < prev {
+		return 0
+	}
+	return curr - prev
+}
+
+func tickDeltas(prev, curr cpu.ExTimesStat) cpu.ExTimesStat {
+	return cpu.ExTimesStat{
+		CPU:     curr.CPU,
+		User:    tickDelta(curr.User, prev.User),
+		Nice:    tickDelta(curr.Nice, prev.Nice),
+		System:  tickDelta(curr.System, prev.System),
+		Idle:    tickDelta(curr.Idle, prev.Idle),
+		Iowait:  tickDelta(curr.Iowait, prev.Iowait),
+		Irq:     tickDelta(curr.Irq, prev.Irq),
+		Softirq: tickDelta(curr.Softirq, prev.Softirq),
+		Steal:   tickDelta(curr.Steal, prev.Steal),
+	}
 }
 
 func recordTickTimes(now pcommon.Timestamp, ticks []cpu.ExTimesStat, tickDuration time.Duration, mb *metadata.MetricsBuilder) {
@@ -90,20 +110,21 @@ func recordTickTimes(now pcommon.Timestamp, ticks []cpu.ExTimesStat, tickDuratio
 }
 
 func recordTickUtilization(now pcommon.Timestamp, prev, curr cpu.ExTimesStat, mb *metadata.MetricsBuilder) {
-	deltaTotal := totalTicks(curr) - totalTicks(prev)
+	d := tickDeltas(prev, curr)
+	deltaTotal := d.User + d.Nice + d.System + d.Idle + d.Iowait + d.Irq + d.Softirq + d.Steal
 	if deltaTotal == 0 {
 		recordZeroUtilization(now, curr.CPU, mb)
 		return
 	}
 	total := float64(deltaTotal)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.User-prev.User)/total, curr.CPU, metadata.AttributeStateUser)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.System-prev.System)/total, curr.CPU, metadata.AttributeStateSystem)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Idle-prev.Idle)/total, curr.CPU, metadata.AttributeStateIdle)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Irq-prev.Irq)/total, curr.CPU, metadata.AttributeStateInterrupt)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Nice-prev.Nice)/total, curr.CPU, metadata.AttributeStateNice)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Softirq-prev.Softirq)/total, curr.CPU, metadata.AttributeStateSoftirq)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Steal-prev.Steal)/total, curr.CPU, metadata.AttributeStateSteal)
-	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Iowait-prev.Iowait)/total, curr.CPU, metadata.AttributeStateWait)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.User)/total, curr.CPU, metadata.AttributeStateUser)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.System)/total, curr.CPU, metadata.AttributeStateSystem)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.Idle)/total, curr.CPU, metadata.AttributeStateIdle)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.Irq)/total, curr.CPU, metadata.AttributeStateInterrupt)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.Nice)/total, curr.CPU, metadata.AttributeStateNice)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.Softirq)/total, curr.CPU, metadata.AttributeStateSoftirq)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.Steal)/total, curr.CPU, metadata.AttributeStateSteal)
+	mb.RecordSystemCPUUtilizationDataPoint(now, float64(d.Iowait)/total, curr.CPU, metadata.AttributeStateWait)
 }
 
 func recordZeroUtilization(now pcommon.Timestamp, cpuName string, mb *metadata.MetricsBuilder) {
