@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
-	hostmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/precision"
+	hostmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
@@ -105,7 +105,6 @@ func recordTickUtilization(now pcommon.Timestamp, prev, curr cpu.ExTimesStat, mb
 	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Steal-prev.Steal)/total, curr.CPU, metadata.AttributeStateSteal)
 	mb.RecordSystemCPUUtilizationDataPoint(now, float64(curr.Iowait-prev.Iowait)/total, curr.CPU, metadata.AttributeStateWait)
 }
-
 
 func recordZeroUtilization(now pcommon.Timestamp, cpuName string, mb *metadata.MetricsBuilder) {
 	for _, state := range []metadata.AttributeState{
