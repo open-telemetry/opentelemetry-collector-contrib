@@ -74,8 +74,6 @@ service:
       exporters: [otlp_http/metrics]
 ```
 
-These examples use component names from Collector contrib v0.153.0 and later. On earlier versions, use `otlphttp`, `resourcedetection`, and `metricstransform`.
-
 On Fargate, and on Amazon EC2 with ECS container agent 1.104.0 or later, Amazon ECS sets `AWS_REGION` in the container. On older agents, set `AWS_REGION` in the task definition.
 
 You can send the metrics to any backend by replacing the exporter. To also receive metrics from your application, add the `otlp` receiver to the same pipeline.
