@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -120,6 +119,22 @@ var bufferPool = sync.Pool{
 			snappy:   nil,
 		}
 	},
+}
+
+// encodeRequest serializes req and compresses it with Snappy into a payload of its own.
+//
+// The protobuf and Snappy buffers are sized for the uncompressed request, which is often an order of
+// magnitude larger than the payload, and they are returned to the pool before the payload is sent.
+// A request that waits for a slow endpoint or between retries then holds only the compressed
+// payload, instead of both buffers for the whole duration of the send.
+func encodeRequest(req gogoProto) ([]byte, error) {
+	buf := bufferPool.Get().(*buffer)
+	defer bufferPool.Put(buf)
+	compressed, err := buf.MarshalAndEncode(req)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.Clone(compressed), nil
 }
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
@@ -469,20 +484,28 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	return nil
 }
 
-// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
+// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order.
+// It does not modify requests, which the WAL keeps.
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
+	// The channel is filled in a function of its own, and the workers only get the channel. A request
+	// is then referenced by the channel, which clears its slot when the request is received, and by
+	// the worker that encodes it, so that its time series can be reclaimed while its payload waits
+	// for the endpoint or between retries. Filling the channel in the function that waits for the
+	// workers kept the requests reachable until the export ended.
+	return prwe.exportQueued(ctx, queueRequests(requests))
+}
+
+// exportQueued sends the requests of input, a channel filled and closed by queueRequests.
+func (prwe *prwExporter) exportQueued(ctx context.Context, input chan *prompb.WriteRequest) error {
 	ctx, cancel := prwe.exportContext(ctx)
 	defer cancel()
 
-	input := make(chan *prompb.WriteRequest, len(requests))
-	for _, request := range requests {
-		input <- request
-	}
-	close(input)
+	// queueRequests sizes the channel for the requests.
+	total := cap(input)
 
 	var wg sync.WaitGroup
 
-	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
+	concurrencyLimit := min(prwe.concurrency, total)
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	var mu sync.Mutex
@@ -502,13 +525,21 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	}
 	wg.Wait()
 
-	return appendUnsentRequestsError(ctx, errs, len(input), len(requests))
+	return appendUnsentRequestsError(ctx, errs, len(input), total)
+}
+
+// queueRequests returns a closed channel that holds the requests, from which the workers receive them.
+func queueRequests[T any](requests []T) chan T {
+	input := make(chan T, len(requests))
+	for _, request := range requests {
+		input <- request
+	}
+	close(input)
+	return input
 }
 
 func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.WriteRequest) error {
 	var errs error
-	buf := bufferPool.Get().(*buffer)
-	defer bufferPool.Put(buf)
 	for {
 		// Stop as soon as the context is done. The input channel is closed once it was filled, so
 		// receiving from it never blocks.
@@ -519,15 +550,16 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 		if !ok {
 			return errs
 		}
-
-		reqBuf, errMarshal := buf.MarshalAndEncode(request)
+		reqBuf, errMarshal := encodeRequest(request)
 		if errMarshal != nil {
 			return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
 		}
+		// The request is not used after this point: the attempts send reqBuf.
+		sampleCount := writeRequestSampleCount(request)
 
 		if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
 			if rejected, ok := errors.AsType[*payloadRejectionError](errExecute); ok {
-				rejected.sampleCount = writeRequestSampleCount(request)
+				rejected.sampleCount = sampleCount
 			}
 			errs = multierr.Append(errs, errExecute)
 		}
