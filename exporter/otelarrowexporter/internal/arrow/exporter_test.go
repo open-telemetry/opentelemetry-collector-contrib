@@ -161,7 +161,10 @@ func newExporterTestCaseCommon(t zaptest.TestingT, pname PrioritizerName, noisy 
 		})
 	}
 
-	exp := NewExporter(maxLifetime, numStreams, pname, disableDowngrade, ctc.telset, nil, mockArrowProducer(ctc), ctc.traceClient, ctc.perRPCCredentials, netstats.Noop{})
+	restart := NewDefaultStreamRestartConfig()
+	restart.InitialInterval = time.Millisecond
+	restart.MaxInterval = 10 * time.Millisecond
+	exp := NewExporter(maxLifetime, restart, numStreams, pname, disableDowngrade, ctc.telset, nil, mockArrowProducer(ctc), ctc.traceClient, ctc.perRPCCredentials, netstats.Noop{})
 
 	return &exporterTestCase{
 		commonTestCase: ctc,

@@ -95,6 +95,13 @@ func TestUnmarshalConfig(t *testing.T) {
 				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))}),
 			},
 			Arrow: ArrowConfig{
+				StreamRestartBackOff: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     250 * time.Millisecond,
+					RandomizationFactor: 0.2,
+					Multiplier:          2,
+					MaxInterval:         8 * time.Second,
+				},
 				NumStreams:         2,
 				MaxStreamLifetime:  2 * time.Hour,
 				PayloadCompression: configcompression.TypeZstd,
@@ -107,9 +114,10 @@ func TestUnmarshalConfig(t *testing.T) {
 func TestArrowConfigValidate(t *testing.T) {
 	settings := func(enabled bool, numStreams int, maxStreamLifetime time.Duration, level zstd.Level) *ArrowConfig {
 		return &ArrowConfig{
-			Disabled:          !enabled,
-			NumStreams:        numStreams,
-			MaxStreamLifetime: maxStreamLifetime,
+			StreamRestartBackOff: arrow.NewDefaultStreamRestartConfig(),
+			Disabled:             !enabled,
+			NumStreams:           numStreams,
+			MaxStreamLifetime:    maxStreamLifetime,
 			Zstd: zstd.EncoderConfig{
 				Level: level,
 			},
@@ -161,5 +169,61 @@ func TestArrowConfigPayloadCompressionNone(t *testing.T) {
 			opt(&config)
 		}
 		require.False(t, config.Zstd)
+	}
+}
+
+func TestStreamRestartConfigValidate(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		change    func(*configretry.BackOffConfig)
+		wantError string
+	}{
+		{"disabled", func(c *configretry.BackOffConfig) { c.Enabled = false }, "enabled must be true"},
+		{"elapsed limit", func(c *configretry.BackOffConfig) { c.MaxElapsedTime = time.Minute }, "max_elapsed_time must be 0"},
+		{"negative elapsed limit", func(c *configretry.BackOffConfig) { c.MaxElapsedTime = -time.Second }, "max_elapsed_time"},
+		{"zero initial", func(c *configretry.BackOffConfig) { c.InitialInterval = 0 }, "initial_interval must be > 0"},
+		{"negative initial", func(c *configretry.BackOffConfig) { c.InitialInterval = -time.Second }, "initial_interval"},
+		{"max below initial", func(c *configretry.BackOffConfig) { c.MaxInterval = time.Millisecond }, "max_interval"},
+		{"decreasing multiplier", func(c *configretry.BackOffConfig) { c.Multiplier = 0.5 }, "multiplier"},
+		{"infinite multiplier", func(c *configretry.BackOffConfig) { c.Multiplier = math.Inf(1) }, "multiplier"},
+		{"nan multiplier", func(c *configretry.BackOffConfig) { c.Multiplier = math.NaN() }, "multiplier"},
+		{"negative randomization", func(c *configretry.BackOffConfig) { c.RandomizationFactor = -0.1 }, "randomization_factor"},
+		{"large randomization", func(c *configretry.BackOffConfig) { c.RandomizationFactor = 1.1 }, "randomization_factor"},
+		{"nan randomization", func(c *configretry.BackOffConfig) { c.RandomizationFactor = math.NaN() }, "randomization_factor"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tc.change(&cfg.Arrow.StreamRestartBackOff)
+			require.ErrorContains(t, confmap.Validate(cfg), tc.wantError)
+		})
+	}
+}
+
+func TestUnmarshalStreamRestartConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		values    map[string]any
+		wantError string
+	}{
+		{"default", map[string]any{}, ""},
+		{"continuous", map[string]any{"enabled": true, "max_elapsed_time": "0s"}, ""},
+		{"disabled", map[string]any{"enabled": false}, "enabled must be true"},
+		{"elapsed limit", map[string]any{"max_elapsed_time": "1m"}, "max_elapsed_time must be 0"},
+		{"standard validation", map[string]any{"randomization_factor": 2}, "randomization_factor"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cm := confmap.NewFromStringMap(map[string]any{
+				"endpoint": "localhost:4317",
+				"arrow":    map[string]any{"stream_restart_backoff": tc.values},
+			})
+			require.NoError(t, cm.Unmarshal(cfg))
+			if tc.wantError != "" {
+				require.ErrorContains(t, confmap.Validate(cfg), tc.wantError)
+				return
+			}
+			require.NoError(t, confmap.Validate(cfg))
+			require.Equal(t, arrow.NewDefaultStreamRestartConfig(), cfg.Arrow.StreamRestartBackOff)
+		})
 	}
 }

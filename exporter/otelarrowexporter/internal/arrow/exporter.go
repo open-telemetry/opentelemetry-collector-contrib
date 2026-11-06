@@ -16,6 +16,7 @@ import (
 	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -73,6 +74,9 @@ type Exporter struct {
 
 	// maxStreamLifetime is a limit on duration for streams.
 	maxStreamLifetime time.Duration
+
+	// streamRestart configures independent backoff for each stream's work state.
+	streamRestart configretry.BackOffConfig
 
 	// disableDowngrade prevents downgrade from occurring, supports
 	// forcing Arrow transport.
@@ -155,6 +159,7 @@ func MakeAnyStreamClient[T AnyStreamClient](method string, clientFunc func(ctx c
 // NewExporter configures a new Exporter.
 func NewExporter(
 	maxStreamLifetime time.Duration,
+	streamRestart configretry.BackOffConfig,
 	numStreams int,
 	prioritizerName PrioritizerName,
 	disableDowngrade bool,
@@ -167,6 +172,7 @@ func NewExporter(
 ) *Exporter {
 	return &Exporter{
 		maxStreamLifetime: maxStreamLifetime,
+		streamRestart:     streamRestart,
 		numStreams:        numStreams,
 		prioritizerName:   prioritizerName,
 		disableDowngrade:  disableDowngrade,
@@ -196,7 +202,8 @@ func (e *Exporter) Start(ctx context.Context) error {
 	e.ready, sws = newStreamPrioritizer(downDc, e.prioritizerName, e.numStreams, e.maxStreamLifetime)
 
 	for _, ws := range sws {
-		e.startArrowStream(downCtx, ws)
+		ws.restartBackOff = newStreamRestartBackOff(e.streamRestart)
+		e.startArrowStream(downCtx, ws, 0)
 	}
 
 	go e.runStreamController(ctx, downCtx, downDc)
@@ -204,13 +211,13 @@ func (e *Exporter) Start(ctx context.Context) error {
 	return nil
 }
 
-func (e *Exporter) startArrowStream(ctx context.Context, ws *streamWorkState) {
+func (e *Exporter) startArrowStream(ctx context.Context, ws *streamWorkState, delay time.Duration) {
 	// this is the new stream context
 	ctx, dc := newDoneCancel(ctx)
 
 	e.wg.Add(1)
 
-	go e.runArrowStream(ctx, dc, ws)
+	go e.runArrowStream(ctx, dc, ws, delay)
 }
 
 // runStreamController starts the initial set of streams, then waits for streams to
@@ -231,7 +238,14 @@ func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downD
 			if !stream.arrowUnsupported || e.disableDowngrade {
 				// For general stream errors or when downgrade
 				// is disabled, restart the stream.
-				e.startArrowStream(downCtx, stream.workState)
+				var delay time.Duration
+				if !stream.restartAfterError || stream.receivedResponse {
+					stream.workState.restartBackOff.Reset()
+				}
+				if stream.restartAfterError {
+					delay = stream.workState.restartBackOff.NextBackOff()
+				}
+				e.startArrowStream(downCtx, stream.workState, delay)
 				continue
 			}
 			// Otherwise, the endpoint does not support Arrow.  It was
@@ -271,8 +285,23 @@ func addJitter(v time.Duration) time.Duration {
 // If the stream connection is successful, this goroutine starts another goroutine
 // to call writeStream() and performs readStream() itself.  When the stream shuts
 // down this call synchronously waits for and unblocks the consumers.
-func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *streamWorkState) {
+func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *streamWorkState, delay time.Duration) {
+	defer e.wg.Done()
 	defer dc.cancel()
+	// Wait in the stream goroutine so other streams and downgrade decisions
+	// remain independent. Do not allocate a producer while waiting to retry.
+	if delay > 0 {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+		}
+	}
+	if ctx.Err() != nil {
+		return
+	}
 	producer := e.newProducer()
 
 	stream := newStream(producer, e.ready, e.telemetry, e.netReporter, state)
@@ -281,7 +310,6 @@ func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *str
 		if err := producer.Close(); err != nil {
 			e.telemetry.Logger.Error("arrow producer close:", zap.Error(err))
 		}
-		e.wg.Done()
 		e.returning <- stream
 	}()
 

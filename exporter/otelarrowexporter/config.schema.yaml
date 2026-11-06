@@ -22,6 +22,9 @@ $defs:
       prioritizer:
         description: Prioritizer is a policy name for how load is distributed across streams.
         $ref: ./internal/arrow.prioritizer_name
+      stream_restart_backoff:
+        description: StreamRestartBackOff controls retries of failed Arrow streams, independently of retry_on_failure for individual data batches.
+        $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
       zstd:
         description: Zstd settings apply to OTel-Arrow use of gRPC specifically. Note that when multiple Otel-Arrow exporters are configured their settings will be applied in arbitrary order. Identical Zstd settings are recommended when multiple OTel-Arrow exporters are in use.
         $ref: /internal/otelarrow/compression/zstd.encoder_config
