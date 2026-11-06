@@ -394,6 +394,16 @@ The time since the container started
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
+### k8s.container.cpu.limit.utilization@v1
+
+The ratio of container CPU usage to its current CPU limit.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.container.cpu.limit.utilization`
+
 ### k8s.container.cpu.node.utilization
 
 Container cpu utilization as a ratio of the node's capacity
@@ -401,6 +411,16 @@ Container cpu utilization as a ratio of the node's capacity
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Deprecated |
+
+### k8s.container.cpu.request.utilization@v1
+
+The ratio of container CPU usage to its current CPU request.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.container.cpu.request.utilization`
 
 ### k8s.container.cpu_limit_utilization
 
@@ -410,6 +430,14 @@ Container cpu utilization as a ratio of the container's limits
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+#### Migration
+
+- Target Metric: `k8s.container.cpu.limit.utilization@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### k8s.container.cpu_request_utilization
 
 Container cpu utilization as a ratio of the container's requests
@@ -417,6 +445,14 @@ Container cpu utilization as a ratio of the container's requests
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+#### Migration
+
+- Target Metric: `k8s.container.cpu.request.utilization@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### k8s.container.ephemeral_storage.usage
 
@@ -432,6 +468,18 @@ Ephemeral storage used by the container.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | fs.type | The type of filesystem component. | Str: ``rootfs``, ``logs`` | Recommended | - |
 
+### k8s.container.memory.limit.utilization@v1
+
+The ratio of container memory working set to its current memory limit.
+
+Only emitted when the `receiver.kubelet_stats.EmitV1K8sConventions` feature gate is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.container.memory.limit.utilization`
+
 ### k8s.container.memory.node.utilization
 
 Container memory utilization as a ratio of the node's capacity
@@ -440,9 +488,23 @@ Container memory utilization as a ratio of the node's capacity
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Deprecated |
 
+### k8s.container.memory.request.utilization@v1
+
+The ratio of container memory working set to its current memory request.
+
+Only emitted when the `receiver.kubelet_stats.EmitV1K8sConventions` feature gate is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.container.memory.request.utilization`
+
 ### k8s.container.memory_limit_utilization
 
 Container memory utilization as a ratio of the container's limits
+
+Uses the memory usage as the numerator. Not emitted when the `receiver.kubelet_stats.DontEmitV0K8sConventions` feature gate is enabled. See `k8s.container.memory.limit.utilization@v1` for the semantic conventions compliant metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -451,6 +513,8 @@ Container memory utilization as a ratio of the container's limits
 ### k8s.container.memory_request_utilization
 
 Container memory utilization as a ratio of the container's requests
+
+Uses the memory usage as the numerator. Not emitted when the `receiver.kubelet_stats.DontEmitV0K8sConventions` feature gate is enabled. See `k8s.container.memory.request.utilization@v1` for the semantic conventions compliant metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -528,6 +592,16 @@ The time since the node started
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | true | Development |
 
+### k8s.pod.cpu.limit.utilization@v1
+
+The ratio of Pod CPU usage to its current CPU limit.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.pod.cpu.limit.utilization`
+
 ### k8s.pod.cpu.node.utilization
 
 Pod cpu utilization as a ratio of the node's capacity
@@ -535,6 +609,16 @@ Pod cpu utilization as a ratio of the node's capacity
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Deprecated |
+
+### k8s.pod.cpu.request.utilization@v1
+
+The ratio of Pod CPU usage to its current CPU request.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.pod.cpu.request.utilization`
 
 ### k8s.pod.cpu_limit_utilization
 
@@ -544,6 +628,14 @@ Pod cpu utilization as a ratio of the pod's total container limits. If any conta
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+#### Migration
+
+- Target Metric: `k8s.pod.cpu.limit.utilization@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### k8s.pod.cpu_request_utilization
 
 Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
@@ -551,6 +643,26 @@ Pod cpu utilization as a ratio of the pod's total container requests. If any con
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+#### Migration
+
+- Target Metric: `k8s.pod.cpu.request.utilization@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
+### k8s.pod.memory.limit.utilization@v1
+
+The ratio of Pod memory working set to its current memory limit.
+
+Only emitted when the `receiver.kubelet_stats.EmitV1K8sConventions` feature gate is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.pod.memory.limit.utilization`
 
 ### k8s.pod.memory.node.utilization
 
@@ -560,9 +672,23 @@ Pod memory utilization as a ratio of the node's capacity
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Deprecated |
 
+### k8s.pod.memory.request.utilization@v1
+
+The ratio of Pod memory working set to its current memory request.
+
+Only emitted when the `receiver.kubelet_stats.EmitV1K8sConventions` feature gate is enabled.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+Emitted Name: `k8s.pod.memory.request.utilization`
+
 ### k8s.pod.memory_limit_utilization
 
 Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+
+Uses the memory usage as the numerator. Not emitted when the `receiver.kubelet_stats.DontEmitV0K8sConventions` feature gate is enabled. See `k8s.pod.memory.limit.utilization@v1` for the semantic conventions compliant metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -571,6 +697,8 @@ Pod memory utilization as a ratio of the pod's total container limits. If any co
 ### k8s.pod.memory_request_utilization
 
 Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+
+Uses the memory usage as the numerator. Not emitted when the `receiver.kubelet_stats.DontEmitV0K8sConventions` feature gate is enabled. See `k8s.pod.memory.request.utilization@v1` for the semantic conventions compliant metric.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -613,6 +741,8 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.kubelet_stats.DontEmitV0K8sConventions` | alpha | When enabled, the receiver stops emitting the legacy k8s.{pod,container}.{cpu,memory}_{limit,request}_utilization metrics. Requires receiver.kubelet_stats.EmitV1K8sConventions to be enabled. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40444) |
+| `receiver.kubelet_stats.EmitV1K8sConventions` | alpha | When enabled, the receiver emits the semantic-conventions-compliant k8s.{pod,container}.{cpu,memory}.{limit,request}.utilization metrics. The memory variants use the memory working set as the numerator. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40444) |
 | `receiver.kubeletstats.cpuUsageScrapeBased` | beta | When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
