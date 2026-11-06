@@ -124,8 +124,10 @@ stream. Configure this under `arrow.stream_restart_backoff`:
 Retries continue until shutdown or downgrade. Backoff resets after a response
 from the server, and normal `max_stream_lifetime` recycling does not incur a
 delay. These settings are separate from `retry_on_failure`, which applies to
-individual batches. There is no `enabled` or `max_elapsed_time` setting for
-stream restart backoff.
+individual batches. Stream restart settings use the standard `configretry` configuration,
+with `enabled: true` and `max_elapsed_time: 0s`. These values are required:
+disabling retries or imposing an elapsed-time limit is not supported for stream
+restarts and results in a configuration error.
 
 The following setting determines memory and CPU resources that the
 exporter will use:

@@ -31,6 +31,8 @@ keepalive:
 balancer_name: "experimental"
 arrow:
   stream_restart_backoff:
+    enabled: true
+    max_elapsed_time: 0s
     initial_interval: 250ms
     randomization_factor: 0.2
     multiplier: 2

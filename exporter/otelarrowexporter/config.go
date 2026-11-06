@@ -4,7 +4,9 @@
 package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter"
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -67,7 +69,7 @@ type Config struct {
 type ArrowConfig struct {
 	// StreamRestartBackOff controls retries of failed Arrow streams,
 	// independently of retry_on_failure for individual data batches.
-	StreamRestartBackOff arrow.StreamRestartConfig `mapstructure:"stream_restart_backoff"`
+	StreamRestartBackOff configretry.BackOffConfig `mapstructure:"stream_restart_backoff"`
 
 	// NumStreams determines the number of OTel Arrow streams.
 	NumStreams int `mapstructure:"num_streams"`
@@ -129,8 +131,26 @@ func (cfg *Config) Validate() error {
 
 // Validate returns an error when the number of streams is less than 1.
 func (cfg *ArrowConfig) Validate() error {
-	if err := cfg.StreamRestartBackOff.Validate(); err != nil {
-		return fmt.Errorf("stream_restart_backoff: %w", err)
+	// confmap validates the nested configretry fields. These additional constraints
+	// keep stream restarts continuous and prevent immediate retry loops.
+	restart := cfg.StreamRestartBackOff
+	if !restart.Enabled {
+		return errors.New("stream_restart_backoff.enabled must be true")
+	}
+	if restart.MaxElapsedTime != 0 {
+		return errors.New("stream_restart_backoff.max_elapsed_time must be 0")
+	}
+	if restart.InitialInterval <= 0 {
+		return errors.New("stream_restart_backoff.initial_interval must be > 0")
+	}
+	if restart.MaxInterval < restart.InitialInterval {
+		return errors.New("stream_restart_backoff.max_interval must be >= initial_interval")
+	}
+	if math.IsNaN(restart.RandomizationFactor) {
+		return errors.New("stream_restart_backoff.randomization_factor must not be NaN")
+	}
+	if math.IsNaN(restart.Multiplier) || math.IsInf(restart.Multiplier, 0) || restart.Multiplier < 1 {
+		return errors.New("stream_restart_backoff.multiplier must be finite and >= 1")
 	}
 	if cfg.NumStreams < 1 {
 		return fmt.Errorf("stream count must be > 0: %d", cfg.NumStreams)

@@ -16,6 +16,7 @@ import (
 	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -75,7 +76,7 @@ type Exporter struct {
 	maxStreamLifetime time.Duration
 
 	// streamRestart configures independent backoff for each stream's work state.
-	streamRestart StreamRestartConfig
+	streamRestart configretry.BackOffConfig
 
 	// disableDowngrade prevents downgrade from occurring, supports
 	// forcing Arrow transport.
@@ -158,7 +159,7 @@ func MakeAnyStreamClient[T AnyStreamClient](method string, clientFunc func(ctx c
 // NewExporter configures a new Exporter.
 func NewExporter(
 	maxStreamLifetime time.Duration,
-	streamRestart StreamRestartConfig,
+	streamRestart configretry.BackOffConfig,
 	numStreams int,
 	prioritizerName PrioritizerName,
 	disableDowngrade bool,
@@ -201,7 +202,7 @@ func (e *Exporter) Start(ctx context.Context) error {
 	e.ready, sws = newStreamPrioritizer(downDc, e.prioritizerName, e.numStreams, e.maxStreamLifetime)
 
 	for _, ws := range sws {
-		ws.restartBackOff = e.streamRestart.newBackOff()
+		ws.restartBackOff = newStreamRestartBackOff(e.streamRestart)
 		e.startArrowStream(downCtx, ws, 0)
 	}
 

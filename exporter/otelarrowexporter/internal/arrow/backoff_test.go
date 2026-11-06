@@ -6,7 +6,6 @@ package arrow
 import (
 	"context"
 	"errors"
-	"math"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -14,41 +13,25 @@ import (
 	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
 	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configretry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func testStreamRestartConfig() StreamRestartConfig {
-	return StreamRestartConfig{
+func testStreamRestartConfig() configretry.BackOffConfig {
+	return configretry.BackOffConfig{
+		Enabled:         true,
 		InitialInterval: time.Second,
 		MaxInterval:     4 * time.Second,
 		Multiplier:      2,
 	}
 }
 
-func TestStreamRestartConfigValidate(t *testing.T) {
-	require.NoError(t, NewDefaultStreamRestartConfig().Validate())
-	for _, tc := range []struct {
-		name   string
-		change func(*StreamRestartConfig)
-	}{
-		{"zero initial", func(c *StreamRestartConfig) { c.InitialInterval = 0 }},
-		{"negative initial", func(c *StreamRestartConfig) { c.InitialInterval = -1 }},
-		{"max below initial", func(c *StreamRestartConfig) { c.MaxInterval = time.Millisecond }},
-		{"decreasing multiplier", func(c *StreamRestartConfig) { c.Multiplier = 0.5 }},
-		{"infinite multiplier", func(c *StreamRestartConfig) { c.Multiplier = math.Inf(1) }},
-		{"nan multiplier", func(c *StreamRestartConfig) { c.Multiplier = math.NaN() }},
-		{"negative randomization", func(c *StreamRestartConfig) { c.RandomizationFactor = -0.1 }},
-		{"large randomization", func(c *StreamRestartConfig) { c.RandomizationFactor = 1.1 }},
-		{"nan randomization", func(c *StreamRestartConfig) { c.RandomizationFactor = math.NaN() }},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := testStreamRestartConfig()
-			tc.change(&cfg)
-			require.Error(t, cfg.Validate())
-		})
-	}
+func TestStreamRestartConfigDefaults(t *testing.T) {
+	expected := configretry.NewDefaultBackOffConfig()
+	expected.MaxElapsedTime = 0
+	require.Equal(t, expected, NewDefaultStreamRestartConfig())
 }
 
 // A successful gRPC constructor is not proof of a healthy stream: failures
