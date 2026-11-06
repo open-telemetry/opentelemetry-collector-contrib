@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	defaultPort = "4317"
+	defaultPort     = "4317" // OTLP/gRPC
+	defaultHTTPPort = "4318" // OTLP/HTTP
 )
 
 var (
@@ -34,6 +35,9 @@ type loadBalancer struct {
 
 	res  resolver
 	ring *hashRing
+
+	// port is appended to backends that the resolver returns without one.
+	port string
 
 	componentFactory    componentFactory
 	exporters           map[string]*wrappedExporter
@@ -136,7 +140,13 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 		return nil, errNoResolver
 	}
 
+	port := defaultPort
+	if oCfg.Protocol.OTLPHTTP.HasValue() {
+		port = defaultHTTPPort
+	}
+
 	return &loadBalancer{
+		port:             port,
 		logger:           logger,
 		res:              res,
 		componentFactory: factory,
@@ -170,7 +180,7 @@ func (lb *loadBalancer) onBackendChanges(resolved []string) {
 
 func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
 	for _, endpoint := range endpoints {
-		endpoint = endpointWithPort(endpoint)
+		endpoint = lb.endpointWithPort(endpoint)
 
 		if _, exists := lb.exporters[endpoint]; !exists {
 			exp, err := lb.componentFactory(ctx, endpoint)
@@ -189,16 +199,27 @@ func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []str
 }
 
 func endpointWithPort(endpoint string) string {
+	return endpointWithDefaultPort(endpoint, defaultPort)
+}
+
+func endpointWithDefaultPort(endpoint, port string) string {
 	if !strings.Contains(endpoint, ":") {
-		endpoint = fmt.Sprintf("%s:%s", endpoint, defaultPort)
+		endpoint = fmt.Sprintf("%s:%s", endpoint, port)
 	}
 	return endpoint
+}
+
+func (lb *loadBalancer) endpointWithPort(endpoint string) string {
+	if lb.port == "" {
+		return endpointWithPort(endpoint)
+	}
+	return endpointWithDefaultPort(endpoint, lb.port)
 }
 
 func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []string) {
 	endpointsWithPort := make([]string, len(endpoints))
 	for i, e := range endpoints {
-		endpointsWithPort[i] = endpointWithPort(e)
+		endpointsWithPort[i] = lb.endpointWithPort(e)
 	}
 	for existing := range lb.exporters {
 		if !slices.Contains(endpointsWithPort, existing) {
@@ -231,7 +252,7 @@ func (lb *loadBalancer) exporterAndEndpoint(identifier []byte) (*wrappedExporter
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
 	endpoint := lb.ring.endpointFor(identifier)
-	exp, found := lb.exporters[endpointWithPort(endpoint)]
+	exp, found := lb.exporters[lb.endpointWithPort(endpoint)]
 	if !found {
 		// something is really wrong... how come we couldn't find the exporter??
 		return nil, "", fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)

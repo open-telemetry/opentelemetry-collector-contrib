@@ -8,12 +8,14 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	tracenoop "go.opentelemetry.io/otel/trace/noop"
@@ -43,11 +45,15 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
 	otlpDefaultCfg.ClientConfig.Endpoint = "placeholder:4317"
 
+	// Defaults of otlphttpexporter apply once the user sets protocol::otlp_http.
+	otlpHTTPDefaultCfg := otlphttpexporter.NewFactory().CreateDefaultConfig().(*otlphttpexporter.Config)
+
 	return &Config{
 		// By default we disable resilience options on loadbalancing exporter level
 		// to maintain compatibility with workflow in previous versions
 		Protocol: Protocol{
-			OTLP: *otlpDefaultCfg,
+			OTLP:     *otlpDefaultCfg,
+			OTLPHTTP: configoptional.Default(*otlpHTTPDefaultCfg),
 		},
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
@@ -58,6 +64,41 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg.ClientConfig.Endpoint = endpoint
 
 	return oCfg
+}
+
+// buildHTTPExporterConfig copies the OTLP/HTTP settings and points every configured endpoint at hostPort.
+// Scheme, path and query of each endpoint stay as the user wrote them. Only string fields of the copy
+// are written, so the shared configuration is never modified.
+func buildHTTPExporterConfig(cfg *Config, hostPort string) otlphttpexporter.Config {
+	hCfg := *cfg.Protocol.OTLPHTTP.Get()
+	for _, endpoint := range []*string{
+		&hCfg.ClientConfig.Endpoint,
+		&hCfg.TracesEndpoint,
+		&hCfg.MetricsEndpoint,
+		&hCfg.LogsEndpoint,
+		&hCfg.ProfilesEndpoint,
+	} {
+		if *endpoint == "" {
+			continue
+		}
+		if u, err := url.Parse(*endpoint); err == nil {
+			u.Host = hostPort
+			*endpoint = u.String()
+		}
+	}
+	return hCfg
+}
+
+// newBackend returns the factory, config and settings of the exporter that sends to one resolved backend.
+func newBackend(cfg *Config, params exporter.Settings, endpoint string) (exporter.Factory, component.Config, exporter.Settings) {
+	if cfg.Protocol.OTLPHTTP.HasValue() {
+		f := otlphttpexporter.NewFactory()
+		hCfg := buildHTTPExporterConfig(cfg, endpoint)
+		return f, &hCfg, buildExporterSettings(f.Type(), params, endpoint)
+	}
+	f := otlpexporter.NewFactory()
+	oCfg := buildExporterConfig(cfg, endpoint)
+	return f, &oCfg, buildExporterSettings(f.Type(), params, endpoint)
 }
 
 func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {

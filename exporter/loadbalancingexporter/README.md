@@ -91,11 +91,16 @@ To avoid a single point of failure, requests can be distributed among multiple C
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the exporter.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
+* The `otlp_http` property sends data over OTLP/HTTP instead of OTLP/gRPC, for backends that only accept HTTP, such as vmagent. It configures the template used for building the OTLP/HTTP exporter, see the OTLP/HTTP Exporter documentation for the available options and their defaults. It applies to traces, metrics and logs, and cannot be set together with `otlp`. Without it the exporter keeps using OTLP/gRPC.
+  * At least one of `endpoint`, `traces_endpoint`, `metrics_endpoint`, `logs_endpoint` or `profiles_endpoint` must be set, each with an `http://` or `https://` scheme. For every resolved backend the exporter replaces only the host and port of each endpoint you set. The scheme, path and query are kept, so a custom path such as `/opentelemetry/v1/metrics` works. If only `endpoint` is set, the `/v1/<signal>` path is appended as in the OTLP/HTTP exporter.
+  * Backends returned without a port get port 4318 instead of 4317.
+  * `timeout` under `otlp_http` is the HTTP client timeout of each backend. It is separate from the `timeout` of the exporter itself and is not copied from it.
+  * `sending_queue` and `retry_on_failure` under `otlp_http` apply per backend, as under `otlp`. Persistent queue is not supported there either. Retries follow the OTLP/HTTP exporter: 429, 502, 503 and 504 are retried, `Retry-After` is honored, other statuses are permanent.
 * The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `aws_cloud_map`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts the following optional properties:
   * `hostname` DNS hostname to resolve.
-  * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
+  * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used (4318 with `otlp_http`).
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
 * The `k8s` node accepts the following optional properties:
@@ -453,6 +458,22 @@ service:
       processors: []
       exporters:
         - debug
+```
+
+Example sending metrics to vmagent over OTLP/HTTP:
+
+```yaml
+exporters:
+  loadbalancing:
+    routing_key: attributes
+    routing_attributes: [service.name]
+    protocol:
+      otlp_http:
+        metrics_endpoint: http://placeholder:8429/opentelemetry/v1/metrics
+    resolver:
+      dns:
+        hostname: vmagent-headless.monitoring.svc
+        port: "8429"
 ```
 
 ## Metrics

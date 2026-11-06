@@ -44,6 +44,14 @@ require (
 )
 
 require (
+	github.com/felixge/httpsnoop v1.1.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/rs/cors v1.11.1 // indirect
+	go.opentelemetry.io/collector/config/confighttp v0.164.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
+)
+
+require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.5 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.13 // indirect
@@ -142,6 +150,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.164.1-0.20261105234325-55e32ede1d63 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/extension v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.1-0.20261105234325-55e32ede1d63 // indirect

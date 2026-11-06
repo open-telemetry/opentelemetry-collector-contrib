@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
@@ -53,12 +52,10 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		return nil, err
 	}
 
-	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+		f, oCfg, oParams := newBackend(cfg.(*Config), params, endpoint)
 
-		return exporterFactory.CreateTraces(ctx, oParams, &oCfg)
+		return f.CreateTraces(ctx, oParams, oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)

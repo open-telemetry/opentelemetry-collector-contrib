@@ -4,14 +4,18 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
 
 type routingKey int
@@ -60,6 +64,17 @@ type Config struct {
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
 }
 
+var errMultipleProtocolsProvided = errors.New("only one of protocol::otlp and protocol::otlp_http should be specified")
+
+// Unmarshal rejects a configuration that sets both protocols. protocol::otlp is always populated by the
+// default config, so only the raw configuration can tell whether the user wrote it.
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf.IsSet("protocol::otlp") && conf.IsSet("protocol::otlp_http") {
+		return errMultipleProtocolsProvided
+	}
+	return conf.Unmarshal(c)
+}
+
 // Validate checks if the exporter configuration is valid.
 func (c *Config) Validate() error {
 	// routing_attributes only has meaning when routing_key=attributes.
@@ -71,12 +86,42 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("routing_attributes can only be used when routing_key is %q; got %q. Remove routing_attributes or set routing_key to %q", attrRoutingStr, c.RoutingKey, attrRoutingStr)
 	}
 
+	if c.Protocol.OTLPHTTP.HasValue() {
+		return validateHTTPEndpoints(c.Protocol.OTLPHTTP.Get())
+	}
+
 	return nil
 }
 
-// Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
+// validateHTTPEndpoints checks that every endpoint set on the OTLP/HTTP sub-exporter has a scheme and a host.
+// The host and port are replaced by the resolved backend, the rest of the URL is kept.
+func validateHTTPEndpoints(cfg *otlphttpexporter.Config) error {
+	for name, endpoint := range map[string]string{
+		"endpoint":          cfg.ClientConfig.Endpoint,
+		"traces_endpoint":   cfg.TracesEndpoint,
+		"metrics_endpoint":  cfg.MetricsEndpoint,
+		"logs_endpoint":     cfg.LogsEndpoint,
+		"profiles_endpoint": cfg.ProfilesEndpoint,
+	} {
+		if endpoint == "" {
+			continue
+		}
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return fmt.Errorf("protocol::otlp_http::%s is not a valid URL: %w", name, err)
+		}
+		if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("protocol::otlp_http::%s must be an http:// or https:// URL with a host, got %q", name, endpoint)
+		}
+	}
+	return nil
+}
+
+// Protocol holds the individual protocol-specific settings. OTLP/gRPC is used unless OTLPHTTP is set.
 type Protocol struct {
 	OTLP otlpexporter.Config `mapstructure:"otlp"`
+	// OTLPHTTP switches the backend exporters to OTLP/HTTP. It cannot be combined with OTLP.
+	OTLPHTTP configoptional.Optional[otlphttpexporter.Config] `mapstructure:"otlp_http"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
