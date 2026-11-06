@@ -65,6 +65,10 @@ type Config struct {
 // ArrowConfig includes whether Arrow is enabled and the number of
 // concurrent Arrow streams.
 type ArrowConfig struct {
+	// StreamRestartBackOff controls retries of failed Arrow streams,
+	// independently of retry_on_failure for individual data batches.
+	StreamRestartBackOff arrow.StreamRestartConfig `mapstructure:"stream_restart_backoff"`
+
 	// NumStreams determines the number of OTel Arrow streams.
 	NumStreams int `mapstructure:"num_streams"`
 
@@ -125,6 +129,9 @@ func (cfg *Config) Validate() error {
 
 // Validate returns an error when the number of streams is less than 1.
 func (cfg *ArrowConfig) Validate() error {
+	if err := cfg.StreamRestartBackOff.Validate(); err != nil {
+		return fmt.Errorf("stream_restart_backoff: %w", err)
+	}
 	if cfg.NumStreams < 1 {
 		return fmt.Errorf("stream count must be > 0: %d", cfg.NumStreams)
 	}

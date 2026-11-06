@@ -30,6 +30,11 @@ keepalive:
   permit_without_stream: true
 balancer_name: "experimental"
 arrow:
+  stream_restart_backoff:
+    initial_interval: 250ms
+    randomization_factor: 0.2
+    multiplier: 2
+    max_interval: 8s
   num_streams: 2
   disabled: false
   max_stream_lifetime: 2h

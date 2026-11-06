@@ -73,8 +73,9 @@ func createDefaultConfig() component.Config {
 			BalancerName: "round_robin",
 		},
 		Arrow: ArrowConfig{
-			NumStreams:        arrow.DefaultNumStreams,
-			MaxStreamLifetime: arrow.DefaultMaxStreamLifetime,
+			StreamRestartBackOff: arrow.NewDefaultStreamRestartConfig(),
+			NumStreams:           arrow.DefaultNumStreams,
+			MaxStreamLifetime:    arrow.DefaultMaxStreamLifetime,
 
 			Zstd:        zstd.DefaultEncoderConfig(),
 			Prioritizer: arrow.DefaultPrioritizer,

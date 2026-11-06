@@ -112,6 +112,21 @@ easier.
 - `max_stream_lifetime` (default: 30s): duration after which streams
   are recycled.
 
+Failed streams are restarted using independent exponential backoff for each
+stream. Configure this under `arrow.stream_restart_backoff`:
+
+- `initial_interval` (default: 5s): delay after the first failure; must be positive.
+- `randomization_factor` (default: 0.5): jitter applied to each delay, between 0 and 1.
+- `multiplier` (default: 1.5): growth factor for consecutive failures; must be at least 1.
+- `max_interval` (default: 30s): cap on the interval before jitter; must be at least
+  `initial_interval`. The actual delay can be up to `max_interval * (1 + randomization_factor)`.
+
+Retries continue until shutdown or downgrade. Backoff resets after a response
+from the server, and normal `max_stream_lifetime` recycling does not incur a
+delay. These settings are separate from `retry_on_failure`, which applies to
+individual batches. There is no `enabled` or `max_elapsed_time` setting for
+stream restart backoff.
+
 The following setting determines memory and CPU resources that the
 exporter will use:
 

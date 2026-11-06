@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v7"
 	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
 	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
@@ -54,6 +55,12 @@ type Stream struct {
 	// OTLP or keep trying OTAP.
 	arrowUnsupported bool
 
+	// These are read by the controller only after run returns. A gRPC
+	// constructor can succeed before the server accepts the stream, so only
+	// an actual response resets consecutive-failure backoff.
+	restartAfterError bool
+	receivedResponse  bool
+
 	// method the gRPC method name, used for additional instrumentation.
 	method string
 
@@ -84,6 +91,10 @@ type streamWorkState struct {
 
 	// waiters is the response channel for each active batch.
 	waiters map[int64]chan<- error
+
+	// restartBackOff is retained across stream attempts and accessed only
+	// by the stream controller after initialization.
+	restartBackOff *backoff.ExponentialBackOff
 }
 
 // writeItem is passed from the sender (a pipeline consumer) to the
@@ -170,6 +181,7 @@ func (s *Stream) logStreamError(where string, err error) {
 // run blocks the calling goroutine while executing stream logic.  run
 // will return when the reader and writer are finished.  errors will be logged.
 func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClientFunc, grpcOptions []grpc.CallOption) {
+	s.restartAfterError = true
 	sc, method, err := streamClient(ctx, grpcOptions...)
 	if err != nil {
 		// Unsupported errors will cause a downgrade to standard OTLP.
@@ -221,6 +233,9 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 	// Wait for the writer to ensure that all waiters are known.
 	dc.cancel()
 	ww.Wait()
+	// A nil writer error means its lifetime timer expired normally.
+	// Recycle immediately rather than backing off a healthy stream.
+	s.restartAfterError = writeErr != nil
 
 	// TODO: SA4023: this comparison is always true
 	if err != nil { //nolint:staticcheck
@@ -388,6 +403,7 @@ func (s *Stream) read(_ context.Context) error { //nolint:staticcheck
 			// Note: do not wrap, contains a Status.
 			return err
 		}
+		s.receivedResponse = true
 
 		err = s.processBatchStatus(resp)
 		if err != nil {

@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelar
 go 1.26.0
 
 require (
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.164.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.164.1
 	github.com/open-telemetry/otel-arrow/go v0.60.1
@@ -44,7 +45,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/apache/arrow-go/v18 v18.6.0 // indirect
 	github.com/axiomhq/hyperloglog v0.2.6 // indirect
-	github.com/cenkalti/backoff/v7 v7.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-metro v0.0.0-20250106013310-edb8663e5e33 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4 // indirect

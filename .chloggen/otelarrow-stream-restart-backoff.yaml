@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/otelarrow
+note: Back off failed Arrow stream restarts to avoid excessive CPU usage and logging during outages.
+issues: [52784]
+change_logs: [user]

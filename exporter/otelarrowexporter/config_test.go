@@ -95,6 +95,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: component.NewID(component.MustNewType("nop"))}),
 			},
 			Arrow: ArrowConfig{
+				StreamRestartBackOff: arrow.StreamRestartConfig{
+					InitialInterval:     250 * time.Millisecond,
+					RandomizationFactor: 0.2,
+					Multiplier:          2,
+					MaxInterval:         8 * time.Second,
+				},
 				NumStreams:         2,
 				MaxStreamLifetime:  2 * time.Hour,
 				PayloadCompression: configcompression.TypeZstd,
@@ -107,9 +113,10 @@ func TestUnmarshalConfig(t *testing.T) {
 func TestArrowConfigValidate(t *testing.T) {
 	settings := func(enabled bool, numStreams int, maxStreamLifetime time.Duration, level zstd.Level) *ArrowConfig {
 		return &ArrowConfig{
-			Disabled:          !enabled,
-			NumStreams:        numStreams,
-			MaxStreamLifetime: maxStreamLifetime,
+			StreamRestartBackOff: arrow.NewDefaultStreamRestartConfig(),
+			Disabled:             !enabled,
+			NumStreams:           numStreams,
+			MaxStreamLifetime:    maxStreamLifetime,
 			Zstd: zstd.EncoderConfig{
 				Level: level,
 			},
