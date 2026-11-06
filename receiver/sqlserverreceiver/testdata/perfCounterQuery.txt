@@ -89,7 +89,6 @@ SELECT DISTINCT
 			,'Logical Connections'
 			,'Temp Tables Creation Rate'
 			,'Temp Tables For Destruction'
-			,'Free Space in tempdb (KB)'
 			,'Version Store Size (KB)'
 			,'Memory Grants Pending'
 			,'Memory Grants Outstanding'

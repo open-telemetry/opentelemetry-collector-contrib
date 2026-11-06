@@ -48,11 +48,11 @@ flowchart LR
 
 Key design decisions:
 
-- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate using dual-epoch HyperLogLog++ sketches, so legitimate high-cardinality metrics aren't penalized.
+- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate with dual-epoch HyperLogLog++ sketches: the delta is the number of values seen this epoch that were absent from the previous one, so a stable high-cardinality set reads as zero growth while a label that keeps producing new values is caught every epoch.
 
 - **256-way sharding.** Each shard has its own `RWMutex`. With 50 concurrent goroutines across 256 shards, average occupancy is ~0.4 per shard. Contention is near zero. Shard selection is `hash & 0xFF` — one CPU cycle.
 
-- **HLL++ with bounded sketch reuse.** Each tracker retains two p=14 sketches. Sketches start sparse and may grow to dense registers of about 16 KiB each. Epoch rotation reuses a sketch only when its prior insert count guarantees it stayed sparse; otherwise it replaces the sketch with a fresh sparse one. This avoids repeatedly clearing dense registers and lets dense storage be reclaimed as cardinality falls. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
+- **HLL++ with bounded sketch reuse.** Each tracker retains two p=14 sketches — the per-epoch sketch and the two-epoch window. Sketches start sparse and may grow to dense registers of about 16 KiB each. At rotation the per-epoch sketch becomes the next window, and the retired window is reused only when its distinct count guarantees it stayed sparse; otherwise it is replaced with a fresh sparse one. This avoids repeatedly clearing dense registers and lets dense storage be reclaimed as cardinality falls. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
 
 - **Stale eviction.** Trackers that haven't been seen for two epochs are evicted and their sketch storage becomes eligible for garbage collection. However, shard-map capacity and storage retained by active trackers can reflect historical peak load. Set `max_tracker_count` to limit the number of concurrently retained trackers; `0` permits unlimited growth.
 

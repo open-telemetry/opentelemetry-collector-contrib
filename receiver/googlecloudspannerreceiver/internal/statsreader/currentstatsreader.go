@@ -26,6 +26,9 @@ const (
 	// to read data from stale replica nodes(at this time replica node will contain required data), since we are
 	// requesting data for mm:00. Also stale reads are faster than reads from main node.
 	dataStalenessSafeThresholdSeconds = 2 * dataStalenessSeconds
+	activePartitionedDMLsMetricName   = "active partitioned dmls"
+	oldestActiveQueriesMetricName     = "oldest active queries"
+	userSplitPointsMetricName         = "user split points"
 )
 
 type currentStatsReader struct {
@@ -33,7 +36,9 @@ type currentStatsReader struct {
 	database               *datasource.Database
 	metricsMetadata        *metadata.MetricsMetadata
 	topMetricsQueryMaxRows int
+	hideSplitStatsKeys     bool
 	hideClientIPAddress    bool
+	truncateText           bool
 	statement              func(args statementArgs) statsStatement
 }
 
@@ -49,7 +54,9 @@ func newCurrentStatsReader(
 		metricsMetadata:        metricsMetadata,
 		statement:              currentStatsStatement,
 		topMetricsQueryMaxRows: config.TopMetricsQueryMaxRows,
+		hideSplitStatsKeys:     config.HideSplitStatsKeys,
 		hideClientIPAddress:    config.HideClientIPAddress,
+		truncateText:           config.TruncateText,
 	}
 }
 
@@ -68,9 +75,21 @@ func (reader *currentStatsReader) Read(ctx context.Context) ([]*metadata.Metrics
 		return nil, err
 	}
 
+	if reader.hideSplitStatsKeys && reader.metricsMetadata != nil && reader.metricsMetadata.Name == userSplitPointsMetricName {
+		for _, dataPoint := range dataPoints {
+			dataPoint.HideSplitStatsKeysPII()
+		}
+	}
+
 	if reader.hideClientIPAddress {
 		for _, dataPoint := range dataPoints {
 			dataPoint.HideClientIPAddressPII()
+		}
+	}
+
+	if reader.truncateText && reader.metricsMetadata != nil && (reader.metricsMetadata.Name == activePartitionedDMLsMetricName || reader.metricsMetadata.Name == oldestActiveQueriesMetricName) {
+		for _, dataPoint := range dataPoints {
+			dataPoint.TruncateQueryText(maxLengthTruncateText)
 		}
 	}
 
