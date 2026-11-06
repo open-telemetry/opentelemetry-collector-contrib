@@ -156,6 +156,12 @@ func (*wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
+// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
+func (wme *wrapperMetricsExporter) ExporterHelperBatchingEnabled() bool {
+	b, ok := wme.Metrics.(interface{ ExporterHelperBatchingEnabled() bool })
+	return ok && b.ExporterHelperBatchingEnabled()
+}
+
 // WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
 // converts incoming resource attributes to metrics attributes or constant labels.
 // If Included or Excluded patterns are set, they take precedence over the deprecated Enabled field.
