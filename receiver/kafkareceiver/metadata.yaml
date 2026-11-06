@@ -25,6 +25,10 @@ tests:
         - github.com/twmb/franz-go/pkg/kfake.(*group).manage
 
 attributes:
+  action:
+    description: The action taken in response to an error condition.
+    type: string
+    enum: [stall, skip, fatal]
   node_id:
     description: The Kafka node ID.
     type: int
@@ -116,6 +120,20 @@ telemetry:
         value_type: int
         async: true
       attributes: [topic, partition]
+    kafka_receiver_fetch_err_decompress_too_large:
+      enabled: true
+      description: The total number of fetched record batches that decompressed beyond max_decompress_batch_bytes.
+      extended_documentation: |
+        Only produced when franz-go is enabled. The "action" attribute reports
+        how the batch was handled: "skip" means the batch was dropped via
+        SetOffsets, "fatal" means the receiver stopped with a permanent error,
+        "stall" means the partition remained blocked on the batch.
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [topic, partition, action]
     kafka_receiver_latency:
       enabled: true
       stability: deprecated

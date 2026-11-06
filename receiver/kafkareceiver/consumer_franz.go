@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -329,6 +330,13 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		)
 		// Report recoverable error while consuming.
 		c.reportRecoverable(err)
+
+		// An oversized decompressed batch leaves the partition permanently
+		// stalled unless it is skipped or the limit is raised. Handle it
+		// here so a single bad batch cannot silently jam a partition.
+		if tooLarge, ok := errors.AsType[*kgo.ErrDecompressTooLarge](err); ok {
+			c.handleDecompressTooLarge(ctx, tooLarge)
+		}
 	})
 	// Fetch errors are per partition. Records polled for other partitions
 	// have already advanced their fetch cursors, so they must be processed
@@ -401,6 +409,43 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		}
 	}
 	return true
+}
+
+// handleDecompressTooLarge applies the on_decompress_too_large action when a
+// fetched record batch decompressed beyond max_decompress_batch_bytes:
+// "stall" keeps polling (the partition stays blocked on the batch), "skip"
+// drops the batch and advances the partition, "fatal" reports a permanent
+// error and stops the receiver. Every action counts the batch on the
+// kafka_receiver_fetch_err_decompress_too_large metric.
+func (c *franzConsumer) handleDecompressTooLarge(ctx context.Context, tooLarge *kgo.ErrDecompressTooLarge) {
+	c.telemetryBuilder.KafkaReceiverFetchErrDecompressTooLarge.Add(
+		ctx,
+		1,
+		metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("topic", tooLarge.Topic),
+			attribute.Int64("partition", int64(tooLarge.Partition)),
+			attribute.String("action", string(c.config.ConsumerConfig.OnDecompressTooLarge)),
+		)),
+	)
+	switch c.config.ConsumerConfig.OnDecompressTooLarge {
+	case configkafka.OnDecompressTooLargeSkip:
+		c.settings.Logger.Warn(
+			"skipping record batch that exceeds max_decompress_batch_bytes",
+			zap.String("topic", tooLarge.Topic),
+			zap.Int64("partition", int64(tooLarge.Partition)),
+			zap.Int64("offset", tooLarge.Offset),
+			zap.Int64("next_offset", tooLarge.NextOffset),
+		)
+		c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+			tooLarge.Topic: {tooLarge.Partition: {Epoch: tooLarge.Epoch, Offset: tooLarge.NextOffset}},
+		})
+	case configkafka.OnDecompressTooLargeFatal:
+		componentstatus.ReportStatus(c.host, componentstatus.NewFatalErrorEvent(tooLarge))
+	case configkafka.OnDecompressTooLargeStall:
+		// Keep the default franz-go behavior: partition stays
+		// stalled on this batch until the limit is raised or the
+		// consumer is recreated.
+	}
 }
 
 // pollRecords records the active poll cancellation function so a worker can
