@@ -555,6 +555,55 @@ func (ms *SqlserverDatabaseExecutionErrorsMetricConfig) Unmarshal(parser *confma
 	return nil
 }
 
+// SqlserverDatabaseFileSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.database.file.size metric.
+type SqlserverDatabaseFileSizeMetricAttributeKey string
+
+const (
+	SqlserverDatabaseFileSizeMetricAttributeKeyFileType    SqlserverDatabaseFileSizeMetricAttributeKey = "file_type"
+	SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace SqlserverDatabaseFileSizeMetricAttributeKey = "db.namespace"
+)
+
+// SqlserverDatabaseFileSizeMetricConfig provides config for the sqlserver.database.file.size metric.
+type SqlserverDatabaseFileSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverDatabaseFileSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverDatabaseFileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverDatabaseFileSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace:
+		default:
+			return fmt.Errorf("metric sqlserver.database.file.size doesn't have an attribute %v, valid attributes: [file_type, db.namespace]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverDatabaseFullScanRateMetricConfig provides config for the sqlserver.database.full_scan.rate metric.
 type SqlserverDatabaseFullScanRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -783,6 +832,26 @@ type SqlserverDatabaseTempdbVersionStoreSizeMetricConfig struct {
 }
 
 func (ms *SqlserverDatabaseTempdbVersionStoreSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverDatabaseTransactionsActiveMetricConfig provides config for the sqlserver.database.transactions.active metric.
+type SqlserverDatabaseTransactionsActiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverDatabaseTransactionsActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3086,12 +3155,14 @@ type MetricsConfig struct {
 	SqlserverDatabaseBackupOrRestoreRate                  SqlserverDatabaseBackupOrRestoreRateMetricConfig                  `mapstructure:"sqlserver.database.backup_or_restore.rate"`
 	SqlserverDatabaseCount                                SqlserverDatabaseCountMetricConfig                                `mapstructure:"sqlserver.database.count"`
 	SqlserverDatabaseExecutionErrors                      SqlserverDatabaseExecutionErrorsMetricConfig                      `mapstructure:"sqlserver.database.execution.errors"`
+	SqlserverDatabaseFileSize                             SqlserverDatabaseFileSizeMetricConfig                             `mapstructure:"sqlserver.database.file.size"`
 	SqlserverDatabaseFullScanRate                         SqlserverDatabaseFullScanRateMetricConfig                         `mapstructure:"sqlserver.database.full_scan.rate"`
 	SqlserverDatabaseIo                                   SqlserverDatabaseIoMetricConfig                                   `mapstructure:"sqlserver.database.io"`
 	SqlserverDatabaseLatency                              SqlserverDatabaseLatencyMetricConfig                              `mapstructure:"sqlserver.database.latency"`
 	SqlserverDatabaseOperations                           SqlserverDatabaseOperationsMetricConfig                           `mapstructure:"sqlserver.database.operations"`
 	SqlserverDatabaseTempdbSpace                          SqlserverDatabaseTempdbSpaceMetricConfig                          `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize               SqlserverDatabaseTempdbVersionStoreSizeMetricConfig               `mapstructure:"sqlserver.database.tempdb.version_store.size"`
+	SqlserverDatabaseTransactionsActive                   SqlserverDatabaseTransactionsActiveMetricConfig                   `mapstructure:"sqlserver.database.transactions.active"`
 	SqlserverDeadlockRate                                 SqlserverDeadlockRateMetricConfig                                 `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverDiskIo                                       SqlserverDiskIoMetricConfig                                       `mapstructure:"sqlserver.disk.io"`
 	SqlserverDiskOperations                               SqlserverDiskOperationsMetricConfig                               `mapstructure:"sqlserver.disk.operations"`
@@ -3242,6 +3313,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDatabaseExecutionErrors: SqlserverDatabaseExecutionErrorsMetricConfig{
 			Enabled: false,
 		},
+		SqlserverDatabaseFileSize: SqlserverDatabaseFileSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace},
+		},
 		SqlserverDatabaseFullScanRate: SqlserverDatabaseFullScanRateMetricConfig{
 			Enabled: false,
 		},
@@ -3266,6 +3342,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SqlserverDatabaseTempdbSpaceMetricAttributeKey{SqlserverDatabaseTempdbSpaceMetricAttributeKeyTempdbState},
 		},
 		SqlserverDatabaseTempdbVersionStoreSize: SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseTransactionsActive: SqlserverDatabaseTransactionsActiveMetricConfig{
 			Enabled: false,
 		},
 		SqlserverDeadlockRate: SqlserverDeadlockRateMetricConfig{
