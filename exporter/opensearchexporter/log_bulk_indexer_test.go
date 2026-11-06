@@ -4,11 +4,17 @@
 package opensearchexporter
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -55,6 +61,48 @@ func TestProcessItemFailure(t *testing.T) {
 			lbi.processItemFailure(resp, nil, logs)
 			if len(lbi.errs) != tt.expectedErrs {
 				t.Errorf("expected %d errors, got %d", tt.expectedErrs, len(lbi.errs))
+			}
+		})
+	}
+}
+
+func TestOnIndexerErrorIsRetryable(t *testing.T) {
+	lbi := &logBulkIndexer{}
+	// A transport failure surfaces through the bulk indexer's OnError callback.
+	lbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	err := lbi.joinedError()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if consumererror.IsPermanent(err) {
+		t.Error("indexer-level transport error must be retryable, not permanent (otherwise retry_on_failure silently drops the batch)")
+	}
+}
+
+func TestIsRetryableError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil", nil, false},
+		{"deadline exceeded", context.DeadlineExceeded, true},
+		{"canceled", context.Canceled, true},
+		{"net.OpError", &net.OpError{Op: "dial", Err: errors.New("connection refused")}, true},
+		{
+			"url.Error wrapping net.OpError",
+			&url.Error{Op: "Post", URL: "http://localhost", Err: &net.OpError{Op: "dial", Err: errors.New("connection refused")}},
+			true,
+		},
+		{"flush-wrapped deadline", fmt.Errorf("flush: %w", context.DeadlineExceeded), true},
+		{"flush-wrapped EOF", fmt.Errorf("flush: %w", io.EOF), true},
+		{"unexpected EOF", io.ErrUnexpectedEOF, true},
+		{"encoding error", errors.New("json: unsupported value"), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRetryableError(tt.err); got != tt.want {
+				t.Errorf("isRetryableError(%v) = %v, want %v", tt.err, got, tt.want)
 			}
 		})
 	}

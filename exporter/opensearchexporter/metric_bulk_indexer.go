@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net"
 	"time"
 
@@ -147,7 +148,8 @@ func (mbi *metricBulkIndexer) processItem(
 		bi.OnFailure = ItemFailureHandler
 		err = mbi.bulkIndexer.Add(ctx, bi)
 		if err != nil {
-			mbi.appendRetryMetricError(err, makeMetric(resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp))
+			// Add only fails once ctx is done; a bare error retries the whole batch, not just this item.
+			mbi.errs = append(mbi.errs, err)
 		}
 	}
 }
@@ -251,6 +253,10 @@ func isRetryableError(err error) bool {
 		return false
 	}
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	// The transport calls RoundTrip directly, so a proxy closing the connection surfaces as a bare io.EOF.
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return true
 	}
 	var netErr net.Error
