@@ -172,6 +172,7 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/collector/receiver v1.70.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.164.1-0.20261106205140-205deacf383e // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper v0.0.0-20261106185333-e3935b3d6843 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.164.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ecs v1.47.0 // indirect
