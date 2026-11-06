@@ -24,7 +24,6 @@ type Server struct {
 	BaseURL          string                 `mapstructure:"base_url"`
 	User             string                 `mapstructure:"username"`
 	Pwd              configopaque.String    `mapstructure:"password"`
-	Insecure         bool                   `mapstructure:"insecure"`
 	TLS              configtls.ClientConfig `mapstructure:"tls"`
 	Timeout          string                 `mapstructure:"timeout"`
 	Redfish          redfishConfig          `mapstructure:"redfish"`
@@ -53,6 +52,10 @@ func (cfg *Config) Validate() error {
 
 		if err := cfg.Servers[i].TLS.Validate(); err != nil {
 			return err
+		}
+
+		if cfg.Servers[i].TLS.Insecure {
+			return errors.New("tls::insecure is not supported")
 		}
 
 		if strings.TrimSpace(cfg.Servers[i].ComputerSystemID) == "" {

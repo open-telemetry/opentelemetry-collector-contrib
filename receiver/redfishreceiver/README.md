@@ -39,8 +39,7 @@ Each server has the following properties:
 - `base_url` (required): base url to monitor in the form [https][://][host]:[port].
 - `username` (optional): Redfish username. When set, HTTP basic auth is used.
 - `password` (optional): Redfish password.
-- `insecure` (optional, default: `false`): Skips server certificate verification.
-- `tls` (optional): TLS settings, e.g. `ca_file`, `cert_file` and `key_file` for mTLS, or `server_name_override` when the server certificate does not match the host in `base_url`. If the client certificate and key are in a single PEM file, set both `cert_file` and `key_file` to it. See [configtls](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for all options.
+- `tls` (optional): TLS settings, e.g. `insecure_skip_verify` to skip server certificate verification, `ca_file`, `cert_file` and `key_file` for mTLS, or `server_name_override` when the server certificate does not match the host in `base_url`. If the client certificate and key are in a single PEM file, set both `cert_file` and `key_file` to it. `insecure` is not supported. See [configtls](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for all options.
 - `timeout` (optional, default: `60s`): Sets the Redfish client timeout.
 - `redfish` (optional): Redfish configuration.
 - `computer_system_id` (required): Redfish computer system id to monitor.
@@ -68,7 +67,8 @@ receivers:
     - base_url: https://16.1.15.1
       username: "${BMC_USER}"
       password: "${BMC_PASSWORD}"
-      insecure: true
+      tls:
+        insecure_skip_verify: true
       computer_system_id: "1"
       resources:
       - ComputerSystem

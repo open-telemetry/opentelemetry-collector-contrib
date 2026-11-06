@@ -73,6 +73,24 @@ func TestConfig_Validate(t *testing.T) {
 			expectError: true,
 		},
 		{
+			desc: "Bad Config - TLS Insecure",
+			cfg: &Config{
+				Servers: []Server{
+					{BaseURL: "https://localhost:3000", TLS: configtls.ClientConfig{Insecure: true}, ComputerSystemID: "1", Resources: validResources},
+				},
+			},
+			expectError: true,
+		},
+		{
+			desc: "Valid Config - TLS Insecure Skip Verify",
+			cfg: &Config{
+				Servers: []Server{
+					{BaseURL: "https://localhost:3000", TLS: configtls.ClientConfig{InsecureSkipVerify: true}, ComputerSystemID: "1", Resources: validResources},
+				},
+			},
+			expectError: false,
+		},
+		{
 			desc: "Valid Config - mTLS",
 			cfg: &Config{
 				Servers: []Server{

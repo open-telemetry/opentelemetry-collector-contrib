@@ -31,7 +31,6 @@ type ClientOption func(*clientOptions)
 type clientOptions struct {
 	RedfishVersion string
 	ClientTimeout  time.Duration
-	Insecure       bool
 	TLSConfig      *tls.Config
 }
 
@@ -41,10 +40,6 @@ func WithRedfishVersion(version string) ClientOption {
 
 func WithClientTimeout(timeout time.Duration) ClientOption {
 	return func(o *clientOptions) { o.ClientTimeout = timeout }
-}
-
-func WithInsecure(insecure bool) ClientOption {
-	return func(o *clientOptions) { o.Insecure = insecure }
 }
 
 // WithTLSConfig sets the TLS configuration (e.g. CA and client certificates for mTLS).
@@ -67,7 +62,6 @@ func NewClient(computerSystemID, addr, user string, pwd configopaque.String, opt
 	clientOpts := &clientOptions{
 		RedfishVersion: "v1",
 		ClientTimeout:  time.Second * 60,
-		Insecure:       false,
 	}
 	for _, opt := range opts {
 		opt(clientOpts)
@@ -76,9 +70,6 @@ func NewClient(computerSystemID, addr, user string, pwd configopaque.String, opt
 	tlsConfig := clientOpts.TLSConfig
 	if tlsConfig == nil {
 		tlsConfig = &tls.Config{}
-	}
-	if clientOpts.Insecure {
-		tlsConfig.InsecureSkipVerify = true
 	}
 
 	return &Client{

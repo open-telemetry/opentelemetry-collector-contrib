@@ -4,20 +4,14 @@
 package redfish
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"path"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 const (
@@ -56,7 +50,7 @@ func Test_HPE(t *testing.T) {
 	ts := createRedfishTestServer(HPE, compSysID)
 	defer ts.Close()
 
-	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithInsecure(true))
+	client, err := NewClient(compSysID, ts.URL, USER, PASS)
 	require.NoError(t, err)
 
 	system, err := client.GetComputerSystem()
@@ -83,7 +77,7 @@ func Test_Dell(t *testing.T) {
 	ts := createRedfishTestServer(DELL, compSysID)
 	defer ts.Close()
 
-	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithInsecure(true))
+	client, err := NewClient(compSysID, ts.URL, USER, PASS)
 	require.NoError(t, err)
 
 	system, err := client.GetComputerSystem()
@@ -105,119 +99,46 @@ func Test_Dell(t *testing.T) {
 	require.Equal(t, int64(28), *thermal.Temperatures[1].ReadingCelsius)
 }
 
-// newClientCert is a helper function to create a self-signed client certificate
-func newClientCert(t *testing.T) (tls.Certificate, *x509.Certificate) {
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-	tmpl := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "otel-redfish-client"},
-		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(time.Hour),
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+// Test_BasicAuth is a function to test that basic auth is only sent when a username is set
+func Test_BasicAuth(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		user     string
+		pwd      string
+		wantAuth bool
+	}{
+		{desc: "No Username", wantAuth: false},
+		{desc: "With Username", user: USER, pwd: PASS, wantAuth: true},
 	}
-	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
-	require.NoError(t, err)
-	cert, err := x509.ParseCertificate(der)
-	require.NoError(t, err)
-	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}, cert
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				user, pass, ok := r.BasicAuth()
+				if ok != tc.wantAuth || user != tc.user || pass != tc.pwd {
+					http.Error(w, "unexpected basic auth", http.StatusUnauthorized)
+					return
+				}
+				http.ServeFile(w, r, path.Join("testdata/", HPE, "systems.json"))
+			}))
+			defer ts.Close()
+
+			client, err := NewClient("S7", ts.URL, tc.user, configopaque.String(tc.pwd))
+			require.NoError(t, err)
+			_, err = client.GetComputerSystem()
+			require.NoError(t, err)
+		})
+	}
 }
 
-// Test_MTLS is a function to test client certificate authentication without basic auth
-func Test_MTLS(t *testing.T) {
-	compSysID := "S7"
-	clientCert, caCert := newClientCert(t)
-	clientCAs := x509.NewCertPool()
-	clientCAs.AddCert(caCert)
+// Test_WithTLSConfig is a function to test that the TLS config is used by the HTTP transport
+func Test_WithTLSConfig(t *testing.T) {
+	tlsConfig := &tls.Config{ServerName: "bmc.example.com"}
 
-	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, _, ok := r.BasicAuth(); ok {
-			http.Error(w, "unexpected basic auth", http.StatusBadRequest)
-			return
-		}
-		http.ServeFile(w, r, path.Join("testdata/", HPE, "systems.json"))
-	}))
-	ts.TLS = &tls.Config{ClientAuth: tls.RequireAndVerifyClientCert, ClientCAs: clientCAs}
-	ts.StartTLS()
-	defer ts.Close()
-
-	rootCAs := x509.NewCertPool()
-	rootCAs.AddCert(ts.Certificate())
-
-	// without a client certificate the handshake must fail
-	client, err := NewClient(compSysID, ts.URL, "", "", WithTLSConfig(&tls.Config{RootCAs: rootCAs}))
+	client, err := NewClient("S7", "https://localhost:3000", "", "", WithTLSConfig(tlsConfig))
 	require.NoError(t, err)
-	_, err = client.GetComputerSystem()
-	require.Error(t, err)
 
-	client, err = NewClient(compSysID, ts.URL, "", "", WithTLSConfig(&tls.Config{
-		RootCAs:      rootCAs,
-		Certificates: []tls.Certificate{clientCert},
-	}))
-	require.NoError(t, err)
-	system, err := client.GetComputerSystem()
-	require.NoError(t, err)
-	require.Equal(t, "otel-test-host", system.HostName)
-}
-
-// Test_MTLSWithBasicAuth is a function to test client certificate authentication combined with basic auth
-func Test_MTLSWithBasicAuth(t *testing.T) {
-	compSysID := "S7"
-	clientCert, caCert := newClientCert(t)
-	clientCAs := x509.NewCertPool()
-	clientCAs.AddCert(caCert)
-
-	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if user, pass, ok := r.BasicAuth(); !ok || user != USER || pass != PASS {
-			http.Error(w, "authentication failed", http.StatusUnauthorized)
-			return
-		}
-		http.ServeFile(w, r, path.Join("testdata/", HPE, "systems.json"))
-	}))
-	ts.TLS = &tls.Config{ClientAuth: tls.RequireAndVerifyClientCert, ClientCAs: clientCAs}
-	ts.StartTLS()
-	defer ts.Close()
-
-	rootCAs := x509.NewCertPool()
-	rootCAs.AddCert(ts.Certificate())
-
-	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithTLSConfig(&tls.Config{
-		RootCAs:      rootCAs,
-		Certificates: []tls.Certificate{clientCert},
-	}))
-	require.NoError(t, err)
-	system, err := client.GetComputerSystem()
-	require.NoError(t, err)
-	require.Equal(t, "otel-test-host", system.HostName)
-}
-
-// Test_InsecureWithTLSConfig is a function to test that insecure skips server verification when a TLS config is set
-func Test_InsecureWithTLSConfig(t *testing.T) {
-	compSysID := "S7"
-	clientCert, caCert := newClientCert(t)
-	clientCAs := x509.NewCertPool()
-	clientCAs.AddCert(caCert)
-
-	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join("testdata/", HPE, "systems.json"))
-	}))
-	ts.TLS = &tls.Config{ClientAuth: tls.RequireAndVerifyClientCert, ClientCAs: clientCAs}
-	ts.StartTLS()
-	defer ts.Close()
-
-	// the server certificate is not trusted, so verification must fail
-	client, err := NewClient(compSysID, ts.URL, "", "", WithTLSConfig(&tls.Config{
-		Certificates: []tls.Certificate{clientCert},
-	}))
-	require.NoError(t, err)
-	_, err = client.GetComputerSystem()
-	require.Error(t, err)
-
-	client, err = NewClient(compSysID, ts.URL, "", "", WithInsecure(true), WithTLSConfig(&tls.Config{
-		Certificates: []tls.Certificate{clientCert},
-	}))
-	require.NoError(t, err)
-	system, err := client.GetComputerSystem()
-	require.NoError(t, err)
-	require.Equal(t, "otel-test-host", system.HostName)
+	transport, ok := client.client.Transport.(*http.Transport)
+	require.True(t, ok)
+	require.Same(t, tlsConfig, transport.TLSClientConfig)
 }
