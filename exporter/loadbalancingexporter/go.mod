@@ -44,6 +44,14 @@ require (
 )
 
 require (
+	github.com/felixge/httpsnoop v1.1.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/rs/cors v1.11.1 // indirect
+	go.opentelemetry.io/collector/config/confighttp v0.164.1-0.20261105234325-55e32ede1d63 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
+)
+
+require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.5 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.13 // indirect
@@ -124,7 +132,7 @@ require (
 	go.opentelemetry.io/collector/client v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.70.1-0.20261105234325-55e32ede1d63 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.70.1-0.20261105234325-55e32ede1d63 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/config/configgrpc v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.70.1-0.20261105234325-55e32ede1d63 // indirect
@@ -142,6 +150,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.164.1-0.20261105234325-55e32ede1d63 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/extension v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.1-0.20261105234325-55e32ede1d63 // indirect
@@ -196,7 +205,7 @@ require (
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
-	google.golang.org/grpc v1.85.0 // indirect
+	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

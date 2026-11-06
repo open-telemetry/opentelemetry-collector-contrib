@@ -52,11 +52,15 @@ $defs:
         type: string
         format: duration
   protocol:
-    description: Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
+    description: Protocol holds the individual protocol-specific settings. OTLP/gRPC is used unless OTLPHTTP is set.
     type: object
     properties:
       otlp:
         $ref: go.opentelemetry.io/collector/exporter/otlpexporter.config
+      otlp_http:
+        description: OTLPHTTP switches the backend exporters to OTLP/HTTP. It cannot be combined with OTLP.
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/exporter/otlphttpexporter.config
   resolver_settings:
     description: ResolverSettings defines the configurations for the backend resolver
     type: object

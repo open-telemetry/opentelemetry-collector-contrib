@@ -76,11 +76,11 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
                                         +------------------+          +---------------+
 ```
 
-* For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` property). Once redelivery is exhausted on sub-exporter level, and resilience options 1 are enabled - telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
+* For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` or `otlp_http` property). Once redelivery is exhausted on sub-exporter level, and resilience options 1 are enabled - telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
 * When using the `static` resolver, there's a risk of data loss if one of the defined endpoint targets becomes unavailable and both resiliency option 2 and resiliency option 1 (if enabled) are exhausted. This limitation stems from the nature of the `static` resolver, where endpoints are configured manually and remain fixed. In contrast, resolvers like `dns` and `k8s` automatically update the list of available endpoints, offering greater flexibility and resilience.
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 * Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `load_balancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
-* Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
+* Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` or `otlp_http` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
 
 Unfortunately, data loss is still possible for any resolver type if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
@@ -91,16 +91,22 @@ To avoid a single point of failure, requests can be distributed among multiple C
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the exporter.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
+* The `otlp_http` property sends data over OTLP/HTTP instead of OTLP/gRPC, for backends that only accept HTTP, such as vmagent. It configures the template used for building the OTLP/HTTP exporter, see the OTLP/HTTP Exporter documentation for the available options and their defaults. It applies to traces, metrics and logs, and cannot be set together with `otlp`. Without it the exporter keeps using OTLP/gRPC.
+  * At least one of `endpoint`, `traces_endpoint`, `metrics_endpoint`, `logs_endpoint` or `profiles_endpoint` must be set, each with an `http://` or `https://` scheme. For every resolved backend the exporter replaces only the host and port of each endpoint you set. The scheme and path are kept, so a custom path such as `/opentelemetry/v1/metrics` works. If only `endpoint` is set, the `/v1/<signal>` path is appended as in the OTLP/HTTP exporter, so `endpoint` cannot have a query or a fragment. A pipeline needs an endpoint for its signal (`endpoint` or the matching `*_endpoint`), otherwise the exporter fails to start.
+  * Backends returned without a port get port 4318 instead of 4317.
+  * With `https`, the certificate is checked against the resolved address. Set `tls::server_name_override` if the backends present a certificate for another name.
+  * `timeout` under `otlp_http` is the HTTP client timeout of each backend. It is separate from the `timeout` of the exporter itself and is not copied from it.
+  * `sending_queue` and `retry_on_failure` under `otlp_http` apply per backend, as under `otlp`. Persistent queue is not supported there either. Retries follow the OTLP/HTTP exporter: 429, 502, 503 and 504 are retried, `Retry-After` is honored for 429 and 503, other statuses are permanent.
 * The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `aws_cloud_map`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts the following optional properties:
   * `hostname` DNS hostname to resolve.
-  * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
+  * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used (4318 with `otlp_http`).
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
 * The `k8s` node accepts the following optional properties:
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
-  * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
+  * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used (4318 with `otlp_http`). When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1m` will be used.
   * `return_hostnames` will return hostnames instead of IPs. This is useful in certain situations like using istio in sidecar mode. To use this feature, the `service` must be a headless `Service`, pointing at a `StatefulSet`, and the `service` must be what is specified under `.spec.serviceName` in the `StatefulSet`.
   * **RBAC requirement:** the Collector pod must run with a service account that is allowed to `get`, `list`, and `watch` `discovery.k8s.io/v1` `EndpointSlice` objects in the target namespace; otherwise the resolver cache remains empty and the exporter logs `couldn't find the exporter for the endpoint ""`.
@@ -453,6 +459,22 @@ service:
       processors: []
       exporters:
         - debug
+```
+
+Example sending metrics to vmagent over OTLP/HTTP:
+
+```yaml
+exporters:
+  loadbalancing:
+    routing_key: attributes
+    routing_attributes: [service.name]
+    protocol:
+      otlp_http:
+        metrics_endpoint: http://placeholder:8429/opentelemetry/v1/metrics
+    resolver:
+      dns:
+        hostname: vmagent-headless.monitoring.svc
+        port: "8429"
 ```
 
 ## Metrics

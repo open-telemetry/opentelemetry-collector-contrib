@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
@@ -42,16 +41,17 @@ type metricExporterImp struct {
 }
 
 func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "metrics"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+		f, oCfg, oParams := newBackend(cfg.(*Config), params, endpoint)
 
-		return exporterFactory.CreateMetrics(ctx, oParams, &oCfg)
+		return f.CreateMetrics(ctx, oParams, oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
