@@ -69,6 +69,12 @@ var errMultipleProtocolsProvided = errors.New("only one of protocol::otlp and pr
 // Unmarshal rejects a configuration that sets both protocols. protocol::otlp is always populated by the
 // default config, so only the raw configuration can tell whether the user wrote it.
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	// A null value, as written when a default config is marshaled, means the key is not set.
+	for _, key := range []string{"protocol::otlp", "protocol::otlp_http"} {
+		if conf.IsSet(key) && conf.Get(key) == nil {
+			conf.Delete(key)
+		}
+	}
 	if conf.IsSet("protocol::otlp") && conf.IsSet("protocol::otlp_http") {
 		return errMultipleProtocolsProvided
 	}
@@ -93,26 +99,54 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+type httpEndpoint struct {
+	name  string
+	value *string
+}
+
+// httpEndpoints lists every endpoint of the OTLP/HTTP exporter configuration.
+func httpEndpoints(cfg *otlphttpexporter.Config) []httpEndpoint {
+	return []httpEndpoint{
+		{"endpoint", &cfg.ClientConfig.Endpoint},
+		{"traces_endpoint", &cfg.TracesEndpoint},
+		{"metrics_endpoint", &cfg.MetricsEndpoint},
+		{"logs_endpoint", &cfg.LogsEndpoint},
+		{"profiles_endpoint", &cfg.ProfilesEndpoint},
+	}
+}
+
 // validateHTTPEndpoints checks that every endpoint set on the OTLP/HTTP sub-exporter has a scheme and a host.
-// The host and port are replaced by the resolved backend, the rest of the URL is kept.
+// The host and port are replaced by the resolved backend, the rest of the URL is kept. The otlphttp exporter
+// appends /v1/<signal> to endpoint, so it cannot carry a query or a fragment.
 func validateHTTPEndpoints(cfg *otlphttpexporter.Config) error {
-	for _, e := range []struct{ name, value string }{
-		{"endpoint", cfg.ClientConfig.Endpoint},
-		{"traces_endpoint", cfg.TracesEndpoint},
-		{"metrics_endpoint", cfg.MetricsEndpoint},
-		{"logs_endpoint", cfg.LogsEndpoint},
-		{"profiles_endpoint", cfg.ProfilesEndpoint},
-	} {
-		if e.value == "" {
+	for _, e := range httpEndpoints(cfg) {
+		if *e.value == "" {
 			continue
 		}
-		u, err := url.Parse(e.value)
+		u, err := url.Parse(*e.value)
 		if err != nil {
 			return fmt.Errorf("protocol::otlp_http::%s is not a valid URL: %w", e.name, err)
 		}
 		if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return fmt.Errorf("protocol::otlp_http::%s must be an http:// or https:// URL with a host, got %q", e.name, e.value)
+			return fmt.Errorf("protocol::otlp_http::%s must be an http:// or https:// URL with a host, got %q", e.name, *e.value)
 		}
+		if e.name == "endpoint" && (u.RawQuery != "" || u.Fragment != "") {
+			return fmt.Errorf("protocol::otlp_http::endpoint must not have a query or a fragment, use a per signal endpoint instead, got %q", *e.value)
+		}
+	}
+	return nil
+}
+
+// checkHTTPSignalEndpoint fails when the OTLP/HTTP exporter has no endpoint for the signal, as the otlphttp
+// exporter does. Without it the backends would fail to be created later and only be logged.
+func checkHTTPSignalEndpoint(cfg *Config, signal string) error {
+	if !cfg.Protocol.OTLPHTTP.HasValue() {
+		return nil
+	}
+	h := cfg.Protocol.OTLPHTTP.Get()
+	perSignal := map[string]string{"traces": h.TracesEndpoint, "metrics": h.MetricsEndpoint, "logs": h.LogsEndpoint}[signal]
+	if h.ClientConfig.Endpoint == "" && perSignal == "" {
+		return fmt.Errorf("protocol::otlp_http: either endpoint or %s_endpoint must be specified", signal)
 	}
 	return nil
 }

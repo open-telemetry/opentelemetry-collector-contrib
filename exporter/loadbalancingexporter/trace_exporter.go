@@ -47,6 +47,9 @@ type traceExporterImp struct {
 
 // Create new traces exporter
 func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "traces"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err

@@ -41,6 +41,9 @@ type metricExporterImp struct {
 }
 
 func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "metrics"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err

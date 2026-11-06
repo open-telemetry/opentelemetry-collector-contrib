@@ -71,19 +71,13 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 // are written, so the shared configuration is never modified.
 func buildHTTPExporterConfig(cfg *Config, hostPort string) otlphttpexporter.Config {
 	hCfg := *cfg.Protocol.OTLPHTTP.Get()
-	for _, endpoint := range []*string{
-		&hCfg.ClientConfig.Endpoint,
-		&hCfg.TracesEndpoint,
-		&hCfg.MetricsEndpoint,
-		&hCfg.LogsEndpoint,
-		&hCfg.ProfilesEndpoint,
-	} {
-		if *endpoint == "" {
+	for _, e := range httpEndpoints(&hCfg) {
+		if *e.value == "" {
 			continue
 		}
-		if u, err := url.Parse(*endpoint); err == nil {
+		if u, err := url.Parse(*e.value); err == nil {
 			u.Host = hostPort
-			*endpoint = u.String()
+			*e.value = u.String()
 		}
 	}
 	return hCfg

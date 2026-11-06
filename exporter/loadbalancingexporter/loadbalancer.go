@@ -203,7 +203,9 @@ func endpointWithPort(endpoint string) string {
 }
 
 func endpointWithDefaultPort(endpoint, port string) string {
-	if !strings.Contains(endpoint, ":") {
+	// A bracketed IPv6 address without a port contains colons too.
+	bareIPv6 := strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]")
+	if bareIPv6 || !strings.Contains(endpoint, ":") {
 		endpoint = fmt.Sprintf("%s:%s", endpoint, port)
 	}
 	return endpoint

@@ -177,24 +177,24 @@ func TestOTLPHTTPConfigInvalid(t *testing.T) {
 func TestBuildHTTPExporterConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	h := httpDefaults()
-	h.ClientConfig.Endpoint = "https://placeholder/base?x=1"
+	h.ClientConfig.Endpoint = "https://placeholder/base"
 	h.MetricsEndpoint = "http://placeholder:8429/opentelemetry/v1/metrics"
-	h.LogsEndpoint = "http://placeholder:1/custom/logs"
+	h.LogsEndpoint = "http://placeholder:1/custom/logs?x=1"
 	cfg.Protocol.OTLPHTTP = configoptional.Some(*h)
 
 	first := buildHTTPExporterConfig(cfg, "10.0.0.1:4318")
 	second := buildHTTPExporterConfig(cfg, "10.0.0.2:4318")
 
-	assert.Equal(t, "https://10.0.0.1:4318/base?x=1", first.ClientConfig.Endpoint)
+	assert.Equal(t, "https://10.0.0.1:4318/base", first.ClientConfig.Endpoint)
 	assert.Equal(t, "http://10.0.0.1:4318/opentelemetry/v1/metrics", first.MetricsEndpoint)
-	assert.Equal(t, "http://10.0.0.1:4318/custom/logs", first.LogsEndpoint)
+	assert.Equal(t, "http://10.0.0.1:4318/custom/logs?x=1", first.LogsEndpoint)
 	assert.Empty(t, first.TracesEndpoint, "unset endpoints stay unset")
 	assert.Empty(t, first.ProfilesEndpoint)
 
 	// Each backend gets its own copy and the shared configuration is not modified.
-	assert.Equal(t, "https://10.0.0.2:4318/base?x=1", second.ClientConfig.Endpoint)
+	assert.Equal(t, "https://10.0.0.2:4318/base", second.ClientConfig.Endpoint)
 	shared := cfg.Protocol.OTLPHTTP.Get()
-	assert.Equal(t, "https://placeholder/base?x=1", shared.ClientConfig.Endpoint)
+	assert.Equal(t, "https://placeholder/base", shared.ClientConfig.Endpoint)
 	assert.Equal(t, "http://placeholder:8429/opentelemetry/v1/metrics", shared.MetricsEndpoint)
 }
 

@@ -45,6 +45,9 @@ type logExporterImp struct {
 
 // Create new logs exporter
 func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "logs"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
