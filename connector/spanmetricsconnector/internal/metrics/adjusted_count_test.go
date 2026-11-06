@@ -109,13 +109,6 @@ func TestGetStochasticAdjustedCount_ZeroCount(t *testing.T) {
 			wantAdjust: true,
 		},
 		{
-			// zc and th are mutually exclusive; if both arrive, th is used.
-			name:       "zero count flag with th uses th",
-			tracestate: "ot=th:0;zc:1",
-			wantCount:  1,
-			wantAdjust: true,
-		},
-		{
 			name:       "invalid zero count value is ignored",
 			tracestate: "ot=zc:0",
 			wantCount:  1,

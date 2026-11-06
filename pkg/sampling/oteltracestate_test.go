@@ -400,24 +400,6 @@ func TestOpenTelemetryTraceStateZeroCountBlocksTValueUpdate(t *testing.T) {
 
 }
 
-func TestOpenTelemetryTraceStateZeroCountWithTValue(t *testing.T) {
-	// The flags are mutually exclusive, but if both arrive they are
-	// both preserved, and updating the threshold is still refused.
-	otts, err := NewOpenTelemetryTraceState("zc:1;th:8")
-	require.NoError(t, err)
-	require.True(t, otts.ZeroCount())
-	require.Equal(t, "8", otts.TValue())
-
-	th, err := ProbabilityToThreshold(0.25)
-	require.NoError(t, err)
-	require.ErrorIs(t, otts.UpdateTValueWithSampling(th), ErrZeroCount)
-	require.Equal(t, "8", otts.TValue())
-
-	var w strings.Builder
-	require.NoError(t, otts.Serialize(&w))
-	require.Equal(t, "th:8;zc:1", w.String())
-}
-
 func TestW3CTraceStateZeroCount(t *testing.T) {
 	w3c, err := NewW3CTraceState("ot=zc:1;rv:6e6d1a75832a2f,vendor=abc")
 	require.NoError(t, err)

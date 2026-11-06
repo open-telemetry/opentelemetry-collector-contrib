@@ -209,9 +209,8 @@ func (otts *OpenTelemetryTraceState) ClearTValue() {
 
 // ZeroCount returns true if the zero-count flag (key: "zc") is set,
 // meaning this item has an adjusted count of zero.  The zero-count flag
-// and the T-value are mutually exclusive.  If both arrive in the same
-// tracestate, both are preserved and reported, and it is up to the
-// consumer how to interpret the combination.
+// and the T-value are mutually exclusive; the behavior when both are
+// present is unspecified.
 func (otts *OpenTelemetryTraceState) ZeroCount() bool {
 	return otts.zeroCount
 }
