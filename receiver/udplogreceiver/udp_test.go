@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -93,6 +94,71 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.NoError(t, confmap.Validate(cfg))
 	assert.Equal(t, testdataConfigYaml("127.0.0.1:29018"), cfg)
+
+	// test resolve_names: false
+	cfgFalse := factory.CreateDefaultConfig()
+	subFalse, err := cm.Sub("udp_log/resolve_names_false")
+	require.NoError(t, err)
+	require.NoError(t, subFalse.Unmarshal(cfgFalse))
+	assert.NoError(t, confmap.Validate(cfgFalse))
+	expectedFalse := testdataConfigYaml("127.0.0.1:29018")
+	expectedFalse.InputConfig.AddAttributes = true
+	expectedFalse.InputConfig.ResolveNames = configoptional.Some(false)
+	assert.Equal(t, expectedFalse, cfgFalse)
+
+	// test resolve_names: true
+	cfgTrue := factory.CreateDefaultConfig()
+	subTrue, err := cm.Sub("udp_log/resolve_names_true")
+	require.NoError(t, err)
+	require.NoError(t, subTrue.Unmarshal(cfgTrue))
+	assert.NoError(t, confmap.Validate(cfgTrue))
+	expectedTrue := testdataConfigYaml("127.0.0.1:29018")
+	expectedTrue.InputConfig.AddAttributes = true
+	expectedTrue.InputConfig.ResolveNames = configoptional.Some(true)
+	assert.Equal(t, expectedTrue, cfgTrue)
+}
+
+func TestUdpResolveNamesFalse(t *testing.T) {
+	listenAddress := "127.0.0.1:29020"
+	cfg := testdataConfigYaml(listenAddress)
+	cfg.InputConfig.AddAttributes = true
+	cfg.InputConfig.ResolveNames = configoptional.Some(false)
+
+	numLogs := 3
+	f := NewFactory()
+	sink := new(consumertest.LogsSink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+
+	conn, err := net.Dial("udp", listenAddress)
+	require.NoError(t, err)
+
+	for i := range numLogs {
+		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d\n", i, i)
+		_, err = conn.Write([]byte(msg))
+		require.NoError(t, err)
+	}
+	require.NoError(t, conn.Close())
+
+	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
+	require.NoError(t, rcvr.Shutdown(t.Context()))
+	require.Len(t, sink.AllLogs(), 1)
+
+	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
+	require.Equal(t, logs.Len(), numLogs)
+
+	for i := range numLogs {
+		attrs := logs.At(i).Attributes().AsRaw()
+		assert.Equal(t, "IP.UDP", attrs["net.transport"])
+		assert.Equal(t, "127.0.0.1", attrs["net.host.ip"])
+		assert.NotEmpty(t, attrs["net.host.port"])
+		assert.Equal(t, "127.0.0.1", attrs["net.peer.ip"])
+		assert.NotEmpty(t, attrs["net.peer.port"])
+		assert.NotContains(t, attrs, "net.host.name", "net.host.name must not be present when resolve_names is false")
+		assert.NotContains(t, attrs, "net.peer.name", "net.peer.name must not be present when resolve_names is false")
+	}
 }
 
 func testdataConfigYaml(listenAddress string) *UDPLogConfig {

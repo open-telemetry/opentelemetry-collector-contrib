@@ -1,0 +1,5 @@
+change_type: enhancement
+component: extension/encoding
+note: Add optional message decoding interfaces with explicit client metadata options for all signals.
+issues: [51752]
+change_logs: [api]
