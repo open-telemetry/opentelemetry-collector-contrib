@@ -25,6 +25,14 @@ type failingRowsDriver struct {
 	closedRows atomic.Int32
 }
 
+func (d *failingRowsDriver) Connect(context.Context) (driver.Conn, error) {
+	return &failingRowsConn{driver: d}, nil
+}
+
+func (d *failingRowsDriver) Driver() driver.Driver {
+	return d
+}
+
 func (d *failingRowsDriver) Open(string) (driver.Conn, error) {
 	return &failingRowsConn{driver: d}, nil
 }
@@ -74,9 +82,7 @@ func (r *failingRows) Next(dest []driver.Value) error {
 
 func TestMetricRowsReturnsIterationError(t *testing.T) {
 	d := &failingRowsDriver{}
-	sql.Register("oracledbreceiver-failing-rows", d)
-	db, err := sql.Open("oracledbreceiver-failing-rows", "")
-	require.NoError(t, err)
+	db := sql.OpenDB(d)
 	t.Cleanup(func() { require.NoError(t, db.Close()) })
 
 	client := newDbClient(db, "SELECT NAME FROM T", zap.NewNop())
@@ -84,5 +90,7 @@ func TestMetricRowsReturnsIterationError(t *testing.T) {
 
 	require.ErrorIs(t, err, errIteration)
 	assert.Nil(t, rows)
+	// database/sql also closes the rows itself when Next fails, so this is a
+	// sanity check and does not cover the deferred Close in metricRows.
 	assert.Equal(t, int32(1), d.closedRows.Load())
 }
