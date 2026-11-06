@@ -14,11 +14,11 @@
 ## Overview
 
 This module contains functionality for aggregating status information about components. Used by extensions that
-implement the `componentstatus.Watcher` interface for collecting status information about the internal status of all
+implement the `extensioncapabilities.ComponentStatusWatcher` interface for collecting status information about the internal status of all
 components inside the collector.
 
 ### History
 
 `pkg/status` was originally developed for the `healthcheckv2extension`. It provided a generic way of aggregating
-status information for components. Other extensions that need to implement the `componentstatus.Watcher` can now use
+status information for components. Other extensions that need to implement the `extensioncapabilities.ComponentStatusWatcher` can now use
 the same implementation `healthcheckv2extension` uses.

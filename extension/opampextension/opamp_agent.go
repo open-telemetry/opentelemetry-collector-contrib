@@ -108,7 +108,7 @@ var (
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
 	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
-	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+	_ extensioncapabilities.ComponentStatusWatcher = (*opampAgent)(nil)
 
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
@@ -287,8 +287,8 @@ func (o *opampAgent) NotReady() error {
 	return nil
 }
 
-// ComponentStatusChanged implements the componentstatus.Watcher interface.
-func (o *opampAgent) ComponentStatusChanged(
+// Changed implements the extensioncapabilities.ComponentStatusWatcher interface.
+func (o *opampAgent) Changed(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
