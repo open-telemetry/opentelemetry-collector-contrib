@@ -109,9 +109,17 @@ func (r *FactoryRegistry) getLocked(key factoryKey) (dynamicinformer.DynamicShar
 	return f, nil
 }
 
-// StopCh returns the channel that signals factory shutdown. Observers pass it to factory.Start.
+// StopCh returns the channel that signals factory shutdown.
 func (r *FactoryRegistry) StopCh() <-chan struct{} {
 	return r.stopCh
+}
+
+// Start starts f's informers. It holds the registry lock so an informer is
+// never started between its creation and SetTransform in Informer.
+func (r *FactoryRegistry) Start(f dynamicinformer.DynamicSharedInformerFactory) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	f.Start(r.stopCh)
 }
 
 // Shutdown stops every factory. The registry is single-use; build a new one for the next leader term.

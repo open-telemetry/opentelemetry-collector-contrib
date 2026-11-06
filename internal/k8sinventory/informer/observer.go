@@ -51,8 +51,8 @@ type Observer struct {
 	handlerRegs      map[namespacedFactory]cache.ResourceEventHandlerRegistration
 	base             k8sinventory.Config
 	cacheSyncTimeout time.Duration
-	// Shared stop channel from the registry; closing it stops every observer at once.
-	stopCh <-chan struct{}
+	// Registry that owns the factories; its shutdown stops every observer at once.
+	reg *FactoryRegistry
 	// pull-only
 	pullHandler func(*unstructured.UnstructuredList)
 	interval    time.Duration
@@ -77,7 +77,7 @@ func NewPull(reg *FactoryRegistry, config PullConfig, logger *zap.Logger, handle
 		infs:             infs,
 		base:             config.Config,
 		cacheSyncTimeout: config.CacheSyncTimeout,
-		stopCh:           reg.StopCh(),
+		reg:              reg,
 		pullHandler:      handler,
 		interval:         config.Interval,
 		logger:           logger,
@@ -101,7 +101,7 @@ func NewWatch(reg *FactoryRegistry, config WatchConfig, logger *zap.Logger, hand
 		handlerRegs:      make(map[namespacedFactory]cache.ResourceEventHandlerRegistration, len(infs)),
 		base:             config.Config,
 		cacheSyncTimeout: config.CacheSyncTimeout,
-		stopCh:           reg.StopCh(),
+		reg:              reg,
 		watchHandler:     handler,
 		exclude:          config.Exclude,
 		skipInitialList:  !config.IncludeInitialState,
@@ -159,7 +159,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) (chan struct{}
 	}
 
 	for nf := range o.infs {
-		nf.factory.Start(o.stopCh)
+		o.reg.Start(nf.factory)
 	}
 
 	if err := o.waitForCacheSync(ctx); err != nil {
@@ -253,7 +253,7 @@ func (o *Observer) runHandlerRemover(ctx context.Context, stopCh <-chan struct{}
 	select {
 	case <-stopCh:
 	case <-ctx.Done():
-	case <-o.stopCh:
+	case <-o.reg.StopCh():
 	}
 	o.removeHandlers()
 }

@@ -149,12 +149,44 @@ func TestRegistryInformerTransformOnRunningInformer(t *testing.T) {
 
 	f, inf1, err := reg.Informer("default", "", "", podsGVR)
 	require.NoError(t, err)
-	f.Start(reg.StopCh())
+	reg.Start(f)
 	require.True(t, cache.WaitForCacheSync(t.Context().Done(), inf1.HasSynced))
 
 	_, inf2, err := reg.Informer("default", "", "", podsGVR)
 	require.NoError(t, err)
 	assert.Same(t, inf1, inf2)
+}
+
+// A factory started concurrently, e.g. by a pull observer after initial_delay,
+// must not start an informer while Informer is installing its transform.
+func TestRegistryStartWaitsForInformer(t *testing.T) {
+	t.Parallel()
+	client, _ := newFakeClient(t)
+	reg := NewFactoryRegistry(client, 0, func(obj any) (any, error) { return obj, nil })
+	t.Cleanup(reg.Shutdown)
+
+	f, err := reg.Get("", "", "")
+	require.NoError(t, err)
+
+	// Hold the lock as Informer does between creating the informer and SetTransform.
+	reg.mu.Lock()
+	inf := f.ForResource(podsGVR).Informer()
+	started := make(chan struct{})
+	go func() {
+		reg.Start(f)
+		close(started)
+	}()
+	assert.Never(t, func() bool {
+		select {
+		case <-started:
+			return true
+		default:
+			return false
+		}
+	}, 100*time.Millisecond, 10*time.Millisecond)
+	assert.NoError(t, inf.SetTransform(func(obj any) (any, error) { return obj, nil }))
+	reg.mu.Unlock()
+	<-started
 }
 
 func TestRegistryInformerAfterShutdownReturnsError(t *testing.T) {
