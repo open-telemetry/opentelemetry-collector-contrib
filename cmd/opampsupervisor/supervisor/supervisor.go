@@ -202,6 +202,10 @@ type Supervisor struct {
 	// agentRestarting is true if the agent is restarting.
 	agentRestarting atomic.Bool
 
+	// pendingRestartCommand is the restart command received from the OpAMP
+	// server whose completion has not been reported yet.
+	pendingRestartCommand atomic.Pointer[protobufs.ServerToAgentCommand]
+
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
 	opampServerPort int
@@ -730,7 +734,7 @@ func (s *Supervisor) startOpAMPClient() error {
 			OnCommand: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-					return s.handleRestartCommand()
+					return s.handleRestartCommand(command)
 				}
 				return nil
 			},
@@ -1948,21 +1952,46 @@ func (s *Supervisor) loadAndWriteFallbackConfig() error {
 	return nil
 }
 
-func (s *Supervisor) handleRestartCommand() error {
+// handleRestartCommand restarts the agent process. If it returns an error, the
+// OpAMP client reports the command as FAILED. Otherwise COMPLETED is reported
+// once the restarted agent reports healthy, see [Supervisor.markAgentReady].
+func (s *Supervisor) handleRestartCommand(command *protobufs.ServerToAgentCommand) error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 	s.telemetrySettings.Logger.Debug("Received restart command")
 
+	s.pendingRestartCommand.Store(command)
 	err := s.commander.Stop(s.runCtx)
 	if err == nil {
 		s.resetPassthroughLogBuffer()
+		// Reset before starting, so the first healthy report of the new
+		// process marks the agent ready and completes the command.
+		s.resetAgentReady()
 		err = s.commander.Start(s.runCtx)
 	}
 	if err != nil {
+		s.pendingRestartCommand.Store(nil)
 		s.telemetrySettings.Logger.Error("Could not restart agent process", zap.Error(err))
 	}
-	s.resetAgentReady()
 	return err
+}
+
+// reportRestartCompleted reports the pending restart command, if any, as
+// COMPLETED to the OpAMP server.
+func (s *Supervisor) reportRestartCompleted() {
+	command := s.pendingRestartCommand.Swap(nil)
+	if command == nil || s.opampClient == nil ||
+		s.config.Capabilities.SupportedCapabilities()&protobufs.AgentCapabilities_AgentCapabilities_ReportsCommandStatus == 0 {
+		return
+	}
+	err := s.opampClient.SetCommandStatus(&protobufs.CommandStatus{
+		CommandId: command.CommandId,
+		Type:      command.Type,
+		Status:    protobufs.CommandStatuses_CommandStatuses_COMPLETED,
+	})
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not report restart command status", zap.Error(err))
+	}
 }
 
 func (s *Supervisor) startAgent() (agentStartStatus, error) {
@@ -2163,6 +2192,7 @@ func (s *Supervisor) markAgentReady() {
 	case s.agentReadyChan <- struct{}{}:
 	default:
 	}
+	s.reportRestartCompleted()
 }
 
 // resetAgentReady resets the agent as not ready and drains [agentReadyChan].
