@@ -1,0 +1,40 @@
+$defs:
+  source:
+    description: Source configures normalization behavior for a single source convention.
+    type: object
+    properties:
+      mappings:
+        description: Mappings is the source-attribute -> target-attribute rename table. Required for user-defined sources; rejected on built-in sources.
+        type: object
+        additionalProperties:
+          type: string
+      name:
+        description: Name identifies the source. Built-in names (e.g. "openinference", "openllmetry") use pre-defined mapping tables; any other name is a user-defined source whose mappings come from this entry's Mappings and ValueMappings fields.
+        $ref: source_name
+      overwrite:
+        description: Overwrite replaces target attributes that already exist on the span. When false (default), existing target attributes are left unchanged.
+        type: boolean
+      remove_originals:
+        description: RemoveOriginals deletes source attributes after mapping.
+        type: boolean
+      value_mappings:
+        description: ValueMappings is keyed by the post-rename target attribute name and folds source string values onto preferred target string values. Source-value lookups are exact-match. Only valid on user-defined sources; each key must appear as a target in Mappings.
+        type: object
+        additionalProperties:
+          type: object
+          additionalProperties:
+            type: string
+  source_name:
+    description: SourceName identifies a source instrumentation convention. Built-in names (e.g. "openinference") get pre-defined mapping tables; any other name is a user-defined source whose mappings come from the config.
+    type: string
+description: Config holds the configuration for the genainormalizer processor.
+type: object
+properties:
+  overwrite_schema_url:
+    description: OverwriteSchemaURL replaces an existing ScopeSpans schema URL with the semantic-conventions schema URL targeted by this processor when at least one normalization writes an attribute. When false (default), an existing scope schema URL is preserved.
+    type: boolean
+  sources:
+    description: Sources is an ordered list of sources to normalize. Each span is processed by every source in the order specified. At least one source must be specified.
+    type: array
+    items:
+      $ref: source
