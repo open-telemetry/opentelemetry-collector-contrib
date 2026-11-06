@@ -98,6 +98,7 @@ func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 			initNames[c.Name] = struct{}{}
 			newPod.Spec.InitContainers = append(newPod.Spec.InitContainers, corev1.Container{
 				Name:          c.Name,
+				Image:         c.Image,
 				RestartPolicy: c.RestartPolicy,
 				Resources: corev1.ResourceRequirements{
 					Requests: c.Resources.Requests,
@@ -128,7 +129,8 @@ func Transform(pod *corev1.Pod, cfg ContainerMetricsConfig) *corev1.Pod {
 			c := &pod.Spec.EphemeralContainers[i]
 			newPod.Spec.EphemeralContainers = append(newPod.Spec.EphemeralContainers, corev1.EphemeralContainer{
 				EphemeralContainerCommon: corev1.EphemeralContainerCommon{
-					Name: c.Name,
+					Name:  c.Name,
+					Image: c.Image,
 					Resources: corev1.ResourceRequirements{
 						Requests: c.Resources.Requests,
 						Limits:   c.Resources.Limits,

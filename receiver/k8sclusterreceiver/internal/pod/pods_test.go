@@ -102,7 +102,8 @@ func TestPodAndSidecarContainerMetricsReportCPUMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectSidecarContainerMetrics: true})
+	cfg := ContainerMetricsConfig{CollectSidecarContainerMetrics: true}
+	RecordMetrics(zap.NewNop(), mb, Transform(pod, cfg), ts, cfg)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_sidecar.yaml"))
 	require.NoError(t, err)
@@ -187,7 +188,8 @@ func TestPodAndEphemeralContainerMetricsReportCPUMetrics(t *testing.T) {
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
-	RecordMetrics(zap.NewNop(), mb, pod, ts, ContainerMetricsConfig{CollectEphemeralContainerMetrics: true})
+	cfg := ContainerMetricsConfig{CollectEphemeralContainerMetrics: true}
+	RecordMetrics(zap.NewNop(), mb, Transform(pod, cfg), ts, cfg)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_ephemeral.yaml"))
 	require.NoError(t, err)
@@ -783,11 +785,13 @@ func TestTransformKeepsSidecarButDropsRegularInitContainers(t *testing.T) {
 
 	require.Len(t, got.Spec.InitContainers, 1)
 	assert.Equal(t, "my-sidecar", got.Spec.InitContainers[0].Name)
+	assert.Equal(t, "alpine:latest", got.Spec.InitContainers[0].Image)
 	require.Len(t, got.Status.InitContainerStatuses, 1)
 	assert.Equal(t, "my-sidecar", got.Status.InitContainerStatuses[0].Name)
 
 	require.Len(t, got.Spec.EphemeralContainers, 1)
 	assert.Equal(t, "debugger", got.Spec.EphemeralContainers[0].Name)
+	assert.Equal(t, "busybox:latest", got.Spec.EphemeralContainers[0].Image)
 	require.Len(t, got.Status.EphemeralContainerStatuses, 1)
 	assert.Equal(t, "debugger", got.Status.EphemeralContainerStatuses[0].Name)
 }
