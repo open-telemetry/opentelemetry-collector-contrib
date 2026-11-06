@@ -922,6 +922,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "sqlserver.availability_group.database_replica.secondary_lag",
 		Attributes: []string{"sqlserver.availability_group.name", "sqlserver.replica.name"},
 	},
+	SqlserverBatchCompilationUtilization: metricInfo{
+		Name: "sqlserver.batch.compilation.utilization",
+	},
 	SqlserverBatchRequestRate: metricInfo{
 		Name: "sqlserver.batch.request.rate",
 	},
@@ -1153,6 +1156,9 @@ var MetricsInfo = metricsInfo{
 	SqlserverPageSplitRate: metricInfo{
 		Name: "sqlserver.page.split.rate",
 	},
+	SqlserverPageSplitUtilization: metricInfo{
+		Name: "sqlserver.page.split.utilization",
+	},
 	SqlserverParameterizationRate: metricInfo{
 		Name:       "sqlserver.parameterization.rate",
 		Attributes: []string{"sqlserver.parameterization.result"},
@@ -1259,6 +1265,7 @@ type metricsInfo struct {
 	SqlserverAvailabilityGroupDatabaseReplicaQueueRate    metricInfo
 	SqlserverAvailabilityGroupDatabaseReplicaQueueSize    metricInfo
 	SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag metricInfo
+	SqlserverBatchCompilationUtilization                  metricInfo
 	SqlserverBatchRequestRate                             metricInfo
 	SqlserverBatchSQLCompilationRate                      metricInfo
 	SqlserverBatchSQLRecompilationRate                    metricInfo
@@ -1327,6 +1334,7 @@ type metricsInfo struct {
 	SqlserverPageOperationRate                            metricInfo
 	SqlserverPageReadAheadRate                            metricInfo
 	SqlserverPageSplitRate                                metricInfo
+	SqlserverPageSplitUtilization                         metricInfo
 	SqlserverParameterizationRate                         metricInfo
 	SqlserverPlanExecutionRate                            metricInfo
 	SqlserverProcessesBlocked                             metricInfo
@@ -1745,6 +1753,56 @@ func (m *metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag) emit(metri
 
 func newMetricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag(cfg SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig) metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag {
 	m := metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverBatchCompilationUtilization struct {
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   SqlserverBatchCompilationUtilizationMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.batch.compilation.utilization metric with initial data.
+func (m *metricSqlserverBatchCompilationUtilization) init() {
+	m.data.SetName("sqlserver.batch.compilation.utilization")
+	m.data.SetDescription("Number of SQL compilations per batch request.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverBatchCompilationUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverBatchCompilationUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverBatchCompilationUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverBatchCompilationUtilization(cfg SqlserverBatchCompilationUtilizationMetricConfig) metricSqlserverBatchCompilationUtilization {
+	m := metricSqlserverBatchCompilationUtilization{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6133,6 +6191,56 @@ func newMetricSqlserverPageSplitRate(cfg SqlserverPageSplitRateMetricConfig) met
 	return m
 }
 
+type metricSqlserverPageSplitUtilization struct {
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   SqlserverPageSplitUtilizationMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.page.split.utilization metric with initial data.
+func (m *metricSqlserverPageSplitUtilization) init() {
+	m.data.SetName("sqlserver.page.split.utilization")
+	m.data.SetDescription("Number of page splits per batch request.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverPageSplitUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverPageSplitUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverPageSplitUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverPageSplitUtilization(cfg SqlserverPageSplitUtilizationMetricConfig) metricSqlserverPageSplitUtilization {
+	m := metricSqlserverPageSplitUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverParameterizationRate struct {
 	data          pmetric.Metric                            // data buffer for generated metric.
 	config        SqlserverParameterizationRateMetricConfig // metric config provided by user.
@@ -8063,6 +8171,7 @@ type MetricsBuilder struct {
 	metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate    metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate
 	metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize    metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize
 	metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag
+	metricSqlserverBatchCompilationUtilization                  metricSqlserverBatchCompilationUtilization
 	metricSqlserverBatchRequestRate                             metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate                      metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate                    metricSqlserverBatchSQLRecompilationRate
@@ -8131,6 +8240,7 @@ type MetricsBuilder struct {
 	metricSqlserverPageOperationRate                            metricSqlserverPageOperationRate
 	metricSqlserverPageReadAheadRate                            metricSqlserverPageReadAheadRate
 	metricSqlserverPageSplitRate                                metricSqlserverPageSplitRate
+	metricSqlserverPageSplitUtilization                         metricSqlserverPageSplitUtilization
 	metricSqlserverParameterizationRate                         metricSqlserverParameterizationRate
 	metricSqlserverPlanExecutionRate                            metricSqlserverPlanExecutionRate
 	metricSqlserverProcessesBlocked                             metricSqlserverProcessesBlocked
@@ -8190,6 +8300,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate:    newMetricSqlserverAvailabilityGroupDatabaseReplicaQueueRate(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueRate),
 		metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize:    newMetricSqlserverAvailabilityGroupDatabaseReplicaQueueSize(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaQueueSize),
 		metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag: newMetricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag(mbc.Metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag),
+		metricSqlserverBatchCompilationUtilization:                  newMetricSqlserverBatchCompilationUtilization(mbc.Metrics.SqlserverBatchCompilationUtilization),
 		metricSqlserverBatchRequestRate:                             newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
 		metricSqlserverBatchSQLCompilationRate:                      newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
 		metricSqlserverBatchSQLRecompilationRate:                    newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
@@ -8258,6 +8369,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverPageOperationRate:                            newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
 		metricSqlserverPageReadAheadRate:                            newMetricSqlserverPageReadAheadRate(mbc.Metrics.SqlserverPageReadAheadRate),
 		metricSqlserverPageSplitRate:                                newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
+		metricSqlserverPageSplitUtilization:                         newMetricSqlserverPageSplitUtilization(mbc.Metrics.SqlserverPageSplitUtilization),
 		metricSqlserverParameterizationRate:                         newMetricSqlserverParameterizationRate(mbc.Metrics.SqlserverParameterizationRate),
 		metricSqlserverPlanExecutionRate:                            newMetricSqlserverPlanExecutionRate(mbc.Metrics.SqlserverPlanExecutionRate),
 		metricSqlserverProcessesBlocked:                             newMetricSqlserverProcessesBlocked(mbc.Metrics.SqlserverProcessesBlocked),
@@ -8430,6 +8542,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueRate.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaQueueSize.emit(ils.Metrics())
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.emit(ils.Metrics())
+	mb.metricSqlserverBatchCompilationUtilization.emit(ils.Metrics())
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
@@ -8498,6 +8611,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverPageOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverPageReadAheadRate.emit(ils.Metrics())
 	mb.metricSqlserverPageSplitRate.emit(ils.Metrics())
+	mb.metricSqlserverPageSplitUtilization.emit(ils.Metrics())
 	mb.metricSqlserverParameterizationRate.emit(ils.Metrics())
 	mb.metricSqlserverPlanExecutionRate.emit(ils.Metrics())
 	mb.metricSqlserverProcessesBlocked.emit(ils.Metrics())
@@ -8581,6 +8695,11 @@ func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupDatabaseReplicaQueueSi
 // RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint adds a data point to sqlserver.availability_group.database_replica.secondary_lag metric.
 func (mb *MetricsBuilder) RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts pcommon.Timestamp, val float64, sqlserverAvailabilityGroupNameAttributeValue string, sqlserverReplicaNameAttributeValue string) {
 	mb.metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.recordDataPoint(mb.startTime, ts, val, sqlserverAvailabilityGroupNameAttributeValue, sqlserverReplicaNameAttributeValue)
+}
+
+// RecordSqlserverBatchCompilationUtilizationDataPoint adds a data point to sqlserver.batch.compilation.utilization metric.
+func (mb *MetricsBuilder) RecordSqlserverBatchCompilationUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverBatchCompilationUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverBatchRequestRateDataPoint adds a data point to sqlserver.batch.request.rate metric.
@@ -8961,6 +9080,11 @@ func (mb *MetricsBuilder) RecordSqlserverPageReadAheadRateDataPoint(ts pcommon.T
 // RecordSqlserverPageSplitRateDataPoint adds a data point to sqlserver.page.split.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverPageSplitRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverPageSplitRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverPageSplitUtilizationDataPoint adds a data point to sqlserver.page.split.utilization metric.
+func (mb *MetricsBuilder) RecordSqlserverPageSplitUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverPageSplitUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverParameterizationRateDataPoint adds a data point to sqlserver.parameterization.rate metric.

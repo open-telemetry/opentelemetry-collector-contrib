@@ -4005,6 +4005,50 @@ resourceMetrics:
         - key: service.namespace
           value:
             stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Number of SQL compilations per batch request.
+            gauge:
+              dataPoints:
+                - asDouble: 0.6125290023201856
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: sqlserver.batch.compilation.utilization
+            unit: "1"
+          - description: Number of page splits per batch request.
+            gauge:
+              dataPoints:
+                - asDouble: 0.6357308584686775
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: sqlserver.page.split.utilization
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
         - key: sqlserver.database.name
           value:
             stringValue: Total

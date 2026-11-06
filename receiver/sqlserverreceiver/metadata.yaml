@@ -657,6 +657,14 @@ metrics:
       value_type: double
     attributes: [sqlserver.availability_group.name, sqlserver.replica.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server and the instance has Always On Availability Groups enabled.
+  sqlserver.batch.compilation.utilization:
+    enabled: false
+    description: Number of SQL compilations per batch request.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.
@@ -1270,6 +1278,14 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.split.utilization:
+    enabled: false
+    description: Number of page splits per batch request.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.parameterization.rate:
     enabled: false
     description: Rate of auto-parameterization activity, broken down by result.

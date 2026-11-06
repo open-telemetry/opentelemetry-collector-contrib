@@ -143,6 +143,9 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordSqlserverAvailabilityGroupDatabaseReplicaSecondaryLagDataPoint(ts+1, 3, "sqlserver.availability_group.name-val-2", "sqlserver.replica.name-val-2")
 				assert.Equal(t, 2, mb.metricSqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.data.Gauge().DataPoints().Len())
 			}
+
+			allMetricsCount++
+			mb.RecordSqlserverBatchCompilationUtilizationDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
@@ -473,6 +476,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverPageSplitUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverParameterizationRateDataPoint(ts, 1, AttributeSqlserverParameterizationResultAutoAttempted)
@@ -882,6 +888,18 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
+				case "sqlserver.batch.compilation.utilization":
+					assert.False(t, validatedMetrics["sqlserver.batch.compilation.utilization"], "Found a duplicate in the metrics slice: sqlserver.batch.compilation.utilization")
+					validatedMetrics["sqlserver.batch.compilation.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of SQL compilations per batch request.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.batch.request.rate":
 					assert.False(t, validatedMetrics["sqlserver.batch.request.rate"], "Found a duplicate in the metrics slice: sqlserver.batch.request.rate")
 					validatedMetrics["sqlserver.batch.request.rate"] = true
@@ -2516,6 +2534,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of pages split as a result of overflowing index pages.", mi.Description())
 					assert.Equal(t, "{pages}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.page.split.utilization":
+					assert.False(t, validatedMetrics["sqlserver.page.split.utilization"], "Found a duplicate in the metrics slice: sqlserver.page.split.utilization")
+					validatedMetrics["sqlserver.page.split.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of page splits per batch request.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
