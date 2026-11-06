@@ -29,3 +29,22 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, confmap.Validate(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
+
+func TestValidateRejectsNegativeMaxConnections(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxConnections = -1
+	require.ErrorContains(t, cfg.Validate(), "max_connections")
+}
+
+func TestLoadConfigMaxConnections(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_max_connections.yaml"))
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig()
+	sub, err := cm.Sub(metadata.Type.String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.NoError(t, confmap.Validate(cfg))
+	assert.Equal(t, 5, cfg.(*Config).MaxConnections)
+}
