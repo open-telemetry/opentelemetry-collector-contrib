@@ -39,7 +39,7 @@ type ResourceAttributesConfig struct {
 	HostIP             ResourceAttributeConfig `mapstructure:"host.ip"`
 	HostMac            ResourceAttributeConfig `mapstructure:"host.mac"`
 	HostName           ResourceAttributeConfig `mapstructure:"host.name"`
-	OsBuildID          ResourceAttributeConfig `mapstructure:"os.build.id"`
+	OsBuildID          ResourceAttributeConfig `mapstructure:"os.build_id"`
 	OsDescription      ResourceAttributeConfig `mapstructure:"os.description"`
 	OsName             ResourceAttributeConfig `mapstructure:"os.name"`
 	OsType             ResourceAttributeConfig `mapstructure:"os.type"`
