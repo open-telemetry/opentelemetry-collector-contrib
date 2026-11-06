@@ -44,12 +44,15 @@ func TestAccessLogToLogRecord(t *testing.T) {
 		Links: []*mongodbatlas.Link{},
 	}
 
-	cluster := &mongodbatlas.Cluster{
+	cluster := &mongodbatlas.AdvancedCluster{
 		GroupID: testProjectID,
 		Name:    testClusterName,
-		ProviderSettings: &mongodbatlas.ProviderSettings{
-			ProviderName: testProviderName,
-			RegionName:   testRegionName,
+		ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+			{
+				RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+					{ProviderName: testProviderName, RegionName: testRegionName},
+				},
+			},
 		},
 	}
 
@@ -341,13 +344,16 @@ func testClientBase() *mockAccessLogsClient {
 		Links: []*mongodbatlas.Link{},
 	}, nil)
 	ac.On("GetClusters", mock.Anything, testProjectID).Return(
-		[]mongodbatlas.Cluster{
+		[]*mongodbatlas.AdvancedCluster{
 			{
 				GroupID: testProjectID,
 				Name:    testClusterName,
-				ProviderSettings: &mongodbatlas.ProviderSettings{
-					ProviderName: testProviderName,
-					RegionName:   testRegionName,
+				ReplicationSpecs: []*mongodbatlas.AdvancedReplicationSpec{
+					{
+						RegionConfigs: []*mongodbatlas.AdvancedRegionConfig{
+							{ProviderName: testProviderName, RegionName: testRegionName},
+						},
+					},
 				},
 			},
 		},
@@ -464,9 +470,9 @@ func (mac *mockAccessLogsClient) GetProject(ctx context.Context, pID string) (*m
 	return args.Get(0).(*mongodbatlas.Project), args.Error(1)
 }
 
-func (mac *mockAccessLogsClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
+func (mac *mockAccessLogsClient) GetClusters(ctx context.Context, groupID string) ([]*mongodbatlas.AdvancedCluster, error) {
 	args := mac.Called(ctx, groupID)
-	return args.Get(0).([]mongodbatlas.Cluster), args.Error(1)
+	return args.Get(0).([]*mongodbatlas.AdvancedCluster), args.Error(1)
 }
 
 func (mac *mockAccessLogsClient) GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
