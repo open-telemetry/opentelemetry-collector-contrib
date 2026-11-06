@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/informer"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
@@ -53,6 +54,7 @@ type k8seventsReceiver struct {
 	wg              sync.WaitGroup
 	// dedupCache holds the last-emit time per Event UID. nil unless dedup_interval > 0.
 	dedupCache *ttlmap.TTLMap
+	registry   *informer.FactoryRegistry
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -134,7 +136,9 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 				kr.cancel = cancel
 				kr.ctx = cctx
 				kr.settings.Logger.Info("Events Receiver started as leader")
-				kr.startWatchers()
+				if err := kr.startWatchers(cctx); err != nil {
+					kr.settings.Logger.Error("Failed to start watchers", zap.Error(err))
+				}
 			},
 			func() {
 				// Shutdown on leader loss. The receiver will restart if leadership is regained
@@ -151,7 +155,9 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 
 	// No leader election: start immediately.
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
-	kr.startWatchers()
+	if err := kr.startWatchers(kr.ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -165,6 +171,10 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 		close(stopperChan)
 	}
 	kr.stopperChanList = nil
+
+	if kr.registry != nil {
+		kr.registry.Shutdown()
+	}
 	kr.mu.Unlock()
 	kr.wg.Wait()
 
@@ -186,8 +196,7 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// startWatchers creates and starts the k8sinventory watch observer
-func (kr *k8seventsReceiver) startWatchers() {
+func (kr *k8seventsReceiver) startWatchers(ctx context.Context) error {
 	kr.initDedupCache()
 
 	// Events GVR (GroupVersionResource)
@@ -202,53 +211,82 @@ func (kr *k8seventsReceiver) startWatchers() {
 		namespaces = []string{""} // Empty string means all namespaces
 	}
 
-	observer, err := watchobserver.New(
-		kr.client,
-		watchobserver.Config{
-			Config: k8sinventory.Config{
-				Gvr:        eventsGVR,
-				Namespaces: namespaces,
-			},
-			IncludeInitialState: false,                                               // Don't send initial state, only new events
-			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
-		},
-		kr.settings.Logger,
-		kr.storageClient,
-		func(event *apiWatch.Event) {
-			// The k8sinventory watch observer uses dynamic client which returns unstructured objects
-			// We need to convert them to corev1.Event
-			unstructuredObj, ok := event.Object.(*unstructured.Unstructured)
-			if !ok {
-				kr.settings.Logger.Warn("Received non-Unstructured object from watch",
-					zap.String("type", fmt.Sprintf("%T", event.Object)))
-				return
-			}
+	// Extract the callback to reuse it for both the informer and the legacy watch observer
+	handleEventCallback := func(event *apiWatch.Event) {
+		// The k8sinventory watch observer uses dynamic client which returns unstructured objects
+		// We need to convert them to corev1.Event
+		unstructuredObj, ok := event.Object.(*unstructured.Unstructured)
+		if !ok {
+			kr.settings.Logger.Warn("Received non-Unstructured object from watch",
+				zap.String("type", fmt.Sprintf("%T", event.Object)))
+			return
+		}
 
-			// Convert unstructured to corev1.Event
-			ev := &corev1.Event{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, ev)
-			if err != nil {
-				kr.settings.Logger.Error("Failed to convert unstructured object to Event",
-					zap.Error(err))
-				return
-			}
+		// Convert unstructured to corev1.Event
+		ev := &corev1.Event{}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, ev)
+		if err != nil {
+			kr.settings.Logger.Error("Failed to convert unstructured object to Event", zap.Error(err))
+			return
+		}
 
-			kr.handleEvent(ev, event.Type)
-		},
-	)
-	if err != nil {
-		kr.settings.Logger.Error("Failed to create watch observer", zap.Error(err))
-		return
+		kr.handleEvent(ev, event.Type)
 	}
 
-	stopperChan, err := observer.Start(kr.ctx, &kr.wg)
+	var observer k8sinventory.Observer
+	var err error
+
+	useInformer := metadata.ReceiverK8seventsUseInformerObserverFeatureGate.IsEnabled()
+
+	if useInformer {
+		kr.settings.Logger.Info("Using informer-based observer for k8s events")
+		kr.registry = informer.NewFactoryRegistry(kr.client, 0)
+
+		observer, err = informer.NewWatch(
+			kr.registry,
+			informer.WatchConfig{
+				Config: k8sinventory.Config{
+					Gvr:        eventsGVR,
+					Namespaces: namespaces,
+				},
+				IncludeInitialState: false,                                               // Don't send initial state, only new events
+				Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events
+				CacheSyncTimeout:    kr.config.CacheSyncTimeout,
+				StorageClient:       kr.storageClient,
+			},
+			kr.settings.Logger,
+			handleEventCallback,
+		)
+	} else {
+		observer, err = watchobserver.New(
+			kr.client,
+			watchobserver.Config{
+				Config: k8sinventory.Config{
+					Gvr:        eventsGVR,
+					Namespaces: namespaces,
+				},
+				IncludeInitialState: false,                                               // Don't send initial state, only new events
+				Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
+			},
+			kr.settings.Logger,
+			kr.storageClient,
+			handleEventCallback,
+		)
+	}
+
 	if err != nil {
-		kr.settings.Logger.Error("Failed to start watch observer", zap.Error(err))
-		return
+		return fmt.Errorf("failed to create watch observer: %w", err)
+	}
+
+	stopperChan, err := observer.Start(ctx, &kr.wg)
+	if err != nil {
+		return fmt.Errorf("failed to start watch observer: %w", err)
 	}
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
+
+	return nil
 }
 
 // handleEvent always emits ADDED; MODIFIED is gated by dedup_interval.

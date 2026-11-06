@@ -546,7 +546,8 @@ func TestDedupCacheRecreatedAfterShutdown(t *testing.T) {
 
 	// The leader-regain callback calls startWatchers, not Start.
 	recv.ctx = t.Context()
-	recv.startWatchers()
+	err = recv.startWatchers(t.Context())
+	require.NoError(t, err)
 	require.NotNil(t, recv.dedupCache, "startWatchers should rebuild the cache after Shutdown")
 
 	ev := getEvent("Warning")

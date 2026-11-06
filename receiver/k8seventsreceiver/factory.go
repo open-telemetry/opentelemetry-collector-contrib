@@ -5,6 +5,7 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,6 +31,7 @@ func createDefaultConfig() component.Config {
 			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
+		CacheSyncTimeout: 10 * time.Second,
 	}
 }
 

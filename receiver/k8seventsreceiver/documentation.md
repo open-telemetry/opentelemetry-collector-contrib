@@ -13,3 +13,13 @@ Number of MODIFIED watch events filtered out by dedup_interval. Always 0 when de
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {event} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.k8sevents.useInformerObserver` | alpha | When enabled, the receiver collects events via a shared informer factory instead of the legacy watch observer. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51982) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

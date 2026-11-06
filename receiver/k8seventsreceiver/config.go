@@ -36,6 +36,8 @@ type Config struct {
 	// For mocking
 	makeClient        func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
 	makeDynamicClient func(apiConf k8sconfig.APIConfig) (dynamic.Interface, error)
+
+	CacheSyncTimeout time.Duration `mapstructure:"cache_sync_timeout"`
 }
 
 func (cfg *Config) Validate() error {
