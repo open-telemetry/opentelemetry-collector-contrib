@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -331,9 +332,10 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 					attributes[attributeLocation] = resource.Location
 				}
 				s.resources[subscriptionID][*resource.ID] = &azureResource{
-					attributes:   attributes,
-					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
-					resourceType: resource.Type,
+					attributes:            attributes,
+					metricDefinitionGroup: metricDefinitionGroup(resource),
+					tags:                  filterResourceTags(tagsFilterMap, resource.Tags),
+					resourceType:          resource.Type,
 				}
 				if resourceTypes[*resource.Type] == nil {
 					resourceTypes[*resource.Type] = &azureType{
@@ -416,6 +418,34 @@ func (s *azureBatchScraper) getResourcesFilter() string {
 	return fmt.Sprintf("(resourceType eq '%s')%s", resourcesTypeFilter, resourcesGroupFilterString)
 }
 
+func metricDefinitionGroup(resource *armresources.GenericResourceExpanded) string {
+	parts := []string{"", "", "", "", "", "", ""}
+	if resource.Type != nil {
+		parts[0] = *resource.Type
+	}
+	if resource.Location != nil {
+		parts[1] = *resource.Location
+	}
+	if resource.Kind != nil {
+		parts[2] = *resource.Kind
+	}
+	if resource.SKU != nil {
+		if resource.SKU.Name != nil {
+			parts[3] = *resource.SKU.Name
+		}
+		if resource.SKU.Tier != nil {
+			parts[4] = *resource.SKU.Tier
+		}
+		if resource.SKU.Family != nil {
+			parts[5] = *resource.SKU.Family
+		}
+		if resource.SKU.Model != nil {
+			parts[6] = *resource.SKU.Model
+		}
+	}
+	return strings.ToLower(strings.Join(parts, "\x00"))
+}
+
 // TODO: Partially duplicate
 func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Context, subscriptionID, resourceType string) {
 	s.settings.Logger.Debug("Loading the list of Azure Metrics Definitions",
@@ -439,27 +469,53 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	}
 
 	resourceIDs := s.resourceTypes[subscriptionID][resourceType].resourceIDs
-	if len(resourceIDs) == 0 && resourceIDs[0] != "" {
+	if len(resourceIDs) == 0 {
 		return
 	}
 
-	discoveredNamespaces := map[string]struct{}{}
+	// Metric definitions can differ between resources of the same type, for example
+	// between Standard and Premium Event Hubs namespaces. Merge the definitions from
+	// one representative of each distinct location/kind/SKU group.
+	representatives := make([]string, 0, len(resourceIDs))
+	discoveredGroups := make(map[string]struct{}, len(resourceIDs))
+	for _, resourceID := range resourceIDs {
+		if resourceID == "" {
+			continue
+		}
+		group := resourceID
+		if resource := s.resources[subscriptionID][resourceID]; resource != nil && resource.metricDefinitionGroup != "" {
+			group = resource.metricDefinitionGroup
+		}
+		if _, found := discoveredGroups[group]; found {
+			continue
+		}
+		discoveredGroups[group] = struct{}{}
+		representatives = append(representatives, resourceID)
+	}
 
-	s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, nil, discoveredNamespaces)
+	discoveredNamespaces := map[string]struct{}{}
+	for _, resourceID := range representatives {
+		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceID, clientMetricsDefinitions, nil, discoveredNamespaces)
+	}
 
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
 	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
-	// when the metricnamespace query parameter is set explicitly. Make additional calls
-	// for each namespace configured in the metrics filter that was not already returned
-	// by the default call above.
+	// when the metricnamespace query parameter is set explicitly. Since custom namespaces
+	// may differ between otherwise identical resources, query every resource only for a
+	// configured namespace that was not returned by platform metric discovery.
 	for configNamespace := range s.cfg.Metrics {
 		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
 			continue
 		}
-		opts := &armmonitor.MetricDefinitionsClientListOptions{
-			Metricnamespace: new(configNamespace),
+		for _, resourceID := range resourceIDs {
+			if resourceID == "" {
+				continue
+			}
+			opts := &armmonitor.MetricDefinitionsClientListOptions{
+				Metricnamespace: new(configNamespace),
+			}
+			s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceID, clientMetricsDefinitions, opts, nil)
 		}
-		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, opts, nil)
 	}
 
 	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
@@ -533,10 +589,10 @@ func (s *azureBatchScraper) loadMetricsDefinitionByType(subscriptionID, resource
 		zap.String("metric", metricName),
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
-	if _, ok := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey]; ok {
-		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics = append(
-			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, metricName,
-		)
+	if resourceMetrics, ok := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey]; ok {
+		if !slices.Contains(resourceMetrics.metrics, metricName) {
+			resourceMetrics.metrics = append(resourceMetrics.metrics, metricName)
+		}
 	} else {
 		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{
 			metrics:               []string{metricName},
