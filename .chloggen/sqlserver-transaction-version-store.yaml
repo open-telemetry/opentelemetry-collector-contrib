@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: "Add `sqlserver.transaction.longest_running_time`, `sqlserver.transaction.version_cleanup.rate`, and `sqlserver.transaction.version_generation.rate` metrics."
+
+issues: [52637]
+
+subtext: The three new metrics are disabled by default.
+
+change_logs: [user]

@@ -2748,6 +2748,26 @@ func (ms *SqlserverTransactionDelayMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
+// SqlserverTransactionLongestRunningTimeMetricConfig provides config for the sqlserver.transaction.longest_running_time metric.
+type SqlserverTransactionLongestRunningTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverTransactionLongestRunningTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverTransactionMirrorWriteRateMetricConfig provides config for the sqlserver.transaction.mirror_write.rate metric.
 type SqlserverTransactionMirrorWriteRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2775,6 +2795,46 @@ type SqlserverTransactionRateMetricConfig struct {
 }
 
 func (ms *SqlserverTransactionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverTransactionVersionCleanupRateMetricConfig provides config for the sqlserver.transaction.version_cleanup.rate metric.
+type SqlserverTransactionVersionCleanupRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverTransactionVersionCleanupRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverTransactionVersionGenerationRateMetricConfig provides config for the sqlserver.transaction.version_generation.rate metric.
+type SqlserverTransactionVersionGenerationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverTransactionVersionGenerationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3155,8 +3215,11 @@ type MetricsConfig struct {
 	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
 	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
+	SqlserverTransactionLongestRunningTime                SqlserverTransactionLongestRunningTimeMetricConfig                `mapstructure:"sqlserver.transaction.longest_running_time"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
+	SqlserverTransactionVersionCleanupRate                SqlserverTransactionVersionCleanupRateMetricConfig                `mapstructure:"sqlserver.transaction.version_cleanup.rate"`
+	SqlserverTransactionVersionGenerationRate             SqlserverTransactionVersionGenerationRateMetricConfig             `mapstructure:"sqlserver.transaction.version_generation.rate"`
 	SqlserverTransactionWriteRate                         SqlserverTransactionWriteRateMetricConfig                         `mapstructure:"sqlserver.transaction.write.rate"`
 	SqlserverTransactionLogFlushDataRate                  SqlserverTransactionLogFlushDataRateMetricConfig                  `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
 	SqlserverTransactionLogFlushRate                      SqlserverTransactionLogFlushRateMetricConfig                      `mapstructure:"sqlserver.transaction_log.flush.rate"`
@@ -3505,11 +3568,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,
 		},
+		SqlserverTransactionLongestRunningTime: SqlserverTransactionLongestRunningTimeMetricConfig{
+			Enabled: false,
+		},
 		SqlserverTransactionMirrorWriteRate: SqlserverTransactionMirrorWriteRateMetricConfig{
 			Enabled: false,
 		},
 		SqlserverTransactionRate: SqlserverTransactionRateMetricConfig{
 			Enabled: true,
+		},
+		SqlserverTransactionVersionCleanupRate: SqlserverTransactionVersionCleanupRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverTransactionVersionGenerationRate: SqlserverTransactionVersionGenerationRateMetricConfig{
+			Enabled: false,
 		},
 		SqlserverTransactionWriteRate: SqlserverTransactionWriteRateMetricConfig{
 			Enabled: true,

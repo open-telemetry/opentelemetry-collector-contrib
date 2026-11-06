@@ -212,9 +212,15 @@ all_set:
       attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.transaction.delay:
       enabled: true
+    sqlserver.transaction.longest_running_time:
+      enabled: true
     sqlserver.transaction.mirror_write.rate:
       enabled: true
     sqlserver.transaction.rate:
+      enabled: true
+    sqlserver.transaction.version_cleanup.rate:
+      enabled: true
+    sqlserver.transaction.version_generation.rate:
       enabled: true
     sqlserver.transaction.write.rate:
       enabled: true
@@ -487,9 +493,15 @@ reaggregate_set:
       attributes: []
     sqlserver.transaction.delay:
       enabled: true
+    sqlserver.transaction.longest_running_time:
+      enabled: true
     sqlserver.transaction.mirror_write.rate:
       enabled: true
     sqlserver.transaction.rate:
+      enabled: true
+    sqlserver.transaction.version_cleanup.rate:
+      enabled: true
+    sqlserver.transaction.version_generation.rate:
       enabled: true
     sqlserver.transaction.write.rate:
       enabled: true
@@ -762,9 +774,15 @@ none_set:
       attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.transaction.delay:
       enabled: false
+    sqlserver.transaction.longest_running_time:
+      enabled: false
     sqlserver.transaction.mirror_write.rate:
       enabled: false
     sqlserver.transaction.rate:
+      enabled: false
+    sqlserver.transaction.version_cleanup.rate:
+      enabled: false
+    sqlserver.transaction.version_generation.rate:
       enabled: false
     sqlserver.transaction.write.rate:
       enabled: false

@@ -1,0 +1,7 @@
+[
+  {
+    "measurement": "sqlserver_longest_running_transaction",
+    "sql_instance": "testhost",
+    "longest_running_seconds": "42"
+  }
+]

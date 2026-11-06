@@ -125,8 +125,11 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogGrowthCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogShrinkCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLogUsage.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLongestRunningTime.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionVersionCleanupRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionVersionGenerationRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryLimit.Enabled = enabled
@@ -383,6 +386,8 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedTempDBContention.yaml")
 				case getSQLServerTempDBFileQuery():
 					expectedFile = filepath.Join("testdata", "expectedTempDBFile.yaml")
+				case getSQLServerLongestRunningTransactionQuery():
+					expectedFile = filepath.Join("testdata", "expectedLongestRunningTransaction.yaml")
 				}
 
 				// Uncomment line below to re-generate expected metrics.
@@ -1319,6 +1324,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("tempDBContentionQueryData.txt")
 	case getSQLServerTempDBFileQuery():
 		queryResults, err = readFile("tempDBFileQueryData.txt")
+	case getSQLServerLongestRunningTransactionQuery():
+		queryResults, err = readFile("longestRunningTransactionQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
@@ -2556,6 +2563,20 @@ func TestIsWorkerThreadsQueryEnabled(t *testing.T) {
 	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 }
 
+func TestIsPerfCounterQueryEnabledForVersionStoreRateMetrics(t *testing.T) {
+	assert.False(t, isPerfCounterQueryEnabled(nil))
+
+	metrics := &metadata.MetricsConfig{}
+	assert.False(t, isPerfCounterQueryEnabled(metrics))
+
+	metrics.SqlserverTransactionVersionCleanupRate.Enabled = true
+	assert.True(t, isPerfCounterQueryEnabled(metrics))
+
+	metrics.SqlserverTransactionVersionCleanupRate.Enabled = false
+	metrics.SqlserverTransactionVersionGenerationRate.Enabled = true
+	assert.True(t, isPerfCounterQueryEnabled(metrics))
+}
+
 func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DataSource = "sqlserver://testuser:testpass@datasource-host.example.com:1434?database=testdb"
@@ -2895,6 +2916,56 @@ func TestRecordTempDBFileMetrics(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 2, totalDP)
+}
+
+func TestRecordLongestRunningTransactionMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Server = "0.0.0.0"
+	cfg.Port = 1433
+	assert.NoError(t, cfg.Validate())
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLongestRunningTime.Enabled = true
+
+	scrapers, provider := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+	assert.NotEmpty(t, scrapers)
+	defer func() { assert.NoError(t, provider.close()) }()
+
+	var longestRunningScraper *sqlServerScraperHelper
+	for _, s := range scrapers {
+		if s.sqlQuery == getSQLServerLongestRunningTransactionQuery() {
+			longestRunningScraper = s
+			break
+		}
+	}
+	assert.NotNil(t, longestRunningScraper, "longest running transaction scraper should be present")
+
+	err := longestRunningScraper.Start(t.Context(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer assert.NoError(t, longestRunningScraper.Shutdown(t.Context()))
+
+	longestRunningScraper.client = mockClient{
+		SQL: longestRunningScraper.sqlQuery,
+	}
+
+	actualMetrics, err := longestRunningScraper.ScrapeMetrics(t.Context())
+	assert.NoError(t, err)
+
+	// 1 row = 1 data point
+	var totalDP int
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == metadata.MetricsInfo.SqlserverTransactionLongestRunningTime.Name {
+					totalDP += m.Gauge().DataPoints().Len()
+				}
+			}
+		}
+	}
+	assert.Equal(t, 1, totalDP)
 }
 
 func TestIsTempDBQueryEnabled(t *testing.T) {
