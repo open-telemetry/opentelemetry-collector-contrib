@@ -21,7 +21,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261105234325-55e32ede1d63 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261105184035-79bf8a49d2e4 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

@@ -33,8 +33,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/oapi-codegen/runtime v1.7.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261105184035-79bf8a49d2e4 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261105184035-79bf8a49d2e4 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261105234325-55e32ede1d63 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect

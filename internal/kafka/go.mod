@@ -9,7 +9,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	go.opentelemetry.io/collector/component v1.70.1-0.20261105234325-55e32ede1d63
-	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261105184035-79bf8a49d2e4
+	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/config/configcompression v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/config/configopaque v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/config/configtls v1.70.1-0.20261105234325-55e32ede1d63
@@ -27,7 +27,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261105184035-79bf8a49d2e4 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/pdata v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
