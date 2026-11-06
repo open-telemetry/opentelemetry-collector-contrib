@@ -5,6 +5,7 @@ package loadbalancingexporter
 
 import (
 	"context"
+	"maps"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -143,9 +144,7 @@ func TestRetryFlagsFollowUserConfig(t *testing.T) {
 		}
 		withRetry := func(retry map[string]any) map[string]any {
 			c := map[string]any{"retry_on_failure": retry}
-			for k, v := range endpoint {
-				c[k] = v
-			}
+			maps.Copy(c, endpoint)
 			return map[string]any{
 				"protocol": map[string]any{proto: c},
 				"resolver": map[string]any{"static": map[string]any{"hostnames": []any{"a"}}},
