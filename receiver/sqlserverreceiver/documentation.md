@@ -849,6 +849,12 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {wait} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| workload_group.name | The name of the SQL Server Resource Governor workload group. | Str: ``default``, ``internal`` | Recommended | - |
+
 ### sqlserver.lock.wait_time.total
 
 Total wait time in seconds for locks since the last server restart.
@@ -938,6 +944,12 @@ Total memory in use.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | kBy | Sum | Double | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| resource_pool.name | The name of the SQL Server Resource Governor resource pool. | Str: ``default``, ``internal`` | Recommended | - |
 
 ### sqlserver.os.wait.duration
 

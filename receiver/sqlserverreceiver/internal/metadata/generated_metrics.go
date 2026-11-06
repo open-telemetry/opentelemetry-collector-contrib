@@ -344,6 +344,32 @@ var MapAttributeRequestState = map[string]AttributeRequestState{
 	"waiting": AttributeRequestStateWaiting,
 }
 
+// AttributeResourcePoolName specifies the value resource_pool.name attribute.
+type AttributeResourcePoolName int
+
+const (
+	_ AttributeResourcePoolName = iota
+	AttributeResourcePoolNameDefault
+	AttributeResourcePoolNameInternal
+)
+
+// String returns the string representation of the AttributeResourcePoolName.
+func (av AttributeResourcePoolName) String() string {
+	switch av {
+	case AttributeResourcePoolNameDefault:
+		return "default"
+	case AttributeResourcePoolNameInternal:
+		return "internal"
+	}
+	return ""
+}
+
+// MapAttributeResourcePoolName is a helper map of string to AttributeResourcePoolName attribute value.
+var MapAttributeResourcePoolName = map[string]AttributeResourcePoolName{
+	"default":  AttributeResourcePoolNameDefault,
+	"internal": AttributeResourcePoolNameInternal,
+}
+
 // AttributeSqlserverAccessScanType specifies the value sqlserver.access.scan.type attribute.
 type AttributeSqlserverAccessScanType int
 
@@ -902,6 +928,32 @@ var MapAttributeWorkerState = map[string]AttributeWorkerState{
 	"waiting_for_cpu": AttributeWorkerStateWaitingForCPU,
 }
 
+// AttributeWorkloadGroupName specifies the value workload_group.name attribute.
+type AttributeWorkloadGroupName int
+
+const (
+	_ AttributeWorkloadGroupName = iota
+	AttributeWorkloadGroupNameDefault
+	AttributeWorkloadGroupNameInternal
+)
+
+// String returns the string representation of the AttributeWorkloadGroupName.
+func (av AttributeWorkloadGroupName) String() string {
+	switch av {
+	case AttributeWorkloadGroupNameDefault:
+		return "default"
+	case AttributeWorkloadGroupNameInternal:
+		return "internal"
+	}
+	return ""
+}
+
+// MapAttributeWorkloadGroupName is a helper map of string to AttributeWorkloadGroupName attribute value.
+var MapAttributeWorkloadGroupName = map[string]AttributeWorkloadGroupName{
+	"default":  AttributeWorkloadGroupNameDefault,
+	"internal": AttributeWorkloadGroupNameInternal,
+}
+
 var MetricsInfo = metricsInfo{
 	SqlserverAccessScanRate: metricInfo{
 		Name:       "sqlserver.access.scan.rate",
@@ -1077,7 +1129,8 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"sqlserver.lock.timeout.type"},
 	},
 	SqlserverLockWaitCount: metricInfo{
-		Name: "sqlserver.lock.wait.count",
+		Name:       "sqlserver.lock.wait.count",
+		Attributes: []string{"workload_group.name"},
 	},
 	SqlserverLockWaitRate: metricInfo{
 		Name: "sqlserver.lock.wait.rate",
@@ -1110,7 +1163,8 @@ var MetricsInfo = metricsInfo{
 		Attributes: []string{"page.pool"},
 	},
 	SqlserverMemoryUsage: metricInfo{
-		Name: "sqlserver.memory.usage",
+		Name:       "sqlserver.memory.usage",
+		Attributes: []string{"resource_pool.name"},
 	},
 	SqlserverOsWaitDuration: metricInfo{
 		Name:       "sqlserver.os.wait.duration",
@@ -4721,9 +4775,11 @@ func newMetricSqlserverLockTimeoutRate(cfg SqlserverLockTimeoutRateMetricConfig)
 }
 
 type metricSqlserverLockWaitCount struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   SqlserverLockWaitCountMetricConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SqlserverLockWaitCountMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                     // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills sqlserver.lock.wait.count metric with initial data.
@@ -4734,16 +4790,50 @@ func (m *metricSqlserverLockWaitCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverLockWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricSqlserverLockWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, workloadGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName) {
+		dp.Attributes().PutStr("workload_group.name", workloadGroupNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -4756,6 +4846,11 @@ func (m *metricSqlserverLockWaitCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverLockWaitCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -5350,9 +5445,11 @@ func newMetricSqlserverMemoryPageCount(cfg SqlserverMemoryPageCountMetricConfig)
 }
 
 type metricSqlserverMemoryUsage struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   SqlserverMemoryUsageMetricConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SqlserverMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []float64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills sqlserver.memory.usage metric with initial data.
@@ -5363,16 +5460,50 @@ func (m *metricSqlserverMemoryUsage) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, resourcePoolNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryUsageMetricAttributeKeyResourcePoolName) {
+		dp.Attributes().PutStr("resource_pool.name", resourcePoolNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5385,6 +5516,11 @@ func (m *metricSqlserverMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -8849,8 +8985,8 @@ func (mb *MetricsBuilder) RecordSqlserverLockTimeoutRateDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverLockWaitCountDataPoint adds a data point to sqlserver.lock.wait.count metric.
-func (mb *MetricsBuilder) RecordSqlserverLockWaitCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverLockWaitCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSqlserverLockWaitCountDataPoint(ts pcommon.Timestamp, val int64, workloadGroupNameAttributeValue AttributeWorkloadGroupName) {
+	mb.metricSqlserverLockWaitCount.recordDataPoint(mb.startTime, ts, val, workloadGroupNameAttributeValue.String())
 }
 
 // RecordSqlserverLockWaitRateDataPoint adds a data point to sqlserver.lock.wait.rate metric.
@@ -8899,8 +9035,8 @@ func (mb *MetricsBuilder) RecordSqlserverMemoryPageCountDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverMemoryUsageDataPoint adds a data point to sqlserver.memory.usage metric.
-func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, resourcePoolNameAttributeValue AttributeResourcePoolName) {
+	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val, resourcePoolNameAttributeValue.String())
 }
 
 // RecordSqlserverOsWaitDurationDataPoint adds a data point to sqlserver.os.wait.duration metric.
