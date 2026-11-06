@@ -43,7 +43,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		opts = append(opts, openshiftdetector.WithAddress(cfg.Address))
 	}
 	if cfg.Token != "" {
-		opts = append(opts, openshiftdetector.WithToken(cfg.Token))
+		opts = append(opts, openshiftdetector.WithToken(string(cfg.Token)))
 	}
 	// Without any TLS settings the SDK detector trusts the certificate authority
 	// projected into the pod, so only build a TLS config when the user set one.
@@ -128,7 +128,7 @@ func (d *detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 // detector reported as cloud.region before it was ported to the SDK detector.
 // It is removed together with the removeCloudNameRegion feature gate.
 func (d *detector) legacyCloudNameRegion(ctx context.Context) (string, error) {
-	address, token, tlsCfg := d.cfg.Address, d.cfg.Token, d.tlsCfg
+	address, token, tlsCfg := d.cfg.Address, string(d.cfg.Token), d.tlsCfg
 	var err error
 	if address == "" {
 		if address, err = readSVCAddressFromENV(); err != nil {

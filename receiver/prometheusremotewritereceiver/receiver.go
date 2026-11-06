@@ -238,11 +238,13 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	stats.SetHeaders(w)
 	if err != nil {
+		// A refused request is not passed on, so nothing in it was written.
+		promremote.WriteResponseStats{}.SetHeaders(w)
 		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
 		return
 	}
+	stats.SetHeaders(w)
 
 	// Return early if metric count is 0.
 	if m.MetricCount() == 0 {
@@ -443,7 +445,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 				prw.logDroppedSeries(ls, "classic_histogram")
 				continue
 			}
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget)
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget); err != nil {
+				badRequestErrors = errors.Join(badRequestErrors, err)
+			}
 			continue
 		}
 
@@ -582,7 +586,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
 	bucketBudget *histogramBucketBudget,
-) {
+) error {
 	attrs := extractAttributes(ls)
 
 	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
@@ -604,6 +608,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		scopeID      identity.Scope
 		scope        pmetric.ScopeMetrics
 		rm           pmetric.ResourceMetrics
+		invalid      error // refusals Prometheus' own validation makes too, which fail the request
 	)
 
 	for i := range ts.Histograms {
@@ -655,6 +660,14 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
 				zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
 			)
+			// The request fails as well when Prometheus' own validation refuses the histogram. The
+			// count is rebuilt here rather than checked, so Prometheus is given one that cannot
+			// disagree with the buckets.
+			structural := histogram.ToIntHistogram()
+			structural.Count, structural.Sum = math.MaxUint64, math.NaN()
+			if err := structural.Validate(); err != nil {
+				invalid = errors.Join(invalid, fmt.Errorf("invalid histogram for metric %q: %w", metricName, err))
+			}
 		}
 
 		// A stale marker still copies its bounds to the data point, so they are checked before it
@@ -782,6 +795,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		delete(exemplarMap, exemplarsKey)
 		haveExemplars = false
 	}
+	return invalid
 }
 
 // setMetric append a new empty metric and assign the name, unit and description to it.
