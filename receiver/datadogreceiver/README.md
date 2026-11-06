@@ -93,11 +93,6 @@ of `/v1.0/traces` is not bounded by `max_request_body_size`. A request of a few 
 hundreds of megabytes (see [DataDog/datadog-agent#59778](https://github.com/DataDog/datadog-agent/issues/59778)).
 Normal tracers do not send such requests.
 
-The `/api/v0.2/traces` endpoint does not have this problem, because its payload is decoded with protobuf. Its memory
-use does grow with the size of the request, by up to about 140 times in our measurements. It is bounded by
-`max_request_body_size` (20 MiB by default), but at that size the receiver can use more than 2 GB. Lower
-`max_request_body_size` if untrusted clients can reach the receiver.
-
 Default: `false`
 
 ### logs.decode_json_message (Optional)
