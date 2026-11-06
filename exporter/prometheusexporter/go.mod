@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.164.1
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
-	github.com/prometheus/common v0.72.1
+	github.com/prometheus/common v0.73.1
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.315.1
 	github.com/stretchr/testify v1.12.1
@@ -195,6 +195,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.124.1 // indirect
 	github.com/outscale/osc-sdk-go/v2 v2.35.0 // indirect
 	github.com/ovh/go-ovh v1.9.0 // indirect
+	github.com/pandatix/go-abnf v0.5.3 // indirect
 	github.com/pb33f/jsonpath v0.8.2 // indirect
 	github.com/pb33f/libopenapi v0.38.7 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
