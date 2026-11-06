@@ -12,7 +12,8 @@ status:
     development: [logs]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk, rogercoll]
+    active: [braydonk, rogercoll, pjanotti]
+    emeritus: [dmitryax]
 
 feature_gates:
   - id: hostmetrics.process.bootTimeCache
