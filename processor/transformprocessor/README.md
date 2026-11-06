@@ -57,6 +57,10 @@ and allows you to configure a list of statements for the processor to execute. T
 > [!NOTE]
 > Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
 
+> [!NOTE]
+> The `spanlink` context is experimental and subject to change or removal in the future. It requires the `processor.transform.enableExperimentalFunctions` feature gate to be enabled, and is not included in the table below.
+> See the [Span Link Context](../../pkg/ottl/contexts/xspanlink/ottlspanlink/README.md) for its paths.
+
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
 | Signal             | Path Prefix Values                                          |
