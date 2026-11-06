@@ -38,15 +38,36 @@ type baseMetricsExporter struct {
 	consumer.Metrics
 }
 
+// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
+func (e *baseMetricsExporter) ExporterHelperBatchingEnabled() bool {
+	return batchingEnabled(e.Component)
+}
+
 // TODO: Find a place for this to be shared.
 type baseLogsExporter struct {
 	component.Component
 	consumer.Logs
 }
 
+// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
+func (e *baseLogsExporter) ExporterHelperBatchingEnabled() bool {
+	return batchingEnabled(e.Component)
+}
+
 type signalfMetadataExporter struct {
 	exporter.Metrics
 	exporter *signalfxExporter
+}
+
+// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
+func (sme *signalfMetadataExporter) ExporterHelperBatchingEnabled() bool {
+	return batchingEnabled(sme.Metrics)
+}
+
+// batchingEnabled reports whether c is an exporterhelper exporter with batching enabled.
+func batchingEnabled(c any) bool {
+	b, ok := c.(interface{ ExporterHelperBatchingEnabled() bool })
+	return ok && b.ExporterHelperBatchingEnabled()
 }
 
 func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
