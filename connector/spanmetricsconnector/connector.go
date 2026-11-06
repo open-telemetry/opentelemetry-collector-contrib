@@ -469,6 +469,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 
 				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCountWithCache(&span, &adjustedCountCache)
+				if adjustedCount == 0 {
+					// The span carries the zero-count flag (`ot=zc:1`), so it must not
+					// contribute to the generated metrics.
+					continue
+				}
 				key := p.buildKey(serviceName, span, p.dimensions, p.callsDimensions, resourceAttr, nil, isAdjusted)
 				attributesFun := func() pcommon.Map {
 					return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.callsDimensions, ils.Scope(), isAdjusted)

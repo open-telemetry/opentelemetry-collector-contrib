@@ -38,6 +38,8 @@ func NewAdjustedCountCache() AdjustedCountCache {
 // GetStochasticAdjustedCount returns the stochastic-rounded adjusted count for the span.
 // The second return value indicates whether the count is adjusted (i.e., the span has
 // a valid tracestate with a sampling threshold). When false, the count will be 1, meaning it only represents the span itself.
+// When the span has no sampling threshold but carries the OpenTelemetry zero-count flag
+// (`ot=zc:1`), the count is 0 and the span should not contribute to generated metrics.
 func GetStochasticAdjustedCount(span *ptrace.Span) (uint64, bool) {
 	return GetStochasticAdjustedCountWithCache(span, nil)
 }
@@ -81,8 +83,12 @@ func computeAdjustedCount(tracestate string) (uint64, bool) {
 	if err != nil {
 		return 1, false
 	}
-	threshold, exists := w3cTraceState.OTelValue().TValueThreshold()
+	otelState := w3cTraceState.OTelValue()
+	threshold, exists := otelState.TValueThreshold()
 	if !exists {
+		if otelState.ZeroCount() {
+			return 0, true
+		}
 		return 1, false
 	}
 	denominator := sampling.MaxAdjustedCount - threshold.Unsigned()

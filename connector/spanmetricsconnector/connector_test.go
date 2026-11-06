@@ -3301,6 +3301,18 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 			expectedAdjustedCount: 1,
 			expectExtrapolated:    false,
 		},
+		{
+			name:                  "zc:1 without th - span is skipped",
+			tracestate:            "ot=zc:1",
+			expectedAdjustedCount: 0,
+			expectExtrapolated:    true,
+		},
+		{
+			name:                  "zc:1 with rv and without th - span is skipped",
+			tracestate:            "ot=rv:abcdabcdabcdff;zc:1",
+			expectedAdjustedCount: 0,
+			expectExtrapolated:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -3329,6 +3341,7 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 			var totalCalls int64
 			var totalHistogramCount uint64
 			var totalEvents int64
+			var totalDataPoints int
 
 			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
 				rm := receivedMetrics.ResourceMetrics().At(i)
@@ -3340,6 +3353,7 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 						case metricNameCalls:
 							require.Equal(t, pmetric.MetricTypeSum, m.Type())
 							dps := m.Sum().DataPoints()
+							totalDataPoints += dps.Len()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
 								totalCalls += dp.IntValue()
@@ -3357,6 +3371,7 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 						case metricNameDuration:
 							require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 							dps := m.Histogram().DataPoints()
+							totalDataPoints += dps.Len()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
 								totalHistogramCount += dp.Count()
@@ -3374,6 +3389,7 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 						case metricNameEvents:
 							require.Equal(t, pmetric.MetricTypeSum, m.Type())
 							dps := m.Sum().DataPoints()
+							totalDataPoints += dps.Len()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
 								totalEvents += dp.IntValue()
@@ -3390,6 +3406,12 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 						}
 					}
 				}
+			}
+
+			if tt.expectedAdjustedCount == 0 {
+				// Spans with the zero-count flag must be skipped entirely, not
+				// aggregated as zero-valued series.
+				assert.Zero(t, totalDataPoints, "zero count spans should not create any data points")
 			}
 
 			// buildSampleTraceWithTracestate creates 3 spans total (2 in service-a, 1 in service-b)
