@@ -122,6 +122,21 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "drop_managed_fields"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
+				DropManagedFields: true,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: k8sinventory.WatchMode,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,6 +159,7 @@ func TestLoadConfig(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected.Objects, cfg.Objects)
+				assert.Equal(t, tt.expected.DropManagedFields, cfg.DropManagedFields)
 			}
 		})
 	}
