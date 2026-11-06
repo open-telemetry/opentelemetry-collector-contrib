@@ -23,13 +23,13 @@ type Config struct {
 	//
 	// Defaults to telemetry-specific encodings: "cwlog" for logs,
 	// and "cwmetrics" for metrics. This default behavior is
-	// deprecated as of v0.149.0, and in the future it will be
+	// deprecated as of v0.149.0, and in v0.168.0 it will be
 	// required to specify the encoding explicitly.
 	Encoding string `mapstructure:"encoding"`
 	// RecordType is an alias for Encoding for backwards compatibility.
 	// It is an error to specify both encoding and record_type.
 	//
-	// Deprecated: [v0.121.0] use Encoding instead.
+	// Deprecated: [v0.121.0] use Encoding instead. Will be removed in v0.168.0.
 	RecordType string `mapstructure:"record_type"`
 	// AccessKey is checked against the one received with each request.
 	// This can be set when creating or updating the Firehose delivery
@@ -51,6 +51,6 @@ func (c *Config) Validate() error {
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.RecordType != "" {
-		logger.Warn("record_type is deprecated, and will be removed in a future version. Use encoding instead.")
+		logger.Warn("record_type is deprecated, and will be removed in v0.168.0. Use encoding instead.")
 	}
 }
