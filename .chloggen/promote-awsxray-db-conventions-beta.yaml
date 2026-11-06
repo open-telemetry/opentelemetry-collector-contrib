@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/awsxray
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Promote exporter.awsxray.EmitV1DBConventions and exporter.awsxray.DontEmitV0DBConventions to Beta, and split the db.user to user.name migration into new Alpha gates exporter.awsxray.EmitV1DBUserConventions and exporter.awsxray.DontEmitV0DBUserConventions.
+note: Promote the exporter.awsxray.EmitV1DBConventions feature gate to Beta.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52462]
@@ -15,7 +15,11 @@ issues: [52462]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The db.user to user.name migration stays Alpha because `user.name` is not yet stable upstream.
+subtext: |
+  The exporter now reads the newer semconv database attribute keys (db.namespace, db.system.name,
+  db.query.text, user.name) by default and still falls back to the deprecated v1.12.0 keys
+  (db.name, db.system, db.statement, db.user), so no data is lost. exporter.awsxray.DontEmitV0DBConventions
+  stays Alpha and will move to Beta in a later release once producers write the newer keys by default.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

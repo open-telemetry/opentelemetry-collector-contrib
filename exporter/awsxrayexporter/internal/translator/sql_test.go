@@ -24,18 +24,8 @@ func enableGate(t *testing.T, gate *featuregate.Gate) {
 	})
 }
 
-func disableGate(t *testing.T, gate *featuregate.Gate) {
-	prev := gate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
-	})
-}
-
 func TestClientSpanWithNewAndLegacyDBAttributesPrefersNew(t *testing.T) {
 	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
-	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
-	enableGate(t, metadata.ExporterAwsxrayEmitV1DBUserConventionsFeatureGate)
 
 	attributes := make(map[string]pcommon.Value)
 	attributes["db.system.name"] = pcommon.NewValueStr("postgresql")
@@ -59,27 +49,8 @@ func TestClientSpanWithNewAndLegacyDBAttributesPrefersNew(t *testing.T) {
 	}
 }
 
-func TestClientSpanDBUserGateHoldsLegacyUserWhenDisabled(t *testing.T) {
-	// EmitV1DBUser off (Alpha default): db.user kept, user.name ignored.
-	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
-	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
-	disableGate(t, metadata.ExporterAwsxrayEmitV1DBUserConventionsFeatureGate)
-
-	attributes := make(map[string]pcommon.Value)
-	attributes["db.system.name"] = pcommon.NewValueStr("postgresql")
-	attributes["db.namespace"] = pcommon.NewValueStr("orders")
-	attributes["user.name"] = pcommon.NewValueStr("new_user")
-	attributes["db.user"] = pcommon.NewValueStr("legacy_user")
-	span := constructSQLSpan(attributes)
-
-	_, sqlData := makeSQL(span, attributes)
-	require.NotNil(t, sqlData)
-	assert.Equal(t, "legacy_user", *sqlData.User)
-}
-
 func TestClientSpanWithLegacyDBAttributesOnlyWithEmitV1(t *testing.T) {
 	enableGate(t, metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate)
-	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
 
 	attributes := make(map[string]pcommon.Value)
 	attributes["db.system"] = pcommon.NewValueStr("mysql")
@@ -93,8 +64,6 @@ func TestClientSpanWithLegacyDBAttributesOnlyWithEmitV1(t *testing.T) {
 }
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
-	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
-
 	attributes := make(map[string]pcommon.Value)
 	attributes["db.system"] = pcommon.NewValueStr("mysql")
 	attributes["db.name"] = pcommon.NewValueStr("customers")
@@ -118,8 +87,6 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 }
 
 func TestClientSpanWithNonSQLDatabase(t *testing.T) {
-	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
-
 	attributes := make(map[string]pcommon.Value)
 	attributes["db.system"] = pcommon.NewValueStr("redis")
 	attributes["db.name"] = pcommon.NewValueStr("0")
@@ -136,8 +103,6 @@ func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 }
 
 func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
-	disableGate(t, metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate)
-
 	attributes := make(map[string]pcommon.Value)
 	attributes["db.system"] = pcommon.NewValueStr("postgresql")
 	attributes["db.name"] = pcommon.NewValueStr("customers")
