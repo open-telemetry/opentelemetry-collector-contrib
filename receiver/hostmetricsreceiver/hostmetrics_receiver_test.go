@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -255,6 +257,9 @@ func (s *notifyingSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) er
 func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	sink := &notifyingSink{ch: make(chan int, 10)}
 	tickerCh := make(chan time.Time)
+
+	host.EnableBootTimeCache(true)
+	process.EnableBootTimeCache(true)
 
 	options, err := createAddScraperOptions(b.Context(), cfg, scraperFactories)
 	require.NoError(b, err)
