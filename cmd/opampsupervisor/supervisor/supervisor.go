@@ -50,6 +50,7 @@ import (
 	gyaml "gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/addon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
@@ -84,7 +85,19 @@ const (
 	agentConfigFileName         = "effective.yaml"
 	agentLogFileName            = "agent.log"
 	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
+	// packagesDirName is the subdirectory of the storage directory holding
+	// downloaded packages and extracted addons.
+	packagesDirName = "packages"
 )
+
+// addonConfigRole is the AgentConfigObject.role value marking a remote config
+// entry as configuration for an addon rather than for the Collector. The
+// entry's key is the addon's package name, "<type>:<name>".
+//
+// The role field exists for exactly this purpose: the spec describes it as a
+// way to "distinguish top-level configuration from supplementary content such
+// as certificates or other artifacts referenced by configuration".
+const addonConfigRole = "addon-config"
 
 const maxBufferedCustomMessages = 10
 
@@ -230,9 +243,28 @@ type Supervisor struct {
 	// passthroughLogBuffer keeps the latest Collector log lines when passthrough logging is enabled.
 	passthroughLogBuffer *logRingBuffer
 	passthroughLogMu     sync.Mutex
+
+	// packages stores downloaded packages and is the PackagesStateProvider the
+	// OpAMP client syncs against. nil when the packages capability is disabled.
+	packages *packageManager
+	// addons holds the supported addon types and the installed addons. nil
+	// when the packages capability is disabled.
+	addons *addon.Manager
+	// addonConfigErr is set while an addon rejects the configuration offered
+	// in the current remote config. See reportAddonConfigErrors.
+	addonConfigErr atomic.Pointer[addonConfigError]
+	// addonEffectiveMu guards addonEffective, the addon configurations last
+	// included in the effective config.
+	addonEffectiveMu sync.Mutex
+	addonEffective   map[string][]byte
 }
 
-func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
+func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Supervisor, opts ...Option) (*Supervisor, error) {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+
 	s := &Supervisor{
 		pidProvider:                    defaultPIDProvider{},
 		hasNewConfig:                   make(chan struct{}, 1),
@@ -288,6 +320,26 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 	}
 
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+
+	// The packages capability requires a PackagesStateProvider: the OpAMP client
+	// refuses to start if AcceptsPackages is set without one.
+	if s.config.Capabilities.AcceptsPackages {
+		s.addons, err = addon.NewManager(
+			s.telemetrySettings.Logger.Named("addon"),
+			append(builtinAddonFactories(), o.addonFactories...)...,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error registering addon types: %w", err)
+		}
+		s.packages, err = newPackageManager(
+			s.telemetrySettings.Logger.Named("packages"),
+			filepath.Join(s.config.Storage.Directory, packagesDirName),
+			s.addons,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error creating package manager: %w", err)
+		}
+	}
 
 	return s, nil
 }
@@ -388,13 +440,10 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return err
 	}
 
-	if s.config.Capabilities.AcceptsPackages {
-		s.telemetrySettings.Logger.Error(
-			"accepts_packages capability is not yet fully implemented. " +
-				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
-		)
-		return errors.New("accepts_packages capability is not yet fully implemented")
-	}
+	// The guard that rejected accepts_packages here is removed in this PoC so the
+	// addon path is reachable through normal startup. Upstream, removing it is
+	// step 7 of #47272, after the package manager and binary update
+	// orchestration land.
 
 	if err = s.getFeatureGates(); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
@@ -417,6 +466,11 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed loading initial config: %w", err)
 	}
+
+	// Addons are reconciled after the persisted remote config is loaded, since
+	// it carries their configuration, and before the Collector starts, so
+	// addons the Collector reads are already in place.
+	s.startAddons(s.runCtx)
 
 	flags := []string{
 		"--config", s.agentConfigFilePath(),
@@ -741,6 +795,12 @@ func (s *Supervisor) startOpAMPClient() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
+	}
+
+	// The client validates that a PackagesStateProvider is present whenever the
+	// packages capabilities are declared, and refuses to start otherwise.
+	if s.packages != nil {
+		settings.PackagesStateProvider = s.packages
 	}
 
 	// Find and use auth extension if configured with non-empty reference
@@ -1226,6 +1286,12 @@ func (s *Supervisor) createRemoteConfigComposers(incomingConfig *protobufs.Agent
 		for name := range c.ConfigMap {
 			if name == "" {
 				// skip instance config
+				continue
+			}
+			if c.ConfigMap[name].GetRole() == addonConfigRole {
+				// Addon configuration is not Collector configuration. Merging it
+				// would corrupt the Collector config, so it is routed to the addon
+				// instead. See applyAddonConfigs.
 				continue
 			}
 			names = append(names, name)
@@ -1719,6 +1785,11 @@ func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
+	return s.withAddonEffectiveConfig(s.collectorEffectiveConfigMsg())
+}
+
+// collectorEffectiveConfigMsg returns the Collector's own effective config.
+func (s *Supervisor) collectorEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	if cfg, ok := s.effectiveConfig.Load().(*protobufs.EffectiveConfig); ok && cfg != nil {
 		return cfg
 	}
@@ -2323,6 +2394,10 @@ func (s *Supervisor) Shutdown() {
 
 	close(s.doneChan)
 
+	// Addons are stopped before the agent: they are independent processes, and
+	// leaving them running after the Supervisor exits would orphan them.
+	s.stopAddons(context.Background())
+
 	// Shutdown in order from producer to consumer (agent -> customMessageForwarder -> local OpAMP server -> client to remote OpAMP server).
 	s.agentWG.Wait()
 	s.customMessageWG.Wait()
@@ -2458,6 +2533,16 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 		return
 	}
 	remoteConfig := s.remoteConfig.Load()
+
+	// The Collector applying its part of a remote config does not make the
+	// whole config applied while an addon rejects its part of the same config.
+	if status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
+		if addonErr := s.addonConfigErr.Load(); addonErr != nil && bytes.Equal(addonErr.hash, remoteConfig.GetConfigHash()) {
+			status = protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+			errorMessage = addonErr.message
+		}
+	}
+
 	rcs := &protobufs.RemoteConfigStatus{
 		LastRemoteConfigHash: remoteConfig.GetConfigHash(),
 		Status:               status,
@@ -2582,12 +2667,21 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		if err != nil {
 			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 		}
+	}
 
-		s.telemetrySettings.Logger.Debug("Config is changed. Signal to restart the agent")
-		// Signal that there is a new config.
-		select {
-		case s.hasNewConfig <- struct{}{}:
-		default:
+	// A message carries at most one Collector restart. When it also offers
+	// packages, the restart waits for the package sync so that it observes the
+	// new addons as well as the new config; see syncPackages.
+	if msg.PackageSyncer != nil {
+		s.syncPackages(ctx, msg.PackageSyncer, configChanged)
+	} else {
+		restartAgent := configChanged
+		if msg.RemoteConfig != nil {
+			restartAgent = s.reconcileAddons(ctx) || restartAgent
+		}
+		if restartAgent {
+			s.telemetrySettings.Logger.Debug("Config is changed. Signal to restart the agent")
+			s.signalAgentRestart()
 		}
 	}
 
