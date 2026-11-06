@@ -21,16 +21,13 @@ resourceLogs:
                   stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7
               - key: rpc.method
                 value:
-                  stringValue: StartInstances
-              - key: rpc.system
+                  stringValue: ec2.amazonaws.com/StartInstances
+              - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
               - key: aws.cloudtrail.api_version
                 value:
                   stringValue: v1
-              - key: rpc.service
-                value:
-                  stringValue: ec2.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16

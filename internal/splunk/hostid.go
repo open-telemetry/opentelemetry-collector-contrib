@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // HostIDKey represents a host identifier.
@@ -104,7 +104,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 
 func azureID(attrs pcommon.Map, cloudAccount string) string {
 	// The azure detector emits either attribute name depending on whether the
-	// processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate is enabled.
+	// processor.azuredetector.RenameResourceGroupAttribute feature gate is enabled.
 	var resourceGroupName string
 	if attr, ok := attrs.Get("azure.resource_group.name"); ok {
 		resourceGroupName = attr.Str()

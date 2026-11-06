@@ -16,8 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
-func intPtr(i int) *int { return &i }
-
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
@@ -41,7 +39,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:   "valid headerless by index",
-			config: &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: false, Delimiter: ",", KeyColumnIndex: intPtr(0)},
+			config: &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: false, Delimiter: ",", KeyColumnIndex: new(0)},
 		},
 		{
 			name:    "no key selector",
@@ -50,7 +48,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "both key selectors",
-			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: true, Delimiter: ",", KeyColumn: "id", KeyColumnIndex: intPtr(0)},
+			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: true, Delimiter: ",", KeyColumn: "id", KeyColumnIndex: new(0)},
 			wantErr: "only one of key_column or key_column_index",
 		},
 		{
@@ -60,7 +58,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "negative index",
-			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: false, Delimiter: ",", KeyColumnIndex: intPtr(-1)},
+			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: false, Delimiter: ",", KeyColumnIndex: new(-1)},
 			wantErr: "key_column_index must not be negative",
 		},
 		{
@@ -80,8 +78,30 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name:    "both value selectors",
-			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: true, Delimiter: ",", KeyColumn: "id", ValueColumn: "v", ValueColumnIndex: intPtr(1)},
+			config:  &Config{FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"}, HasHeader: true, Delimiter: ",", KeyColumn: "id", ValueColumn: "v", ValueColumnIndex: new(1)},
 			wantErr: "only one of value_column or value_column_index",
+		},
+		{
+			name: "negative value index",
+			config: &Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"},
+				HasHeader:        true,
+				Delimiter:        ",",
+				KeyColumn:        "id",
+				ValueColumnIndex: new(-1),
+			},
+			wantErr: "value_column_index must not be negative",
+		},
+		{
+			name: "value column by name without header",
+			config: &Config{
+				FileSourceConfig: lookupsource.FileSourceConfig{Path: "f.csv"},
+				HasHeader:        false,
+				Delimiter:        ",",
+				KeyColumnIndex:   new(0),
+				ValueColumn:      "val",
+			},
+			wantErr: "value_column (by name) requires has_header: true",
 		},
 	}
 
@@ -138,7 +158,7 @@ func TestHeaderlessByIndex(t *testing.T) {
 	path := writeFile(t, "1010,closed_store\n1011,open_store\n")
 	source := newSource(t, &Config{
 		FileSourceConfig: lookupsource.FileSourceConfig{Path: path}, HasHeader: false, Delimiter: ",",
-		KeyColumnIndex: intPtr(0), ValueColumnIndex: intPtr(1),
+		KeyColumnIndex: new(0), ValueColumnIndex: new(1),
 	})
 
 	val, found, err := source.Lookup(t.Context(), "1010")
@@ -165,7 +185,7 @@ func TestHeaderedMapLookup(t *testing.T) {
 func TestHeaderlessMapLookupByIndexKeys(t *testing.T) {
 	path := writeFile(t, "1010,closed_store,NL\n")
 	source := newSource(t, &Config{
-		FileSourceConfig: lookupsource.FileSourceConfig{Path: path}, HasHeader: false, Delimiter: ",", KeyColumnIndex: intPtr(0),
+		FileSourceConfig: lookupsource.FileSourceConfig{Path: path}, HasHeader: false, Delimiter: ",", KeyColumnIndex: new(0),
 	})
 
 	val, found, err := source.Lookup(t.Context(), "1010")
@@ -222,4 +242,46 @@ func TestReloadPicksUpChanges(t *testing.T) {
 		v, ok, lookupErr := source.Lookup(t.Context(), "1010")
 		return lookupErr == nil && ok && v == "closed_store"
 	}, 2*time.Second, 10*time.Millisecond)
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	cfg := createDefaultConfig()
+	csvCfg, ok := cfg.(*Config)
+
+	require.True(t, ok)
+	assert.True(t, csvCfg.HasHeader)
+	assert.Equal(t, ",", csvCfg.Delimiter)
+}
+
+func TestMakeParse_ShortRowsSkipped(t *testing.T) {
+	t.Run("skips row when key index is out of bounds", func(t *testing.T) {
+		cfg := &Config{
+			HasHeader:      false,
+			KeyColumnIndex: new(2),
+		}
+		parse := makeParse(cfg)
+
+		content := []byte("a,b\nc,d\n")
+		res, err := parse(content)
+
+		require.NoError(t, err)
+		assert.Empty(t, res)
+	})
+
+	t.Run("skips row when value index is out of bounds", func(t *testing.T) {
+		cfg := &Config{
+			HasHeader:        false,
+			KeyColumnIndex:   new(0),
+			ValueColumnIndex: new(2),
+		}
+		parse := makeParse(cfg)
+
+		content := []byte("key1,val1\nkey2,val2,val3\n")
+		res, err := parse(content)
+
+		require.NoError(t, err)
+		assert.Len(t, res, 1)
+		assert.Equal(t, "val3", res["key2"])
+		assert.NotContains(t, res, "key1")
+	})
 }

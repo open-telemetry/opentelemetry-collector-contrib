@@ -214,7 +214,7 @@ func TestHandleSeriesV3Payload_SketchInSeriesPayloadErrors(t *testing.T) {
 		MetricData: &intakev3.MetricData{
 			DictNameStr:        v3StringDict("test.dist1"),
 			DictTagsets:        []int64{0},
-			Types:              []uint64{uint64(intakev3.MetricType_Sketch) | uint64(intakev3.ValueType_Zero)},
+			Types:              []uint64{uint64(intakev3.MetricType_DDSketch) | uint64(intakev3.ValueType_Zero)},
 			NameRefs:           []int64{1},
 			TagsetRefs:         []int64{0},
 			ResourcesRefs:      []int64{0},
@@ -223,7 +223,7 @@ func TestHandleSeriesV3Payload_SketchInSeriesPayloadErrors(t *testing.T) {
 			Intervals:          []uint64{0},
 			NumPoints:          []uint64{1},
 			Timestamps:         []int64{1000},
-			SketchNumBins:      []uint64{0},
+			NumBins:            []uint64{0},
 			ValsSint64:         []int64{0},
 		},
 	}
@@ -299,4 +299,29 @@ func TestHandleSeriesV3Payload_InvalidUTF8TagSanitized(t *testing.T) {
 	require.Len(t, series, 1)
 	require.Len(t, series[0].Tags, 1)
 	assert.NotEmpty(t, series[0].Tags[0])
+}
+
+// TestTranslateSeriesV3Rate covers a v3 rate series through to OTLP. The v3
+// decoder emits the v2 series representation, so both endpoints translate via
+// TranslateSeriesV2.
+func TestTranslateSeriesV3Rate(t *testing.T) {
+	pl := buildMinimalV3Payload()
+	pl.MetricData.DictNameStr = v3StringDict("test.rate")
+	pl.MetricData.Types = []uint64{uint64(intakev3.MetricType_Rate) | uint64(intakev3.ValueType_Float64)}
+
+	mt := NewMetricsTranslator(component.BuildInfo{}, 0)
+	series, err := mt.HandleSeriesV3Payload(v3Request(t, pl))
+	require.NoError(t, err)
+	require.Len(t, series, 1)
+	require.Equal(t, gogen.MetricPayload_RATE, series[0].Type)
+
+	result := mt.TranslateSeriesV2(series)
+	requireMetricAndDataPointCounts(t, result, 1, 1)
+
+	metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	requireSum(t, metric, "test.rate", 1)
+
+	dp := metric.Sum().DataPoints().At(0)
+	requireAsTypeRate(t, dp)
+	assert.Equal(t, 420.0, dp.DoubleValue()) // value 42.0 scaled by the 10s interval
 }

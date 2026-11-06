@@ -6,10 +6,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.azure.RenameResourceGroupAttribute",
+var ProcessorAzuredetectorRenameResourceGroupAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.azuredetector.RenameResourceGroupAttribute",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the azure detector emits the azure.resource_group.name resource attribute instead of azure.resourcegroup.name, aligning with semantic convention naming."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49079"),
-	featuregate.WithRegisterFromVersion("v0.158.0"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
 )

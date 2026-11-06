@@ -143,8 +143,7 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	if err == nil {
 		return rlen, nil
 	}
-	var netErr net.Error
-	if errors.As(err, &netErr) {
+	if netErr, ok := errors.AsType[net.Error](err); ok {
 		if !netErr.Timeout() {
 			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: netErr})
 		}

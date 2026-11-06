@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -205,7 +206,7 @@ func TestDecode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, err := createDecodeFunction[any](ottl.FunctionContext{}, &DecodeArguments[any]{
+			expressionFunc, err := createDecodeFunction[any](ottl.FunctionContext{}, &decodeArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil
@@ -253,11 +254,9 @@ func BenchmarkDecodeBytes(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err = dec(ctx, nil)
-		if err != nil {
+		if _, err = dec(ctx, nil); err != nil {
 			b.Fatal(err)
 		}
-		require.NoError(b, err)
 	}
 }
 
@@ -281,10 +280,49 @@ func BenchmarkDecodeString(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
-		_, err = dec(ctx, nil)
-		if err != nil {
+		if _, err = dec(ctx, nil); err != nil {
 			b.Fatal(err)
 		}
-		require.NoError(b, err)
 	}
+}
+
+func Test_DecodeFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewDecodeFactory[any]()
+		assert.Equal(t, "Decode", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewDecodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &decodeArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Encoding"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewDecodeFactory[any]()
+		args := factory.CreateDefaultArguments()
+		decodeArgs, ok := args.(*decodeArguments[any])
+		require.True(t, ok)
+		decodeArgs.Target = &ottl.StandardGetSetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "aGVsbG8gd29ybGQ=", nil
+			},
+		}
+		decodeArgs.Encoding = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "base64", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createDecodeFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "DecodeFactory args must be of type *decodeArguments[K]")
+	})
 }

@@ -90,14 +90,23 @@ func TestDynamicTemplateMode(t *testing.T) {
 	summaryDp.SetSum(10)
 	summaryDp.SetCount(5)
 
+	m5 := pmetric.NewMetric()
+	m5.SetName("exphist")
+	exphist := m5.SetEmptyExponentialHistogram()
+	exphistDp := exphist.DataPoints().AppendEmpty()
+	exphistDp.SetTimestamp(ts)
+	exphistDp.Negative().BucketCounts().FromRaw([]uint64{1, 2})
+	exphistDp.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+
 	metrics := []struct {
 		m  pmetric.Metric
 		dp datapoints.DataPoint
 	}{
 		{m, datapoints.NewNumber(m, dp)},
 		{m2, datapoints.NewNumber(m2, dp2)},
-		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m3, datapoints.NewHistogram(m3, histDp, datapoints.HistogramMappingRaw)},
 		{m4, datapoints.NewSummary(m4, summaryDp)},
+		{m5, datapoints.NewExponentialHistogram(m5, exphistDp, datapoints.HistogramMappingExponential)},
 	}
 
 	tests := []struct {
@@ -108,12 +117,12 @@ func TestDynamicTemplateMode(t *testing.T) {
 		{
 			name:          "OTel",
 			mode:          datapoints.DynamicTemplateModeOTel,
-			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary", "exponential_histogram"},
 		},
 		{
 			name:          "ECS",
 			mode:          datapoints.DynamicTemplateModeECS,
-			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics", "histogram_metrics"},
 		},
 	}
 
@@ -757,10 +766,8 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	}`, buf.String())
 }
 
-func TestEncodeLogECSMode(t *testing.T) {
-	logs := plog.NewLogs()
-	resource := logs.ResourceLogs().AppendEmpty().Resource()
-	err := resource.Attributes().FromRaw(map[string]any{
+func ecsModeResourceAttributes() map[string]any {
+	return map[string]any{
 		"agent.name":                  "custom-agent",
 		"agent.version":               "1.2.3",
 		"service.name":                "foo.bar",
@@ -779,6 +786,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"container.name":              "happy-seger",
 		"container.id":                "e69cc5d3dda",
 		"container.image.name":        "my-app",
+		"container.image.tags":        []any{"v3.4.0"},
 		"container.runtime":           "docker",
 		"host.name":                   "i-103de39e0a.gke.us-west-1b.cloud.google.com",
 		"host.hostname":               "hostname.example.com",
@@ -816,11 +824,19 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"source.address":              "12.53.12.1",
 		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
 		"faas.trigger":                "api-gateway",
-	})
-	require.NoError(t, err)
+	}
+}
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
-	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
+func ecsModeResource(tb testing.TB) pcommon.Resource {
+	resource := pcommon.NewResource()
+	require.NoError(tb, resource.Attributes().FromRaw(ecsModeResourceAttributes()))
+	return resource
+}
+
+func TestEncodeLogECSMode(t *testing.T) {
+	logs := plog.NewLogs()
+	resource := logs.ResourceLogs().AppendEmpty().Resource()
+	err := resource.Attributes().FromRaw(ecsModeResourceAttributes())
 	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
@@ -936,6 +952,46 @@ func TestEncodeLogECSMode(t *testing.T) {
 		     "trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
+}
+
+func TestEncodeECSMode_PooledDocumentMatchesUnpooled(t *testing.T) {
+	encoder, err := newEncoder(MappingECS)
+	require.NoError(t, err)
+	idx := elasticsearch.Index{}
+	ts := pcommon.Timestamp(1710273641123456789)
+
+	resource := pcommon.NewResource()
+	require.NoError(t, resource.Attributes().PutEmptySlice("items").FromRaw([]any{
+		map[string]any{
+			"a":   int64(1),
+			"a.b": "nested",
+		},
+	}))
+	scope := pcommon.NewInstrumentationScope()
+
+	encodeTwo := func(ec encodingContext) ([]string, error) {
+		docs := make([]string, 2)
+		for i := range docs {
+			rec := plog.NewLogRecord()
+			rec.SetObservedTimestamp(ts)
+			rec.Attributes().PutInt("n", int64(i))
+			var buf bytes.Buffer
+			if encodeErr := encoder.encodeLog(ec, rec, idx, &buf); encodeErr != nil {
+				return nil, encodeErr
+			}
+			docs[i] = buf.String()
+		}
+		return docs, nil
+	}
+
+	got, err := encodeTwo(encodingContext{resource: resource, scope: scope, ecsDoc: &objmodel.Document{}})
+	require.NoError(t, err)
+	want, err := encodeTwo(encodingContext{resource: resource, scope: scope})
+	require.NoError(t, err)
+	require.Len(t, got, len(want))
+	for i := range got {
+		require.JSONEq(t, want[i], got[i])
+	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {

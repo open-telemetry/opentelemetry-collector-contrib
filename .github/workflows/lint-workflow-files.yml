@@ -14,13 +14,15 @@ permissions:
   contents: read
 
 jobs:
-  lint:
+  actionLint:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-go-tools
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup-go-tools
         with:
           go-version: oldstable
 

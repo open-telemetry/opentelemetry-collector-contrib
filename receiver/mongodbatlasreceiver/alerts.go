@@ -119,7 +119,7 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	}
 
 	if recv.mode == alertModePoll {
-		client, err := internal.NewMongoDBAtlasClient(recv.baseURL, recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		client, err := internal.NewMongoDBAtlasClient(recv.baseURL, recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger, params.BuildInfo)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create MongoDB Atlas client for alerts receiver: %w", err)
 		}
@@ -128,10 +128,6 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		return recv, nil
 	}
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.IdleTimeout = 0
-	serverConfig.KeepAlivesEnabled = false
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  cfg.Endpoint,
 		Transport: "tcp",

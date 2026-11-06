@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/protocol"
 )
 
 type tcpServer struct {
@@ -76,8 +76,7 @@ func (t *tcpServer) ListenAndServe(
 			continue
 		}
 
-		var netErr net.Error
-		if errors.As(acceptErr, &netErr) {
+		if netErr, ok := errors.AsType[net.Error](acceptErr); ok {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - Accept (temporary=%v) net.Error: %v",
 				t.ln.Addr().String(),

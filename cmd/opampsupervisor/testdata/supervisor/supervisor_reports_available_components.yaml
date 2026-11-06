@@ -7,7 +7,6 @@ capabilities:
   reports_own_metrics: false
   reports_health: false
   accepts_remote_config: false
-  reports_remote_config: false
 
 storage:
   directory: '{{.storage_dir}}'

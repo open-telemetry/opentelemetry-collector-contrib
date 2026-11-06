@@ -1,0 +1,15 @@
+display_name: File Telemetry Policy Extension
+type: file_telemetry_policy
+
+description: The File Telemetry Policy Extension provides telemetry policies loaded from local files.
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [dashpole, jaronoff97, mx-psi]
+
+tests:
+  config:

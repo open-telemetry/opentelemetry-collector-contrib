@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -68,8 +68,8 @@ func TestLoadConfig(t *testing.T) {
 					config.TLS = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
-					config.MaxIdleConns = maxIdleConns
-					config.IdleConnTimeout = idleConnTimeout
+					config.Keepalive.Get().IdleConnTimeout = idleConnTimeout
+					config.Keepalive.Get().MaxIdleConns = maxIdleConns
 				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",

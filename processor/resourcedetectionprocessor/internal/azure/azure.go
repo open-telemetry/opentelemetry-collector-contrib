@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_azure) && !omit_detector_azure
+
 package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 
 import (
@@ -10,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
@@ -18,11 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/internal/metadata"
 )
 
-const (
-	// TypeStr is type of detector.
-	TypeStr   = "azure"
-	tagPrefix = "azure.tag."
-)
+const tagPrefix = "azure.tag."
 
 var _ internal.Detector = (*Detector)(nil)
 
@@ -87,7 +85,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if compute.VMScaleSetName != "" {
 		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
 	}
-	if metadata.ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate.IsEnabled() {
+	if metadata.ProcessorAzuredetectorRenameResourceGroupAttributeFeatureGate.IsEnabled() {
 		d.rb.SetAzureResourceGroupName(compute.ResourceGroupName)
 	} else {
 		d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)

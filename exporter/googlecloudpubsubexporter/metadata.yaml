@@ -7,11 +7,17 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [alexvanboxel]
+    active: [alexvanboxel, braydonk, dpaasman00]
 
-# TODO: Update the exporter to pass the tests
+sending_queue:
+  support: has_overrides
+  rationale: "Sending queue is disabled by default."
+  overrides:
+    enabled: false
+    batch:
+      enabled: false
+
 tests:
-  skip_lifecycle: true
   goleak:
     ignore:
       top:

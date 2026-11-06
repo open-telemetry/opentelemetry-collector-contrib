@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -29,8 +30,11 @@ import (
 
 func TestComponentStatus(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	// Use port 0 so the OS assigns a free port when the servers start. The
+	// test never reads the endpoint back, so there is no need to pick a port
+	// up front and risk another process taking it before Start.
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
@@ -56,12 +60,12 @@ func TestComponentStatus(t *testing.T) {
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+		ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusStarting))
 	}
 
 	// StatusOK will be queued until the PipelineWatcher Ready method is called.
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
+		ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	// Note the use of assert.Eventually here and throughout this test is because
@@ -82,7 +86,7 @@ func TestComponentStatus(t *testing.T) {
 
 	// StatusStopping will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
+		ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusStopping))
 	}
 
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
@@ -101,7 +105,7 @@ func TestComponentStatus(t *testing.T) {
 
 	// Events sent after shutdown will be discarded
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopped))
+		ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusStopped))
 	}
 
 	st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
@@ -109,7 +113,7 @@ func TestComponentStatus(t *testing.T) {
 	assert.Equal(t, componentstatus.StatusStopping, st.Status())
 }
 
-func TestNotifyConfig(t *testing.T) {
+func TestNotifyConfigSnapshot(t *testing.T) {
 	confMap, err := confmaptest.LoadConf(
 		filepath.Join("internal", "httpserver", "testdata", "config.yaml"),
 	)
@@ -152,7 +156,8 @@ func TestNotifyConfig(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 	require.NoError(t, resp.Body.Close())
 
-	require.NoError(t, ext.NotifyConfig(ctx, confMap))
+	snapshot := extensioncapabilities.NewConfigSnapshot(confMap, nil)
+	require.NoError(t, ext.NotifyConfigSnapshot(ctx, snapshot))
 
 	resp, err = client.Get(url)
 	require.NoError(t, err)
@@ -164,13 +169,16 @@ func TestNotifyConfig(t *testing.T) {
 	assert.JSONEq(t, string(confJSON), string(body))
 }
 
-// TestComponentStatusChangedAfterShutdownDoesNotDeadlock verifies that calling
-// ComponentStatusChanged after Shutdown does not block. This is a regression
+// TestChangedAfterShutdownDoesNotDeadlock verifies that calling
+// Changed after Shutdown does not block. This is a regression
 // test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47591.
-func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
+func TestChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+	// Use port 0 so the OS assigns a free port when the servers start. The
+	// test never reads the endpoint back, so there is no need to pick a port
+	// up front and risk another process taking it before Start.
+	cfg.HTTPConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	cfg.GRPCConfig.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(*cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 
@@ -182,11 +190,11 @@ func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
 
 	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+		ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusStarting))
 	}
 	require.NoError(t, ext.Ready())
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
+		ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	//nolint:usetesting // Background context is used to ensure shutdown completes even after test ends
@@ -199,8 +207,8 @@ func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		for _, id := range traces.InstanceIDs() {
-			ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
-			ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopped))
+			ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusStopping))
+			ext.Changed(id, componentstatus.NewEvent(componentstatus.StatusStopped))
 		}
 		close(done)
 	}()
@@ -209,7 +217,7 @@ func TestComponentStatusChangedAfterShutdownDoesNotDeadlock(t *testing.T) {
 	case <-done:
 		// success
 	case <-time.After(time.Second):
-		t.Fatal("ComponentStatusChanged blocked after Shutdown - deadlock")
+		t.Fatal("Changed blocked after Shutdown - deadlock")
 	}
 }
 

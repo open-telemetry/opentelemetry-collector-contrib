@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type clientRequestArgs struct {
@@ -31,6 +31,8 @@ type clientRequestArgs struct {
 }
 
 func TestExtension(t *testing.T) {
+	const localEndpoint = "127.0.0.1:0"
+
 	tests := []struct {
 		name                        string
 		config                      func(listenAt string) *Config
@@ -47,11 +49,6 @@ func TestExtension(t *testing.T) {
 			name: "No additional headers",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0
-				ingressConfig.KeepAlivesEnabled = false
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
@@ -80,20 +77,11 @@ func TestExtension(t *testing.T) {
 			name: "With additional headers",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0
-				ingressConfig.KeepAlivesEnabled = false
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0
-				egressConfig.IdleConnTimeout = 0
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Headers = configopaque.MapList{
 					{Name: "key", Value: "value"},
 				}
@@ -118,20 +106,11 @@ func TestExtension(t *testing.T) {
 			name: "Error code from backend",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0
-				ingressConfig.KeepAlivesEnabled = false
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0
-				egressConfig.IdleConnTimeout = 0
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Headers = configopaque.MapList{
 					{Name: "key", Value: "value"},
 				}
@@ -154,20 +133,11 @@ func TestExtension(t *testing.T) {
 			name: "Error making request at forwarder",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0
-				ingressConfig.KeepAlivesEnabled = false
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0
-				egressConfig.IdleConnTimeout = 0
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Headers = configopaque.MapList{
 					{Name: "key", Value: "value"},
 				}
@@ -190,20 +160,11 @@ func TestExtension(t *testing.T) {
 			name: "Invalid config - HTTP Client creation fails",
 			config: func(listenAt string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0
-				ingressConfig.KeepAlivesEnabled = false
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  listenAt,
 				}
 				egressConfig := confighttp.NewDefaultClientConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				egressConfig.MaxIdleConns = 0
-				egressConfig.IdleConnTimeout = 0
-				egressConfig.ForceAttemptHTTP2 = false
 				egressConfig.Endpoint = "localhost:9090"
 				egressConfig.TLS = configtls.ClientConfig{
 					Config: configtls.Config{
@@ -222,11 +183,6 @@ func TestExtension(t *testing.T) {
 			name: "Error on Startup",
 			config: func(_ string) *Config {
 				ingressConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				ingressConfig.WriteTimeout = 0
-				ingressConfig.ReadHeaderTimeout = 0
-				ingressConfig.IdleTimeout = 0
-				ingressConfig.KeepAlivesEnabled = false
 				ingressConfig.NetAddr = confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  "invalid", // to mock error setting up listener.
@@ -241,12 +197,9 @@ func TestExtension(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			listenAt := testutil.GetAvailableLocalAddress(t)
+			listenAt := localEndpoint
 			cfg := test.config(listenAt)
 			var cra clientRequestArgs
-			if test.clientRequestArgs != nil {
-				cra = test.clientRequestArgs(listenAt)
-			}
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if test.httpErrorFromBackend {
 					http.Error(w, "", http.StatusInternalServerError)
@@ -279,7 +232,7 @@ func TestExtension(t *testing.T) {
 				_, err := w.Write(test.expectedBackendResponseBody)
 				assert.NoError(t, err)
 			}))
-			defer backend.Close()
+			t.Cleanup(backend.Close)
 
 			// Fill in final destination URL.
 			backendURL, _ := url.Parse(backend.URL)
@@ -287,7 +240,8 @@ func TestExtension(t *testing.T) {
 
 			// Setup forwarder with wrong final address to mock failures.
 			if test.requestErrorAtForwarder {
-				cfg.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
+				// Port 0 is not a listening port when used as a destination.
+				cfg.Egress.Endpoint = "http://" + localEndpoint
 			}
 
 			hf, err := newHTTPForwarder(cfg, componenttest.NewNopTelemetrySettings())
@@ -304,6 +258,13 @@ func TestExtension(t *testing.T) {
 				return
 			}
 			require.NoError(t, hf.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, hf.Shutdown(ctx))
+			}()
+			listenAt = hf.(*httpForwarder).server.Addr
+			if test.clientRequestArgs != nil {
+				cra = test.clientRequestArgs(listenAt)
+			}
 
 			// Mock a client trying to talk to backend using the forwarder.
 			httpClient := http.Client{}
@@ -335,8 +296,109 @@ func TestExtension(t *testing.T) {
 				}
 				t.Error("unexpected header found in response: ", k)
 			}
+		})
+	}
+}
 
-			require.NoError(t, hf.Shutdown(ctx))
+func TestExtensionForwardsMultipleResponseHeaders(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Set-Cookie", "session=abc; Path=/")
+		w.Header().Add("Set-Cookie", "csrf=xyz; Path=/")
+		w.Header().Add("X-Example", "first")
+		w.Header().Add("X-Example", "second")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer backend.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Ingress.NetAddr.Endpoint = "127.0.0.1:0"
+	cfg.Egress.Endpoint = backend.URL
+	hf, err := newHTTPForwarder(cfg, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.NoError(t, hf.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, hf.Shutdown(t.Context())) }()
+
+	response, err := http.Get("http://" + hf.(*httpForwarder).server.Addr + "/")
+	require.NoError(t, err)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	assert.Equal(t, []string{"session=abc; Path=/", "csrf=xyz; Path=/"}, response.Header.Values("Set-Cookie"))
+	assert.Equal(t, []string{"first", "second"}, response.Header.Values("X-Example"))
+}
+
+func TestExtensionResponseBodyWarnings(t *testing.T) {
+	tests := []struct {
+		name       string
+		method     string
+		backend    http.HandlerFunc
+		body       string
+		copyFailed bool
+	}{
+		{
+			name:   "chunked response",
+			method: http.MethodGet,
+			backend: func(w http.ResponseWriter, _ *http.Request) {
+				w.(http.Flusher).Flush()
+				_, _ = io.WriteString(w, "hello")
+			},
+			body: "hello",
+		},
+		{
+			name:   "HEAD response",
+			method: http.MethodHead,
+			backend: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "5")
+			},
+		},
+		{
+			name:   "truncated response",
+			method: http.MethodGet,
+			backend: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "10")
+				_, _ = io.WriteString(w, "hello")
+			},
+			body:       "hello",
+			copyFailed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := httptest.NewServer(tt.backend)
+			defer backend.Close()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Ingress.NetAddr.Endpoint = "127.0.0.1:0"
+			cfg.Egress.Endpoint = backend.URL
+
+			settings := componenttest.NewNopTelemetrySettings()
+			core, logs := observer.New(zap.WarnLevel)
+			settings.Logger = zap.New(core)
+
+			hf, err := newHTTPForwarder(cfg, settings)
+			require.NoError(t, err)
+			require.NoError(t, hf.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, hf.Shutdown(t.Context())) }()
+
+			req, err := http.NewRequestWithContext(t.Context(), tt.method, "http://"+hf.(*httpForwarder).server.Addr+"/", http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			body, readErr := io.ReadAll(resp.Body)
+
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			assert.Equal(t, tt.body, string(body))
+			if tt.copyFailed {
+				assert.ErrorIs(t, readErr, io.ErrUnexpectedEOF)
+				entries := logs.All()
+				require.Len(t, entries, 1)
+				assert.Equal(t, "Error writing HTTP response message", entries[0].Message)
+				assert.Equal(t, io.ErrUnexpectedEOF.Error(), entries[0].ContextMap()["error"])
+			} else {
+				require.NoError(t, readErr)
+				assert.Empty(t, logs.All())
+			}
 		})
 	}
 }

@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
@@ -77,8 +76,8 @@ type Config struct {
 	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
-	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
-	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+	// TLS settings for the SignalFx ingest endpoint. Configure a CA file when the endpoint
+	// uses a self-signed certificate whose CA is not loaded in the system cert pool.
 	IngestTLSs configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -139,7 +138,9 @@ type Config struct {
 	DefaultProperties map[string]string `mapstructure:"default_properties"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
-	Correlation *correlation.Config `mapstructure:"correlation"`
+	//
+	// Deprecated: this configuration section is ignored
+	Correlation map[string]string `mapstructure:"correlation"`
 
 	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
 	// to be used in a dimension key.

@@ -8,7 +8,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 

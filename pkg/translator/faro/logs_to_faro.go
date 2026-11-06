@@ -7,8 +7,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,14 +23,15 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
 )
 
 const (
-	faroKind          = "kind"
-	faroTimestamp     = "timestamp"
-	faroContextPrefix = "context_"
+	faroKind            = "kind"
+	faroTimestamp       = "timestamp"
+	faroTimestampMicros = "timestamp_micros"
+	faroContextPrefix   = "context_"
 
 	faroSDKName         = "sdk_name"
 	faroSDKVersion      = "sdk_version"
@@ -63,11 +66,26 @@ const (
 	faroDeviceBrand           = "device_brand"
 	faroDeviceIsPhysical      = "device_is_physical"
 	faroDeviceType            = "device_type"
+	faroDeviceArch            = "device_arch"
+	faroDeviceScreenWidth     = "device_screen_width"
+	faroDeviceScreenHeight    = "device_screen_height"
+	faroDeviceScreenDensity   = "device_screen_density"
+	faroDeviceMemoryTotal     = "device_memory_total"
+	faroDeviceBatteryLevel    = "device_battery_level"
+	faroDeviceIsCharging      = "device_is_charging"
+	faroDeviceLowPowerMode    = "device_low_power_mode"
+	faroDeviceThermalState    = "device_thermal_state"
 
-	faroOSName    = "os_name"
-	faroOSVersion = "os_version"
-	faroOSBuildID = "os_build_id"
-	faroOSDetail  = "os_detail"
+	faroOSName     = "os_name"
+	faroOSVersion  = "os_version"
+	faroOSBuildID  = "os_build_id"
+	faroOSDetail   = "os_detail"
+	faroOSAPILevel = "os_api_level"
+
+	faroNetworkConnectionType    = "network_connection_type"
+	faroNetworkConnectionSubtype = "network_connection_subtype"
+	faroNetworkCarrierName       = "network_carrier_name"
+	faroNetworkReachable         = "network_reachable"
 
 	faroGeoContinentIso   = "geo_continent_iso"
 	faroGeoCountryIso     = "geo_country_iso"
@@ -157,7 +175,7 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 				meta := payload.Meta
 				w.Reset() // Reset hash before encoding
 				if encodeErr := encoder.Encode(meta); encodeErr != nil {
-					errs = multierr.Append(errs, err)
+					errs = multierr.Append(errs, encodeErr)
 					continue
 				}
 				metaKey := fmt.Sprintf("%x", w.Sum(nil))
@@ -323,7 +341,14 @@ func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes
 	if err != nil {
 		return meta, err
 	}
-	osMeta := extractOSFromKeyVal(kv)
+	osMeta, err := extractOSFromKeyVal(kv)
+	if err != nil {
+		return meta, err
+	}
+	network, err := extractNetworkFromKeyVal(kv)
+	if err != nil {
+		return meta, err
+	}
 	geo := extractGeoFromKeyVal(kv)
 	k6, err := extractK6FromKeyVal(kv)
 	if err != nil {
@@ -339,6 +364,7 @@ func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes
 	meta.Browser = *browser
 	meta.Device = device
 	meta.OS = osMeta
+	meta.Network = network
 	meta.Geo = geo
 	meta.K6 = k6
 	meta.Page = page
@@ -358,6 +384,14 @@ func extractTimestampFromKeyVal(kv map[string]string) (time.Time, error) {
 	timestamp, err := time.Parse(string(faroTypes.TimeFormatRFC3339Milli), val)
 	if err != nil {
 		return timestamp, err
+	}
+	// The timestamp key keeps milliseconds only. The timestamp_micros key,
+	// when present, holds the sub-millisecond part too. Ignore it when it
+	// disagrees with timestamp, for example after a processor edited timestamp.
+	if micros, microsErr := strconv.ParseInt(kv[faroTimestampMicros], 10, 64); microsErr == nil {
+		if withMicros := time.UnixMicro(micros).UTC(); withMicros.UnixMilli() == timestamp.UnixMilli() {
+			timestamp = withMicros
+		}
 	}
 	return timestamp, nil
 }
@@ -383,10 +417,13 @@ func parseIntegrationsFromString(integrationsString string) []faroTypes.SDKInteg
 	}
 
 	for integrationString := range strings.SplitSeq(integrationsString, ",") {
-		integrationNameVersion := strings.Split(integrationString, ":")
+		name, version, found := strings.Cut(integrationString, ":")
+		if !found {
+			continue
+		}
 		sdkIntegrations = append(sdkIntegrations, faroTypes.SDKIntegration{
-			Name:    integrationNameVersion[0],
-			Version: integrationNameVersion[1],
+			Name:    name,
+			Version: version,
 		})
 	}
 
@@ -509,29 +546,32 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 		if !found {
 			continue
 		}
-		brandAsString := strings.Split(suffix, "_")
-		idx, err := strconv.ParseInt(brandAsString[0], 10, 64)
+		idxAsString, field, found := strings.Cut(suffix, "_")
+		if !found {
+			return brands, fmt.Errorf("invalid browser brand key %q: expected format %s<index>_<field>", key, faroBrowserBrandPrefix)
+		}
+		idx, err := strconv.ParseInt(idxAsString, 10, 64)
 		if err != nil {
 			return brands, err
 		}
-		brand, ok := brandsMap[idx]
-		if !ok {
-			brandsMap[idx] = faroTypes.Brand{}
-			brand = brandsMap[idx]
-		}
-		if brandAsString[1] == faroBrand {
+		brand := brandsMap[idx]
+		switch field {
+		case faroBrand:
 			brand.Brand = val
-		}
-		if brandAsString[1] == faroBrandVersion {
+		case faroBrandVersion:
 			brand.Version = val
 		}
 		brandsMap[idx] = brand
 	}
-	brandsMapLen := len(brandsMap)
-	if brandsMapLen != 0 {
-		brandsAsArray := make([]faroTypes.Brand, brandsMapLen)
-		for i, brand := range brandsMap {
-			brandsAsArray[i] = brand
+	if len(brandsMap) != 0 {
+		indexes := make([]int64, 0, len(brandsMap))
+		for idx := range brandsMap {
+			indexes = append(indexes, idx)
+		}
+		slices.Sort(indexes)
+		brandsAsArray := make([]faroTypes.Brand, 0, len(indexes))
+		for _, idx := range indexes {
+			brandsAsArray = append(brandsAsArray, brandsMap[idx])
 		}
 		if err := brands.FromBrandsArray(brandsAsArray); err != nil {
 			return brands, err
@@ -564,10 +604,65 @@ func extractDeviceFromKeyVal(kv map[string]string) (faroTypes.Device, error) {
 	if deviceType, ok := kv[faroDeviceType]; ok {
 		device.Type = deviceType
 	}
+	if arch, ok := kv[faroDeviceArch]; ok {
+		device.Arch = arch
+	}
+	if screenWidth, ok := kv[faroDeviceScreenWidth]; ok {
+		parsed, err := strconv.Atoi(screenWidth)
+		if err != nil {
+			return device, err
+		}
+		device.ScreenWidth = parsed
+	}
+	if screenHeight, ok := kv[faroDeviceScreenHeight]; ok {
+		parsed, err := strconv.Atoi(screenHeight)
+		if err != nil {
+			return device, err
+		}
+		device.ScreenHeight = parsed
+	}
+	if screenDensity, ok := kv[faroDeviceScreenDensity]; ok {
+		parsed, err := strconv.ParseFloat(screenDensity, 64)
+		if err != nil {
+			return device, err
+		}
+		device.ScreenDensity = parsed
+	}
+	if memoryTotal, ok := kv[faroDeviceMemoryTotal]; ok {
+		parsed, err := strconv.Atoi(memoryTotal)
+		if err != nil {
+			return device, err
+		}
+		device.MemoryTotal = parsed
+	}
+	if batteryLevel, ok := kv[faroDeviceBatteryLevel]; ok {
+		parsed, err := strconv.Atoi(batteryLevel)
+		if err != nil {
+			return device, err
+		}
+		device.BatteryLevel = &parsed
+	}
+	if isCharging, ok := kv[faroDeviceIsCharging]; ok {
+		parsed, err := strconv.ParseBool(isCharging)
+		if err != nil {
+			return device, err
+		}
+		device.IsCharging = &parsed
+	}
+	if lowPowerMode, ok := kv[faroDeviceLowPowerMode]; ok {
+		parsed, err := strconv.ParseBool(lowPowerMode)
+		if err != nil {
+			return device, err
+		}
+		device.LowPowerMode = &parsed
+	}
+	if thermalState, ok := kv[faroDeviceThermalState]; ok {
+		device.ThermalState = faroTypes.DeviceThermalState(thermalState)
+	}
 	return device, nil
 }
 
-func extractOSFromKeyVal(kv map[string]string) faroTypes.OS {
+func extractOSFromKeyVal(kv map[string]string) (faroTypes.OS, error) {
 	var osMeta faroTypes.OS
 	if name, ok := kv[faroOSName]; ok {
 		osMeta.Name = name
@@ -581,7 +676,35 @@ func extractOSFromKeyVal(kv map[string]string) faroTypes.OS {
 	if detail, ok := kv[faroOSDetail]; ok {
 		osMeta.Detail = detail
 	}
-	return osMeta
+	if apiLevel, ok := kv[faroOSAPILevel]; ok {
+		parsed, err := strconv.Atoi(apiLevel)
+		if err != nil {
+			return osMeta, err
+		}
+		osMeta.APILevel = parsed
+	}
+	return osMeta, nil
+}
+
+func extractNetworkFromKeyVal(kv map[string]string) (faroTypes.Network, error) {
+	var network faroTypes.Network
+	if connectionType, ok := kv[faroNetworkConnectionType]; ok {
+		network.ConnectionType = connectionType
+	}
+	if connectionSubtype, ok := kv[faroNetworkConnectionSubtype]; ok {
+		network.ConnectionSubtype = connectionSubtype
+	}
+	if carrierName, ok := kv[faroNetworkCarrierName]; ok {
+		network.CarrierName = carrierName
+	}
+	if reachable, ok := kv[faroNetworkReachable]; ok {
+		parsed, err := strconv.ParseBool(reachable)
+		if err != nil {
+			return network, err
+		}
+		network.Reachable = &parsed
+	}
+	return network, nil
 }
 
 func extractGeoFromKeyVal(kv map[string]string) faroTypes.Geo {
@@ -668,6 +791,10 @@ func extractViewFromKeyVal(kv map[string]string) faroTypes.View {
 	return view
 }
 
+// faroLogLevelWarn is the warning level that Faro SDKs send. The faro
+// LogLevel enum only defines "warning".
+const faroLogLevelWarn faroTypes.LogLevel = "warn"
+
 func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 	var log faroTypes.Log
 	timestamp, err := extractTimestampFromKeyVal(kv)
@@ -686,6 +813,8 @@ func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 			log.LogLevel = faroTypes.LogLevelError
 		case string(faroTypes.LogLevelWarning):
 			log.LogLevel = faroTypes.LogLevelWarning
+		case string(faroLogLevelWarn):
+			log.LogLevel = faroLogLevelWarn
 		case string(faroTypes.LogLevelTrace):
 			log.LogLevel = faroTypes.LogLevelTrace
 		case string(faroTypes.LogLevelInfo):
@@ -846,6 +975,9 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 	}
 
 	matches := stacktraceRegexp.FindStringSubmatch(frameStr)
+	if matches == nil {
+		return nil, errors.New("invalid stack trace frame")
+	}
 
 	frame.Function = matches[stacktraceRegexp.SubexpIndex(faroStacktraceFunction)]
 	frame.Module = matches[stacktraceRegexp.SubexpIndex(faroStackTraceModule)]

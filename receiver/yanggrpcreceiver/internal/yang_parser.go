@@ -12,12 +12,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-)
 
-// Helper function to create int64 pointers
-func int64Ptr(v int64) *int64 {
-	return &v
-}
+	"go.uber.org/zap"
+)
 
 // YANGDataType represents the YANG data type information
 type YANGDataType struct {
@@ -47,13 +44,17 @@ type YANGModule struct {
 
 // YANGParser handles parsing of YANG modules to identify keyed elements
 type YANGParser struct {
-	modules map[string]*YANGModule
+	modules       map[string]*YANGModule
+	moduleSources map[string]string
+	logger        *zap.Logger
 }
 
 // NewYANGParser creates a new YANG parser instance
-func NewYANGParser() *YANGParser {
+func NewYANGParser(logger *zap.Logger) *YANGParser {
 	return &YANGParser{
-		modules: make(map[string]*YANGModule),
+		modules:       make(map[string]*YANGModule),
+		moduleSources: make(map[string]string),
+		logger:        logger,
 	}
 }
 
@@ -146,10 +147,10 @@ func (p *YANGParser) LoadBuiltinModules() {
 			"/cpu-usage/cpu-utilization/cpu-usage-processes/name": {Type: "string", Description: "Process name"},
 
 			// CPU utilization percentages - based on your screenshot showing uint8, 0-255 range, percent units
-			"/cpu-usage/cpu-utilization/five-seconds":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU busy percentage in last 5-seconds"},
-			"/cpu-usage/cpu-utilization/five-seconds-intr": {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU interrupt percentage in last 5-seconds"},
-			"/cpu-usage/cpu-utilization/one-minute":        {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU busy percentage in last minute"},
-			"/cpu-usage/cpu-utilization/five-minutes":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: int64Ptr(0), Max: int64Ptr(255)}, Description: "CPU busy percentage in last 5-minutes"},
+			"/cpu-usage/cpu-utilization/five-seconds":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU busy percentage in last 5-seconds"},
+			"/cpu-usage/cpu-utilization/five-seconds-intr": {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU interrupt percentage in last 5-seconds"},
+			"/cpu-usage/cpu-utilization/one-minute":        {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU busy percentage in last minute"},
+			"/cpu-usage/cpu-utilization/five-minutes":      {Type: "uint8", Units: "percent", Range: &YANGRange{Min: new(int64(0)), Max: new(int64(255))}, Description: "CPU busy percentage in last 5-minutes"},
 		},
 		Description: "Process CPU utilization operational data for Cisco IOS XE devices",
 	}
@@ -177,6 +178,11 @@ func (p *YANGParser) LoadBuiltinModules() {
 	p.modules[bgpModule.Name] = bgpModule
 	p.modules[processCPUModule.Name] = processCPUModule
 	p.modules[ospfModule.Name] = ospfModule
+
+	p.moduleSources[interfacesModule.Name] = "<builtin>"
+	p.moduleSources[bgpModule.Name] = "<builtin>"
+	p.moduleSources[processCPUModule.Name] = "<builtin>"
+	p.moduleSources[ospfModule.Name] = "<builtin>"
 
 	log.Printf("Loaded %d builtin YANG modules", len(p.modules))
 }
@@ -443,7 +449,14 @@ func (p *YANGParser) LoadModulesFromFile(filename string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	return json.Unmarshal(data, &p.modules)
+	if err := json.Unmarshal(data, &p.modules); err != nil {
+		return fmt.Errorf("failed to unmarshal modules: %w", err)
+	}
+
+	for name := range p.modules {
+		p.moduleSources[name] = filename
+	}
+	return nil
 }
 
 // GetAvailableModules returns a list of loaded module names
@@ -474,7 +487,15 @@ func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
 
 		module := p.parseYANGContent(string(content), filepath.Base(path))
 		if module != nil {
+			if prevPath, exists := p.moduleSources[module.Name]; exists {
+				p.logger.Warn("Duplicate YANG module detected; overwriting existing module",
+					zap.String("module", module.Name),
+					zap.String("previous_path", prevPath),
+					zap.String("new_path", path),
+				)
+			}
 			p.modules[module.Name] = module
+			p.moduleSources[module.Name] = path
 		}
 
 		return nil

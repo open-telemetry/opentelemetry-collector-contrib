@@ -27,13 +27,10 @@ resourceLogs:
                   stringValue: 5cb53c22-36b5-3ca3-a389-dae3eec919df
               - key: rpc.method
                 value:
-                  stringValue: PutObject
-              - key: rpc.system
+                  stringValue: s3.amazonaws.com/PutObject
+              - key: rpc.system.name
                 value:
                   stringValue: AwsApiCall
-              - key: rpc.service
-                value:
-                  stringValue: s3.amazonaws.com
               - key: aws.request_id
                 value:
                   stringValue: EH45WHPCAE9G5SX8

@@ -7,7 +7,7 @@ change_type: deprecation
 component: processor/resource_detection
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate the `azure.resourcegroup.name` resource attribute in favor of `azure.resource_group.name`, behind the `processor.resourcedetection.azure.RenameResourceGroupAttribute` feature gate
+note: Deprecate the `azure.resourcegroup.name` resource attribute in favor of `azure.resource_group.name`, behind the `processor.azuredetector.RenameResourceGroupAttribute` feature gate
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49079]
@@ -16,7 +16,7 @@ issues: [49079]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The new `processor.resourcedetection.azure.RenameResourceGroupAttribute` feature gate is alpha
+  The new `processor.azuredetector.RenameResourceGroupAttribute` feature gate is alpha
   and disabled by default, so the azure detector continues to emit `azure.resourcegroup.name` and
   there is no change in behavior. Enabling the gate makes the detector emit
   `azure.resource_group.name` instead, matching the naming convention used by other semantic

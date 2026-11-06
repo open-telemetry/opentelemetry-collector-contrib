@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
 	"strings"
 	"testing"
 
@@ -1532,4 +1534,23 @@ func TestCreateDecompressingReader(t *testing.T) {
 			assert.Equal(t, payload, got)
 		})
 	}
+}
+
+func TestCreateIntakeReverseProxyRewrite(t *testing.T) {
+	rewrite := createIntakeReverseProxyRewrite("datadoghq.eu", "test-api-key")
+
+	in := httptest.NewRequest(http.MethodPost, "http://localhost:8126/intake?foo=bar", http.NoBody)
+	in.RemoteAddr = "10.0.0.1:12345"
+	out := in.Clone(in.Context())
+	// Rewrite strips the X-Forwarded-* headers before it is called; emulate that here.
+	out.Header.Del("X-Forwarded-For")
+
+	rewrite(&httputil.ProxyRequest{In: in, Out: out})
+
+	assert.Equal(t, "https", out.URL.Scheme)
+	assert.Equal(t, "api.datadoghq.eu", out.URL.Host)
+	assert.Equal(t, "api_key=test-api-key", out.URL.RawQuery)
+	assert.Equal(t, "test-api-key", out.Header.Get("Dd-Api-Key"))
+	// SetXForwarded must preserve the X-Forwarded-For behavior Director gave us.
+	assert.Equal(t, "10.0.0.1", out.Header.Get("X-Forwarded-For"))
 }

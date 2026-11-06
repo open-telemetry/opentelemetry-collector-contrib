@@ -12,7 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -30,6 +32,75 @@ type dummySchemaProvider struct {
 }
 
 type errorSchemaProvider struct{}
+
+type testStorageClient struct {
+	closeErr error
+	closed   bool
+}
+
+func (*testStorageClient) Get(context.Context, string) ([]byte, error) {
+	return nil, nil
+}
+
+func (*testStorageClient) Set(context.Context, string, []byte) error {
+	return nil
+}
+
+func (*testStorageClient) Delete(context.Context, string) error {
+	return nil
+}
+
+func (*testStorageClient) Batch(context.Context, ...*storage.Operation) error {
+	return nil
+}
+
+func (c *testStorageClient) Close(context.Context) error {
+	c.closed = true
+	return c.closeErr
+}
+
+type testStorageExtension struct {
+	client storage.Client
+	getErr error
+	called bool
+}
+
+func (*testStorageExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (*testStorageExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (e *testStorageExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, _ string) (storage.Client, error) {
+	e.called = true
+
+	if e.getErr != nil {
+		return nil, e.getErr
+	}
+
+	return e.client, nil
+}
+
+type testComponent struct{}
+
+func (testComponent) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (testComponent) Shutdown(context.Context) error {
+	return nil
+}
+
+type testHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *testHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
 
 func (*errorSchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
 	return "", errors.New("provider error")
@@ -84,6 +155,104 @@ func TestSchemaProcessorStart(t *testing.T) {
 
 	trans := newTestSchemaProcessor(t, "", "1.9.0")
 	assert.NoError(t, trans.start(t.Context(), componenttest.NewNopHost()))
+}
+
+func TestSchemaProcessorStartWithStorage(t *testing.T) {
+	t.Parallel()
+
+	storageID := component.MustNewIDWithName("file_storage", "test")
+
+	client := &testStorageClient{}
+
+	ext := &testStorageExtension{
+		client: client,
+	}
+
+	host := &testHost{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			storageID: ext,
+		},
+	}
+
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
+	trans.config.StorageID = &storageID
+
+	err := trans.start(t.Context(), host)
+
+	require.NoError(t, err)
+	assert.True(t, ext.called)
+	assert.Same(t, client, trans.storageClient)
+
+	require.NoError(t, trans.shutdown(t.Context()))
+	assert.True(t, client.closed)
+}
+
+func TestSchemaProcessorStartStorageError(t *testing.T) {
+	t.Parallel()
+
+	storageID := component.MustNewIDWithName("file_storage", "test")
+	expectedErr := errors.New("get client failed")
+
+	ext := &testStorageExtension{
+		getErr: expectedErr,
+	}
+
+	host := &testHost{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			storageID: ext,
+		},
+	}
+
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
+	trans.config.StorageID = &storageID
+
+	err := trans.start(t.Context(), host)
+
+	require.ErrorIs(t, err, expectedErr)
+	assert.Nil(t, trans.storageClient)
+	assert.True(t, ext.called)
+}
+
+func TestSchemaProcessorShutdown(t *testing.T) {
+	t.Parallel()
+
+	t.Run("without storage client", func(t *testing.T) {
+		trans := newTestSchemaProcessor(t, "", "1.9.0")
+
+		err := trans.shutdown(t.Context())
+
+		require.NoError(t, err)
+	})
+
+	t.Run("closes storage client", func(t *testing.T) {
+		client := &testStorageClient{}
+
+		trans := newTestSchemaProcessor(t, "", "1.9.0")
+		trans.storageClient = client
+
+		err := trans.shutdown(t.Context())
+
+		require.NoError(t, err)
+		assert.True(t, client.closed)
+	})
+
+	t.Run("returns storage client close error", func(t *testing.T) {
+		expectedErr := errors.New("close failed")
+
+		client := &testStorageClient{
+			closeErr: expectedErr,
+		}
+
+		trans := newTestSchemaProcessor(t, "", "1.9.0")
+		trans.storageClient = client
+
+		err := trans.shutdown(t.Context())
+
+		require.ErrorIs(t, err, expectedErr)
+		assert.True(t, client.closed)
+	})
 }
 
 func TestSchemaProcessorProcessing(t *testing.T) {
@@ -429,5 +598,100 @@ func TestTranslatedCounter(t *testing.T) {
 			}},
 			metricdatatest.IgnoreTimestamp())
 		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+}
+
+func TestGetStorageClient(t *testing.T) {
+	t.Parallel()
+
+	storageID := component.MustNewIDWithName("file_storage", "test")
+	componentID := component.MustNewIDWithName("schemaprocessor", "test")
+
+	t.Run("storage extension not found", func(t *testing.T) {
+		host := componenttest.NewNopHost()
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.Contains(t, err.Error(), "storage extension")
+		assert.Contains(t, err.Error(), "not found")
+	})
+
+	t.Run("extension is not a storage extension", func(t *testing.T) {
+		host := &testHost{
+			Host: componenttest.NewNopHost(),
+			extensions: map[component.ID]component.Component{
+				storageID: testComponent{},
+			},
+		}
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.Error(t, err)
+		assert.Nil(t, client)
+		assert.Contains(t, err.Error(), "is not a storage extension")
+	})
+
+	t.Run("GetClient returns error", func(t *testing.T) {
+		expectedErr := errors.New("get client failed")
+
+		ext := &testStorageExtension{
+			getErr: expectedErr,
+		}
+
+		host := &testHost{
+			Host: componenttest.NewNopHost(),
+			extensions: map[component.ID]component.Component{
+				storageID: ext,
+			},
+		}
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.ErrorIs(t, err, expectedErr)
+		assert.Nil(t, client)
+		assert.True(t, ext.called)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		expectedClient := &testStorageClient{}
+
+		ext := &testStorageExtension{
+			client: expectedClient,
+		}
+
+		host := &testHost{
+			Host: componenttest.NewNopHost(),
+			extensions: map[component.ID]component.Component{
+				storageID: ext,
+			},
+		}
+
+		client, err := getStorageClient(
+			t.Context(),
+			host,
+			storageID,
+			componentID,
+		)
+
+		require.NoError(t, err)
+		assert.Same(t, expectedClient, client)
+		assert.True(t, ext.called)
 	})
 }

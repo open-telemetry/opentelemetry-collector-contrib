@@ -4,16 +4,12 @@ type: googlecloudpubsubpush
 status:
   class: receiver
   stability:
-    development: [logs]
+    alpha: [logs]
+  distributions: [contrib]
   codeowners:
     active: [constanca-m]
     emeritus: [axw]
-
-tests:
-  # start requires an encoding extension to exist
-  skip_lifecycle: true
-  # requires google credentials for the storage client
-  skip_shutdown: true
+    seeking_new: true
 
 telemetry:
   metrics:

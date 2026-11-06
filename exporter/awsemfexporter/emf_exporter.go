@@ -189,8 +189,7 @@ func (emf *emfExporter) shutdown(ctx context.Context) error {
 }
 
 func wrapErrorIfBadRequest(err error) error {
-	var ae smithy.APIError
-	if errors.As(err, &ae) {
+	if ae, ok := errors.AsType[smithy.APIError](err); ok {
 		if ae.ErrorFault() == smithy.FaultClient || ae.ErrorFault() == smithy.FaultUnknown {
 			return consumererror.NewPermanent(err)
 		}

@@ -19,7 +19,7 @@ func NewBasicConfig(operatorID, operatorType string) BasicConfig {
 	}
 }
 
-// BasicConfig provides a basic implemention for an operator config.
+// BasicConfig provides a basic implementation for an operator config.
 type BasicConfig struct {
 	OperatorID   string `mapstructure:"id"`
 	OperatorType string `mapstructure:"type"`

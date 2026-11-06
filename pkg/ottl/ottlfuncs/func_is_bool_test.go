@@ -73,3 +73,52 @@ func Test_IsBool_Error(t *testing.T) {
 	_, ok := err.(ottl.TypeError)
 	assert.False(t, ok)
 }
+
+func Test_IsBoolFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewIsBoolFactory[any]()
+		assert.Equal(t, "IsBool", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewIsBoolFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &isBoolArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewIsBoolFactory[any]()
+		args := factory.CreateDefaultArguments()
+		isBoolArgs, ok := args.(*isBoolArguments[any])
+		require.True(t, ok)
+		isBoolArgs.Target = &ottl.StandardBoolGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return true, nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createIsBoolFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "IsBoolFactory args must be of type *isBoolArguments[K]")
+	})
+}
+
+func BenchmarkIsBool(b *testing.B) {
+	exprFunc := isBool[any](&ottl.StandardBoolGetter[any]{
+		Getter: func(context.Context, any) (any, error) { return true, nil },
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

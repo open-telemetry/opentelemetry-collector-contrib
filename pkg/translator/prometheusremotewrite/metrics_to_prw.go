@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
@@ -80,13 +78,12 @@ func getTranslationConfiguration(settings Settings) (withSuffixes, utf8Allowed b
 
 func newPrometheusConverter(settings Settings) *prometheusConverter {
 	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
-	permissiveSanitization := prometheus.DropSanitizationGate.IsEnabled()
 
 	return &prometheusConverter{
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !permissiveSanitization, PreserveMultipleUnderscores: permissiveSanitization, UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{PreserveMultipleUnderscores: true, UTF8Allowed: utf8Allowed},
 		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
@@ -175,7 +172,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 				}
 			}
 		}
-		errs = multierr.Append(errs, addResourceTargetInfo(resource, settings, mostRecentTimestamp, c))
+		errs = multierr.Append(errs, c.addResourceTargetInfo(resource, settings, mostRecentTimestamp))
 	}
 
 	return errs

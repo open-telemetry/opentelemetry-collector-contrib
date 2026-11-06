@@ -23,6 +23,12 @@ tests:
         - "go.opencensus.io/stats/view.(*worker).start"
 
 feature_gates:
+  - id: receiver.prometheus.UseTargetUrlForServerAddress
+    stage: alpha
+    description: >-
+      When enabled, server.address, server.port, and url.scheme are populated from the scraped target's post-relabeling __address__ and __scheme__ labels instead of parsing the instance label and pre-relabeling service discovery labels.
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565
   - id: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
     stage: alpha
     description: >-
@@ -31,12 +37,3 @@ feature_gates:
       This is disabled by default due to worse CPU performance with higher metric volumes.
     from_version: v0.113.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355
-    skip_strict_validation: true
-
-  - id: receiver.prometheusreceiver.IgnoreScopeInfoMetric
-    stage: beta
-    description: >-
-      When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction.
-    from_version: v0.148.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502
-    skip_strict_validation: true

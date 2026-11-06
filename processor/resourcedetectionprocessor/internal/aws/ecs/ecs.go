@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_aws_ecs) && !omit_detector_aws_ecs
+
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 
 import (
@@ -12,17 +14,12 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs/internal/metadata"
-)
-
-const (
-	// TypeStr is type of detector.
-	TypeStr = "ecs"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -38,8 +35,7 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOn
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
-		var errNTMED endpoints.ErrNoTaskMetadataEndpointDetected
-		if errors.As(err, &errNTMED) {
+		if _, ok := errors.AsType[endpoints.ErrNoTaskMetadataEndpointDetected](err); ok {
 			return &Detector{provider: nil, failOnMissingMetadata: failOnMissingMetadata}, nil
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
@@ -127,7 +123,7 @@ func constructClusterArn(cluster, region, account string) string {
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
 func parseTaskARN(taskARN string) (region, account, taskID string) {
 	parts := strings.Split(taskARN, ":")
-	if len(parts) >= 5 {
+	if len(parts) >= 6 {
 		region := parts[3]
 		account := parts[4]
 

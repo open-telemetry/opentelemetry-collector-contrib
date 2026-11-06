@@ -24,7 +24,7 @@ var ExtensionAwslogsencodingVpcflowStartIso8601FeatureGate = featuregate.GlobalR
 
 var ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.encoding.awslogsencoding.DontEmitV0RPCConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, CloudTrail log unmarshaler no longer emits the deprecated semconv v1.38.0 attributes rpc.service and rpc.system. Requires extension.encoding.awslogsencoding.EmitV1RPCConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),
@@ -32,7 +32,7 @@ var ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate = featur
 
 var ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.encoding.awslogsencoding.EmitV1RPCConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, CloudTrail log unmarshaler emits rpc.system.name (semconv v1.40.0) instead of the deprecated rpc.system (semconv v1.38.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549"),
 	featuregate.WithRegisterFromVersion("v0.150.0"),

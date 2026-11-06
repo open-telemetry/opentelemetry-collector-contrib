@@ -17,7 +17,7 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 		"default_prop": "default_value",
 	}
 
-	transformer := NewEntityEventTransformer(defaultProps)
+	transformer := NewEntityEventTransformer(defaultProps, true)
 
 	tests := []struct {
 		name           string
@@ -45,10 +45,10 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.pod.uid",
 			wantDimValue: "pod-123",
 			wantProperties: map[string]*string{
-				"default_prop":       strPtr("default_value"),
-				"k8s.pod.name":       strPtr("my-pod"),
-				"k8s.namespace.name": strPtr("default"),
-				"app":                strPtr("web"),
+				"default_prop":       new("default_value"),
+				"k8s.pod.name":       new("my-pod"),
+				"k8s.namespace.name": new("default"),
+				"app":                new("web"),
 			},
 			wantTags: map[string]bool{
 				"empty_tag": true,
@@ -65,10 +65,53 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.node.uid",
 			wantDimValue: "node-456",
 			wantProperties: map[string]*string{
-				"default_prop":  strPtr("default_value"),
-				"k8s.node.name": strPtr("worker-1"),
+				"default_prop":  new("default_value"),
+				"k8s.node.name": new("worker-1"),
 			},
 			wantTags: map[string]bool{},
+		},
+		{
+			name:          "k8s.node strips k8s label prefix",
+			entityType:    "k8s.node",
+			entityIDKey:   "k8s.node.uid",
+			entityIDValue: "node-456",
+			attributes: map[string]any{
+				"k8s.node.name":              "worker-1",
+				"k8s.node.label.nodeName":    "my3",
+				"k8s.node.label.environment": "production",
+			},
+			wantDimKey:   "k8s.node.uid",
+			wantDimValue: "node-456",
+			wantProperties: map[string]*string{
+				"default_prop":  new("default_value"),
+				"k8s.node.name": new("worker-1"),
+				"nodeName":      new("my3"),
+				"environment":   new("production"),
+			},
+			wantTags: map[string]bool{},
+		},
+		{
+			name:          "k8s.pod strips label prefix and renames service tags",
+			entityType:    "k8s.pod",
+			entityIDKey:   "k8s.pod.uid",
+			entityIDValue: "pod-789",
+			attributes: map[string]any{
+				"k8s.pod.name":      "web-0",
+				"k8s.pod.label.app": "web",
+				"k8s.pod.label.topology.kubernetes.io/zone": "us-central1-a",
+				"k8s.service.web": "",
+			},
+			wantDimKey:   "k8s.pod.uid",
+			wantDimValue: "pod-789",
+			wantProperties: map[string]*string{
+				"default_prop":                new("default_value"),
+				"k8s.pod.name":                new("web-0"),
+				"app":                         new("web"),
+				"topology.kubernetes.io/zone": new("us-central1-a"),
+			},
+			wantTags: map[string]bool{
+				"kubernetes_service_web": true,
+			},
 		},
 		{
 			name:          "k8s.namespace",
@@ -81,8 +124,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.namespace.uid",
 			wantDimValue: "ns-789",
 			wantProperties: map[string]*string{
-				"default_prop":       strPtr("default_value"),
-				"k8s.namespace.name": strPtr("production"),
+				"default_prop":       new("default_value"),
+				"k8s.namespace.name": new("production"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -97,8 +140,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.deployment.uid",
 			wantDimValue: "deploy-123",
 			wantProperties: map[string]*string{
-				"default_prop":        strPtr("default_value"),
-				"k8s.deployment.name": strPtr("my-deployment"),
+				"default_prop":        new("default_value"),
+				"k8s.deployment.name": new("my-deployment"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -113,8 +156,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.replicaset.uid",
 			wantDimValue: "rs-123",
 			wantProperties: map[string]*string{
-				"default_prop":        strPtr("default_value"),
-				"k8s.replicaset.name": strPtr("my-rs"),
+				"default_prop":        new("default_value"),
+				"k8s.replicaset.name": new("my-rs"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -129,8 +172,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.statefulset.uid",
 			wantDimValue: "ss-123",
 			wantProperties: map[string]*string{
-				"default_prop":         strPtr("default_value"),
-				"k8s.statefulset.name": strPtr("my-statefulset"),
+				"default_prop":         new("default_value"),
+				"k8s.statefulset.name": new("my-statefulset"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -145,8 +188,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.daemonset.uid",
 			wantDimValue: "ds-123",
 			wantProperties: map[string]*string{
-				"default_prop":       strPtr("default_value"),
-				"k8s.daemonset.name": strPtr("my-daemonset"),
+				"default_prop":       new("default_value"),
+				"k8s.daemonset.name": new("my-daemonset"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -161,8 +204,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.cronjob.uid",
 			wantDimValue: "cj-123",
 			wantProperties: map[string]*string{
-				"default_prop":     strPtr("default_value"),
-				"k8s.cronjob.name": strPtr("my-cronjob"),
+				"default_prop":     new("default_value"),
+				"k8s.cronjob.name": new("my-cronjob"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -177,8 +220,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.job.uid",
 			wantDimValue: "job-123",
 			wantProperties: map[string]*string{
-				"default_prop": strPtr("default_value"),
-				"k8s.job.name": strPtr("my-job"),
+				"default_prop": new("default_value"),
+				"k8s.job.name": new("my-job"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -193,8 +236,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.hpa.uid",
 			wantDimValue: "hpa-123",
 			wantProperties: map[string]*string{
-				"default_prop": strPtr("default_value"),
-				"k8s.hpa.name": strPtr("my-hpa"),
+				"default_prop": new("default_value"),
+				"k8s.hpa.name": new("my-hpa"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -209,8 +252,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.replicationcontroller.uid",
 			wantDimValue: "rc-123",
 			wantProperties: map[string]*string{
-				"default_prop":                   strPtr("default_value"),
-				"k8s.replicationcontroller.name": strPtr("my-rc"),
+				"default_prop":                   new("default_value"),
+				"k8s.replicationcontroller.name": new("my-rc"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -225,8 +268,8 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "container.id",
 			wantDimValue: "container-123",
 			wantProperties: map[string]*string{
-				"default_prop":   strPtr("default_value"),
-				"container.name": strPtr("my-container"),
+				"default_prop":   new("default_value"),
+				"container.name": new("my-container"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -245,12 +288,12 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.persistentvolume.uid",
 			wantDimValue: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 			wantProperties: map[string]*string{
-				"default_prop":                                                    strPtr("default_value"),
-				"k8s.persistentvolume.name":                                       strPtr("pvc-a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
-				"k8s.persistentvolume.creation_timestamp":                         strPtr("2026-04-21T00:00:00Z"),
-				"k8s.persistentvolume.label.storage-tier":                         strPtr("fast"),
-				"k8s.persistentvolume.label.env":                                  strPtr("production"),
-				"k8s.persistentvolume.annotation.pv.kubernetes.io/provisioned-by": strPtr("ebs.csi.aws.com"),
+				"default_prop":                                                    new("default_value"),
+				"k8s.persistentvolume.name":                                       new("pvc-a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+				"k8s.persistentvolume.creation_timestamp":                         new("2026-04-21T00:00:00Z"),
+				"k8s.persistentvolume.label.storage-tier":                         new("fast"),
+				"k8s.persistentvolume.label.env":                                  new("production"),
+				"k8s.persistentvolume.annotation.pv.kubernetes.io/provisioned-by": new("ebs.csi.aws.com"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -272,15 +315,15 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.persistentvolumeclaim.uid",
 			wantDimValue: "f9e8d7c6-b5a4-3210-fedc-ba0987654321",
 			wantProperties: map[string]*string{
-				"default_prop":                                                 strPtr("default_value"),
-				"k8s.persistentvolumeclaim.name":                               strPtr("data-postgres-0"),
-				"k8s.namespace.name":                                           strPtr("database"),
-				"k8s.persistentvolumeclaim.creation_timestamp":                 strPtr("2026-04-21T00:00:00Z"),
-				"k8s.persistentvolume.name":                                    strPtr("pvc-f9e8d7c6-b5a4-3210-fedc-ba0987654321"),
-				"k8s.persistentvolumeclaim.label.app":                          strPtr("postgres"),
-				"k8s.persistentvolumeclaim.label.app.kubernetes.io/managed-by": strPtr("Helm"),
-				"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/storage-provisioner": strPtr("ebs.csi.aws.com"),
-				"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/selected-node":       strPtr("ip-10-0-1-42.ec2.internal"),
+				"default_prop":                                                 new("default_value"),
+				"k8s.persistentvolumeclaim.name":                               new("data-postgres-0"),
+				"k8s.namespace.name":                                           new("database"),
+				"k8s.persistentvolumeclaim.creation_timestamp":                 new("2026-04-21T00:00:00Z"),
+				"k8s.persistentvolume.name":                                    new("pvc-f9e8d7c6-b5a4-3210-fedc-ba0987654321"),
+				"k8s.persistentvolumeclaim.label.app":                          new("postgres"),
+				"k8s.persistentvolumeclaim.label.app.kubernetes.io/managed-by": new("Helm"),
+				"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/storage-provisioner": new("ebs.csi.aws.com"),
+				"k8s.persistentvolumeclaim.annotation.volume.kubernetes.io/selected-node":       new("ip-10-0-1-42.ec2.internal"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -304,17 +347,17 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 			wantDimKey:   "k8s.service.uid",
 			wantDimValue: "d5d0975c-eab9-4dc5-8db4-aec3929ce882",
 			wantProperties: map[string]*string{
-				"default_prop":                                    strPtr("default_value"),
-				"k8s.service.name":                                strPtr("metrics-server"),
-				"k8s.service.type":                                strPtr("ClusterIP"),
-				"k8s.namespace.name":                              strPtr("kube-system"),
-				"k8s.service.creation_timestamp":                  strPtr("2026-01-16T06:46:44Z"),
-				"k8s.service.label.app.kubernetes.io/name":        strPtr("metrics-server"),
-				"k8s.service.label.app.kubernetes.io/instance":    strPtr("metrics-server"),
-				"k8s.service.label.app.kubernetes.io/version":     strPtr("0.7.2"),
-				"k8s.service.label.app.kubernetes.io/managed-by":  strPtr("EKS"),
-				"k8s.service.selector.app.kubernetes.io/name":     strPtr("metrics-server"),
-				"k8s.service.selector.app.kubernetes.io/instance": strPtr("metrics-server"),
+				"default_prop":                                    new("default_value"),
+				"k8s.service.name":                                new("metrics-server"),
+				"k8s.service.type":                                new("ClusterIP"),
+				"k8s.namespace.name":                              new("kube-system"),
+				"k8s.service.creation_timestamp":                  new("2026-01-16T06:46:44Z"),
+				"k8s.service.label.app.kubernetes.io/name":        new("metrics-server"),
+				"k8s.service.label.app.kubernetes.io/instance":    new("metrics-server"),
+				"k8s.service.label.app.kubernetes.io/version":     new("0.7.2"),
+				"k8s.service.label.app.kubernetes.io/managed-by":  new("EKS"),
+				"k8s.service.selector.app.kubernetes.io/name":     new("metrics-server"),
+				"k8s.service.selector.app.kubernetes.io/instance": new("metrics-server"),
 			},
 			wantTags: map[string]bool{},
 		},
@@ -371,8 +414,24 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 	}
 }
 
+func TestEntityEventTransformer_KeepK8sLabelPrefix(t *testing.T) {
+	transformer := NewEntityEventTransformer(nil, false)
+
+	entityEvents := metadata.NewEntityEventsSlice()
+	entityEvent := entityEvents.AppendEmpty()
+	entityEvent.ID().PutStr("k8s.pod.uid", "pod-123")
+	state := entityEvent.SetEntityState()
+	state.SetEntityType("k8s.pod")
+	state.Attributes().PutStr("k8s.pod.label.app", "web")
+
+	dimUpdate, err := transformer.TransformEntityEvent(entityEvent)
+	require.NoError(t, err)
+	require.NotNil(t, dimUpdate)
+	assert.Equal(t, map[string]*string{"k8s.pod.label.app": new("web")}, dimUpdate.Properties)
+}
+
 func TestEntityEventTransformer_DeleteEvent(t *testing.T) {
-	transformer := NewEntityEventTransformer(nil)
+	transformer := NewEntityEventTransformer(nil, true)
 
 	// Create delete event
 	entityEvents := metadata.NewEntityEventsSlice()
@@ -386,7 +445,7 @@ func TestEntityEventTransformer_DeleteEvent(t *testing.T) {
 }
 
 func TestEntityEventTransformer_MissingEntityID(t *testing.T) {
-	transformer := NewEntityEventTransformer(nil)
+	transformer := NewEntityEventTransformer(nil, true)
 
 	// Create entity event without ID
 	entityEvents := metadata.NewEntityEventsSlice()
@@ -398,8 +457,4 @@ func TestEntityEventTransformer_MissingEntityID(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, dimUpdate)
 	assert.Contains(t, err.Error(), "entity ID not found")
-}
-
-func strPtr(s string) *string {
-	return &s
 }

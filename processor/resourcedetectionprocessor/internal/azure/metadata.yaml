@@ -1,4 +1,5 @@
 type: azuredetector
+sem_conv_version: 1.43.0
 
 status:
   class: processor
@@ -10,11 +11,11 @@ status:
 
 resource_attributes:
   azure.resource_group.name:
-    description: The azure.resource_group.name. Only emitted when the processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate is enabled.
+    description: The azure.resource_group.name. Only emitted when the processor.azuredetector.RenameResourceGroupAttribute feature gate is enabled.
     enabled: true
     type: string
   azure.resourcegroup.name:
-    description: The azure.resourcegroup.name. Deprecated, use azure.resource_group.name instead by enabling the processor.resourcedetection.azure.RenameResourceGroupAttribute feature gate.
+    description: The azure.resourcegroup.name. Deprecated, use azure.resource_group.name instead by enabling the processor.azuredetector.RenameResourceGroupAttribute feature gate.
     enabled: true
     type: string
   azure.vm.name:
@@ -30,44 +31,53 @@ resource_attributes:
     enabled: true
     type: string
   cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
     description: The cloud.account.id
     type: string
     enabled: true
   cloud.availability_zone:
+    semantic_convention:
+      ref: cloud.md#cloud-availability-zone
     description: The cloud availability zone
     type: string
     enabled: false
   cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
     description: The cloud.platform
     type: string
     enabled: true
   cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
     description: The cloud.provider
     type: string
     enabled: true
   cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
     description: The cloud.region
     type: string
     enabled: true
   host.id:
+    semantic_convention:
+      ref: host.md#host-id
     description: The host.id
     type: string
     enabled: true
   host.name:
+    semantic_convention:
+      ref: host.md#host-name
     description: The hostname
     type: string
     enabled: true
 
 feature_gates:
-  - id: processor.resourcedetection.azure.RenameResourceGroupAttribute
+  - id: processor.azuredetector.RenameResourceGroupAttribute
     stage: alpha
     description: >-
       When enabled, the azure detector emits the azure.resource_group.name resource attribute
       instead of azure.resourcegroup.name, aligning with semantic convention naming.
-    from_version: v0.158.0
+    from_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49079
-    skip_strict_validation: true
-
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

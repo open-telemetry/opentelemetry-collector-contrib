@@ -1719,23 +1719,24 @@ func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Times
 		brs = kv.Content.Current.BackupRestoreStatus
 		rs = kv.Content.Current.ReplicationStatus
 		se = kv.Content.Current.StorageEngine
-		ext = kv.Content.KVService.Status
 
 		// a 0 gauge value means that the metric was not reported in the api call
 		// to the introspection endpoint.
 		if st == "" {
 			st = kvStatusUnknown
+			ext = "true"
 			// set to 0 to indicate no status being reported
 			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 0, se, ext, st, i.Build, i.Version)
 		} else {
+			ext = "false"
 			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st, i.Build, i.Version)
 		}
 
 		if rs == "" {
 			rs = kvRestoreStatusUnknown
-			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs, i.Build, i.Version)
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs, se, i.Build, i.Version)
 		} else {
-			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs, i.Build, i.Version)
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs, se, i.Build, i.Version)
 		}
 
 		if brs == "" {
@@ -2165,7 +2166,9 @@ func (s *splunkScraper) getSearchEntries(sid string) (searchMetaEntries, error) 
 	return metaEntries, nil
 }
 
-// setSearchJobTTLById sets the SearchJob's TTL on the remote Splunk server to Timeout and returns a ControlResponse.
+// setSearchJobTTLByID sets the SearchJob's TTL on the remote Splunk server to the configured
+// Timeout. Splunk's setttl action expects a whole number of seconds, so the duration must be
+// converted; passing it directly would send its raw nanosecond representation.
 func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	ept := fmt.Sprintf("/services/search/jobs/%s/control", sid)
 
@@ -2176,7 +2179,7 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 
 	form := url.Values{
 		"action": []string{"setttl"},
-		"ttl":    []string{fmt.Sprintf("%d", s.conf.ControllerConfig.Timeout)},
+		"ttl":    []string{strconv.Itoa(int(s.conf.ControllerConfig.Timeout.Seconds()))},
 	}
 	req.Body = io.NopCloser(strings.NewReader(form.Encode()))
 	req.Method = http.MethodPost
@@ -2185,16 +2188,19 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
 
 		return fmt.Errorf("failed to set TTL for search: %s", body)
 	}
+
+	// Drain the body so the underlying connection can be reused.
+	_, _ = io.Copy(io.Discard, res.Body)
 
 	return nil
 }
@@ -2220,6 +2226,9 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 		errs <- err
 		return
 	}
+	if res.StatusCode != http.StatusOK {
+		errs <- fmt.Errorf("non 200 returned by scrape: %s", res.Status)
+	}
 	defer res.Body.Close()
 
 	if err := json.NewDecoder(res.Body).Decode(&icms); err != nil {
@@ -2230,8 +2239,9 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 	for _, ic := range icms.Entries {
 		if ic.Content.RollingRestartOrUpgrade {
 			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+		} else {
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 		}
-		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 	}
 }
 

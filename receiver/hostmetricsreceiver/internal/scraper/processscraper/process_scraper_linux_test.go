@@ -187,8 +187,7 @@ func testContextSwitches(ctx context.Context, t *testing.T, scraper *processScra
 func metricsConfigAllEnabled() metadata.MetricsConfig {
 	cfg := metadata.DefaultMetricsConfig()
 	v := reflect.ValueOf(&cfg).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
+	for _, field := range v.Fields() {
 		if field.Kind() == reflect.Struct {
 			enabledField := field.FieldByName("Enabled")
 			if enabledField.IsValid() && enabledField.CanSet() {

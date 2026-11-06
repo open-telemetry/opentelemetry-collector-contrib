@@ -30,16 +30,11 @@ func TestLoadConfig(t *testing.T) {
 	egressCfg.Headers = configopaque.MapList{
 		{Name: "otel_http_forwarder", Value: "dev"},
 	}
-	egressCfg.MaxIdleConns = maxIdleConns
-	egressCfg.IdleConnTimeout = idleConnTimeout
 	egressCfg.Timeout = 5 * time.Second
+	egressCfg.Keepalive.Get().IdleConnTimeout = idleConnTimeout
+	egressCfg.Keepalive.Get().MaxIdleConns = maxIdleConns
 
 	ingressCfg := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	ingressCfg.WriteTimeout = 0
-	ingressCfg.ReadHeaderTimeout = 0
-	ingressCfg.IdleTimeout = 0
-	ingressCfg.KeepAlivesEnabled = false
 	ingressCfg.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "http://localhost:7070",

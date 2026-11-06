@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,20 +43,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultClientConfig.MaxIdleConns = 0
-	defaultClientConfig.IdleConnTimeout = 0
-	defaultClientConfig.ForceAttemptHTTP2 = false
 	defaultClientConfig.Timeout = 5 * time.Second
 	defaultClientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
 	}
 
 	overrideClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	overrideClientConfig.MaxIdleConns = 0
-	overrideClientConfig.IdleConnTimeout = 0
-	overrideClientConfig.ForceAttemptHTTP2 = false
 	overrideClientConfig.Timeout = 500 * time.Millisecond
 	overrideClientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},

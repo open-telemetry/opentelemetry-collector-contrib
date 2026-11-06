@@ -68,7 +68,15 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
-	ns := newMySQLScraper(params, cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	clientFactory, err := newClientFactory(cfg, params.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	ns, err := newMySQLScraper(params, cfg, clientFactory, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+	if err != nil {
+		return nil, err
+	}
 	s, err := scraper.NewMetrics(ns.scrape, scraper.WithStart(ns.start),
 		scraper.WithShutdown(ns.shutdown))
 	if err != nil {
@@ -89,6 +97,11 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
 
+	clientFactory, err := newClientFactory(cfg, params.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	opts := make([]scraperhelper.ControllerOption, 0)
 
 	// Shared query-plan cache so that a plan fetched by scrapeTopQueries() can be
@@ -101,9 +114,13 @@ func createLogsReceiver(
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
-		// we have 2 updated only attributes. so we set the cache size accordingly.
+		// we have 4 updated only attributes (sum_timer_wait, count_star, sum_rows_examined,
+		// sum_rows_sent), so we size the cache for 4 columns with 2x headroom.
 		// TODO: parameterize this cache size.
-		ns := newMySQLScraper(params, cfg, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)), sharedPlanCache)
+		ns, err := newMySQLScraper(params, cfg, clientFactory, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*4*2)), sharedPlanCache)
+		if err != nil {
+			return nil, err
+		}
 		s, err := scraper.NewLogs(
 			ns.scrapeTopQueryFunc,
 			scraper.WithStart(ns.start),
@@ -122,7 +139,10 @@ func createLogsReceiver(
 	}
 
 	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
-		ns := newMySQLScraper(params, cfg, newCache[int64](1), sharedPlanCache)
+		ns, err := newMySQLScraper(params, cfg, clientFactory, newCache[int64](1), sharedPlanCache)
+		if err != nil {
+			return nil, err
+		}
 		s, err := scraper.NewLogs(
 			ns.scrapeQuerySampleFunc,
 			scraper.WithStart(ns.start),

@@ -145,14 +145,9 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 		}
 	}
 
-	authConf.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		// Don't use system proxy settings since the API is local to the
-		// cluster
-		if t, ok := rt.(*http.Transport); ok {
-			t.Proxy = nil
-		}
-		return rt
-	}
+	// Don't use system proxy settings since the API is local to the
+	// cluster
+	authConf.Proxy = http.ProxyURL(nil)
 
 	if apiConf.KubeAPIQPS > 0 {
 		authConf.QPS = apiConf.KubeAPIQPS
@@ -265,17 +260,17 @@ func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, erro
 func NewNodeSharedInformer(client k8s.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
-				return client.CoreV1().Nodes().List(context.Background(), opts)
+				return client.CoreV1().Nodes().List(ctx, opts)
 			},
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 				if nodeName != "" {
 					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
 				}
-				return client.CoreV1().Nodes().Watch(context.Background(), opts)
+				return client.CoreV1().Nodes().Watch(ctx, opts)
 			},
 		},
 		&api_v1.Node{},

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
@@ -240,7 +240,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		fieldIndexTotalTime:
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return fmt.Errorf("value for field %q in log line is not a number", field)
+			return fmt.Errorf("value for field %d in log line is not a number", field)
 		}
 		attrName := attributeNames[field]
 		record.Attributes().PutInt(attrName, n)
@@ -254,7 +254,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		case unknownField:
 			record.Attributes().PutBool(attrName, false)
 		default:
-			return fmt.Errorf("unknown value %q for field %q", value, field)
+			return fmt.Errorf("unknown value %q for field %d", value, field)
 		}
 	case fieldIndexTLSVersion:
 		// The value is one of following: TLSv1.1, TLSv1.2, TLSv1.3.

@@ -41,12 +41,11 @@ func createDefaultConfig() component.Config {
 	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.QueueSize = 10
 	qs.BlockOnOverflow = true
-	qs.Batch = configoptional.Some(exporterhelper.BatchConfig{
-		FlushTimeout: 10 * time.Second,
-		MinSize:      1e+6,
-		MaxSize:      5e+6,
-		Sizer:        exporterhelper.RequestSizerTypeBytes,
-	})
+	batch := qs.Batch.GetOrInsertDefault()
+	batch.FlushTimeout = 10 * time.Second
+	batch.MinSize = 1e+6
+	batch.MaxSize = 5e+6
+	batch.Sizer = exporterhelper.RequestSizerTypeBytes
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
@@ -72,7 +71,6 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:         "otel",
 			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
@@ -87,6 +85,9 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInputRateLimit: time.Second,
 		},
 		IncludeSourceOnError: nil,
+		VersionDetection: VersionDetectionSettings{
+			Enabled: true,
+		},
 	}
 }
 
@@ -100,7 +101,6 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.LogsIndex)
@@ -130,7 +130,6 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex)
@@ -159,7 +158,6 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.TracesIndex)
@@ -193,7 +191,6 @@ func createProfilesExporter(
 ) (xexporter.Profiles, error) {
 	cf := cfg.(*Config)
 
-	handleDeprecatedConfig(cf, set.Logger)
 	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, "")

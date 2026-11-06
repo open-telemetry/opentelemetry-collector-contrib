@@ -42,10 +42,6 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0
-	clientConfig.IdleConnTimeout = 0
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 5 * time.Second
 	clientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},

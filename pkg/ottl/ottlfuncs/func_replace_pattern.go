@@ -18,7 +18,7 @@ var (
 	invalidRegex = regexp.MustCompile(`%[^s]`)
 )
 
-type ReplacePatternArguments[K any] struct {
+type replacePatternArguments[K any] struct {
 	Target            ottl.GetSetter[K]
 	RegexPattern      ottl.StringGetter[K]
 	Replacement       ottl.StringGetter[K]
@@ -30,15 +30,17 @@ type replacePatternFuncArgs[K any] struct {
 	Input ottl.StringGetter[K]
 }
 
+// NewReplacePatternFactory returns a factory for the replace_pattern OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#replace_pattern
 func NewReplacePatternFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("replace_pattern", &ReplacePatternArguments[K]{}, createReplacePatternFunction[K])
+	return ottl.NewFactory("replace_pattern", &replacePatternArguments[K]{}, createReplacePatternFunction[K])
 }
 
 func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ReplacePatternArguments[K])
+	args, ok := oArgs.(*replacePatternArguments[K])
 
 	if !ok {
-		return nil, errors.New("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
+		return nil, errors.New("ReplacePatternFactory args must be of type *replacePatternArguments[K]")
 	}
 
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
@@ -125,7 +127,7 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern, replacement o
 			if err != nil {
 				return nil, err
 			}
-			if cp.MatchString(originalValStr) {
+			if compiledPattern.matchString(cp, originalValStr) {
 				if !fn.IsEmpty() {
 					var updatedString string
 					updatedString, err = applyOptReplaceFunction[K](ctx, tCtx, cp, fn, originalValStr, replacementVal, replacementFormat)

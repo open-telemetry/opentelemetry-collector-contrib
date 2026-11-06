@@ -11,12 +11,16 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
+
+func ptr[T any](v T) *T { return new(v) }
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
@@ -86,6 +90,29 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: true,
 		},
 		{
+			desc: "valid config with db_auth provider",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				DBAuth:               configdbauth.ID(component.MustNewID("azure_auth")),
+				Username:             "sql-user",
+				Server:               "sql.example.database.windows.net",
+				Port:                 1433,
+			},
+			expectedSuccess: true,
+		},
+		{
+			desc: "invalid config with db_auth and static password",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				DBAuth:           configdbauth.ID(component.MustNewID("azure_auth")),
+				Password:         "secret",
+				Server:           "sql.example.database.windows.net",
+				Port:             1433,
+			},
+			expectedSuccess: false,
+		},
+		{
 			desc: "config with invalid MaxQuerySampleCount value",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
@@ -109,6 +136,98 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			desc: "valid config with databases and exclude_databases",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				Databases:            []string{"sales", "hr"},
+				ExcludeDatabases:     []string{"hr"},
+			},
+			expectedSuccess: true,
+		},
+		{
+			desc: "config with an empty name in databases",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				Databases:            []string{"sales", ""},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with an empty name in exclude_databases",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ExcludeDatabases:     []string{""},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with invalid MaxProcedureSampleCount value",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopProcedureCollection: TopProcedureCollection{
+					MaxProcedureSampleCount: 100000,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with TopProcedureCount above MaxProcedureSampleCount",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopProcedureCollection: TopProcedureCollection{
+					MaxProcedureSampleCount: 100,
+					TopProcedureCount:       200,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with zero TopProcedureCount while the event is enabled",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:    topProcedureEnabledLogsConfig(),
+				TopProcedureCollection: TopProcedureCollection{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       0,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "valid top procedure config with the event enabled",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:    topProcedureEnabledLogsConfig(),
+				TopProcedureCollection: TopProcedureCollection{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       250,
+					CollectionInterval:      time.Minute,
+				},
+			},
+			expectedSuccess: true,
+		},
+		{
+			desc: "config with negative top procedure collection interval",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig:    topProcedureEnabledLogsConfig(),
+				TopProcedureCollection: TopProcedureCollection{
+					MaxProcedureSampleCount: 1000,
+					TopProcedureCount:       250,
+					CollectionInterval:      -1 * time.Second,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
 			desc: "config with invalid LookbackTime",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
@@ -120,6 +239,38 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedSuccess: false,
+		},
+		{
+			desc: "config with negative connection_pool.max_open",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ConnectionPool:       ConnectionPool{MaxOpen: new(-1)},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with negative connection_pool.max_idle_time",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ConnectionPool:       ConnectionPool{MaxIdleTime: ptr(-1 * time.Second)},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with valid connection_pool",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				ConnectionPool: ConnectionPool{
+					MaxOpen:     new(8),
+					MaxIdle:     new(4),
+					MaxLifetime: ptr(5 * time.Minute),
+					MaxIdleTime: ptr(time.Minute),
+				},
+			},
+			expectedSuccess: true,
 		},
 	}
 
@@ -141,7 +292,7 @@ func TestLoadConfig(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig()
 
-		sub, err := cm.Sub("sqlserver")
+		sub, err := cm.Sub("sql_server")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
@@ -226,8 +377,10 @@ func TestLoadConfig(t *testing.T) {
 		expected.QuerySample = QuerySample{
 			MaxRowsPerQuery: 1450,
 		}
+		expected.Databases = []string{"sales", "hr"}
+		expected.ExcludeDatabases = []string{"hr"}
 
-		sub, err := cm.Sub("sqlserver/named")
+		sub, err := cm.Sub("sql_server/named")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
@@ -253,4 +406,10 @@ func TestLoadConfig(t *testing.T) {
 		config.TopQueryCollection.LookbackTime = 60 * time.Second
 		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")
 	})
+}
+
+func topProcedureEnabledLogsConfig() metadata.LogsBuilderConfig {
+	cfg := metadata.DefaultLogsBuilderConfig()
+	cfg.Events.DbServerTopProcedure.Enabled = true
+	return cfg
 }

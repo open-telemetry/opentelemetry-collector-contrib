@@ -14,7 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func TestPathGetSetter(t *testing.T) {
@@ -136,7 +135,7 @@ func TestPathGetSetter(t *testing.T) {
 				N: "metadata",
 				KeySlice: []ottl.Key[*testContext]{
 					&pathtest.Key[*testContext]{
-						S: ottltest.Strp("key"),
+						S: new("key"),
 					},
 				},
 			},

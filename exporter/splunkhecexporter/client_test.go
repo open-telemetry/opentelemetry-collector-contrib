@@ -6,6 +6,7 @@ package splunkhecexporter
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -37,7 +39,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -197,6 +202,13 @@ type receivedRequest struct {
 	headers http.Header
 }
 
+// receivedRequestChanBuffer is the capacity given to receivedRequest channels.
+// The ServeHTTP handler records requests synchronously to preserve their order,
+// so the channel must be buffered enough that the send never blocks the exporter
+// before the test's collecting loop starts reading. It comfortably exceeds the
+// number of batches any test in this package produces.
+const receivedRequestChanBuffer = 1024
+
 type capturingData struct {
 	testing          *testing.T
 	receivedRequest  chan receivedRequest
@@ -214,11 +226,14 @@ func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	go func() {
-		if c.receivedRequest != nil {
-			c.receivedRequest <- receivedRequest{body, r.Header}
-		}
-	}()
+	// Record the request synchronously so that batches are captured in the exact
+	// order the client sent them. Spawning a goroutine per request here would let
+	// requests race onto the channel and be collected out of order, causing flaky
+	// assertions on per-batch contents. The channel is buffered by the callers so
+	// this send never blocks the exporter.
+	if c.receivedRequest != nil {
+		c.receivedRequest <- receivedRequest{body, r.Header}
+	}
 	w.WriteHeader(c.statusCode)
 }
 
@@ -233,7 +248,7 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -286,7 +301,7 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -346,7 +361,7 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
@@ -1302,7 +1317,7 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 }
 
 func TestErrorReceived(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 500}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1354,7 +1369,7 @@ func TestErrorReceived(t *testing.T) {
 }
 
 func TestErrorReceivedForbidden(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1489,7 +1504,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
-	rr := make(chan receivedRequest)
+	rr := make(chan receivedRequest, receivedRequestChanBuffer)
 	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -1643,6 +1658,28 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	assert.Error(t, err, "Permanent error: unsupported value: +Inf")
 }
 
+func Test_pushLogData_LogsPermanentErrorsWhenPostFails(t *testing.T) {
+	core, observed := observer.New(zapcore.WarnLevel)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c.logger = zap.New(core)
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
+	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	logs := plog.NewLogs()
+	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	logRecords.AppendEmpty().Body().SetDouble(math.Inf(1))
+	logRecords.AppendEmpty().Body().SetStr("valid log")
+
+	err := c.pushLogDataInBatches(t.Context(), logs, nil)
+	require.ErrorContains(t, err, "503")
+	assert.False(t, consumererror.IsPermanent(err), "the 503 must remain retryable")
+	entries := observed.FilterMessage("Log records were dropped while sending a batch").All()
+	require.Len(t, entries, 1)
+	assert.Contains(t, entries[0].ContextMap()["error"], "unsupported value: +Inf")
+}
+
 func Test_pushLogData_PostError(t *testing.T) {
 	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &defaultHecWorker{url: &url.URL{Host: "in va lid"}, logger: zap.NewNop()}
@@ -1772,8 +1809,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 func TestProfileData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 
-	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	config.MaxContentLengthLogs, config.DisableCompression = 350, true
+	// Allow enough room for the serialized profiling event.
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
 
 	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
 
@@ -1799,8 +1836,12 @@ func TestProfileData(t *testing.T) {
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
-	profiles.Dictionary().StringTable().Append("foo")
+	profiles.Dictionary().StringTable().Append("")
+	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
 	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
 	s := p.Samples().AppendEmpty()
 	s.Values().Append(42)
 
@@ -1842,7 +1883,9 @@ func TestProfileDataPprofSampleLabels(t *testing.T) {
 	p := sp.Profiles().AppendEmpty()
 	p.SampleType().SetTypeStrindex(0)
 	p.SampleType().SetUnitStrindex(1)
-	p.SetPeriod(100)
+	p.PeriodType().SetTypeStrindex(0)
+	p.PeriodType().SetUnitStrindex(1)
+	p.SetPeriod(50_000_000)
 	ts := time.Date(2024, 6, 15, 12, 0, 0, 123456789, time.UTC)
 	p.SetTime(pcommon.NewTimestampFromTime(ts))
 	s := p.Samples().AppendEmpty()
@@ -1861,8 +1904,354 @@ func TestProfileDataPprofSampleLabels(t *testing.T) {
 	require.Equal(t, []int64{ts.UnixMilli()}, sample.NumLabel["source.event.time"])
 	require.Equal(t, []string{spanID.String()}, sample.Label["span_id"])
 	require.Equal(t, []string{traceID.String()}, sample.Label["trace_id"])
-	require.Equal(t, []string{"100"}, sample.Label["source.event.period"])
+	require.Equal(t, []string{"50"}, sample.Label["source.event.period"])
 	require.Equal(t, ts.UnixNano(), pprofProfile.TimeNanos)
+}
+
+func TestProfileDataTypeNormalization(t *testing.T) {
+	tests := []struct {
+		name                string
+		sampleType          string
+		sampleUnit          string
+		periodType          string
+		periodUnit          string
+		wantSupported       bool
+		wantDataType        string
+		wantPprofSampleType string
+		wantPprofUnit       string
+		wantValue           int64
+	}{
+		{
+			name:                "ebpf cpu samples",
+			sampleType:          "samples",
+			sampleUnit:          "count",
+			periodType:          "cpu",
+			periodUnit:          "nanoseconds",
+			wantSupported:       true,
+			wantDataType:        "cpu",
+			wantPprofSampleType: "samples",
+			wantPprofUnit:       "count",
+			wantValue:           3,
+		},
+		{
+			name:                "allocation bytes",
+			sampleType:          "alloc_space",
+			sampleUnit:          "bytes",
+			wantSupported:       true,
+			wantDataType:        "allocation",
+			wantPprofSampleType: "alloc_space",
+			wantPprofUnit:       "bytes",
+			wantValue:           4096,
+		},
+		{
+			name:                "allocation count",
+			sampleType:          "alloc_objects",
+			sampleUnit:          "count",
+			wantSupported:       true,
+			wantDataType:        "allocation",
+			wantPprofSampleType: "alloc_objects",
+			wantPprofUnit:       "count",
+			wantValue:           2,
+		},
+		{
+			name:       "unsupported off-cpu profile is dropped",
+			sampleType: "off_cpu",
+			sampleUnit: "nanoseconds",
+			wantValue:  100,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			profiles := pprofile.NewProfiles()
+			dict := profiles.Dictionary()
+			dict.StackTable().AppendEmpty()
+			stringTable := dict.StringTable()
+			stringTable.Append("")
+			typeIndex := stringTable.Len()
+			stringTable.Append(tt.sampleType)
+			unitIndex := stringTable.Len()
+			stringTable.Append(tt.sampleUnit)
+			periodTypeIndex := stringTable.Len()
+			stringTable.Append(tt.periodType)
+			periodUnitIndex := stringTable.Len()
+			stringTable.Append(tt.periodUnit)
+
+			profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+			profile.SampleType().SetTypeStrindex(int32(typeIndex))
+			profile.SampleType().SetUnitStrindex(int32(unitIndex))
+			profile.PeriodType().SetTypeStrindex(int32(periodTypeIndex))
+			profile.PeriodType().SetUnitStrindex(int32(periodUnitIndex))
+			sample := profile.Samples().AppendEmpty()
+			sample.Values().Append(tt.wantValue)
+
+			logs, errs := buildProfilesLogs(profiles)
+			if !tt.wantSupported {
+				require.Len(t, errs, 1)
+				assert.True(t, consumererror.IsPermanent(errs[0]))
+				assert.Equal(t, 0, logs.LogRecordCount())
+				assert.Contains(t, errs[0].Error(), "unsupported profile sample type")
+				return
+			}
+			require.Empty(t, errs)
+			record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			dataType, ok := record.Attributes().Get(profilingDataTypeKey)
+			require.True(t, ok)
+			assert.Equal(t, tt.wantDataType, dataType.Str())
+
+			pprofProfile := decodePprofLogRecord(t, record)
+			require.Len(t, pprofProfile.SampleType, 1)
+			assert.Equal(t, tt.wantPprofSampleType, pprofProfile.SampleType[0].Type)
+			assert.Equal(t, tt.wantPprofUnit, pprofProfile.SampleType[0].Unit)
+			require.Len(t, pprofProfile.Sample, 1)
+			assert.Equal(t, []int64{tt.wantValue}, pprofProfile.Sample[0].Value)
+		})
+	}
+}
+
+func TestProfileDataUnsupportedProfilesAreDroppedAndCounted(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: meterProvider})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		telemetryBuilder.Shutdown()
+		require.NoError(t, meterProvider.Shutdown(t.Context()))
+	})
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+	c.telemetryBuilder = telemetryBuilder
+
+	var exportedRecords int
+	httpClient, _ := newTestClientWithBodyReader(func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) > 0 {
+				exportedRecords++
+			}
+		}
+	})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("off_cpu")
+	dict.StringTable().Append("inuse_space")
+	dict.StringTable().Append("bytes")
+
+	profileScope := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	appendProfile := func(sampleTypeIndex, unitIndex int32) {
+		profile := profileScope.Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(sampleTypeIndex)
+		profile.SampleType().SetUnitStrindex(unitIndex)
+		profile.Samples().AppendEmpty().Values().Append(1)
+	}
+	appendProfile(1, 2) // Supported on-CPU profile.
+	appendProfile(3, 2) // Unsupported off-CPU profile.
+	appendProfile(4, 5) // Unsupported retained-memory profile.
+
+	err = c.pushProfilesData(t.Context(), profiles)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.Equal(t, 1, exportedRecords, "supported profiles in the batch should still be exported")
+
+	got, err := getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{2}, got)
+}
+
+func TestProfileDataTransientSendErrorRemainsRetryableWithUnsupportedProfiles(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("off_cpu")
+	dict.StringTable().Append("count")
+
+	profileScope := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	for _, sampleTypeIndex := range []int32{1, 4} {
+		profile := profileScope.Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(sampleTypeIndex)
+		profile.SampleType().SetUnitStrindex(2)
+		profile.Samples().AppendEmpty().Values().Append(1)
+	}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, err, "503")
+	assert.False(t, consumererror.IsPermanent(err), "a transient HEC failure must remain retryable")
+	assert.NotContains(t, err.Error(), "unsupported profile sample type", "the unsupported profile must not make the send failure permanent")
+}
+
+func TestProfileDataUnsupportedProfileCountIsNotRepeatedOnRetry(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: meterProvider})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		telemetryBuilder.Shutdown()
+		require.NoError(t, meterProvider.Shutdown(t.Context()))
+	})
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 1024, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+	c.telemetryBuilder = telemetryBuilder
+	httpClient, _ := newTestClientWithPresetResponses(
+		[]int{http.StatusServiceUnavailable, http.StatusOK}, []string{"NOK", "OK"}, func(_ []byte) {},
+	)
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	dict := profiles.Dictionary()
+	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
+	dict.StringTable().Append("off_cpu")
+	dict.StringTable().Append("count")
+	profileScope := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+	for _, sampleTypeIndex := range []int32{1, 4} {
+		profile := profileScope.Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(sampleTypeIndex)
+		profile.SampleType().SetUnitStrindex(2)
+		profile.Samples().AppendEmpty().Values().Append(1)
+	}
+
+	firstErr := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, firstErr, "503")
+	retryErr, ok := errors.AsType[xconsumererror.Profiles](firstErr)
+	require.True(t, ok)
+	assert.Equal(t, 1, retryErr.Data().SampleCount(), "only the supported profile should be retried")
+	got, err := getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{1}, got)
+
+	require.NoError(t, c.pushProfilesData(t.Context(), retryErr.Data()))
+	got, err = getMetricValue(reader, "otelcol_exporter_dropped_unsupported_profile_records")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{1}, got, "retrying supported profiles must not recount the dropped profile")
+}
+
+func TestProfileDataRetryPreservesResourceAttributes(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 0, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var observedHosts []string
+	httpClient, _ := newTestClientWithPresetResponses([]int{http.StatusServiceUnavailable, http.StatusOK}, []string{"NOK", "OK"}, func(body []byte) {
+		for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var hecEvent translator.Event
+			require.NoError(t, json.Unmarshal(line, &hecEvent))
+			observedHosts = append(observedHosts, hecEvent.Host)
+		}
+	})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("")
+	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("host.name", "profile-host")
+	profile := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	profile.SampleType().SetTypeStrindex(1)
+	profile.SampleType().SetUnitStrindex(2)
+	profile.Samples().AppendEmpty().Values().Append(1)
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, err, "503")
+	require.False(t, consumererror.IsPermanent(err), "the failed send must be retryable")
+
+	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
+	assert.Equal(t, []string{"profile-host", "profile-host"}, observedHosts)
+	value, found := rp.Resource().Attributes().Get("host.name")
+	require.True(t, found)
+	assert.Equal(t, "profile-host", value.Str())
+}
+
+func TestProfileDataPartialSuccessRetriesOnlyUnsentProfiles(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthLogs, config.DisableCompression = 700, true
+	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
+
+	var requests [][]string
+	httpClient, _ := newTestClientWithPresetResponses(
+		[]int{http.StatusOK, http.StatusServiceUnavailable, http.StatusOK},
+		[]string{"OK", "NOK", "OK"},
+		func(body []byte) {
+			var hosts []string
+			for line := range bytes.SplitSeq(bytes.TrimSpace(body), []byte("\n")) {
+				if len(line) == 0 {
+					continue
+				}
+				var hecEvent translator.Event
+				require.NoError(t, json.Unmarshal(line, &hecEvent))
+				hosts = append(hosts, hecEvent.Host)
+			}
+			requests = append(requests, hosts)
+		},
+	)
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+
+	profiles := pprofile.NewProfiles()
+	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("")
+	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
+	for i, host := range []string{"host-a", "host-b", "host-c"} {
+		rp := profiles.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("host.name", host)
+		profile := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+		profile.SampleType().SetTypeStrindex(1)
+		profile.SampleType().SetUnitStrindex(2)
+		profile.Samples().AppendEmpty().Values().Append(int64(i + 1))
+	}
+
+	err := c.pushProfilesData(t.Context(), profiles)
+	require.ErrorContains(t, err, "503")
+	profilesErr, ok := errors.AsType[xconsumererror.Profiles](err)
+	require.True(t, ok, "retryable profile send errors must carry the unsent profile subset")
+	require.NoError(t, c.pushProfilesData(t.Context(), profilesErr.Data()))
+
+	require.GreaterOrEqual(t, len(requests), 3)
+	require.NotEmpty(t, requests[0])
+	require.NotEmpty(t, requests[1])
+	retriedHosts := map[string]int{}
+	for _, request := range requests[2:] {
+		for _, host := range request {
+			retriedHosts[host]++
+		}
+	}
+	for _, host := range requests[0] {
+		assert.Zero(t, retriedHosts[host], "profiles from the successful first request must not be resent")
+	}
+	for _, host := range requests[1] {
+		assert.Equal(t, 1, retriedHosts[host], "profiles from the failed request must be retried once")
+	}
 }
 
 // TestProfileDataMultiValueSamples verifies the OTel profiles data model: a Sample with
@@ -1913,7 +2302,7 @@ func TestProfileDataTimestampsOnlySample(t *testing.T) {
 	dict := profiles.Dictionary()
 	dict.StackTable().AppendEmpty()
 	dict.StringTable().Append("")
-	dict.StringTable().Append("wall")
+	dict.StringTable().Append("cpu")
 	dict.StringTable().Append("nanoseconds")
 
 	sp := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
@@ -1977,16 +2366,22 @@ func TestProfileDataMultipleResources(t *testing.T) {
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
+	profiles.Dictionary().StringTable().Append("")
 	profiles.Dictionary().StringTable().Append("cpu")
+	profiles.Dictionary().StringTable().Append("nanoseconds")
 
 	rp1 := profiles.ResourceProfiles().AppendEmpty()
 	rp1.Resource().Attributes().PutStr("host.name", "host-a")
 	p1 := rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p1.SampleType().SetTypeStrindex(1)
+	p1.SampleType().SetUnitStrindex(2)
 	p1.Samples().AppendEmpty().Values().Append(1)
 
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "host-b")
 	p2 := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p2.SampleType().SetTypeStrindex(1)
+	p2.SampleType().SetUnitStrindex(2)
 	p2.Samples().AppendEmpty().Values().Append(2)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
@@ -2030,7 +2425,9 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
+	dict.StringTable().Append("")
 	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
 
 	// Add 3 empty locations (indices 0, 1, 2) so the translator can look them up.
 	dict.LocationTable().AppendEmpty()
@@ -2049,6 +2446,8 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 	stack2.LocationIndices().Append(0)
 
 	p := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p.SampleType().SetTypeStrindex(1)
+	p.SampleType().SetUnitStrindex(2)
 
 	// Sample A: stack 1 → 3 frames
 	sA := p.Samples().AppendEmpty()
@@ -2099,23 +2498,26 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
 	dict.StackTable().AppendEmpty()
+	dict.StringTable().Append("")
 	dict.StringTable().Append("cpu")
+	dict.StringTable().Append("nanoseconds")
 
 	// Resource 1: well-formed profile — should export successfully.
 	rp1 := profiles.ResourceProfiles().AppendEmpty()
 	rp1.Resource().Attributes().PutStr("host.name", "good-host")
-	rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty().Values().Append(1)
+	goodProfile := rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	goodProfile.SampleType().SetTypeStrindex(1)
+	goodProfile.SampleType().SetUnitStrindex(2)
+	goodProfile.Samples().AppendEmpty().Values().Append(1)
 
-	// Resource 2: profile with a sample whose values and timestamps_unix_nano lengths disagree,
-	// which the spec forbids. This causes an error that is local to this profile and does not
-	// affect the shared dictionary used by the good profile.
+	// Resource 2: profile with an out-of-range sample type string index. This
+	// must be rejected without affecting the shared dictionary or good profile.
 	rp2 := profiles.ResourceProfiles().AppendEmpty()
 	rp2.Resource().Attributes().PutStr("host.name", "bad-host")
 	badProfile := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	badProfile.SampleType().SetTypeStrindex(3) // The string table contains indices 0 through 2.
 	badSample := badProfile.Samples().AppendEmpty()
 	badSample.Values().Append(1)
-	badSample.Values().Append(2)                        // 2 values
-	badSample.TimestampsUnixNano().Append(uint64(1000)) // but only 1 timestamp → mismatch error
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
@@ -2129,6 +2531,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	// The combined error must be non-nil and permanent.
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
+	assert.ErrorContains(t, err, "profile sample type string index 3 out of range")
 }
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
@@ -2550,7 +2953,7 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
-	// Buffered channel so the async handler goroutines never block.
+	// Buffered channel so the handler's synchronous send never blocks the exporter.
 	rr := make(chan receivedRequest, 64)
 	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
@@ -2575,7 +2978,7 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 	require.NoError(t, exp.Shutdown(t.Context()))
 
 	// Collect exactly expectedBatchesNum requests, with a generous timeout to
-	// account for the async handler goroutine scheduling.
+	// account for batcher flush scheduling.
 	var requests []receivedRequest
 	deadline := time.After(10 * time.Second)
 	for len(requests) < expectedBatchesNum {
@@ -2597,11 +3000,10 @@ func runBatchedLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatche
 func TestBatcherPartitionsByHecToken(t *testing.T) {
 	makeCfg := func() *Config {
 		cfg := createDefaultConfig().(*Config)
-		cfg.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      2,
-		})
+		batch := cfg.QueueSettings.Get().Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 2
 		return cfg
 	}
 
@@ -2674,5 +3076,135 @@ func TestBuildHTTPHeaders(t *testing.T) {
 		headers := buildHTTPHeaders(cfg, buildInfo)
 		assert.Equal(t, "1.2.3", headers["__splunk_app_version"])
 		assert.Equal(t, "myapp/1.2.3", headers["User-Agent"])
+	})
+}
+
+type capturingHecWorker struct {
+	batches [][]byte
+}
+
+func (c *capturingHecWorker) send(_ context.Context, buf buffer, _ map[string]string) error {
+	c.batches = append(c.batches, bytes.Clone(buf.Bytes()))
+	return nil
+}
+
+type multiMetricItem struct {
+	name      string
+	timestamp pcommon.Timestamp
+	oversized bool
+}
+
+func makeMultiMetricData(items ...multiMetricItem) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	for i, item := range items {
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(item.name)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(int64(i + 1))
+		dp.SetTimestamp(item.timestamp)
+		if item.oversized {
+			dp.Attributes().PutStr("large_attr", strings.Repeat("x", 400))
+		}
+	}
+	return md
+}
+
+func Test_PushMetricsData_MultiMetric_DropOversizedEvents(t *testing.T) {
+	newTestClient := func() (*client, *capturingHecWorker) {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.UseMultiMetricFormat = true
+		cfg.DisableCompression = true
+		// 300 bytes: oversized event (~500+ bytes) exceeds capacity on empty buffer,
+		// while normal events (~150 bytes) fit within 300 bytes.
+		cfg.MaxContentLengthMetrics = 300
+
+		c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), cfg)
+		worker := &capturingHecWorker{}
+		c.hecWorker = worker
+		return c, worker
+	}
+
+	t.Run("oversized event followed by valid event", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "oversized_first", timestamp: pcommon.Timestamp(1_000_000_000), oversized: true},
+			multiMetricItem{name: "valid_second", timestamp: pcommon.Timestamp(2_000_000_000), oversized: false},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "dropped metric event")
+
+		require.Len(t, worker.batches, 1, "valid_second must be exported despite preceding oversized event")
+		assert.Contains(t, string(worker.batches[0]), "valid_second")
+		assert.NotContains(t, string(worker.batches[0]), "oversized_first")
+	})
+
+	t.Run("valid event followed by oversized event", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "valid_first", timestamp: pcommon.Timestamp(1_000_000_000), oversized: false},
+			multiMetricItem{name: "oversized_second", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "dropped metric event")
+
+		require.Len(t, worker.batches, 1, "valid_first must be exported")
+		assert.Contains(t, string(worker.batches[0]), "valid_first")
+		assert.NotContains(t, string(worker.batches[0]), "oversized_second")
+	})
+
+	t.Run("oversized event between two valid events", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "valid_first", timestamp: pcommon.Timestamp(1_000_000_000), oversized: false},
+			multiMetricItem{name: "oversized_middle", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+			multiMetricItem{name: "valid_last", timestamp: pcommon.Timestamp(3_000_000_000), oversized: false},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "dropped metric event")
+
+		require.Len(t, worker.batches, 2, "both valid events must be exported across batches")
+		assert.Contains(t, string(worker.batches[0]), "valid_first")
+		assert.Contains(t, string(worker.batches[1]), "valid_last")
+		for _, b := range worker.batches {
+			assert.NotContains(t, string(b), "oversized_middle")
+		}
+	})
+
+	t.Run("consecutive oversized events", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "oversized_1", timestamp: pcommon.Timestamp(1_000_000_000), oversized: true},
+			multiMetricItem{name: "oversized_2", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+			multiMetricItem{name: "valid_3", timestamp: pcommon.Timestamp(3_000_000_000), oversized: false},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		// Both oversized events should be reported in permanent errors
+		assert.Equal(t, 2, strings.Count(err.Error(), "dropped metric event"))
+
+		require.Len(t, worker.batches, 1, "valid_3 must be exported after consecutive oversized drops")
+		assert.Contains(t, string(worker.batches[0]), "valid_3")
+	})
+
+	t.Run("all oversized events", func(t *testing.T) {
+		c, worker := newTestClient()
+		md := makeMultiMetricData(
+			multiMetricItem{name: "oversized_1", timestamp: pcommon.Timestamp(1_000_000_000), oversized: true},
+			multiMetricItem{name: "oversized_2", timestamp: pcommon.Timestamp(2_000_000_000), oversized: true},
+		)
+
+		err := c.pushMetricsData(t.Context(), md)
+		require.Error(t, err)
+		assert.Equal(t, 2, strings.Count(err.Error(), "dropped metric event"))
+		assert.Empty(t, worker.batches, "no batches should be exported when all events are oversized")
 	})
 }

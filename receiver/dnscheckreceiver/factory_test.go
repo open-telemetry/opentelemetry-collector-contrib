@@ -45,7 +45,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	consumer := consumertest.NewNop()
 
-	// For skeleton, we expect a no-op receiver and no error
 	receiver, err := factory.CreateMetrics(t.Context(), set, cfg, consumer)
 	assert.NotNil(t, receiver)
 	assert.NoError(t, err)

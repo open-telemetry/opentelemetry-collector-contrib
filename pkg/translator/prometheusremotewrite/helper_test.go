@@ -4,8 +4,11 @@
 package prometheusremotewrite
 
 import (
+	"fmt"
+	"maps"
 	"math"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,10 +21,12 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func Test_isValidAggregationTemporality(t *testing.T) {
@@ -246,14 +251,13 @@ func Test_timeSeriesSignature(t *testing.T) {
 // collision happens. It does not check whether labels are not sorted
 func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
-		name                        string
-		resource                    pcommon.Resource
-		orig                        pcommon.Map
-		externalLabels              map[string]string
-		extras                      []string
-		want                        []prompb.Label
-		expectErr                   bool
-		underscoreLabelSanitization bool
+		name           string
+		resource       pcommon.Resource
+		orig           pcommon.Map
+		externalLabels map[string]string
+		extras         []string
+		want           []prompb.Label
+		expectErr      bool
 	}{
 		{
 			name:           "labels_clean",
@@ -304,15 +308,6 @@ func Test_createLabelSet(t *testing.T) {
 			externalLabels: map[string]string{},
 			extras:         []string{label31 + dirty1, value31, label32, value32},
 			want:           getPromLabels(label11+"_", value11, "_"+label12, value12, label31+"_", value31, label32, value32),
-		},
-		{
-			name:                        "labels_dirty_with_sanitization",
-			resource:                    pcommon.NewResource(),
-			orig:                        lbs1Dirty,
-			externalLabels:              map[string]string{},
-			extras:                      []string{label31 + dirty1, value31, label32, value32},
-			want:                        getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
-			underscoreLabelSanitization: true,
 		},
 		{
 			name:           "no_original_case",
@@ -380,15 +375,6 @@ func Test_createLabelSet(t *testing.T) {
 			want:           getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 		{
-			name:                        "sanitize_labels_starts_with_underscore_with_sanitization",
-			resource:                    pcommon.NewResource(),
-			orig:                        lbs3,
-			externalLabels:              exlbs1,
-			extras:                      []string{label31, value31, label32, value32},
-			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
-			underscoreLabelSanitization: true,
-		},
-		{
 			name: "empty_attribute_value_excluded",
 			resource: func() pcommon.Resource {
 				res := pcommon.NewResource()
@@ -420,9 +406,7 @@ func Test_createLabelSet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			labelNamer := otlptranslator.LabelNamer{
-				UnderscoreLabelSanitization: tt.underscoreLabelSanitization,
-			}
+			labelNamer := otlptranslator.LabelNamer{PreserveMultipleUnderscores: true}
 			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
@@ -819,11 +803,48 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: 0,
 		},
+		{
+			desc: "preserve leading and consecutive underscores in target_info labels",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("_foo", "leading")
+				r.Attributes().PutStr("app__component", "backend")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: "_foo", Value: "leading"},
+				{Name: "app__component", Value: "backend"},
+				{Name: model.JobLabel, Value: "my_service"},
+			},
+		},
+		{
+			desc: "with resource, NoTranslation strategy preserves dots in attribute names",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("service.instance.id", "my_id")
+				r.Attributes().PutStr("server.address", "oteljob")
+				r.Attributes().PutStr("server.port", "9464")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			settings:  Settings{TranslationStrategy: "NoTranslation"},
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.InstanceLabel, Value: "my_id"},
+				{Name: model.JobLabel, Value: "my_service"},
+				{Name: "server.address", Value: "oteljob"},
+				{Name: "server.port", Value: "9464"},
+			},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter(tc.settings)
 
-			err := addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+			err := converter.addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp)
 			require.NoError(t, err)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
@@ -844,6 +865,113 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			}
 			assert.Exactly(t, expected, converter.unique)
 			assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
+func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%t", enabled), func(t *testing.T) {
+			gate := prometheustranslator.KeepIdentifyingResourceAttributesGate
+			previous := gate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
+			})
+			for _, strategy := range []string{"UnderscoreEscapingWithSuffixes", "NoTranslation"} {
+				for _, tc := range []struct {
+					name       string
+					attributes map[string]any
+					want       map[string]string
+				}{
+					{
+						name:       "all_service_attributes",
+						attributes: map[string]any{"service.name": "api", "service.namespace": "shop", "service.instance.id": "replica-1", "region": "west"},
+						want:       map[string]string{"job": "shop/api", "instance": "replica-1", "region": "west"},
+					},
+					{
+						name:       "only_service_name",
+						attributes: map[string]any{"service.name": "api"},
+						want:       map[string]string{"job": "api"},
+					},
+					{
+						name:       "only_service_instance_id",
+						attributes: map[string]any{"service.instance.id": "replica-1"},
+						want:       map[string]string{"instance": "replica-1"},
+					},
+					{
+						name:       "no_identifier",
+						attributes: map[string]any{"service.namespace": "shop", "region": "west"},
+					},
+				} {
+					t.Run(strategy+"/"+tc.name, func(t *testing.T) {
+						md := pmetric.NewMetrics()
+						rm := md.ResourceMetrics().AppendEmpty()
+						require.NoError(t, rm.Resource().Attributes().FromRaw(tc.attributes))
+						metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+						metric.SetName("requests")
+						metric.SetEmptyGauge().DataPoints().AppendEmpty().SetTimestamp(1_000_000_000)
+						settings := Settings{TranslationStrategy: strategy}
+						v1, err := FromMetrics(md, settings)
+						require.NoError(t, err)
+						v2, table, err := FromMetricsV2(md, settings)
+						require.NoError(t, err)
+						labelsByVersion := map[string][]map[string]string{"v1": {}, "v2": {}}
+						for _, ts := range v1 {
+							labels := map[string]string{}
+							for _, label := range ts.Labels {
+								labels[label.Name] = label.Value
+							}
+							labelsByVersion["v1"] = append(labelsByVersion["v1"], labels)
+						}
+						symbols := table.Symbols()
+						for _, ts := range v2 {
+							labels := map[string]string{}
+							for i := 0; i < len(ts.LabelsRefs); i += 2 {
+								labels[symbols[ts.LabelsRefs[i]]] = symbols[ts.LabelsRefs[i+1]]
+							}
+							labelsByVersion["v2"] = append(labelsByVersion["v2"], labels)
+						}
+						for version, series := range labelsByVersion {
+							t.Run(version, func(t *testing.T) {
+								wantTarget := tc.want != nil && (enabled || tc.name == "all_service_attributes")
+								var target map[string]string
+								for _, labels := range series {
+									if labels["__name__"] == "target_info" {
+										target = labels
+										continue
+									}
+									// Service attributes must not be added to ordinary metrics.
+									for key := range tc.attributes {
+										if strings.HasPrefix(key, "service.") {
+											require.NotContains(t, labels, key)
+											require.NotContains(t, labels, strings.ReplaceAll(key, ".", "_"))
+										}
+									}
+								}
+								if !wantTarget {
+									require.Nil(t, target)
+									return
+								}
+								want := maps.Clone(tc.want)
+								want["__name__"] = "target_info"
+								if enabled {
+									for key, value := range tc.attributes {
+										if strings.HasPrefix(key, "service.") {
+											if strategy != "NoTranslation" {
+												key = strings.ReplaceAll(key, ".", "_")
+											}
+											want[key] = value.(string)
+										}
+									}
+								}
+								require.Equal(t, want, target)
+							})
+						}
+						require.Equal(t, tc.attributes, rm.Resource().Attributes().AsRaw())
+					})
+				}
+			}
 		})
 	}
 }

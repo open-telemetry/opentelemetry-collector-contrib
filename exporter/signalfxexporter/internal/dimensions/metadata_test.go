@@ -385,9 +385,9 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				Name:  "k8s.persistentvolume.uid",
 				Value: "pv-lifecycle-uid",
 				Properties: map[string]*string{
-					"k8s.persistentvolume.label.new-label": pointerString("new-value"),
+					"k8s.persistentvolume.label.new-label": new("new-value"),
 					"k8s.persistentvolume.label.to-remove": nil,
-					"k8s.persistentvolume.label.to-update": pointerString("updated-value"),
+					"k8s.persistentvolume.label.to-update": new("updated-value"),
 				},
 				Tags: map[string]bool{},
 			},
@@ -415,9 +415,9 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				Name:  "k8s.service.uid",
 				Value: "lifecycle-svc-uid",
 				Properties: map[string]*string{
-					"k8s.service.label.new-label": pointerString("new-value"),
+					"k8s.service.label.new-label": new("new-value"),
 					"k8s.service.label.to-remove": nil,
-					"k8s.service.label.to-update": pointerString("updated-value"),
+					"k8s.service.label.to-update": new("updated-value"),
 				},
 				Tags: map[string]bool{},
 			},
@@ -477,8 +477,4 @@ func TestFilterKeyChars(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func pointerString(s string) *string {
-	return &s
 }

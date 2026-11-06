@@ -12,12 +12,15 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
@@ -52,16 +55,31 @@ type bearerTokenAuth struct {
 	header                    string
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
+	// tokensAtomic holds the same tokens as authorizationValuesAtomic, without
+	// the scheme prefix, for consumers that need the bare token.
+	tokensAtomic atomic.Value
 
 	tokenResolver credentialsfile.ValueResolver
 	logger        *zap.Logger
+
+	// waitForTokenFile makes Start block until the token file is read
+	// successfully (respecting the retry budget) instead of retrying in the
+	// background. See Config.WaitForTokenFile.
+	waitForTokenFile bool
+
+	// startOnce guards Start so the resolver is started at most once.
+	startOnce sync.Once
+	// startWG tracks the background resolver Start goroutine. Shutdown waits on
+	// it so it does not race the resolver's own start-up.
+	startWG sync.WaitGroup
 }
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 	a := &bearerTokenAuth{
-		header: cfg.Header,
-		scheme: cfg.Scheme,
-		logger: logger,
+		header:           cfg.Header,
+		scheme:           cfg.Scheme,
+		logger:           logger,
+		waitForTokenFile: cfg.WaitForTokenFile,
 	}
 
 	var inlineToken string
@@ -93,6 +111,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 				}
 				a.updateAuthorizationValues()
 			}),
+			credentialsfile.WithRetry(cfg.RetryOnFailure),
 		)
 		if err != nil {
 			logger.Error("failed to create token resolver", zap.Error(err))
@@ -109,11 +128,33 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *bearerTokenAuth {
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *bearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
-	if b.tokenResolver != nil {
-		return b.tokenResolver.Start(ctx)
+//
+// When WaitForTokenFile is enabled, Start blocks until the token file is read
+// successfully (respecting the retry budget) and returns an error if it cannot
+// be read, so collector startup fails. Otherwise the resolver is started in the
+// background and read failures are reported asynchronously as a component
+// status event.
+func (b *bearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+	if b.tokenResolver == nil {
+		return nil
 	}
-	return nil
+
+	var startErr error
+	b.startOnce.Do(func() {
+		if b.waitForTokenFile {
+			// Block until the token file is read or the retry budget is exhausted.
+			startErr = b.tokenResolver.Start(ctx)
+			return
+		}
+		b.startWG.Go(func() {
+			if err := b.tokenResolver.Start(ctx); err != nil {
+				b.logger.Error("failed to start token resolver", zap.Error(err))
+				componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
+			}
+		})
+	})
+
+	return startErr
 }
 
 func (b *bearerTokenAuth) updateAuthorizationValues() {
@@ -149,6 +190,7 @@ func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {
 		}
 	}
 	b.authorizationValuesAtomic.Store(values)
+	b.tokensAtomic.Store(tokens)
 }
 
 // authorizationValues returns the Authorization header/metadata values
@@ -167,8 +209,22 @@ func (b *bearerTokenAuth) authorizationValue() string {
 	return ""
 }
 
+// Token returns the first configured token, without the scheme, so the extension
+// can be used as an OAuth2 token source (e.g. Kafka `oauthbearer_token_source`).
+// It implements oauth2clientauthextension.ContextTokenSource interface.
+func (b *bearerTokenAuth) Token(context.Context) (*oauth2.Token, error) {
+	tokens, _ := b.tokensAtomic.Load().([]string)
+	if len(tokens) == 0 || tokens[0] == "" {
+		return nil, errors.New("no bearer token available")
+	}
+	return &oauth2.Token{AccessToken: tokens[0]}, nil
+}
+
 // Shutdown of BearerTokenAuth does nothing and returns nil
 func (b *bearerTokenAuth) Shutdown(_ context.Context) error {
+	// Wait for the background Start goroutine to finish so we don't race the
+	// resolver's own start-up when tearing it down.
+	b.startWG.Wait()
 	if b.tokenResolver != nil {
 		return b.tokenResolver.Shutdown()
 	}

@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -428,8 +428,7 @@ func checkConsumerErrorAndWrap(err error) error {
 	}
 
 	// If already wrapped as a consumererror, return as-is
-	var consumerErr *consumererror.Error
-	if errors.As(err, &consumerErr) {
+	if _, ok := errors.AsType[*consumererror.Error](err); ok {
 		return err
 	}
 

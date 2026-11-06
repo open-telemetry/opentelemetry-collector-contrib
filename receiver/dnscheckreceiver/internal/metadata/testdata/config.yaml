@@ -3,32 +3,78 @@ all_set:
   metrics:
     dnscheck.duration:
       enabled: true
-      attributes: ["dns.domain","dns.record.type","dns.server"]
     dnscheck.error:
       enabled: true
-      attributes: ["dns.domain","dns.record.type","dns.server","error.message"]
+      attributes: ["error.message"]
     dnscheck.status:
       enabled: true
-      attributes: ["dns.domain","dns.rcode","dns.record.type","dns.resolved.all.ips","dns.resolved.ip","dns.server"]
+      attributes: ["dns.rcode","dns.resolved.all.ips","dns.resolved.ip"]
+  resource_attributes:
+    dns.domain:
+      enabled: true
+    dns.record.type:
+      enabled: true
+    dns.server:
+      enabled: true
 reaggregate_set:
   metrics:
     dnscheck.duration:
       enabled: true
-      attributes: []
     dnscheck.error:
       enabled: true
       attributes: []
     dnscheck.status:
       enabled: true
       attributes: []
+  resource_attributes:
+    dns.domain:
+      enabled: true
+    dns.record.type:
+      enabled: true
+    dns.server:
+      enabled: true
 none_set:
   metrics:
     dnscheck.duration:
       enabled: false
-      attributes: ["dns.domain","dns.record.type","dns.server"]
     dnscheck.error:
       enabled: false
-      attributes: ["dns.domain","dns.record.type","dns.server","error.message"]
+      attributes: ["error.message"]
     dnscheck.status:
       enabled: false
-      attributes: ["dns.domain","dns.rcode","dns.record.type","dns.resolved.all.ips","dns.resolved.ip","dns.server"]
+      attributes: ["dns.rcode","dns.resolved.all.ips","dns.resolved.ip"]
+  resource_attributes:
+    dns.domain:
+      enabled: false
+    dns.record.type:
+      enabled: false
+    dns.server:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    dns.domain:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    dns.record.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    dns.server:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    dns.domain:
+      enabled: true
+      metrics_exclude:
+        - strict: "dns.domain-val"
+    dns.record.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "dns.record.type-val"
+    dns.server:
+      enabled: true
+      metrics_exclude:
+        - strict: "dns.server-val"

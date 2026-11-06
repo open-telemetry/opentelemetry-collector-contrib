@@ -187,7 +187,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestDefaultConfigQueueDisabled(t *testing.T) {
+func TestDefaultConfigQueueEnabled(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -196,5 +196,5 @@ func TestDefaultConfigQueueDisabled(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.False(t, cfg.(*Config).QueueSettings.HasValue())
+	require.True(t, cfg.(*Config).QueueSettings.HasValue())
 }

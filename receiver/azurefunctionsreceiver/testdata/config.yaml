@@ -76,3 +76,78 @@ azure_functions/duplicate_binding_name:
           encoding: azure_encoding
         - name: logs
           encoding: azureresourcelogs_encoding
+
+azure_functions/metrics_only:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      metrics:
+        - name: metrics
+          encoding: azure_encoding
+
+azure_functions/logs_and_metrics:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
+      metrics:
+        - name: metrics
+          encoding: azure_encoding
+
+azure_functions/empty_event_hub_logs_and_metrics:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs: []
+      metrics: []
+
+azure_functions/missing_metrics_binding_name:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      metrics:
+        - encoding: azure_encoding
+
+azure_functions/missing_metrics_binding_encoding:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      metrics:
+        - name: metrics
+
+azure_functions/duplicate_metrics_binding_name:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      metrics:
+        - name: m
+          encoding: azure_encoding
+        - name: m
+          encoding: azure_encoding
+
+azure_functions/duplicate_binding_name_logs_and_metrics:
+  http:
+    endpoint: test:123
+  auth: azureauth
+  triggers:
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
+      metrics:
+        - name: logs
+          encoding: azure_encoding

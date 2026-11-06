@@ -8,16 +8,16 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-func strPtr(s string) *string       { return &s }
-func float64Ptr(f float64) *float64 { return &f }
 
 type testPoint struct {
 	Ts    int64
@@ -27,7 +27,7 @@ type testPoint struct {
 func testPointsToDatadogPoints(points []testPoint) [][]*float64 {
 	datadogPoints := make([][]*float64, len(points))
 	for i, point := range points {
-		datadogPoints[i] = []*float64{float64Ptr(float64(point.Ts)), float64Ptr(point.Value)}
+		datadogPoints[i] = []*float64{new(float64(point.Ts)), new(point.Value)}
 	}
 	return datadogPoints
 }
@@ -103,8 +103,8 @@ func TestTranslateSeriesV1(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestCount",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeCount),
+						Host:   new("Host1"),
+						Type:   new(TypeCount),
 						Tags:   []string{"env:tag1", "version:tag2"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -131,9 +131,11 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 0.5)
+				requireNoAsType(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 1.0)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -142,8 +144,8 @@ func TestTranslateSeriesV1(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestGauge",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeGauge),
+						Host:   new("Host1"),
+						Type:   new(TypeGauge),
 						Tags:   []string{"env:tag1", "version:tag2"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -172,9 +174,11 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				dp := metric.Gauge().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireNoAsType(t, dp)
 
 				dp = metric.Gauge().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -183,8 +187,8 @@ func TestTranslateSeriesV1(t *testing.T) {
 				Series: []datadogV1.Series{
 					{
 						Metric: "TestRate",
-						Host:   strPtr("Host1"),
-						Type:   strPtr(TypeRate),
+						Host:   new("Host1"),
+						Type:   new(TypeRate),
 						Tags:   []string{"env:tag1", "version:tag2"},
 						Points: testPointsToDatadogPoints([]testPoint{
 							{
@@ -203,6 +207,7 @@ func TestTranslateSeriesV1(t *testing.T) {
 				requireMetricAndDataPointCounts(t, result, 1, 2)
 
 				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
+				expectedAttrs.dp.PutStr(datadogMetricAsTypeKey, TypeRate)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
@@ -213,9 +218,11 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireAsTypeRate(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireAsTypeRate(t, dp)
 			},
 		},
 	}
@@ -276,9 +283,11 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 0.5)
+				requireNoAsType(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 1.0)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -321,9 +330,11 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				dp := metric.Gauge().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireNoAsType(t, dp)
 
 				dp = metric.Gauge().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireNoAsType(t, dp)
 			},
 		},
 		{
@@ -356,6 +367,7 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
 				expectedAttrs.resource.PutStr("source", "")
+				expectedAttrs.dp.PutStr(datadogMetricAsTypeKey, TypeRate)
 				require.Equal(t, 1, result.ResourceMetrics().Len())
 				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
@@ -366,9 +378,11 @@ func TestTranslateSeriesV2(t *testing.T) {
 
 				dp := metric.Sum().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1636629071, 2)
+				requireAsTypeRate(t, dp)
 
 				dp = metric.Sum().DataPoints().At(1)
 				requireDp(t, dp, expectedAttrs.dp, 1636629081, 3)
+				requireAsTypeRate(t, dp)
 			},
 		},
 		{
@@ -444,18 +458,18 @@ func TestTranslateSeriesV1StartTimestampOrdering(t *testing.T) {
 			name: "In-order submissions set StartTimestamp correctly",
 			submissions: []SeriesList{
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1000, Value: 1.0}}),
 				}}},
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 2.0}}),
 				}}},
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1020, Value: 3.0}}),
 				}}},
 			},
@@ -480,19 +494,19 @@ func TestTranslateSeriesV1StartTimestampOrdering(t *testing.T) {
 			name: "Out-of-order submission does not set StartTimestamp exceeding Timestamp",
 			submissions: []SeriesList{
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.0}}),
 				}}},
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1020, Value: 2.0}}),
 				}}},
 				// Late/reordered arrival with an older timestamp
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.5}}),
 				}}},
 			},
@@ -509,25 +523,25 @@ func TestTranslateSeriesV1StartTimestampOrdering(t *testing.T) {
 			name: "Recovery after out-of-order: lastTs is not poisoned",
 			submissions: []SeriesList{
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.0}}),
 				}}},
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1020, Value: 2.0}}),
 				}}},
 				// Late arrival
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1010, Value: 1.5}}),
 				}}},
 				// Normal next submission: should still chain from 1020, not 1010
 				{Series: []datadogV1.Series{{
-					Metric: "TestCount", Host: strPtr("Host1"),
-					Type: strPtr(TypeCount), Tags: []string{"env:test"},
+					Metric: "TestCount", Host: new("Host1"),
+					Type: new(TypeCount), Tags: []string{"env:test"},
 					Points: testPointsToDatadogPoints([]testPoint{{Ts: 1030, Value: 3.0}}),
 				}}},
 			},
@@ -675,4 +689,67 @@ func TestTranslateSeriesV2StartTimestampOrdering(t *testing.T) {
 			tt.expect(t, results)
 		})
 	}
+}
+
+// A declared interval sets the window, including on a stream's first point.
+func TestTranslateSeriesIntervalSetsStartTimestamp(t *testing.T) {
+	const (
+		ts       = int64(1636629071)
+		interval = int64(10)
+	)
+	wantStart := pcommon.Timestamp((ts - interval) * time.Second.Nanoseconds())
+	wantTs := pcommon.Timestamp(ts * time.Second.Nanoseconds())
+
+	t.Run("v1 first point of a stream", func(t *testing.T) {
+		mt := createMetricsTranslator()
+		result := mt.TranslateSeriesV1(SeriesList{
+			Series: []datadogV1.Series{
+				{
+					Metric:   "TestRate",
+					Host:     new("Host1"),
+					Type:     new(TypeRate),
+					Interval: *datadog.NewNullableInt64(new(interval)),
+					Points:   testPointsToDatadogPoints([]testPoint{{ts, 1.0}}),
+				},
+			},
+		})
+		dp := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, wantTs, dp.Timestamp())
+		// Without the declared interval this is 0 and no interval can be inferred.
+		require.Equal(t, wantStart, dp.StartTimestamp())
+		// Value scaling by the interval is unchanged.
+		require.InEpsilon(t, float64(interval), dp.DoubleValue(), 1e-9)
+	})
+
+	t.Run("v2 first point of a stream", func(t *testing.T) {
+		mt := createMetricsTranslator()
+		result := mt.TranslateSeriesV2([]*gogen.MetricPayload_MetricSeries{
+			{
+				Metric:    "TestRate",
+				Type:      gogen.MetricPayload_RATE,
+				Interval:  interval,
+				Resources: []*gogen.MetricPayload_Resource{{Type: "host", Name: "Host1"}},
+				Points:    []*gogen.MetricPayload_MetricPoint{{Timestamp: ts, Value: 1.0}},
+			},
+		})
+		dp := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, wantTs, dp.Timestamp())
+		require.Equal(t, wantStart, dp.StartTimestamp())
+		require.InEpsilon(t, float64(interval), dp.DoubleValue(), 1e-9)
+	})
+
+	t.Run("no declared interval falls back to inter-arrival tracking", func(t *testing.T) {
+		mt := createMetricsTranslator()
+		mk := func(at int64) SeriesList {
+			return SeriesList{Series: []datadogV1.Series{{
+				Metric: "TestCount", Host: new("Host1"), Type: new(TypeCount),
+				Points: testPointsToDatadogPoints([]testPoint{{at, 1.0}}),
+			}}}
+		}
+		_ = mt.TranslateSeriesV1(mk(ts))
+		second := mt.TranslateSeriesV1(mk(ts + 30))
+		dp := second.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, pcommon.Timestamp(ts*time.Second.Nanoseconds()), dp.StartTimestamp(),
+			"series without a declared interval must still use the previous timestamp")
+	})
 }

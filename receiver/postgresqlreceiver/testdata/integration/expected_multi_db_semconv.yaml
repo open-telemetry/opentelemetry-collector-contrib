@@ -612,7 +612,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
-          - description: The number of database locks.
+          - description: The number of database locks, including those held by the receiver's own connections.
             gauge:
               dataPoints:
                 - asInt: "1"
@@ -789,6 +789,38 @@ resourceMetrics:
                     - key: relation
                       value:
                         stringValue: test1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ""
+                    - key: lock_type
+                      value:
+                        stringValue: transactionid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: db.namespace
+                      value:
+                        stringValue: ""
+                    - key: lock_type
+                      value:
+                        stringValue: virtualxid
+                    - key: mode
+                      value:
+                        stringValue: ExclusiveLock
+                    - key: relation
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: postgresql.database.locks
@@ -1415,7 +1447,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{table}'
-          - description: Disk space used by a table.
+          - description: Total disk space used by a table, including its indexes and TOAST data.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2

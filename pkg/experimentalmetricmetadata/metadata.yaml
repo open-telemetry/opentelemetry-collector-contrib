@@ -4,8 +4,8 @@ status:
   disable_codecov_badge: true
   class: pkg
   codeowners:
-    active: [dmitryax]
-    emeritus: [rmfitzpatrick]
+    active: [jinja2]
+    emeritus: [rmfitzpatrick, dmitryax]
 
 feature_gates:
   - id: pkg.experimentalmetricmetadata.useEntityEventsSpecification
@@ -13,4 +13,3 @@ feature_gates:
     stage: alpha
     from_version: v0.156.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/49667
-    skip_strict_validation: true

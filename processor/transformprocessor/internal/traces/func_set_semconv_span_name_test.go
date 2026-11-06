@@ -24,6 +24,24 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 		wantError                 bool
 	}{
 		{
+			name:                      "valid semconv version 1.43.0 and original span name attribute",
+			semconvVersion:            "1.43.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
+			name:                      "valid semconv version 1.42.0 and original span name attribute",
+			semconvVersion:            "1.42.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
+			name:                      "valid semconv version 1.41.0 and original span name attribute",
+			semconvVersion:            "1.41.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 false,
+		},
+		{
 			name:                      "valid semconv version 1.40.0 and original span name attribute",
 			semconvVersion:            "1.40.0",
 			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
@@ -60,8 +78,14 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 			wantError:                 true,
 		},
 		{
-			name:                      "unsupported semconv version and valid original span name attribute",
+			name:                      "unsupported semconv version below minimum and valid original span name attribute",
 			semconvVersion:            "1.36.0",
+			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+			wantError:                 true,
+		},
+		{
+			name:                      "unsupported semconv version above maximum and valid original span name attribute",
+			semconvVersion:            "1.44.0",
 			originalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
 			wantError:                 true,
 		},
@@ -505,7 +529,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			require.NoError(t, err)
 			require.NotNil(t, setSemconvNameFunction)
 
-			tCtx := ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
+			tCtx := ottlspan.NewTransformContext(resourceSpans, scopeSpans, span)
 			defer tCtx.Close()
 			_, err = setSemconvNameFunction(t.Context(), tCtx)
 			require.NoError(t, err)
@@ -904,5 +928,35 @@ func Test_dbSpanName(t *testing.T) {
 			got := dbSpanName(span)
 			assert.Equalf(t, tt.want, got, "dbSpanName(%v)", span)
 		})
+	}
+}
+
+func BenchmarkSetSemconvSpanName(b *testing.B) {
+	setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
+		SemconvVersion:            maxKnownSemConvVersion.String(),
+		OriginalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	template := ptrace.NewSpan()
+	template.SetName("GET /users/123")
+	template.SetKind(ptrace.SpanKindServer)
+	template.Attributes().PutStr("http.request.method", "GET")
+	template.Attributes().PutStr("http.route", "/users/:id")
+
+	resourceSpans := ptrace.NewResourceSpans()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	span := scopeSpans.Spans().AppendEmpty()
+	tCtx := ottlspan.NewTransformContext(resourceSpans, scopeSpans, span)
+	b.Cleanup(tCtx.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(span)
+		_, err = setSemconvNameFunction(b.Context(), tCtx)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }

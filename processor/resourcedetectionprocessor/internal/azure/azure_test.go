@@ -107,11 +107,10 @@ func TestDetectResourceGroupNameFeatureGate(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(
-				metadata.ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate.ID(), tt.gateEnabled))
+			gateID := metadata.ProcessorAzuredetectorRenameResourceGroupAttributeFeatureGate.ID()
+			require.NoError(t, featuregate.GlobalRegistry().Set(gateID, tt.gateEnabled))
 			t.Cleanup(func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					metadata.ProcessorResourcedetectionAzureRenameResourceGroupAttributeFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
 			})
 
 			mp := &azure.MockProvider{}

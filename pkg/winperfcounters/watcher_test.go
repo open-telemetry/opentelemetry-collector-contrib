@@ -47,6 +47,9 @@ func TestCounterPath(t *testing.T) {
 func Test_Scraping_Wildcard(t *testing.T) {
 	watcher, err := NewWatcher("LogicalDisk", "*", "Free Megabytes")
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, watcher.Close())
+	}()
 
 	values, err := watcher.ScrapeData()
 	require.NoError(t, err)
@@ -98,6 +101,9 @@ func TestNewPerfCounter_InvalidPath(t *testing.T) {
 func TestNewPerfCounter(t *testing.T) {
 	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
 	require.NoError(t, err, "Failed to create performance counter: %v", err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	assert.NotNil(t, pc.query)
 	assert.NotNil(t, pc.handle)
@@ -107,14 +113,14 @@ func TestNewPerfCounter(t *testing.T) {
 	vals, err = pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	require.NoError(t, err)
 	assert.Equal(t, []CounterValue{{InstanceName: "", Value: 0}}, vals)
-
-	err = pc.query.Close()
-	require.NoError(t, err, "Failed to close initialized performance counter query: %v", err)
 }
 
 func TestNewPerfCounter_CollectOnStartup(t *testing.T) {
 	pc, err := newPerfCounter(`\Memory\Committed Bytes`, true)
 	require.NoError(t, err, "Failed to create performance counter: %v", err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	assert.NotNil(t, pc.query)
 	assert.NotNil(t, pc.handle)
@@ -124,9 +130,6 @@ func TestNewPerfCounter_CollectOnStartup(t *testing.T) {
 	vals, err = pc.query.GetFormattedCounterArrayDouble(pc.handle)
 	require.NoError(t, err)
 	assert.Greater(t, vals[0].Value, float64(0))
-
-	err = pc.query.Close()
-	require.NoError(t, err, "Failed to close initialized performance counter query: %v", err)
 }
 
 func TestPerfCounter_Close(t *testing.T) {
@@ -145,6 +148,9 @@ func TestPerfCounter_Close(t *testing.T) {
 func TestPerfCounter_NonExistentInstance_NoError(t *testing.T) {
 	pc, err := newPerfCounter(`\Process(NonExistentInstance)\% Processor Time`, true)
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	data, err := pc.ScrapeData()
 	require.NoError(t, err)
@@ -153,10 +159,20 @@ func TestPerfCounter_NonExistentInstance_NoError(t *testing.T) {
 }
 
 func TestPerfCounter_Reset(t *testing.T) {
-	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
+	pc, err := newPerfCounter(
+		`\Memory\Committed Bytes`,
+		false,
+		WithAggregationName("_Global_"),
+		WithIncludeAggregationInstance(),
+	)
 	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, pc.Close())
+	}()
 
 	path, handle, query := pc.Path(), pc.handle, pc.query
+	assert.Equal(t, "_Global_", pc.aggregationName)
+	assert.True(t, pc.includeAggregationInstance)
 
 	err = pc.Reset()
 
@@ -165,6 +181,8 @@ func TestPerfCounter_Reset(t *testing.T) {
 	assert.NotEqual(t, handle, pc.handle)
 	assert.NotSame(t, query, pc.query)
 	assert.Equal(t, path, pc.Path())
+	assert.Equal(t, "_Global_", pc.aggregationName)
+	assert.True(t, pc.includeAggregationInstance)
 
 	err = query.Close() // previous query is closed
 	if assert.Error(t, err) {
@@ -176,6 +194,7 @@ func TestPerfCounter_Scrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		path              string
+		options           []WatcherOption
 		assertExpected    func(t *testing.T, data []CounterValue)
 		assertExpectedRaw func(t *testing.T, data []RawCounterValue)
 	}
@@ -206,27 +225,45 @@ func TestPerfCounter_Scrape(t *testing.T) {
 			},
 		},
 		{
-			name: "all instances",
+			name: "all instances except default aggregation",
 			path: `\LogicalDisk(*)\Free Megabytes`,
 			assertExpected: func(t *testing.T, data []CounterValue) {
 				assert.GreaterOrEqual(t, len(data), 1)
 				for _, d := range data {
 					assert.NotEmpty(t, d.InstanceName)
+					assert.NotEqual(t, defaultAggregationName, d.InstanceName)
 				}
 			},
 			assertExpectedRaw: func(t *testing.T, raw []RawCounterValue) {
 				assert.GreaterOrEqual(t, len(raw), 1)
 				for _, r := range raw {
 					assert.NotEmpty(t, r.InstanceName)
+					assert.NotEqual(t, defaultAggregationName, r.InstanceName)
 				}
+			},
+		},
+		{
+			name:    "all instances including default aggregation",
+			path:    `\LogicalDisk(*)\Free Megabytes`,
+			options: []WatcherOption{WithIncludeAggregationInstance()},
+			assertExpected: func(t *testing.T, data []CounterValue) {
+				assert.GreaterOrEqual(t, len(data), 2)
+				assert.Contains(t, instanceNames(data), defaultAggregationName)
+			},
+			assertExpectedRaw: func(t *testing.T, raw []RawCounterValue) {
+				assert.GreaterOrEqual(t, len(raw), 2)
+				assert.Contains(t, instanceNames(raw), defaultAggregationName)
 			},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			pc, err := newPerfCounter(test.path, false)
+			pc, err := newPerfCounter(test.path, false, test.options...)
 			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, pc.Close())
+			}()
 
 			data, err := pc.ScrapeData()
 			require.NoError(t, err, "Failed to scrape data: %v", err)
@@ -239,16 +276,27 @@ func TestPerfCounter_Scrape(t *testing.T) {
 	}
 }
 
+func instanceNames[C CounterValue | RawCounterValue](values []C) []string {
+	names := make([]string, 0, len(values))
+	for _, value := range values {
+		names = append(names, getInstanceName(value))
+	}
+	return names
+}
+
 func Test_InstanceNameIndexing(t *testing.T) {
 	type testCase struct {
-		name     string
-		vals     []CounterValue
-		expected []CounterValue
+		name                       string
+		vals                       []CounterValue
+		aggregationName            string
+		includeAggregationInstance bool
+		expected                   []CounterValue
 	}
 
 	testCases := []testCase{
 		{
-			name: "Multiple distinct instances",
+			name:            "Multiple distinct instances",
+			aggregationName: defaultAggregationName,
 			vals: []CounterValue{
 				{
 					InstanceName: "A",
@@ -279,7 +327,8 @@ func Test_InstanceNameIndexing(t *testing.T) {
 			},
 		},
 		{
-			name: "Single repeated instance name",
+			name:            "Single repeated instance name",
+			aggregationName: defaultAggregationName,
 			vals: []CounterValue{
 				{
 					InstanceName: "A",
@@ -310,7 +359,8 @@ func Test_InstanceNameIndexing(t *testing.T) {
 			},
 		},
 		{
-			name: "Multiple repeated instance name",
+			name:            "Multiple repeated instance name",
+			aggregationName: defaultAggregationName,
 			vals: []CounterValue{
 				{
 					InstanceName: "A",
@@ -364,12 +414,145 @@ func Test_InstanceNameIndexing(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:            "Default aggregation instance only",
+			aggregationName: defaultAggregationName,
+			vals:            []CounterValue{{InstanceName: defaultAggregationName, Value: 1.0}},
+			expected:        []CounterValue{{Value: 1.0}},
+		},
+		{
+			name:            "Default aggregation among multiple instances",
+			aggregationName: defaultAggregationName,
+			vals: []CounterValue{
+				{InstanceName: "0", Value: 1.0},
+				{InstanceName: defaultAggregationName, Value: 2.0},
+				{InstanceName: "1", Value: 3.0},
+			},
+			expected: []CounterValue{
+				{InstanceName: "0", Value: 1.0},
+				{InstanceName: "1", Value: 3.0},
+			},
+		},
+		{
+			name:            "Custom aggregation among multiple instances",
+			aggregationName: "_Global_",
+			vals: []CounterValue{
+				{InstanceName: defaultAggregationName, Value: 1.0},
+				{InstanceName: "_Global_", Value: 2.0},
+				{InstanceName: "worker", Value: 3.0},
+			},
+			expected: []CounterValue{
+				{InstanceName: defaultAggregationName, Value: 1.0},
+				{InstanceName: "worker", Value: 3.0},
+			},
+		},
+		{
+			name:            "Custom aggregation instance only",
+			aggregationName: "_Global_",
+			vals:            []CounterValue{{InstanceName: "_Global_", Value: 1.0}},
+			expected:        []CounterValue{{Value: 1.0}},
+		},
+		{
+			name:            "Default aggregation is ordinary when aggregation is custom",
+			aggregationName: "_Global_",
+			vals:            []CounterValue{{InstanceName: defaultAggregationName, Value: 1.0}},
+			expected:        []CounterValue{{InstanceName: defaultAggregationName, Value: 1.0}},
+		},
+		{
+			name:                       "Included custom aggregation preserves all instances",
+			aggregationName:            "_Global_",
+			includeAggregationInstance: true,
+			vals: []CounterValue{
+				{InstanceName: "_Global_", Value: 1.0},
+				{InstanceName: "worker", Value: 2.0},
+			},
+			expected: []CounterValue{
+				{InstanceName: "_Global_", Value: 1.0},
+				{InstanceName: "worker", Value: 2.0},
+			},
+		},
+		{
+			name:                       "Included aggregation preserves a single instance name",
+			aggregationName:            defaultAggregationName,
+			includeAggregationInstance: true,
+			vals: []CounterValue{
+				{InstanceName: defaultAggregationName, Value: 1.0},
+			},
+			expected: []CounterValue{
+				{InstanceName: defaultAggregationName, Value: 1.0},
+			},
+		},
+		{
+			name:                       "Included aggregation preserves all instances",
+			aggregationName:            defaultAggregationName,
+			includeAggregationInstance: true,
+			vals: []CounterValue{
+				{InstanceName: defaultAggregationName, Value: 1.0},
+				{InstanceName: "worker", Value: 2.0},
+			},
+			expected: []CounterValue{
+				{InstanceName: defaultAggregationName, Value: 1.0},
+				{InstanceName: "worker", Value: 2.0},
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		actual := cleanupScrapedValues(test.vals)
 		t.Run(test.name, func(t *testing.T) {
+			actual := cleanupScrapedValues(test.vals, test.aggregationName, test.includeAggregationInstance)
 			assert.Equal(t, test.expected, actual)
 		})
 	}
+}
+
+func TestCleanupScrapedRawValues(t *testing.T) {
+	tests := []struct {
+		name                       string
+		values                     []RawCounterValue
+		aggregationName            string
+		includeAggregationInstance bool
+		expected                   []RawCounterValue
+	}{
+		{
+			name: "Default aggregation is removed",
+			values: []RawCounterValue{
+				{InstanceName: defaultAggregationName},
+				{InstanceName: "worker"},
+			},
+			aggregationName: defaultAggregationName,
+			expected:        []RawCounterValue{{InstanceName: "worker"}},
+		},
+		{
+			name:                       "Included aggregation preserves all instances",
+			aggregationName:            defaultAggregationName,
+			includeAggregationInstance: true,
+			values: []RawCounterValue{
+				{InstanceName: defaultAggregationName},
+				{InstanceName: "worker"},
+			},
+			expected: []RawCounterValue{
+				{InstanceName: defaultAggregationName},
+				{InstanceName: "worker"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, cleanupScrapedValues(test.values, test.aggregationName, test.includeAggregationInstance))
+		})
+	}
+}
+
+func TestWatcherOptions(t *testing.T) {
+	pc := &perfCounter{aggregationName: defaultAggregationName}
+
+	WithAggregationName("")(pc)
+	assert.Equal(t, defaultAggregationName, pc.aggregationName)
+
+	WithAggregationName("_Global_")(pc)
+	assert.Equal(t, "_Global_", pc.aggregationName)
+
+	WithIncludeAggregationInstance()(pc)
+	assert.True(t, pc.includeAggregationInstance)
 }

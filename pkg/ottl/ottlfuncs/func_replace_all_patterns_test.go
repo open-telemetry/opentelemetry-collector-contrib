@@ -772,3 +772,94 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 	assert.Nil(t, exprFunc)
 	assert.ErrorContains(t, err, "invalid mode")
 }
+
+func Test_ReplaceAllPatternsFactory(t *testing.T) {
+	t.Run("factory creation", func(t *testing.T) {
+		factory := NewReplaceAllPatternsFactory[any]()
+		assert.Equal(t, "replace_all_patterns", factory.Name())
+	})
+
+	t.Run("default arguments", func(t *testing.T) {
+		factory := NewReplaceAllPatternsFactory[any]()
+		args := factory.CreateDefaultArguments()
+
+		assert.IsType(t, &replaceAllPatternsArguments[any]{}, args)
+		assertArgumentFieldNames(t, args, []string{"Target", "Mode", "RegexPattern", "Replacement", "Function", "ReplacementFormat"})
+	})
+
+	t.Run("function creation", func(t *testing.T) {
+		factory := NewReplaceAllPatternsFactory[any]()
+		args := factory.CreateDefaultArguments()
+		replaceArgs, ok := args.(*replaceAllPatternsArguments[any])
+		require.True(t, ok)
+		replaceArgs.Target = &ottl.StandardPMapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.NewMap(), nil
+			},
+			Setter: func(context.Context, any, any) error {
+				return nil
+			},
+		}
+		replaceArgs.Mode = "value"
+		replaceArgs.RegexPattern = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "pattern", nil
+			},
+		}
+		replaceArgs.Replacement = &ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return "replacement", nil
+			},
+		}
+
+		fn, err := factory.CreateFunction(ottl.FunctionContext{}, args)
+		require.NoError(t, err)
+		assert.NotNil(t, fn)
+	})
+
+	t.Run("invalid arguments type", func(t *testing.T) {
+		_, err := createReplaceAllPatternsFunction[any](ottl.FunctionContext{}, "invalid args")
+		assert.ErrorContains(t, err, "ReplaceAllPatternsFactory args must be of type *replaceAllPatternsArguments[K]")
+	})
+}
+
+func BenchmarkReplaceAllPatterns(b *testing.B) {
+	input := pcommon.NewMap()
+	input.PutStr("test", "hello world")
+	input.PutStr("test2", "hello")
+	input.PutStr("test3", "goodbye world1 and world2")
+
+	target := ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			if v, ok := m.(pcommon.Map); ok {
+				v.CopyTo(tCtx)
+				return nil
+			}
+			return errors.New("expected pcommon.Map")
+		},
+	}
+	pattern := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(context.Context, pcommon.Map) (any, error) {
+			return "hello", nil
+		},
+	}
+	replacement := ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(context.Context, pcommon.Map) (any, error) {
+			return "hello {universe}", nil
+		},
+	}
+	exprFunc, err := replaceAllPatterns[pcommon.Map](target, modeValue, pattern, replacement, ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}, ottl.Optional[ottl.StringGetter[pcommon.Map]]{})
+	require.NoError(b, err)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		scenarioMap := pcommon.NewMap()
+		input.CopyTo(scenarioMap)
+		if _, err := exprFunc(ctx, scenarioMap); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
