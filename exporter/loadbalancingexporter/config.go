@@ -96,22 +96,22 @@ func (c *Config) Validate() error {
 // validateHTTPEndpoints checks that every endpoint set on the OTLP/HTTP sub-exporter has a scheme and a host.
 // The host and port are replaced by the resolved backend, the rest of the URL is kept.
 func validateHTTPEndpoints(cfg *otlphttpexporter.Config) error {
-	for name, endpoint := range map[string]string{
-		"endpoint":          cfg.ClientConfig.Endpoint,
-		"traces_endpoint":   cfg.TracesEndpoint,
-		"metrics_endpoint":  cfg.MetricsEndpoint,
-		"logs_endpoint":     cfg.LogsEndpoint,
-		"profiles_endpoint": cfg.ProfilesEndpoint,
+	for _, e := range []struct{ name, value string }{
+		{"endpoint", cfg.ClientConfig.Endpoint},
+		{"traces_endpoint", cfg.TracesEndpoint},
+		{"metrics_endpoint", cfg.MetricsEndpoint},
+		{"logs_endpoint", cfg.LogsEndpoint},
+		{"profiles_endpoint", cfg.ProfilesEndpoint},
 	} {
-		if endpoint == "" {
+		if e.value == "" {
 			continue
 		}
-		u, err := url.Parse(endpoint)
+		u, err := url.Parse(e.value)
 		if err != nil {
-			return fmt.Errorf("protocol::otlp_http::%s is not a valid URL: %w", name, err)
+			return fmt.Errorf("protocol::otlp_http::%s is not a valid URL: %w", e.name, err)
 		}
 		if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			return fmt.Errorf("protocol::otlp_http::%s must be an http:// or https:// URL with a host, got %q", name, endpoint)
+			return fmt.Errorf("protocol::otlp_http::%s must be an http:// or https:// URL with a host, got %q", e.name, e.value)
 		}
 	}
 	return nil
