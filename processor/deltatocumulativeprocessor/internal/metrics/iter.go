@@ -11,7 +11,7 @@ func Filter(md pmetric.Metrics, keep func(Metric) bool) {
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				return !keep(From(rm.Resource(), sm.Scope(), m))
+				return !keep(FromWithSchema(rm.Resource(), sm.Scope(), sm.SchemaUrl(), m))
 			})
 			return sm.Metrics().Len() == 0
 		})
