@@ -266,6 +266,8 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces ptrace.Trace
 	}
 
 	for key, tracesForKey := range tracesByOrderingKey {
+		// The no-ordering-key batch seeded above stays empty when every resource carries the
+		// ordering attribute; an encoding extension may still produce a payload for it.
 		if tracesForKey.ResourceSpans().Len() == 0 {
 			continue
 		}
@@ -324,6 +326,8 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Me
 	}
 
 	for key, metricsForKey := range metricsByOrderingKey {
+		// The no-ordering-key batch seeded above stays empty when every resource carries the
+		// ordering attribute; an encoding extension may still produce a payload for it.
 		if metricsForKey.ResourceMetrics().Len() == 0 {
 			continue
 		}
@@ -384,6 +388,8 @@ func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error
 	}
 
 	for key, logsForKey := range logsByOrderingKey {
+		// The no-ordering-key batch seeded above stays empty when every resource carries the
+		// ordering attribute; an encoding extension may still produce a payload for it.
 		if logsForKey.ResourceLogs().Len() == 0 {
 			continue
 		}
