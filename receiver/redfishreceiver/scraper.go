@@ -53,7 +53,6 @@ func (s *redfishScraper) start(ctx context.Context, _ component.Host) error {
 		server := s.cfg.Servers[i]
 
 		opts := make([]redfish.ClientOption, 0)
-		opts = append(opts, redfish.WithInsecure(server.Insecure))
 
 		tlsConfig, tlsErr := server.TLS.LoadTLSConfig(ctx)
 		if tlsErr != nil {
