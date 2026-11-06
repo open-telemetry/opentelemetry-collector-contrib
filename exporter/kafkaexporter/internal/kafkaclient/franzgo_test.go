@@ -17,6 +17,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -369,4 +370,124 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	case <-closeCtx.Done():
 		t.Fatal("ExportData was not unblocked by Close; collector would hang on shutdown")
 	}
+}
+
+func TestExportData_AllRecordsSucceed(t *testing.T) {
+	const topic = "test-topic"
+	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topic))
+	require.NoError(t, err)
+	t.Cleanup(cluster.Close)
+
+	kgoClient, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
+
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, nil)
+	records := []*kgo.Record{
+		{Topic: topic, Value: []byte("rec1")},
+		{Topic: topic, Value: []byte("rec2")},
+	}
+	require.NoError(t, producer.ExportData(t.Context(), records))
+}
+
+func TestExportData_MixedOutcomes_PreservesRetryableRecords(t *testing.T) {
+	const (
+		topicA = "topic-a"
+		topicB = "topic-b"
+		topicC = "topic-c"
+	)
+	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topicA, topicB, topicC))
+	require.NoError(t, err)
+	t.Cleanup(cluster.Close)
+
+	// Intercept ProduceRequests: topicA succeeds, topicB fails permanently (MessageTooLarge), topicC fails retryably (NotEnoughReplicas).
+	cluster.ControlKey(new(kmsg.ProduceRequest).Key(), func(req kmsg.Request) (kmsg.Response, error, bool) {
+		cluster.KeepControl()
+		pr := req.(*kmsg.ProduceRequest)
+		resp := kmsg.NewProduceResponse()
+		resp.Version = pr.Version
+		for _, top := range pr.Topics {
+			tr := kmsg.NewProduceResponseTopic()
+			tr.Topic = top.Topic
+			tr.TopicID = top.TopicID
+			topicName := top.Topic
+			if topicName == "" {
+				if info := cluster.TopicIDInfo(top.TopicID); info != nil {
+					topicName = info.Topic
+				}
+			}
+			for _, p := range top.Partitions {
+				prt := kmsg.NewProduceResponseTopicPartition()
+				prt.Partition = p.Partition
+				switch topicName {
+				case topicA:
+					prt.ErrorCode = 0
+				case topicB:
+					prt.ErrorCode = kerr.MessageTooLarge.Code
+				case topicC:
+					prt.ErrorCode = kerr.NotEnoughReplicas.Code
+				default:
+					prt.ErrorCode = 0
+				}
+				tr.Partitions = append(tr.Partitions, prt)
+			}
+			resp.Topics = append(resp.Topics, tr)
+		}
+		return &resp, nil, true
+	})
+
+	kgoClient, err := kgo.NewClient(
+		kgo.SeedBrokers(cluster.ListenAddrs()...),
+		kgo.RecordRetries(0), // don't loop internally on retryable error
+	)
+	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
+
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, nil)
+	recA := &kgo.Record{Topic: topicA, Value: []byte("payload-a")}
+	recB := &kgo.Record{Topic: topicB, Value: []byte("payload-b")}
+	recC := &kgo.Record{Topic: topicC, Value: []byte("payload-c")}
+
+	err = producer.ExportData(t.Context(), []*kgo.Record{recA, recB, recC})
+	require.Error(t, err)
+
+	// In a mixed batch with at least one retryable record, the aggregate error MUST NOT be classified as permanent.
+	assert.False(t, consumererror.IsPermanent(err), "mixed batch with retryable failure must not be marked permanent")
+
+	// Verify that retryable record is preserved and accessible.
+	var recErr *RecordsError
+	require.ErrorAs(t, err, &recErr)
+	require.Len(t, recErr.RetryableRecords(), 1)
+	assert.Same(t, recC, recErr.RetryableRecords()[0])
+
+	// Verify that the permanent failure is still visible in the error chain.
+	var msgTooLarge *MessageTooLargeError
+	require.ErrorAs(t, err, &msgTooLarge)
+	require.ErrorIs(t, err, kerr.MessageTooLarge)
+}
+
+func TestExportData_ClearsExpiredRecordContext(t *testing.T) {
+	const topic = "test-topic"
+	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topic))
+	require.NoError(t, err)
+	t.Cleanup(cluster.Close)
+
+	kgoClient, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
+
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, nil)
+
+	// Simulate a record that was produced previously under an attempt context that expired.
+	canceledCtx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	record := &kgo.Record{
+		Topic:   topic,
+		Value:   []byte("test-retry-record"),
+		Context: canceledCtx, // stale canceled context from previous attempt
+	}
+
+	// ExportData should clear record.Context so the new valid attempt context is used.
+	require.NoError(t, producer.ExportData(t.Context(), []*kgo.Record{record}))
 }
