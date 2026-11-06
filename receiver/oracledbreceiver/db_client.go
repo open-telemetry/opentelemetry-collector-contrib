@@ -74,7 +74,7 @@ func (cl dbSQLClient) metricRows(ctx context.Context, args ...any) ([]metricRow,
 		}
 		out = append(out, row.toMetricRow())
 	}
-	if err = sqlRows.Err(); err != nil {
+	if err := sqlRows.Err(); err != nil {
 		return nil, err
 	}
 	return out, nil
