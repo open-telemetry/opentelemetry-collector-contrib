@@ -3,9 +3,12 @@
 package metadata
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -65,6 +68,28 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
+			if tt.name == "all_set" {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", true))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+			}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["k8s.container.ephemeral_storage.usage"] = mb.metricK8sContainerEphemeralStorageUsage.config.AggregationStrategy
@@ -89,6 +114,8 @@ func TestMetricsBuilder(t *testing.T) {
 			if tt.metricsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
+			}
+			if tt.name == "all_set" {
 			}
 			if tt.metricsSet != testDataSetReag {
 				assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -135,12 +162,16 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sContainerCPUNodeUtilizationDataPoint(ts, 1)
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordK8sContainerCPULimitUtilizationDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordK8sContainerCPULimitUtilizationDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordK8sContainerCPURequestUtilizationDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordK8sContainerCPURequestUtilizationDataPoint(ts, 1)
+			}
 
 			allMetricsCount++
 			mb.RecordK8sContainerEphemeralStorageUsageDataPoint(ts, 1, AttributeFsTypeRootfs)
@@ -246,12 +277,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordK8sPodCPULimitUtilizationDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordK8sPodCPULimitUtilizationDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
@@ -528,30 +563,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Container cpu utilization as a ratio of the node's capacity", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.container.cpu_limit_utilization":
-					assert.False(t, validatedMetrics["k8s.container.cpu_limit_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu_limit_utilization")
-					validatedMetrics["k8s.container.cpu_limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Container cpu utilization as a ratio of the container's limits", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.container.cpu_request_utilization":
-					assert.False(t, validatedMetrics["k8s.container.cpu_request_utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu_request_utilization")
-					validatedMetrics["k8s.container.cpu_request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Container cpu utilization as a ratio of the container's requests", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1034,30 +1045,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.pod.cpu_limit_utilization":
-					assert.False(t, validatedMetrics["k8s.pod.cpu_limit_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu_limit_utilization")
-					validatedMetrics["k8s.pod.cpu_limit_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.pod.cpu_request_utilization":
-					assert.False(t, validatedMetrics["k8s.pod.cpu_request_utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu_request_utilization")
-					validatedMetrics["k8s.pod.cpu_request_utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.pod.filesystem.available":
 					assert.False(t, validatedMetrics["k8s.pod.filesystem.available"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.available")
 					validatedMetrics["k8s.pod.filesystem.available"] = true
@@ -1396,4 +1383,346 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+func TestVersionedMetrics(t *testing.T) {
+	t.Run("k8s.container.cpu_limit_utilization", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sContainerCPULimitUtilizationDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "k8s.container.cpu_limit_utilization" {
+							legacyFound = true
+						}
+						if m.Name() == "k8s.container.cpu.limit.utilization" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "k8s.container.cpu_limit_utilization") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("k8s.container.cpu_request_utilization", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sContainerCPURequestUtilizationDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "k8s.container.cpu_request_utilization" {
+							legacyFound = true
+						}
+						if m.Name() == "k8s.container.cpu.request.utilization" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "k8s.container.cpu_request_utilization") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("k8s.pod.cpu_limit_utilization", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sPodCPULimitUtilizationDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "k8s.pod.cpu_limit_utilization" {
+							legacyFound = true
+						}
+						if m.Name() == "k8s.pod.cpu.limit.utilization" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "k8s.pod.cpu_limit_utilization") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("k8s.pod.cpu_request_utilization", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
+				require.NoError(t, featuregate.GlobalRegistry().Set(
+					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
+				t.Cleanup(func() {
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
+					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
+				})
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "k8s.pod.cpu_request_utilization" {
+							legacyFound = true
+						}
+						if m.Name() == "k8s.pod.cpu.request.utilization" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "k8s.pod.cpu_request_utilization") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
 }

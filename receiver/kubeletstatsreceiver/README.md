@@ -431,6 +431,63 @@ it and use the CPU usage reported by kubelet, start the Collector with:
 otelcol --config=config.yaml --feature-gates=-receiver.kubeletstats.cpuUsageScrapeBased
 ```
 
+### `receiver.kubelet_stats.EmitV1K8sConventions` and `receiver.kubelet_stats.DontEmitV0K8sConventions`
+
+These feature gates control the migration of the CPU and memory limit and
+request utilization metrics to the names and definitions of the
+[Kubernetes semantic conventions](https://opentelemetry.io/docs/specs/semconv/system/k8s-metrics/):
+
+| Legacy metric | Semantic conventions metric |
+| ------------- | --------------------------- |
+| `k8s.pod.cpu_limit_utilization` | `k8s.pod.cpu.limit.utilization` |
+| `k8s.pod.cpu_request_utilization` | `k8s.pod.cpu.request.utilization` |
+| `k8s.pod.memory_limit_utilization` | `k8s.pod.memory.limit.utilization` |
+| `k8s.pod.memory_request_utilization` | `k8s.pod.memory.request.utilization` |
+| `k8s.container.cpu_limit_utilization` | `k8s.container.cpu.limit.utilization` |
+| `k8s.container.cpu_request_utilization` | `k8s.container.cpu.request.utilization` |
+| `k8s.container.memory_limit_utilization` | `k8s.container.memory.limit.utilization` |
+| `k8s.container.memory_request_utilization` | `k8s.container.memory.request.utilization` |
+
+The memory metrics also change how they are calculated: the legacy metrics
+use the memory usage as the numerator, while the semantic conventions metrics
+use the memory working set, which is what the kubelet uses for eviction
+decisions. The memory usage includes reclaimable page cache, so the legacy
+metrics can report a much higher utilization than the memory pressure the
+workload is actually under. The CPU metrics are only renamed.
+
+- `receiver.kubelet_stats.EmitV1K8sConventions`: when enabled, the semantic
+  conventions metrics are emitted.
+- `receiver.kubelet_stats.DontEmitV0K8sConventions`: when enabled, the legacy
+  metrics are no longer emitted. Enable it together with
+  `receiver.kubelet_stats.EmitV1K8sConventions`.
+
+Both feature gates are at the alpha stage and disabled by default. Like the
+legacy metrics, the semantic conventions metrics are disabled by default and
+are enabled in the configuration with the `@v1` suffix:
+
+```yaml
+receivers:
+  kubelet_stats:
+    metrics:
+      k8s.pod.memory.limit.utilization@v1:
+        enabled: true
+      k8s.container.memory.limit.utilization@v1:
+        enabled: true
+```
+
+To emit both the legacy and the semantic conventions metrics while migrating
+dashboards and alerts, start the Collector with:
+
+```shell
+otelcol --config=config.yaml --feature-gates=receiver.kubelet_stats.EmitV1K8sConventions
+```
+
+To emit only the semantic conventions metrics, start the Collector with:
+
+```shell
+otelcol --config=config.yaml --feature-gates=receiver.kubelet_stats.EmitV1K8sConventions,receiver.kubelet_stats.DontEmitV0K8sConventions
+```
+
 ## Self-observability
 
 The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. It uses the Collector's standard receiver and scraper observability mechanisms.
