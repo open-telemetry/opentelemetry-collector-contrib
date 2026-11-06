@@ -27,3 +27,13 @@ Number of job/instance entries evicted from the resource metrics cache because i
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {entries} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.prometheus_remote_write.disableJobSplit` | alpha | When enabled, the prometheusremotewritereceiver will disable the splitting of the job label by '/' to derive service.namespace and service.name, instead mapping the entire job string to service.name. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52626) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

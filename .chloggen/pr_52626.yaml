@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/prometheus_remote_write
+note: "Adds an alpha feature gate `receiver.prometheus_remote_write.disableJobSplit` to map the `job` label directly to `service.name` without splitting, aligning with the `prometheusreceiver`."
+issues: [52626]
