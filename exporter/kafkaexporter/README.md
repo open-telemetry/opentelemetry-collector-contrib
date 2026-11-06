@@ -130,6 +130,7 @@ The following settings can be optionally configured:
       - `snappy`
         No compression levels supported yet
   - `flush_max_messages` (default = 10000) The maximum number of records the producer buffers across all partitions before `Produce` blocks waiting for broker acknowledgements.
+  - `max_inflight_requests_per_broker` (default = 1) The maximum number of produce requests kept in flight per broker. Only takes effect with `required_acks` `0` or `1`. It mostly helps with `required_acks: 1`, since with `0` a request stops counting as in flight as soon as it has been sent. Must be left at `1` with `required_acks: all`, where idempotent produce manages the limit. With values above `1`, a failed request is retried together with every later in-flight request for the same partitions, including ones the broker already accepted, so records may be reordered and duplicated.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
 
