@@ -335,6 +335,19 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
+			// Keep the Datadog operation and resource names. processSpanByName below may
+			// rename the span (e.g. http.request to "GET /users/:id"), and the Datadog exporter
+			// and the Datadog Agent's OTLP intake read operation.name and resource.name.
+			newSpan.Attributes().PutStr("operation.name", span.Name)
+			if span.Resource != "" {
+				newSpan.Attributes().PutStr("resource.name", span.Resource)
+			}
+			// Keep the Datadog span type (web, sql, cache, ...). The Datadog exporter and the
+			// Datadog Agent's OTLP intake read it from span.type; without it they derive a
+			// different type from the span kind and attributes.
+			if span.Type != "" {
+				newSpan.Attributes().PutStr("span.type", span.Type)
+			}
 			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}
