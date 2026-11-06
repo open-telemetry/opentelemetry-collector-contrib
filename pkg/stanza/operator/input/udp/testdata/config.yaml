@@ -20,3 +20,13 @@ all_with_async:
     readers: 2
     processors: 2
     max_queue_length: 100
+resolve_names_true:
+  type: udp_input
+  listen_address: 10.0.0.1:9000
+  add_attributes: true
+  resolve_names: true
+resolve_names_false:
+  type: udp_input
+  listen_address: 10.0.0.1:9000
+  add_attributes: true
+  resolve_names: false
