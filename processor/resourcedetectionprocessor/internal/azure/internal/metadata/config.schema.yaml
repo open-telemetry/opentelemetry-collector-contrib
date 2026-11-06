@@ -81,3 +81,10 @@ $defs:
           enabled:
             type: boolean
             default: true
+      host.type:
+        description: ResourceAttributeConfig provides common config for a host.type resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true

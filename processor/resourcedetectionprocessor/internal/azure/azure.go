@@ -82,6 +82,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	// used by system detector.
 	d.rb.SetAzureVMName(compute.Name)
 	d.rb.SetAzureVMSize(compute.VMSize)
+	d.rb.SetHostType(compute.VMSize)
 	if compute.VMScaleSetName != "" {
 		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
 	}
