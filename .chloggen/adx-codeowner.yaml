@@ -1,5 +1,5 @@
 change_type: enhancement
-component: exporter/azuredataexplorer
+component: exporter/azure_data_explorer
 note: Restore the stability of the exporter from `unmaintained` to `beta`
 issues: [52282]
 subtext:
