@@ -5,8 +5,8 @@ go 1.26.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261102165206-9372e2e353df
-	go.opentelemetry.io/collector/pdata v1.70.1-0.20261102165206-9372e2e353df
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261105234325-55e32ede1d63
+	go.opentelemetry.io/collector/pdata v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
