@@ -252,6 +252,13 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 			if !scanner.Scan() {
 				break
 			}
+
+			if i.connectionIdleTimeout > 0 {
+				if err := conn.SetReadDeadline(time.Time{}); err != nil {
+					i.Logger().Debug("Failed to clear connection deadline", zap.Error(err))
+					break
+				}
+			}
 			i.handleMessage(ctx, conn, dec, scanner.Bytes())
 		}
 
