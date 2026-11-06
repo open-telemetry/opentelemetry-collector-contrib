@@ -13,9 +13,12 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -218,14 +221,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 		require.True(t, directionFound, `missing dimension: direction`)
 	}
 
-	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
-	// is the cumulative across devices and directions.
-	dps, ok = metrics["disk_ops.total"]
-	require.True(t, ok, "disk_ops.total metrics not found")
-	require.Len(t, dps, 1)
-	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
-	require.Len(t, dps[0].Dimensions, 1)
-	requireDimension(t, dps[0].Dimensions, "host", "host0")
+	require.NotContains(t, metrics, "disk_ops.total")
 
 	// system.network.io.total new metric calculation
 	dps, ok = metrics["system.network.io.total"]
@@ -694,7 +690,7 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 8, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 7, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 
 	require.Empty(t, dps)
@@ -844,4 +840,34 @@ func testReadJSON(f string, v any) error {
 		return err
 	}
 	return json.Unmarshal(bytes, &v)
+}
+
+func TestExporterHelperBatchingEnabled(t *testing.T) {
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	create := map[string]func(*Config) (component.Component, error){
+		"metrics": func(cfg *Config) (component.Component, error) { return factory.CreateMetrics(t.Context(), set, cfg) },
+		"logs":    func(cfg *Config) (component.Component, error) { return factory.CreateLogs(t.Context(), set, cfg) },
+	}
+
+	for signal, fn := range create {
+		t.Run(signal, func(t *testing.T) {
+			for _, enabled := range []bool{true, false} {
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.AccessToken = "access_token"
+				cfg.Realm = "us0"
+				if enabled {
+					cfg.QueueSettings.Get().Batch.GetOrInsertDefault()
+				} else {
+					cfg.QueueSettings.Get().Batch = configoptional.None[exporterhelper.BatchConfig]()
+				}
+
+				exp, err := fn(cfg)
+				require.NoError(t, err)
+				b, ok := exp.(interface{ ExporterHelperBatchingEnabled() bool })
+				require.True(t, ok)
+				assert.Equal(t, enabled, b.ExporterHelperBatchingEnabled())
+			}
+		})
+	}
 }
