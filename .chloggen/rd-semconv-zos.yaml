@@ -10,7 +10,7 @@ component: processor/resource_detection
 note: "The `system` and `docker` detectors now set `os.type` to `zos` instead of the deprecated `z_os` on z/OS."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [52804]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
