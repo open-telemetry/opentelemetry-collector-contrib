@@ -358,9 +358,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
 					},
 					SqlserverThreadPoolTaskCount: SqlserverThreadPoolTaskCountMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverThreadPoolTaskCountMetricAttributeKey{SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState},
+						Enabled: true,
 					},
 					SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 						Enabled: true,
@@ -759,9 +757,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
 					},
 					SqlserverThreadPoolTaskCount: SqlserverThreadPoolTaskCountMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverThreadPoolTaskCountMetricAttributeKey{SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState},
+						Enabled: false,
 					},
 					SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 						Enabled: false,
@@ -1227,18 +1223,6 @@ func TestSqlserverTempdbFileSizeMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.tempdb.file.size doesn't have an attribute invalid, valid attributes: [file_type, sqlserver.tempdb.file.id]")
 
 	cfg = DefaultMetricsConfig().SqlserverTempdbFileSize
-	cfg.AggregationStrategy = "invalid"
-	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
-}
-
-func TestSqlserverThreadPoolTaskCountMetricsConfig_Validate(t *testing.T) {
-	cfg := DefaultMetricsConfig().SqlserverThreadPoolTaskCount
-	require.NoError(t, cfg.Validate())
-
-	cfg.EnabledAttributes = []SqlserverThreadPoolTaskCountMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.thread_pool.task.count doesn't have an attribute invalid, valid attributes: [sqlserver.thread_pool.task.state]")
-
-	cfg = DefaultMetricsConfig().SqlserverThreadPoolTaskCount
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

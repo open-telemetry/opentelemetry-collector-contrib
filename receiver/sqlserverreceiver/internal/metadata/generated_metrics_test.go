@@ -100,7 +100,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.task.rate"] = mb.metricSqlserverTaskRate.config.AggregationStrategy
 			aggMap["sqlserver.tempdb.allocation.waiters.count"] = mb.metricSqlserverTempdbAllocationWaitersCount.config.AggregationStrategy
 			aggMap["sqlserver.tempdb.file.size"] = mb.metricSqlserverTempdbFileSize.config.AggregationStrategy
-			aggMap["sqlserver.thread_pool.task.count"] = mb.metricSqlserverThreadPoolTaskCount.config.AggregationStrategy
 			aggMap["sqlserver.worker.request.count"] = mb.metricSqlserverWorkerRequestCount.config.AggregationStrategy
 			aggMap["sqlserver.worker.thread.count"] = mb.metricSqlserverWorkerThreadCount.config.AggregationStrategy
 
@@ -576,12 +575,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverThreadPoolTaskCountDataPoint(ts, 1, AttributeSqlserverThreadPoolTaskStateCurrent)
-			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverThreadPoolTaskCountDataPoint(ts, 3, AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool)
-				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordSqlserverThreadPoolTaskCountDataPoint(ts+1, 3, AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool)
-				assert.Equal(t, 2, mb.metricSqlserverThreadPoolTaskCount.data.Gauge().DataPoints().Len())
-			}
 
 			allMetricsCount++
 			mb.RecordSqlserverTransactionDelayDataPoint(ts, 1)
@@ -685,7 +678,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverTaskRate.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTempdbAllocationWaitersCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverTempdbFileSize.aggDataPoints)
-				assert.Empty(t, mb.metricSqlserverThreadPoolTaskCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverWorkerRequestCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverWorkerThreadCount.aggDataPoints)
 			}
@@ -2997,47 +2989,20 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 					}
 				case "sqlserver.thread_pool.task.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["sqlserver.thread_pool.task.count"], "Found a duplicate in the metrics slice: sqlserver.thread_pool.task.count")
-						validatedMetrics["sqlserver.thread_pool.task.count"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of SQL Server tasks tracked by schedulers, broken down by queueing state.", mi.Description())
-						assert.Equal(t, "{task}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						sqlserverThreadPoolTaskStateAttrVal, ok := dp.Attributes().Get("sqlserver.thread_pool.task.state")
-						assert.True(t, ok)
-						assert.Equal(t, "current", sqlserverThreadPoolTaskStateAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["sqlserver.thread_pool.task.count"], "Found a duplicate in the metrics slice: sqlserver.thread_pool.task.count")
-						validatedMetrics["sqlserver.thread_pool.task.count"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
-						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
-						assert.Equal(t, "Number of SQL Server tasks tracked by schedulers, broken down by queueing state.", mi.Description())
-						assert.Equal(t, "{task}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["sqlserver.thread_pool.task.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("sqlserver.thread_pool.task.state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["sqlserver.thread_pool.task.count"], "Found a duplicate in the metrics slice: sqlserver.thread_pool.task.count")
+					validatedMetrics["sqlserver.thread_pool.task.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of SQL Server tasks tracked by schedulers.", mi.Description())
+					assert.Equal(t, "{task}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverThreadPoolTaskStateAttrVal, ok := dp.Attributes().Get("sqlserver.thread_pool.task.state")
+					assert.True(t, ok)
+					assert.Equal(t, "current", sqlserverThreadPoolTaskStateAttrVal.Str())
 				case "sqlserver.transaction.delay":
 					assert.False(t, validatedMetrics["sqlserver.transaction.delay"], "Found a duplicate in the metrics slice: sqlserver.transaction.delay")
 					validatedMetrics["sqlserver.transaction.delay"] = true

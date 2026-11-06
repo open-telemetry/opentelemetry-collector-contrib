@@ -388,7 +388,7 @@ attributes:
   sqlserver.thread_pool.task.state:
     description: State of a SQL Server task tracked for thread-pool diagnostics.
     type: string
-    requirement_level: recommended
+    requirement_level: required
     enum: [current, waiting_for_threadpool]
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
@@ -1414,7 +1414,7 @@ metrics:
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.thread_pool.task.count:
     enabled: false
-    description: Number of SQL Server tasks tracked by schedulers, broken down by queueing state.
+    description: Number of SQL Server tasks tracked by schedulers.
     stability: development
     unit: "{task}"
     gauge:

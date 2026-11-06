@@ -7292,63 +7292,29 @@ func newMetricSqlserverTempdbFileSize(cfg SqlserverTempdbFileSizeMetricConfig) m
 }
 
 type metricSqlserverThreadPoolTaskCount struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SqlserverThreadPoolTaskCountMetricConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
-	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SqlserverThreadPoolTaskCountMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills sqlserver.thread_pool.task.count metric with initial data.
 func (m *metricSqlserverThreadPoolTaskCount) init() {
 	m.data.SetName("sqlserver.thread_pool.task.count")
-	m.data.SetDescription("Number of SQL Server tasks tracked by schedulers, broken down by queueing state.")
+	m.data.SetDescription("Number of SQL Server tasks tracked by schedulers.")
 	m.data.SetUnit("{task}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricSqlserverThreadPoolTaskCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverThreadPoolTaskStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState) {
-		dp.Attributes().PutStr("sqlserver.thread_pool.task.state", sqlserverThreadPoolTaskStateAttributeValue)
-	}
-
-	var s string
-	key := dataPointKey(dp)
-	dps := m.data.Gauge().DataPoints()
-	if i, ok := m.dpIndex[key]; ok {
-		dpi := dps.At(i)
-		switch s = m.config.AggregationStrategy; s {
-		case AggregationStrategySum, AggregationStrategyAvg:
-			dpi.SetIntValue(dpi.IntValue() + val)
-			m.aggDataPoints[i] += 1
-			return
-		case AggregationStrategyMin:
-			if dpi.IntValue() > val {
-				dpi.SetIntValue(val)
-			}
-			return
-		case AggregationStrategyMax:
-			if dpi.IntValue() < val {
-				dpi.SetIntValue(val)
-			}
-			return
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	m.dpIndex[key] = dps.Len()
-	dp.MoveTo(dps.AppendEmpty())
+	dp.Attributes().PutStr("sqlserver.thread_pool.task.state", sqlserverThreadPoolTaskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -7361,11 +7327,6 @@ func (m *metricSqlserverThreadPoolTaskCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSqlserverThreadPoolTaskCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

@@ -2728,20 +2728,10 @@ func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
 	return nil
 }
 
-// SqlserverThreadPoolTaskCountMetricAttributeKey specifies the key of an attribute for the sqlserver.thread_pool.task.count metric.
-type SqlserverThreadPoolTaskCountMetricAttributeKey string
-
-const (
-	SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState SqlserverThreadPoolTaskCountMetricAttributeKey = "sqlserver.thread_pool.task.state"
-)
-
 // SqlserverThreadPoolTaskCountMetricConfig provides config for the sqlserver.thread_pool.task.count metric.
 type SqlserverThreadPoolTaskCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
-
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SqlserverThreadPoolTaskCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverThreadPoolTaskCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -2755,24 +2745,6 @@ func (ms *SqlserverThreadPoolTaskCountMetricConfig) Unmarshal(parser *confmap.Co
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-func (ms *SqlserverThreadPoolTaskCountMetricConfig) Validate() error {
-	for _, val := range ms.EnabledAttributes {
-		switch val {
-		case SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState:
-		default:
-			return fmt.Errorf("metric sqlserver.thread_pool.task.count doesn't have an attribute %v, valid attributes: [sqlserver.thread_pool.task.state]", val)
-		}
-	}
-
-	switch ms.AggregationStrategy {
-	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
-	default:
-		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
-	}
-
 	return nil
 }
 
@@ -3552,9 +3524,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
 		},
 		SqlserverThreadPoolTaskCount: SqlserverThreadPoolTaskCountMetricConfig{
-			Enabled:             false,
-			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverThreadPoolTaskCountMetricAttributeKey{SqlserverThreadPoolTaskCountMetricAttributeKeySqlserverThreadPoolTaskState},
+			Enabled: false,
 		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,

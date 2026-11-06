@@ -212,7 +212,6 @@ all_set:
       attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.thread_pool.task.count:
       enabled: true
-      attributes: ["sqlserver.thread_pool.task.state"]
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -490,7 +489,6 @@ reaggregate_set:
       attributes: []
     sqlserver.thread_pool.task.count:
       enabled: true
-      attributes: []
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -768,7 +766,6 @@ none_set:
       attributes: ["file_type","sqlserver.tempdb.file.id"]
     sqlserver.thread_pool.task.count:
       enabled: false
-      attributes: ["sqlserver.thread_pool.task.state"]
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:

@@ -24,7 +24,7 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
-          - description: Number of SQL Server tasks tracked by schedulers, broken down by queueing state.
+          - description: Number of SQL Server tasks tracked by schedulers.
             gauge:
               dataPoints:
                 - asInt: "44"

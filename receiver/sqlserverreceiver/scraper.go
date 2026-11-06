@@ -2374,11 +2374,11 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) error {
 	const activeThreads = "active_threads"
 	const availableThreads = "available_threads"
+	const currentTasks = "current_tasks"
 	const requestsWaitingForThreads = "requests_waiting_for_threads"
+	const tasksWaitingForThreadpool = "tasks_waiting_for_threadpool"
 	const totalThreads = "total_threads"
 	const waitingForCPUThreads = "waiting_for_cpu_threads"
-	const currentTasks = "current_tasks"
-	const tasksWaitingForThreadpool = "tasks_waiting_for_threadpool"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {

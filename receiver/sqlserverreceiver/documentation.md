@@ -1212,7 +1212,7 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.thread_pool.task.count
 
-Number of SQL Server tasks tracked by schedulers, broken down by queueing state.
+Number of SQL Server tasks tracked by schedulers.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -1224,7 +1224,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| sqlserver.thread_pool.task.state | State of a SQL Server task tracked for thread-pool diagnostics. | Str: ``current``, ``waiting_for_threadpool`` | Recommended | - |
+| sqlserver.thread_pool.task.state | State of a SQL Server task tracked for thread-pool diagnostics. | Str: ``current``, ``waiting_for_threadpool`` | Required | - |
 
 ### sqlserver.transaction.delay
 
