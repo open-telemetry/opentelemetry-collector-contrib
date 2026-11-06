@@ -18,8 +18,9 @@
 //
 // # How it works
 //
-// For every (metric_name, label_key) pair the processor keeps two HLL sketches
-// (current and previous epoch). The delta between them estimates how many new
+// For every (metric_name, label_key) pair the processor keeps two HLL sketches:
+// this epoch's values, and the union of this epoch with the previous one. The
+// difference between the union and the previous epoch's count is how many new
 // unique values the label has acquired this epoch. When that delta exceeds
 // MaxCardinalityDeltaPerEpoch the offending attribute is handled per the
 // configured EnforcementMode (EnforcementTagOnly, EnforcementOverflowAttribute,
@@ -40,5 +41,5 @@
 //	               across all 256 shards, one shard at a time
 //
 // Hot-path design rationale lives on the named identifiers themselves — see
-// numShards, hashAttrValue, estimateInterval, tracker.insert, and tracker.rotate.
+// numShards, hashAttrValue, refreshBackoff, tracker.insert, and tracker.rotate.
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"

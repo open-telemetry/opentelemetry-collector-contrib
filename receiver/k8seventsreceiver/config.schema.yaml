@@ -1,6 +1,9 @@
 description: Config defines configuration for kubernetes events receiver.
 type: object
 properties:
+  cache_sync_timeout:
+    type: string
+    format: duration
   dedup_interval:
     description: 'DedupInterval controls throttling of MODIFIED watch events per event UID. positive: emit MODIFIED only after interval has elapsed since the last emit for that UID 0 (default): no throttling — current behavior, backward compatible negative: drop all MODIFIED events'
     type: string

@@ -1546,6 +1546,7 @@ func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, new
 			querySampleColumnQueryID,
 			querySampleColumnState,
 			querySampleColumnApplicationName,
+			querySampleColumnBackendType,
 			querySampleColumnBlockingPIDs,
 			querySampleColumnBlockingStartTime,
 			querySampleColumnBlockingLockMode,
