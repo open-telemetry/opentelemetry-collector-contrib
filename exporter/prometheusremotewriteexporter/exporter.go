@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/golang/snappy"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -420,13 +419,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	utf8Allowed := cfg.TranslationStrategy == noUTF8EscapingWithSuffixes || cfg.TranslationStrategy == noTranslation
-	permissiveSanitization := prometheustranslator.DropSanitizationGate.IsEnabled()
 	namer := otlptranslator.LabelNamer{
-		UTF8Allowed: utf8Allowed,
-		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
-		UnderscoreLabelSanitization: !permissiveSanitization, //nolint:staticcheck
-		PreserveMultipleUnderscores: permissiveSanitization,
+		UTF8Allowed:                 utf8Allowed,
+		PreserveMultipleUnderscores: true,
 	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
@@ -531,9 +526,53 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 		}
 
 		if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+			if rejected, ok := errors.AsType[*payloadRejectionError](errExecute); ok {
+				rejected.sampleCount = writeRequestSampleCount(request)
+			}
 			errs = multierr.Append(errs, errExecute)
 		}
 	}
+}
+
+// payloadRejectionError reports that the remote endpoint rejected the content
+// of a write request, so the identical payload will be rejected again and no
+// amount of retrying can make it succeed. It is distinct from a permanent error,
+// which also covers a retryable failure that merely ran out of retry budget, and
+// from a status such as 401 that rejects every request regardless of content.
+type payloadRejectionError struct {
+	StatusCode int
+	// sampleCount is the number of samples the rejected request carried.
+	sampleCount int
+	err         error
+}
+
+func (e *payloadRejectionError) Error() string {
+	return fmt.Sprintf("%s (http status %d)", e.err.Error(), e.StatusCode)
+}
+
+func (e *payloadRejectionError) Unwrap() error { return e.err }
+
+// isPayloadRejection reports whether status rejects the content of the request rather than every request.
+func isPayloadRejection(status int) bool {
+	switch status {
+	case http.StatusBadRequest, http.StatusConflict, http.StatusRequestEntityTooLarge, http.StatusUnprocessableEntity:
+		return true
+	default:
+		return false
+	}
+}
+
+// writeRequestSampleCount reports how many samples a write request carries. A
+// native histogram is one sample in Prometheus terms, so it is counted here;
+// exemplars are accounted for separately by the backend and are not.
+func writeRequestSampleCount(req *prompb.WriteRequest) int {
+	n := 0
+	// Indexed rather than ranged by value: a TimeSeries is large enough that
+	// copying one per iteration shows up in the linter.
+	for i := range req.Timeseries {
+		n += len(req.Timeseries[i].Samples) + len(req.Timeseries[i].Histograms)
+	}
+	return n
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
@@ -639,7 +678,13 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return resp.StatusCode, rerr
 		}
 
-		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		// Only a rejection of this payload is tagged; any other status rejects every request, so the WAL keeps the batch.
+		if !isPayloadRejection(resp.StatusCode) {
+			return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		}
+
+		rejected := &payloadRejectionError{StatusCode: resp.StatusCode, err: rerr}
+		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rejected))
 	}
 
 	var err error

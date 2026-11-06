@@ -116,6 +116,26 @@ func TestFailedParse(t *testing.T) {
 	}
 }
 
+// A directive that appears twice shares its layout elements with the earlier occurrence. A failure in the first one
+// must not make the second one retry forever.
+func TestRepeatedDirectiveDoesNotRetryForever(t *testing.T) {
+	for _, tc := range []struct{ name, format, input string }{
+		{"repeated %X", "%a,%X%X", "Mon, "},
+		{"repeated %H", "%H %H", " 5 5"},
+		{"repeated %Y", "%Y %Y", " 2024 2024"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			_, _, err := Parse(tc.format, func(layout string) (time.Time, error) {
+				calls++
+				require.Less(t, calls, 100, "Parse keeps trying new layouts")
+				return time.Parse(layout, tc.input)
+			})
+			require.Error(t, err)
+		})
+	}
+}
+
 func TestZulu(t *testing.T) {
 	format := "%Y-%m-%dT%H:%M:%S.%L%z"
 	// These time should all parse as UTC.

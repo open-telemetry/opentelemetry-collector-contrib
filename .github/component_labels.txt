@@ -159,6 +159,7 @@ pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/ottl/contexts/xprofile pkg/ottl/contexts/xprofile
+pkg/ottl/contexts/xspanlink pkg/ottl/contexts/xspanlink
 pkg/ottl/xottl pkg/ottl/xottl
 pkg/pdatatest pkg/pdatatest
 pkg/resourcetotelemetry pkg/resourcetotelemetry
@@ -238,6 +239,7 @@ processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
 processor/unrollprocessor processor/unroll
+processor/verifyprocessor processor/verify
 receiver/activedirectorydsreceiver receiver/activedirectoryds
 receiver/activedirectoryinvreceiver receiver/activedirectoryinv
 receiver/aerospikereceiver receiver/aerospike
@@ -337,7 +339,6 @@ receiver/receivercreator receiver/receivercreator
 receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
 receiver/saphanareceiver receiver/saphana
-receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
@@ -367,6 +368,7 @@ receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
 testbed testbed
+testbed/integrationtests/elasticsearch testbed/integrationtests/elasticsearch
 testbed/mockdatasenders/mockdatadogagentexporter testbed/mockdatasenders/mockdatadogagentexporter
 reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml

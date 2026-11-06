@@ -207,6 +207,10 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 		close(c.started)
 	}
 
+	if c.config.PartitionProcessing.maxBufferedBatchesSet {
+		c.settings.Logger.Warn("partition_processing.max_buffered_batches is deprecated, use partition_processing.max_prefetch.batches instead")
+	}
+
 	// Report "Starting" as soon as Start() is called.
 	c.host = host
 	c.reportStatus(componentstatus.StatusStarting)
@@ -626,7 +630,8 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			if c.config.PartitionProcessing.Independent {
 				partitionConsumer.mailbox = newPartitionMailbox(
 					partitionConsumer.ctx,
-					c.config.PartitionProcessing.MaxBufferedBatches,
+					c.config.PartitionProcessing.MaxPrefetch.Batches,
+					c.config.PartitionProcessing.MaxPrefetch.Bytes,
 				)
 				if partitionConsumer.add() {
 					go c.runPartitionWorker(&partitionConsumer, tp)

@@ -1,2 +1,10 @@
 udp_log:
   listen_address: "127.0.0.1:29018"
+udp_log/resolve_names_false:
+  listen_address: "127.0.0.1:29018"
+  add_attributes: true
+  resolve_names: false
+udp_log/resolve_names_true:
+  listen_address: "127.0.0.1:29018"
+  add_attributes: true
+  resolve_names: true

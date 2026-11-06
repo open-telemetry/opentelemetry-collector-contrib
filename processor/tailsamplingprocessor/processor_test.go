@@ -138,9 +138,10 @@ func withPolicies(policies []*policy) Option {
 }
 
 type spanInfo struct {
-	span     ptrace.Span
-	resource pcommon.Resource
-	scope    pcommon.InstrumentationScope
+	span           ptrace.Span
+	resource       pcommon.Resource
+	scope          pcommon.InstrumentationScope
+	scopeSchemaURL string
 }
 
 func TestTraceIntegrity(t *testing.T) {
@@ -151,12 +152,14 @@ func TestTraceIntegrity(t *testing.T) {
 
 	// Fill resource
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.SetSchemaUrl("https://example.com/resource")
 	resource := resourceSpans.Resource()
 	resourceSpans.Resource().Attributes().PutStr("key1", "value1")
 	resourceSpans.Resource().Attributes().PutInt("key2", 0)
 
 	// Fill scopeSpans 1
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scopeSpans.SetSchemaUrl("https://example.com/scope1")
 	scope := scopeSpans.Scope()
 	scopeSpans.Scope().SetName("scope1")
 	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
@@ -167,16 +170,17 @@ func TestTraceIntegrity(t *testing.T) {
 	spanID := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	span = scopeSpans.Spans().AppendEmpty()
 	spanID = [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	// Fill scopeSpans 2
 	scopeSpans = resourceSpans.ScopeSpans().AppendEmpty()
+	scopeSpans.SetSchemaUrl("https://example.com/scope2")
 	scope = scopeSpans.Scope()
 	scopeSpans.Scope().SetName("scope2")
 	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
@@ -187,13 +191,13 @@ func TestTraceIntegrity(t *testing.T) {
 	spanID = [8]byte{17, 18, 19, 20, 21, 22, 23, 24}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{9, 10, 11, 12}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	span = scopeSpans.Spans().AppendEmpty()
 	spanID = [8]byte{25, 26, 27, 28, 29, 30, 31, 32}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	require.Len(t, spans, spanCount)
 
@@ -254,6 +258,8 @@ func TestTraceIntegrity(t *testing.T) {
 			require.Equal(t, spanInfo.span, span)
 			require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
 			require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+			require.Equal(t, "https://example.com/resource", trace.ResourceSpans().At(0).SchemaUrl())
+			require.Equal(t, spanInfo.scopeSchemaURL, trace.ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 		} else {
 			require.Fail(t, "Span not found")
 		}
@@ -307,10 +313,9 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 	require.True(t, a.hasRoot)
 	require.False(t, b.hasRoot)
 
-	// We copy the resource, but not SchemaUrl (the old rebuild path didn't either).
 	require.Equal(t, "frontend", a.rss.Resource().Attributes().AsRaw()["service.name"])
-	require.Empty(t, a.rss.SchemaUrl())
-	require.Empty(t, b.rss.SchemaUrl())
+	require.Equal(t, "https://example.com/resource", a.rss.SchemaUrl())
+	require.Equal(t, "https://example.com/resource", b.rss.SchemaUrl())
 
 	// Trace A keeps both scopes in first-seen order, no empty scopes.
 	require.Equal(t, 2, a.rss.ScopeSpans().Len())
@@ -320,11 +325,13 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 	require.Equal(t, uInt64ToSpanID(1), a.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
 	require.Equal(t, uInt64ToSpanID(4), a.rss.ScopeSpans().At(0).Spans().At(1).SpanID())
 	require.Equal(t, uInt64ToSpanID(3), a.rss.ScopeSpans().At(1).Spans().At(0).SpanID())
-	require.Empty(t, a.rss.ScopeSpans().At(0).SchemaUrl())
+	require.Equal(t, "https://example.com/scope-a", a.rss.ScopeSpans().At(0).SchemaUrl())
+	require.Empty(t, a.rss.ScopeSpans().At(1).SchemaUrl())
 
 	// Trace B only appeared in scope A.
 	require.Equal(t, 1, b.rss.ScopeSpans().Len())
 	require.Equal(t, "lib-a", b.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, "https://example.com/scope-a", b.rss.ScopeSpans().At(0).SchemaUrl())
 	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
 
 	// Spans are moved out of the source; the resource and scopes are copied.
