@@ -16,9 +16,9 @@ import (
 	"os"
 )
 
-// maxAgentBytes is the maximum size of an agent binary the supervisor will write
+// MaxAgentBytes is the maximum size of an agent binary the supervisor will write
 // to disk during an install. It guards against unbounded writes.
-const maxAgentBytes = 1 << 30 // 1 GiB
+const MaxAgentBytes = 1 << 30 // 1 GiB
 
 // Format is the format of the package downloaded by the supervisor.
 type Format string
@@ -45,9 +45,9 @@ type Extractor interface {
 func NewExtractor(format Format) (Extractor, error) {
 	switch format {
 	case FormatNone:
-		return rawExtractor{maxBytes: maxAgentBytes}, nil
+		return rawExtractor{maxBytes: MaxAgentBytes}, nil
 	case FormatTarGzip:
-		return tarGzipExtractor{maxBytes: maxAgentBytes}, nil
+		return tarGzipExtractor{maxBytes: MaxAgentBytes}, nil
 	default:
 		return nil, fmt.Errorf("unsupported archive format: %q", string(format))
 	}
