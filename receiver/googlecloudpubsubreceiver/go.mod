@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/confmap v1.70.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/consumer v1.70.1-0.20261105234325-55e32ede1d63
+	go.opentelemetry.io/collector/consumer/consumererror v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.164.1-0.20261105234325-55e32ede1d63
 	go.opentelemetry.io/collector/pdata v1.70.1-0.20261105234325-55e32ede1d63
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
+	golang.org/x/time v0.16.0
 	google.golang.org/api v0.310.0
 	google.golang.org/genproto v0.0.0-20261012220534-4341edf3f941
 	google.golang.org/grpc v1.85.0
@@ -59,7 +61,6 @@ require (
 	go.opentelemetry.io/collector/client v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.70.1-0.20261105234325-55e32ede1d63 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/exporter v1.70.1-0.20261105234325-55e32ede1d63 // indirect
 	go.opentelemetry.io/collector/extension v1.70.1-0.20261105234325-55e32ede1d63 // indirect
@@ -84,7 +85,6 @@ require (
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20261012220534-4341edf3f941 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
