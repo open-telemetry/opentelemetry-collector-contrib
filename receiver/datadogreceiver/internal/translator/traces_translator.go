@@ -26,8 +26,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
+	
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -200,14 +199,8 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	spanName := ""
 	if method != "" {
 		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
-		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
-			newSpan.Attributes().PutStr("rpc.service", service)
-		}
 		spanName = service + "/" + method
 	} else if service != "" {
-		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
-			newSpan.Attributes().PutStr("rpc.service", service)
-		}
 		spanName = service
 	}
 	if spanName != "" {
