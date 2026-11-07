@@ -198,7 +198,7 @@ linters:
             - pkg: math/rand$
               desc: Use math/rand/v2 instead of math/rand
 
-            - pkg: "gopkg.in/yaml.v3"
+            - pkg: gopkg.in/yaml.v3
               desc: "Use 'go.yaml.in/yaml/v3' instead of gopkg.in/yaml.v3"
 
             # Block AWS SDK v1 to prevent new usage while migration to v2 is in progress.
