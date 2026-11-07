@@ -10,6 +10,7 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib]
+  warnings: [Other]
   codeowners:
     active: [antonblock, akats7]
     emeritus: [djaglowski]
