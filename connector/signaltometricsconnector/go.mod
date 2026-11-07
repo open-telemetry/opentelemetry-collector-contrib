@@ -8,7 +8,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.165.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.3.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.165.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.165.0
