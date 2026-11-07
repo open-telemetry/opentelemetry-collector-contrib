@@ -205,6 +205,9 @@ linters:
             # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
             - pkg: github.com/aws/aws-sdk-go/
               desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
+            
+            - pkg: github.com/tj/assert
+              desc: "Use github.com/stretchr/testify/assert instead"
 
         semconv:
           list-mode: lax
