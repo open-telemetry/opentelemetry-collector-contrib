@@ -3,7 +3,8 @@
 
 //go:build !windows
 
-// TODO review if tests should succeed on Windows
+// The golden files were captured from a Linux daemon. The Windows build uses a different
+// CPU formula and memory fields, so the expected values do not match there.
 
 package dockerstatsreceiver
 

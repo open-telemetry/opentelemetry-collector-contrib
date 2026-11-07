@@ -15,7 +15,7 @@ status:
   codeowners:
     active: [jamesmoessis]
     emeritus: [rmfitzpatrick]
-  unsupported_platforms: [darwin, windows]
+  unsupported_platforms: [darwin]
 
 sem_conv_version: 1.43.0
 
