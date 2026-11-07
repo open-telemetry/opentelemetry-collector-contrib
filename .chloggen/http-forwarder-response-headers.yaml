@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: extension/http_forwarder
-note: Preserve all values of HTTP response headers, including multiple Set-Cookie headers.
-issues: [52453]
-change_logs: [user]
