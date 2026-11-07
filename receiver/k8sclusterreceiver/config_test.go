@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,6 +47,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetadataCollectionInterval: 30 * time.Minute,
 				MetricsBuilderConfig:       metadata.NewDefaultMetricsBuilderConfig(),
+				ContainerMetricsConfig: pod.ContainerMetricsConfig{
+					CollectSidecarContainerMetrics:   true,
+					CollectAllInitContainerMetrics:   true,
+					CollectEphemeralContainerMetrics: true,
+				},
 			},
 		},
 		{
