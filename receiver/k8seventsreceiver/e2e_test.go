@@ -7,6 +7,7 @@ package k8seventsreceiver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -147,9 +149,8 @@ func countEventLogs(allLogs []plog.Logs, eventName string) int {
 	return count
 }
 
-// TestE2EDedup uses a pod whose readiness probe always fails so the kubelet
-// PATCHes the same Unhealthy Event on every failure, producing the MODIFIED
-// watch notifications dedup_interval is meant to throttle.
+// TestE2EDedup creates events.k8s.io/v1 events programmatically and patches them
+// repeatedly to produce MODIFIED watch notifications that dedup_interval throttles.
 func TestE2EDedup(t *testing.T) {
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
@@ -192,60 +193,61 @@ func TestE2EDedup(t *testing.T) {
 		}
 	}()
 
-	// Create the failing-readiness pod after the collector is up so the
-	// collector's startTime predates every Unhealthy event.
-	podObj, err := os.ReadFile(filepath.Join(objectsDir, "pod.yaml"))
-	require.NoError(t, err, "failed to read pod.yaml")
-	createdPod, err := k8stest.CreateObject(k8sClient, podObj)
-	require.NoError(t, err, "failed to create failing-readiness pod")
-	defer func() {
-		require.NoErrorf(t, k8stest.DeleteObject(k8sClient, createdPod), "failed to delete pod")
-	}()
-
-	// 25 = kubelet's per-source spam-filter burst; waiting that long ensures
-	// the receiver has seen many real PATCHes by the time we assert.
-	const targetEventCount = 25
-
-	eventsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}
+	eventsGVR := schema.GroupVersionResource{Group: "events.k8s.io", Version: "v1", Resource: "events"}
 	evClient := k8sClient.DynamicClient.Resource(eventsGVR).Namespace("test-k8sevents-dedup")
 
-	maxEventCount := func() (int64, string) {
-		evList, err := evClient.List(context.Background(), metav1.ListOptions{
-			FieldSelector: "involvedObject.name=failing-readiness,reason=Unhealthy",
-		})
-		if err != nil {
-			return 0, ""
+	// Create an events.k8s.io/v1 Event with a far-future eventTime so allowEvent
+	// always passes regardless of clock skew between the CI runner and the pod.
+	eventObj := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "events.k8s.io/v1",
+			"kind":       "Event",
+			"metadata": map[string]any{
+				"name":      "test-dedup-unhealthy",
+				"namespace": "test-k8sevents-dedup",
+			},
+			"regarding": map[string]any{
+				"apiVersion": "v1",
+				"kind":       "Pod",
+				"name":       "failing-readiness",
+				"namespace":  "test-k8sevents-dedup",
+			},
+			"reason":              "Unhealthy",
+			"note":                "Readiness probe failed: connection refused",
+			"type":                "Warning",
+			"reportingController": "kubelet",
+			"reportingInstance":   "test-node",
+			"action":              "HealthCheck",
+			"eventTime":           "2099-01-01T00:00:00.000000Z",
+		},
+	}
+	created, err := evClient.Create(context.Background(), eventObj, metav1.CreateOptions{})
+	require.NoError(t, err, "failed to create dedup test event")
+	defer func() {
+		_ = evClient.Delete(context.Background(), created.GetName(), metav1.DeleteOptions{})
+	}()
+
+	// Patch the event 25 times with 200ms gaps to generate MODIFIED watch events.
+	// dedup_interval=5s means the first MODIFIED is emitted and the rest are
+	// throttled until 5s elapses — far fewer than 25 records should reach the consumer.
+	// Use a far-future lastObservedTime so allowEvent passes regardless of clock skew.
+	const patchCount = 25
+	for i := range patchCount {
+		time.Sleep(200 * time.Millisecond)
+		patch := fmt.Sprintf(`{"series":{"count":%d,"lastObservedTime":"2099-01-01T00:01:00.000000Z"}}`, i+2)
+		if _, patchErr := evClient.Patch(context.Background(), created.GetName(), types.MergePatchType, []byte(patch), metav1.PatchOptions{}); patchErr != nil {
+			t.Logf("patch %d: %v", i+1, patchErr)
 		}
-		var max int64
-		var name string
-		for _, e := range evList.Items {
-			cnt, ok, _ := unstructured.NestedInt64(e.Object, "count")
-			if ok && cnt > max {
-				max = cnt
-				name = e.GetName()
-			}
-		}
-		return max, name
 	}
 
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		cnt, _ := maxEventCount()
-		assert.GreaterOrEqualf(c, cnt, int64(targetEventCount),
-			"kubelet at count=%d, waiting for >= %d", cnt, targetEventCount)
-	}, 2*time.Minute, 2*time.Second, "kubelet didn't produce enough Unhealthy events in time")
-
-	// Drain in-flight watch events, then take a single snapshot so the API
-	// count and receiver count refer to the same moment.
+	// Drain in-flight watch events before sampling.
 	time.Sleep(3 * time.Second)
-	apiCount, eventName := maxEventCount()
-	receiverCount := countEventLogs(logsConsumer.AllLogs(), eventName)
-	t.Logf("dedup — Event.count=%d  receiver records=%d  dedup_interval=5s",
-		apiCount, receiverCount)
+	receiverCount := countEventLogs(logsConsumer.AllLogs(), created.GetName())
+	t.Logf("dedup — patches=%d  receiver records=%d  dedup_interval=5s", patchCount, receiverCount)
 
 	require.GreaterOrEqual(t, receiverCount, 1, "expected at least the ADDED record")
-	require.Lessf(t, int64(receiverCount), apiCount,
-		"dedup didn't throttle: Event.count=%d but receiver emitted %d records",
-		apiCount, receiverCount)
+	require.Less(t, receiverCount, patchCount+1,
+		"dedup didn't throttle: %d patches but receiver emitted %d records", patchCount, receiverCount)
 
 	// The receiver pushes its internal metrics via the configured periodic
 	// OTLP reader; the latest cumulative datapoint must reflect filtering.

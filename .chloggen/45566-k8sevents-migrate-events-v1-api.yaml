@@ -1,0 +1,23 @@
+change_type: breaking
+
+component: receiver/k8s_events
+
+note: >
+  Migrate from deprecated `core/v1` Events API to `events.k8s.io/v1` (stable since k8s 1.25).
+  Remove incorrect `k8s.node.name` resource attribute (was mapped from `source.host`, which
+  describes the reporter, not the regarding object). Move `k8s.namespace.name` from log
+  attributes to resource attributes to correctly describe the regarding object's identity.
+  Event `body` is now populated from the `note` field (was `message` in core/v1).
+  `k8s.event.count` is now derived from `series.count` (nil series → attribute omitted).
+
+issues: [45566]
+
+subtext: |
+  **Attribute changes:**
+  - Removed resource attribute `k8s.node.name` (was incorrectly mapped from `source.host`)
+  - Moved `k8s.namespace.name` from log attributes to resource attributes
+  - `k8s.event.count` now uses `series.count`; omitted when no series is present
+
+  **Minimum Kubernetes version:** 1.25 (events.k8s.io/v1 stable)
+
+change_logs: [user]
