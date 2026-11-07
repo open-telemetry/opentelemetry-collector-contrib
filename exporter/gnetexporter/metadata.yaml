@@ -1,0 +1,15 @@
+type: gnet
+display_name: gnet Exporter
+
+description: |
+  High-throughput OTLP exporter using the gnet event-loop network library.
+  Sends length-prefixed protobuf frames over a persistent TCP connection to a
+  gnetreceiver, bypassing HTTP/2 and gRPC overhead for agent-to-gateway hops.
+
+status:
+  class: exporter
+  stability:
+    development: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: []

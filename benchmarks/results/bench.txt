@@ -1,0 +1,31 @@
+goos: linux
+goarch: amd64
+pkg: github.com/open-telemetry/opentelemetry-collector-contrib/benchmarks
+cpu: 12th Gen Intel(R) Core(TM) i7-1255U
+BenchmarkGnetTraces
+[gnet] 2026-10-21T20:02:45.702119995Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:40479
+[gnet] 2026-10-21T20:02:45.783274761Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:35791
+[gnet] 2026-10-21T20:02:45.865111988Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:41607
+[gnet] 2026-10-21T20:02:46.003936826Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:34813
+[gnet] 2026-10-21T20:02:51.792061971Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:35893
+BenchmarkGnetTraces-12      	 2103243	      5674 ns/op	 754.52 MB/s	    4870 B/op	       1 allocs/op
+BenchmarkGnetLogs
+[gnet] 2026-10-21T20:03:03.806775227Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:38625
+[gnet] 2026-10-21T20:03:03.88787857Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:36597
+[gnet] 2026-10-21T20:03:03.969350379Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:38079
+[gnet] 2026-10-21T20:03:04.088912081Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:43719
+[gnet] 2026-10-21T20:03:08.990649992Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:37361
+BenchmarkGnetLogs-12        	 2489202	      4744 ns/op	 443.74 MB/s	    2305 B/op	       1 allocs/op
+BenchmarkGnetParallel
+[gnet] 2026-10-21T20:03:20.879946855Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:43481
+[gnet] 2026-10-21T20:03:20.966574083Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:35961
+[gnet] 2026-10-21T20:03:21.048170833Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:46417
+[gnet] 2026-10-21T20:03:21.137068573Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:40449
+[gnet] 2026-10-21T20:03:24.478564353Z	INFO	logging/logger.go:256	Launching gnet with 1 event-loops, listening on: tcp://127.0.0.1:33103
+BenchmarkGnetParallel-12    	 3681542	      3038 ns/op	1409.24 MB/s	    4865 B/op	       1 allocs/op
+BenchmarkGRPCTraces
+BenchmarkGRPCTraces-12      	  117955	     98969 ns/op	    9601 B/op	     181 allocs/op
+BenchmarkGRPCParallel
+BenchmarkGRPCParallel-12    	  611210	     23605 ns/op	    9256 B/op	     164 allocs/op
+PASS
+ok  	github.com/open-telemetry/opentelemetry-collector-contrib/benchmarks	87.479s
