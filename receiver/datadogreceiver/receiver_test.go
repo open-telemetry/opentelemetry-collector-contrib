@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"github.com/DataDog/agent-payload/v5/gogen"
 	intakev3 "github.com/DataDog/agent-payload/v5/metrics/intake_v3"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace/idx"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/encoding/protowire"
@@ -83,6 +86,7 @@ func TestDatadogLogsReceiver_Lifecycle(t *testing.T) {
 func TestDatadogServer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.Traces.EnableV1Endpoint = true
 
 	ctx := t.Context()
 
@@ -115,6 +119,13 @@ func TestDatadogServer(t *testing.T) {
 			name:          "invalid data",
 			op:            strings.NewReader("{"),
 			endpoint:      "http://%s/v0.7/traces",
+			expectCode:    http.StatusBadRequest,
+			expectContent: "Unable to unmarshal reqs\n",
+		},
+		{
+			name:          "invalid v1.0 data",
+			op:            strings.NewReader("{"),
+			endpoint:      "http://%s/v1.0/traces",
 			expectCode:    http.StatusBadRequest,
 			expectContent: "Unable to unmarshal reqs\n",
 		},
@@ -220,6 +231,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		name            string
 		tracesConsumer  consumer.Traces
 		metricsConsumer consumer.Metrics
+		enableV1        bool
 
 		expectContent string
 	}{
@@ -255,6 +267,29 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 	"client_drop_p0s": false,
 	"span_meta_structs": false,
 	"long_running_spans": false,
+	"config": null
+}`,
+		},
+		{
+			name:            "Traces consumer with the v1 endpoint enabled",
+			tracesConsumer:  consumertest.NewNop(),
+			metricsConsumer: nil,
+			enableV1:        true,
+			expectContent: `{
+	"version": "datadogreceiver-otelcol-latest",
+	"endpoints": [
+		"/",
+		"/v0.3/traces",
+		"/v0.4/traces",
+		"/v0.5/traces",
+		"/v0.7/traces",
+		"/api/v0.2/traces",
+		"/v1.0/traces"
+	],
+	"client_drop_p0s": false,
+	"span_meta_structs": false,
+	"long_running_spans": false,
+	"span_events": true,
 	"config": null
 }`,
 		},
@@ -321,6 +356,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+			cfg.Traces.EnableV1Endpoint = tc.enableV1
 
 			ctx := t.Context()
 
@@ -1553,4 +1589,201 @@ func TestCreateIntakeReverseProxyRewrite(t *testing.T) {
 	assert.Equal(t, "test-api-key", out.Header.Get("Dd-Api-Key"))
 	// SetXForwarded must preserve the X-Forwarded-For behavior Director gave us.
 	assert.Equal(t, "10.0.0.1", out.Header.Get("X-Forwarded-For"))
+}
+
+// newV1TracerPayload returns a v1 tracer payload with a root server span and a child client span. The root span has
+// a 128-bit trace id, attributes of every v1 value type, a link and an event.
+func newV1TracerPayload() *idx.InternalTracerPayload {
+	// The 128-bit trace id lives on the chunk; its low half is 0x1122, its high half 0xAABB.
+	traceID := make([]byte, 16)
+	binary.BigEndian.PutUint64(traceID[:8], 0xAABB)
+	binary.BigEndian.PutUint64(traceID[8:], 0x1122)
+	linkTraceID := make([]byte, 16)
+	binary.BigEndian.PutUint64(linkTraceID[:8], 0x77)
+	binary.BigEndian.PutUint64(linkTraceID[8:], 0x88)
+
+	strs := idx.NewStringTable()
+	str := func(s string) *idx.AnyValue {
+		return &idx.AnyValue{Value: &idx.AnyValue_StringValueRef{StringValueRef: strs.Add(s)}}
+	}
+	root := &idx.Span{
+		ServiceRef:   strs.Add("checkout"),
+		NameRef:      strs.Add("http.request"),
+		ResourceRef:  strs.Add("GET /cart"),
+		TypeRef:      strs.Add("web"),
+		EnvRef:       strs.Add("prod"),
+		ComponentRef: strs.Add("net/http"),
+		Kind:         idx.SpanKind_SPAN_KIND_SERVER,
+		SpanID:       1,
+		Start:        1_000,
+		Duration:     500,
+		Error:        true,
+		Attributes: map[uint32]*idx.AnyValue{
+			strs.Add("http.method"):   str("GET"),
+			strs.Add("http.route"):    str("/cart"),
+			strs.Add("retries"):       {Value: &idx.AnyValue_IntValue{IntValue: 3}},
+			strs.Add("ratio"):         {Value: &idx.AnyValue_DoubleValue{DoubleValue: 0.5}},
+			strs.Add("cache.enabled"): {Value: &idx.AnyValue_BoolValue{BoolValue: true}},
+			strs.Add("payload"):       {Value: &idx.AnyValue_BytesValue{BytesValue: []byte("raw")}},
+			strs.Add("cart.items"): {Value: &idx.AnyValue_ArrayValue{ArrayValue: &idx.ArrayValue{
+				Values: []*idx.AnyValue{str("apple"), {Value: &idx.AnyValue_IntValue{IntValue: 2}}},
+			}}},
+			strs.Add("cart.owner"): {Value: &idx.AnyValue_KeyValueList{KeyValueList: &idx.KeyValueList{
+				KeyValues: []*idx.KeyValue{{Key: strs.Add("name"), Value: str("erwin")}},
+			}}},
+		},
+		Links: []*idx.SpanLink{{
+			TraceID:       linkTraceID,
+			SpanID:        9,
+			TracestateRef: strs.Add("k=v"),
+			Flags:         1,
+			Attributes:    map[uint32]*idx.AnyValue{strs.Add("link.attr"): str("x")},
+		}},
+		Events: []*idx.SpanEvent{{
+			Time:    1_100,
+			NameRef: strs.Add("exception"),
+			Attributes: map[uint32]*idx.AnyValue{
+				strs.Add("exception.message"): str("boom"),
+				strs.Add("exception.count"):   {Value: &idx.AnyValue_IntValue{IntValue: 2}},
+			},
+		}},
+	}
+	child := &idx.Span{
+		ServiceRef:  strs.Add("checkout"),
+		NameRef:     strs.Add("redis.query"),
+		ResourceRef: strs.Add("GET cart:1"),
+		TypeRef:     strs.Add("redis"),
+		Kind:        idx.SpanKind_SPAN_KIND_CLIENT,
+		SpanID:      2,
+		ParentID:    1,
+		Start:       1_100,
+		Duration:    100,
+	}
+	payload := &idx.InternalTracerPayload{
+		Strings: strs,
+		Chunks: []*idx.InternalTraceChunk{idx.NewInternalTraceChunk(
+			strs, 1, "rum", nil,
+			[]*idx.InternalSpan{idx.NewInternalSpan(strs, root), idx.NewInternalSpan(strs, child)},
+			false, traceID, 0,
+		)},
+	}
+	payload.SetLanguageName("go")
+	payload.SetTracerVersion("v2.0.0")
+	payload.SetContainerID("container-1")
+	payload.SetHostname("host-1")
+	payload.SetAppVersion("1.2.3")
+	payload.SetStringAttribute("_dd.tags.container", "kube_namespace:default")
+	return payload
+}
+
+// v1RootSpanAttributes are the attributes of the root span of newV1TracerPayload as the receiver emits them.
+var v1RootSpanAttributes = map[string]any{
+	"dd.span.Resource":            "GET /cart",
+	"sampling.priority":           "1.000000",
+	"datadog.span.id":             "1",
+	"datadog.trace.id":            "4386",
+	"deployment.environment.name": "prod",
+	"component":                   "net/http",
+	"http.request.method":         "GET",
+	"http.route":                  "/cart",
+	"ratio":                       0.5,
+	"retries":                     int64(3),
+	"cache.enabled":               true,
+	"payload":                     []byte("raw"),
+	"cart.items":                  []any{"apple", int64(2)},
+	"cart.owner":                  map[string]any{"name": "erwin"},
+}
+
+func TestDatadogTracesV1_EndToEnd(t *testing.T) {
+	// agentPayload is how an agent that received v1.0 traffic forwards it: in the idxTracerPayloads field.
+	agentPayload := func(t *testing.T, payload *idx.InternalTracerPayload) []byte {
+		body, err := proto.Marshal(&pb.AgentPayload{IdxTracerPayloads: []*idx.TracerPayload{payload.ToProto()}})
+		require.NoError(t, err)
+		return body
+	}
+	rawPayload := func(t *testing.T, payload *idx.InternalTracerPayload) []byte {
+		body, err := payload.MarshalMsg(nil)
+		require.NoError(t, err)
+		return body
+	}
+
+	for _, tc := range []struct {
+		name        string
+		path        string
+		contentType string
+		encode      func(*testing.T, *idx.InternalTracerPayload) []byte
+		wantBody    string
+	}{
+		{name: "v1.0 endpoint", path: "/v1.0/traces", contentType: "application/msgpack", encode: rawPayload, wantBody: "{}"},
+		{name: "agent payload", path: "/api/v0.2/traces", contentType: "application/x-protobuf", encode: agentPayload, wantBody: "OK"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Traces.EnableV1Endpoint = true
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+			sink := new(consumertest.TracesSink)
+			dd, err := newDataDogReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, err, "Must not error when creating receiver")
+			dd.(*datadogReceiver).nextTracesConsumer = sink
+			require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, dd.Shutdown(t.Context()))
+			}()
+
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s%s", dd.(*datadogReceiver).address, tc.path), bytes.NewReader(tc.encode(t, newV1TracerPayload())))
+			require.NoError(t, err, "Must not error when creating request")
+			req.Header.Set("Content-Type", tc.contentType)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Must not error performing request")
+			respBody, err := io.ReadAll(resp.Body)
+			require.NoError(t, errors.Join(err, resp.Body.Close()), "Must not error when reading body")
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+			traces := sink.AllTraces()
+			require.Len(t, traces, 1)
+			require.Equal(t, 1, traces[0].ResourceSpans().Len())
+			rs := traces[0].ResourceSpans().At(0)
+			resourceAttrs := rs.Resource().Attributes().AsRaw()
+			assert.Equal(t, "checkout", resourceAttrs["service.name"])
+			assert.Equal(t, "container-1", resourceAttrs["container.id"])
+			assert.Equal(t, "host-1", resourceAttrs["host.name"])
+			assert.Equal(t, "1.2.3", resourceAttrs["service.version"])
+			assert.Equal(t, "go", resourceAttrs["telemetry.sdk.language"])
+			assert.Equal(t, "kube_namespace:default", resourceAttrs["_dd.tags.container"])
+
+			spans := rs.ScopeSpans().At(0).Spans()
+			require.Equal(t, 2, spans.Len())
+			wantTraceID := pcommon.TraceID{0, 0, 0, 0, 0, 0, 0xAA, 0xBB, 0, 0, 0, 0, 0, 0, 0x11, 0x22}
+
+			gotRoot, gotChild := spans.At(0), spans.At(1)
+			assert.Equal(t, wantTraceID, gotRoot.TraceID())
+			assert.Equal(t, wantTraceID, gotChild.TraceID())
+			assert.Equal(t, pcommon.SpanID{0, 0, 0, 0, 0, 0, 0, 1}, gotRoot.SpanID())
+			assert.Equal(t, pcommon.SpanID{0, 0, 0, 0, 0, 0, 0, 1}, gotChild.ParentSpanID())
+			assert.Equal(t, "GET /cart", gotRoot.Name())
+			assert.Equal(t, ptrace.SpanKindServer, gotRoot.Kind())
+			assert.Equal(t, ptrace.StatusCodeError, gotRoot.Status().Code())
+			assert.Equal(t, pcommon.Timestamp(1_000), gotRoot.StartTimestamp())
+			assert.Equal(t, pcommon.Timestamp(1_500), gotRoot.EndTimestamp())
+			assert.Equal(t, ptrace.SpanKindClient, gotChild.Kind())
+			assert.Equal(t, ptrace.StatusCodeOk, gotChild.Status().Code())
+			assert.Equal(t, v1RootSpanAttributes, gotRoot.Attributes().AsRaw())
+
+			require.Equal(t, 1, gotRoot.Links().Len())
+			link := gotRoot.Links().At(0)
+			assert.Equal(t, pcommon.TraceID{0, 0, 0, 0, 0, 0, 0, 0x77, 0, 0, 0, 0, 0, 0, 0, 0x88}, link.TraceID())
+			assert.Equal(t, pcommon.SpanID{0, 0, 0, 0, 0, 0, 0, 9}, link.SpanID())
+			assert.Equal(t, "k=v", link.TraceState().AsRaw())
+			assert.Equal(t, uint32(1), link.Flags())
+			assert.Equal(t, map[string]any{"link.attr": "x"}, link.Attributes().AsRaw())
+
+			require.Equal(t, 1, gotRoot.Events().Len())
+			event := gotRoot.Events().At(0)
+			assert.Equal(t, "exception", event.Name())
+			assert.Equal(t, pcommon.Timestamp(1_100), event.Timestamp())
+			assert.Equal(t, map[string]any{"exception.message": "boom", "exception.count": int64(2)}, event.Attributes().AsRaw())
+
+			assert.Equal(t, tc.wantBody, string(respBody))
+		})
+	}
 }
