@@ -1,0 +1,29 @@
+name: 'Add Labels (Discussions)'
+on:
+  discussion_comment:
+    types: [created]
+
+permissions: read-all
+
+jobs:
+  add-labels:
+    if: ${{ startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
+    permissions:
+      discussions: write
+
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run update permissions
+        run: chmod +x ./.github/workflows/scripts/add-labels-discussions.sh
+
+      - name: Run add-labels-discussions.sh
+        run: ./.github/workflows/scripts/add-labels-discussions.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCUSSION_ID: ${{ github.event.discussion.node_id }}
+          COMMENT: ${{ github.event.comment.body }}
+          SENDER: ${{ github.event.sender.login }}
