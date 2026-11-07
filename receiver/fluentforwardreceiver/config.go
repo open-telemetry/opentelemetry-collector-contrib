@@ -5,8 +5,10 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 
 import "errors"
 
-var errNegativeMaxConnections = errors.New("max_connections must be greater than or equal to 0")
-var errRefuseWithoutLimit = errors.New("refuse_over_limit requires max_connections to be greater than 0")
+var (
+	errNegativeMaxConnections = errors.New("max_connections must be greater than or equal to 0")
+	errRefuseWithoutLimit     = errors.New("refuse_over_limit requires max_connections to be greater than 0")
+)
 
 // Config defines configuration for the fluentforward receiver.
 type Config struct {
