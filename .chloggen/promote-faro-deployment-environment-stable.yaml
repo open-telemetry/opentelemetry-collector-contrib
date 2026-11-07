@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/faro
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Promote pkg.translator.faro.EmitV1DeploymentEnvironmentConventions and pkg.translator.faro.DontEmitV0DeploymentEnvironmentConventions feature gates to Stable.
+note: Promote pkg.translator.faro.EmitV1DeploymentEnvironmentConventions and pkg.translator.faro.DontEmitV0DeploymentEnvironmentConventions feature gates from Beta to Stable.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52504]
