@@ -64,7 +64,7 @@ func TestCreateOrLoadPersistentState(t *testing.T) {
 		err = os.WriteFile(f, []byte(`
 instance_id: "018feed6-905b-7aa6-ba37-b0eec565de03"
 last_remote_config_status:
-  status: 3
+  status: failed
   last_remote_config_hash: 259ac3f596a87e6b8ca3b431908ac237ed8ae86128274da7911fcbedb93186a3
   error_message: "test error message"`), 0o600)
 
@@ -132,4 +132,65 @@ func TestPersistentState_SetLastRemoteConfigStatus(t *testing.T) {
 		LastRemoteConfigHash: lastRemoteConfigHash,
 	}, loadedState.GetLastRemoteConfigStatus())
 	require.FileExists(t, f)
+
+	fileBytes, err := os.ReadFile(f)
+	require.NoError(t, err)
+
+	require.Contains(t, string(fileBytes), "status: applied")
+	require.Contains(t, string(fileBytes), "last_remote_config_hash: "+hex.EncodeToString(lastRemoteConfigHash))
+	require.Contains(t, string(fileBytes), "error_message: \"\"")
+	require.NotContains(t, string(fileBytes), "status: 1")
+}
+
+func TestPersistentState_RemoteConfigStatusStringRoundTrip(t *testing.T) {
+	tests := []struct {
+		name   string
+		status protobufs.RemoteConfigStatuses
+		want   string
+	}{
+		{
+			name:   "applied",
+			status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+			want:   "applied",
+		},
+		{
+			name:   "applying",
+			status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+			want:   "applying",
+		},
+		{
+			name:   "failed",
+			status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+			want:   "failed",
+		},
+		{
+			name:   "unset",
+			status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET,
+			want:   "unset",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := filepath.Join(t.TempDir(), "state.yaml")
+			state, err := createNewPersistentState(f, "", zap.NewNop())
+			require.NoError(t, err)
+
+			err = state.SetLastRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+				Status: tt.status,
+			})
+			require.NoError(t, err)
+
+			fileBytes, err := os.ReadFile(f)
+			require.NoError(t, err)
+			require.Contains(t, string(fileBytes), "status: "+tt.want)
+
+			loadedState, err := loadPersistentState(f, zap.NewNop())
+			require.NoError(t, err)
+
+			got := loadedState.GetLastRemoteConfigStatus()
+			require.NotNil(t, got)
+			require.Equal(t, tt.status, got.Status)
+		})
+	}
 }
