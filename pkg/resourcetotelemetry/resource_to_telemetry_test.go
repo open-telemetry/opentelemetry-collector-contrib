@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -284,4 +286,22 @@ func initMetricAttributes(capacity, idx int) pcommon.Map {
 		dest.PutStr(fmt.Sprintf("label-name-for-index-%d", i+idx), fmt.Sprintf("label-value-for-index-%d", i+idx))
 	}
 	return dest
+}
+
+type fakeBatchingMetricsExporter struct {
+	exporter.Metrics
+	batching bool
+}
+
+func (f *fakeBatchingMetricsExporter) ExporterHelperBatchingEnabled() bool {
+	return f.batching
+}
+
+func TestWrapMetricsExporterBatchingEnabled(t *testing.T) {
+	for _, enabled := range []bool{true, false} {
+		wrapped := WrapMetricsExporter(Settings{Included: []string{"*"}}, &fakeBatchingMetricsExporter{batching: enabled})
+		b, ok := wrapped.(interface{ ExporterHelperBatchingEnabled() bool })
+		require.True(t, ok)
+		assert.Equal(t, enabled, b.ExporterHelperBatchingEnabled())
+	}
 }
