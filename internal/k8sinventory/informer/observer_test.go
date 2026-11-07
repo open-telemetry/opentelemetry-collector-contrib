@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -559,6 +560,30 @@ func TestHandleWatchEventTombstone(t *testing.T) {
 	require.Len(t, events, 1)
 	assert.Equal(t, apiWatch.Deleted, events[0].Type)
 	assert.Equal(t, "tombstone-pod", events[0].Object.(*unstructured.Unstructured).GetName())
+}
+
+func TestHandleWatchEventNilTombstone(t *testing.T) {
+	t.Parallel()
+	client, _ := newFakeClient(t)
+	reg := NewFactoryRegistry(client, 0)
+	t.Cleanup(reg.Shutdown)
+
+	core, logs := observer.New(zap.WarnLevel)
+	called := false
+	obs, err := NewWatch(reg, WatchConfig{
+		Config:           k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout: 5 * time.Second,
+	}, zap.New(core), func(*apiWatch.Event) { called = true })
+	require.NoError(t, err)
+
+	obs.handleWatchEvent(apiWatch.Deleted, cache.DeletedFinalStateUnknown{Key: "default/gone-pod"}, "default")
+
+	assert.False(t, called)
+	entries := logs.FilterMessage("dropping delete event: tombstone has no final object state").All()
+	require.Len(t, entries, 1)
+	ctx := entries[0].ContextMap()
+	assert.Equal(t, "default/gone-pod", ctx["key"])
+	assert.Equal(t, podsGVR.String(), ctx["gvr"])
 }
 
 func newTestStorageClient(t *testing.T) *storagetest.TestClient {
