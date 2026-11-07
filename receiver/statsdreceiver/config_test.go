@@ -6,6 +6,7 @@ package statsdreceiver
 import (
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"testing"
 	"time"
@@ -376,6 +377,59 @@ func TestConfig_validateExplicitBuckets(t *testing.T) {
 			t.Parallel()
 			got := cfg.validateExplicitBuckets(tc.Explicitbuckets)
 			require.EqualError(t, got, tc.Want.Error())
+		})
+	}
+}
+
+func TestConfigValidateExplicitBucketBoundaries(t *testing.T) {
+	t.Parallel()
+
+	for _, statsdType := range []protocol.TypeName{
+		protocol.TimingTypeName,
+		protocol.TimingAltTypeName,
+		protocol.HistogramTypeName,
+		protocol.DistributionTypeName,
+	} {
+		t.Run(string(statsdType), func(t *testing.T) {
+			t.Parallel()
+			for _, tc := range []struct {
+				name    string
+				buckets []float64
+				valid   bool
+			}{
+				{name: "duplicate_first", buckets: []float64{1, 1, 2}},
+				{name: "duplicate_middle", buckets: []float64{1, 2, 2, 3}},
+				{name: "duplicate_last", buckets: []float64{1, 2, 3, 3}},
+				{name: "all_equal", buckets: []float64{1, 1, 1}},
+				{name: "nan_first", buckets: []float64{math.NaN(), 1, 2}},
+				{name: "nan_middle", buckets: []float64{1, math.NaN(), 2}},
+				{name: "nan_last", buckets: []float64{1, 2, math.NaN()}},
+				{name: "nan_single", buckets: []float64{math.NaN()}},
+				{name: "increasing", buckets: []float64{1, 2, 3}, valid: true},
+				{name: "single", buckets: []float64{1}, valid: true},
+				{name: "negative_and_zero", buckets: []float64{-1, 0, 1}, valid: true},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					t.Parallel()
+					cfg := createDefaultConfig().(*Config)
+					cfg.TimerHistogramMapping = []protocol.TimerHistogramMapping{{
+						StatsdType:   statsdType,
+						ObserverType: protocol.HistogramObserver,
+						Histogram: protocol.HistogramConfig{
+							ExplicitBuckets: []protocol.ExplicitBucket{{
+								MatcherPattern: "foo.*",
+								Buckets:        tc.buckets,
+							}},
+						},
+					}}
+					err := cfg.Validate()
+					if tc.valid {
+						require.NoError(t, err)
+					} else {
+						require.EqualError(t, err, fmt.Sprintf("explicit bucket [0] buckets are not unique or not ascendingly sorted %v", tc.buckets))
+					}
+				})
+			}
 		})
 	}
 }
