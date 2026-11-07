@@ -393,9 +393,6 @@ exclusions:
       - name: filelog.mtimeSortType
         validation:
           enabled: false
-      - name: filelog.protobufCheckpointEncoding
-        validation:
-          enabled: false
       - name: filelog.requireExplicitTopN
         validation:
           enabled: false
@@ -428,6 +425,9 @@ exclusions:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
     feature_gates:
+      - name: pkg.translator.prometheus.CorrectUCUMUnits
+        validation:
+          enabled: false
       - name: pkg.translator.prometheus.PermissiveLabelSanitization
         validation:
           enabled: false
