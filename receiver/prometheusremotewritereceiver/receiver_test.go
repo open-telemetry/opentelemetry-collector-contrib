@@ -972,6 +972,29 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			// An empty name cannot become an OTLP attribute key, so the series is refused rather
+			// than normalized. Under some labels implementations it also reads as a duplicate of
+			// nothing, which is why it is checked first.
+			name: "empty label name",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "job", "j", "v"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 0, 5},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "empty label name in labels",
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
 			name: "UnitRef bigger than symbols length",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test"},
@@ -1438,6 +1461,56 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetDoubleValue(1.0)
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.Attributes().PutStr("d", "e")
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
+			// The name is not empty, so the series is accepted, but nothing is left of it once the
+			// scope prefix is stripped and an empty attribute key cannot be emitted.
+			name: "the bare otel_scope_ prefix leaves no scope attribute",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "normal_metric", // 1, 2
+					"job", "test_job", // 3, 4
+					"otel_scope_", "value", // 5, 6
+					"otel_scope_attr", "attr_value", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				sm.Scope().Attributes().PutStr("attr", "attr_value")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("normal_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1.0)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 
 				return metrics
 			}(),
@@ -5223,6 +5296,14 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 			},
 		},
+		{
+			name: "a series with an empty label name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 0, 2},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
@@ -5367,14 +5448,26 @@ func TestEmptyLabelValuesAreDroppedFromHistogramDataPoints(t *testing.T) {
 	assert.Equal(t, 3, seen)
 }
 
-func TestExtractScopeInfoDropsEmptyValuedScopeLabels(t *testing.T) {
-	// A scope attribute needs a value as well as a key, so a label with an empty value drops out
-	// while the attributes around it survive.
+func TestExtractScopeInfoDropsUnrepresentableScopeLabels(t *testing.T) {
+	// A scope attribute needs both a key and a value, so a label whose suffix is empty and a label
+	// whose value is empty drop out while the attribute around them survives. Each row pins one of
+	// the two checks on its own: they are independent, and neither may take the other's labels out.
 	prwReceiver := setupMetricsReceiver(t)
-	si := prwReceiver.extractScopeInfo(labels.FromStrings("otel_scope_empty", "", "otel_scope_kept", "kept"))
-	assert.Equal(t, []attribute{{Key: "kept", Value: "kept"}}, si.scopeAttrs)
-	assert.Equal(t, "OpenTelemetry Collector", si.Name)
-	assert.Equal(t, "latest", si.Version)
+	want := []attribute{{Key: "kept", Value: "kept"}}
+	for _, tc := range []struct {
+		name   string
+		labels labels.Labels
+	}{
+		{name: "empty value", labels: labels.FromStrings("otel_scope_empty", "", "otel_scope_kept", "kept")},
+		{name: "bare prefix", labels: labels.FromStrings("otel_scope_", "value", "otel_scope_kept", "kept")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			si := prwReceiver.extractScopeInfo(tc.labels)
+			assert.Equal(t, want, si.scopeAttrs)
+			assert.Equal(t, "OpenTelemetry Collector", si.Name)
+			assert.Equal(t, "latest", si.Version)
+		})
+	}
 }
 
 func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
