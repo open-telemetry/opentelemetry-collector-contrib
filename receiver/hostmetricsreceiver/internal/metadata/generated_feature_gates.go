@@ -30,6 +30,14 @@ var ReceiverHostmetricsEmitV1SystemConventionsFeatureGate = featuregate.GlobalRe
 	featuregate.WithRegisterFromVersion("v0.160.0"),
 )
 
+var ReceiverHostmetricsreceiverUseCPUTicksFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetricsreceiver.UseCPUTicks",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Compute CPU utilization on Linux from raw uint64 tick deltas (gopsutil cpu.NewExLinux) instead of float64 seconds."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46177"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var ReceiverHostmetricsreceiverUseLinuxMemAvailableFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
 	featuregate.StageBeta,
