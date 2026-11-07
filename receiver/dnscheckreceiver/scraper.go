@@ -215,9 +215,13 @@ func (s *scraper) recordResult(result *checkResult) {
 	}
 
 	var success int64
-	if result.resp.Rcode == dns.RcodeSuccess {
+	if result.resp.Rcode == dns.RcodeSuccess && !result.resp.Truncated {
 		success = 1
 	}
 
+	if success == 0 {
+		resolvedIP = ""
+		resolvedAllIPs = nil
+	}
 	s.mb.RecordDnscheckStatusDataPoint(result.now, success, int64(result.resp.Rcode), strings.Join(resolvedAllIPs, ","), resolvedIP)
 }
