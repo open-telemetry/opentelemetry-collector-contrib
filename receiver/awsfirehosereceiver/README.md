@@ -60,11 +60,11 @@ The ID of an [encoding extension](https://github.com/open-telemetry/opentelemetr
 This configuration also supports the built-in encodings listed in the [Encodings](#encodings) section.
 
 If no encoding is specified, then the receiver will default to a signal-specific encoding: `cwmetrics` for metrics, and `cwlogs` for logs.
-In the future, the default encodings will be removed, and it will be required to specify an encoding extension.
+In v0.168.0, the default encodings will be removed, and it will be required to specify an encoding extension.
 
 ### record\_type:
 
-Deprecated, use `encoding` instead. `record_type` will be removed in a future release; it is an alias for `encoding`.
+Deprecated, use `encoding` instead. `record_type` will be removed in v0.168.0; it is an alias for `encoding`.
 
 ### access\_key (Optional):
 The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
@@ -73,11 +73,11 @@ See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-desti
 ## Encodings
 
 Any encoding extension can be used with this receiver. There are additionally built-in encodings, which are deprecated.
-In the future it will be required to specify an encoding extension, and the built-in encodings will be removed.
+In v0.168.0 it will be required to specify an encoding extension, and the built-in encodings will be removed.
 
 ### cwmetrics (deprecated)
 
-The built-in `cwmetrics` encoding is deprecated and will be removed in a future version.
+The built-in `cwmetrics` encoding is deprecated and will be removed in v0.168.0.
 Use the [`awscloudwatchmetricstreams_encoding`](../../extension/encoding/awscloudwatchmetricstreamsencodingextension)
 extension with `format: json` instead.
 
@@ -92,7 +92,7 @@ receivers:
 
 ### cwlogs (deprecated)
 
-The built-in `cwlogs` encoding is deprecated and will be removed in a future version.
+The built-in `cwlogs` encoding is deprecated and will be removed in v0.168.0.
 Use the [`aws_logs_encoding`](../../extension/encoding/awslogsencodingextension) extension with
 `format: cloudwatch` instead.
 
@@ -109,7 +109,7 @@ receivers:
 
 ### otlp\_v1 (deprecated)
 
-The built-in `otlp_v1` encoding is deprecated and will be removed in a future version.
+The built-in `otlp_v1` encoding is deprecated and will be removed in v0.168.0.
 Use the [`awscloudwatchmetricstreams_encoding`](../../extension/encoding/awscloudwatchmetricstreamsencodingextension)
 extension with `format: opentelemetry1.0` instead.
 
