@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/file
+note: Fix issue where a failed write in rotation mode with native compression permanently blocked subsequent writes.
+issues: [52334]
+subtext:
+change_logs: [user]
