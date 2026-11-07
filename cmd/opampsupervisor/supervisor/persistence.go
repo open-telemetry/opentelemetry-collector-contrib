@@ -86,6 +86,8 @@ func loadOrCreatePersistentState(file, instanceID string, logger *zap.Logger) (*
 		return createNewPersistentState(file, instanceID, logger)
 	case err != nil:
 		return nil, err
+	case state.InstanceID == uuid.Nil:
+		return createNewPersistentState(file, instanceID, logger)
 	default:
 		return state, nil
 	}
@@ -101,6 +103,10 @@ func loadPersistentState(file string, logger *zap.Logger) (*persistentState, err
 
 	if err := yaml.Unmarshal(by, &state); err != nil {
 		return nil, err
+	}
+
+	if state == nil {
+		state = &persistentState{}
 	}
 
 	state.configPath = file
