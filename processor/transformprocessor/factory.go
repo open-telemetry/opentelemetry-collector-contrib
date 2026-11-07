@@ -48,7 +48,6 @@ type transformProcessorFactory struct {
 	defaultMetricFunctionsOverridden    bool
 	defaultSpanEventFunctionsOverridden bool
 	defaultSpanFunctionsOverridden      bool
-	defaultProfileFunctionsOverridden   bool
 }
 
 // FactoryOption applies changes to transformProcessorFactory.
@@ -123,20 +122,6 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext])
 			factory.defaultSpanFunctionsOverridden = true
 		}
 		factory.spanFunctions = mergeFunctionsToMap(factory.spanFunctions, spanFunctions)
-	}
-}
-
-// WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
-// Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func WithProfileFunctions(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
-	return func(factory *transformProcessorFactory) {
-		if !factory.defaultProfileFunctionsOverridden {
-			factory.profileFunctions = map[string]ottl.Factory[*ottlprofile.TransformContext]{}
-			factory.defaultProfileFunctionsOverridden = true
-		}
-		factory.profileFunctions = mergeFunctionsToMap(factory.profileFunctions, profileFunctions)
 	}
 }
 
@@ -272,12 +257,12 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
 ) (xprocessor.Profiles, error) {
+	if !metadata.ProcessorTransformEnableProfileStatementsFeatureGate.IsEnabled() {
+		return nil, errProfilesGateDisabled
+	}
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
 
-	if f.defaultProfileFunctionsOverridden {
-		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"transform\" processor", zap.Bool("profile", f.defaultProfileFunctionsOverridden))
-	}
 	proc, err := profiles.NewProcessor(oCfg.ProfileStatements, oCfg.ErrorMode, set.TelemetrySettings, f.profileFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)

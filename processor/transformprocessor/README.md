@@ -55,7 +55,7 @@ and allows you to configure a list of statements for the processor to execute. T
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
 > [!NOTE]
-> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is in development and is controlled by the [`processor.transform.enableProfileStatements`](#processortransformenableprofilestatements) feature gate, which is enabled by default.
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
@@ -1123,6 +1123,12 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 - Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten.log`](#transformflattenlogs) option can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
 
 ## Feature Gate
+
+### `processor.transform.enableProfileStatements`
+
+The `processor.transform.enableProfileStatements` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables support for the `profile` signal and is enabled by default. While it is disabled, configuring `profile_statements` fails validation and the processor can't be used in a profiles pipeline.
+
+To disable it, run the collector with `--feature-gates=-processor.transform.enableProfileStatements`.
 
 ### `transform.flatten.logs`
 
