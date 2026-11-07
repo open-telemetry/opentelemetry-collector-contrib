@@ -151,7 +151,13 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 			} else {
 				batch, ok = pc.mailbox.dequeue(func() {
 					if pc.clearPauseReasons(partitionPauseBackpressure) {
+						// Resume before canceling. A cancelled poll returns immediately, and the
+						// consume loop can start the next PollRecords before this callback finishes.
+						// The partition must already be eligible or that fetch omits it again.
+						// A Fetch already written to the socket is left running. Failing that
+						// read would drop every broker connection on each backpressure resume.
 						c.client.ResumeFetchPartitions(partition)
+						c.interruptPoll()
 					}
 				})
 			}

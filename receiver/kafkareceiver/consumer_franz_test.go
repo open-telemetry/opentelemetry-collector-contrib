@@ -237,6 +237,98 @@ func TestPartitionProcessing(t *testing.T) {
 		waitAtomic(t, &processed, 4)
 	})
 
+	t.Run("resume interrupts poll", func(t *testing.T) {
+		// An idle sibling partition keeps the fetch that omitted the paused partition
+		// in flight until MaxFetchWait. Resuming cancels that PollRecords call.
+		// The broker read keeps running, so the next hot record can still wait
+		// out the fetch that was already on the socket.
+		const fetchWait = time.Second
+		h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
+			cfg.ConsumerConfig.MaxFetchSize = 1
+			cfg.ConsumerConfig.MaxFetchWait = fetchWait
+		})
+		started := make(chan struct{}, 1)
+		release := make(chan struct{})
+		third := make(chan struct{}, 1)
+		h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set) error {
+			switch string(record.Value) {
+			case "first":
+				notify(started)
+				select {
+				case <-release:
+				case <-ctx.Done():
+				}
+			case "third":
+				notify(third)
+			}
+			return nil
+		})
+		h.produce(0, "first")
+		waitSignal(t, started, "first record did not start")
+		// The first record occupies the worker. The next record fills the
+		// one-slot mailbox and pauses partition 0. Partition 1 stays idle.
+		h.produce(0, "second")
+		h.waitPaused(1)
+		h.produce(0, "third")
+		before := h.waitPollBlocked()
+		close(release)
+		h.waitPollReturned(before, fetchWait/2)
+		waitSignal(t, third, "third record was not consumed")
+	})
+
+	t.Run("resume keeps records", func(t *testing.T) {
+		// Records already queued, and records still only on the broker, must all
+		// be consumed in offset order after the poll is interrupted. The in-flight
+		// broker read is not failed, so this must not depend on a reconnect.
+		const fetchWait = time.Second
+		h := newPartitionProcessingHarness(t, 2, func(cfg *Config) {
+			cfg.ConsumerConfig.MaxFetchSize = 1
+			cfg.ConsumerConfig.MaxFetchWait = fetchWait
+		})
+		started := make(chan struct{}, 1)
+		release := make(chan struct{})
+		var mu sync.Mutex
+		got := map[int32][]string{}
+		h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set) error {
+			if string(record.Value) == "p0-0" {
+				notify(started)
+				select {
+				case <-release:
+				case <-ctx.Done():
+				}
+			}
+			mu.Lock()
+			got[record.Partition] = append(got[record.Partition], string(record.Value))
+			mu.Unlock()
+			return nil
+		})
+		want := map[int32][]string{
+			0: {"p0-0", "p0-1", "p0-2", "p0-3"},
+			1: {"p1-0", "p1-1"},
+		}
+		h.produce(0, "p0-0")
+		waitSignal(t, started, "first record did not start")
+		// p0-0 occupies the worker. p0-1 fills the mailbox and pauses partition 0.
+		h.produce(0, "p0-1")
+		h.waitPaused(1)
+		// Wait until the poll is blocked in the fetch that excludes partition 0.
+		// Records produced on partition 1 would satisfy that fetch and it would
+		// return before resume, so they are produced after the poll is blocked.
+		h.waitPollBlocked()
+		h.produce(0, "p0-2")
+		h.produce(0, "p0-3")
+		before := h.waitPollBlocked()
+		close(release)
+		h.produce(1, "p1-0")
+		h.produce(1, "p1-1")
+		h.waitPollReturned(before, fetchWait/2)
+		require.EventuallyWithT(t, func(ct *assert.CollectT) {
+			mu.Lock()
+			defer mu.Unlock()
+			assert.Equal(ct, want, got)
+		}, 5*time.Second, 10*time.Millisecond)
+	})
+
 	t.Run("transient retry", func(t *testing.T) {
 		// A transient error rewinds the partition until processing succeeds.
 		h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
@@ -596,6 +688,31 @@ func (h *partitionProcessingHarness) waitPaused(want int) {
 		paused := h.consumer.client.PauseFetchPartitions(nil)
 		return len(paused[h.topic]) == want
 	}, 5*time.Second, 10*time.Millisecond)
+}
+
+// waitPollBlocked waits until PollRecords is inside the cancellable poll context
+// and returns how many PollRecords calls have returned so far.
+func (h *partitionProcessingHarness) waitPollBlocked() uint64 {
+	h.t.Helper()
+	var returned uint64
+	require.Eventually(h.t, func() bool {
+		h.consumer.pollMu.Lock()
+		defer h.consumer.pollMu.Unlock()
+		if h.consumer.pollCancel == nil {
+			return false
+		}
+		returned = h.consumer.pollsReturned.Load()
+		return true
+	}, 5*time.Second, time.Millisecond, "poll was not blocked")
+	return returned
+}
+
+// waitPollReturned waits until the PollRecords call observed by waitPollBlocked has returned.
+func (h *partitionProcessingHarness) waitPollReturned(before uint64, timeout time.Duration) {
+	h.t.Helper()
+	require.Eventually(h.t, func() bool {
+		return h.consumer.pollsReturned.Load() > before
+	}, timeout, 10*time.Millisecond, "resume did not return PollRecords")
 }
 
 func (h *partitionProcessingHarness) assignment(partition int32) *pc {
