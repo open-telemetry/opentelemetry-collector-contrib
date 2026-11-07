@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.13
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.6
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/confmap v1.70.1-0.20261105184035-79bf8a49d2e4
+	go.opentelemetry.io/collector/confmap v1.70.1-0.20261106205140-205deacf383e
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -36,7 +36,7 @@ require (
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261105184035-79bf8a49d2e4 // indirect
+	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261106205140-205deacf383e // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
