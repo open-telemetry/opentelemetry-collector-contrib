@@ -72,7 +72,12 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	client, err := newOpenSearchClient(l.httpSettings.Endpoint, httpClient, l.telemetry.Logger)
+	client, err := newOpenSearchClient(
+		l.httpSettings.Endpoint,
+		httpClient,
+		l.telemetry.Logger,
+		l.config,
+	)
 	if err != nil {
 		return err
 	}
