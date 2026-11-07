@@ -151,10 +151,13 @@ resourceLogs:
               - key: sqlserver.procedure_name
                 value:
                   stringValue: ""
+              - key: db.query.comment_tags
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6a7169203331
-            timeUnixNano: "1786287284824930000"
+            timeUnixNano: "1790107220700969000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

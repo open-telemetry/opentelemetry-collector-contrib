@@ -127,12 +127,12 @@ func TestDatabaseFilteredQueries(t *testing.T) {
 	}{
 		{
 			name:      "top query",
-			query:     getSQLServerQueryTextAndPlanQuery(),
+			query:     getSQLServerQueryTextAndPlanQuery(false),
 			condition: "AS st1 WHERE LOWER(ISNULL(DB_NAME(st1.dbid), N'')) NOT IN (@excludeDatabase0)\n",
 		},
 		{
 			name:      "query sample",
-			query:     getSQLServerQuerySamplesQuery(),
+			query:     getSQLServerQuerySamplesQuery(false),
 			condition: "AND r.session_id != @@SPID AND LOWER(ISNULL(DB_NAME(r.database_id), N'')) NOT IN (@excludeDatabase0);",
 		},
 		{
@@ -280,7 +280,7 @@ func TestDatabaseFilterBindsQueryArguments(t *testing.T) {
 		},
 		{
 			name:  "top query",
-			query: getSQLServerQueryTextAndPlanQuery(),
+			query: getSQLServerQueryTextAndPlanQuery(false),
 			record: func(s *sqlServerScraperHelper, ctx context.Context) error {
 				_, err := s.recordDatabaseQueryTextAndPlan(ctx)
 				return err
@@ -288,7 +288,7 @@ func TestDatabaseFilterBindsQueryArguments(t *testing.T) {
 		},
 		{
 			name:  "query sample",
-			query: getSQLServerQuerySamplesQuery(),
+			query: getSQLServerQuerySamplesQuery(false),
 			record: func(s *sqlServerScraperHelper, ctx context.Context) error {
 				_, err := s.recordDatabaseSampleQuery(ctx)
 				return err
@@ -323,7 +323,7 @@ func TestDatabaseFilterAppliedToClientQuery(t *testing.T) {
 	cfg.ExcludeDatabases = []string{"rdsadmin"}
 
 	var clientQuery string
-	s := newSQLServerScraper(component.MustNewID("sqlserver"), getSQLServerQuerySamplesQuery(), sqlquery.TelemetryConfig{},
+	s := newSQLServerScraper(component.MustNewID("sqlserver"), getSQLServerQuerySamplesQuery(false), sqlquery.TelemetryConfig{},
 		func() (*sql.DB, error) { return nil, nil },
 		func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
 			clientQuery = query
@@ -332,8 +332,8 @@ func TestDatabaseFilterAppliedToClientQuery(t *testing.T) {
 		receivertest.NewNopSettings(metadata.Type), cfg, newCache(1))
 	require.NoError(t, s.Start(t.Context(), nil))
 
-	assert.Equal(t, newDatabaseFilter(cfg).apply(getSQLServerQuerySamplesQuery()), clientQuery)
+	assert.Equal(t, newDatabaseFilter(cfg).apply(getSQLServerQuerySamplesQuery(false)), clientQuery)
 	assert.Contains(t, clientQuery, "NOT IN (@excludeDatabase0)")
 	// The scraper keeps the template, which is what picks the recorder.
-	assert.Equal(t, getSQLServerQuerySamplesQuery(), s.sqlQuery)
+	assert.Equal(t, getSQLServerQuerySamplesQuery(false), s.sqlQuery)
 }
