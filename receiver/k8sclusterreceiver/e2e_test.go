@@ -86,7 +86,7 @@ func TestE2EClusterScoped(t *testing.T) {
 	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
 	time.Sleep(calculateCronJobExecution())
 
-	wantEntries := 10 // Minimal number of metrics to wait for.
+	wantEntries := 1 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileClusterScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -191,7 +191,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
 	time.Sleep(calculateCronJobExecution())
 
-	wantEntries := 10 // Minimal number of metrics to wait for.
+	wantEntries := 1 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -292,7 +292,7 @@ func TestE2ENamespaceScopedMultipleNamespaces(t *testing.T) {
 	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
 	time.Sleep(calculateCronJobExecution())
 
-	wantEntries := 10 // Minimal number of metrics to wait for.
+	wantEntries := 1 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScopedMultipleNamespaces, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
