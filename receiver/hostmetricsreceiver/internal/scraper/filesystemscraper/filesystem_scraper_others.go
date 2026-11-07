@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !linux && !darwin && !freebsd && !openbsd && !solaris
+//go:build !linux && !darwin && !freebsd && !openbsd && !solaris && !aix
 
 package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 

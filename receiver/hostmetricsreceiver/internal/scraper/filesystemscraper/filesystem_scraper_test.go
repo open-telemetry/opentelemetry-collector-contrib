@@ -646,5 +646,5 @@ func TestTranslateMountpoint(t *testing.T) {
 }
 
 func isUnix() bool {
-	return slices.Contains([]string{"linux", "darwin", "freebsd", "openbsd", "solaris"}, runtime.GOOS)
+	return slices.Contains([]string{"linux", "darwin", "freebsd", "openbsd", "solaris", "aix"}, runtime.GOOS)
 }
