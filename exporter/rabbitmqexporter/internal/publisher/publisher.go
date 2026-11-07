@@ -22,9 +22,10 @@ type DialConfig struct {
 }
 
 type Message struct {
-	Exchange   string
-	RoutingKey string
-	Body       []byte
+	Exchange        string
+	RoutingKey      string
+	Body            []byte
+	ContentEncoding string
 }
 
 func NewConnection(logger *zap.Logger, client otelrabbitmq.AmqpClient, config DialConfig) (Publisher, error) {
@@ -90,8 +91,9 @@ func (p *publisher) Publish(ctx context.Context, message Message) error {
 	}
 
 	confirmation, err := channel.PublishWithDeferredConfirmWithContext(ctx, message.Exchange, message.RoutingKey, true, false, amqp.Publishing{
-		Body:         message.Body,
-		DeliveryMode: deliveryMode,
+		Body:            message.Body,
+		ContentEncoding: message.ContentEncoding,
+		DeliveryMode:    deliveryMode,
 	})
 	if err != nil {
 		err = errors.Join(errors.New("error publishing message"), err)

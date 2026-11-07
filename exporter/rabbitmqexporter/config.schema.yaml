@@ -43,6 +43,9 @@ $defs:
         type: string
 type: object
 properties:
+  compression:
+    description: Compression compresses message bodies and sets their content-encoding. Valid values are `gzip`, `zstd`, `none` or no value set.
+    $ref: go.opentelemetry.io/collector/config/configcompression.type
   connection:
     $ref: connection_config
   durable:
