@@ -6,17 +6,17 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.70.1-0.20261106205140-205deacf383e
+	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261106205140-205deacf383e
-	go.opentelemetry.io/collector/config/confignet v1.70.1-0.20261106205140-205deacf383e
-	go.opentelemetry.io/collector/config/configopaque v1.70.1-0.20261106205140-205deacf383e
-	go.opentelemetry.io/collector/confmap v1.70.1-0.20261106205140-205deacf383e
-	go.opentelemetry.io/collector/consumer v1.70.1-0.20261106205140-205deacf383e
+	go.opentelemetry.io/collector/config/confignet v1.71.0
+	go.opentelemetry.io/collector/config/configopaque v1.71.0
+	go.opentelemetry.io/collector/confmap v1.71.0
+	go.opentelemetry.io/collector/consumer v1.71.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.1-0.20261106205140-205deacf383e
 	go.opentelemetry.io/collector/filter v0.164.1-0.20261106205140-205deacf383e
-	go.opentelemetry.io/collector/pdata v1.70.1-0.20261106205140-205deacf383e
+	go.opentelemetry.io/collector/pdata v1.71.0
 	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261106205140-205deacf383e
-	go.opentelemetry.io/collector/receiver v1.70.1-0.20261106205140-205deacf383e
+	go.opentelemetry.io/collector/receiver v1.71.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.164.1-0.20261106205140-205deacf383e
 	go.opentelemetry.io/collector/receiver/xreceiver v0.164.1-0.20261106205140-205deacf383e
 	go.opentelemetry.io/collector/scraper v0.164.1-0.20261106205140-205deacf383e
@@ -47,10 +47,10 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.164.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.1-0.20261106205140-205deacf383e // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261106205140-205deacf383e // indirect
+	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261106205140-205deacf383e // indirect
-	go.opentelemetry.io/collector/pipeline v1.70.1-0.20261106205140-205deacf383e // indirect
+	go.opentelemetry.io/collector/pipeline v1.71.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.164.1-0.20261106205140-205deacf383e // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
