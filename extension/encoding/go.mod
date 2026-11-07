@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/client v1.71.0
 	go.opentelemetry.io/collector/extension v1.71.0
 	go.opentelemetry.io/collector/pdata v1.71.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261106205140-205deacf383e
+	go.opentelemetry.io/collector/pdata/pprofile v0.165.0
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/collector/component v1.71.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261106205140-205deacf383e // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
