@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -157,7 +158,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 			rw.WriteHeader(http.StatusUnauthorized)
 			l.logger.Debug("Got payload with no Secret when it was specified in config, dropping...")
 			return
-		} else if secretHeader != l.cfg.Secret {
+		} else if subtle.ConstantTimeCompare([]byte(secretHeader), []byte(l.cfg.Secret)) != 1 {
 			rw.WriteHeader(http.StatusUnauthorized)
 			l.logger.Debug("Got payload with invalid Secret, dropping...")
 			return
