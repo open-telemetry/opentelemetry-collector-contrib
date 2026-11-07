@@ -22,25 +22,13 @@ The File Storage Extension can persist state to the local file system.
 
 ### Other: Persistent storage requirements
 
-The File Storage extension persists state on the local
-filesystem. When the storage directory is ephemeral,
-state can be lost when a container or Kubernetes pod
-is recreated.
+The File Storage extension persists state on the local filesystem. When the storage directory is ephemeral, state can be lost when a container or Kubernetes pod is recreated.
 
-For components using this extension for checkpoints
-or persistent queues, losing stored state may cause
-data loss, duplicate processing, or reprocessing,
-depending on the component and configuration.
+For components using this extension for checkpoints or persistent queues, losing stored state may cause data loss, duplicate processing, or reprocessing, depending on the component and configuration.
 
-For Kubernetes deployments, use a persistent volume
-for the configured storage directory when state must
-survive pod recreation. Ensure the directory has
-appropriate filesystem permissions and sufficient
-capacity.
+For Kubernetes deployments, use a persistent volume for the configured storage directory when state must survive pod recreation. Ensure the directory has appropriate filesystem permissions and sufficient capacity.
 
-Persistent volumes reduce the risk of state loss
-during container recreation, but they do not replace
-backups or guarantee data durability.
+Persistent volumes reduce the risk of state loss during container recreation, but they do not replace backups or guarantee data durability.
 
 The File Storage extension can persist state to the local file system.
 
