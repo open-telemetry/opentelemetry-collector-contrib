@@ -69,7 +69,7 @@ func newStorage(ctx context.Context, cfg *Config, logger *zap.Logger, telemetry 
 		logger = zap.NewNop()
 	}
 
-	db, created, err := newPebbleDB(filepath.Join(cfg.Directory, storageVersion), logger)
+	db, created, err := newPebbleDB(filepath.Join(cfg.Directory, storageVersion), cfg, logger)
 	if err != nil {
 		return nil, err
 	}
