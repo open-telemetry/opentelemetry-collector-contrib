@@ -73,6 +73,24 @@ func TestLogToCWLog(t *testing.T) {
 			},
 		},
 		{
+			name:     "observed timestamp fallback",
+			resource: testResource(),
+			scope:    testScope(),
+			log:      testLogRecordObservedOnly(),
+			config:   &Config{},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: types.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"scope":{"name":"test-scope","version":"1.0.0","attributes":{"scope-attr":"value"}},"resource":{"host":"abc123","node":5}}`),
+				},
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "",
+					LogStreamName: "",
+				},
+			},
+		},
+		{
 			name:     "no resource",
 			resource: pcommon.NewResource(),
 			scope:    testScope(),
@@ -316,6 +334,13 @@ func testLogRecordWithoutTrace() plog.LogRecord {
 	record.Attributes().PutInt("key1", 1)
 	record.Attributes().PutStr("key2", "attr2")
 	record.SetTimestamp(1609719139000000)
+	return record
+}
+
+func testLogRecordObservedOnly() plog.LogRecord {
+	record := testLogRecord()
+	record.SetTimestamp(0)
+	record.SetObservedTimestamp(1609719139000000)
 	return record
 }
 
