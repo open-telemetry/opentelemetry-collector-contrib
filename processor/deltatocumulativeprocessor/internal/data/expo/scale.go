@@ -18,6 +18,10 @@ func (scale Scale) Idx(v float64) int {
 
 	// Special case for power-of-two values.
 	if frac, exp := math.Frexp(v); frac == 0.5 {
+		if scale <= 0 {
+			// exp-2 is the index at scale 0. negative scales merge 2^-scale of those.
+			return (exp - 2) >> -scale
+		}
 		return ((exp - 1) << scale) - 1
 	}
 
