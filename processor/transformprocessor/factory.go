@@ -24,12 +24,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -128,8 +128,6 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext])
 
 // WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
 // Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithProfileFunctions(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultProfileFunctionsOverridden {
@@ -172,10 +170,10 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode:          ottl.IgnoreError,
-		TraceStatements:    []common.ContextStatements{},
-		MetricStatements:   []common.ContextStatements{},
-		LogStatements:      []common.ContextStatements{},
-		ProfileStatements:  []common.ContextStatements{},
+		TraceStatements:    []transformconfig.ContextStatements{},
+		MetricStatements:   []transformconfig.ContextStatements{},
+		LogStatements:      []transformconfig.ContextStatements{},
+		ProfileStatements:  []transformconfig.ContextStatements{},
 		dataPointFunctions: f.dataPointFunctions,
 		exemplarFunctions:  f.exemplarFunctions,
 		logFunctions:       f.logFunctions,

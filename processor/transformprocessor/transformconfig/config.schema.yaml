@@ -1,7 +1,9 @@
 $defs:
   context_id:
+    description: ContextID is the name of the OTTL context a group of statements runs against.
     type: string
   context_statements:
+    description: ContextStatements is a group of OTTL statements and conditions executed together.
     type: object
     properties:
       conditions:

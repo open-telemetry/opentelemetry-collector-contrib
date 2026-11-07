@@ -16,10 +16,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type MetricsConsumer interface {
-	Context() ContextID
+	Context() transformconfig.ContextID
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error
 }
 
@@ -28,8 +29,8 @@ type metricStatements struct {
 	expr.BoolExpr[*ottlmetric.TransformContext]
 }
 
-func (metricStatements) Context() ContextID {
-	return Metric
+func (metricStatements) Context() transformconfig.ContextID {
+	return transformconfig.Metric
 }
 
 func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
@@ -64,8 +65,8 @@ type dataPointStatements struct {
 	expr.BoolExpr[*ottldatapoint.TransformContext]
 }
 
-func (dataPointStatements) Context() ContextID {
-	return DataPoint
+func (dataPointStatements) Context() transformconfig.ContextID {
+	return transformconfig.DataPoint
 }
 
 func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
@@ -184,8 +185,8 @@ type exemplarStatements struct {
 	expr.BoolExpr[*ottlexemplar.TransformContext]
 }
 
-func (exemplarStatements) Context() ContextID {
-	return Exemplar
+func (exemplarStatements) Context() transformconfig.ContextID {
+	return transformconfig.Exemplar
 }
 
 func (e exemplarStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
@@ -387,7 +388,7 @@ func convertExemplarStatements(pc *ottl.ParserCollection[MetricsConsumer], state
 	return exemplarStatements{eStatements, globalExpr}, nil
 }
 
-func (mpc *MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (MetricsConsumer, error) {
+func (mpc *MetricParserCollection) ParseContextStatements(contextStatements transformconfig.ContextStatements) (MetricsConsumer, error) {
 	pc := ottl.ParserCollection[MetricsConsumer](*mpc)
 	if contextStatements.Context != "" {
 		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)

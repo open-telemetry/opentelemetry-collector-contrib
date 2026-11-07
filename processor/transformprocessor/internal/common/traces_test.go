@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 func newTraceParserCollection(t *testing.T) *TraceParserCollection {
@@ -32,28 +33,28 @@ func newTraceParserCollection(t *testing.T) *TraceParserCollection {
 func TestTraceParserCollection_ConsumeTraces(t *testing.T) {
 	tests := []struct {
 		name    string
-		cs      ContextStatements
+		cs      transformconfig.ContextStatements
 		assert  func(*testing.T, any)
 		wantKey string
 	}{
 		{
 			name:    "span context",
-			cs:      ContextStatements{Context: Span, Statements: []string{`set(attributes["test"], "pass")`}},
+			cs:      transformconfig.ContextStatements{Context: transformconfig.Span, Statements: []string{`set(attributes["test"], "pass")`}},
 			wantKey: "test",
 		},
 		{
 			name:    "span event context",
-			cs:      ContextStatements{Context: SpanEvent, Statements: []string{`set(attributes["test"], "pass")`}},
+			cs:      transformconfig.ContextStatements{Context: transformconfig.SpanEvent, Statements: []string{`set(attributes["test"], "pass")`}},
 			wantKey: "test",
 		},
 		{
 			name:    "span context with condition",
-			cs:      ContextStatements{Context: Span, Conditions: []string{`name == "span"`}, Statements: []string{`set(attributes["cond"], "pass")`}},
+			cs:      transformconfig.ContextStatements{Context: transformconfig.Span, Conditions: []string{`name == "span"`}, Statements: []string{`set(attributes["cond"], "pass")`}},
 			wantKey: "cond",
 		},
 		{
 			name:    "inferred context",
-			cs:      ContextStatements{Statements: []string{`set(span.attributes["inferred"], "pass")`}},
+			cs:      transformconfig.ContextStatements{Statements: []string{`set(span.attributes["inferred"], "pass")`}},
 			wantKey: "inferred",
 		},
 	}
@@ -69,7 +70,7 @@ func TestTraceParserCollection_ConsumeTraces(t *testing.T) {
 
 			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			var attrs pcommon.Map
-			if tt.cs.Context == SpanEvent {
+			if tt.cs.Context == transformconfig.SpanEvent {
 				attrs = span.Events().At(0).Attributes()
 			} else {
 				attrs = span.Attributes()
@@ -84,18 +85,18 @@ func TestTraceParserCollection_ConsumeTraces(t *testing.T) {
 func TestTraceParserCollection_Context(t *testing.T) {
 	pc := newTraceParserCollection(t)
 
-	span, err := pc.ParseContextStatements(ContextStatements{Context: Span, Statements: []string{`set(attributes["x"], "y")`}})
+	span, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Span, Statements: []string{`set(attributes["x"], "y")`}})
 	require.NoError(t, err)
-	assert.Equal(t, Span, span.Context())
+	assert.Equal(t, transformconfig.Span, span.Context())
 
-	spanEvent, err := pc.ParseContextStatements(ContextStatements{Context: SpanEvent, Statements: []string{`set(attributes["x"], "y")`}})
+	spanEvent, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.SpanEvent, Statements: []string{`set(attributes["x"], "y")`}})
 	require.NoError(t, err)
-	assert.Equal(t, SpanEvent, spanEvent.Context())
+	assert.Equal(t, transformconfig.SpanEvent, spanEvent.Context())
 }
 
 func TestTraceParserCollection_ConsumeTraces_PropagatesError(t *testing.T) {
 	pc := newTraceParserCollection(t)
-	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Span, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}})
+	consumer, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Span, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}})
 	require.NoError(t, err)
 
 	err = consumer.ConsumeTraces(t.Context(), newTestTraces(), nil)
@@ -104,6 +105,6 @@ func TestTraceParserCollection_ConsumeTraces_PropagatesError(t *testing.T) {
 
 func TestTraceParserCollection_ParseContextStatements_Error(t *testing.T) {
 	pc := newTraceParserCollection(t)
-	_, err := pc.ParseContextStatements(ContextStatements{Context: Span, Statements: []string{`not a valid statement`}})
+	_, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Span, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

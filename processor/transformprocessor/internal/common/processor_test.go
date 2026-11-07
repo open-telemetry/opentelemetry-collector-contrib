@@ -8,15 +8,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 func TestResourceStatements_ConsumeAllSignals(t *testing.T) {
-	cs := ContextStatements{Context: Resource, Statements: []string{`set(attributes["test"], "pass")`}}
+	cs := transformconfig.ContextStatements{Context: transformconfig.Resource, Statements: []string{`set(attributes["test"], "pass")`}}
 
 	t.Run("traces", func(t *testing.T) {
 		consumer, err := newTraceParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
-		assert.Equal(t, Resource, consumer.Context())
+		assert.Equal(t, transformconfig.Resource, consumer.Context())
 		td := newTestTraces()
 		require.NoError(t, consumer.ConsumeTraces(t.Context(), td, nil))
 		v, ok := td.ResourceSpans().At(0).Resource().Attributes().Get("test")
@@ -56,12 +58,12 @@ func TestResourceStatements_ConsumeAllSignals(t *testing.T) {
 }
 
 func TestScopeStatements_ConsumeAllSignals(t *testing.T) {
-	cs := ContextStatements{Context: Scope, Conditions: []string{`name == "scope"`}, Statements: []string{`set(attributes["test"], "pass")`}}
+	cs := transformconfig.ContextStatements{Context: transformconfig.Scope, Conditions: []string{`name == "scope"`}, Statements: []string{`set(attributes["test"], "pass")`}}
 
 	t.Run("traces", func(t *testing.T) {
 		consumer, err := newTraceParserCollection(t).ParseContextStatements(cs)
 		require.NoError(t, err)
-		assert.Equal(t, Scope, consumer.Context())
+		assert.Equal(t, transformconfig.Scope, consumer.Context())
 		td := newTestTraces()
 		require.NoError(t, consumer.ConsumeTraces(t.Context(), td, nil))
 		v, ok := td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("test")
@@ -105,8 +107,8 @@ func TestResourceScopeStatements_PropagateError(t *testing.T) {
 	// branch of the resource and scope consumers for every signal.
 	stmt := []string{`set(attributes["test"], ParseJSON("1"))`}
 
-	for _, ctx := range []ContextID{Resource, Scope} {
-		cs := ContextStatements{Context: ctx, Statements: stmt}
+	for _, ctx := range []transformconfig.ContextID{transformconfig.Resource, transformconfig.Scope} {
+		cs := transformconfig.ContextStatements{Context: ctx, Statements: stmt}
 		t.Run(string(ctx), func(t *testing.T) {
 			traceConsumer, err := newTraceParserCollection(t).ParseContextStatements(cs)
 			require.NoError(t, err)

@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type parsedContextStatements struct {
@@ -27,10 +28,10 @@ type parsedContextStatements struct {
 type Processor struct {
 	contexts            []parsedContextStatements
 	logger              *zap.Logger
-	sharedCacheContexts []common.ContextID
+	sharedCacheContexts []transformconfig.ContextID
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext]) (*Processor, error) {
+func NewProcessor(contextStatements []transformconfig.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext]) (*Processor, error) {
 	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(metricFunctions), common.WithDataPointParser(dataPointFunctions), common.WithExemplarParser(exemplarFunctions), common.WithMetricErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -53,7 +54,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, errors
 	}
 
-	var sharedCacheContexts []common.ContextID
+	var sharedCacheContexts []transformconfig.ContextID
 	for _, c := range contexts {
 		if !c.sharedCache || slices.Contains(sharedCacheContexts, c.Context()) {
 			continue

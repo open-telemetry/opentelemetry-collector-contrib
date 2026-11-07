@@ -46,8 +46,6 @@ func DefaultSpanEventFunctions() []ottl.Factory[*ottlspanevent.TransformContext]
 }
 
 // DefaultProfileFunctions returns the default OTTL functions available in the profile context.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
 func DefaultProfileFunctions() []ottl.Factory[*ottlprofile.TransformContext] {
 	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
 }

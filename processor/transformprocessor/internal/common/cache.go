@@ -5,12 +5,14 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 // LoadContextCache retrieves a context cache for the given context ID.
 // If `sharedCache` is true, it returns the cached context map if it exists,
 // or returns nil if it does not.
-func LoadContextCache(cache map[ContextID]*pcommon.Map, context ContextID, sharedCache bool) *pcommon.Map {
+func LoadContextCache(cache map[transformconfig.ContextID]*pcommon.Map, context transformconfig.ContextID, sharedCache bool) *pcommon.Map {
 	if !sharedCache || len(cache) == 0 {
 		return nil
 	}
@@ -21,11 +23,11 @@ func LoadContextCache(cache map[ContextID]*pcommon.Map, context ContextID, share
 // processing invocation, with one map per context ID in contexts. It returns
 // nil when contexts is empty, which LoadContextCache treats as "no shared
 // cache configured".
-func NewSharedCaches(contexts []ContextID) map[ContextID]*pcommon.Map {
+func NewSharedCaches(contexts []transformconfig.ContextID) map[transformconfig.ContextID]*pcommon.Map {
 	if len(contexts) == 0 {
 		return nil
 	}
-	caches := make(map[ContextID]*pcommon.Map, len(contexts))
+	caches := make(map[transformconfig.ContextID]*pcommon.Map, len(contexts))
 	for _, id := range contexts {
 		m := pcommon.NewMap()
 		caches[id] = &m
