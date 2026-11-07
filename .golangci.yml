@@ -206,6 +206,9 @@ linters:
             - pkg: github.com/aws/aws-sdk-go/
               desc: "Use github.com/aws/aws-sdk-go-v2 instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699"
 
+            - pkg: "gopkg.in/yaml.v3"
+              desc: "Use 'go.yaml.in/yaml/v3' instead of gopkg.in/yaml.v3"
+
         semconv:
           list-mode: lax
           deny:
