@@ -1,0 +1,7 @@
+change_type: bug_fix
+component: extension/remotetap
+note: Fix unroutable HTTP server and 404 responses for embedded UI.
+issues: [52854]
+subtext: |
+  Fixes fs.Sub directory path to mount the embedded http/ directory and binds the HTTP server to the configured listener instead of port 80.
+change_logs: [user]

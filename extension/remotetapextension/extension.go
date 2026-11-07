@@ -25,19 +25,26 @@ type remoteObserverExtension struct {
 }
 
 func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host) error {
-	htmlContent, err := fs.Sub(httpFS, "html")
+	htmlContent, err := fs.Sub(httpFS, "http")
 	if err != nil {
 		return err
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(htmlContent)))
-	s.server, err = s.config.ServerConfig.ToServer(ctx, host.GetExtensions(), s.settings.TelemetrySettings, mux)
+
+	ln, err := s.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
+	s.server, err = s.config.ServerConfig.ToServer(ctx, host.GetExtensions(), s.settings.TelemetrySettings, mux)
+	if err != nil {
+		_ = ln.Close()
+		return err
+	}
+
 	go func() {
-		err := s.server.ListenAndServe()
+		err := s.server.Serve(ln)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
