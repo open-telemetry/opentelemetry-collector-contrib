@@ -198,8 +198,8 @@ linters:
             - pkg: math/rand$
               desc: Use math/rand/v2 instead of math/rand
 
-            - pkg: sigs.k8s.io/yaml
-              desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
+            - pkg: gopkg.in/yaml.v3
+              desc: "Use 'go.yaml.in/yaml/v3' instead of gopkg.in/yaml.v3"
 
             # Block AWS SDK v1 to prevent new usage while migration to v2 is in progress.
             # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
