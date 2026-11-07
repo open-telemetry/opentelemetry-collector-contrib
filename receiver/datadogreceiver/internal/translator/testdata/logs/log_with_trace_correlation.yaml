@@ -37,3 +37,4 @@ resourceLogs:
             timeUnixNano: "1700000000000000000"
             traceId: 0000000000000000112210f47de98115
         scope: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
