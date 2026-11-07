@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -109,6 +110,12 @@ var (
 	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ extensioncapabilities.ComponentStatusWatcher = (*opampAgent)(nil)
+
+	// pendingRestartCommand is the restart command whose completion has not
+	// been reported yet. A restart reloads the Collector, which replaces this
+	// extension with a new instance, so it must outlive the instance that
+	// received the command.
+	pendingRestartCommand atomic.Pointer[protobufs.ServerToAgentCommand]
 
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
@@ -279,7 +286,29 @@ func (o *opampAgent) Register(capability string, opts ...opampcustommessages.Cus
 func (o *opampAgent) Ready() error {
 	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
 	close(o.readyCh)
+	o.reportRestartCompleted()
 	return nil
+}
+
+// reportRestartCompleted reports the pending restart command, if any, as
+// COMPLETED to the OpAMP server. It is called once all pipelines are running
+// after the reload triggered by the restart command.
+func (o *opampAgent) reportRestartCompleted() {
+	if !o.capabilities.AcceptsRestartCommand || o.opampClient == nil {
+		return
+	}
+	command := pendingRestartCommand.Swap(nil)
+	if command == nil {
+		return
+	}
+	err := o.opampClient.SetCommandStatus(&protobufs.CommandStatus{
+		CommandId: command.CommandId,
+		Type:      command.Type,
+		Status:    protobufs.CommandStatuses_CommandStatuses_COMPLETED,
+	})
+	if err != nil {
+		o.logger.Error("Could not report restart command status", zap.Error(err))
+	}
 }
 
 func (o *opampAgent) NotReady() error {
@@ -534,7 +563,12 @@ func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAge
 		if err != nil {
 			return fmt.Errorf("finding current process from pid: %w", err)
 		}
-		return collectorProcess.Signal(syscall.SIGHUP)
+		pendingRestartCommand.Store(command)
+		if err := collectorProcess.Signal(syscall.SIGHUP); err != nil {
+			pendingRestartCommand.Store(nil)
+			return err
+		}
+		return nil
 	}
 	return nil
 }
