@@ -146,11 +146,13 @@ func TestScraper(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 			cfg := &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "127.0.0.1:8080",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 3 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "127.0.0.1:8080",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 3 * time.Second,
+							},
 						},
 					},
 				},
@@ -204,11 +206,13 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "127.0.0.1:9999",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 3 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "127.0.0.1:9999",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 3 * time.Second,
+							},
 						},
 					},
 				},
@@ -299,14 +303,16 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 	}
 
 	cfg := &Config{
-		Targets: make([]*confignet.TCPAddrConfig, len(endpoints)),
+		Targets: make([]*TargetConfig, len(endpoints)),
 	}
 
 	for i, endpoint := range endpoints {
-		cfg.Targets[i] = &confignet.TCPAddrConfig{
-			Endpoint: endpoint,
-			DialerConfig: confignet.DialerConfig{
-				Timeout: 1 * time.Second,
+		cfg.Targets[i] = &TargetConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: endpoint,
+				DialerConfig: confignet.DialerConfig{
+					Timeout: 1 * time.Second,
+				},
 			},
 		}
 	}
@@ -389,23 +395,29 @@ func TestScraper_MultipleEndpoints_ErrorSum(t *testing.T) {
 	}
 
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
+		Targets: []*TargetConfig{
 			{
-				Endpoint: endpoints[0],
-				DialerConfig: confignet.DialerConfig{
-					Timeout: 1 * time.Second,
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: endpoints[0],
+					DialerConfig: confignet.DialerConfig{
+						Timeout: 1 * time.Second,
+					},
 				},
 			},
 			{
-				Endpoint: endpoints[1],
-				DialerConfig: confignet.DialerConfig{
-					Timeout: 1 * time.Second,
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: endpoints[1],
+					DialerConfig: confignet.DialerConfig{
+						Timeout: 1 * time.Second,
+					},
 				},
 			},
 			{
-				Endpoint: endpoints[2],
-				DialerConfig: confignet.DialerConfig{
-					Timeout: 1 * time.Second,
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: endpoints[2],
+					DialerConfig: confignet.DialerConfig{
+						Timeout: 1 * time.Second,
+					},
 				},
 			},
 		},

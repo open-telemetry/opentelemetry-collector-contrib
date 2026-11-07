@@ -14,7 +14,7 @@ metrics:
 
 ### tcpcheck.duration
 
-Measures the duration of TCP connection.
+Measures the duration of a successful TCP check, including query_response operations.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -39,11 +39,11 @@ Records errors occurring during TCP check.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |
-| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` | Recommended | - |
+| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error``, ``expect_mismatch``, ``step_timeout`` | Recommended | - |
 
 ### tcpcheck.status
 
-1 if the TCP client successfully connected, otherwise 0.
+1 if the TCP connection and all query_response operations succeeded, otherwise 0.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

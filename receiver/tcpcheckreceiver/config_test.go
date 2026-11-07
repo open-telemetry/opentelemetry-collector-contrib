@@ -28,7 +28,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing targets",
 			cfg: &Config{
-				Targets:          []*confignet.TCPAddrConfig{},
+				Targets:          []*TargetConfig{},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errMissingTargets,
@@ -36,11 +36,13 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "endpoint:  12efg",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 12 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "endpoint:  12efg",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 12 * time.Second,
+							},
 						},
 					},
 				},
@@ -51,12 +53,16 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid config with multiple targets",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "endpoint:  12efg",
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "endpoint:  12efg",
+						},
 					},
 					{
-						Endpoint: "https://example.com:80",
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "https://example.com:80",
+						},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -66,12 +72,16 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "duplicate targets",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "opentelemetry.io:443",
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "opentelemetry.io:443",
+						},
 					},
 					{
-						Endpoint: "opentelemetry.io:443",
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "opentelemetry.io:443",
+						},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -81,9 +91,11 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "port out of range",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "www.opentelemetry.io:67000",
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "www.opentelemetry.io:67000",
+						},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -93,9 +105,11 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing port",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "www.opentelemetry.io/docs",
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "www.opentelemetry.io/docs",
+						},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -105,23 +119,29 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "opentelemetry.io:443",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 3 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "opentelemetry.io:443",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 3 * time.Second,
+							},
 						},
 					},
 					{
-						Endpoint: "opentelemetry.io:8080",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 1 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "opentelemetry.io:8080",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 1 * time.Second,
+							},
 						},
 					},
 					{
-						Endpoint: "111.222.33.44:10000",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 5 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "111.222.33.44:10000",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 5 * time.Second,
+							},
 						},
 					},
 				},
@@ -164,17 +184,21 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 1 * time.Minute,
 					InitialDelay:       1 * time.Second,
 				},
-				Targets: []*confignet.TCPAddrConfig{
+				Targets: []*TargetConfig{
 					{
-						Endpoint: "google.com:443",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 3 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "google.com:443",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 3 * time.Second,
+							},
 						},
 					},
 					{
-						Endpoint: "localhost:8080",
-						DialerConfig: confignet.DialerConfig{
-							Timeout: 5 * time.Second,
+						TCPAddrConfig: confignet.TCPAddrConfig{
+							Endpoint: "localhost:8080",
+							DialerConfig: confignet.DialerConfig{
+								Timeout: 5 * time.Second,
+							},
 						},
 					},
 				},
