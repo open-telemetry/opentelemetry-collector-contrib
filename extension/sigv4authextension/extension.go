@@ -120,6 +120,9 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 
 func assumeRoleOptions(cfg *Config) func(*stscreds.AssumeRoleOptions) {
 	return func(o *stscreds.AssumeRoleOptions) {
+		if cfg.AssumeRole.SessionName != "" {
+			o.RoleSessionName = cfg.AssumeRole.SessionName
+		}
 		if cfg.AssumeRole.ExternalID != "" {
 			o.ExternalID = &cfg.AssumeRole.ExternalID
 		}
