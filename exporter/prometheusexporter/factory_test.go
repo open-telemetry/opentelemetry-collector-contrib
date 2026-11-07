@@ -114,4 +114,3 @@ func TestCreateMetrics_DefaultSendingQueueNoWarning(t *testing.T) {
 	warnLogs := observedLogs.FilterMessageSnippet("sending_queue is deprecated and will be removed in a future release")
 	assert.Equal(t, 0, warnLogs.Len())
 }
-}

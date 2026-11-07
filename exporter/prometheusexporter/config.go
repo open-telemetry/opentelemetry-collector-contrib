@@ -24,7 +24,7 @@ type Config struct {
 
 	// QueueBatchConfig defines the queue configuration.
 	//
-	// Deprecated: [v0.165.0] Use of sending_queue is deprecated and will be removed in a future release. The Prometheus exporter is pull-based and does not support queuing.
+	// Deprecated: [v0.166.0] Use of sending_queue is deprecated and will be removed in a future release. The Prometheus exporter is pull-based and does not support queuing.
 	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.

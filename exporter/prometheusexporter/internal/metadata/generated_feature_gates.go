@@ -19,7 +19,7 @@ var ExporterPrometheusDisableSendingQueueFeatureGate = featuregate.GlobalRegistr
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the deprecated sending_queue configuration option is disabled and rejected, as the Prometheus exporter is pull-based."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52830"),
-	featuregate.WithRegisterFromVersion("v0.165.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )
 
 var ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
