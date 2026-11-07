@@ -4,10 +4,23 @@
 package otelsemconv // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
 
 import (
-	"reflect"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+// kind is the type a gen_ai.* attribute carries, per the semantic-conventions
+// registry.
+type kind uint8
+
+const (
+	// kindAny is the registry's "any". Values are passed through unchecked.
+	kindAny kind = iota
+	kindString
+	kindInt
+	kindDouble
+	kindBoolean
+	kindStringSlice
 )
 
 // Coerce writes src into dst conforming to the Go type the OTel GenAI
@@ -15,26 +28,23 @@ import (
 // (passthrough or coerced). Returns false when the key has a known type but
 // src cannot be safely coerced; callers must drop the attribute.
 //
-// Keys without a known typed constructor (spec type "any") fall through to
-// a verbatim src.CopyTo(dst).
+// Keys typed "any", and keys the registry does not define, are copied verbatim.
 func Coerce(targetKey string, src, dst pcommon.Value) bool {
 	expected, known := targetTypes[targetKey]
-	if !known {
+	if !known || expected == kindAny {
 		src.CopyTo(dst)
 		return true
 	}
-	switch expected.Kind() {
-	case reflect.Int, reflect.Int64:
+	switch expected {
+	case kindInt:
 		return coerceInt(src, dst)
-	case reflect.Float64:
+	case kindDouble:
 		return coerceFloat64(src, dst)
-	case reflect.String:
+	case kindString:
 		return coerceString(src, dst)
-	case reflect.Slice:
-		if expected.Elem().Kind() == reflect.String {
-			return coerceStringSlice(src, dst)
-		}
-	case reflect.Bool:
+	case kindStringSlice:
+		return coerceStringSlice(src, dst)
+	case kindBoolean:
 		return coerceBool(src, dst)
 	}
 	return false

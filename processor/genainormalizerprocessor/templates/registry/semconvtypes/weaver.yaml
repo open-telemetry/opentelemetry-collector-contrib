@@ -1,0 +1,27 @@
+# Generates the gen_ai.* type table in internal/otelsemconv. Run by
+# `make generate-semconv-types`.
+params:
+  # Set by the Makefile. tag is the semconv release with dots underscored;
+  # ident is its Go identifier spelling.
+  tag: unset
+  ident: Unset
+templates:
+  - pattern: types_gen.go.j2
+    # Every gen_ai.* attribute the release defines, reduced to key and type.
+    # Deprecated attributes are excluded, as in opentelemetry-go's semconv
+    # generation.
+    filter: >
+      semconv_attributes({"exclude_deprecated": true})
+      | map(select(.name | startswith("gen_ai.")))
+      | map({name: .name, type: .type})
+      | sort_by(.name)
+    application_mode: single
+    file_name: "internal/otelsemconv/types_{{ params.tag }}_gen.go"
+comment_formats:
+  go:
+    format: markdown
+    prefix: "// "
+    trim: true
+    word_wrap:
+      line_length: 80
+default_comment_format: go
