@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/memcached
+note: Fix `memcached.operation_hit_ratio` reporting the miss ratio instead of the hit ratio
+issues: [49470]
+subtext: |
+  The arguments passed to the hit-ratio helper were swapped relative to its
+  parameters, so the metric emitted misses / (hits + misses) rather than
+  hits / (hits + misses).
