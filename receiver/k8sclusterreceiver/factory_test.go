@@ -33,7 +33,7 @@ func TestFactory(t *testing.T) {
 
 	require.Equal(t, &Config{
 		Distribution:               distributionKubernetes,
-		CollectionInterval:         10 * time.Second,
+		CollectionInterval:         60 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,

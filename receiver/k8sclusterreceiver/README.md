@@ -45,7 +45,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 
 The following settings are optional:
 
-- `collection_interval` (default = `10s`): This receiver continuously watches
+- `collection_interval` (default = `60s`): This receiver continuously watches
 for events using K8s API. However, the metrics collected are emitted only
 once every collection interval. `collection_interval` will determine the
 frequency at which metrics are emitted by this receiver.
