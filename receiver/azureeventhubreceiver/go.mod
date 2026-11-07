@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.2
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.2
-	github.com/goccy/go-json v0.10.6
+	github.com/goccy/go-json v0.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.165.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.165.0
