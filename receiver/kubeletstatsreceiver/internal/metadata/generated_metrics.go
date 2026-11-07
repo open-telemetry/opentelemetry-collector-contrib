@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/otel/semconv/v1.44.0"
+	"go.uber.org/zap"
 )
 
 const (
@@ -102,6 +103,9 @@ var MetricsInfo = metricsInfo{
 	ContainerMemoryAvailable: metricInfo{
 		Name: "container.memory.available",
 	},
+	ContainerMemoryAvailableV1: metricInfo{
+		Name: "container.memory.available",
+	},
 	ContainerMemoryMajorPageFaults: metricInfo{
 		Name: "container.memory.major_page_faults",
 	},
@@ -111,10 +115,19 @@ var MetricsInfo = metricsInfo{
 	ContainerMemoryRss: metricInfo{
 		Name: "container.memory.rss",
 	},
+	ContainerMemoryRssV1: metricInfo{
+		Name: "container.memory.rss",
+	},
 	ContainerMemoryUsage: metricInfo{
 		Name: "container.memory.usage",
 	},
+	ContainerMemoryUsageV1: metricInfo{
+		Name: "container.memory.usage",
+	},
 	ContainerMemoryWorkingSet: metricInfo{
+		Name: "container.memory.working_set",
+	},
+	ContainerMemoryWorkingSetV1: metricInfo{
 		Name: "container.memory.working_set",
 	},
 	ContainerUptime: metricInfo{
@@ -299,11 +312,15 @@ type metricsInfo struct {
 	ContainerFilesystemCapacity            metricInfo
 	ContainerFilesystemUsage               metricInfo
 	ContainerMemoryAvailable               metricInfo
+	ContainerMemoryAvailableV1             metricInfo
 	ContainerMemoryMajorPageFaults         metricInfo
 	ContainerMemoryPageFaults              metricInfo
 	ContainerMemoryRss                     metricInfo
+	ContainerMemoryRssV1                   metricInfo
 	ContainerMemoryUsage                   metricInfo
+	ContainerMemoryUsageV1                 metricInfo
 	ContainerMemoryWorkingSet              metricInfo
+	ContainerMemoryWorkingSetV1            metricInfo
 	ContainerUptime                        metricInfo
 	K8sContainerCPUNodeUtilization         metricInfo
 	K8sContainerCPULimitUtilization        metricInfo
@@ -669,6 +686,58 @@ func newMetricContainerMemoryAvailable(cfg ContainerMemoryAvailableMetricConfig)
 	return m
 }
 
+type metricContainerMemoryAvailableV1 struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ContainerMemoryAvailableV1MetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.available@v1 metric with initial data.
+func (m *metricContainerMemoryAvailableV1) init() {
+	m.data.SetName("container.memory.available")
+	m.data.SetDescription("Container memory available.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryAvailableV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryAvailableV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryAvailableV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryAvailableV1(cfg ContainerMemoryAvailableV1MetricConfig) metricContainerMemoryAvailableV1 {
+	m := metricContainerMemoryAvailableV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryMajorPageFaults struct {
 	data     pmetric.Metric                             // data buffer for generated metric.
 	config   ContainerMemoryMajorPageFaultsMetricConfig // metric config provided by user.
@@ -819,6 +888,58 @@ func newMetricContainerMemoryRss(cfg ContainerMemoryRssMetricConfig) metricConta
 	return m
 }
 
+type metricContainerMemoryRssV1 struct {
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   ContainerMemoryRssV1MetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.rss@v1 metric with initial data.
+func (m *metricContainerMemoryRssV1) init() {
+	m.data.SetName("container.memory.rss")
+	m.data.SetDescription("Container memory RSS.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryRssV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryRssV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryRssV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryRssV1(cfg ContainerMemoryRssV1MetricConfig) metricContainerMemoryRssV1 {
+	m := metricContainerMemoryRssV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryUsage struct {
 	data     pmetric.Metric                   // data buffer for generated metric.
 	config   ContainerMemoryUsageMetricConfig // metric config provided by user.
@@ -869,6 +990,58 @@ func newMetricContainerMemoryUsage(cfg ContainerMemoryUsageMetricConfig) metricC
 	return m
 }
 
+type metricContainerMemoryUsageV1 struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   ContainerMemoryUsageV1MetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.usage@v1 metric with initial data.
+func (m *metricContainerMemoryUsageV1) init() {
+	m.data.SetName("container.memory.usage")
+	m.data.SetDescription("Memory usage of the container.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryUsageV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryUsageV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryUsageV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryUsageV1(cfg ContainerMemoryUsageV1MetricConfig) metricContainerMemoryUsageV1 {
+	m := metricContainerMemoryUsageV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryWorkingSet struct {
 	data     pmetric.Metric                        // data buffer for generated metric.
 	config   ContainerMemoryWorkingSetMetricConfig // metric config provided by user.
@@ -911,6 +1084,58 @@ func (m *metricContainerMemoryWorkingSet) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerMemoryWorkingSet(cfg ContainerMemoryWorkingSetMetricConfig) metricContainerMemoryWorkingSet {
 	m := metricContainerMemoryWorkingSet{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerMemoryWorkingSetV1 struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryWorkingSetV1MetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.working_set@v1 metric with initial data.
+func (m *metricContainerMemoryWorkingSetV1) init() {
+	m.data.SetName("container.memory.working_set")
+	m.data.SetDescription("Container memory working set.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryWorkingSetV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryWorkingSetV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryWorkingSetV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryWorkingSetV1(cfg ContainerMemoryWorkingSetV1MetricConfig) metricContainerMemoryWorkingSetV1 {
+	m := metricContainerMemoryWorkingSetV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3984,11 +4209,15 @@ type MetricsBuilder struct {
 	metricContainerFilesystemCapacity            metricContainerFilesystemCapacity
 	metricContainerFilesystemUsage               metricContainerFilesystemUsage
 	metricContainerMemoryAvailable               metricContainerMemoryAvailable
+	metricContainerMemoryAvailableV1             metricContainerMemoryAvailableV1
 	metricContainerMemoryMajorPageFaults         metricContainerMemoryMajorPageFaults
 	metricContainerMemoryPageFaults              metricContainerMemoryPageFaults
 	metricContainerMemoryRss                     metricContainerMemoryRss
+	metricContainerMemoryRssV1                   metricContainerMemoryRssV1
 	metricContainerMemoryUsage                   metricContainerMemoryUsage
+	metricContainerMemoryUsageV1                 metricContainerMemoryUsageV1
 	metricContainerMemoryWorkingSet              metricContainerMemoryWorkingSet
+	metricContainerMemoryWorkingSetV1            metricContainerMemoryWorkingSetV1
 	metricContainerUptime                        metricContainerUptime
 	metricK8sContainerCPUNodeUtilization         metricK8sContainerCPUNodeUtilization
 	metricK8sContainerCPULimitUtilization        metricK8sContainerCPULimitUtilization
@@ -4088,11 +4317,15 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerFilesystemCapacity:            newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
 		metricContainerFilesystemUsage:               newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
 		metricContainerMemoryAvailable:               newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
+		metricContainerMemoryAvailableV1:             newMetricContainerMemoryAvailableV1(mbc.Metrics.ContainerMemoryAvailableV1),
 		metricContainerMemoryMajorPageFaults:         newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
 		metricContainerMemoryPageFaults:              newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
 		metricContainerMemoryRss:                     newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
+		metricContainerMemoryRssV1:                   newMetricContainerMemoryRssV1(mbc.Metrics.ContainerMemoryRssV1),
 		metricContainerMemoryUsage:                   newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
+		metricContainerMemoryUsageV1:                 newMetricContainerMemoryUsageV1(mbc.Metrics.ContainerMemoryUsageV1),
 		metricContainerMemoryWorkingSet:              newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
+		metricContainerMemoryWorkingSetV1:            newMetricContainerMemoryWorkingSetV1(mbc.Metrics.ContainerMemoryWorkingSetV1),
 		metricContainerUptime:                        newMetricContainerUptime(mbc.Metrics.ContainerUptime),
 		metricK8sContainerCPUNodeUtilization:         newMetricK8sContainerCPUNodeUtilization(mbc.Metrics.K8sContainerCPUNodeUtilization),
 		metricK8sContainerCPULimitUtilization:        newMetricK8sContainerCPULimitUtilization(mbc.Metrics.K8sContainerCPULimitUtilization),
@@ -4212,6 +4445,138 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
 	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryAvailable.config.Enabled && !mb.metricContainerMemoryAvailableV1.config.enabledSetByUser {
+			mb.metricContainerMemoryAvailableV1.config.Enabled = true
+			mb.metricContainerMemoryAvailableV1.data = pmetric.NewMetric()
+			mb.metricContainerMemoryAvailableV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryAvailable.config.Enabled && mb.metricContainerMemoryAvailableV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerMemoryAvailable.data.Type() != mb.metricContainerMemoryAvailableV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.available` disabled: same emitted name as `container.memory.available@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerMemoryAvailable.Attributes, MetricsInfo.ContainerMemoryAvailableV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.available` disabled: same emitted name as `container.memory.available@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerMemoryAvailable.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerMemoryAvailableV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerMemoryAvailable.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerMemoryAvailableV1.config.Enabled {
+			mb.metricContainerMemoryAvailableV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.memory.available@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryRss.config.Enabled && !mb.metricContainerMemoryRssV1.config.enabledSetByUser {
+			mb.metricContainerMemoryRssV1.config.Enabled = true
+			mb.metricContainerMemoryRssV1.data = pmetric.NewMetric()
+			mb.metricContainerMemoryRssV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryRss.config.Enabled && mb.metricContainerMemoryRssV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerMemoryRss.data.Type() != mb.metricContainerMemoryRssV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.rss` disabled: same emitted name as `container.memory.rss@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerMemoryRss.Attributes, MetricsInfo.ContainerMemoryRssV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.rss` disabled: same emitted name as `container.memory.rss@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerMemoryRss.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerMemoryRssV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerMemoryRss.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerMemoryRssV1.config.Enabled {
+			mb.metricContainerMemoryRssV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.memory.rss@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryUsage.config.Enabled && !mb.metricContainerMemoryUsageV1.config.enabledSetByUser {
+			mb.metricContainerMemoryUsageV1.config.Enabled = true
+			mb.metricContainerMemoryUsageV1.data = pmetric.NewMetric()
+			mb.metricContainerMemoryUsageV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryUsage.config.Enabled && mb.metricContainerMemoryUsageV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerMemoryUsage.data.Type() != mb.metricContainerMemoryUsageV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.usage` disabled: same emitted name as `container.memory.usage@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerMemoryUsage.Attributes, MetricsInfo.ContainerMemoryUsageV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.usage` disabled: same emitted name as `container.memory.usage@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerMemoryUsage.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerMemoryUsageV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerMemoryUsage.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerMemoryUsageV1.config.Enabled {
+			mb.metricContainerMemoryUsageV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.memory.usage@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryWorkingSet.config.Enabled && !mb.metricContainerMemoryWorkingSetV1.config.enabledSetByUser {
+			mb.metricContainerMemoryWorkingSetV1.config.Enabled = true
+			mb.metricContainerMemoryWorkingSetV1.data = pmetric.NewMetric()
+			mb.metricContainerMemoryWorkingSetV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryWorkingSet.config.Enabled && mb.metricContainerMemoryWorkingSetV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerMemoryWorkingSet.data.Type() != mb.metricContainerMemoryWorkingSetV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.working_set` disabled: same emitted name as `container.memory.working_set@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerMemoryWorkingSet.Attributes, MetricsInfo.ContainerMemoryWorkingSetV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.memory.working_set` disabled: same emitted name as `container.memory.working_set@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerMemoryWorkingSet.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerMemoryWorkingSetV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerMemoryWorkingSet.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerMemoryWorkingSetV1.config.Enabled {
+			mb.metricContainerMemoryWorkingSetV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.memory.working_set@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
 
 	for _, op := range options {
 		op.apply(mb)
@@ -4288,11 +4653,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerFilesystemCapacity.emit(ils.Metrics())
 	mb.metricContainerFilesystemUsage.emit(ils.Metrics())
 	mb.metricContainerMemoryAvailable.emit(ils.Metrics())
+	mb.metricContainerMemoryAvailableV1.emit(ils.Metrics())
 	mb.metricContainerMemoryMajorPageFaults.emit(ils.Metrics())
 	mb.metricContainerMemoryPageFaults.emit(ils.Metrics())
 	mb.metricContainerMemoryRss.emit(ils.Metrics())
+	mb.metricContainerMemoryRssV1.emit(ils.Metrics())
 	mb.metricContainerMemoryUsage.emit(ils.Metrics())
+	mb.metricContainerMemoryUsageV1.emit(ils.Metrics())
 	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
+	mb.metricContainerMemoryWorkingSetV1.emit(ils.Metrics())
 	mb.metricContainerUptime.emit(ils.Metrics())
 	mb.metricK8sContainerCPUNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPULimitUtilization.emit(ils.Metrics())
@@ -4407,7 +4776,14 @@ func (mb *MetricsBuilder) RecordContainerFilesystemUsageDataPoint(ts pcommon.Tim
 
 // RecordContainerMemoryAvailableDataPoint adds a data point to container.memory.available metric.
 func (mb *MetricsBuilder) RecordContainerMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerMemoryAvailableV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerMemoryMajorPageFaultsDataPoint adds a data point to container.memory.major_page_faults metric.
@@ -4422,17 +4798,38 @@ func (mb *MetricsBuilder) RecordContainerMemoryPageFaultsDataPoint(ts pcommon.Ti
 
 // RecordContainerMemoryRssDataPoint adds a data point to container.memory.rss metric.
 func (mb *MetricsBuilder) RecordContainerMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryRss.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerMemoryRss.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerMemoryRssV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerMemoryUsageDataPoint adds a data point to container.memory.usage metric.
 func (mb *MetricsBuilder) RecordContainerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerMemoryUsageV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerMemoryWorkingSetDataPoint adds a data point to container.memory.working_set metric.
 func (mb *MetricsBuilder) RecordContainerMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerMemoryWorkingSetV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerUptimeDataPoint adds a data point to container.uptime metric.

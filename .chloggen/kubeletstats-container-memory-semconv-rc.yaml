@@ -1,0 +1,25 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: receiver/kubelet_stats
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Emit `container.memory.usage`, `container.memory.available`, `container.memory.rss` and `container.memory.working_set` as UpDownCounters following the release candidate semantic conventions, behind feature gates.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [50728]
+
+# (Optional) One or more lines of additional information to render under the main note.
+# These lines will be padded with 2 spaces and then inlined with the note.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Enable with the `receiver.kubelet_stats.EmitV1K8sConventions` and `receiver.kubelet_stats.DontEmitV0K8sConventions` feature gates.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should mark it using the change_logs key with 'user' or 'api'.
+# Optional: The change logs to which this change should be included.
+# Default: '[user]'
+change_logs: [user]

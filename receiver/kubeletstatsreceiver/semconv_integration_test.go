@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
@@ -37,9 +38,30 @@ var semconvCompliantMetrics = []string{
 	"container.cpu.time",
 }
 
+// semconvV1CompliantMetrics lists the receiver metrics that match a
+// release_candidate (or stable) definition only when the
+// receiver.kubelet_stats.EmitV1K8sConventions feature gate is enabled.
+var semconvV1CompliantMetrics = []string{
+	"container.memory.available",
+	"container.memory.rss",
+	"container.memory.usage",
+	"container.memory.working_set",
+}
+
 // TestSemconvComplianceContainerMetrics checks the container metrics, and the
 // resource attributes they carry, against semantic conventions.
 func TestSemconvComplianceContainerMetrics(t *testing.T) {
+	testSemconvComplianceContainerMetrics(t, semconvCompliantMetrics)
+}
+
+// TestSemconvComplianceContainerMetricsV1 checks the container metrics emitted
+// with the receiver.kubelet_stats.EmitV1K8sConventions feature gate enabled.
+func TestSemconvComplianceContainerMetricsV1(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, true)()
+	testSemconvComplianceContainerMetrics(t, slices.Concat(semconvCompliantMetrics, semconvV1CompliantMetrics))
+}
+
+func testSemconvComplianceContainerMetrics(t *testing.T, compliant []string) {
 	r, err := newKubeletScraper(
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
@@ -56,19 +78,19 @@ func TestSemconvComplianceContainerMetrics(t *testing.T) {
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
-	keepSemconvCompliantMetrics(md)
+	keepSemconvCompliantMetrics(md, compliant)
 	require.Positive(t, md.MetricCount(), "expected at least one semconv-compliant metric")
 
 	semconvtest.TestMetrics(t, md, semconvtest.WithRegistry(semconvRegistry))
 }
 
 // keepSemconvCompliantMetrics drops every metric that is not listed in
-// semconvCompliantMetrics, along with the scopes and resources left empty.
-func keepSemconvCompliantMetrics(md pmetric.Metrics) {
+// compliant, along with the scopes and resources left empty.
+func keepSemconvCompliantMetrics(md pmetric.Metrics, compliant []string) {
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				return !slices.Contains(semconvCompliantMetrics, m.Name())
+				return !slices.Contains(compliant, m.Name())
 			})
 			return sm.Metrics().Len() == 0
 		})
