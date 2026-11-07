@@ -5,6 +5,8 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 
 import "errors"
 
+var errNegativeMaxConnections = errors.New("max_connections must be greater than or equal to 0")
+
 // Config defines configuration for the fluentforward receiver.
 type Config struct {
 	// The address to listen on for incoming Fluent Forward events.  Should be
@@ -23,7 +25,7 @@ type Config struct {
 // Validate checks that the connection limit settings are valid.
 func (c *Config) Validate() error {
 	if c.MaxConnections < 0 {
-		return errors.New("max_connections must be greater than or equal to 0")
+		return errNegativeMaxConnections
 	}
 	return nil
 }

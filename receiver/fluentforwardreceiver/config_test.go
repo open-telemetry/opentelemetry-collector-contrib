@@ -16,35 +16,41 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
+	tests := []struct {
+		name     string
+		file     string
+		expected *Config
+	}{
+		{
+			name:     "default",
+			file:     "config.yaml",
+			expected: createDefaultConfig().(*Config),
+		},
+		{
+			name:     "max_connections",
+			file:     "config_max_connections.yaml",
+			expected: &Config{MaxConnections: 5},
+		},
+	}
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.file))
+			require.NoError(t, err)
 
-	sub, err := cm.Sub(metadata.Type.String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
+			cfg := NewFactory().CreateDefaultConfig()
+			sub, err := cm.Sub(metadata.Type.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, confmap.Validate(cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestValidateRejectsNegativeMaxConnections(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MaxConnections = -1
-	require.ErrorContains(t, cfg.Validate(), "max_connections")
-}
-
-func TestLoadConfigMaxConnections(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_max_connections.yaml"))
-	require.NoError(t, err)
-
-	cfg := createDefaultConfig()
-	sub, err := cm.Sub(metadata.Type.String())
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-
-	assert.NoError(t, confmap.Validate(cfg))
-	assert.Equal(t, 5, cfg.(*Config).MaxConnections)
+	require.ErrorIs(t, cfg.Validate(), errNegativeMaxConnections)
 }
