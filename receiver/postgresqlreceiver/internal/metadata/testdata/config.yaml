@@ -122,9 +122,6 @@ all_set:
     postgresql.wal.delay:
       enabled: true
       attributes: ["operation","replication_client"]
-    postgresql.wal.lag:
-      enabled: true
-      attributes: ["operation","replication_client"]
   events:
     db.server.query_plan:
       enabled: true
@@ -276,9 +273,6 @@ reaggregate_set:
     postgresql.wal.delay:
       enabled: true
       attributes: []
-    postgresql.wal.lag:
-      enabled: true
-      attributes: []
   events:
     db.server.query_plan:
       enabled: true
@@ -428,9 +422,6 @@ none_set:
     postgresql.wal.age:
       enabled: false
     postgresql.wal.delay:
-      enabled: false
-      attributes: ["operation","replication_client"]
-    postgresql.wal.lag:
       enabled: false
       attributes: ["operation","replication_client"]
   events:
