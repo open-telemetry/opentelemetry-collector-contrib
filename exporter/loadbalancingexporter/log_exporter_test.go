@@ -2645,3 +2645,43 @@ func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) e
 func newNopMockLogsExporter() exporter.Logs {
 	return &mockLogsExporter{Component: mockComponent{}}
 }
+
+func serviceForEndpoint(t *testing.T, ring *hashRing, wantEndpoint string) string {
+	t.Helper()
+	for i := range 1_000_000 {
+		svc := fmt.Sprintf("svc-%d", i)
+		if ring.endpointFor([]byte(svc)) == wantEndpoint {
+			return svc
+		}
+	}
+	t.Fatalf("no service routed to %q", wantEndpoint)
+	return ""
+}
+
+func TestConsumeLogs_NoConsumeWGLeakOnResolveError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	good := newWrappedExporter(newNopMockLogsExporter(), endpointWithPort("good"))
+	lb := &loadBalancer{
+		res:       &mockResolver{},
+		ring:      newHashRing([]string{"good", "missing"}),
+		exporters: map[string]*wrappedExporter{endpointWithPort("good"): good},
+	}
+	e := &logExporterImp{
+		loadBalancer: lb,
+		routingKey:   svcRouting,
+		logger:       ts.Logger,
+		telemetry:    tb,
+		started:      true,
+	}
+
+	svcGood := serviceForEndpoint(t, lb.ring, "good")
+	svcMissing := serviceForEndpoint(t, lb.ring, "missing")
+
+	for range 20 {
+		ld := simpleLogWithServiceName(svcGood)
+		simpleLogWithServiceName(svcMissing).ResourceLogs().MoveAndAppendTo(ld.ResourceLogs())
+		require.Error(t, e.ConsumeLogs(t.Context(), ld))
+	}
+	require.Eventually(t, func() bool { return e.Shutdown(t.Context()) == nil }, time.Second, 10*time.Millisecond, "Shutdown hangs")
+}

@@ -1320,3 +1320,34 @@ func (e *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Met
 	}
 	return e.ConsumeMetricsFn(ctx, md)
 }
+
+func TestConsumeMetrics_NoConsumeWGLeakOnResolveError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	good := newWrappedExporter(newNopMockMetricsExporter(), endpointWithPort("good"))
+	lb := &loadBalancer{
+		res:       &mockResolver{},
+		ring:      newHashRing([]string{"good", "missing"}),
+		exporters: map[string]*wrappedExporter{endpointWithPort("good"): good},
+	}
+	e := &metricExporterImp{
+		loadBalancer: lb,
+		routingKey:   svcRouting,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	svcGood := serviceForEndpoint(t, lb.ring, "good")
+	svcMissing := serviceForEndpoint(t, lb.ring, "missing")
+
+	for range 20 {
+		md := pmetric.NewMetrics()
+		for _, svc := range []string{svcGood, svcMissing} {
+			rm := md.ResourceMetrics().AppendEmpty()
+			rm.Resource().Attributes().PutStr("service.name", svc)
+			appendSimpleMetricWithID(rm, svc)
+		}
+		require.Error(t, e.ConsumeMetrics(t.Context(), md))
+	}
+	require.Eventually(t, func() bool { return e.Shutdown(t.Context()) == nil }, time.Second, 10*time.Millisecond, "Shutdown hangs")
+}
