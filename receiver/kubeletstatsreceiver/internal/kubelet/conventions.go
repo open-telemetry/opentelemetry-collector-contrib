@@ -11,6 +11,8 @@ const (
 	labelValueConfigMapVolume       = "configMap"
 	labelValueDownwardAPIVolume     = "downwardAPI"
 	labelValueEmptyDirVolume        = "emptyDir"
+	labelValueEphemeralVolume       = "ephemeral"
+	labelValueProjectedVolume       = "projected"
 	labelValueSecretVolume          = "secret"
 	labelValueHostPathVolume        = "hostPath"
 	labelValueLocalVolume           = "local"
