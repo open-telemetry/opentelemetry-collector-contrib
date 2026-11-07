@@ -1,7 +1,7 @@
 change_type: breaking
 component: exporter/signalfx
 note: Exclude and deprecate metrics produced by the default translation rules that are not used by Splunk Observability Cloud built-in content.
-issues: []
+issues: [52847]
 subtext: |
   The following metrics are now excluded by default: `memory.total`, `process.cpu_time_seconds`,
   `system.disk.operations.total`, `system.network.io.total`, `system.network.packets.total`.
