@@ -52,12 +52,12 @@ the `float64` exponent.  This mapping function is used with scale `-10
 `float64` number range into a single bucket, thus are not considered
 useful.
 
-The `mapping/logarithm` mapping function uses `math.Log(value)` times
-the scaling factor `math.Ldexp(math.Log2E, scale)`.  This mapping
-function is used with `0 < scale <= 20`.  The maximum scale is
-selected because at scale 21, simply, it becomes difficult to test
-correctness--at this point `math.MaxFloat64` maps to index
-`math.MaxInt32` and the `math/big` logic used in testing breaks down.
+The `mapping/logarithm` mapping function uses exact, generated lookup
+tables for scales `0 < scale <= 8`, then falls back to the existing
+`math.Log` calculation through scale 20. The maximum scale is selected
+because at scale 21, `math.MaxFloat64` maps to index `math.MaxInt32`
+and the `math/big` logic used in testing breaks down. Run
+`go generate ./...` from this module to regenerate the table.
 
 ### Data structure
 
