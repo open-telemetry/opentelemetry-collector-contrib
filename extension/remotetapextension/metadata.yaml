@@ -12,3 +12,4 @@ status:
 
 tests:
   config:
+    endpoint: localhost:0
