@@ -364,6 +364,8 @@ all_set:
       enabled: true
       attributes: ["oracle.db.pdb"]
   events:
+    db.server.procedure_definition:
+      enabled: true
     db.server.query_plan:
       enabled: true
     db.server.query_sample:
@@ -764,6 +766,8 @@ reaggregate_set:
       enabled: true
       attributes: []
   events:
+    db.server.procedure_definition:
+      enabled: true
     db.server.query_plan:
       enabled: true
     db.server.query_sample:
@@ -1164,6 +1168,8 @@ none_set:
       enabled: false
       attributes: ["oracle.db.pdb"]
   events:
+    db.server.procedure_definition:
+      enabled: false
     db.server.query_plan:
       enabled: false
     db.server.query_sample:

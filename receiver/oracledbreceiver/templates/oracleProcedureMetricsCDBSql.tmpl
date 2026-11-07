@@ -1,10 +1,12 @@
 /* otel-collector */ SELECT
   P.OWNER                                 AS SCHEMA_NAME,
+  P.OBJECT_NAME                           AS OBJECT_NAME,
   P.OWNER || '.' || P.OBJECT_NAME         AS PROCEDURE_NAME,
   P.OBJECT_TYPE                           AS PROCEDURE_TYPE,
   S.PROGRAM_ID                            AS PROGRAM_ID,
   NVL(C.NAME, '')                         AS DB_NAMESPACE,
   S.SERVICE                               AS SERVICE,
+  P.CON_ID                                AS CON_ID,
   NVL(MIN(S.EXECUTIONS), 0)               AS EXECUTIONS,
   NVL(SUM(S.CPU_TIME), 0)                 AS CPU_TIME,
   NVL(SUM(S.ELAPSED_TIME), 0)             AS ELAPSED_TIME,
@@ -29,5 +31,5 @@ FROM
     ON C.CON_ID = S.CON_ID
 WHERE S.PROGRAM_ID > 0
   AND S.LAST_ACTIVE_TIME >= SYSDATE - NUMTODSINTERVAL(:1, 'SECOND')
-GROUP BY P.OWNER, P.OBJECT_NAME, P.OBJECT_TYPE, S.PROGRAM_ID, C.NAME, S.SERVICE
+GROUP BY P.OWNER, P.OBJECT_NAME, P.OBJECT_TYPE, S.PROGRAM_ID, C.NAME, S.SERVICE, P.CON_ID
 FETCH FIRST :2 ROWS ONLY

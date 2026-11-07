@@ -367,7 +367,10 @@ FROM (
 	planHashValueAttr = "PLAN_HASH_VALUE"
 
 	// Procedure metrics columns
-	lastActiveTimeAttr = "LAST_ACTIVE_TIME"
+	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
+	definitionAttr      = "DEFINITION"
+	innerObjectNameAttr = "OBJECT_NAME"
+	conIDAttr           = "CON_ID"
 )
 
 var (
@@ -389,6 +392,10 @@ var (
 	oracleProcedureMetricsSQL string
 	//go:embed templates/oracleProcedureMetricsCDBSql.tmpl
 	oracleProcedureMetricsCDBSQL string
+	//go:embed templates/oracleProcedureSourceSql.tmpl
+	oracleProcedureSourceSQL string
+	//go:embed templates/oracleProcedureSourceCDBSql.tmpl
+	oracleProcedureSourceCDBSQL string
 )
 
 // sgaComponentNames maps V$SGAINFO.NAME values to the snake_case enum keys
@@ -549,6 +556,112 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
+// buildNamedList generates named bind placeholders and sql.Named args for a column.
+func buildNamedList(prefix string, values []string) ([]string, []any) {
+	placeholders := make([]string, 0, len(values))
+	args := make([]any, 0, len(values))
+	for i, v := range values {
+		name := prefix + strconv.Itoa(i)
+		placeholders = append(placeholders, ":"+name)
+		args = append(args, sql.Named(name, v))
+	}
+	return placeholders, args
+}
+
+// procedureKey builds the lookup key used to map a procedure to its concatenated source text.
+// conID is empty string for PDB connections.
+func procedureKey(owner, name, procType, conID string) string {
+	return owner + "|" + name + "|" + procType + "|" + conID
+}
+
+// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN clauses
+// using named bind parameters. CON_ID is included only when isCDB is true.
+func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (string, []any) {
+	owners := make([]string, len(hits))
+	names := make([]string, len(hits))
+	types := make([]string, len(hits))
+	conIDs := make([]string, len(hits))
+	for i := range hits {
+		owners[i], names[i], types[i], conIDs[i] = hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID
+	}
+	ownerPH, ownerArgs := buildNamedList("owner", owners)
+	namePH, nameArgs := buildNamedList("name", names)
+	typePH, typeArgs := buildNamedList("type", types)
+
+	argCount := len(ownerArgs) + len(nameArgs) + len(typeArgs)
+	if isCDB {
+		argCount += len(hits)
+	}
+	args := make([]any, 0, argCount)
+	args = append(args, ownerArgs...)
+	args = append(args, nameArgs...)
+	args = append(args, typeArgs...)
+
+	if isCDB {
+		conIDPH, conIDArgs := buildNamedList("conid", conIDs)
+		args = append(args, conIDArgs...)
+		return fmt.Sprintf(oracleProcedureSourceCDBSQL,
+			strings.Join(ownerPH, ","),
+			strings.Join(namePH, ","),
+			strings.Join(typePH, ","),
+			strings.Join(conIDPH, ",")), args
+	}
+	return fmt.Sprintf(oracleProcedureSourceSQL,
+		strings.Join(ownerPH, ","),
+		strings.Join(namePH, ","),
+		strings.Join(typePH, ",")), args
+}
+
+// isWrappedDefinition reports whether a procedure's source begins with Oracle's
+// `wrapped` keyword, which marks the body as encrypted. The following lines contain
+// only the encoded payload, not readable source.
+func isWrappedDefinition(definition string) bool {
+	firstLine := definition
+	if idx := strings.IndexByte(firstLine, '\n'); idx >= 0 {
+		firstLine = firstLine[:idx]
+	}
+	return strings.HasSuffix(strings.TrimSpace(firstLine), " wrapped")
+}
+
+// groupSourceRowsByKey concatenates source lines per procedure into a definition map.
+// Key format matches procedureKey — conID is empty string for PDB rows. Wrapped
+// (encrypted) procedures map to an empty string so callers don't ship the encoded blob.
+func groupSourceRowsByKey(sourceRows []metricRow) map[string]string {
+	builders := make(map[string]*strings.Builder)
+	for _, row := range sourceRows {
+		key := procedureKey(row["OWNER"], row["NAME"], row["TYPE"], row["CON_ID"])
+		if builders[key] == nil {
+			builders[key] = &strings.Builder{}
+		}
+		builders[key].WriteString(row["TEXT"])
+	}
+	result := make(map[string]string, len(builders))
+	for k, v := range builders {
+		definition := v.String()
+		if isWrappedDefinition(definition) {
+			definition = ""
+		}
+		result[k] = definition
+	}
+	return result
+}
+
+// fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
+// IN-clause query (one DB roundtrip) and concatenates per-procedure in Go.
+func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[string]string, error) {
+	if len(hits) == 0 {
+		return nil, nil
+	}
+
+	sqlQuery, args := buildProcedureSourceQuery(hits, s.useCDBProceduresView)
+
+	sourceRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+	return groupSourceRowsByKey(sourceRows), nil
+}
+
 func (s *oracleScraper) buildTopQuerySQL() string {
 	if s.useCDBProceduresView {
 		return oracleQueryMetricsCDBSQL
@@ -615,6 +728,11 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	if s.useCDBDictionaryViews {
 		s.logger.Debug("oracledbreceiver: using container-qualified dictionary joins for query-sample collection")
 	}
+	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
+		!s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		s.logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+	}
+
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	if s.instanceInfo.connectedToPDB {
@@ -2224,11 +2342,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 
 type procedureMetricCacheHit struct {
 	schemaName     string
+	objectName     string
 	procedureName  string
 	procedureType  string
 	programID      int64
 	dbNamespace    string
 	service        string
+	conID          string
 	firstLoadTime  string
 	lastActiveTime string
 	metrics        map[string]int64
@@ -2285,10 +2405,12 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 		if oldCacheVal, ok := s.procedureMetricCache.Get(cacheKey); ok {
 			hit := procedureMetricCacheHit{
 				schemaName:     row[schemaNameAttr],
+				objectName:     row[innerObjectNameAttr],
 				procedureName:  row[objectNameAttr],
 				procedureType:  row[objectTypeAttr],
 				dbNamespace:    row[dbNamespaceAttr],
 				service:        row[serviceAttr],
+				conID:          row[conIDAttr],
 				firstLoadTime:  row[firstLoadTimeAttr],
 				lastActiveTime: row[lastActiveTimeAttr],
 				metrics:        make(map[string]int64, len(metricNames)),
@@ -2345,6 +2467,16 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	maxHitsSize := min(len(hits), int(s.procedureMetricsCfg.TopProcedureCount))
 	hits = hits[:maxHitsSize]
 
+	// Fetch all procedure definitions in one query if the event is enabled.
+	var definitions map[string]string
+	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+		var defErr error
+		definitions, defErr = s.fetchProcedureDefinitions(ctx, hits)
+		if defErr != nil {
+			errs = append(errs, fmt.Errorf("failed to fetch procedure definitions: %w", defErr))
+		}
+	}
+
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for i := range hits {
@@ -2371,6 +2503,19 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.metrics[physicalWriteBytesMetric],
 			hit.firstLoadTime,
 			hit.lastActiveTime)
+
+		// Only emit the definition event when fetch succeeded; a nil map means fetch failed,
+		// and emitting empty definitions would be indistinguishable from a wrapped/empty procedure.
+		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled && definitions != nil {
+			key := procedureKey(hit.schemaName, hit.objectName, hit.procedureType, hit.conID)
+			s.lb.RecordDbServerProcedureDefinitionEvent(context.Background(),
+				pcommon.NewTimestampFromTime(collectionTime),
+				dbSystemNameVal,
+				hit.dbNamespace,
+				hit.programID,
+				hit.procedureName,
+				definitions[key])
+		}
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
