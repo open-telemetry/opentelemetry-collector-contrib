@@ -830,7 +830,7 @@ rules:
     verbs: ["get"]
 ```
 
-> **Note:** `node_from_env_var` and the `nodes` RBAC permission are required even when only `k8s.cluster.uid` is enabled; the detector will fail to start if the env variable is unset or empty. The `namespaces` permission is required for `k8s.cluster.uid`; if missing, detection continues without it.
+> **Note:** `node_from_env_var` and the `nodes` RBAC permission are required even when only `k8s.cluster.uid` is enabled; if the env variable is unset or empty, the detector returns no attributes, or fails detection when `fail_on_missing_metadata` is enabled. The `namespaces` permission is required for `k8s.cluster.uid`; if missing, detection continues without it.
 
 | Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
 | ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
