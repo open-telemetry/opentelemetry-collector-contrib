@@ -209,6 +209,9 @@ linters:
             - pkg: github.com/tj/assert
               desc: "Use github.com/stretchr/testify/assert instead"
 
+            - pkg: "gopkg.in/yaml.v3"
+              desc: "Use 'go.yaml.in/yaml/v3' instead of gopkg.in/yaml.v3"
+
         semconv:
           list-mode: lax
           deny:
