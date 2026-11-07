@@ -31,5 +31,7 @@ func TestMain(m *testing.M) {
 		_, _ = fmt.Fprint(os.Stderr, "shutdown error")
 		os.Exit(0)
 	}
-	goleak.VerifyTestMain(m)
+	// go-winio starts a process-wide IO completion goroutine on first named
+	// pipe use (initIO) that never exits; the npipe tests trigger it.
+	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("github.com/Microsoft/go-winio.ioCompletionProcessor"))
 }

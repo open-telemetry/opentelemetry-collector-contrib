@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsuperv
 go 1.26.0
 
 require (
+	github.com/Microsoft/go-winio v0.6.4
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opamp-go v0.25.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.165.0
@@ -48,7 +49,6 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.10.0 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20230320061759-8cc1b52080c5 // indirect
-	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.33.10 // indirect
