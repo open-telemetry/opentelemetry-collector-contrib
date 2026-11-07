@@ -99,6 +99,26 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect exchange metrics: %w", err))
 	}
 
+	// Channel and connection counts describe the broker as a whole, so they share a
+	// single resource.
+	channelsEnabled := r.cfg.MetricsBuilderConfig.Metrics.RabbitmqChannelCount.Enabled
+	connectionsEnabled := r.cfg.MetricsBuilderConfig.Metrics.RabbitmqConnectionCount.Enabled
+	if channelsEnabled {
+		if err := r.collectChannelMetrics(ctx, now); err != nil {
+			scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect channel metrics: %w", err))
+		}
+	}
+	if connectionsEnabled {
+		if err := r.collectConnectionMetrics(ctx, now); err != nil {
+			scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect connection metrics: %w", err))
+		}
+	}
+	if channelsEnabled || connectionsEnabled {
+		rb := r.mb.NewResourceBuilder()
+		setClusterName(rb, clusterName)
+		r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
 	// Emit collected metrics
 	metrics := r.mb.Emit()
 
@@ -122,6 +142,32 @@ func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.T
 	// Collect metrics for each queue
 	for _, queue := range queues {
 		r.collectQueue(queue, now, clusterName)
+	}
+	return nil
+}
+
+func (r *rabbitmqScraper) collectChannelMetrics(ctx context.Context, now pcommon.Timestamp) error {
+	channels, err := r.client.GetChannels(ctx)
+	if err != nil {
+		return err
+	}
+
+	// The metrics builder sums datapoints with identical attributes, so recording each
+	// channel individually yields counts broken down by whichever attributes are enabled.
+	for _, channel := range channels {
+		r.mb.RecordRabbitmqChannelCountDataPoint(now, 1, channel.ConsumerCount > 0, channel.PrefetchCount, channel.User, channel.VHost)
+	}
+	return nil
+}
+
+func (r *rabbitmqScraper) collectConnectionMetrics(ctx context.Context, now pcommon.Timestamp) error {
+	connections, err := r.client.GetConnections(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, connection := range connections {
+		r.mb.RecordRabbitmqConnectionCountDataPoint(now, 1, connection.User, connection.VHost)
 	}
 	return nil
 }

@@ -26,6 +26,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					RabbitmqChannelCount: RabbitmqChannelCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RabbitmqChannelCountMetricAttributeKey{RabbitmqChannelCountMetricAttributeKeyChannelConsuming, RabbitmqChannelCountMetricAttributeKeyChannelPrefetchCount, RabbitmqChannelCountMetricAttributeKeyUserName, RabbitmqChannelCountMetricAttributeKeyVhostName},
+					},
+					RabbitmqConnectionCount: RabbitmqConnectionCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RabbitmqConnectionCountMetricAttributeKey{RabbitmqConnectionCountMetricAttributeKeyUserName, RabbitmqConnectionCountMetricAttributeKeyVhostName},
+					},
 					RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 						Enabled: true,
 					},
@@ -289,6 +299,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					RabbitmqChannelCount: RabbitmqChannelCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RabbitmqChannelCountMetricAttributeKey{RabbitmqChannelCountMetricAttributeKeyChannelConsuming, RabbitmqChannelCountMetricAttributeKeyChannelPrefetchCount, RabbitmqChannelCountMetricAttributeKeyUserName, RabbitmqChannelCountMetricAttributeKeyVhostName},
+					},
+					RabbitmqConnectionCount: RabbitmqConnectionCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []RabbitmqConnectionCountMetricAttributeKey{RabbitmqConnectionCountMetricAttributeKeyUserName, RabbitmqConnectionCountMetricAttributeKeyVhostName},
+					},
 					RabbitmqConsumerCount: RabbitmqConsumerCountMetricConfig{
 						Enabled: false,
 					},
@@ -552,10 +572,33 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RabbitmqConsumerCountMetricConfig{}, RabbitmqExchangeMessagesPublishedInMetricConfig{}, RabbitmqExchangeMessagesPublishedOutMetricConfig{}, RabbitmqMessageAcknowledgedMetricConfig{}, RabbitmqMessageCurrentMetricConfig{}, RabbitmqMessageDeliveredMetricConfig{}, RabbitmqMessageDroppedMetricConfig{}, RabbitmqMessagePublishedMetricConfig{}, RabbitmqNodeChannelClosedMetricConfig{}, RabbitmqNodeChannelClosedDetailsRateMetricConfig{}, RabbitmqNodeChannelCreatedMetricConfig{}, RabbitmqNodeChannelCreatedDetailsRateMetricConfig{}, RabbitmqNodeConnectionClosedMetricConfig{}, RabbitmqNodeConnectionClosedDetailsRateMetricConfig{}, RabbitmqNodeConnectionCreatedMetricConfig{}, RabbitmqNodeConnectionCreatedDetailsRateMetricConfig{}, RabbitmqNodeContextSwitchesMetricConfig{}, RabbitmqNodeContextSwitchesDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeMetricConfig{}, RabbitmqNodeDiskFreeAlarmMetricConfig{}, RabbitmqNodeDiskFreeDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeLimitMetricConfig{}, RabbitmqNodeFdTotalMetricConfig{}, RabbitmqNodeFdUsedMetricConfig{}, RabbitmqNodeFdUsedDetailsRateMetricConfig{}, RabbitmqNodeGcBytesReclaimedMetricConfig{}, RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig{}, RabbitmqNodeGcNumMetricConfig{}, RabbitmqNodeGcNumDetailsRateMetricConfig{}, RabbitmqNodeIoReadAvgTimeMetricConfig{}, RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoReadBytesMetricConfig{}, RabbitmqNodeIoReadBytesDetailsRateMetricConfig{}, RabbitmqNodeIoReadCountMetricConfig{}, RabbitmqNodeIoReadCountDetailsRateMetricConfig{}, RabbitmqNodeIoReopenCountMetricConfig{}, RabbitmqNodeIoReopenCountDetailsRateMetricConfig{}, RabbitmqNodeIoSeekAvgTimeMetricConfig{}, RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSeekCountMetricConfig{}, RabbitmqNodeIoSeekCountDetailsRateMetricConfig{}, RabbitmqNodeIoSyncAvgTimeMetricConfig{}, RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSyncCountMetricConfig{}, RabbitmqNodeIoSyncCountDetailsRateMetricConfig{}, RabbitmqNodeIoWriteAvgTimeMetricConfig{}, RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoWriteBytesMetricConfig{}, RabbitmqNodeIoWriteBytesDetailsRateMetricConfig{}, RabbitmqNodeIoWriteCountMetricConfig{}, RabbitmqNodeIoWriteCountDetailsRateMetricConfig{}, RabbitmqNodeMemAlarmMetricConfig{}, RabbitmqNodeMemLimitMetricConfig{}, RabbitmqNodeMemUsedMetricConfig{}, RabbitmqNodeMemUsedDetailsRateMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreReadCountMetricConfig{}, RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreWriteCountMetricConfig{}, RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig{}, RabbitmqNodeProcTotalMetricConfig{}, RabbitmqNodeProcUsedMetricConfig{}, RabbitmqNodeProcUsedDetailsRateMetricConfig{}, RabbitmqNodeProcessorsMetricConfig{}, RabbitmqNodeQueueCreatedMetricConfig{}, RabbitmqNodeQueueCreatedDetailsRateMetricConfig{}, RabbitmqNodeQueueDeclaredMetricConfig{}, RabbitmqNodeQueueDeclaredDetailsRateMetricConfig{}, RabbitmqNodeQueueDeletedMetricConfig{}, RabbitmqNodeQueueDeletedDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexReadCountMetricConfig{}, RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexWriteCountMetricConfig{}, RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig{}, RabbitmqNodeRunQueueMetricConfig{}, RabbitmqNodeSocketsTotalMetricConfig{}, RabbitmqNodeSocketsUsedMetricConfig{}, RabbitmqNodeSocketsUsedDetailsRateMetricConfig{}, RabbitmqNodeUptimeMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RabbitmqChannelCountMetricConfig{}, RabbitmqConnectionCountMetricConfig{}, RabbitmqConsumerCountMetricConfig{}, RabbitmqExchangeMessagesPublishedInMetricConfig{}, RabbitmqExchangeMessagesPublishedOutMetricConfig{}, RabbitmqMessageAcknowledgedMetricConfig{}, RabbitmqMessageCurrentMetricConfig{}, RabbitmqMessageDeliveredMetricConfig{}, RabbitmqMessageDroppedMetricConfig{}, RabbitmqMessagePublishedMetricConfig{}, RabbitmqNodeChannelClosedMetricConfig{}, RabbitmqNodeChannelClosedDetailsRateMetricConfig{}, RabbitmqNodeChannelCreatedMetricConfig{}, RabbitmqNodeChannelCreatedDetailsRateMetricConfig{}, RabbitmqNodeConnectionClosedMetricConfig{}, RabbitmqNodeConnectionClosedDetailsRateMetricConfig{}, RabbitmqNodeConnectionCreatedMetricConfig{}, RabbitmqNodeConnectionCreatedDetailsRateMetricConfig{}, RabbitmqNodeContextSwitchesMetricConfig{}, RabbitmqNodeContextSwitchesDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeMetricConfig{}, RabbitmqNodeDiskFreeAlarmMetricConfig{}, RabbitmqNodeDiskFreeDetailsRateMetricConfig{}, RabbitmqNodeDiskFreeLimitMetricConfig{}, RabbitmqNodeFdTotalMetricConfig{}, RabbitmqNodeFdUsedMetricConfig{}, RabbitmqNodeFdUsedDetailsRateMetricConfig{}, RabbitmqNodeGcBytesReclaimedMetricConfig{}, RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig{}, RabbitmqNodeGcNumMetricConfig{}, RabbitmqNodeGcNumDetailsRateMetricConfig{}, RabbitmqNodeIoReadAvgTimeMetricConfig{}, RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoReadBytesMetricConfig{}, RabbitmqNodeIoReadBytesDetailsRateMetricConfig{}, RabbitmqNodeIoReadCountMetricConfig{}, RabbitmqNodeIoReadCountDetailsRateMetricConfig{}, RabbitmqNodeIoReopenCountMetricConfig{}, RabbitmqNodeIoReopenCountDetailsRateMetricConfig{}, RabbitmqNodeIoSeekAvgTimeMetricConfig{}, RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSeekCountMetricConfig{}, RabbitmqNodeIoSeekCountDetailsRateMetricConfig{}, RabbitmqNodeIoSyncAvgTimeMetricConfig{}, RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoSyncCountMetricConfig{}, RabbitmqNodeIoSyncCountDetailsRateMetricConfig{}, RabbitmqNodeIoWriteAvgTimeMetricConfig{}, RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig{}, RabbitmqNodeIoWriteBytesMetricConfig{}, RabbitmqNodeIoWriteBytesDetailsRateMetricConfig{}, RabbitmqNodeIoWriteCountMetricConfig{}, RabbitmqNodeIoWriteCountDetailsRateMetricConfig{}, RabbitmqNodeMemAlarmMetricConfig{}, RabbitmqNodeMemLimitMetricConfig{}, RabbitmqNodeMemUsedMetricConfig{}, RabbitmqNodeMemUsedDetailsRateMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountMetricConfig{}, RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountMetricConfig{}, RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreReadCountMetricConfig{}, RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig{}, RabbitmqNodeMsgStoreWriteCountMetricConfig{}, RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig{}, RabbitmqNodeProcTotalMetricConfig{}, RabbitmqNodeProcUsedMetricConfig{}, RabbitmqNodeProcUsedDetailsRateMetricConfig{}, RabbitmqNodeProcessorsMetricConfig{}, RabbitmqNodeQueueCreatedMetricConfig{}, RabbitmqNodeQueueCreatedDetailsRateMetricConfig{}, RabbitmqNodeQueueDeclaredMetricConfig{}, RabbitmqNodeQueueDeclaredDetailsRateMetricConfig{}, RabbitmqNodeQueueDeletedMetricConfig{}, RabbitmqNodeQueueDeletedDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexReadCountMetricConfig{}, RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig{}, RabbitmqNodeQueueIndexWriteCountMetricConfig{}, RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig{}, RabbitmqNodeRunQueueMetricConfig{}, RabbitmqNodeSocketsTotalMetricConfig{}, RabbitmqNodeSocketsUsedMetricConfig{}, RabbitmqNodeSocketsUsedDetailsRateMetricConfig{}, RabbitmqNodeUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
+}
+func TestRabbitmqChannelCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RabbitmqChannelCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RabbitmqChannelCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric rabbitmq.channel.count doesn't have an attribute invalid, valid attributes: [rabbitmq.channel.consuming, rabbitmq.channel.prefetch_count, rabbitmq.user.name, rabbitmq.vhost.name]")
+
+	cfg = DefaultMetricsConfig().RabbitmqChannelCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestRabbitmqConnectionCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().RabbitmqConnectionCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []RabbitmqConnectionCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric rabbitmq.connection.count doesn't have an attribute invalid, valid attributes: [rabbitmq.user.name, rabbitmq.vhost.name]")
+
+	cfg = DefaultMetricsConfig().RabbitmqConnectionCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
 func TestRabbitmqMessageCurrentMetricsConfig_Validate(t *testing.T) {
