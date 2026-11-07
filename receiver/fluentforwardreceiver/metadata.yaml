@@ -62,9 +62,9 @@ telemetry:
         monotonic:
     fluent_refused_connections:
       enabled: true
-      description: Number of connections refused because max_connections was reached
+      description: Number of connections refused because the max_connections limit was reached
       stability: development
       unit: "1"
       sum:
         value_type: int
-        monotonic:
+        monotonic: true

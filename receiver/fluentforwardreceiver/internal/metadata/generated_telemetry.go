@@ -30,7 +30,7 @@ type TelemetryBuilder struct {
 	FluentOpenedConnections  metric.Int64UpDownCounter
 	FluentParseFailures      metric.Int64UpDownCounter
 	FluentRecordsGenerated   metric.Int64UpDownCounter
-	FluentRefusedConnections metric.Int64UpDownCounter
+	FluentRefusedConnections metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -92,9 +92,9 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FluentRefusedConnections, err = builder.meter.Int64UpDownCounter(
+	builder.FluentRefusedConnections, err = builder.meter.Int64Counter(
 		"otelcol_fluent_refused_connections",
-		metric.WithDescription("Number of connections refused because max_connections was reached [Development]"),
+		metric.WithDescription("Number of connections refused because the max_connections limit was reached [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

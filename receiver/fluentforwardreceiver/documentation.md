@@ -48,8 +48,8 @@ Number of log records generated from Fluent forward input
 
 ### otelcol_fluent_refused_connections
 
-Number of connections refused because max_connections was reached
+Number of connections refused because the max_connections limit was reached
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | Development |
+| 1 | Sum | Int | true | Development |
