@@ -145,6 +145,48 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			configFile: "config_empty_label_set.yaml",
+			id:         component.NewID(metadata.Type),
+			expected: &Config{
+				Transforms: []transform{
+					{
+						MetricIncludeFilter: filterConfig{
+							Include: "name",
+						},
+						Action: "update",
+						Operations: []operation{
+							{
+								Action:          "aggregate_labels",
+								AggregationType: "sum",
+								LabelSet:        []string{},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			configFile: "config_absent_label_set.yaml",
+			id:         component.NewID(metadata.Type),
+			expected: &Config{
+				Transforms: []transform{
+					{
+						MetricIncludeFilter: filterConfig{
+							Include: "name",
+						},
+						Action: "update",
+						Operations: []operation{
+							{
+								Action:          "aggregate_labels",
+								AggregationType: "sum",
+								LabelSet:        nil,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -1,0 +1,8 @@
+metrics_transform:
+  transforms:
+    - include: name
+      action: update
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set: []

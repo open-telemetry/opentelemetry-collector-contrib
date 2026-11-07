@@ -216,6 +216,9 @@ func createLabelValueMapping(valueActions []valueAction, version string) map[str
 // sliceToSet converts slice of strings to set of strings
 // Returns the set of strings
 func sliceToSet(slice []string) map[string]bool {
+	if slice == nil {
+		return nil
+	}
 	set := make(map[string]bool, len(slice))
 	for _, s := range slice {
 		set[s] = true
