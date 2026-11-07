@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: connector/slow_sql
+note: Fix slowsql connector discarding resource metadata, emitting empty logs, and corrupting non-string dimensions.
+issues: [52865]
+subtext:
+change_logs: [user]
