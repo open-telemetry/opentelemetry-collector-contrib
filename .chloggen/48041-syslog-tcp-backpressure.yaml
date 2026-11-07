@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/syslog
+
+note: Propagate downstream backpressure to TCP syslog connections
+
+issues: [48041]
+
+subtext:
+
+change_logs: [user]
