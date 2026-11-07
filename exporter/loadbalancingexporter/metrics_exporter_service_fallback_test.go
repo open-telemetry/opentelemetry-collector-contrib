@@ -115,7 +115,7 @@ func resourceMetric(service, host string) pmetric.Metrics {
 //  1. are delivered and not dropped,
 //  2. are not all sent to one backend,
 //  3. always reach the same backend (per-resource affinity).
-func TestE2EMissingServiceNameSpreadsAcrossBackends(t *testing.T) {
+func TestE2EMetricsMissingServiceNameSpreadsAcrossBackends(t *testing.T) {
 	const (
 		resources = 90
 		rounds    = 3
@@ -154,7 +154,7 @@ func TestE2EMissingServiceNameSpreadsAcrossBackends(t *testing.T) {
 
 // TestE2EMissingServiceNameSameAsResourceRouting shows that unnamed resources follow the
 // same backend as routing_key "resource", so both routing keys agree on placement.
-func TestE2EMissingServiceNameSameAsResourceRouting(t *testing.T) {
+func TestE2EMetricsMissingServiceNameSameAsResourceRouting(t *testing.T) {
 	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
 	svcDelivery, resDelivery := newMetricDelivery(), newMetricDelivery()
 	svcExporter := newServiceRoutingMetricsExporter(t, svcRoutingStr, endpoints, svcDelivery)
@@ -176,7 +176,7 @@ func TestE2EMissingServiceNameSameAsResourceRouting(t *testing.T) {
 // TestE2ENamedServicesKeepServiceAffinity proves that the change does not affect resources
 // that have a service.name: all resources of one service still go to one backend, even when
 // their other resource attributes differ.
-func TestE2ENamedServicesKeepServiceAffinity(t *testing.T) {
+func TestE2EMetricsNamedServicesKeepServiceAffinity(t *testing.T) {
 	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
 	d := newMetricDelivery()
 	p := newServiceRoutingMetricsExporter(t, svcRoutingStr, endpoints, d)
@@ -198,7 +198,7 @@ func TestE2ENamedServicesKeepServiceAffinity(t *testing.T) {
 // TestE2EMixedBatchDeliversEveryPointOnce sends named, unnamed and empty-name resources in
 // one batch. Before the change the unnamed ones were dropped. Now no data point is lost
 // or duplicated.
-func TestE2EMixedBatchDeliversEveryPointOnce(t *testing.T) {
+func TestE2EMetricsMixedBatchDeliversEveryPointOnce(t *testing.T) {
 	endpoints := []string{"endpoint-1", "endpoint-2", "endpoint-3"}
 	d := newMetricDelivery()
 	p := newServiceRoutingMetricsExporter(t, svcRoutingStr, endpoints, d)
