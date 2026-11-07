@@ -120,6 +120,7 @@ func TestE2EClusterScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
 			pmetrictest.ChangeResourceAttributeValue("container.image.tag", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.cluster.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.cronjob.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
@@ -481,6 +482,8 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	entityName := "test-entities-ns"
 	namespaceLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
 
+	assertClusterUID(t, namespaceLogs[0])
+
 	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns.yaml")
 	require.NoError(t, err)
 
@@ -500,6 +503,8 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
 		plogtest.IgnoreLogRecordsOrder(),
+		// The cluster UID differs per cluster, it is asserted on separately.
+		plogtest.IgnoreResourceAttributeValue("k8s.cluster.uid"),
 	))
 
 	logsConsumer.Reset()
@@ -523,6 +528,8 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
 		plogtest.IgnoreLogRecordsOrder(),
+		// The cluster UID differs per cluster, it is asserted on separately.
+		plogtest.IgnoreResourceAttributeValue("k8s.cluster.uid"),
 	))
 }
 
@@ -555,6 +562,8 @@ func TestE2EPVCEntity(t *testing.T) {
 	entityName := "test-entities-pvc"
 	pvcLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
 
+	assertClusterUID(t, pvcLogs[0])
+
 	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-pvc.yaml")
 	require.NoError(t, err)
 
@@ -574,6 +583,8 @@ func TestE2EPVCEntity(t *testing.T) {
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
 		plogtest.IgnoreLogRecordsOrder(),
+		// The cluster UID differs per cluster, it is asserted on separately.
+		plogtest.IgnoreResourceAttributeValue("k8s.cluster.uid"),
 	))
 }
 
@@ -605,6 +616,8 @@ func TestE2ENamespaceMetadataWithEntityEventsSpecificationFeatureGate(t *testing
 	entityName := "test-entities-ns"
 	namespaceLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
 
+	assertClusterUID(t, namespaceLogs[0])
+
 	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-ns-entity-events-spec.yaml")
 	require.NoError(t, err)
 
@@ -624,6 +637,8 @@ func TestE2ENamespaceMetadataWithEntityEventsSpecificationFeatureGate(t *testing
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
 		plogtest.IgnoreLogRecordsOrder(),
+		// The cluster UID differs per cluster, it is asserted on separately.
+		plogtest.IgnoreResourceAttributeValue("k8s.cluster.uid"),
 	))
 
 	logsConsumer.Reset()
@@ -647,6 +662,8 @@ func TestE2ENamespaceMetadataWithEntityEventsSpecificationFeatureGate(t *testing
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
 		plogtest.IgnoreLogRecordsOrder(),
+		// The cluster UID differs per cluster, it is asserted on separately.
+		plogtest.IgnoreResourceAttributeValue("k8s.cluster.uid"),
 	))
 }
 
@@ -681,6 +698,8 @@ func TestE2EPVCEntityWithEntityEventsSpecificationFeatureGate(t *testing.T) {
 	entityName := "test-entities-pvc"
 	pvcLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
 
+	assertClusterUID(t, pvcLogs[0])
+
 	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-pvc-entity-events-spec.yaml")
 	require.NoError(t, err)
 
@@ -700,7 +719,22 @@ func TestE2EPVCEntityWithEntityEventsSpecificationFeatureGate(t *testing.T) {
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
 		plogtest.IgnoreLogRecordsOrder(),
+		// The cluster UID differs per cluster, it is asserted on separately.
+		plogtest.IgnoreResourceAttributeValue("k8s.cluster.uid"),
 	))
+}
+
+// assertClusterUID asserts that every resource of the given logs carries the k8s.cluster.uid
+// resource attribute. The value is the UID of the kube-system namespace, which differs per cluster,
+// hence only its presence is verified here.
+func assertClusterUID(t *testing.T, logs plog.Logs) {
+	rls := logs.ResourceLogs()
+	require.Positive(t, rls.Len())
+	for i := 0; i < rls.Len(); i++ {
+		clusterUID, ok := rls.At(i).Resource().Attributes().Get("k8s.cluster.uid")
+		require.True(t, ok, "k8s.cluster.uid resource attribute is missing")
+		require.NotEmpty(t, clusterUID.Str())
+	}
 }
 
 // filterEntityLogs returns logs that contain the entity with the given entityType and entityNameKey and entityName.
