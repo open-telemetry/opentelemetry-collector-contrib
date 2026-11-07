@@ -55,6 +55,22 @@ Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | Recommended | - |
 | splunk.splunkd.version | The splunkd version number | Any Str | Recommended | - |
 
+### splunk.api.info.up
+
+Availability of the authenticated /services/server/info endpoint. 1 for HTTP 200, 0 for other HTTP responses or transport errors.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| splunk.host | The name of the splunk host | Any Str | Recommended | - |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str | Recommended | - |
+| splunk.splunkd.version | The splunkd version number | Any Str | Recommended | - |
+
 ### splunk.buckets.searchable.status
 
 Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.

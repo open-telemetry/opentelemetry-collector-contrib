@@ -31,6 +31,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []SplunkAggregationQueueRatioMetricAttributeKey{SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
+					SplunkAPIInfoUp: SplunkAPIInfoUpMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion},
+					},
 					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -293,6 +298,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []SplunkAggregationQueueRatioMetricAttributeKey{SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
+					SplunkAPIInfoUp: SplunkAPIInfoUpMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []SplunkAPIInfoUpMetricAttributeKey{SplunkAPIInfoUpMetricAttributeKeySplunkHost, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion},
+					},
 					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -550,7 +560,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SplunkAggregationQueueRatioMetricConfig{}, SplunkBucketsSearchableStatusMetricConfig{}, SplunkDataIndexesExtendedBucketCountMetricConfig{}, SplunkDataIndexesExtendedBucketEventCountMetricConfig{}, SplunkDataIndexesExtendedBucketHotCountMetricConfig{}, SplunkDataIndexesExtendedBucketWarmCountMetricConfig{}, SplunkDataIndexesExtendedEventCountMetricConfig{}, SplunkDataIndexesExtendedRawSizeMetricConfig{}, SplunkDataIndexesExtendedTotalSizeMetricConfig{}, SplunkHealthMetricConfig{}, SplunkIndexerAvgRateMetricConfig{}, SplunkIndexerCPUTimeMetricConfig{}, SplunkIndexerQueueRatioMetricConfig{}, SplunkIndexerRawWriteTimeMetricConfig{}, SplunkIndexerRollingrestartStatusMetricConfig{}, SplunkIndexerThroughputMetricConfig{}, SplunkIndexesAvgSizeMetricConfig{}, SplunkIndexesAvgUsageMetricConfig{}, SplunkIndexesBucketCountMetricConfig{}, SplunkIndexesMedianDataAgeMetricConfig{}, SplunkIndexesSizeMetricConfig{}, SplunkIoAvgIopsMetricConfig{}, SplunkKvstoreBackupStatusMetricConfig{}, SplunkKvstoreReplicationStatusMetricConfig{}, SplunkKvstoreStatusMetricConfig{}, SplunkLicenseExpirationSecondsRemainingMetricConfig{}, SplunkLicenseIndexUsageMetricConfig{}, SplunkParseQueueRatioMetricConfig{}, SplunkPipelineSetCountMetricConfig{}, SplunkSchedulerAvgExecutionLatencyMetricConfig{}, SplunkSchedulerAvgRunTimeMetricConfig{}, SplunkSchedulerCompletionRatioMetricConfig{}, SplunkSearchDurationMetricConfig{}, SplunkSearchInitiationMetricConfig{}, SplunkSearchStatusMetricConfig{}, SplunkSearchSuccessMetricConfig{}, SplunkServerIntrospectionQueuesCurrentMetricConfig{}, SplunkServerIntrospectionQueuesCurrentBytesMetricConfig{}, SplunkServerSearchartifactsAdhocMetricConfig{}, SplunkServerSearchartifactsAdhocSizeMetricConfig{}, SplunkServerSearchartifactsCompletedMetricConfig{}, SplunkServerSearchartifactsCompletedSizeMetricConfig{}, SplunkServerSearchartifactsIncompleteMetricConfig{}, SplunkServerSearchartifactsIncompleteSizeMetricConfig{}, SplunkServerSearchartifactsInvalidMetricConfig{}, SplunkServerSearchartifactsJobCacheCountMetricConfig{}, SplunkServerSearchartifactsJobCacheSizeMetricConfig{}, SplunkServerSearchartifactsSavedsearchesMetricConfig{}, SplunkServerSearchartifactsScheduledMetricConfig{}, SplunkServerSearchartifactsScheduledSizeMetricConfig{}, SplunkTypingQueueRatioMetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SplunkAggregationQueueRatioMetricConfig{}, SplunkAPIInfoUpMetricConfig{}, SplunkBucketsSearchableStatusMetricConfig{}, SplunkDataIndexesExtendedBucketCountMetricConfig{}, SplunkDataIndexesExtendedBucketEventCountMetricConfig{}, SplunkDataIndexesExtendedBucketHotCountMetricConfig{}, SplunkDataIndexesExtendedBucketWarmCountMetricConfig{}, SplunkDataIndexesExtendedEventCountMetricConfig{}, SplunkDataIndexesExtendedRawSizeMetricConfig{}, SplunkDataIndexesExtendedTotalSizeMetricConfig{}, SplunkHealthMetricConfig{}, SplunkIndexerAvgRateMetricConfig{}, SplunkIndexerCPUTimeMetricConfig{}, SplunkIndexerQueueRatioMetricConfig{}, SplunkIndexerRawWriteTimeMetricConfig{}, SplunkIndexerRollingrestartStatusMetricConfig{}, SplunkIndexerThroughputMetricConfig{}, SplunkIndexesAvgSizeMetricConfig{}, SplunkIndexesAvgUsageMetricConfig{}, SplunkIndexesBucketCountMetricConfig{}, SplunkIndexesMedianDataAgeMetricConfig{}, SplunkIndexesSizeMetricConfig{}, SplunkIoAvgIopsMetricConfig{}, SplunkKvstoreBackupStatusMetricConfig{}, SplunkKvstoreReplicationStatusMetricConfig{}, SplunkKvstoreStatusMetricConfig{}, SplunkLicenseExpirationSecondsRemainingMetricConfig{}, SplunkLicenseIndexUsageMetricConfig{}, SplunkParseQueueRatioMetricConfig{}, SplunkPipelineSetCountMetricConfig{}, SplunkSchedulerAvgExecutionLatencyMetricConfig{}, SplunkSchedulerAvgRunTimeMetricConfig{}, SplunkSchedulerCompletionRatioMetricConfig{}, SplunkSearchDurationMetricConfig{}, SplunkSearchInitiationMetricConfig{}, SplunkSearchStatusMetricConfig{}, SplunkSearchSuccessMetricConfig{}, SplunkServerIntrospectionQueuesCurrentMetricConfig{}, SplunkServerIntrospectionQueuesCurrentBytesMetricConfig{}, SplunkServerSearchartifactsAdhocMetricConfig{}, SplunkServerSearchartifactsAdhocSizeMetricConfig{}, SplunkServerSearchartifactsCompletedMetricConfig{}, SplunkServerSearchartifactsCompletedSizeMetricConfig{}, SplunkServerSearchartifactsIncompleteMetricConfig{}, SplunkServerSearchartifactsIncompleteSizeMetricConfig{}, SplunkServerSearchartifactsInvalidMetricConfig{}, SplunkServerSearchartifactsJobCacheCountMetricConfig{}, SplunkServerSearchartifactsJobCacheSizeMetricConfig{}, SplunkServerSearchartifactsSavedsearchesMetricConfig{}, SplunkServerSearchartifactsScheduledMetricConfig{}, SplunkServerSearchartifactsScheduledSizeMetricConfig{}, SplunkTypingQueueRatioMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -563,6 +573,18 @@ func TestSplunkAggregationQueueRatioMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric splunk.aggregation.queue.ratio doesn't have an attribute invalid, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]")
 
 	cfg = DefaultMetricsConfig().SplunkAggregationQueueRatio
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestSplunkAPIInfoUpMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().SplunkAPIInfoUp
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []SplunkAPIInfoUpMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric splunk.api.info.up doesn't have an attribute invalid, valid attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]")
+
+	cfg = DefaultMetricsConfig().SplunkAPIInfoUp
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
