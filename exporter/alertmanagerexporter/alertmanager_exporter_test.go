@@ -78,7 +78,8 @@ func TestAlertManagerExporterExtractSpanEvents(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			set := exportertest.NewNopSettings(metadata.Type)
-			am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+			am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+			require.NoError(t, err)
 			require.NotNil(t, am)
 
 			// make traces & a span
@@ -110,7 +111,8 @@ func TestAlertManagerExporterSpanEventNameAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	// make traces & a span
@@ -152,7 +154,8 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	cfg.SeverityAttribute = "foo"
 	cfg.EventLabels = []string{}
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	// make traces & a span
@@ -209,7 +212,8 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 	cfg.EventLabels = []string{}
 	// make traces & a span
@@ -239,7 +243,8 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	cfg.EventLabels = []string{}
 
 	require.NotNil(t, am)
@@ -294,7 +299,8 @@ func TestAlertManagerExporterSpanEventLabels(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	// make traces & a span
@@ -374,14 +380,16 @@ func TestAlertManagerPostAlert(t *testing.T) {
 
 	cfg.ClientConfig.Endpoint = mock.mockserver.URL
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
-	err := am.start(t.Context(), componenttest.NewNopHost())
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
+	err = am.start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 	err = am.postAlert(t.Context(), alerts)
 	assert.Contains(t, err.Error(), "failed - \"404 Not Found\"")
 
 	cfg.APIVersion = "v1"
-	am = newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err = newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	err = am.start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 	err = am.postAlert(t.Context(), alerts)
@@ -460,7 +468,8 @@ func TestClientConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			set := exportertest.NewNopSettings(metadata.Type)
-			am := newAlertManagerExporter(tt.config, set.TelemetrySettings)
+			am, err := newAlertManagerExporter(tt.config, set.TelemetrySettings)
+			require.NoError(t, err)
 
 			exp, err := newTracesExporter(t.Context(), tt.config, set)
 			if tt.mustFailOnCreate {
@@ -488,7 +497,8 @@ func TestConvertSpanEventSliceToArray(t *testing.T) {
 	cfg.DefaultSeverity = "info"
 	cfg.SeverityAttribute = "severity"
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
@@ -518,7 +528,8 @@ func TestConvertLogRecordSliceToArray(t *testing.T) {
 	cfg.DefaultSeverity = "info"
 	cfg.SeverityAttribute = "severity"
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	// Create Logs with multiple log records
@@ -612,7 +623,8 @@ func TestExtractLogEvents(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.DefaultSeverity = "info"
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	// Construct Logs with two ResourceLogs
@@ -648,7 +660,8 @@ func TestCreateLogAnnotations(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.DefaultSeverity = "info"
 	set := exportertest.NewNopSettings(metadata.Type)
-	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	am, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 	require.NotNil(t, am)
 
 	// Create a log record with TraceID, SpanID, Body, and Timestamp
@@ -708,7 +721,8 @@ func TestCreateLogLabels(t *testing.T) {
 	cfg.DefaultSeverity = "info"
 	set := exportertest.NewNopSettings(metadata.Type)
 
-	exporter := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	exporter, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 
 	// Create a log record
 	logRecord := plog.NewLogRecord()
@@ -778,7 +792,8 @@ func TestSpanEventNameAttributeToLabelConversion(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.EventLabels = []string{}
 	set := exportertest.NewNopSettings(metadata.Type)
-	exporter := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	exporter, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 
 	eventSlice := ptrace.NewSpanEventSlice()
 	spanEvent := eventSlice.AppendEmpty()
@@ -808,7 +823,8 @@ func TestLogEventNameAttributeConversion(t *testing.T) {
 	cfg.EventLabels = []string{"event.name"}
 	cfg.DefaultSeverity = "info"
 	set := exportertest.NewNopSettings(metadata.Type)
-	exporter := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	exporter, err := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NoError(t, err)
 
 	logRecord := plog.NewLogRecord()
 	logRecord.Attributes().PutStr("event.name", "log-event-value")
