@@ -513,6 +513,10 @@ component_management:
     name: pkg_ottl_contexts_xprofile
     paths:
     - pkg/ottl/contexts/xprofile/**
+  - component_id: pkg_ottl_contexts_xspanlink
+    name: pkg_ottl_contexts_xspanlink
+    paths:
+    - pkg/ottl/contexts/xspanlink/**
   - component_id: pkg_ottl_xottl
     name: pkg_ottl_xottl
     paths:

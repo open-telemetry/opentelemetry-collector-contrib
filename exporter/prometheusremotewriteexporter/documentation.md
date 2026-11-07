@@ -92,6 +92,22 @@ Number of WAL reads that failed
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
+### otelcol_exporter_prometheusremotewrite_wal_send_failed_batches
+
+Number of remote write request batches dropped from the WAL because the remote endpoint rejected their content (HTTP 400, 409, 413 or 422). Any other failure keeps the batch in the WAL and is not counted here.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {batch} | Sum | Int | true | Development |
+
+### otelcol_exporter_prometheusremotewrite_wal_send_failed_samples
+
+Number of samples and native histograms in the batches counted by exporter_prometheusremotewrite_wal_send_failed_batches. This is an upper bound on the samples lost, because the endpoint may have stored part of a rejected batch.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {sample} | Sum | Int | true | Development |
+
 ### otelcol_exporter_prometheusremotewrite_wal_write_latency
 
 Response latency in ms for the WAL writes.

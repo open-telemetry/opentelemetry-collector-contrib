@@ -9,9 +9,10 @@ description: |
 status:
   class: receiver
   stability:
-    unmaintained: [logs]
+    beta: [logs]
   distributions: [contrib, k8s]
   codeowners:
+    active: [evan-bradley, dyl10s]
     emeritus: [dmitryax]
     seeking_new: true
 
