@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider/testdata"
@@ -24,10 +25,15 @@ func TestProcessorWithMaxMind(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run("maxmind_"+tt.name, func(t *testing.T) {
+			errorMode := tt.errorMode
+			if errorMode == "" {
+				errorMode = ottl.PropagateError
+			}
 			cfg := &Config{
 				Context:           tt.context,
 				Providers:         map[string]provider.Config{"maxmind": &maxmindConfig},
 				Attributes:        []attribute.Key{"source.address", "client.address", "custom.address"},
+				ErrorMode:         errorMode,
 				providerFactories: defaultProviderFactories,
 			}
 
