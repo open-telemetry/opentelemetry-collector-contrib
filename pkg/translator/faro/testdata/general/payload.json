@@ -305,13 +305,29 @@
         "model_name": "iPhone 13",
         "brand": "iPhone",
         "is_physical": true,
-        "type": "mobile"
+        "type": "mobile",
+        "arch": "arm64",
+        "screen_width": 1170,
+        "screen_height": 2532,
+        "screen_density": 3,
+        "memory_total": 3755,
+        "battery_level": 85,
+        "is_charging": true,
+        "low_power_mode": false,
+        "thermal_state": "nominal"
       },
       "os": {
         "name": "iOS",
         "version": "18.1",
         "build_id": "22G91",
-        "detail": "iOS 18.1 (22G91)"
+        "detail": "iOS 18.1 (22G91)",
+        "api_level": 34
+      },
+      "network": {
+        "connection_type": "cell",
+        "connection_subtype": "lte",
+        "carrier_name": "TestCarrier",
+        "reachable": true
       },
       "view": {
         "name": "foobar"
