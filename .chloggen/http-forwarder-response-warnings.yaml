@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: extension/http_forwarder
-note: Avoid false response truncation warnings for chunked and HEAD responses.
-issues: [52589]
-change_logs: [user]
