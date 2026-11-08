@@ -1,7 +1,7 @@
 change_type: enhancement
 component: receiver/awscloudwatch
 note: Add the `logs.settle_lag` option, which ends each log request window before the current time so that late-ingested events are not skipped.
-issues: []
+issues: [52876]
 subtext: |
   CloudWatch can ingest an event several seconds after its timestamp. When a poll reads up to the current time and finds nothing,
   the next poll starts at that time, and an event ingested late is never read. With `settle_lag` set, the window ends at the
