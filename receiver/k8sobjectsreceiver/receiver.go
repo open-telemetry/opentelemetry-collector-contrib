@@ -34,6 +34,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
+// Backoff between observer start attempts. Each attempt can itself block for up to
+// cache_sync_timeout, so the real gap between attempts is the backoff plus that timeout.
+const (
+	startRetryInterval = time.Second
+	startRetryCap      = 60 * time.Second
+	startRetryFactor   = 2
+	startRetryJitter   = 0.2
+)
+
 type k8sobjectsreceiver struct {
 	setting         receiver.Settings
 	config          *Config
@@ -88,11 +97,11 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
 		startRetryBackoff: wait.Backoff{
-			Duration: time.Second,
-			Factor:   2,
-			Jitter:   0.1,
+			Duration: startRetryInterval,
+			Factor:   startRetryFactor,
+			Jitter:   startRetryJitter,
+			Cap:      startRetryCap,
 			Steps:    math.MaxInt32,
-			Cap:      time.Minute,
 		},
 	}
 
@@ -310,9 +319,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		kr.mu.Unlock()
 		for _, object := range validConfigs {
 			if err := kr.start(cctx, registry, object); err != nil {
-				if handlerErr := kr.handleError(err, ""); handlerErr != nil {
-					return handlerErr
-				}
+				return err
 			}
 		}
 	}
@@ -407,27 +414,37 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, reg *informer.FactoryRe
 
 	stopChan, err := kr.startObserver(ctx, obs, object)
 	if err != nil {
-		if kr.config.ErrorMode == PropagateError {
-			return err
-		}
-		stopChan = kr.retryObserver(ctx, obs, object)
+		return err
 	}
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopChan)
 	kr.mu.Unlock()
 
-	return err
+	return nil
 }
 
-// retryObserver keeps retrying obs.Start with backoff in the background so an
-// object whose start failed (e.g. cache sync timeout) resumes collection once
-// the API server recovers. It exits when the returned channel is closed or ctx is done.
-func (kr *k8sobjectsreceiver) retryObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) chan struct{} {
-	stopChan := make(chan struct{})
+// startObserver starts obs, either right away or after the pull mode initial_delay.
+// Unless error_mode is propagate, a failed start (e.g. cache sync timeout) is retried
+// in the background with backoff until it succeeds, the returned channel is closed,
+// or ctx is done.
+func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
 	backoff := kr.startRetryBackoff
+	var delay time.Duration
+	if object.Mode == k8sinventory.PullMode && object.InitialDelay > 0 {
+		delay = object.InitialDelay
+	} else {
+		observerStopChan, err := obs.Start(ctx, &kr.wg)
+		if err == nil || kr.config.ErrorMode == PropagateError {
+			return observerStopChan, err
+		}
+		_ = kr.handleError(err, "failed to start observer, retrying")
+		delay = backoff.Step()
+	}
+
+	stopChan := make(chan struct{})
 	kr.wg.Go(func() {
 		for {
-			timer := time.NewTimer(backoff.Step())
+			timer := time.NewTimer(delay)
 			select {
 			case <-timer.C:
 			case <-stopChan:
@@ -439,51 +456,21 @@ func (kr *k8sobjectsreceiver) retryObserver(ctx context.Context, obs k8sinventor
 			}
 
 			observerStopChan, err := obs.Start(ctx, &kr.wg)
-			if err != nil {
-				kr.setting.Logger.Debug("retrying observer start",
+			if err == nil {
+				select {
+				case <-stopChan:
+					close(observerStopChan)
+				case <-ctx.Done():
+				}
+				return
+			}
+			if kr.config.ErrorMode == PropagateError {
+				kr.setting.Logger.Error("failed to start observer",
 					zap.String("object", object.Name), zap.Error(err))
-				continue
+				return
 			}
-			kr.setting.Logger.Info("observer started after retry", zap.String("object", object.Name))
-			select {
-			case <-stopChan:
-				close(observerStopChan)
-			case <-ctx.Done():
-			}
-			return
-		}
-	})
-	return stopChan
-}
-
-func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
-	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
-		return obs.Start(ctx, &kr.wg)
-	}
-
-	stopChan := make(chan struct{})
-	kr.wg.Go(func() {
-		timer := time.NewTimer(object.InitialDelay)
-		defer timer.Stop()
-
-		select {
-		case <-timer.C:
-		case <-stopChan:
-			return
-		case <-ctx.Done():
-			return
-		}
-
-		observerStopChan, err := obs.Start(ctx, &kr.wg)
-		if err != nil {
-			kr.setting.Logger.Error("failed to start observer after initial delay",
-				zap.String("object", object.Name), zap.Error(err))
-			return
-		}
-		select {
-		case <-stopChan:
-			close(observerStopChan)
-		case <-ctx.Done():
+			_ = kr.handleError(err, "failed to start observer, retrying")
+			delay = backoff.Step()
 		}
 	})
 
