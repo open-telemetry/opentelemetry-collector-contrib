@@ -43,6 +43,9 @@ $defs:
       poll_interval:
         type: string
         format: duration
+      settle_lag:
+        type: string
+        format: duration
       start_from:
         type: string
   metric_query:
