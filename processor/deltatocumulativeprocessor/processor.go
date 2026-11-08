@@ -5,6 +5,7 @@ package deltatocumulativeprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -102,8 +103,8 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 			var err error
 			switch dp := dp.(type) {
 			case pmetric.NumberDataPoint:
-				last, loaded := p.last.nums.LoadOrStore(id, zero.nums)
-				if maps.Exceeded(last, loaded) {
+				last, loaded, loadErr := p.last.nums.LoadOrStore(ctx, id, zero.nums)
+				if errors.Is(loadErr, maps.ErrLimitExceeded) {
 					// state is full, reject stream
 					attrs.Set(telemetry.Error("limit"))
 					return drop
@@ -122,8 +123,8 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 					last.CopyTo(dp)
 				})
 			case pmetric.HistogramDataPoint:
-				last, loaded := p.last.hist.LoadOrStore(id, zero.hist)
-				if maps.Exceeded(last, loaded) {
+				last, loaded, loadErr := p.last.hist.LoadOrStore(ctx, id, zero.hist)
+				if errors.Is(loadErr, maps.ErrLimitExceeded) {
 					// state is full, reject stream
 					attrs.Set(telemetry.Error("limit"))
 					return drop
@@ -142,8 +143,8 @@ func (p *deltaToCumulativeProcessor) ConsumeMetrics(ctx context.Context, md pmet
 					last.CopyTo(dp)
 				})
 			case pmetric.ExponentialHistogramDataPoint:
-				last, loaded := p.last.expo.LoadOrStore(id, zero.expo)
-				if maps.Exceeded(last, loaded) {
+				last, loaded, loadErr := p.last.expo.LoadOrStore(ctx, id, zero.expo)
+				if errors.Is(loadErr, maps.ErrLimitExceeded) {
 					// state is full, reject stream
 					attrs.Set(telemetry.Error("limit"))
 					return drop
@@ -198,9 +199,9 @@ func (p *deltaToCumulativeProcessor) Start(_ context.Context, _ component.Host) 
 					now := time.Now()
 					p.stale.Range(func(id identity.Stream, last time.Time) bool {
 						if now.Sub(last) > p.cfg.MaxStale {
-							p.last.nums.LoadAndDelete(id)
-							p.last.hist.LoadAndDelete(id)
-							p.last.expo.LoadAndDelete(id)
+							_, _, _ = p.last.nums.LoadAndDelete(p.ctx, id)
+							_, _, _ = p.last.hist.LoadAndDelete(p.ctx, id)
+							_, _, _ = p.last.expo.LoadAndDelete(p.ctx, id)
 							p.stale.Delete(id)
 						}
 						return true

@@ -4,6 +4,7 @@
 package maps_test
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -30,10 +31,13 @@ func TestLimit(t *testing.T) {
 	for range 10 {
 		wg.Go(func() {
 			for i := range 110 {
-				o, loaded := m.LoadOrStore(i, v)
+				_, loaded, err := m.LoadOrStore(t.Context(), i, v)
 				switch {
-				case maps.Exceeded(o, loaded):
+				case errors.Is(err, maps.ErrLimitExceeded):
 					fails.Add(1)
+				case err != nil:
+					t.Error(err)
+					return
 				case loaded:
 					loads.Add(1)
 				case !loaded:
@@ -47,4 +51,25 @@ func TestLimit(t *testing.T) {
 	require.Equal(t, int64(100), stores.Load())
 	require.Equal(t, int64(900), loads.Load())
 	require.Equal(t, int64(100), fails.Load())
+}
+
+func TestLimitDistinguishesZeroValue(t *testing.T) {
+	m := maps.New[int, int](maps.Limit(1))
+	value, loaded, err := m.LoadOrStore(t.Context(), 1, 0)
+	require.NoError(t, err)
+	require.Zero(t, value)
+	require.False(t, loaded)
+	value, loaded, err = m.LoadOrStore(t.Context(), 1, 42)
+	require.NoError(t, err)
+	require.Zero(t, value)
+	require.True(t, loaded)
+	_, loaded, err = m.LoadOrStore(t.Context(), 2, 0)
+	require.ErrorIs(t, err, maps.ErrLimitExceeded)
+	require.False(t, loaded)
+	_, loaded, err = m.LoadAndDelete(t.Context(), 1)
+	require.NoError(t, err)
+	require.True(t, loaded)
+	_, loaded, err = m.LoadOrStore(t.Context(), 2, 0)
+	require.NoError(t, err)
+	require.False(t, loaded)
 }

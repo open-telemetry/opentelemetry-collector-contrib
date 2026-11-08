@@ -4,11 +4,15 @@
 package maps // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maps"
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 
 	"github.com/puzpuzpuz/xsync/v4"
 )
+
+var ErrLimitExceeded = errors.New("stream limit exceeded")
 
 func Limit(limit int64) Context {
 	return Context{limit: limit, guard: new(atomic.Int64), total: new(atomic.Int64)}
@@ -50,18 +54,17 @@ func (ctx Context) String() string {
 // LoadOrStore loads existing values from the map or creates missing ones initialized to <def>.
 //
 // Return Value:
-//   - <value>, true: m[k] already existed and was loaded
-//   - <def>, false: m[k] was created and initialized to <def>
-//   - <zero>, false: m[k] did not exist but was not created due to size limit
-func (m *Parallel[K, V]) LoadOrStore(k K, def V) (_ V, loaded bool) {
+//   - <value>, true, nil: m[k] already existed and was loaded
+//   - <def>, false, nil: m[k] was created and initialized to <def>
+//   - <zero>, false, ErrLimitExceeded: m[k] did not exist but was not created due to size limit
+func (m *Parallel[K, V]) LoadOrStore(_ context.Context, k K, def V) (V, bool, error) {
 	// multiple routines may attempt to LoadOrStore the same value at once. as
 	// such, we cannot use data-dependent instructions such as if(not exist)
 	// {...}, because the <not exist> may have changed right after we checked
 	// it.
 
-	v, ok := m.elems.Load(k)
-	if ok {
-		return v, true
+	if v, ok := m.elems.Load(k); ok {
+		return v, true, nil
 	}
 
 	// as long as there appears to be actual space, try to store
@@ -79,7 +82,7 @@ func (m *Parallel[K, V]) LoadOrStore(k K, def V) (_ V, loaded bool) {
 
 		// we got a valid slot. others may too. as such, we try to store, but
 		// may end up loading instead if another routine stored just before us.
-		v, loaded = m.elems.LoadOrStore(k, def)
+		v, loaded := m.elems.LoadOrStore(k, def)
 		if loaded {
 			// another routine stored, but we got a value. give up slot
 			m.guard.Add(-1)
@@ -87,30 +90,35 @@ func (m *Parallel[K, V]) LoadOrStore(k K, def V) (_ V, loaded bool) {
 			// we stored. increase the total size
 			m.total.Add(1)
 		}
-		return v, loaded
+		return v, loaded, nil
 	}
 
 	// we didn't store, because we hit the limit. attempt another load, just in
 	// case another routine stored by now.
-	return m.elems.Load(k)
+	v, loaded := m.elems.Load(k)
+	if loaded {
+		return v, true, nil
+	}
+	return v, false, ErrLimitExceeded
 }
 
 // LoadAndDelete deletes m[k], returning the value it had if it existed
-func (m *Parallel[K, V]) LoadAndDelete(k K) (_ V, loaded bool) {
+func (m *Parallel[K, V]) LoadAndDelete(_ context.Context, k K) (V, bool, error) {
 	v, loaded := m.elems.LoadAndDelete(k)
 	if loaded {
 		// m[k] did exist. decrease size and open up a slot
 		m.total.Add(-1)
 		m.guard.Add(-1)
 	}
-	return v, loaded
+	return v, loaded, nil
 }
 
 func (ctx Context) Size() int64 {
 	return ctx.total.Load()
 }
 
-// Exceeded reports whether a [Limited.LoadOrStore] failed due to the limit being exceeded.
-func Exceeded[T comparable](v T, loaded bool) bool {
-	return !loaded && v == *new(T)
+// Range iterates all entries in the map, calling fn for each key-value pair.
+// If fn returns false, iteration stops.
+func (m *Parallel[K, V]) Range(fn func(K, V) bool) {
+	m.elems.Range(fn)
 }
