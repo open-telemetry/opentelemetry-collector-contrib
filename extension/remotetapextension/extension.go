@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -23,7 +24,7 @@ type remoteObserverExtension struct {
 	config   *Config
 	settings extension.Settings
 	server   *http.Server
-	stopped  chan struct{}
+	wg       sync.WaitGroup
 }
 
 func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host) error {
@@ -44,14 +45,12 @@ func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host
 	}
 	s.server = server
 
-	s.stopped = make(chan struct{})
-	go func() {
-		defer close(s.stopped)
+	s.wg.Go(func() {
 		err := s.server.Serve(ln)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 	return nil
 }
 
@@ -60,6 +59,6 @@ func (s *remoteObserverExtension) Shutdown(_ context.Context) error {
 		return nil
 	}
 	err := s.server.Close()
-	<-s.stopped
+	s.wg.Wait()
 	return err
 }
