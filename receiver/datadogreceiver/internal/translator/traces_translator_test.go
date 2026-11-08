@@ -1036,7 +1036,6 @@ func TestToTraces(t *testing.T) {
 		},
 	}
 
-	//nolint:govet
 	for i := range cases {
 		tt := &cases[i]
 		t.Run(tt.name, func(t *testing.T) {
