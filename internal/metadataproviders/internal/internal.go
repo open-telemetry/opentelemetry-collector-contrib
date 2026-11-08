@@ -5,11 +5,8 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 // GOOSToOSType maps a runtime.GOOS-like value to os.type style.
 func GOOSToOSType(goos string) string {
-	switch goos {
-	case "dragonfly":
+	if goos == "dragonfly" {
 		return "dragonflybsd"
-	case "zos":
-		return "z_os"
 	}
 	return goos
 }

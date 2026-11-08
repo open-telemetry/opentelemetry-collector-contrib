@@ -7,8 +7,10 @@ package k8sapi // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -24,7 +26,15 @@ import (
 
 var _ internal.Detector = (*detector)(nil)
 
+// newProvider is overridden in tests to substitute the k8snode provider.
+var newProvider = k8snode.NewProvider
+
 type detector struct {
+	cfg Config
+	// mu serializes Detect, which lazily creates provider and mutates rb.
+	mu sync.Mutex
+	// provider is created on first use by initProvider, so that the detector can be
+	// built outside Kubernetes.
 	provider              k8snode.Provider
 	logger                *zap.Logger
 	ra                    *metadata.ResourceAttributesConfig
@@ -32,23 +42,45 @@ type detector struct {
 	failOnMissingMetadata bool
 }
 
+// NewDetector returns a detector for Kubernetes node metadata. The node name and the
+// Kubernetes client are resolved on the first Detect call, so the detector can be built
+// outside Kubernetes.
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	if err := cfg.UpdateDefaults(); err != nil {
+	if err := cfg.APIConfig.Validate(); err != nil {
 		return nil, err
 	}
-	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	k8snodeProvider, err := k8snode.NewProvider(nodeName, k8sconfig.FromConfigTypes(cfg.APIConfig))
-	if err != nil {
-		return nil, fmt.Errorf("failed creating k8snode detector: %w", err)
-	}
 	return &detector{
-		provider:              k8snodeProvider,
+		cfg:                   cfg,
 		logger:                set.Logger,
 		ra:                    &cfg.ResourceAttributes,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
+}
+
+// errMetadataUnavailable marks initProvider failures caused by the environment rather
+// than the configuration: no Kubernetes pod, or no node name to look up.
+var errMetadataUnavailable = errors.New("k8s node metadata unavailable")
+
+// initProvider creates the k8snode provider if it doesn't exist yet. A failure is not
+// cached, so the next Detect call tries again. The caller holds d.mu.
+func (d *detector) initProvider() error {
+	if d.provider != nil {
+		return nil
+	}
+	if err := internal.CheckInClusterEnv(d.cfg.APIConfig); err != nil {
+		return fmt.Errorf("%w: %w", errMetadataUnavailable, err)
+	}
+	if err := d.cfg.UpdateDefaults(); err != nil {
+		return fmt.Errorf("%w: %w", errMetadataUnavailable, err)
+	}
+	provider, err := newProvider(os.Getenv(d.cfg.NodeFromEnvVar), k8sconfig.FromConfigTypes(d.cfg.APIConfig))
+	if err != nil {
+		return fmt.Errorf("failed creating k8snode detector: %w", err)
+	}
+	d.provider = provider
+	return nil
 }
 
 // NewDeprecatedDetector logs a deprecation warning and then delegates to NewDetector.
@@ -59,6 +91,20 @@ func NewDeprecatedDetector(set processor.Settings, dcfg internal.DetectorConfig,
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if err := d.initProvider(); err != nil {
+		// Outside Kubernetes, or without a node name, there is nothing to detect. Any other
+		// failure to create the client is reported whatever fail_on_missing_metadata says,
+		// as NewDetector used to.
+		if !errors.Is(err, errMetadataUnavailable) || d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("k8snode metadata unavailable", zap.Error(err))
+		return pcommon.NewResource(), "", nil
+	}
+
 	if d.ra.K8sNodeUID.Enabled {
 		nodeUID, err := d.provider.NodeUID(ctx)
 		if err != nil {

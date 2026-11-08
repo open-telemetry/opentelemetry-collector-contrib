@@ -12,7 +12,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
-	github.com/klauspost/compress v1.20.1 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/oklog/run v1.2.0 // indirect
 	github.com/prometheus/client_golang/exp v0.0.0-20261026045710-70c0a469a56a // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
