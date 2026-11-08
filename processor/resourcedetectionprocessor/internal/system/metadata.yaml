@@ -74,10 +74,10 @@ resource_attributes:
     description: The host.name
     type: string
     enabled: true
-  os.build.id:
+  os.build_id:
     semantic_convention:
       ref: os.md#os-build-id
-    description: The os.build.id
+    description: The os.build_id
     type: string
     enabled: false
   os.description:

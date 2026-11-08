@@ -10,7 +10,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, shalper2]
+    active: [shalper2]
+    emeritus: [dmitryax]
 
 # every meter will have these attributes
 resource_attributes:
