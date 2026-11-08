@@ -20,6 +20,9 @@ status:
 sem_conv_version: 1.43.0
 
 tests:
+  # Start dials the Docker daemon, which the Windows CI runners do not provide.
+  # TestLifecycle in lifecycle_test.go covers start/shutdown against a mock daemon.
+  skip_lifecycle: true
   goleak:
     ignore:
       top:
