@@ -20,6 +20,7 @@ func addFilesystemMetrics(mb *metadata.MetricsBuilder, filesystemMetrics metadat
 	recordIntDataPoint(mb, filesystemMetrics.Usage, s.UsedBytes, currentTime)
 	recordIntDataPoint(mb, filesystemMetrics.Inodes, s.Inodes, currentTime)
 	recordIntDataPoint(mb, filesystemMetrics.InodesFree, s.InodesFree, currentTime)
+	recordIntDataPoint(mb, filesystemMetrics.InodesUsed, s.InodesUsed, currentTime)
 }
 
 func addEphemeralStorageMetrics(mb *metadata.MetricsBuilder, esMetrics metadata.EphemeralStorageMetrics, s *stats.FsStats, fsType metadata.AttributeFsType, currentTime pcommon.Timestamp) {

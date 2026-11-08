@@ -6,12 +6,15 @@ package kubelet
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
@@ -219,6 +222,31 @@ func TestRlimit(t *testing.T) {
 	limitMetrics := metrics["k8s.node.pid.limit"]
 	require.Len(t, limitMetrics, 1)
 	require.Equal(t, int64(32768), limitMetrics[0].Sum().DataPoints().At(0).IntValue())
+}
+
+func TestPodFilesystemInodeUsed(t *testing.T) {
+	used := uint64(42)
+	startTime := metav1.NewTime(time.Now().Add(-time.Hour))
+	summary := &stats.Summary{Pods: []stats.PodStats{
+		{PodRef: stats.PodReference{Name: "with-inodes", UID: "uid-1"}, StartTime: startTime, EphemeralStorage: &stats.FsStats{InodesUsed: &used}},
+		{PodRef: stats.PodReference{Name: "nil-inodes", UID: "uid-2"}, StartTime: startTime, EphemeralStorage: &stats.FsStats{}},
+		{PodRef: stats.PodReference{Name: "nil-ephemeral-storage", UID: "uid-3"}, StartTime: startTime},
+	}}
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sPodFilesystemInodeUsed.Enabled = true
+	mbs := &metadata.MetricsBuilders{
+		PodMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+	}
+
+	mds := MetricsData(zap.NewNop(), summary, Metadata{}, map[MetricGroup]bool{PodMetricGroup: true}, map[MetricGroup]bool{}, mbs, NewCPUUsageCalculator())
+	requireMetricsOk(t, mds)
+
+	// Only the pod reporting InodesUsed emits the metric.
+	inodeMetrics := indexedFakeMetrics(mds)["k8s.pod.filesystem.inode.used"]
+	require.Len(t, inodeMetrics, 1)
+	require.False(t, inodeMetrics[0].Sum().IsMonotonic())
+	require.Equal(t, int64(42), inodeMetrics[0].Sum().DataPoints().At(0).IntValue())
 }
 
 func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricName string) {

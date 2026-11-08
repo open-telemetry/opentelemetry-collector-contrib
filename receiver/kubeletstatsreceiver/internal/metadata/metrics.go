@@ -110,6 +110,7 @@ type FilesystemMetrics struct {
 	Usage      RecordIntDataPointFunc
 	Inodes     RecordIntDataPointFunc
 	InodesFree RecordIntDataPointFunc
+	InodesUsed RecordIntDataPointFunc
 }
 
 type EphemeralStorageMetrics struct {
@@ -125,9 +126,10 @@ var NodeFilesystemMetrics = FilesystemMetrics{
 }
 
 var PodFilesystemMetrics = FilesystemMetrics{
-	Available: (*MetricsBuilder).RecordK8sPodFilesystemAvailableDataPoint,
-	Capacity:  (*MetricsBuilder).RecordK8sPodFilesystemCapacityDataPoint,
-	Usage:     (*MetricsBuilder).RecordK8sPodFilesystemUsageDataPoint,
+	Available:  (*MetricsBuilder).RecordK8sPodFilesystemAvailableDataPoint,
+	Capacity:   (*MetricsBuilder).RecordK8sPodFilesystemCapacityDataPoint,
+	Usage:      (*MetricsBuilder).RecordK8sPodFilesystemUsageDataPoint,
+	InodesUsed: (*MetricsBuilder).RecordK8sPodFilesystemInodeUsedDataPoint,
 }
 
 var ContainerFilesystemMetrics = FilesystemMetrics{
