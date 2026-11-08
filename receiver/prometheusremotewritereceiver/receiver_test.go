@@ -6218,125 +6218,29 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 	})
 }
 
+type mutatingMetricsConsumer struct{}
+
+func (*mutatingMetricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (*mutatingMetricsConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	dest := pmetric.NewMetrics()
+	md.ResourceMetrics().MoveAndAppendTo(dest.ResourceMetrics())
+	return nil
+}
+
 // TestEndMetricsOpReportsDataPointCount verifies that EndMetricsOp is called with the
-// number of data points, not the number of resource metric groups.
+// number of data points, not the number of resource metric groups, even when downstream
+// consumers mutate or move the metric data.
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48306
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52819
 func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	// Build a request with 3 gauge time series all from the same job/instance.
 	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
 	request := &writev2.Request{
 		Symbols: []string{
 			"",              // 0 - required empty string
-			"__name__",      // 1
-			"gauge_a",       // 2
-			"gauge_b",       // 3
-			"gauge_c",       // 4
-			"job",           // 5
-			"test-job",      // 6
-			"instance",      // 7
-			"test-instance", // 8
-		},
-		Timeseries: []writev2.TimeSeries{
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 2, 5, 6, 7, 8},
-				Samples:    []writev2.Sample{{Value: 1.0, Timestamp: 1000}},
-			},
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 3, 5, 6, 7, 8},
-				Samples:    []writev2.Sample{{Value: 2.0, Timestamp: 1000}},
-			},
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 4, 5, 6, 7, 8},
-				Samples:    []writev2.Sample{{Value: 3.0, Timestamp: 1000}},
-			},
-		},
-	}
-	pBuf := proto.NewBuffer(nil)
-	err := pBuf.Marshal(request)
-	require.NoError(t, err)
-
-	receiverID := component.NewIDWithName(metadata.Type, "test")
-	tt := componenttest.NewTelemetry()
-	defer func() {
-		require.NoError(t, tt.Shutdown(t.Context()))
-	}()
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	settings := receivertest.NewNopSettings(metadata.Type)
-	settings.TelemetrySettings = tt.NewTelemetrySettings()
-	settings.ID = receiverID
-
-	sink := &consumertest.MetricsSink{}
-	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
-	require.NoError(t, err)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             receiverID,
-		Transport:              "http",
-		ReceiverCreateSettings: settings,
-	})
-	require.NoError(t, err)
-	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
-
-	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
-	t.Cleanup(func() {
-		writeReceiver.rmCache.Purge()
-	})
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(pBuf.Bytes()))
-	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
-	w := httptest.NewRecorder()
-	writeReceiver.handlePRW(w, req)
-
-	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
-
-	// The accepted metric points must equal the data point count (3), not the
-	// resource group count (1). This is the regression check for #48306.
-	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t,
-		metricdata.Metrics{
-			Name:        "otelcol_receiver_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the pipeline. [Alpha]",
-			Unit:        "{datapoint}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Attributes: otelattr.NewSet(
-							otelattr.String("receiver", receiverID.String()),
-							otelattr.String("transport", "http"),
-						),
-						Value: 3, // 3 data points, not 1 (resource count)
-					},
-				},
-			},
-		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-}
-
-type mutatingMetricsConsumer struct{}
-
-func (m *mutatingMetricsConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-func (m *mutatingMetricsConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	dest := pmetric.NewMetrics()
-	md.ResourceMetrics().MoveAndAppendTo(dest.ResourceMetrics())
-	return nil
-}
-
-// TestEndMetricsOpWithMutatingConsumer verifies that EndMetricsOp correctly records
-// the data point count even when downstream consumers mutate or move the metric data.
-func TestEndMetricsOpWithMutatingConsumer(t *testing.T) {
-	request := &writev2.Request{
-		Symbols: []string{
-			"",              // 0
 			"__name__",      // 1
 			"gauge_a",       // 2
 			"gauge_b",       // 3
@@ -6403,6 +6307,9 @@ func TestEndMetricsOpWithMutatingConsumer(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
 
+	// The accepted metric points must equal the data point count (3), not the
+	// resource group count (1). This also verifies data point count is preserved
+	// even when downstream consumers mutate the data (#48306, #52819).
 	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -6419,7 +6326,7 @@ func TestEndMetricsOpWithMutatingConsumer(t *testing.T) {
 							otelattr.String("receiver", receiverID.String()),
 							otelattr.String("transport", "http"),
 						),
-						Value: 3,
+						Value: 3, // 3 data points, not 1 (resource count)
 					},
 				},
 			},
