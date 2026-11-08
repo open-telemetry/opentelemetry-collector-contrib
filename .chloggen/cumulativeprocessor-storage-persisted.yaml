@@ -1,0 +1,4 @@
+change_type: enhancement
+component: processor/delta_to_cumulative
+note: Support persisting cumulative state across Collector restarts using a storage extension.
+issues: [47086, 47380]
