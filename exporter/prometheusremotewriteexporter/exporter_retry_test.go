@@ -319,12 +319,18 @@ func TestShutdownInterruptsRetries(t *testing.T) {
 
 	buf := emptyRequestBuffer(t)
 	errCh := make(chan error, 1)
-	go func() { errCh <- prwe.execute(context.Background(), buf) }() //nolint:usetesting // must outlive the test context
+	// The request is counted like in PushMetrics, so that the shutdown waits for the attempt in
+	// flight instead of canceling it, which made the attempt fail with context.Canceled. The test
+	// context stops the retries if the shutdown does not.
+	prwe.wg.Go(func() { errCh <- prwe.execute(t.Context(), buf) })
 
 	require.Eventually(t, func() bool { return server.attempts.Load() >= 2 }, 5*time.Second, 5*time.Millisecond)
 
 	start := time.Now()
-	require.NoError(t, prwe.Shutdown(context.Background())) //nolint:usetesting // the test context is already canceled
+	// The shutdown waits for execute to return, so it is not called by the test goroutine: the test
+	// fails below instead of blocking if the retries are not interrupted.
+	shutdownErr := make(chan error, 1)
+	go func() { shutdownErr <- prwe.Shutdown(context.Background()) }() //nolint:usetesting // the test context is already canceled
 	select {
 	case err := <-errCh:
 		require.Error(t, err)
@@ -333,6 +339,7 @@ func TestShutdownInterruptsRetries(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("the retries were not interrupted by the shutdown")
 	}
+	require.NoError(t, <-shutdownErr)
 	assert.Less(t, time.Since(start), 5*time.Second)
 }
 

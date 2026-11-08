@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -342,6 +344,74 @@ func Test_export(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+// TestExportReleasesTimeSeriesWhileSending checks that the time series of a request can be reclaimed
+// once the request is encoded, while the endpoint has not answered yet: a slow endpoint must not
+// make every in-flight batch hold its translated time series.
+func TestExportReleasesTimeSeriesWhileSending(t *testing.T) {
+	received := make(chan struct{}, 1)
+	unblock := make(chan struct{})
+	server := newFlakyServer(t, func(_ int64, _ http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		received <- struct{}{}
+		<-unblock
+	})
+	// The timeouts are longer than the wait below, so that the request is still being sent.
+	prwe := newTestPRWExporter(t, retryTestConfig(server.URL, time.Minute, time.Minute))
+	// Cleanups run last in first out: unblock the handler before the shutdown and the server close.
+	release := sync.OnceFunc(func() { close(unblock) })
+	t.Cleanup(release)
+
+	released := make(chan struct{})
+	tsMap := map[string]*prompb.TimeSeries{}
+	for i := range 100 {
+		labels := []prompb.Label{{Name: "__name__", Value: "metric"}, {Name: "series", Value: strconv.Itoa(i)}}
+		if i == 0 {
+			runtime.AddCleanup(&labels[0], func(ch chan struct{}) { close(ch) }, released)
+		}
+		tsMap[strconv.Itoa(i)] = &prompb.TimeSeries{Labels: labels, Samples: []prompb.Sample{{Value: 1, Timestamp: 1}}}
+	}
+	errCh := make(chan error, 1)
+	go func(tsMap map[string]*prompb.TimeSeries) {
+		errCh <- prwe.handleExport(t.Context(), tsMap, nil)
+	}(tsMap)
+	tsMap = nil //nolint:ineffassign,wastedassign // drop the reference of the test
+
+	select {
+	case <-received:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the request was not sent")
+	}
+	deadline := time.After(10 * time.Second)
+	for waiting := true; waiting; {
+		runtime.GC()
+		select {
+		case <-released:
+			waiting = false
+		case <-deadline:
+			t.Fatal("the time series were not reclaimed while the request was being sent")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	release()
+	require.NoError(t, <-errCh)
+}
+
+// TestExportKeepsRequests checks that export leaves the slice of requests as it is: the WAL owns the
+// slice that it exports.
+func TestExportKeepsRequests(t *testing.T) {
+	server := newFlakyServer(t, func(_ int64, w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	prwe := newTestPRWExporter(t, retryTestConfig(server.URL, time.Second, time.Second))
+
+	requests := []*prompb.WriteRequest{{}, {}, {}}
+	want := slices.Clone(requests)
+	require.NoError(t, prwe.export(t.Context(), requests))
+	for i := range want {
+		assert.Same(t, want[i], requests[i])
+	}
+	assert.Equal(t, int64(len(want)), server.attempts.Load())
 }
 
 func TestNoMetricsNoError(t *testing.T) {
