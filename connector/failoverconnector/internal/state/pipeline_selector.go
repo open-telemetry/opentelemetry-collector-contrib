@@ -22,6 +22,8 @@ type PipelineSelector struct {
 
 // HandleError is called when an error is returned on a healthy pipeline
 func (p *PipelineSelector) HandleError(idx int) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
 	if idx != p.currentPipeline {
 		return
 	}
@@ -31,8 +33,6 @@ func (p *PipelineSelector) HandleError(idx int) {
 
 // NextStableLevel increments the level to the next in the priority list
 func (p *PipelineSelector) NextStableLevel() {
-	p.lock.Lock()
-	defer p.lock.Unlock()
 	p.currentPipeline++
 }
 
@@ -90,6 +90,9 @@ func (p *PipelineSelector) ResetHealthyPipeline(pipelineIndex int) {
 	defer p.lock.Unlock()
 	if pipelineIndex == 0 {
 		p.retryCancel.Cancel()
+		// Without this wait, a new failure can miss the token and leave retries stopped.
+		<-p.retryEnabledToken
+		p.returnRetryToken()
 	}
 	p.currentPipeline = pipelineIndex
 }

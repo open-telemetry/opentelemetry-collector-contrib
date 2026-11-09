@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !remove_all_resourcedetection_detectors
+
 package resourcedetectionprocessor
 
 import (
@@ -144,7 +146,7 @@ func TestResourceProcessor(t *testing.T) {
 		{
 			name:             "Invalid detector key",
 			detectorKeys:     []string{"invalid-key"},
-			expectedNewError: "invalid detector key: invalid-key",
+			expectedNewError: `detector "invalid-key" is not compiled into this binary; compiled detectors: [mock]`,
 		},
 	}
 

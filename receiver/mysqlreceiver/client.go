@@ -21,7 +21,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
-	semconv "go.opentelemetry.io/otel/semconv/v1.41.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
 
@@ -363,9 +363,16 @@ type querySample struct {
 	eventID            int64
 	sessionStatus      string
 	waitType           string
+	waitEvent          string
+	waitEventType      string
 	waitTime           float64
 	statementTimerWait float64
 	traceparent        string
+	// clientName is the client driver's self-reported identity
+	// (session_connect_attrs, ATTR_NAME='_client_name'), e.g. "MySQL
+	// Connector/J" or "libmysql". Empty if the client reported no connect
+	// attributes.
+	clientName string
 }
 
 type topQuery struct {
@@ -1142,12 +1149,18 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.sessionStatus)
 			case "wait_type":
 				dest = append(dest, &s.waitType)
+			case "wait_event_type":
+				dest = append(dest, &s.waitEventType)
+			case "wait_event":
+				dest = append(dest, &s.waitEvent)
 			case "wait_time_seconds":
 				dest = append(dest, &s.waitTime)
 			case "statement_timer_wait_seconds":
 				dest = append(dest, &s.statementTimerWait)
 			case "traceparent":
 				dest = append(dest, &s.traceparent)
+			case "client_name":
+				dest = append(dest, &s.clientName)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}

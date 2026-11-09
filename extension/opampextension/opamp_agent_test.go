@@ -55,6 +55,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NotEmpty(t, o.instanceUID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
+	assert.True(t, o.capabilities.ReportsHeartbeat)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 	assert.NoError(t, o.Shutdown(t.Context()))
@@ -178,6 +179,43 @@ func TestOpampAgentConnectsOverUnixSocket(t *testing.T) {
 
 			assert.NoError(t, o.Shutdown(t.Context()))
 			assert.NoError(t, srv.Stop(t.Context()))
+		})
+	}
+}
+
+func TestReportsHeartbeatCapabilityGating(t *testing.T) {
+	const heartbeatBit = protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
+
+	tests := []struct {
+		name             string
+		reportsHeartbeat bool
+		wantBitSet       bool
+	}{
+		{
+			name:             "explicitly enabled",
+			reportsHeartbeat: true,
+			wantBitSet:       true,
+		},
+		{
+			name:             "disabled",
+			reportsHeartbeat: false,
+			wantBitSet:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Capabilities.ReportsHeartbeat = tt.reportsHeartbeat
+
+			set := extensiontest.NewNopSettings(extensiontest.NopType)
+			o, err := newOpampAgent(cfg, set)
+			require.NoError(t, err)
+			t.Cleanup(func() { assert.NoError(t, o.Shutdown(t.Context())) })
+
+			caps := o.capabilities.toAgentCapabilities()
+			hasBit := caps&heartbeatBit != 0
+			assert.Equal(t, tt.wantBitSet, hasBit)
 		})
 	}
 }
@@ -681,6 +719,26 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 		{
 			Healthy:            false,
 			Status:             "StatusPermanentError",
+			StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
+			LastError:          "error B",
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
+					LastError:          "error B",
+				},
+				"test-exporter": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.Add(3 * time.Second).UnixNano()),
+					LastError:          "exporter error",
+				},
+			},
+		},
+		{
+			Healthy:            false,
+			Status:             "StatusPermanentError",
 			StatusTimeUnixNano: uint64(now.Add(4 * time.Second).UnixNano()),
 			LastError:          "exporter error",
 			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
@@ -856,12 +914,12 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
-		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+		o.Changed(id, componentstatus.NewEvent(componentstatus.StatusStarting))
 	}
 
 	// StatusOK will be queued until the PipelineWatcher Ready method is called.
 	for _, id := range traces.InstanceIDs() {
-		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
+		o.Changed(id, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	// verify we have received the StatusStarting events
@@ -897,7 +955,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	// send another set of events - these should be passed through immediately
 	for _, id := range traces.InstanceIDs() {
-		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
+		o.Changed(id, componentstatus.NewEvent(componentstatus.StatusStopping))
 	}
 
 	require.Eventually(t, func() bool {
@@ -1040,6 +1098,72 @@ func TestHealthReportingReportsAttributeChanges(t *testing.T) {
 		sendUpdate(attrsV2)
 		require.Equal(t, countAfterFirst+1, receivedHealthUpdates)
 
+		assert.NoError(t, o.Shutdown(t.Context()))
+		require.True(t, sa.unsubscribed)
+	})
+}
+
+// Component statuses can change without the top-level status changing, for
+// example when multiple components are in RecoverableError. Such changes should
+// be reported, while changes to timestamps alone should not.
+func TestHealthReportingComponentChangeWithSameTopLevelStatus(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+		statusUpdateChannel := make(chan *status.AggregateStatus)
+		sa := &mockStatusAggregator{
+			statusChan: statusUpdateChannel,
+		}
+
+		var received []*protobufs.ComponentHealth
+		mockOpampClient := &mockOpAMPClient{
+			setHealthFunc: func(health *protobufs.ComponentHealth) error {
+				received = append(received, health)
+				return nil
+			},
+		}
+
+		o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
+		o.initHealthReporting()
+		require.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
+
+		event := func(st componentstatus.Status, err string, ts time.Time) *mockStatusEvent {
+			ev := &mockStatusEvent{status: st, timestamp: ts}
+			if err != "" {
+				ev.err = errors.New(err)
+			}
+			return ev
+		}
+		sendUpdate := func(ts time.Time, exporterStatus componentstatus.Status, exporterErr string) {
+			statusUpdateChannel <- &status.AggregateStatus{
+				Event: event(componentstatus.StatusRecoverableError, "receiver error", ts),
+				ComponentStatusMap: map[string]*status.AggregateStatus{
+					"test-receiver": {Event: event(componentstatus.StatusRecoverableError, "receiver error", ts)},
+					"test-exporter": {Event: event(exporterStatus, exporterErr, ts)},
+				},
+			}
+			synctest.Wait()
+		}
+
+		now := time.Now()
+
+		// Only the receiver is in RecoverableError.
+		sendUpdate(now, componentstatus.StatusOK, "")
+		// received[0] is the initial "unhealthy" report sent on start.
+		require.Len(t, received, 2)
+
+		// The exporter now also enters RecoverableError. The top-level status and
+		// error are unchanged, but the component statuses are not.
+		sendUpdate(now.Add(time.Second), componentstatus.StatusRecoverableError, "exporter error")
+		require.Len(t, received, 3, "component-level change was swallowed by deduplication")
+		assert.Equal(t, "exporter error", received[2].ComponentHealthMap["test-exporter"].LastError)
+
+		// The same statuses with only the timestamps changed are deduplicated.
+		sendUpdate(now.Add(2*time.Second), componentstatus.StatusRecoverableError, "exporter error")
+		require.Len(t, received, 3)
+
+		close(statusUpdateChannel)
 		assert.NoError(t, o.Shutdown(t.Context()))
 		require.True(t, sa.unsubscribed)
 	})

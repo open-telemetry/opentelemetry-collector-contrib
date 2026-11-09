@@ -574,6 +574,8 @@ processors:
             - resource.attributes["service.name"]
 ```
 
+Manual division is only correct while the instance count is fixed. Under autoscaling, or during a rolling deploy, a hardcoded divisor is wrong for as long as the real count differs from it. Scaling out is the unsafe direction, because each instance keeps targeting a goal sized for a smaller fleet, so the fleet overshoots its budget until the config catches up. Scaling in only under-delivers. Setting `fleet_tracker` follows the count instead, so the budget holds across scaling events with no config change.
+
 Behaviour:
 
 - The effective per-instance goal is `max(goal_throughput / N, 1)`, where N is the last-reported member count.
@@ -591,7 +593,7 @@ Caveats:
 - The division is integer, so a goal that does not divide evenly under-delivers slightly (e.g. `goal_throughput: 10` across 4 instances yields an effective goal of `2`, not `2.5`, for a fleet total of `8`); see [honeycombio/dynsampler-go#112](https://github.com/honeycombio/dynsampler-go/issues/112).
 - When N is larger than `goal_throughput`, the per-instance goal floors at 1 span/s (it is never divided below 1), so the fleet emits up to N, more than the configured budget (e.g. `goal_throughput: 10` with `N: 40` emits up to 40 total).
 
-No `fleet_tracker` extension ships in this repository yet. The method signature above is the whole contract an implementation has to satisfy (a `redis_fleet_tracker` extension that heartbeats fleet membership into Redis is maintained separately).
+[`redis_fleet_tracker`](../../extension/fleettracker/redisfleettrackerextension) satisfies this contract by tracking fleet membership in Redis. The method signature above is the whole contract, so any extension implementing it works without importing this package.
 
 ## Known limitations
 

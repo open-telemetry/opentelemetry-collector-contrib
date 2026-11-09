@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -57,15 +57,8 @@ func TestLoadConfig(t *testing.T) {
 	allSettingsClientConfig.MaxConnsPerHost = defaultMaxConnsPerHost
 	allSettingsClientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
 	allSettingsClientConfig.HTTP2PingTimeout = 10 * time.Second
-	// max_idle_conns and max_idle_conns_per_host are deprecated keys and set
-	// as such in testdata/config.yaml; unmarshal them through confmap
-	// (rather than setting the fields directly) so that allSettingsClientConfig
-	// picks up the same deprecation-warning bookkeeping that loading the
-	// testdata produces.
-	require.NoError(t, confmap.NewFromStringMap(map[string]any{
-		"max_idle_conns":          seventy,
-		"max_idle_conns_per_host": seventy,
-	}).Unmarshal(&allSettingsClientConfig))
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConns = seventy
+	allSettingsClientConfig.Keepalive.Get().MaxIdleConnsPerHost = seventy
 
 	tests := []struct {
 		id       component.ID
@@ -455,7 +448,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 		{
 			name:              "empty config",
 			cfg:               &Config{},
-			excludeMetricsLen: 10,
+			excludeMetricsLen: 11,
 		},
 		{
 			name: "existing exclude config",
@@ -466,7 +459,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 					},
 				},
 			},
-			excludeMetricsLen: 11,
+			excludeMetricsLen: 12,
 		},
 		{
 			name: "existing empty exclude config",

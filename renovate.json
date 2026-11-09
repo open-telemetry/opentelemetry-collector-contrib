@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.26"
+    "go": "1.26.0"
   },
   "schedule": [
     "on tuesday"
@@ -38,7 +38,7 @@
         "/^pkg/semconvtest/semconvtest\\.go$/"
       ],
       "matchStrings": [
-        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*defaultWeaverVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     }
   ],
@@ -282,6 +282,12 @@
       "groupName": "github.com/twmb/franz-go/pkg/kmsg package",
       "matchPackageNames": [
         "github.com/twmb/franz-go/pkg/kmsg"
+      ],
+      "allowedVersions": "<2.0.0"
+    },
+    {
+      "matchPackageNames": [
+        "github.com/hashicorp/consul/api"
       ],
       "allowedVersions": "<2.0.0"
     },

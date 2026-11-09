@@ -175,13 +175,86 @@ func newWTScraper(t *testing.T) *mongodbScraper {
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
-// newQueryExecutorScraper builds a scraper with all three query executor metrics enabled.
+// newLatencyScraper builds a scraper with the operation latency count metric enabled.
+func newLatencyScraper(t *testing.T) *mongodbScraper {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbOperationLatencyCount.Enabled = true
+	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+}
+
+func TestRecordLatencyCount(t *testing.T) {
+	s := newLatencyScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordLatencyCount(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.operation.latency.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	// The values come from opLatencies.*.ops, not .latency: the fixture reports
+	// opLatencies.commands.latency 8631 against opLatencies.commands.ops 23.
+	require.Equal(t, map[string]int64{
+		"read":    0,
+		"write":   0,
+		"command": 23,
+	}, sumIntByAttr(t, m, "operation"))
+}
+
+// TestRecordLatencyCountPerOperation gives each operation class a distinct value, which the
+// shared fixture cannot do because its read and write counters are both zero.
+func TestRecordLatencyCountPerOperation(t *testing.T) {
+	s := newLatencyScraper(t)
+	doc := bson.M{
+		"opLatencies": bson.M{
+			"reads":        bson.M{"latency": int64(1100), "ops": int64(11)},
+			"writes":       bson.M{"latency": int64(2200), "ops": int64(22)},
+			"commands":     bson.M{"latency": int64(3300), "ops": int64(33)},
+			"transactions": bson.M{"latency": int64(4400), "ops": int64(44)},
+		},
+	}
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordLatencyCount(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.operation.latency.count")
+	// opLatencies.transactions is reported by the server but stays out of the metric, so that
+	// this pairs point-for-point with mongodb.operation.latency.time.
+	require.Equal(t, 3, m.Sum().DataPoints().Len())
+	require.Equal(t, map[string]int64{
+		"read":    11,
+		"write":   22,
+		"command": 33,
+	}, sumIntByAttr(t, m, "operation"))
+}
+
+func TestRecordLatencyCountMissingSubdocument(t *testing.T) {
+	s := newLatencyScraper(t)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordLatencyCount(now, bson.M{}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	// One failure per operation class.
+	require.Equal(t, 3, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
+}
+
+// newQueryExecutorScraper builds a scraper with all four query executor metrics enabled.
 func newQueryExecutorScraper(t *testing.T) *mongodbScraper {
 	t.Helper()
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorIndexKeyScannedCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorDocumentScannedCount.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanNonTailableCount.Enabled = true
 	return newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 }
 
@@ -239,6 +312,24 @@ func TestRecordQueryExecutorCollectionScans(t *testing.T) {
 
 // TestRecordQueryExecutorMissingSubdocument covers a server that does not report queryExecutor at
 // all: the scrape records partial errors rather than failing, and emits no data points.
+func TestRecordQueryExecutorNonTailableCollectionScans(t *testing.T) {
+	s := newQueryExecutorScraper(t)
+	doc, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	errs := &scrapererror.ScrapeErrors{}
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.recordQueryExecutorNonTailableCollectionScans(now, doc, errs)
+	require.NoError(t, errs.Combine())
+
+	m := findMetric(t, s.mb.Emit(), "mongodb.query_executor.collection_scan.non_tailable.count")
+	require.Equal(t, pmetric.MetricTypeSum, m.Type())
+	require.Equal(t, 1, m.Sum().DataPoints().Len())
+	// collectionScans.nonTailable as the server reports it. The fixture also carries
+	// collectionScans.total 1200, which belongs to the sibling metric.
+	require.Equal(t, int64(900), m.Sum().DataPoints().At(0).IntValue())
+}
+
 func TestRecordQueryExecutorMissingSubdocument(t *testing.T) {
 	s := newQueryExecutorScraper(t)
 	errs := &scrapererror.ScrapeErrors{}
@@ -247,11 +338,12 @@ func TestRecordQueryExecutorMissingSubdocument(t *testing.T) {
 	s.recordQueryExecutorIndexKeysScanned(now, bson.M{}, errs)
 	s.recordQueryExecutorDocumentsScanned(now, bson.M{}, errs)
 	s.recordQueryExecutorCollectionScans(now, bson.M{}, errs)
+	s.recordQueryExecutorNonTailableCollectionScans(now, bson.M{}, errs)
 
 	var partial scrapererror.PartialScrapeError
 	require.ErrorAs(t, errs.Combine(), &partial)
-	// One failure per metric: index keys, documents, and collection scans.
-	require.Equal(t, 3, partial.Failed)
+	// One failure per metric: index keys, documents, collection scans and non-tailable scans.
+	require.Equal(t, 4, partial.Failed)
 	require.Equal(t, 0, s.mb.Emit().MetricCount())
 }
 

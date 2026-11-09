@@ -8,7 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.prometheus.UseTargetUrlForServerAddress` | alpha | When enabled, server.address, server.port, and url.scheme are populated from the scraped target's post-relabeling __address__ and __scheme__ labels instead of parsing the instance label and pre-relabeling service discovery labels. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565) |
 | `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion` | alpha | Enables the Prometheus created-timestamps-zero-injection feature. Created timestamps are injected as 0-valued samples when appropriate. This is disabled by default due to worse CPU performance with higher metric volumes. | v0.113.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355) |
-| `receiver.prometheusreceiver.IgnoreScopeInfoMetric` | stable | When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction. | v0.148.0 | v0.164.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
