@@ -2374,7 +2374,9 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) error {
 	const activeThreads = "active_threads"
 	const availableThreads = "available_threads"
+	const currentTasks = "current_tasks"
 	const requestsWaitingForThreads = "requests_waiting_for_threads"
+	const tasksWaitingForThreadpool = "tasks_waiting_for_threadpool"
 	const totalThreads = "total_threads"
 	const waitingForCPUThreads = "waiting_for_cpu_threads"
 
@@ -2424,6 +2426,28 @@ func (s *sqlServerScraperHelper) recordWorkerThreadMetrics(ctx context.Context) 
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", waitingForCPUThreads, i, err))
 		} else {
 			s.mb.RecordSqlserverWorkerThreadCountDataPoint(now, val.(int64), metadata.AttributeWorkerStateWaitingForCPU)
+		}
+
+		currentTasksVal, currentTasksErr := retrieveInt(row, currentTasks)
+		if currentTasksErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", currentTasks, i, currentTasksErr))
+		}
+
+		waitingForThreadpoolVal, waitingForThreadpoolErr := retrieveInt(row, tasksWaitingForThreadpool)
+		if waitingForThreadpoolErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", tasksWaitingForThreadpool, i, waitingForThreadpoolErr))
+		}
+
+		if waitingForThreadpoolErr == nil {
+			s.mb.RecordSqlserverThreadPoolTaskCountDataPoint(now, waitingForThreadpoolVal.(int64), metadata.AttributeSqlserverThreadPoolTaskStateWaitingForThreadpool)
+		}
+
+		// current_tasks_count already includes the tasks counted as waiting_for_threadpool,
+		// so subtract them to make the two attribute values partition the total instead of
+		// double-counting every waiting task.
+		if currentTasksErr == nil && waitingForThreadpoolErr == nil {
+			current := max(currentTasksVal.(int64)-waitingForThreadpoolVal.(int64), 0)
+			s.mb.RecordSqlserverThreadPoolTaskCountDataPoint(now, current, metadata.AttributeSqlserverThreadPoolTaskStateCurrent)
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
@@ -2534,6 +2558,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const transactionIsolationLevel = "transaction_isolation_level"
 	const username = "username"
 	const waitResource = "wait_resource"
+	const waitStartTime = "wait_start_time"
 	const waitTimeMillisecond = "wait_time"
 	const waitType = "wait_type"
 	const writes = "writes"
@@ -2678,6 +2703,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitTimeSecondVal := float64(waitTimeMillisecondVal) / 1000.0
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
 		blockingStartTimeVal := row[blockingStartTime]
+		waitStartTimeVal := row[waitStartTime]
 		clientAppNameVal := row[clientAppName]
 		sessionStartTimeVal := row[sessionStartTime]
 		waitTypeVal := row[waitType]
@@ -2721,7 +2747,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			requestStatusVal, resourceIDVal, resourceTypeVal, rowCountVal,
 			sessionDurationSecondVal, sessionStartTimeVal, sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
-			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
+			waitResourceVal, waitStartTimeVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],
 		)
 
