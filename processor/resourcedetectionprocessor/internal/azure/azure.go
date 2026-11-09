@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_azure
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_azure) && !omit_detector_azure
 
 package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 
@@ -85,7 +85,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if compute.VMScaleSetName != "" {
 		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
 	}
-	d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
+	if metadata.ProcessorAzuredetectorRenameResourceGroupAttributeFeatureGate.IsEnabled() {
+		d.rb.SetAzureResourceGroupName(compute.ResourceGroupName)
+	} else {
+		d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
+	}
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {

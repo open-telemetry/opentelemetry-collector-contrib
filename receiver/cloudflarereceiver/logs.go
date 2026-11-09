@@ -73,6 +73,9 @@ func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) 
 		Transport: "tcp",
 	}
 	serverConfig.ReadHeaderTimeout = 20 * time.Second
+	// confighttp decompresses the body and applies its own limit before
+	// handleRequest runs. Without this value, it uses its 20MiB default.
+	serverConfig.MaxRequestBodySize = recv.cfg.MaxRequestBodySize
 
 	if tlsConfig := recv.cfg.TLS; tlsConfig != nil {
 		serverConfig.TLS = configoptional.Some(*tlsConfig)

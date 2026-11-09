@@ -5,6 +5,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -86,6 +87,13 @@ type Config struct {
 	// scrapers of this receiver.
 	ConnectionPool ConnectionPool `mapstructure:"connection_pool,omitempty"`
 
+	// Databases limits the per-database metrics and the events to the listed
+	// databases. Empty reports on every database.
+	Databases []string `mapstructure:"databases,omitempty"`
+	// ExcludeDatabases lists databases left out of the per-database metrics and
+	// the events. A database in both lists is excluded.
+	ExcludeDatabases []string `mapstructure:"exclude_databases,omitempty"`
+
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
@@ -153,6 +161,14 @@ func (cfg *Config) Validate() error {
 
 	if poolErr := cfg.validateConnectionPool(); poolErr != nil {
 		return poolErr
+	}
+
+	if slices.Contains(cfg.Databases, "") {
+		return errors.New("`databases` must not contain an empty name")
+	}
+
+	if slices.Contains(cfg.ExcludeDatabases, "") {
+		return errors.New("`exclude_databases` must not contain an empty name")
 	}
 
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)
