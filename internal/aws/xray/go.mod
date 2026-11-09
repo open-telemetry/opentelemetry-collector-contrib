@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.5
 	github.com/aws/aws-sdk-go-v2/service/xray v1.46.3
 	github.com/aws/smithy-go v1.28.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.uber.org/goleak v1.3.0
