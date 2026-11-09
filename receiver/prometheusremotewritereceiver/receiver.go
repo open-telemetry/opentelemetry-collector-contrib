@@ -835,11 +835,13 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 		dest.PutStr("service.instance.id", instance)
 	}
 	if job != "" {
-		parts := strings.Split(job, "/")
-		if len(parts) == 2 {
-			dest.PutStr("service.namespace", parts[0])
-			dest.PutStr("service.name", parts[1])
-			return
+		if !metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.IsEnabled() {
+			parts := strings.Split(job, "/")
+			if len(parts) == 2 {
+				dest.PutStr("service.namespace", parts[0])
+				dest.PutStr("service.name", parts[1])
+				return
+			}
 		}
 		dest.PutStr("service.name", job)
 	}
