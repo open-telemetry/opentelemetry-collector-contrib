@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -192,9 +191,9 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
-				case "db.server.procedure_definition":
-					assert.False(t, validatedEvents["db.server.procedure_definition"], "Found a duplicate in the events slice: db.server.procedure_definition")
-					validatedEvents["db.server.procedure_definition"] = true
+				case "db.server.procedure.definition":
+					assert.False(t, validatedEvents["db.server.procedure.definition"], "Found a duplicate in the events slice: db.server.procedure.definition")
+					validatedEvents["db.server.procedure.definition"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
 					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())

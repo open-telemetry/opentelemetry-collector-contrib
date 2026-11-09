@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,7 +22,7 @@ func (e *eventDbServerProcedureDefinition) recordEvent(ctx context.Context, time
 		return
 	}
 	dp := e.data.AppendEmpty()
-	dp.SetEventName("db.server.procedure_definition")
+	dp.SetEventName("db.server.procedure.definition")
 	dp.SetTimestamp(timestamp)
 
 	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
@@ -533,7 +532,7 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	return logs
 }
 
-// RecordDbServerProcedureDefinitionEvent adds a log record of db.server.procedure_definition event.
+// RecordDbServerProcedureDefinitionEvent adds a log record of db.server.procedure.definition event.
 func (lb *LogsBuilder) RecordDbServerProcedureDefinitionEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, oracledbProcedureIDAttributeValue int64, oracledbProcedureNameAttributeValue string, oracledbProcedureDefinitionAttributeValue string) {
 	lb.eventDbServerProcedureDefinition.recordEvent(ctx, timestamp, dbSystemNameAttributeValue, dbNamespaceAttributeValue, oracledbProcedureIDAttributeValue, oracledbProcedureNameAttributeValue, oracledbProcedureDefinitionAttributeValue)
 }

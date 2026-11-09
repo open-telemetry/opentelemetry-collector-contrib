@@ -1702,7 +1702,7 @@ events:
     enabled: true
 ```
 
-### db.server.procedure_definition
+### db.server.procedure.definition
 
 The SQL source text of stored procedures observed in db.server.top_procedure. Correlates with db.server.top_procedure via oracledb.procedure_id and db.namespace.
 

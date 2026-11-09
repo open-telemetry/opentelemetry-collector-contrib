@@ -486,17 +486,17 @@ func TestProcedureDefinitionEvent(t *testing.T) {
 		eventNames[i] = records.At(i).EventName()
 	}
 	assert.Contains(t, eventNames, "db.server.top_procedure")
-	assert.Contains(t, eventNames, "db.server.procedure_definition")
+	assert.Contains(t, eventNames, "db.server.procedure.definition")
 
 	for i := range records.Len() {
-		if records.At(i).EventName() == "db.server.procedure_definition" {
+		if records.At(i).EventName() == "db.server.procedure.definition" {
 			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
 			require.True(t, ok)
 			assert.Equal(t, "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;", def.Str())
 			return
 		}
 	}
-	t.Fatal("expected a db.server.procedure_definition event")
+	t.Fatal("expected a db.server.procedure.definition event")
 }
 
 func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
@@ -507,7 +507,7 @@ func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
 
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := range records.Len() {
-		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+		assert.NotEqual(t, "db.server.procedure.definition", records.At(i).EventName(),
 			"procedure_definition must not be emitted when disabled")
 	}
 }
@@ -523,14 +523,14 @@ func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
 
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := range records.Len() {
-		if records.At(i).EventName() == "db.server.procedure_definition" {
+		if records.At(i).EventName() == "db.server.procedure.definition" {
 			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
 			require.True(t, ok)
 			assert.Empty(t, def.Str(), "empty definition should be emitted as empty string")
 			return
 		}
 	}
-	t.Fatal("expected a db.server.procedure_definition event")
+	t.Fatal("expected a db.server.procedure.definition event")
 }
 
 // Wrapped (encrypted) procedures must map to an empty definition. DBA_SOURCE returns the
@@ -634,7 +634,7 @@ func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
 
-	entries := observed.FilterMessage("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
+	entries := observed.FilterMessage("db.server.procedure.definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
 	require.Len(t, entries, 1)
 }
 
