@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetHostID sets provided value as "host.id" attribute.
+func (rb *ResourceBuilder) SetHostID(val string) {
+	if rb.config.HostID.Enabled {
+		rb.res.Attributes().PutStr("host.id", val)
+	}
+}
+
 // SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
 func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
 	if rb.config.K8sClusterUID.Enabled {

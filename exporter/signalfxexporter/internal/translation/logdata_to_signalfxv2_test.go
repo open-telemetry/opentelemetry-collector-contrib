@@ -17,8 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// This is basically the reverse of the test in the signalfxreceiver for
-// converting from events to logs
+// This verifies the SignalFx event to log translation in the reverse direction.
 func TestLogDataToSignalFxEvents(t *testing.T) {
 	now := time.Now()
 	msec := now.UnixNano() / 1e6
