@@ -3,13 +3,13 @@
 
 module-sets:
   stable-base:
-    version: v1.3.1
+    version: v1.4.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
   contrib-base:
-    version: v0.164.1
+    version: v0.165.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -374,3 +374,4 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension/integrationtest
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fleettracker/redisfleettrackerextension/integrationtest
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/compliance
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/compliance
