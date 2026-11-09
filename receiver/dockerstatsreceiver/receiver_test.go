@@ -3,14 +3,13 @@
 
 //go:build !windows
 
-// TODO review if tests should succeed on Windows
+// The golden files were captured from a Linux daemon. The Windows build uses a different
+// CPU formula and memory fields, so the expected values do not match there.
 
 package dockerstatsreceiver
 
 import (
-	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -29,8 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
-
-var mockFolder = filepath.Join("testdata", "mock")
 
 var (
 	allMetricsEnabled = func() metadata.MetricsConfig {
@@ -463,33 +460,6 @@ func TestRecordBaseMetrics(t *testing.T) {
 		)
 		require.Error(t, err)
 	})
-}
-
-func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
-	urlToFileContents := make(map[string][]byte, len(*urlToFile))
-	for urlPath, filePath := range *urlToFile {
-		err := func() error {
-			fileContents, err := os.ReadFile(filepath.Clean(filePath))
-			if err != nil {
-				return err
-			}
-			urlToFileContents[urlPath] = fileContents
-			return nil
-		}()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		data, ok := urlToFileContents[req.URL.Path]
-		if !ok {
-			rw.WriteHeader(http.StatusNotFound)
-			return
-		}
-		rw.WriteHeader(http.StatusOK)
-		_, _ = rw.Write(data)
-	})), nil
 }
 
 type testConfigBuilder struct {

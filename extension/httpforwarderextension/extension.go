@@ -96,19 +96,14 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	defer response.Body.Close()
 
 	// Copy over response from the final destination.
-	for k := range response.Header {
-		writer.Header().Set(k, response.Header.Get(k))
+	for k, values := range response.Header {
+		writer.Header()[k] = append([]string(nil), values...)
 	}
 	addViaHeader(writer.Header(), response.Proto, request.Host)
 
 	writer.WriteHeader(response.StatusCode)
-	written, err := io.Copy(writer, response.Body)
-	if err != nil {
+	if _, err := io.Copy(writer, response.Body); err != nil {
 		h.settings.Logger.Warn("Error writing HTTP response message", zap.Error(err))
-	}
-
-	if response.ContentLength != written {
-		h.settings.Logger.Warn("Response from target not fully copied, body might be corrupted")
 	}
 }
 
