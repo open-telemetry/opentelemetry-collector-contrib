@@ -14,6 +14,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 )
 
 func rec(key, value []byte, headers ...kgo.RecordHeader) *kgo.Record {
@@ -65,20 +67,13 @@ func TestOnErrorReturnsSelf(t *testing.T) {
 	assert.Same(t, r, r.OnError(errors.New("anything")))
 }
 
-type fakeRetryableErr struct {
-	records []*kgo.Record
-}
-
-func (*fakeRetryableErr) Error() string                     { return "fake retryable error" }
-func (e *fakeRetryableErr) RetryableRecords() []*kgo.Record { return e.records }
-
 func TestOnError_FiltersRetryableRecords(t *testing.T) {
 	recA := rec(nil, []byte("acknowledged"))
 	recB := rec(nil, []byte("permanent_fail"))
 	recC := rec(nil, []byte("retryable"))
 	r := New([]*kgo.Record{recA, recB, recC})
 
-	err := &fakeRetryableErr{records: []*kgo.Record{recC}}
+	err := kafkaclient.NewRecordsError(errors.New("mixed batch error"), []*kgo.Record{recC}, true)
 	ret := r.OnError(err)
 
 	require.NotSame(t, r, ret)
@@ -93,7 +88,7 @@ func TestOnError_EmptyRetryableReturnsSelf(t *testing.T) {
 	recA := rec(nil, []byte("acknowledged"))
 	r := New([]*kgo.Record{recA})
 
-	err := &fakeRetryableErr{records: nil}
+	err := kafkaclient.NewRecordsError(errors.New("no retryable records"), nil, true)
 	ret := r.OnError(err)
 	assert.Same(t, r, ret)
 }

@@ -13,6 +13,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 )
 
 var (
@@ -80,12 +82,8 @@ func (r *Request) MergeSplit(
 // failures. If retryable records are present, a new Request containing only those
 // records is returned, avoiding unnecessary re-sends of acknowledged or permanently failed records.
 func (r *Request) OnError(err error) xexporterhelper.Request {
-	type retryableError interface {
-		RetryableRecords() []*kgo.Record
-	}
-	var retErr retryableError
-	if errors.As(err, &retErr) {
-		retryable := retErr.RetryableRecords()
+	if recErr, ok := errors.AsType[*kafkaclient.RecordsError](err); ok {
+		retryable := recErr.RetryableRecords()
 		if len(retryable) > 0 {
 			return New(retryable)
 		}

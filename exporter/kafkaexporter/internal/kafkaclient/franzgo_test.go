@@ -457,6 +457,7 @@ func TestExportData_MixedOutcomes_PreservesRetryableRecords(t *testing.T) {
 	// Verify that retryable record is preserved and accessible.
 	var recErr *RecordsError
 	require.ErrorAs(t, err, &recErr)
+	assert.True(t, recErr.HasPermanent())
 	require.Len(t, recErr.RetryableRecords(), 1)
 	assert.Same(t, recC, recErr.RetryableRecords()[0])
 
