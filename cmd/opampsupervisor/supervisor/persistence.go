@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // persistentState represents persistent state for the supervisor
