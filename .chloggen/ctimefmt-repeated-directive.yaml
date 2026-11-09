@@ -1,0 +1,13 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: pkg/coreinternal
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Fix strptime time parsing never returning for a format that repeats a directive, such as `%H %H`.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [52627]
+
+change_logs: [user]
