@@ -37,6 +37,9 @@ resourceLogs:
               - key: postgresql.application_name
                 value:
                   stringValue: receiver
+              - key: postgresql.backend.type
+                value:
+                  stringValue: client backend
               - key: network.peer.address
                 value:
                   stringValue: 11.4.5.14

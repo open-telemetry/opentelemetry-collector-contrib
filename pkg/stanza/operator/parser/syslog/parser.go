@@ -135,7 +135,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 
 // parse will parse a value as syslog.
 func (p *Parser) parse(value any) (any, error) {
-	bytes, err := toBytes(value)
+	raw, err := toBytes(value)
 	if err != nil {
 		return nil, err
 	}
@@ -145,16 +145,31 @@ func (p *Parser) parse(value any) (any, error) {
 		return nil, err
 	}
 
-	slog, err := pFunc(bytes)
+	input := raw
+	var continuation []byte
+	if p.protocol == RFC3164 && !p.enableOctetCounting {
+		if index := bytes.IndexByte(input, '\n'); index >= 0 {
+			continuation = input[index:]
+			input = bytes.TrimSuffix(input[:index], []byte("\r"))
+		}
+	}
+
+	slog, err := pFunc(input)
 	if err != nil {
 		return nil, err
 	}
 
-	skipPriHeaderValues := p.shouldSkipPriorityValues(bytes)
+	skipPriHeaderValues := p.shouldSkipPriorityValues(raw)
 
 	switch message := slog.(type) {
 	case *rfc3164.SyslogMessage:
-		return p.parseRFC3164(message, skipPriHeaderValues)
+		parsed, err := p.parseRFC3164(message, skipPriHeaderValues)
+		if err != nil || len(continuation) == 0 {
+			return parsed, err
+		}
+		parsedMessage, _ := parsed["message"].(string)
+		parsed["message"] = parsedMessage + string(continuation)
+		return parsed, nil
 	case *rfc5424.SyslogMessage:
 		return p.parseRFC5424(message, skipPriHeaderValues)
 	case *rawSyslogMessage:
