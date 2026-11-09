@@ -64,9 +64,9 @@ receivers:
     collection_interval: 2s
     timeout: 20s
     api_version: "1.25"
-    container_labels_to_metric_labels:
-      my.container.label: my-metric-label
-      my.other.container.label: my-other-metric-label
+    container_labels_to_resource_attributes:
+      - strict: my.container.label
+      - regexp: my.container.prefix.*
     env_vars_to_metric_labels:
       MY_ENVIRONMENT_VARIABLE: my-metric-label
       MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
