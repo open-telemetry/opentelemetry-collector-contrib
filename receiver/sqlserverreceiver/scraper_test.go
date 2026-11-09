@@ -134,6 +134,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryUsage.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerRequestCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverWorkerThreadCount.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverThreadPoolTaskCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverWorktableCacheHitRatio.Enabled = enabled
 
 	cfg.MetricsBuilderConfig.Metrics.SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag.Enabled = enabled
@@ -2791,6 +2792,10 @@ func TestIsWorkerThreadsQueryEnabled(t *testing.T) {
 
 	metrics.SqlserverWorkerThreadCount.Enabled = false
 	metrics.SqlserverWorkerRequestCount.Enabled = true
+	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
+
+	metrics.SqlserverWorkerRequestCount.Enabled = false
+	metrics.SqlserverThreadPoolTaskCount.Enabled = true
 	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 }
 

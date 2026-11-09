@@ -97,6 +97,11 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 	seen := map[mountKey]struct{}{}
 
 	for _, partition := range partitions {
+		if partition.Device == "" && partition.Mountpoint == "" {
+			// Workaround until https://github.com/shirou/gopsutil/pull/2187
+			// is merged and "empty" partitions can be returned on Windows
+			continue
+		}
 		key := mountKey{
 			mountpoint: partition.Mountpoint,
 			device:     partition.Device,
