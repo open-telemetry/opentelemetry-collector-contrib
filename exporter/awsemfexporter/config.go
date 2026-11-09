@@ -6,8 +6,10 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
@@ -22,6 +24,9 @@ var eMFSupportedUnits = newEMFSupportedUnits()
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
+	// Timeout limits the entire export, including AWS requests and retries.
+	// Nil preserves the default timeout; an explicit zero disables it.
+	Timeout *time.Duration `mapstructure:"timeout"`
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
 	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`
@@ -107,6 +112,12 @@ var _ component.Config = (*Config)(nil)
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
 func (config *Config) Validate() error {
+	if config.Timeout != nil {
+		timeoutConfig := exporterhelper.TimeoutConfig{Timeout: *config.Timeout}
+		if err := timeoutConfig.Validate(); err != nil {
+			return err
+		}
+	}
 	//nolint:staticcheck // check deprecated fields
 	if metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.IsEnabled() &&
 		(config.ResourceToTelemetrySettings.Enabled || config.ResourceToTelemetrySettings.ExcludeServiceAttributes) {

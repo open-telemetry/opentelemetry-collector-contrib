@@ -103,6 +103,11 @@ properties:
     type: object
     additionalProperties:
       type: string
+  timeout:
+    description: Timeout limits the entire export, including AWS requests and retries. Nil preserves the default timeout; an explicit zero disables it.
+    x-pointer: true
+    type: string
+    format: duration
   version:
     description: Version is an option for sending metrics to CloudWatchLogs with Embedded Metric Format in selected version  (with "_aws") https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure Otherwise, sending metrics as Embedded Metric Format version 0 (without "_aws")
     type: string
