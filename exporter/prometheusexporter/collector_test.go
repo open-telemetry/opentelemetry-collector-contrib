@@ -907,12 +907,12 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 		wantZeroThresh float64
 	}{
 		{
-			name:           "NativeHistogram basic (default zero threshold)",
+			name:           "NativeHistogram basic (zero threshold)",
 			wantCount:      10,
 			wantSum:        42.0,
 			wantSchema:     0,
 			wantZeroCount:  4,
-			wantZeroThresh: defaultZeroThreshold,
+			wantZeroThresh: 0,
 			metric: func(ts time.Time, withStartTime bool) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_native_hist")
@@ -926,7 +926,7 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 				dp.SetZeroCount(4)
 				dp.SetCount(10)
 				dp.SetSum(42.0)
-				dp.SetZeroThreshold(0) // trigger defaultZeroThreshold
+				dp.SetZeroThreshold(0)
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -1286,6 +1286,57 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 					})
 				}
 			}
+		})
+	}
+}
+
+func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
+	tests := []struct {
+		name         string
+		threshold    float64
+		setThreshold bool
+		offset       int32
+	}{
+		{name: "unset threshold", offset: -432},
+		{name: "explicit zero threshold", setThreshold: true, offset: -432},
+		{name: "nonzero threshold", threshold: 0.5, setThreshold: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName("test_native_histogram")
+			hist := metric.SetEmptyExponentialHistogram()
+			hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			dp := hist.DataPoints().AppendEmpty()
+			dp.SetScale(0)
+			dp.SetCount(3)
+			dp.SetSum(0)
+			dp.SetZeroCount(1)
+			if tt.setThreshold {
+				dp.SetZeroThreshold(tt.threshold)
+			}
+			dp.Positive().SetOffset(tt.offset)
+			dp.Positive().BucketCounts().FromRaw([]uint64{1})
+			dp.Negative().SetOffset(tt.offset)
+			dp.Negative().BucketCounts().FromRaw([]uint64{1})
+			c := newCollector(&Config{}, zap.NewNop())
+			m, err := c.convertExponentialHistogram(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
+			require.NoError(t, err)
+			out := &io_prometheus_client.Metric{}
+			require.NoError(t, m.Write(out))
+			h := out.GetHistogram()
+			require.Equal(t, tt.threshold, h.GetZeroThreshold())
+			require.Equal(t, uint64(3), h.GetSampleCount())
+			require.Equal(t, uint64(1), h.GetZeroCount())
+			require.Equal(t, 0.0, h.GetSampleSum())
+			require.Len(t, h.PositiveSpan, 1)
+			require.Len(t, h.NegativeSpan, 1)
+			require.Equal(t, tt.offset+1, h.PositiveSpan[0].GetOffset())
+			require.Equal(t, tt.offset+1, h.NegativeSpan[0].GetOffset())
+			require.Equal(t, uint32(1), h.PositiveSpan[0].GetLength())
+			require.Equal(t, uint32(1), h.NegativeSpan[0].GetLength())
+			require.Equal(t, []int64{1}, h.PositiveDelta)
+			require.Equal(t, []int64{1}, h.NegativeDelta)
 		})
 	}
 }
