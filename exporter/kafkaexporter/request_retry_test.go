@@ -433,7 +433,7 @@ func TestExporter_RetryOnFailure_MixedBatch_GateOnAndOff(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, tracesExp.Start(t.Context(), host))
 		t.Cleanup(func() {
-			_ = tracesExp.Shutdown(context.Background())
+			_ = tracesExp.Shutdown(context.Background()) //nolint:usetesting // t.Context() is canceled before t.Cleanup runs
 		})
 
 		return tracesExp, &topicASends, &topicBSends, &topicCSends
