@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywal
 go 1.26.0
 
 require (
-	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.165.1
 	github.com/stretchr/testify v1.12.1
