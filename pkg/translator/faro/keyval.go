@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
 	om "github.com/wk8/go-ordered-map/v2"
@@ -61,6 +62,16 @@ func keyValAdd(kv *keyVal, key, value string) {
 	}
 }
 
+// keyValAddTimestamp adds the timestamp at millisecond precision. When the
+// timestamp has sub-millisecond precision, it also adds the epoch microseconds,
+// so that consumers can order records that share a millisecond.
+func keyValAddTimestamp(kv *keyVal, ts time.Time) {
+	keyValAdd(kv, faroTimestamp, ts.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	if micros := ts.UnixMicro(); micros%1000 != 0 {
+		keyValAdd(kv, faroTimestampMicros, strconv.FormatInt(micros, 10))
+	}
+}
+
 // keyValToInterfaceSlice converts keyVal to []interface{}, typically used for logging
 func keyValToInterfaceSlice(kv *keyVal) []any {
 	slice := make([]any, kv.Len()*2)
@@ -84,7 +95,7 @@ func logToKeyVal(l *faroTypes.Log) *keyVal {
 		level = string(l.LogLevel)
 	}
 
-	keyValAdd(kv, faroTimestamp, l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, l.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindLog))
 	keyValAdd(kv, faroLogLevel, level)
 	keyValAdd(kv, faroLogMessage, l.Message)
@@ -97,7 +108,7 @@ func logToKeyVal(l *faroTypes.Log) *keyVal {
 // exceptionToKeyVal represents an Exception object as keyVal
 func exceptionToKeyVal(e *faroTypes.Exception) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, e.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindException))
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelError))
 	keyValAdd(kv, faroExceptionType, e.Type)
@@ -142,7 +153,7 @@ func frameToString(frame *faroTypes.Frame) string {
 func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 	kv := newKeyVal()
 
-	keyValAdd(kv, faroTimestamp, m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, m.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindMeasurement))
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroMeasurementType, m.Type)
@@ -164,7 +175,7 @@ func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 // eventToKeyVal produces key -> value representation of Event metadata
 func eventToKeyVal(e *faroTypes.Event) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAddTimestamp(kv, e.Timestamp)
 	keyValAdd(kv, faroKind, string(faroTypes.KindEvent))
 	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroEventName, e.Name)
@@ -197,6 +208,7 @@ func metaToKeyVal(m faroTypes.Meta) *keyVal {
 	mergeKeyVal(kv, browserToKeyVal(m.Browser))
 	mergeKeyVal(kv, deviceToKeyVal(m.Device))
 	mergeKeyVal(kv, osToKeyVal(m.OS))
+	mergeKeyVal(kv, networkToKeyVal(m.Network))
 	mergeKeyVal(kv, k6ToKeyVal(m.K6))
 	mergeKeyVal(kv, viewToKeyVal(m.View))
 	mergeKeyVal(kv, geoToKeyVal(m.Geo))
@@ -306,6 +318,31 @@ func deviceToKeyVal(d faroTypes.Device) *keyVal {
 		keyValAdd(kv, faroDeviceIsPhysical, strconv.FormatBool(d.IsPhysical))
 	}
 	keyValAdd(kv, faroDeviceType, d.Type)
+	keyValAdd(kv, faroDeviceArch, d.Arch)
+	if d.ScreenWidth != 0 {
+		keyValAdd(kv, faroDeviceScreenWidth, strconv.Itoa(d.ScreenWidth))
+	}
+	if d.ScreenHeight != 0 {
+		keyValAdd(kv, faroDeviceScreenHeight, strconv.Itoa(d.ScreenHeight))
+	}
+	if d.ScreenDensity != 0 {
+		keyValAdd(kv, faroDeviceScreenDensity, strconv.FormatFloat(d.ScreenDensity, 'f', -1, 64))
+	}
+	// device_memory_total is in whole MB (1 MB is 1,048,576 bytes). Faro SDKs also send a
+	// device_memory_total session attribute in bytes, which is written as session_attr_device_memory_total.
+	if d.MemoryTotal != 0 {
+		keyValAdd(kv, faroDeviceMemoryTotal, strconv.Itoa(d.MemoryTotal))
+	}
+	if d.BatteryLevel != nil {
+		keyValAdd(kv, faroDeviceBatteryLevel, strconv.Itoa(*d.BatteryLevel))
+	}
+	if d.IsCharging != nil {
+		keyValAdd(kv, faroDeviceIsCharging, strconv.FormatBool(*d.IsCharging))
+	}
+	if d.LowPowerMode != nil {
+		keyValAdd(kv, faroDeviceLowPowerMode, strconv.FormatBool(*d.LowPowerMode))
+	}
+	keyValAdd(kv, faroDeviceThermalState, string(d.ThermalState))
 	return kv
 }
 
@@ -316,6 +353,21 @@ func osToKeyVal(o faroTypes.OS) *keyVal {
 	keyValAdd(kv, faroOSVersion, o.Version)
 	keyValAdd(kv, faroOSBuildID, o.BuildID)
 	keyValAdd(kv, faroOSDetail, o.Detail)
+	if o.APILevel != 0 {
+		keyValAdd(kv, faroOSAPILevel, strconv.Itoa(o.APILevel))
+	}
+	return kv
+}
+
+// networkToKeyVal produces key->value representation of Network metadata
+func networkToKeyVal(n faroTypes.Network) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, faroNetworkConnectionType, n.ConnectionType)
+	keyValAdd(kv, faroNetworkConnectionSubtype, n.ConnectionSubtype)
+	keyValAdd(kv, faroNetworkCarrierName, n.CarrierName)
+	if n.Reachable != nil {
+		keyValAdd(kv, faroNetworkReachable, strconv.FormatBool(*n.Reachable))
+	}
 	return kv
 }
 

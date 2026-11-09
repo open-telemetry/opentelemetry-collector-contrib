@@ -18,8 +18,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-const defaultZeroThreshold = 1e-128
-
 // explicitToNHCB converts an OTLP explicit-bucket histogram data point to a
 // Prometheus histogram with custom buckets (schema -53) via Prometheus' own
 // convertnhcb helper. Exactly one of the returned histograms is non-nil.
@@ -149,7 +147,8 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		ResetHint: prompb.Histogram_UNKNOWN,
 		Schema:    scale,
 
-		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
+		ZeroThreshold: p.ZeroThreshold(),
+		ZeroCount:     &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -157,12 +156,6 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeDeltas: nDeltas,
 
 		Timestamp: convertTimeStamp(p.Timestamp()),
-	}
-
-	if p.ZeroThreshold() != 0 {
-		h.ZeroThreshold = p.ZeroThreshold()
-	} else {
-		h.ZeroThreshold = defaultZeroThreshold
 	}
 
 	if p.Flags().NoRecordedValue() {
