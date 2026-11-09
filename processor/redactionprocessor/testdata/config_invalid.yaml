@@ -1,0 +1,4 @@
+redaction/hash_function_and_masking_string_set:
+  # must not set masking_string and hash_function together
+  masking_string: "[REDACTED]"
+  hash_function: md5

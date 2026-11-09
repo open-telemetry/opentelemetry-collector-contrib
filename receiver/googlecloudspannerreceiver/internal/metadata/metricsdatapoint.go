@@ -157,7 +157,7 @@ func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
 
 func (mdp *MetricsDataPoint) HideSplitStatsKeysPII() {
 	for index, labelValue := range mdp.labelValues {
-		if labelValue.Metadata().Name() != "split_start" && labelValue.Metadata().Name() != "split_limit" {
+		if labelValue.Metadata().Name() != "split_start" && labelValue.Metadata().Name() != "split_limit" && labelValue.Metadata().Name() != "split_key" {
 			continue
 		}
 

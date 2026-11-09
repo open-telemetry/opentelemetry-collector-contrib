@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
@@ -43,10 +44,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 const configTemplate = `
@@ -3621,24 +3622,19 @@ telemetry:
 	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 
-	path := filepath.Join(t.TempDir(), "output.txt")
-	backend := testbed.NewOTLPHTTPDataReceiver(4318)
-	mockBackend := testbed.NewMockBackend(path, backend)
-	err = mockBackend.Start()
-	require.NoError(t, err)
+	sink := testutil.StartOTLPSink(t, "127.0.0.1:4318")
 
-	mockBackend.EnableRecording()
 	supervisor.telemetrySettings.Logger.Info("test log")
 
 	require.Eventually(t, func() bool {
-		return len(mockBackend.GetReceivedLogs()) > 0
+		return len(sink.Logs.AllLogs()) > 0
 	}, 5*time.Second, 1*time.Second)
 
-	mockBackend.Stop()
+	sink.Shutdown()
 
-	receivedLogs := mockBackend.GetReceivedLogs()
+	receivedLogs := sink.Logs.AllLogs()
 	require.Len(t, receivedLogs, 1)
-	l := mockBackend.ReceivedLogs[0]
+	l := receivedLogs[0]
 	require.Equal(t, 1, l.ResourceLogs().Len())
 	l.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		require.Equal(t, 1, rl.ScopeLogs().Len())
@@ -4154,7 +4150,7 @@ func TestSupervisor_healthSurvivesOpAMPClientReplacement(t *testing.T) {
 
 		oldEndpoint := s.config.Server.Endpoint
 
-		// An invalid CA cert makes LoadTLSConfig fail synchronously, before the
+		// An invalid client certificate makes LoadTLSConfig fail synchronously, before the
 		// replacement client is created, so only the rollback reaches the seeding.
 		// onOpampConnectionSettings restores the previous settings and calls
 		// startOpAMPClient again; requiring no error is what makes this case
@@ -4162,7 +4158,10 @@ func TestSupervisor_healthSurvivesOpAMPClientReplacement(t *testing.T) {
 		// leave the assertions below true without publishing anything.
 		require.NoError(t, s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
 			DestinationEndpoint: fmt.Sprintf("wss://127.0.0.1:%d", freePort(t)),
-			Certificate:         &protobufs.TLSCertificate{CaCert: []byte("not-a-valid-pem-certificate")},
+			Certificate: &protobufs.TLSCertificate{
+				Cert:       []byte("not-a-valid-pem-certificate"),
+				PrivateKey: []byte("not-a-valid-pem-key"),
+			},
 		}))
 		require.Equal(t, oldEndpoint, s.config.Server.Endpoint, "the rollback must restore the previous endpoint")
 
@@ -4304,7 +4303,7 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 
 	t.Run("heartbeat interval reverted when reconnect with new settings fails", func(t *testing.T) {
 		// Old endpoint uses HTTP (Start is async → always returns nil).
-		// New endpoint uses WSS with an invalid CA cert: LoadTLSConfig fails synchronously
+		// New endpoint uses WSS with an invalid client certificate: LoadTLSConfig fails synchronously
 		// before any connection is attempted, giving us a reliable way to trigger the
 		// heartbeat rollback path in onOpampConnectionSettings.
 		oldEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
@@ -4315,7 +4314,8 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 			HeartbeatIntervalSeconds: 5,
 			Certificate: &protobufs.TLSCertificate{
 				// Invalid PEM causes LoadTLSConfig to fail synchronously.
-				CaCert: []byte("not-a-valid-pem-certificate"),
+				Cert:       []byte("not-a-valid-pem-certificate"),
+				PrivateKey: []byte("not-a-valid-pem-key"),
 			},
 		})
 		// The error may be nil (fallback succeeded) or non-nil (fallback also failed).
@@ -4324,6 +4324,65 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 			t.Logf("fallback also failed (expected in some environments): %v", err)
 		}
 		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval must be reverted after failed reconnect")
+	})
+
+	t.Run("missing Certificate keeps server verification settings and drops client certificate", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+		s.config.Server.TLS = configtls.ClientConfig{
+			ServerName: "opamp.example.com",
+			Config: configtls.Config{
+				CAPem:   "ca-pem",
+				CertPem: "cert-pem",
+				KeyPem:  "key-pem",
+			},
+		}
+
+		newEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint: newEndpoint,
+		})
+		require.NoError(t, err)
+		require.Equal(t, newEndpoint, s.config.Server.Endpoint)
+		assert.False(t, s.config.Server.TLS.InsecureSkipVerify)
+		assert.Equal(t, "ca-pem", string(s.config.Server.TLS.CAPem))
+		assert.Equal(t, "opamp.example.com", s.config.Server.TLS.ServerName)
+		assert.Empty(t, s.config.Server.TLS.CertPem)
+		assert.Empty(t, s.config.Server.TLS.KeyPem)
+	})
+
+	t.Run("Certificate offer keeps server verification settings and replaces client certificate", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+		s.config.Server.TLS = configtls.ClientConfig{
+			ServerName: "opamp.example.com",
+			Config: configtls.Config{
+				CAPem:      "ca-pem",
+				CertFile:   "cert.pem",
+				KeyFile:    "key.pem",
+				MinVersion: "1.3",
+				TPMConfig:  configtls.TPMConfig{Enabled: true},
+			},
+		}
+
+		newEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint: newEndpoint,
+			Certificate: &protobufs.TLSCertificate{
+				Cert:       []byte("offered-cert-pem"),
+				PrivateKey: []byte("offered-key-pem"),
+				CaCert:     []byte("offered-ca-pem"),
+			},
+		})
+		require.NoError(t, err)
+		require.Equal(t, newEndpoint, s.config.Server.Endpoint)
+		assert.False(t, s.config.Server.TLS.InsecureSkipVerify)
+		assert.Equal(t, "ca-pem", string(s.config.Server.TLS.CAPem))
+		assert.Equal(t, "opamp.example.com", s.config.Server.TLS.ServerName)
+		assert.Equal(t, "1.3", s.config.Server.TLS.MinVersion)
+		assert.Equal(t, "offered-cert-pem", string(s.config.Server.TLS.CertPem))
+		assert.Equal(t, "offered-key-pem", string(s.config.Server.TLS.KeyPem))
+		assert.Empty(t, s.config.Server.TLS.CertFile)
+		assert.Empty(t, s.config.Server.TLS.KeyFile)
+		assert.False(t, s.config.Server.TLS.TPMConfig.Enabled)
 	})
 }
 

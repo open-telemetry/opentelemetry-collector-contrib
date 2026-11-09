@@ -10,7 +10,7 @@ import (
 
 	encoder "go.opentelemetry.io/otel/schema/v1.1"
 	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // SchemaFormat identifies the on-disk format of a parsed schema document.
