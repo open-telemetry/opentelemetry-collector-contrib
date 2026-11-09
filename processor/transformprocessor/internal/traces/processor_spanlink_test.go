@@ -69,6 +69,13 @@ func Test_ProcessTraces_SpanLinkContext(t *testing.T) {
 			checked: []string{"pubsub"},
 		},
 		{
+			name: "inferred context with span condition",
+			cs: common.ContextStatements{
+				Statements: []string{`set(spanlink.attributes["checked"], true) where span.name == "withLinks"`},
+			},
+			checked: []string{"pubsub", "kafka"},
+		},
+		{
 			name: "conditions met",
 			cs: common.ContextStatements{
 				Context:    common.SpanLink,
