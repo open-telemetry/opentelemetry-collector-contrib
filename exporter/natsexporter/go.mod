@@ -7,7 +7,7 @@ require (
 	github.com/nats-io/nats.go v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/natsclient v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.4.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
