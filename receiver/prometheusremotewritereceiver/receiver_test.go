@@ -23,6 +23,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
@@ -1437,6 +1438,73 @@ func TestTranslateV2(t *testing.T) {
 				dp.SetDoubleValue(1.0)
 				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp.Attributes().PutStr("d", "e")
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
+			name: "labels with empty values are dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "normal_metric", // 1, 2
+					"job", "production/service_a", // 3, 4
+					"instance", "host1", // 5, 6
+					"empty_label", "", // 7, 8
+					"label", "value", // 9, 10
+					"otel_scope_name", "", // 11, 12
+					"otel_scope_empty_attr", "", // 13, 14
+					"otel_scope_attr", "scope_value", // 15, 16
+					"__name__", "target_info", // 17, 18
+					"empty_resource_label", "", // 19, 20
+					"resource_label", "resource_value", // 21, 22
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// target_info metric: an empty label value is the same as an absent label,
+						// so it must not become a resource attribute.
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{17, 18, 3, 4, 5, 6, 19, 20, 21, 22},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("resource_label", "resource_value")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				// otel_scope_name is empty, so the receiver build info is used instead.
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				sm.Scope().Attributes().PutStr("attr", "scope_value")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("normal_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1.0)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("label", "value")
 
 				return metrics
 			}(),
@@ -5183,6 +5251,132 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 	}
 }
 
+func TestEmptyLabelValueIsAcceptedNotRefused(t *testing.T) {
+	// A label with an empty value normalizes to an absent label instead of being refused. See
+	// validateSeriesLabels for why refusing it would cost the sender the whole request.
+	sink := &consumertest.MetricsSink{}
+	resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_gauge", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"empty", "", // 7, 8
+			"kept", "value", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	})
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+	written, err := remote.ParseWriteResponseStats(resp)
+	require.NoError(t, err)
+	assert.Equal(t, 1, written.Samples, "the series is written, not refused")
+
+	metrics := sink.AllMetrics()
+	require.Len(t, metrics, 1)
+	dp := metrics[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, map[string]any{"kept": "value"}, dp.Attributes().AsRaw())
+}
+
+func TestEmptyLabelValuesAreDroppedFromHistogramDataPoints(t *testing.T) {
+	// Each histogram flavor builds its data points on its own, and every builder copies the one
+	// attribute map the series produced, so an empty label has to be gone from all of them,
+	// including the marker a reset leaves behind.
+	stale := math.Float64frombits(value.StaleNaN)
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_histogram", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"empty", "", // 7, 8
+			"attr", "value", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				Histograms: []writev2.Histogram{
+					{
+						Schema:         0,
+						Count:          &writev2.Histogram_CountInt{CountInt: 2},
+						Sum:            2,
+						Timestamp:      1,
+						StartTimestamp: 1,
+						PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+						PositiveDeltas: []int64{2},
+					},
+					{
+						Schema:    0,
+						Sum:       stale,
+						Timestamp: 2,
+					},
+				},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				Histograms: []writev2.Histogram{{
+					Schema:         -53,
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      3,
+					CustomValues:   []float64{1},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+					PositiveDeltas: []int64{1},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 3, stats.Histograms, "the stale marker is written too")
+
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	expected := map[string]any{"attr": "value"}
+	sms := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	require.Equal(t, 2, sms.Len(), "each flavor is its own metric")
+
+	seen := 0
+	for i := 0; i < sms.Len(); i++ {
+		switch m := sms.At(i); m.Type() {
+		case pmetric.MetricTypeExponentialHistogram:
+			dps := m.ExponentialHistogram().DataPoints()
+			require.Equal(t, 2, dps.Len())
+			for j := 0; j < dps.Len(); j++ {
+				assert.Equal(t, expected, dps.At(j).Attributes().AsRaw())
+				seen++
+			}
+		case pmetric.MetricTypeHistogram:
+			dps := m.Histogram().DataPoints()
+			require.Equal(t, 1, dps.Len())
+			assert.Equal(t, expected, dps.At(0).Attributes().AsRaw())
+			seen++
+		default:
+			t.Fatalf("unexpected metric type %v", m.Type())
+		}
+	}
+	assert.Equal(t, 3, seen)
+}
+
+func TestExtractScopeInfoDropsEmptyValuedScopeLabels(t *testing.T) {
+	// A scope attribute needs a value as well as a key, so a label with an empty value drops out
+	// while the attributes around it survive.
+	prwReceiver := setupMetricsReceiver(t)
+	si := prwReceiver.extractScopeInfo(labels.FromStrings("otel_scope_empty", "", "otel_scope_kept", "kept"))
+	assert.Equal(t, []attribute{{Key: "kept", Value: "kept"}}, si.scopeAttrs)
+	assert.Equal(t, "OpenTelemetry Collector", si.Name)
+	assert.Equal(t, "latest", si.Version)
+}
+
 func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
 	// Count is derived from the buckets for both schemas, so a count that disagrees with them is
 	// replaced rather than refused. Prometheus sends one when an observation of NaN raised the
@@ -5486,6 +5680,10 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	tests := []struct {
 		name     string
 		requests []*writev2.Request
+		// batches is the number of ConsumeMetrics calls the requests produce; every batch is
+		// compared with expected.
+		batches  int
+		expected pmetric.Metrics
 	}{
 		{
 			name: "target_info first, normal metric second",
@@ -5524,34 +5722,67 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 					},
 				},
 			},
+			batches: 1,
+			// The only batch is the join between the target_info and the normal metric.
+			expected: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("foo", "bar")
+
+				return metrics
+			}(),
+		},
+		{
+			// A label that arrives with an empty value means an absent label, so it neither sets
+			// region nor clears the one an earlier target_info cached.
+			name: "an empty label value does not clear a cached attribute",
+			requests: []*writev2.Request{
+				targetInfoRequest("us-central1"),
+				targetInfoRequest(""),
+			},
+			batches: 2,
+			expected: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("region", "us-central1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+
+				return metrics
+			}(),
 		},
 	}
-
-	expectedIndex0 := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
-		sm := rm.ScopeMetrics().AppendEmpty()
-		sm.Scope().SetName("OpenTelemetry Collector")
-		sm.Scope().SetVersion("latest")
-		m1 := sm.Metrics().AppendEmpty()
-		m1.SetName("normal_metric")
-		m1.SetUnit("")
-		m1.SetDescription("")
-		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp1.SetDoubleValue(2.0)
-		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-		dp1.Attributes().PutStr("foo", "bar")
-
-		return metrics
-	}()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -5567,26 +5798,52 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				// we don't need to compress the body to use the snappy compression in the unit test
 				// because the encoder is just initialized when we initialize the http server.
 				// so we can just use the uncompressed body.
-				err := pBuf.Marshal(req)
-				assert.NoError(t, err)
+				require.NoError(t, pBuf.Marshal(req))
 
 				resp, err := http.Post(
 					ts.URL,
 					fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 					bytes.NewBuffer(pBuf.Bytes()),
 				)
-				assert.NoError(t, err)
-				defer resp.Body.Close()
+				require.NoError(t, err)
 
 				body, err := io.ReadAll(resp.Body)
-				assert.NoError(t, err)
-				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+				resp.Body.Close()
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
-			// Only one metric should be emitted
-			assert.Len(t, mockConsumer.metrics, 1)
-			// index 0 is related to the join between the target_info and the normal metric.
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex0, mockConsumer.metrics[0]))
+
+			require.Len(t, mockConsumer.metrics, tt.batches)
+			for i, batch := range mockConsumer.metrics {
+				assert.NoError(t, pmetrictest.CompareMetrics(tt.expected, batch), "batch %d", i)
+			}
 		})
+	}
+}
+
+// targetInfoRequest builds a request carrying a target_info with the given region plus a sample
+// of the metric it describes, so the two can be joined within the request.
+func targetInfoRequest(region string) *writev2.Request {
+	return &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"region", region, // 5, 6
+			"__name__", "target_info", // 7, 8
+			"__name__", "normal_metric", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{9, 10, 1, 2, 3, 4},
+				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+			},
+		},
 	}
 }
 

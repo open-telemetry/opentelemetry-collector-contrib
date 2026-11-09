@@ -4,19 +4,20 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/zipkin
+component: pkg/coreinternal
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Promote "pkg.translator.zipkin.EmitV1CloudResourceConventions" and "pkg.translator.zipkin.DontEmitV0CloudResourceConventions" feature gates to Beta.
+note: Remove the stable internal.coreinternal.goldendataset.EmitV1RPCConventions and internal.coreinternal.goldendataset.DontEmitV0RPCConventions feature gates.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [52148]
+issues: [52580]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The Zipkin translator now emits `cloud.resource_id` instead of the deprecated `faas.id` by default.
+  The gates reached their scheduled removal version (v0.166.0). goldendataset already generates
+  `rpc.method` and `service.peer.name` unconditionally; referencing either gate now results in an error.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
