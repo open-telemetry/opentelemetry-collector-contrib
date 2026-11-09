@@ -268,6 +268,9 @@ on its database file, so the standby replica fails to start with
 
 Configuring leader election for logs without a storage extension is rejected at startup.
 
+For metrics, a new leader scrapes as soon as it takes over, so a failover can duplicate the most
+recent `collection_interval` of data.
+
 ## Sample Configs
 
 This receiver has a number of sample configs for reference.
