@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	api "github.com/hashicorp/consul/api/v2"
+	"github.com/hashicorp/consul/api"
 )
 
 type Provider interface {
