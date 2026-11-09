@@ -108,7 +108,7 @@ $defs:
         items:
           type: string
       namespace:
-        description: Namespace restricts discovery to a single CloudWatch namespace (e.g. AWS/EC2). Required.
+        description: Namespace restricts discovery to a single CloudWatch namespace (e.g. AWS/EC2).
         type: string
       stats:
         description: Stats selects the CloudWatch statistics to fetch for this entry; same semantics as MetricQuery.Stats.

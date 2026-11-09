@@ -58,13 +58,13 @@ type MetricsDiscoveryConfig struct {
 	// Deprecated: set stats per filter entry instead; applies to entries that do not set their own stats.
 	Stats []string `mapstructure:"stats"`
 
-	// legacyFiltersForm marks the deprecated single-object filters form; relaxes validation and warns.
+	// legacyFiltersForm marks the deprecated single-object filters form so we log a deprecation warning.
 	legacyFiltersForm bool
 }
 
 // MetricsDiscoveryFilter selects a set of metrics to discover via ListMetrics.
 type MetricsDiscoveryFilter struct {
-	// Namespace restricts discovery to a single CloudWatch namespace (e.g. AWS/EC2). Required.
+	// Namespace restricts discovery to a single CloudWatch namespace (e.g. AWS/EC2).
 	Namespace string `mapstructure:"namespace"`
 	// MetricNames restricts discovery to these metric names; when empty, every metric in the namespace.
 	MetricNames []string `mapstructure:"metric_names"`

@@ -104,7 +104,7 @@ Each `filters` entry supports:
 
 | Parameter      | Type            | Required | Description |
 | -------------- | --------------- | -------- | ----------- |
-| `namespace`    | String          | yes      | CloudWatch namespace to discover metrics in, e.g. `AWS/EC2`. |
+| `namespace`    | String          | no       | CloudWatch namespace to discover metrics in, e.g. `AWS/EC2`. When omitted, metrics are discovered across all namespaces. |
 | `metric_names` | List of strings | no       | Restrict discovery within the namespace to these metric names. When omitted, every metric in the namespace is discovered. One `ListMetrics` call is made per name. |
 | `stats`        | List of strings | no       | Which CloudWatch statistics to fetch for the metrics discovered by this entry. Same semantics as in `queries`, see [Statistics](#statistics) below. When omitted, falls back to the deprecated top-level `discovery.stats`, and then to the Summary default. |
 
