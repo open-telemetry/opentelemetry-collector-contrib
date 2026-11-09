@@ -102,3 +102,19 @@ func TestLogsExporterDisableRetriesOnRetrySettingsEnabled(t *testing.T) {
 	assert.NotNil(t, le)
 	assert.True(t, eCfg.Config.LogConfig.DisableRetries)
 }
+
+func TestTracesExporterDisableRetriesOnRetrySettingsEnabled(t *testing.T) {
+	ctx := t.Context()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	eCfg := cfg.(*Config)
+	eCfg.Config.ProjectID = "test"
+	assert.False(t, eCfg.RetrySettings.Enabled)
+	assert.False(t, eCfg.Config.TraceConfig.DisableRetries)
+
+	eCfg.RetrySettings.Enabled = true
+	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+	assert.True(t, eCfg.Config.TraceConfig.DisableRetries)
+}

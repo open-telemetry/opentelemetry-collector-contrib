@@ -85,6 +85,7 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
+	eCfg.Config.TraceConfig.DisableRetries = eCfg.RetrySettings.Enabled
 	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
@@ -100,6 +101,7 @@ func createTracesExporter(
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithRetry(eCfg.RetrySettings),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
