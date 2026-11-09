@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fortytw2/leaktest"
 	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
 	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
 const cacheTestItemTTL = 50 * time.Millisecond
@@ -229,7 +229,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 }
 
 func Test_serviceStrategyCache_Concurrency(t *testing.T) {
-	defer leaktest.CheckTimeout(t, time.Minute*3)()
+	defer goleak.VerifyNone(t)
 
 	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {
