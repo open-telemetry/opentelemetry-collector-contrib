@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/translator/prometheusremotewrite
+note: Preserve the zero threshold when converting exponential histograms to Prometheus remote-write v1 and v2 native histograms.
+issues: [52834]
+change_logs: [user, api]
