@@ -6,6 +6,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -82,7 +83,7 @@ func createLogsExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeLogs,
 		exporterhelper.WithStart(s3Exporter.start),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(s3QueueSettings(cfg)),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
@@ -90,13 +91,18 @@ func createLogsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.ResourceAttrsToS3.S3Prefix == "" {
-		return logsExporter, err
+	routingKeys := cfg.ResourceAttrsToS3.routingKeys()
+	if len(routingKeys) == 0 {
+		return logsExporter, nil
 	}
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(cfg.ResourceAttrsToS3.S3Prefix, logsExporter),
+		Logs: batchperresourceattr.NewMultiBatchPerResourceLogs(
+			routingKeys,
+			logsExporter,
+			batchperresourceattr.WithMetadataInjection(),
+		),
 	}
 	return wrapped, nil
 }
@@ -120,7 +126,7 @@ func createMetricsExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeMetrics,
 		exporterhelper.WithStart(s3Exporter.start),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(s3QueueSettings(cfg)),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
@@ -128,13 +134,18 @@ func createMetricsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.ResourceAttrsToS3.S3Prefix == "" {
-		return metricsExporter, err
+	routingKeys := cfg.ResourceAttrsToS3.routingKeys()
+	if len(routingKeys) == 0 {
+		return metricsExporter, nil
 	}
 
 	wrapped := &baseMetricsExporter{
 		Component: metricsExporter,
-		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(cfg.ResourceAttrsToS3.S3Prefix, metricsExporter),
+		Metrics: batchperresourceattr.NewMultiBatchPerResourceMetrics(
+			routingKeys,
+			metricsExporter,
+			batchperresourceattr.WithMetadataInjection(),
+		),
 	}
 	return wrapped, nil
 }
@@ -159,7 +170,7 @@ func createTracesExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeTraces,
 		exporterhelper.WithStart(s3Exporter.start),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(s3QueueSettings(cfg)),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
@@ -167,15 +178,66 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.ResourceAttrsToS3.S3Prefix == "" {
-		return tracesExporter, err
+	routingKeys := cfg.ResourceAttrsToS3.routingKeys()
+	if len(routingKeys) == 0 {
+		return tracesExporter, nil
 	}
 
 	wrapped := &baseTracesExporter{
 		Component: tracesExporter,
-		Traces:    batchperresourceattr.NewBatchPerResourceTraces(cfg.ResourceAttrsToS3.S3Prefix, tracesExporter),
+		Traces: batchperresourceattr.NewMultiBatchPerResourceTraces(
+			routingKeys,
+			tracesExporter,
+			batchperresourceattr.WithMetadataInjection(),
+		),
 	}
 	return wrapped, nil
+}
+
+// routingKeys returns the resource attribute keys that select the S3 bucket
+// and prefix. Each request is split so that all its resources share the same
+// values for these keys, because the upload takes them from the first resource.
+func (r ResourceAttrsToS3) routingKeys() []string {
+	var keys []string
+	for _, k := range []string{r.S3Bucket, r.S3Prefix} {
+		if k != "" && !containsFold(keys, k) {
+			keys = append(keys, k)
+		}
+	}
+	return keys
+}
+
+// s3QueueSettings returns the queue settings to use. When batching is enabled
+// and the bucket or prefix comes from resource attributes, the batcher must
+// also partition by those keys, or it merges requests that were split per
+// bucket and prefix back into one, and the merged request is uploaded under
+// the first resource's bucket and prefix.
+func s3QueueSettings(cfg *Config) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	qs := cfg.QueueSettings
+	routingKeys := cfg.ResourceAttrsToS3.routingKeys()
+	if len(routingKeys) == 0 || !qs.HasValue() || !qs.Get().Batch.HasValue() {
+		return qs
+	}
+	qCopy := *qs.Get()
+	bCopy := *qCopy.Batch.Get()
+	keys := append([]string(nil), bCopy.Partition.MetadataKeys...)
+	for _, k := range routingKeys {
+		if !containsFold(keys, k) {
+			keys = append(keys, k)
+		}
+	}
+	bCopy.Partition.MetadataKeys = keys
+	qCopy.Batch = configoptional.Some(bCopy)
+	return configoptional.Some(qCopy)
+}
+
+func containsFold(list []string, s string) bool {
+	for _, v := range list {
+		if strings.EqualFold(v, s) {
+			return true
+		}
+	}
+	return false
 }
 
 // checkAndCastConfig checks the configuration type and casts it to the S3 exporter Config struct.
