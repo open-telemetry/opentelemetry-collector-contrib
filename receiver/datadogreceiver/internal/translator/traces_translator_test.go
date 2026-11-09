@@ -1060,6 +1060,9 @@ func TestToTraces(t *testing.T) {
 			assert.Equal(t, 1, got.SpanCount())
 			gotSpan := got.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			assert.Equal(t, tt.expectedSpanName, gotSpan.Name())
+			_, hasRPCService := gotSpan.Attributes().Get("rpc.service")
+			assert.False(t, hasRPCService, "rpc.service should not be emitted")
+			
 			for k, want := range tt.expectedSpanAttributes {
 				val, ok := gotSpan.Attributes().Get(k)
 				assert.True(t, ok, "attribute %s missing", k)
