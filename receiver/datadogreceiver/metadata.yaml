@@ -16,13 +16,12 @@ status:
 
 feature_gates:
   - id: receiver.datadogreceiver.DontEmitDeprecatedRPCServiceAttr
-    stage: stable
+    stage: alpha
     description: >-
       When enabled, the receiver no longer emits the deprecated rpc.service
       attribute on gRPC spans or resource attributes. The service name is
       already captured in the span name (service/method) and rpc.method.
     from_version: v0.154.0
-    to_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095
 
   - id: receiver.datadogreceiver.Enable128BitTraceID
