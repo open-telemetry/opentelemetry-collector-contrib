@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_system
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_system) && !omit_detector_system
 
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 
@@ -15,7 +15,7 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
@@ -45,6 +45,9 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, _ bool) (in
 	cfg := dcfg.(Config)
 	if len(cfg.HostnameSources) == 0 {
 		cfg.HostnameSources = []string{"dns", "os"}
+	}
+	if cfg.deprecatedOSBuildID.Enabled {
+		p.Logger.Warn("the os.build.id resource attribute is deprecated, use os.build_id instead")
 	}
 
 	return &Detector{
@@ -159,8 +162,10 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 					d.logger.Warn("failed to get OS name", zap.Error(err2))
 				}
 			}
-			if d.cfg.ResourceAttributes.OsBuildID.Enabled {
-				if osBuildID, err2 := d.provider.OSBuildID(ctx); err2 == nil {
+			var osBuildID string
+			if d.cfg.ResourceAttributes.OsBuildID.Enabled || d.cfg.deprecatedOSBuildID.Enabled {
+				var err2 error
+				if osBuildID, err2 = d.provider.OSBuildID(ctx); err2 == nil {
 					d.rb.SetOsBuildID(osBuildID)
 				} else {
 					d.logger.Warn("failed to get OS build id", zap.Error(err2))
@@ -169,7 +174,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			if len(cpuInfo) > 0 {
 				setHostCPUInfo(d, cpuInfo[0])
 			}
-			return d.rb.Emit(), conventions.SchemaURL, nil
+			res := d.rb.Emit()
+			if d.cfg.deprecatedOSBuildID.Enabled && osBuildID != "" {
+				res.Attributes().PutStr("os.build.id", osBuildID)
+			}
+			return res, conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
 	}

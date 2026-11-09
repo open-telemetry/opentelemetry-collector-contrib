@@ -13,7 +13,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: cache
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -73,7 +73,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: data
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -133,7 +133,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: data
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -193,7 +193,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: scratch
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.

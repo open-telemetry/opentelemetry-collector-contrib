@@ -153,17 +153,7 @@ all_set:
     k8s.volume.inodes.used:
       enabled: true
   resource_attributes:
-    aws.volume.id:
-      enabled: true
     container.id:
-      enabled: true
-    fs.type:
-      enabled: true
-    gce.pd.name:
-      enabled: true
-    glusterfs.endpoints.name:
-      enabled: true
-    glusterfs.path:
       enabled: true
     k8s.container.name:
       enabled: true
@@ -184,8 +174,6 @@ all_set:
     k8s.volume.name:
       enabled: true
     k8s.volume.type:
-      enabled: true
-    partition:
       enabled: true
 reaggregate_set:
   metrics:
@@ -341,17 +329,7 @@ reaggregate_set:
     k8s.volume.inodes.used:
       enabled: true
   resource_attributes:
-    aws.volume.id:
-      enabled: true
     container.id:
-      enabled: true
-    fs.type:
-      enabled: true
-    gce.pd.name:
-      enabled: true
-    glusterfs.endpoints.name:
-      enabled: true
-    glusterfs.path:
       enabled: true
     k8s.container.name:
       enabled: true
@@ -372,8 +350,6 @@ reaggregate_set:
     k8s.volume.name:
       enabled: true
     k8s.volume.type:
-      enabled: true
-    partition:
       enabled: true
 none_set:
   metrics:
@@ -529,17 +505,7 @@ none_set:
     k8s.volume.inodes.used:
       enabled: false
   resource_attributes:
-    aws.volume.id:
-      enabled: false
     container.id:
-      enabled: false
-    fs.type:
-      enabled: false
-    gce.pd.name:
-      enabled: false
-    glusterfs.endpoints.name:
-      enabled: false
-    glusterfs.path:
       enabled: false
     k8s.container.name:
       enabled: false
@@ -560,32 +526,10 @@ none_set:
     k8s.volume.name:
       enabled: false
     k8s.volume.type:
-      enabled: false
-    partition:
       enabled: false
 filter_set_include:
   resource_attributes:
-    aws.volume.id:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
     container.id:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    fs.type:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    gce.pd.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    glusterfs.endpoints.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    glusterfs.path:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -626,39 +570,15 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.volume.type:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    partition:
       enabled: true
       metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    aws.volume.id:
-      enabled: true
-      metrics_exclude:
-        - strict: "aws.volume.id-val"
     container.id:
       enabled: true
       metrics_exclude:
         - strict: "container.id-val"
-    fs.type:
-      enabled: true
-      metrics_exclude:
-        - strict: "fs.type-val"
-    gce.pd.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "gce.pd.name-val"
-    glusterfs.endpoints.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "glusterfs.endpoints.name-val"
-    glusterfs.path:
-      enabled: true
-      metrics_exclude:
-        - strict: "glusterfs.path-val"
     k8s.container.name:
       enabled: true
       metrics_exclude:
@@ -699,7 +619,3 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.volume.type-val"
-    partition:
-      enabled: true
-      metrics_exclude:
-        - strict: "partition-val"

@@ -294,6 +294,13 @@ func TestSetTraceAndSpan(t *testing.T) {
 			wantSpanID:        "",
 			wantFilteredAttrs: map[string]any{"span_id": strings.Repeat("0", 16)},
 		},
+		{
+			name:              "empty label values are dropped, as an empty label means an absent one",
+			labels:            labels.FromStrings("http_method", "GET", "empty_label", "", "trace_id", "", "span_id", ""),
+			wantTraceID:       "",
+			wantSpanID:        "",
+			wantFilteredAttrs: map[string]any{"http_method": "GET"},
+		},
 	}
 
 	for _, tt := range tests {

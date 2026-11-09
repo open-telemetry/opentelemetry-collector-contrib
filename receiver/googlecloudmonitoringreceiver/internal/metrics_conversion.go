@@ -231,11 +231,14 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 
 // ConvertDistributionToMetrics converts from Google cloud monitoring distributions to OpenTelemetry histograms.
 // See https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#Distribution for information on distribution metrics.
-func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeries, m pmetric.Metric) pmetric.Metric {
+// The temporality of the resulting histogram must match the metric kind of the source time series, that is,
+// pmetric.AggregationTemporalityDelta for DELTA metrics and pmetric.AggregationTemporalityCumulative for
+// CUMULATIVE metrics.
+func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeries, m pmetric.Metric, temporality pmetric.AggregationTemporality) pmetric.Metric {
 	m.SetName(ts.GetMetric().GetType())
 	m.SetUnit(ts.GetUnit())
 	histogram := m.SetEmptyHistogram()
-	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	histogram.SetAggregationTemporality(temporality)
 
 	// Note: Google cloud monitoring distributions use inclusive lower bound and exclusive upper bound (see
 	// https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#bucketoptions), while OpenTelemetry histograms use
@@ -316,6 +319,10 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 					reflect.TypeOf(bucketOptions.Options).String(),
 				))
 			continue
+		}
+
+		if count := distributionValue.GetCount(); count > 0 {
+			targetDataPoint.SetSum(distributionValue.GetMean() * float64(count))
 		}
 
 		targetBucketCounts := targetDataPoint.BucketCounts()

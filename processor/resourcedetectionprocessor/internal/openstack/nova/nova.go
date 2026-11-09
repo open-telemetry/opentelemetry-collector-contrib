@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_openstack_nova
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_openstack_nova) && !omit_detector_openstack_nova
 
 package nova // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 
@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	novaprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openstack/nova"

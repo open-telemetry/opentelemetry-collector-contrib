@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/awskinesis
+note: Make the HTTP client's idle connection timeout configurable via `idle_conn_timeout`.
+issues: [52798]
+subtext:

@@ -10,7 +10,7 @@ resourceMetrics:
         - key: k8s.persistentvolumeclaim.name
           value:
             stringValue: batch-scratch
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
@@ -84,7 +84,7 @@ resourceMetrics:
         - key: k8s.persistentvolumeclaim.uid
           value:
             stringValue: shared-data
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume backing the PersistentVolumeClaim. Values are reported by the volume plugin; for statfs-based plugins (e.g. local) they describe the backing filesystem rather than the claim's requested capacity.
@@ -158,7 +158,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: cache
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -218,7 +218,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: data
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -278,7 +278,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: data
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.
@@ -338,7 +338,7 @@ resourceMetrics:
         - key: k8s.volume.name
           value:
             stringValue: scratch
-    schemaUrl: https://opentelemetry.io/schemas/1.43.0
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
     scopeMetrics:
       - metrics:
           - description: The number of available bytes in the volume.

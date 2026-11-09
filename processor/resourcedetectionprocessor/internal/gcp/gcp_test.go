@@ -310,7 +310,28 @@ func TestDetect(t *testing.T) {
 				"faas.name":                    "my-service",
 				"faas.instance":                "1472385723456792345",
 				"gcp.cloud_run.job.execution":  "my-service-ajg89",
-				"gcp.cloud_run.job.task_index": "2",
+				"gcp.cloud_run.job.task_index": int64(2),
+			},
+		},
+		{
+			desc: "Cloud Run Job invalid task index",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:               "my-project",
+				cloudPlatform:           gcp.CloudRunJob,
+				faaSID:                  "1472385723456792345",
+				faaSCloudRegion:         "us-central1",
+				faaSName:                "my-service",
+				gcpCloudRunJobExecution: "my-service-ajg89",
+				gcpCloudRunJobTaskIndex: "not-a-number",
+			}),
+			expectedResource: map[string]any{
+				"cloud.provider":              "gcp",
+				"cloud.account.id":            "my-project",
+				"cloud.platform":              "gcp_cloud_run",
+				"cloud.region":                "us-central1",
+				"faas.name":                   "my-service",
+				"faas.instance":               "1472385723456792345",
+				"gcp.cloud_run.job.execution": "my-service-ajg89",
 			},
 		},
 		{
@@ -488,6 +509,20 @@ func TestDetectFailOnMissingMetadata(t *testing.T) {
 	res, schema, err := d.Detect(t.Context())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to get metadata")
+	assert.Empty(t, schema)
+	assert.Equal(t, 0, res.Attributes().Len())
+}
+
+func TestDetectFailOnInvalidTaskIndex(t *testing.T) {
+	d := newTestDetector(&fakeGCPDetector{
+		projectID:               "my-project",
+		cloudPlatform:           gcp.CloudRunJob,
+		gcpCloudRunJobTaskIndex: "not-a-number",
+	})
+	d.failOnMissingMetadata = true
+
+	res, schema, err := d.Detect(t.Context())
+	require.ErrorContains(t, err, `parsing "not-a-number"`)
 	assert.Empty(t, schema)
 	assert.Equal(t, 0, res.Attributes().Len())
 }
