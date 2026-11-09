@@ -311,13 +311,13 @@ func TestComponentStatusChanged(t *testing.T) {
 	ext := &datadogExtension{}
 
 	assert.NotPanics(t, func() {
-		ext.ComponentStatusChanged(nil, nil)
+		ext.Changed(nil, nil)
 	})
 
 	instanceID := &componentstatus.InstanceID{}
 	event := &componentstatus.Event{}
 	assert.NotPanics(t, func() {
-		ext.ComponentStatusChanged(instanceID, event)
+		ext.Changed(instanceID, event)
 	})
 }
 
@@ -458,7 +458,7 @@ func TestSimpleInterfaceMethods(t *testing.T) {
 	ext := &datadogExtension{}
 	assert.NoError(t, ext.Ready())
 	assert.NoError(t, ext.NotReady())
-	assert.NotPanics(t, func() { ext.ComponentStatusChanged(nil, nil) })
+	assert.NotPanics(t, func() { ext.Changed(nil, nil) })
 }
 
 func TestExtension_DeploymentTypeInPayload(t *testing.T) {

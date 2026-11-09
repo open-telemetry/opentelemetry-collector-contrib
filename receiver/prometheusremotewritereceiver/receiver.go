@@ -386,12 +386,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("error converting timeseries to labels: %w", err))
 			continue
 		}
+		if err := validateSeriesLabels(ls); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
-			continue
-		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
 			continue
 		}
 
@@ -413,9 +414,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 			attrs := rm.Resource().Attributes()
 
-			// Add the remaining labels as resource attributes
+			// Add the remaining labels as resource attributes. Labels with an empty value are skipped
+			// here for the same reason as in extractAttributes: the data model treats them as absent,
+			// so they would only add empty resource attributes. For the same reason an empty value
+			// does not clear an attribute an earlier target_info put in the cache.
 			ls.Range(func(l labels.Label) {
-				if l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
+				if l.Value != "" && l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
 					attrs.PutStr(l.Name, l.Value)
 				}
 			})
@@ -561,6 +565,22 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 	}
 
 	return otelMetrics, stats, badRequestErrors
+}
+
+// validateSeriesLabels reports a duplicate label name, where the set does not say which value
+// applies.
+//
+// What the Prometheus data model equates with absence is normalized rather than refused: a label
+// with an empty value is dropped where it would have become an attribute, as if it were not there.
+// Refusing it would fail the whole request, because the receiver has no partial write path, and
+// common senders such as Prometheus treat a 400 as non-recoverable and answer by dropping the batch.
+//
+// ToLabels returns the labels sorted, so duplicate names are adjacent.
+func validateSeriesLabels(ls labels.Labels) error {
+	if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
+		return fmt.Errorf("duplicate label %q in labels", duplicateLabel)
+	}
+	return nil
 }
 
 // logDroppedSeries logs a series dropped by design at Debug, since a sender keeps sending these
@@ -1233,12 +1253,21 @@ func appendGap(buckets pcommon.UInt64Slice, nextAppend, index int64) int64 {
 	return index + 1
 }
 
-// extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
+// extractAttributes returns metric data point attributes, excluding job, instance, metric name, all
+// otel_scope_* labels, and labels with an empty value, which the Prometheus data model treats as
+// absent.
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	// job, instance and metric name will always become labels
+	// An upper bound: job, instance, the metric name and labels with an empty value all drop out.
 	attrs.EnsureCapacity(ls.Len() - 3)
 	ls.Range(func(l labels.Label) {
+		if l.Value == "" {
+			// An empty label value is not copied to an attribute: the Prometheus data model treats it
+			// as an absent label, and the Prometheus/OTLP compatibility spec excludes such labels
+			// from the metric labels that become data point attributes.
+			// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+			return
+		}
 		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
 			l.Name != model.MetricNameLabel && // Becomes metric name
 			!strings.HasPrefix(l.Name, "otel_scope_") { // Become instrumentation scope fields
@@ -1249,7 +1278,8 @@ func extractAttributes(ls labels.Labels) pcommon.Map {
 }
 
 // extractScopeInfo extracts all otel_scope_* labels into a scopeInfo per the Prometheus/OTLP compatibility spec.
-// Falls back to receiver build info when otel_scope_name is absent.
+// Falls back to receiver build info when otel_scope_name is absent or empty, since an empty label value is
+// the same as an absent label in the Prometheus data model.
 func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) scopeInfo {
 	si := scopeInfo{
 		Name:    prw.settings.BuildInfo.Description,
@@ -1257,15 +1287,16 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 	}
 
 	ls.Range(func(l labels.Label) {
+		if l.Value == "" {
+			// An empty label value means an absent label, so it sets no scope field: an absent
+			// otel_scope_name falls back to the build info above.
+			return
+		}
 		switch l.Name {
 		case "otel_scope_name":
-			if l.Value != "" {
-				si.Name = l.Value
-			}
+			si.Name = l.Value
 		case "otel_scope_version":
-			if l.Value != "" {
-				si.Version = l.Value
-			}
+			si.Version = l.Value
 		case "otel_scope_schema_url":
 			si.SchemaURL = l.Value
 		default:
