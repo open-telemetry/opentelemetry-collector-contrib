@@ -367,10 +367,10 @@ FROM (
 	planHashValueAttr = "PLAN_HASH_VALUE"
 
 	// Procedure metrics columns
-	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
+	conIDAttr           = "CON_ID"
 	definitionAttr      = "DEFINITION"
 	innerObjectNameAttr = "OBJECT_NAME"
-	conIDAttr           = "CON_ID"
+	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
 )
 
 var (
@@ -570,7 +570,7 @@ func procedureKey(owner, name, procType, conID string) string {
 
 // buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN clauses
 // using named bind parameters. CON_ID is included only when isCDB is true.
-func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (string, []any) {
+func buildProcedureSourceQuery(hits []*procedureMetricCacheHit, isCDB bool) (string, []any) {
 	owners := make([]string, len(hits))
 	names := make([]string, len(hits))
 	types := make([]string, len(hits))
@@ -641,19 +641,25 @@ func groupSourceRowsByKey(sourceRows []metricRow) map[string]string {
 }
 
 // fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
-// IN-clause query (one DB roundtrip) and concatenates per-procedure in Go.
-func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[string]string, error) {
+// IN-clause query (one DB roundtrip), concatenates per-procedure in Go, and populates
+// the definition field on each hit in-place.
+func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []*procedureMetricCacheHit) error {
 	if len(hits) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	sqlQuery, args := buildProcedureSourceQuery(hits, s.useCDBProceduresView)
 
 	sourceRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, args...)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return groupSourceRowsByKey(sourceRows), nil
+	definitions := groupSourceRowsByKey(sourceRows)
+	for _, hit := range hits {
+		def := definitions[procedureKey(hit.schemaName, hit.objectName, hit.procedureType, hit.conID)]
+		hit.definition = &def
+	}
+	return nil
 }
 
 func (s *oracleScraper) buildTopQuerySQL() string {
@@ -2345,6 +2351,7 @@ type procedureMetricCacheHit struct {
 	conID          string
 	firstLoadTime  string
 	lastActiveTime string
+	definition     *string
 	metrics        map[string]int64
 }
 
@@ -2378,7 +2385,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	metricNames := getProcedureMetricNames()
 	resourceMetricNames := getProcedureResourceMetricNames()
 	var discardedHits int
-	var hits []procedureMetricCacheHit
+	var hits []*procedureMetricCacheHit
 	for _, row := range metricRows {
 		newCacheVal := make(map[string]int64, len(metricNames))
 		for _, columnName := range metricNames {
@@ -2432,11 +2439,12 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.metrics[queryExecutionMetric] = max(execDelta, 0)
 
 			// Gated on the resource counters; gating on the execution heuristic drops procedures that burned CPU.
+			hitCopy := hit
 			switch {
 			case possiblePurge:
 				discardedHits++
 			case hit.metrics[elapsedTimeMetric] > 0 || hit.metrics[cpuTimeMetric] > 0:
-				hits = append(hits, hit)
+				hits = append(hits, &hitCopy)
 			}
 		}
 		s.procedureMetricCache.Add(cacheKey, newCacheVal)
@@ -2462,20 +2470,18 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	hits = hits[:maxHitsSize]
 
 	// Fetch all procedure definitions in one query if the event is enabled.
-	var definitions map[string]string
+	// On success, each hit.definition is set to a non-nil pointer (may point to empty string
+	// for wrapped/missing procedures). On failure, hit.definition remains nil and no
+	// definition events are emitted, avoiding ambiguity with genuinely empty definitions.
 	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
-		var defErr error
-		definitions, defErr = s.fetchProcedureDefinitions(ctx, hits)
-		if defErr != nil {
+		if defErr := s.fetchProcedureDefinitions(ctx, hits); defErr != nil {
 			errs = append(errs, fmt.Errorf("failed to fetch procedure definitions: %w", defErr))
 		}
 	}
 
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
-	for i := range hits {
-		hit := &hits[i]
-
+	for _, hit := range hits {
 		s.lb.RecordDbServerTopProcedureEvent(context.Background(),
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
@@ -2498,17 +2504,14 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.firstLoadTime,
 			hit.lastActiveTime)
 
-		// Only emit the definition event when fetch succeeded; a nil map means fetch failed,
-		// and emitting empty definitions would be indistinguishable from a wrapped/empty procedure.
-		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled && definitions != nil {
-			key := procedureKey(hit.schemaName, hit.objectName, hit.procedureType, hit.conID)
+		if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled && hit.definition != nil {
 			s.lb.RecordDbServerProcedureDefinitionEvent(context.Background(),
 				pcommon.NewTimestampFromTime(collectionTime),
 				dbSystemNameVal,
 				hit.dbNamespace,
 				hit.programID,
 				hit.procedureName,
-				definitions[key])
+				*hit.definition)
 		}
 	}
 

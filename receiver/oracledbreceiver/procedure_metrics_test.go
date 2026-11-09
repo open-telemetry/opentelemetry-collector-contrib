@@ -472,31 +472,82 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		"procedure_metrics collection must run after the collection interval has elapsed")
 }
 
-func TestProcedureDefinitionEvent(t *testing.T) {
-	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
-	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
-	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+// TestProcedureDefinitionContent verifies the oracledb.procedure.definition attribute value
+// for various source-row scenarios. Each sub-test enables the definition event, rebuilds lb,
+// calls scrapeLogs, and checks the attribute on the emitted db.server.procedure.definition event.
+func TestProcedureDefinitionContent(t *testing.T) {
+	const ddlDefault = "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
+	const ddlWrappedName = "CREATE OR REPLACE PROCEDURE ADMIN.WRAPPED_ORDERS_REPORT AS BEGIN NULL; END;"
 
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-
-	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	eventNames := make([]string, records.Len())
-	for i := range records.Len() {
-		eventNames[i] = records.At(i).EventName()
+	wrappedRows := []metricRow{
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "PROCEDURE MY_PROCEDURE wrapped\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "a000000\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "354\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "abcd\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "gL4Nq8IVCqO9DAh8W6nhfzw5\n"},
 	}
-	assert.Contains(t, eventNames, "db.server.top_procedure")
-	assert.Contains(t, eventNames, "db.server.procedure.definition")
 
-	for i := range records.Len() {
-		if records.At(i).EventName() == "db.server.procedure.definition" {
-			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
-			require.True(t, ok)
-			assert.Equal(t, "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;", def.Str())
-			return
-		}
+	tests := []struct {
+		name           string
+		clientFn       clientProviderFunc
+		wantDefinition string
+	}{
+		{
+			name:           "definition present",
+			clientFn:       procedureMetricsDbClientFn(t),
+			wantDefinition: ddlDefault,
+		},
+		{
+			// Pass empty source rows so fetchProcedureDefinitions returns no results → empty definition.
+			name:           "empty when source rows missing",
+			clientFn:       staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, []metricRow{}),
+			wantDefinition: "",
+		},
+		{
+			// Wrapped (encrypted) procedures must map to an empty definition. DBA_SOURCE returns the
+			// `wrapped` header followed by the encoded payload; shipping that blob downstream would
+			// mislead consumers and contradict the documented behavior.
+			name:           "empty when procedure is wrapped",
+			clientFn:       staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, wrappedRows),
+			wantDefinition: "",
+		},
+		{
+			// A procedure whose name begins with "WRAPPED" must not be mistaken for an
+			// Oracle-encrypted procedure. Only " wrapped" as the last token of the header
+			// line (Oracle's wrap output format) triggers the empty-definition path.
+			name: "not empty when procedure name contains wrapped",
+			clientFn: staticProcedureRowsFn(
+				[]metricRow{maps.Clone(procedureRow("ORCLPDB1", map[string]string{
+					"OBJECT_NAME":    "WRAPPED_ORDERS_REPORT",
+					"PROCEDURE_NAME": "ADMIN.WRAPPED_ORDERS_REPORT",
+				}))},
+				[]metricRow{{"OWNER": "ADMIN", "NAME": "WRAPPED_ORDERS_REPORT", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": ddlWrappedName}},
+			),
+			wantDefinition: ddlWrappedName,
+		},
 	}
-	t.Fatal("expected a db.server.procedure.definition event")
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			scrpr := newProcedureMetricsScraper(t, tc.clientFn, procedureCacheValue)
+			scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+			scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+			logs, err := scrpr.scrapeLogs(t.Context())
+			require.NoError(t, err)
+
+			records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			for i := range records.Len() {
+				if records.At(i).EventName() == "db.server.procedure.definition" {
+					def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+					require.True(t, ok)
+					assert.Equal(t, tc.wantDefinition, def.Str())
+					return
+				}
+			}
+			t.Fatal("expected a db.server.procedure.definition event")
+		})
+	}
 }
 
 func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
@@ -510,89 +561,6 @@ func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
 		assert.NotEqual(t, "db.server.procedure.definition", records.At(i).EventName(),
 			"procedure_definition must not be emitted when disabled")
 	}
-}
-
-func TestProcedureDefinitionEmptyWhenMissing(t *testing.T) {
-	// Pass empty source rows so fetchProcedureDefinitions returns no results → empty definition.
-	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, []metricRow{}), procedureCacheValue)
-	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
-	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
-
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-
-	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := range records.Len() {
-		if records.At(i).EventName() == "db.server.procedure.definition" {
-			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
-			require.True(t, ok)
-			assert.Empty(t, def.Str(), "empty definition should be emitted as empty string")
-			return
-		}
-	}
-	t.Fatal("expected a db.server.procedure.definition event")
-}
-
-// Wrapped (encrypted) procedures must map to an empty definition. DBA_SOURCE returns the
-// `wrapped` header followed by the encoded payload; shipping that blob downstream would
-// mislead consumers and contradict the documented behavior.
-func TestProcedureDefinitionEmptyWhenWrapped(t *testing.T) {
-	wrappedRows := []metricRow{
-		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "PROCEDURE MY_PROCEDURE wrapped\n"},
-		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "a000000\n"},
-		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "354\n"},
-		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "abcd\n"},
-		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "gL4Nq8IVCqO9DAh8W6nhfzw5\n"},
-	}
-
-	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, wrappedRows), procedureCacheValue)
-	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
-	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
-
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-
-	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := range records.Len() {
-		if records.At(i).EventName() == "db.server.procedure_definition" {
-			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
-			require.True(t, ok)
-			assert.Empty(t, def.Str(), "wrapped procedure must emit empty definition, not the encoded payload")
-			return
-		}
-	}
-	t.Fatal("expected a db.server.procedure_definition event")
-}
-
-// A procedure whose name begins with "WRAPPED" must not be mistaken for an
-// Oracle-encrypted procedure. Only " wrapped" as the last token of the header
-// line (Oracle's wrap output format) triggers the empty-definition path.
-func TestProcedureDefinitionNotWrappedWhenNameContainsWrapped(t *testing.T) {
-	const ddl = "CREATE OR REPLACE PROCEDURE ADMIN.WRAPPED_ORDERS_REPORT AS BEGIN NULL; END;"
-	row := maps.Clone(procedureRow("ORCLPDB1", map[string]string{
-		"OBJECT_NAME":    "WRAPPED_ORDERS_REPORT",
-		"PROCEDURE_NAME": "ADMIN.WRAPPED_ORDERS_REPORT",
-	}))
-	wrappedNameRows := []metricRow{
-		{"OWNER": "ADMIN", "NAME": "WRAPPED_ORDERS_REPORT", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": ddl},
-	}
-	scrpr := newProcedureMetricsScraper(t, staticProcedureRowsFn([]metricRow{row}, wrappedNameRows), procedureCacheValue)
-	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
-	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
-
-	logs, err := scrpr.scrapeLogs(t.Context())
-	require.NoError(t, err)
-
-	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := range records.Len() {
-		if records.At(i).EventName() == "db.server.procedure_definition" {
-			def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
-			require.True(t, ok)
-			assert.Equal(t, ddl, def.Str(), "procedure named WRAPPED_* must not be treated as Oracle-encrypted")
-			return
-		}
-	}
-	t.Fatal("expected a db.server.procedure_definition event")
 }
 
 // When fetchProcedureDefinitions fails, no definition events must be emitted
@@ -618,7 +586,7 @@ func TestProcedureDefinitionNotEmittedWhenFetchFails(t *testing.T) {
 
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := range records.Len() {
-		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+		assert.NotEqual(t, "db.server.procedure.definition", records.At(i).EventName(),
 			"procedure_definition must not be emitted when definitions fetch fails")
 	}
 }
