@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -412,6 +413,70 @@ func TestExportKeepsRequests(t *testing.T) {
 		assert.Same(t, want[i], requests[i])
 	}
 	assert.Equal(t, int64(len(want)), server.attempts.Load())
+}
+
+// TestEncodeBuffers checks that an exporter keeps min(concurrency, GOMAXPROCS) encoding buffers.
+func TestEncodeBuffers(t *testing.T) {
+	procs := runtime.GOMAXPROCS(0)
+	for _, parallelism := range []int{1, procs, procs + 1} {
+		t.Run(strconv.Itoa(parallelism), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.MaxBatchRequestParallelism = &parallelism
+			prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+			require.NoError(t, err)
+			assert.Equal(t, min(parallelism, procs), cap(prwe.encodeBuffers))
+			assert.Len(t, prwe.encodeBuffers, cap(prwe.encodeBuffers))
+		})
+	}
+}
+
+// TestEncodeRequestWaitsForBuffer checks that encodeRequest gives its buffer back, and that it gives
+// up with the cause of the context when the context ends while every buffer is in use.
+func TestEncodeRequestWaitsForBuffer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	parallelism := 1
+	cfg.MaxBatchRequestParallelism = &parallelism
+	prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	req := &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{{
+		Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+		Samples: []prompb.Sample{{Value: 1, Timestamp: 1}},
+	}}}
+	pb, err := proto.Marshal(req)
+	require.NoError(t, err)
+
+	payload, err := prwe.encodeRequest(t.Context(), req)
+	require.NoError(t, err)
+	assert.Equal(t, snappy.Encode(nil, pb), payload)
+	require.Len(t, prwe.encodeBuffers, 1, "the buffer is given back")
+
+	buf := <-prwe.encodeBuffers
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cause := errors.New("stopped")
+	cancel(cause)
+	_, err = prwe.encodeRequest(ctx, req)
+	require.ErrorIs(t, err, cause)
+	prwe.encodeBuffers <- buf
+}
+
+// TestExportStopsWaitingForBuffer checks that an export that ends while every encoding buffer is in
+// use fails with an error that is not permanent, so that the batch can be retried.
+func TestExportStopsWaitingForBuffer(t *testing.T) {
+	server := newFlakyServer(t, func(_ int64, w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	cfg := retryTestConfig(server.URL, time.Second, time.Second)
+	parallelism := 1
+	cfg.MaxBatchRequestParallelism = &parallelism
+	prwe := newTestPRWExporter(t, cfg)
+
+	buf := <-prwe.encodeBuffers
+	defer func() { prwe.encodeBuffers <- buf }()
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	err := prwe.export(ctx, []*prompb.WriteRequest{{}})
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.False(t, consumererror.IsPermanent(err))
+	assert.Zero(t, server.attempts.Load())
 }
 
 func TestNoMetricsNoError(t *testing.T) {
@@ -1432,10 +1497,7 @@ func TestRetries(t *testing.T) {
 				settings:  testTel.NewTelemetrySettings(),
 				telemetry: telemetry,
 			}
-			buf := bufferPool.Get().(*buffer)
-			defer bufferPool.Put(buf)
-
-			reqBuf, errMarshal := buf.MarshalAndEncode(&prompb.WriteRequest{})
+			reqBuf, errMarshal := (&buffer{}).MarshalAndEncode(&prompb.WriteRequest{})
 			if errMarshal != nil {
 				require.NoError(t, errMarshal)
 				return
@@ -1543,8 +1605,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	b.ResetTimer()
 
 	for _, req := range reqs {
-		buf := bufferPool.Get().(*buffer)
-		reqBuf, errMarshal := buf.MarshalAndEncode(req)
+		reqBuf, errMarshal := (&buffer{}).MarshalAndEncode(req)
 		if errMarshal != nil {
 			require.NoError(b, errMarshal)
 			return
@@ -1552,7 +1613,6 @@ func benchmarkExecute(b *testing.B, numSample int) {
 		if err = exporter.execute(ctx, reqBuf); err != nil {
 			b.Fatal(err)
 		}
-		bufferPool.Put(buf)
 	}
 }
 
