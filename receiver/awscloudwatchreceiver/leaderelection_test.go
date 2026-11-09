@@ -10,7 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -264,4 +266,166 @@ func TestLeadershipAfterShutdownDoesNotRestartPolling(t *testing.T) {
 	require.Never(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 200*time.Millisecond, 10*time.Millisecond, "a shut-down receiver must not start polling again")
+}
+
+func TestMetricsLeadershipAfterShutdownDoesNotStartController(t *testing.T) {
+	le := &k8sleaderelectortest.FakeLeaderElection{}
+	host := &k8sleaderelectortest.FakeHost{FakeLeaderElection: le}
+	inner := &countingReceiver{}
+
+	r := newLeaderElectedMetrics(
+		component.MustNewID("k8s_leader_elector"),
+		zap.NewNop(),
+		func() (receiver.Metrics, error) { return inner, nil },
+	)
+
+	require.NoError(t, r.Start(t.Context(), host))
+	require.NoError(t, r.Shutdown(t.Context()))
+
+	// The extension keeps callbacks registered, so leadership can still arrive after the
+	// receiver has shut down and the pipeline below it is gone.
+	le.InvokeOnLeading()
+	require.Zero(t, inner.starts.Load(), "a shut-down receiver must not start a controller")
+}
+
+// cancelAwareStorageClient refuses every operation once its context is cancelled, the way
+// redis_storage does. The shared mock ignores the context, so it cannot catch this.
+type cancelAwareStorageClient struct {
+	*mockStorageClient
+}
+
+func (c *cancelAwareStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return c.mockStorageClient.Get(ctx, key)
+}
+
+func (c *cancelAwareStorageClient) Set(ctx context.Context, key string, value []byte) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return c.mockStorageClient.Set(ctx, key, value)
+}
+
+// pagingClient returns one page of events and then blocks until the poll is cancelled, so
+// cancellation lands after events were emitted but before the poll finishes.
+type pagingClient struct {
+	emitted chan struct{}
+}
+
+func (*pagingClient) DescribeLogGroups(context.Context, *cloudwatchlogs.DescribeLogGroupsInput, ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
+	return &cloudwatchlogs.DescribeLogGroupsOutput{}, nil
+}
+
+func (c *pagingClient) FilterLogEvents(ctx context.Context, _ *cloudwatchlogs.FilterLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
+	select {
+	case <-c.emitted:
+		<-ctx.Done()
+		return nil, ctx.Err()
+	default:
+	}
+
+	defer close(c.emitted)
+	return &cloudwatchlogs.FilterLogEventsOutput{
+		Events: []types.FilteredLogEvent{
+			{
+				EventId:       &testEventIDs[0],
+				IngestionTime: aws.Int64(testIngestionTime),
+				LogStreamName: aws.String(testLogStreamName),
+				Message:       aws.String(testLogStreamMessage),
+				Timestamp:     aws.Int64(testTimeStamp),
+			},
+		},
+		NextToken: aws.String("next-page"),
+	}, nil
+}
+
+func TestCheckpointIsPersistedWhenCollectionStops(t *testing.T) {
+	le := &k8sleaderelectortest.FakeLeaderElection{}
+	host := &k8sleaderelectortest.FakeHost{FakeLeaderElection: le}
+	sink := &consumertest.LogsSink{}
+
+	storageClient := &cancelAwareStorageClient{mockStorageClient: newMockStorageClient()}
+	rcvr := newLeaderElectedLogsReceiver(t, leaderElectedLogsConfig(), sink)
+	rcvr.client = &pagingClient{emitted: make(chan struct{})}
+	rcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(storageClient, zap.NewNop())
+
+	require.NoError(t, rcvr.Start(t.Context(), host))
+	le.InvokeOnLeading()
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	// The poll is parked on its next page. Losing the lease cancels it, and the events it
+	// already emitted still have to be checkpointed.
+	le.InvokeOnStopping()
+
+	// GetCheckpoint reports the start of the stream when nothing was stored, so the value
+	// has to be compared against the position the poll reached.
+	checkpoint, err := rcvr.cloudwatchCheckpointPersister.GetCheckpoint(t.Context(), testLogGroupName)
+	require.NoError(t, err)
+	require.Equal(t, time.UnixMilli(testTimeStamp+1).UTC().Format(time.RFC3339Nano), checkpoint,
+		"events were emitted, so the next leader must not re-read them")
+
+	require.NoError(t, rcvr.Shutdown(t.Context()))
+}
+
+func TestStartCollectingIgnoresCancelledLeadership(t *testing.T) {
+	rcvr := newLeaderElectedLogsReceiver(t, leaderElectedLogsConfig(), &consumertest.LogsSink{})
+
+	// client-go runs the start callback in its own goroutine, so a term can be over before
+	// the callback runs. Such a callback must not start a polling loop.
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	rcvr.startCollecting(ctx)
+
+	rcvr.mu.Lock()
+	defer rcvr.mu.Unlock()
+	require.Nil(t, rcvr.pollCancel, "a callback for an ended term must not start polling")
+}
+
+func TestStartLeadingIgnoresCancelledLeadership(t *testing.T) {
+	inner := &countingReceiver{}
+	r := newLeaderElectedMetrics(
+		component.MustNewID("k8s_leader_elector"),
+		zap.NewNop(),
+		func() (receiver.Metrics, error) { return inner, nil },
+	)
+	r.host = componenttest.NewNopHost()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	r.startLeading(ctx)
+
+	require.Zero(t, inner.starts.Load(), "a callback for an ended term must not start a controller")
+}
+
+// cancellingStorageClient cancels the poll while the checkpoint is being read, the way a lease
+// loss landing mid-poll does, and then fails the read like redis_storage would.
+type cancellingStorageClient struct {
+	*mockStorageClient
+	cancel context.CancelFunc
+}
+
+func (c *cancellingStorageClient) Get(ctx context.Context, _ string) ([]byte, error) {
+	c.cancel()
+	return nil, ctx.Err()
+}
+
+func TestPollCutShortBeforeReadingCheckpointWritesNothing(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	store := newMockStorageClient()
+	rcvr := newLeaderElectedLogsReceiver(t, leaderElectedLogsConfig(), &consumertest.LogsSink{})
+	rcvr.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(
+		&cancellingStorageClient{mockStorageClient: store, cancel: cancel}, zap.NewNop(),
+	)
+
+	require.NoError(t, rcvr.poll(ctx))
+
+	// The read failed, so the poll fell back to the configured start time and then fetched
+	// nothing. Writing that position would move the shared checkpoint backwards.
+	store.cacheMux.Lock()
+	defer store.cacheMux.Unlock()
+	require.Empty(t, store.cache, "a poll that made no progress must not write a checkpoint")
 }

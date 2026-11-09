@@ -37,6 +37,9 @@ type leaderElectedMetrics struct {
 	mu      sync.Mutex
 	host    component.Host
 	current receiver.Metrics
+	// shutdown stops leadership callbacks from starting a new controller after Shutdown. The
+	// extension keeps them registered, and extensions shut down after receivers.
+	shutdown bool
 }
 
 var _ receiver.Metrics = (*leaderElectedMetrics)(nil)
@@ -67,7 +70,7 @@ func (l *leaderElectedMetrics) Start(_ context.Context, host component.Host) err
 func (l *leaderElectedMetrics) startLeading(ctx context.Context) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if l.current != nil || ctx.Err() != nil {
+	if l.shutdown || l.current != nil || ctx.Err() != nil {
 		return
 	}
 
@@ -77,6 +80,8 @@ func (l *leaderElectedMetrics) startLeading(ctx context.Context) {
 		return
 	}
 	if err := controller.Start(ctx, l.host); err != nil {
+		// This replica keeps the lease while collecting nothing, so the others stay idle and
+		// this log line is the only signal. k8sclusterreceiver behaves the same way.
 		l.logger.Error("failed to start metrics controller after acquiring leadership", zap.Error(err))
 		return
 	}
@@ -92,6 +97,7 @@ func (l *leaderElectedMetrics) stopLeading() {
 func (l *leaderElectedMetrics) Shutdown(ctx context.Context) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	l.shutdown = true
 	l.shutdownCurrent(ctx)
 	return nil
 }

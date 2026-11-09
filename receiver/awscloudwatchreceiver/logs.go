@@ -283,6 +283,12 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 	currentGroups := make(map[string]bool)
 	endTime := nowFunc()
 	for _, r := range l.groupRequests {
+		// Collection stopped. The groups left in this cycle were never polled, so there is
+		// nothing new to checkpoint for them.
+		if ctx.Err() != nil {
+			return errs
+		}
+
 		groupName := r.groupName()
 		currentGroups[groupName] = true
 		startTime, ok := l.groupNextStartTimes[groupName]
@@ -294,6 +300,11 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
 			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
+			if err != nil && ctx.Err() != nil {
+				// Collection stopped before the stored position was known. Continuing would
+				// write the configured start time over it.
+				return errs
+			}
 			if err == nil && checkpoint != "" {
 				parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
 				if parseErr == nil && parsedTime.After(startTime) {
@@ -326,7 +337,10 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
 			newCheckpoint := nextStartTime.UTC().Format(time.RFC3339Nano)
-			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
+			// The checkpoint covers events already sent downstream, so it has to be written
+			// even when the poll was cut short by leadership loss or shutdown. A storage
+			// extension that honors cancellation, such as redis_storage, would reject it.
+			err := l.cloudwatchCheckpointPersister.SetCheckpoint(context.WithoutCancel(ctx), logGroup, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
 					zap.String("logGroup", logGroup),
