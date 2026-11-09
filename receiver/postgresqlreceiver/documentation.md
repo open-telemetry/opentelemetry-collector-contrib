@@ -164,6 +164,9 @@ The number of index scans on a table.
 
 The size of the index on disk.
 
+No data point is reported for an index that is dropped while the receiver is collecting,
+because its size is no longer measurable.
+
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
@@ -253,6 +256,9 @@ Number of user tables in a database.
 ### postgresql.table.size
 
 Total disk space used by a table, including its indexes and TOAST data.
+
+No data point is reported for a table that is dropped while the receiver is collecting,
+because its size is no longer measurable. The table's other metrics are still reported.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -692,6 +698,7 @@ query sample
 | postgresql.pid | Process ID of this backend. | Any Int | - |
 | postgresql.backend.connection.start | UTC timestamp (RFC3339) when this backend was started. | Any Str | - |
 | postgresql.application_name | Name of the application that is connected to this backend. | Any Str | - |
+| postgresql.backend.type | Type of the backend. Possible values include client backend, autovacuum worker, parallel worker and walsender. | Any Str | - |
 | network.peer.address | IP address of the client connected to this backend. | Any Str | - |
 | network.peer.port | TCP port number that the client is using for communication with this backend. | Any Int | - |
 | postgresql.client_hostname | Host name of the connected client, as reported by a reverse DNS lookup of client_addr. | Any Str | - |

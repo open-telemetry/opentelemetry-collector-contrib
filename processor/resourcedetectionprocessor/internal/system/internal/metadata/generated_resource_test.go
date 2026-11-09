@@ -25,7 +25,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostIP([]any{"host.ip-item1", "host.ip-item2"})
 			rb.SetHostMac([]any{"host.mac-item1", "host.mac-item2"})
 			rb.SetHostName("host.name-val")
-			rb.SetOsBuildID("os.build.id-val")
+			rb.SetOsBuildID("os.build_id-val")
 			rb.SetOsDescription("os.description-val")
 			rb.SetOsName("os.name-val")
 			rb.SetOsType("os.type-val")
@@ -105,10 +105,10 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "host.name-val", hostNameAttrVal.Str())
 			}
-			osBuildIDAttrVal, ok := res.Attributes().Get("os.build.id")
+			osBuildIDAttrVal, ok := res.Attributes().Get("os.build_id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.build.id-val", osBuildIDAttrVal.Str())
+				assert.Equal(t, "os.build_id-val", osBuildIDAttrVal.Str())
 			}
 			osDescriptionAttrVal, ok := res.Attributes().Get("os.description")
 			assert.Equal(t, tt == "all_set", ok)

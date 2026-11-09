@@ -1145,6 +1145,44 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 	})
 }
 
+func TestScrapeQuerySamplesClientName(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	t.Run("reports the client's reported driver identity", func(t *testing.T) {
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_client_name"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		val, ok := record.Attributes().Get("mysql.client.name")
+		require.True(t, ok, "mysql.client.name must be present")
+		assert.Equal(t, "MySQL Connector/J", val.Str())
+	})
+
+	t.Run("defaults to empty string when the client reported no connect attrs", func(t *testing.T) {
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_no_traceparent"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		val, ok := record.Attributes().Get("mysql.client.name")
+		require.True(t, ok, "mysql.client.name must be present")
+		assert.Empty(t, val.Str())
+	})
+}
+
 func TestScrapeTopQueryInterval(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "otel"
@@ -1681,10 +1719,15 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.eventID, _ = parseInt(text[11])
 		s.sessionStatus = text[12]
 		s.waitType = text[13]
-		s.waitTime, _ = strconv.ParseFloat(text[14], 64)
-		s.statementTimerWait, _ = strconv.ParseFloat(text[15], 64)
-		if len(text) > 16 {
-			s.traceparent = text[16]
+		s.waitEventType = text[14]
+		s.waitEvent = text[15]
+		s.waitTime, _ = strconv.ParseFloat(text[16], 64)
+		s.statementTimerWait, _ = strconv.ParseFloat(text[17], 64)
+		if len(text) > 18 {
+			s.traceparent = text[18]
+		}
+		if len(text) > 19 {
+			s.clientName = text[19]
 		}
 
 		samples = append(samples, s)

@@ -33,11 +33,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"gopkg.in/yaml.v3"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -107,7 +108,7 @@ var (
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
 	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
-	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+	_ extensioncapabilities.ComponentStatusWatcher = (*opampAgent)(nil)
 
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
@@ -286,8 +287,8 @@ func (o *opampAgent) NotReady() error {
 	return nil
 }
 
-// ComponentStatusChanged implements the componentstatus.Watcher interface.
-func (o *opampAgent) ComponentStatusChanged(
+// Changed implements the extensioncapabilities.ComponentStatusWatcher interface.
+func (o *opampAgent) Changed(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
@@ -718,11 +719,9 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 		o.statusSubscriptionWg.Done()
 	}()
 
-	var (
-		lastStatus componentstatus.Status
-		lastErr    string
-		currentErr string
-	)
+	// lastHealth is the last reported health with all timestamps cleared, used
+	// to deduplicate updates which only differ in their timestamps.
+	var lastHealth *protobufs.ComponentHealth
 
 	for {
 		select {
@@ -737,21 +736,14 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 				continue
 			}
 
-			currentStatus := statusUpdate.Status()
-			if statusUpdate.Err() != nil {
-				currentErr = statusUpdate.Err().Error()
-			}
-
-			if currentStatus == lastStatus && currentErr == lastErr {
+			currentHealth := convertComponentHealth(statusUpdate)
+			clearHealthTimestamps(currentHealth)
+			if proto.Equal(currentHealth, lastHealth) {
 				continue
 			}
+			lastHealth = currentHealth
 
-			lastStatus = currentStatus
-			lastErr = currentErr
-
-			componentHealth := convertComponentHealth(statusUpdate)
-
-			o.setHealth(componentHealth)
+			o.setHealth(convertComponentHealth(statusUpdate))
 		}
 	}
 }
@@ -774,6 +766,10 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 		componentHealth.LastError = statusUpdate.Err().Error()
 	}
 
+	if attrs := pcommonMapToKeyValues(statusUpdate.Attributes()); len(attrs) > 0 {
+		componentHealth.Attributes = attrs
+	}
+
 	if len(statusUpdate.ComponentStatusMap) > 0 {
 		componentHealth.ComponentHealthMap = map[string]*protobufs.ComponentHealth{}
 		for comp, compState := range statusUpdate.ComponentStatusMap {
@@ -782,4 +778,14 @@ func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.Com
 	}
 
 	return componentHealth
+}
+
+// clearHealthTimestamps recursively zeroes all timestamp fields of the given
+// ComponentHealth, so that it can be compared with another ignoring timestamps.
+func clearHealthTimestamps(ch *protobufs.ComponentHealth) {
+	ch.StartTimeUnixNano = 0
+	ch.StatusTimeUnixNano = 0
+	for _, child := range ch.ComponentHealthMap {
+		clearHealthTimestamps(child)
+	}
 }

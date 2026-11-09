@@ -38,10 +38,10 @@ ignored_paths:
   - receiver/hostmetricsreceiver # issue with the parser not identifying Config as a config struct
   - receiver/pulsarreceiver # 38930
   - exporter/pulsarexporter # 38929
-  - exporter/elasticsearchexporter/integrationtest
   - testbed/mockdatasenders/mockdatadogagentexporter
   - extension/sumologicextension # 40655
   - extension/k8sleaderelector # 43992
+  - extension/datadogextension # 51877
   - processor/filterprocessor # 43994
   - processor/transformprocessor # 43994
   - connector/routingconnector # 43994

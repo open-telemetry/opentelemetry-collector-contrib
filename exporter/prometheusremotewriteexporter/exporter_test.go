@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,7 +50,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -345,6 +346,74 @@ func Test_export(t *testing.T) {
 	}
 }
 
+// TestExportReleasesTimeSeriesWhileSending checks that the time series of a request can be reclaimed
+// once the request is encoded, while the endpoint has not answered yet: a slow endpoint must not
+// make every in-flight batch hold its translated time series.
+func TestExportReleasesTimeSeriesWhileSending(t *testing.T) {
+	received := make(chan struct{}, 1)
+	unblock := make(chan struct{})
+	server := newFlakyServer(t, func(_ int64, _ http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		received <- struct{}{}
+		<-unblock
+	})
+	// The timeouts are longer than the wait below, so that the request is still being sent.
+	prwe := newTestPRWExporter(t, retryTestConfig(server.URL, time.Minute, time.Minute))
+	// Cleanups run last in first out: unblock the handler before the shutdown and the server close.
+	release := sync.OnceFunc(func() { close(unblock) })
+	t.Cleanup(release)
+
+	released := make(chan struct{})
+	tsMap := map[string]*prompb.TimeSeries{}
+	for i := range 100 {
+		labels := []prompb.Label{{Name: "__name__", Value: "metric"}, {Name: "series", Value: strconv.Itoa(i)}}
+		if i == 0 {
+			runtime.AddCleanup(&labels[0], func(ch chan struct{}) { close(ch) }, released)
+		}
+		tsMap[strconv.Itoa(i)] = &prompb.TimeSeries{Labels: labels, Samples: []prompb.Sample{{Value: 1, Timestamp: 1}}}
+	}
+	errCh := make(chan error, 1)
+	go func(tsMap map[string]*prompb.TimeSeries) {
+		errCh <- prwe.handleExport(t.Context(), tsMap, nil)
+	}(tsMap)
+	tsMap = nil //nolint:ineffassign,wastedassign // drop the reference of the test
+
+	select {
+	case <-received:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the request was not sent")
+	}
+	deadline := time.After(10 * time.Second)
+	for waiting := true; waiting; {
+		runtime.GC()
+		select {
+		case <-released:
+			waiting = false
+		case <-deadline:
+			t.Fatal("the time series were not reclaimed while the request was being sent")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	release()
+	require.NoError(t, <-errCh)
+}
+
+// TestExportKeepsRequests checks that export leaves the slice of requests as it is: the WAL owns the
+// slice that it exports.
+func TestExportKeepsRequests(t *testing.T) {
+	server := newFlakyServer(t, func(_ int64, w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	prwe := newTestPRWExporter(t, retryTestConfig(server.URL, time.Second, time.Second))
+
+	requests := []*prompb.WriteRequest{{}, {}, {}}
+	want := slices.Clone(requests)
+	require.NoError(t, prwe.export(t.Context(), requests))
+	for i := range want {
+		assert.Same(t, want[i], requests[i])
+	}
+	assert.Equal(t, int64(len(want)), server.attempts.Load())
+}
+
 func TestNoMetricsNoError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
@@ -397,6 +466,12 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
+	rw2Gate := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate
+	originalRW2Enabled := rw2Gate.IsEnabled()
+	t.Cleanup(func() {
+		assert.Equal(t, originalRW2Enabled, rw2Gate.IsEnabled(), "RW2 feature gate must be restored after the subtests")
+	})
+
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
@@ -566,11 +641,21 @@ func Test_PushMetrics(t *testing.T) {
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			name:               "exponential_histogram_no_sum_case",
-			metrics:            exponentialNoSumHistogramBatch,
-			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 1,
-			httpResponseCode:   http.StatusAccepted,
+			name:                       "exponential_histogram_no_sum_case",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+		},
+		{
+			name:                       "exponential_histogram_no_sum_case_rw2",
+			metrics:                    exponentialNoSumHistogramBatch,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         0,
+			expectedFailedTranslations: 1,
+			httpResponseCode:           http.StatusAccepted,
+			enableSendingRW2:           true,
 		},
 		{
 			name:               "histogram_case",
@@ -730,7 +815,10 @@ func Test_PushMetrics(t *testing.T) {
 					t.Skip("test not supported when using WAL")
 				}
 				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
+					// RW2 cases mutate a global feature gate and must run serially.
+					if !tt.enableSendingRW2 {
+						t.Parallel()
+					}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker, tt.enableSendingRW2)
@@ -1020,40 +1108,24 @@ func Test_validateAndSanitizeExternalLabels_TranslationStrategy(t *testing.T) {
 	}
 }
 
-func Test_validateAndSanitizeExternalLabels_DropSanitizationGate(t *testing.T) {
-	t.Run("gate enabled preserves multiple underscores and leading underscore", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, true)()
+func Test_validateAndSanitizeExternalLabelsPreservesUnderscores(t *testing.T) {
+	for _, strategy := range []translationStrategy{"", underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation} {
+		t.Run(string(strategy), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = strategy
+			cfg.ExternalLabels = map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}
 
-		cfg := createDefaultConfig().(*Config)
-		cfg.ExternalLabels = map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}
-
-		newLabels, err := validateAndSanitizeExternalLabels(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}, newLabels)
-	})
-
-	t.Run("gate disabled collapses multiple underscores and sanitizes leading underscore", func(t *testing.T) {
-		defer testutil.SetFeatureGateForTest(t, prometheustranslator.DropSanitizationGate, false)()
-
-		cfg := createDefaultConfig().(*Config)
-		cfg.ExternalLabels = map[string]string{
-			"app__component": "backend",
-			"_custom_label":  "val",
-		}
-
-		newLabels, err := validateAndSanitizeExternalLabels(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{
-			"app_component":    "backend",
-			"key_custom_label": "val",
-		}, newLabels)
-	})
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]string{
+				"app__component": "backend",
+				"_custom_label":  "val",
+			}, newLabels)
+		})
+	}
 }
 
 // Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,
@@ -1664,5 +1736,77 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	for _, m := range metrics {
 		err := exporter.PushMetrics(ctx, m)
 		require.NoError(b, err)
+	}
+}
+
+func TestIsPayloadRejection(t *testing.T) {
+	for _, tt := range []struct {
+		status int
+		want   bool
+	}{
+		{status: http.StatusBadRequest, want: true},
+		{status: http.StatusConflict, want: true},
+		{status: http.StatusRequestEntityTooLarge, want: true},
+		{status: http.StatusUnprocessableEntity, want: true},
+		{status: http.StatusUnauthorized, want: false},
+		{status: http.StatusForbidden, want: false},
+		{status: http.StatusNotFound, want: false},
+		{status: http.StatusRequestTimeout, want: false},
+		{status: http.StatusUnsupportedMediaType, want: false},
+		{status: http.StatusTooManyRequests, want: false},
+	} {
+		t.Run(http.StatusText(tt.status), func(t *testing.T) {
+			assert.Equal(t, tt.want, isPayloadRejection(tt.status))
+		})
+	}
+}
+
+func TestWriteRequestSampleCount(t *testing.T) {
+	series := func(samples, histograms int) prompb.TimeSeries {
+		ts := prompb.TimeSeries{Labels: []prompb.Label{{Name: "__name__", Value: "m"}}}
+		for i := range samples {
+			ts.Samples = append(ts.Samples, prompb.Sample{Value: 1, Timestamp: int64(i)})
+		}
+		for i := range histograms {
+			ts.Histograms = append(ts.Histograms, prompb.Histogram{Timestamp: int64(i)})
+		}
+		return ts
+	}
+
+	tests := []struct {
+		name string
+		req  *prompb.WriteRequest
+		want int
+	}{
+		{name: "request with no series", req: &prompb.WriteRequest{}, want: 0},
+		{
+			name: "samples only",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(3, 0)}},
+			want: 3,
+		},
+		{
+			name: "native histograms are samples too",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(0, 2)}},
+			want: 2,
+		},
+		{
+			name: "mixed across several series",
+			req:  &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{series(2, 1), series(1, 4)}},
+			want: 8,
+		},
+		{
+			name: "exemplars are not counted",
+			req: &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{{
+				Samples:   []prompb.Sample{{Value: 1}},
+				Exemplars: []prompb.Exemplar{{Value: 1}, {Value: 2}},
+			}}},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, writeRequestSampleCount(tt.req))
+		})
 	}
 }

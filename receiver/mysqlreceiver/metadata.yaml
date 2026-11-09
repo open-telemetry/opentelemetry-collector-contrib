@@ -172,6 +172,9 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.client.name:
+    description: The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
+    type: string
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -240,6 +243,12 @@ attributes:
   mysql.threads.thread_id:
     description: The unique identifier for the thread executing the statement.
     type: int
+  mysql.wait_event.name:
+    description: Detailed wait breakdown -- the wait event name with its category segment stripped (e.g. 'table/sql/handler', 'mutex/innodb/checkpoint_state'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.type. Distinct from mysql.wait_type, which reports the raw, unprocessed event name and is unchanged.
+    type: string
+  mysql.wait_event.type:
+    description: Top-level wait classification derived from the second path segment of the wait event name ('io', 'lock', 'synch'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.name.
+    type: string
   mysql.wait_type:
     description: The name of the instrument that produced the event.
     type: string
@@ -367,6 +376,8 @@ events:
       - mysql.query_plan
       - mysql.query_plan.hash
       - mysql.event_id
+      - mysql.wait_event.type
+      - mysql.wait_event.name
       - mysql.wait_type
       - mysql.session.status
       - mysql.session.id
@@ -376,6 +387,7 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.client.name
 
   db.server.top_query:
     enabled: false

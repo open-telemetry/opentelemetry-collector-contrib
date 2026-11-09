@@ -14,7 +14,7 @@ func TestGOOSToOsType(t *testing.T) {
 	assert.Equal(t, "linux", GOOSToOSType("linux"))
 	assert.Equal(t, "windows", GOOSToOSType("windows"))
 	assert.Equal(t, "dragonflybsd", GOOSToOSType("dragonfly"))
-	assert.Equal(t, "z_os", GOOSToOSType("zos"))
+	assert.Equal(t, "zos", GOOSToOSType("zos"))
 }
 
 func TestGOARCHToHostArch(t *testing.T) {

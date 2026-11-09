@@ -39,7 +39,8 @@ func tryLoadProtobuf(encoded []byte) ([]*reader.Metadata, error) {
 	return rmds, nil
 }
 
-func saveKeyProto(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
+// SaveKey syncs the given set of files to the database under key using protobuf encoding
+func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
 	pbList := &pb.MetadataList{
 		Metadata: make([]*pb.Metadata, 0, len(rmds)),
 	}

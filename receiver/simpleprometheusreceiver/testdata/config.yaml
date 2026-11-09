@@ -4,6 +4,8 @@ prometheus_simple/all_settings:
   collection_interval: 30s
   metrics_path: /v2/metrics
   job_name: "job123"
+  labels:
+    env: "prod"
   params:
     columns: "name,messages"
     key: [ "foo","bar" ]
@@ -24,3 +26,17 @@ prometheus_simple/partial_tls_settings:
   endpoint: "localhost:1234"
   tls:
     insecure: false
+prometheus_simple/readme_example:
+  collection_interval: 10s
+  use_service_account: true
+  endpoint: "172.17.0.5:9153"
+  tls:
+    ca_file: "/path/to/ca"
+    cert_file: "/path/to/cert"
+    key_file: "/path/to/key"
+prometheus_simple/headers_and_proxy:
+  collection_interval: 30s
+  endpoint: "localhost:1234"
+  headers:
+    X-Scope-OrgID: "tenant-a"
+  proxy_url: "http://proxy.local:3128"
