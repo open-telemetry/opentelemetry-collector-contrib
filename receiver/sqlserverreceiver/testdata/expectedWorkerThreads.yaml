@@ -24,6 +24,25 @@ resourceMetrics:
             stringValue: testhost
     scopeMetrics:
       - metrics:
+          - description: Number of SQL Server tasks tracked by schedulers.
+            gauge:
+              dataPoints:
+                - asInt: "44"
+                  attributes:
+                    - key: sqlserver.thread_pool.task.state
+                      value:
+                        stringValue: current
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3"
+                  attributes:
+                    - key: sqlserver.thread_pool.task.state
+                      value:
+                        stringValue: waiting_for_threadpool
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.thread_pool.task.count
+            unit: '{task}'
           - description: Number of worker requests by state.
             gauge:
               dataPoints:
