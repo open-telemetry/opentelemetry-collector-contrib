@@ -86,7 +86,7 @@ func unmarshalJSON[K any](ctx context.Context, tCtx K, target ottl.StringGetter[
 	// when it is enabled, they will be parsed as `json.Number`, later the parser
 	// will convert them to `int` or `float64` according to the field type.
 	if !parseInts {
-		err := json.Unmarshal([]byte(targetVal), &parsedValue)
+		err = json.Unmarshal([]byte(targetVal), &parsedValue)
 		if err != nil {
 			return nil, err
 		}
