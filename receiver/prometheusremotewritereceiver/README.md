@@ -28,6 +28,14 @@ As the protocol specification changes, we update our implementation to match, wh
 
 The breaking change in Prometheus 3.8.0 ([prometheus/prometheus#17411](https://github.com/prometheus/prometheus/pull/17411)) updated the Remote Write 2.0 spec from rc.3 to rc.4, renaming `CreatedTimestamp` to `StartTimestamp` and moving it from the `TimeSeries` message to individual `Sample` and `Histogram` messages. This is a wire-protocol incompatibility, so mismatched versions will not work correctly together.
 
+### Labels with empty values
+
+In the Prometheus data model a label with an empty value is the same as an absent label, so the receiver does not turn one into an attribute. Such a label is dropped from data point attributes, `target_info` resource attributes, `otel_scope_*` scope fields and exemplar filtered attributes alike, and the series itself is still accepted: refusing it would cost the sender every other series of the same request, since a Remote-Write request is written as a whole.
+
+Because such a label is the same as an absent one, two series that differ only by it are the same series once translated, so a request that carries both spellings yields two data points with the same attributes for the same timestamp. A Prometheus sender cannot produce that, as it drops these labels before writing.
+
+For the same reason, a label that arrives with an empty value does not clear a value an earlier `target_info` cached for the same job/instance, exactly as an absent label does not (see [Resource Metrics Cache](#resource-metrics-cache)).
+
 ## Configuring `PrometheusRemoteWriteReceiver`
 
 This component's configuration is based on [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
@@ -36,6 +44,19 @@ This component's configuration is based on [confighttp](https://github.com/open-
 receivers:
   prometheus_remote_write:
     endpoint: 0.0.0.0:9090
+```
+
+In addition to the `confighttp` server settings, the following settings are available:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `resource_cache_size` | `1000` | Maximum number of job/instance pairs whose resource attributes are kept in the [Resource Metrics Cache](#resource-metrics-cache). Must be greater than 0. Set it to at least the number of distinct job/instance pairs your Prometheus servers send, otherwise `target_info` attributes are lost between requests. |
+
+```yaml
+receivers:
+  prometheus_remote_write:
+    endpoint: 0.0.0.0:9090
+    resource_cache_size: 5000
 ```
 
 ## Configuring your Prometheus
@@ -99,6 +120,16 @@ As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 
+When the sender includes metadata (see [Metadata WAL Records feature flag](#metadata-wal-records-feature-flag)), the series of a Classic Histogram (`_bucket`, `_sum`, `_count`) and of a Summary (quantiles, `_sum`, `_count`) are dropped and nothing is emitted for them. The receiver still accepts the request, so their samples are counted in the `X-Prometheus-Remote-Write-Samples-Written` response header, in line with the [specification's definition of "written"](https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#glossary). Otherwise a Prometheus sender would count them as failed samples and report a partial write. Each dropped series is counted in the `otelcol_receiver_prometheusremotewrite_dropped_series` internal metric, by `metric_type` (`classic_histogram` or `summary`), and logged at Debug level with its labels (see [documentation.md](./documentation.md)). To keep histograms, configure Prometheus to convert Classic Histograms into Native Histograms with custom buckets (`convert_classic_histograms_to_nhcb`); to avoid sending Summaries, drop their series with `write_relabel_configs`.
+
+Without metadata, every series arrives untyped, and the ones carrying samples, including the series of Classic Histograms and Summaries, are translated into gauges.
+
+### Only integer, counter flavored Native Histograms are translated
+
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or buckets do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name. If Prometheus' own validation refuses such a histogram too, for example because its spans and buckets disagree or a bucket count is negative, the request is answered with `400 Bad Request` and none of it is passed on.
+
+The data point count is rebuilt from the buckets the translation emitted, rather than copied from the count Prometheus sent. Those differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket, so a count here can be lower than the one in Prometheus. When nothing could be represented the count is zero and so is the sum, which is what OpenTelemetry requires of a data point that recorded nothing.
+
 ### Native Histogram expansion limits
 
 Prometheus sends Native Histogram buckets as spans of populated buckets separated by gaps, while OTLP wants one contiguous list, so a short list of spans can describe a very wide one. Two limits bound what that expansion is allowed to cost:
@@ -112,9 +143,16 @@ Histograms past either limit are dropped, are not counted in the `X-Prometheus-R
 
 `target_info` metrics and "normal" metrics are a match when they have the same job/instance labels (Please read the [specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1) for more details). But these metrics do not always come in the same Remote-Write request. For this reason, the receiver uses an internal LRU (Least Recently Used) and stateless cache implementation to store resource metrics across requests.
 
-The cleanup is based on a maximum size of 1000 resource metrics, and it will be cleaned when the limit is reached, cleaning the less recently used resource metrics.
+The cache holds one entry per job/instance pair, up to `resource_cache_size` entries (default `1000`). When the limit is reached, the least recently used entry is evicted. Each entry keeps a copy of the resource attributes of its job/instance pair (the `job` and `instance` labels plus the labels of its `target_info` series), so the memory used by the cache grows with `resource_cache_size` and with the number of `target_info` labels; a very large value costs memory even when the cache is full of small entries.
+
+If your Prometheus servers send more distinct job/instance pairs than the cache can hold, entries are evicted on every request: metrics received after `target_info` no longer get its resource attributes and end up in a different resource than earlier samples of the same series. Raise `resource_cache_size` above the number of job/instance pairs to avoid this.
 
 This approach has some limitations, for example:
     - If the process dies or restarts, the cache will be lost.
     - Some inconsistencies can happen according to the order of the requests and the current cache size.
-    - The limit of 1000 resource metrics is hardcoded and not configurable for now.
+
+The receiver reports every eviction in the `otelcol_receiver_prometheusremotewrite_resource_cache_evictions` internal metric. A counter that keeps growing means the cache is smaller than the number of job/instance pairs sent to the receiver.
+
+## Internal Telemetry
+
+See [documentation.md](./documentation.md) for the list of internal metrics emitted by this receiver.

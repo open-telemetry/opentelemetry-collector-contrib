@@ -100,7 +100,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 	t.Lock()
 	defer t.Unlock()
 
-	var outputEntries []*entry.Entry
+	outputEntries := make([]*entry.Entry, 0, len(entries))
 	var errs []error
 
 	// Collect outputs instead of writing immediately

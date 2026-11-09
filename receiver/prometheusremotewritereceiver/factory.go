@@ -26,6 +26,9 @@ func NewFactory() receiver.Factory {
 	)
 }
 
+// defaultResourceCacheSize is the default number of job/instance pairs kept in the resource cache.
+const defaultResourceCacheSize = 1000
+
 func createDefaultConfig() component.Config {
 	netAddr := confignet.NewDefaultAddrConfig()
 	netAddr.Transport = confignet.TransportTypeTCP
@@ -33,7 +36,8 @@ func createDefaultConfig() component.Config {
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = netAddr
 	return &Config{
-		ServerConfig: serverConfig,
+		ServerConfig:      serverConfig,
+		ResourceCacheSize: defaultResourceCacheSize,
 	}
 }
 

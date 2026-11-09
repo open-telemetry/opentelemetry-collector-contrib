@@ -7,8 +7,8 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [ag-ramachandran]
-    emeritus: [asaharn]
+    active: [Abhimanyu9988, tanmaya-panda1]
+    emeritus: [asaharn, ag-ramachandran]
 
 # TODO: Update the exporter to pass the tests
 sending_queue:
