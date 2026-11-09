@@ -8,7 +8,7 @@ import (
 	"slices"
 	"time"
 
-	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"code.cloudfoundry.org/go-loggregator/v10/rpc/loggregator_v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
