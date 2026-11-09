@@ -329,6 +329,8 @@ func TestSumMetrics_IsCardinalityLimitReached(t *testing.T) {
 	tests := []struct {
 		name             string
 		metrics          map[Key]*Sum
+		zeroed           map[Key]*Sum
+		pending          map[Key]*Sum
 		cardinalityLimit int
 		expected         bool
 	}{
@@ -356,12 +358,22 @@ func TestSumMetrics_IsCardinalityLimitReached(t *testing.T) {
 			cardinalityLimit: 3,
 			expected:         true,
 		},
+		{
+			name:             "Zeroed and pending series count toward the limit",
+			metrics:          map[Key]*Sum{"key1": {}},
+			zeroed:           map[Key]*Sum{"key2": {}},
+			pending:          map[Key]*Sum{"key3": {}},
+			cardinalityLimit: 3,
+			expected:         true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sm := SumMetrics{
 				metrics:          tt.metrics,
+				zeroed:           tt.zeroed,
+				pending:          tt.pending,
 				cardinalityLimit: tt.cardinalityLimit,
 			}
 			assert.Equal(t, tt.expected, sm.IsCardinalityLimitReached())
@@ -374,6 +386,8 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 	tests := []struct {
 		name               string
 		metrics            map[Key]*Sum
+		zeroed             map[Key]*Sum
+		pending            map[Key]*Sum
 		key                Key
 		attributes         pcommon.Map
 		cardinalityLimit   int
@@ -394,6 +408,30 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 		{
 			name: "Get existing sum",
 			metrics: map[Key]*Sum{
+				"existing-key": {count: 5},
+			},
+			key:                "existing-key",
+			attributes:         pcommon.NewMap(),
+			expectedMetricsLen: 1,
+			expectedSumCount:   6,
+			expectedCreated:    false,
+		},
+		{
+			name:    "Get existing sum that has not been flushed yet",
+			metrics: make(map[Key]*Sum),
+			pending: map[Key]*Sum{
+				"existing-key": {count: 5},
+			},
+			key:                "existing-key",
+			attributes:         pcommon.NewMap(),
+			expectedMetricsLen: 1,
+			expectedSumCount:   6,
+			expectedCreated:    false,
+		},
+		{
+			name:    "Get existing sum that has only reported zero so far",
+			metrics: make(map[Key]*Sum),
+			zeroed: map[Key]*Sum{
 				"existing-key": {count: 5},
 			},
 			key:                "existing-key",
@@ -442,8 +480,14 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			pending := tt.pending
+			if pending == nil {
+				pending = make(map[Key]*Sum)
+			}
 			sm := SumMetrics{
 				metrics:          tt.metrics,
+				zeroed:           tt.zeroed,
+				pending:          pending,
 				cardinalityLimit: tt.cardinalityLimit,
 			}
 			attributesFun := func() pcommon.Map {
@@ -452,8 +496,14 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 			sum, limitReached := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0), now)
 			sum.Add(1)
 			assert.Equal(t, tt.limitReached, limitReached)
-			assert.Len(t, sm.metrics, tt.expectedMetricsLen)
+			assert.Equal(t, tt.expectedMetricsLen, len(sm.metrics)+len(sm.zeroed)+len(sm.pending))
 			if tt.expectedCreated {
+				// New series wait in pending until their first flush.
+				createdKey := tt.key
+				if tt.limitReached {
+					createdKey = overflowKey
+				}
+				assert.Contains(t, sm.pending, createdKey)
 				assert.Equal(t, tt.attributes, sum.attributes)
 				assert.Equal(t, uint64(1), sum.count)
 			} else {
@@ -467,27 +517,39 @@ func TestSumMetrics_ExpireSeries(t *testing.T) {
 	now := time.Unix(123, 0)
 	sm := SumMetrics{
 		metrics: map[Key]*Sum{
-			"active":     {lastSeen: now, reported: true},
-			"stale":      {lastSeen: now.Add(-2 * time.Second), reported: true},
+			"active":    {lastSeen: now},
+			"stale":     {lastSeen: now.Add(-2 * time.Second)},
+			overflowKey: {lastSeen: now.Add(-2 * time.Second)},
+		},
+		zeroed: map[Key]*Sum{
+			"zeroed": {lastSeen: now.Add(-2 * time.Second)},
+		},
+		pending: map[Key]*Sum{
 			"unreported": {lastSeen: now.Add(-2 * time.Second)},
-			overflowKey:  {lastSeen: now.Add(-2 * time.Second), reported: true},
 		},
 	}
 
 	sm.ExpireSeries(time.Second, now)
 
 	assert.Contains(t, sm.metrics, Key("active"))
-	assert.Contains(t, sm.metrics, Key("unreported"))
 	assert.NotContains(t, sm.metrics, Key("stale"))
 	assert.NotContains(t, sm.metrics, Key(overflowKey))
+	// Series that have not reported their accumulated value yet are never expired.
+	assert.Contains(t, sm.zeroed, Key("zeroed"))
+	assert.Contains(t, sm.pending, Key("unreported"))
 }
 
 func TestExplicitHistogramMetrics_ExpireSeries(t *testing.T) {
 	now := time.Unix(123, 0)
 	hm := &explicitHistogramMetrics{
 		metrics: map[Key]*explicitHistogram{
-			"active":     {lastSeen: now, reported: true},
-			"stale":      {lastSeen: now.Add(-2 * time.Second), reported: true},
+			"active": {lastSeen: now},
+			"stale":  {lastSeen: now.Add(-2 * time.Second)},
+		},
+		zeroed: map[Key]*explicitHistogram{
+			"zeroed": {lastSeen: now.Add(-2 * time.Second)},
+		},
+		pending: map[Key]*explicitHistogram{
 			"unreported": {lastSeen: now.Add(-2 * time.Second)},
 		},
 	}
@@ -495,16 +557,22 @@ func TestExplicitHistogramMetrics_ExpireSeries(t *testing.T) {
 	hm.ExpireSeries(time.Second, now)
 
 	assert.Contains(t, hm.metrics, Key("active"))
-	assert.Contains(t, hm.metrics, Key("unreported"))
 	assert.NotContains(t, hm.metrics, Key("stale"))
+	assert.Contains(t, hm.zeroed, Key("zeroed"))
+	assert.Contains(t, hm.pending, Key("unreported"))
 }
 
 func TestExponentialHistogramMetrics_ExpireSeries(t *testing.T) {
 	now := time.Unix(123, 0)
 	hm := &exponentialHistogramMetrics{
 		metrics: map[Key]*exponentialHistogram{
-			"active":     {lastSeen: now, reported: true},
-			"stale":      {lastSeen: now.Add(-2 * time.Second), reported: true},
+			"active": {lastSeen: now},
+			"stale":  {lastSeen: now.Add(-2 * time.Second)},
+		},
+		zeroed: map[Key]*exponentialHistogram{
+			"zeroed": {lastSeen: now.Add(-2 * time.Second)},
+		},
+		pending: map[Key]*exponentialHistogram{
 			"unreported": {lastSeen: now.Add(-2 * time.Second)},
 		},
 	}
@@ -512,8 +580,9 @@ func TestExponentialHistogramMetrics_ExpireSeries(t *testing.T) {
 	hm.ExpireSeries(time.Second, now)
 
 	assert.Contains(t, hm.metrics, Key("active"))
-	assert.Contains(t, hm.metrics, Key("unreported"))
 	assert.NotContains(t, hm.metrics, Key("stale"))
+	assert.Contains(t, hm.zeroed, Key("zeroed"))
+	assert.Contains(t, hm.pending, Key("unreported"))
 }
 
 func TestSumMetrics_BuildMetrics(t *testing.T) {
@@ -594,6 +663,69 @@ func TestSumMetrics_BuildMetrics(t *testing.T) {
 				if tt.expectedCount == 1 {
 					assert.Equal(t, tt.expectedValue, dp.IntValue())
 				}
+			}
+		})
+	}
+}
+
+func TestSumMetrics_BuildMetrics_FirstFlushIsZero(t *testing.T) {
+	startTimestamp := func(Key, pcommon.Timestamp) pcommon.Timestamp { return 0 }
+	attributesFun := pcommon.NewMap
+
+	tests := []struct {
+		name               string
+		temporality        pmetric.AggregationTemporality
+		wantFirstValue     int64
+		wantFirstExemplars int
+	}{
+		{
+			name:               "cumulative first flush is zero",
+			temporality:        pmetric.AggregationTemporalityCumulative,
+			wantFirstValue:     0,
+			wantFirstExemplars: 0,
+		},
+		{
+			name:               "delta first flush holds the batch",
+			temporality:        pmetric.AggregationTemporalityDelta,
+			wantFirstValue:     2,
+			wantFirstExemplars: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := NewSumMetrics(1, 0)
+			s, _ := sm.GetOrCreate("key1", attributesFun, 0, time.Now())
+			s.Add(2)
+			s.AddExemplar(pcommon.TraceID{1}, pcommon.SpanID{1}, 5)
+
+			first := pmetric.NewMetric()
+			sm.BuildMetrics(first, pcommon.Timestamp(1000), startTimestamp, tt.temporality)
+			require.Equal(t, 1, first.Sum().DataPoints().Len())
+			dp := first.Sum().DataPoints().At(0)
+			assert.Equal(t, tt.wantFirstValue, dp.IntValue())
+			assert.Equal(t, tt.wantFirstExemplars, dp.Exemplars().Len())
+			assert.Empty(t, sm.pending)
+			if tt.temporality == pmetric.AggregationTemporalityCumulative {
+				// The series waits apart from the reported ones until its first real flush.
+				assert.Contains(t, sm.zeroed, Key("key1"))
+			} else {
+				assert.Contains(t, sm.metrics, Key("key1"))
+			}
+			sm.ClearExemplars()
+
+			second := pmetric.NewMetric()
+			sm.BuildMetrics(second, pcommon.Timestamp(2000), startTimestamp, tt.temporality)
+			require.Equal(t, 1, second.Sum().DataPoints().Len())
+			dp = second.Sum().DataPoints().At(0)
+			assert.Equal(t, int64(2), dp.IntValue())
+			assert.Empty(t, sm.zeroed)
+			assert.Contains(t, sm.metrics, Key("key1"))
+			if tt.temporality == pmetric.AggregationTemporalityCumulative {
+				require.Equal(t, 1, dp.Exemplars().Len())
+				assert.Equal(t, pcommon.Timestamp(2000), dp.Exemplars().At(0).Timestamp())
+			} else {
+				assert.Equal(t, 0, dp.Exemplars().Len())
 			}
 		})
 	}
@@ -743,13 +875,14 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 	tests := []struct {
 		name     string
 		metrics  map[Key]*Sum
+		zeroed   map[Key]*Sum
+		pending  map[Key]*Sum
 		expected int
 	}{
 		{
 			name: "Clear exemplars from multiple sums",
 			metrics: map[Key]*Sum{
 				"key1": {
-					reported: true,
 					exemplars: func() pmetric.ExemplarSlice {
 						es := pmetric.NewExemplarSlice()
 						es.AppendEmpty()
@@ -757,7 +890,6 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 					}(),
 				},
 				"key2": {
-					reported: true,
 					exemplars: func() pmetric.ExemplarSlice {
 						es := pmetric.NewExemplarSlice()
 						es.AppendEmpty()
@@ -770,8 +902,17 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 		},
 		{
 			name: "Keep exemplars of sums that have not reported their value yet",
-			metrics: map[Key]*Sum{
+			zeroed: map[Key]*Sum{
 				"key1": {
+					exemplars: func() pmetric.ExemplarSlice {
+						es := pmetric.NewExemplarSlice()
+						es.AppendEmpty()
+						return es
+					}(),
+				},
+			},
+			pending: map[Key]*Sum{
+				"key2": {
 					exemplars: func() pmetric.ExemplarSlice {
 						es := pmetric.NewExemplarSlice()
 						es.AppendEmpty()
@@ -787,10 +928,18 @@ func TestSumMetrics_ClearExemplars(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sm := SumMetrics{
 				metrics: tt.metrics,
+				zeroed:  tt.zeroed,
+				pending: tt.pending,
 			}
 			sm.ClearExemplars()
 
 			for _, sum := range sm.metrics {
+				assert.Equal(t, tt.expected, sum.exemplars.Len())
+			}
+			for _, sum := range sm.zeroed {
+				assert.Equal(t, tt.expected, sum.exemplars.Len())
+			}
+			for _, sum := range sm.pending {
 				assert.Equal(t, tt.expected, sum.exemplars.Len())
 			}
 		})

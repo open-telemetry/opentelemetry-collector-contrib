@@ -4,6 +4,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 
 import (
+	"maps"
 	"sort"
 	"time"
 
@@ -32,13 +33,18 @@ type Histogram interface {
 
 type explicitHistogramMetrics struct {
 	metrics          map[Key]*explicitHistogram
+	zeroed           map[Key]*explicitHistogram
+	pending          map[Key]*explicitHistogram
 	bounds           []float64
+	zeroBuckets      []uint64
 	maxExemplarCount int
 	cardinalityLimit int
 }
 
 type exponentialHistogramMetrics struct {
 	metrics          map[Key]*exponentialHistogram
+	zeroed           map[Key]*exponentialHistogram
+	pending          map[Key]*exponentialHistogram
 	maxSize          int32
 	maxExemplarCount int
 	cardinalityLimit int
@@ -57,8 +63,6 @@ type explicitHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
-	isFirst        bool
-	reported       bool
 	lastSeen       time.Time
 }
 
@@ -71,10 +75,7 @@ type exponentialHistogram struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
-	// isFirst has the same meaning as explicitHistogram.isFirst.
-	isFirst  bool
-	reported bool
-	lastSeen time.Time
+	lastSeen       time.Time
 }
 
 type BuildAttributesFun func() pcommon.Map
@@ -82,6 +83,8 @@ type BuildAttributesFun func() pcommon.Map
 func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount, cardinalityLimit int) HistogramMetrics {
 	return &exponentialHistogramMetrics{
 		metrics:          make(map[Key]*exponentialHistogram),
+		zeroed:           make(map[Key]*exponentialHistogram),
+		pending:          make(map[Key]*exponentialHistogram),
 		maxSize:          maxSize,
 		maxExemplarCount: maxExemplarCount,
 		cardinalityLimit: cardinalityLimit,
@@ -91,19 +94,33 @@ func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount, cardinality
 func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount, cardinalityLimit int) HistogramMetrics {
 	return &explicitHistogramMetrics{
 		metrics:          make(map[Key]*explicitHistogram),
+		zeroed:           make(map[Key]*explicitHistogram),
+		pending:          make(map[Key]*explicitHistogram),
 		bounds:           bounds,
+		zeroBuckets:      make([]uint64, len(bounds)+1),
 		maxExemplarCount: maxExemplarCount,
 		cardinalityLimit: cardinalityLimit,
 	}
 }
 
 func (m *explicitHistogramMetrics) IsCardinalityLimitReached() bool {
-	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
+	return m.cardinalityLimit > 0 && len(m.metrics)+len(m.zeroed)+len(m.pending) >= m.cardinalityLimit
+}
+
+func (m *explicitHistogramMetrics) get(key Key) (*explicitHistogram, bool) {
+	if h, ok := m.metrics[key]; ok {
+		return h, true
+	}
+	if h, ok := m.zeroed[key]; ok {
+		return h, true
+	}
+	h, ok := m.pending[key]
+	return h, ok
 }
 
 func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp, lastSeen time.Time) (Histogram, bool) {
 	limitReached := false
-	h, ok := m.metrics[key]
+	h, ok := m.get(key)
 	if !ok {
 		var attributes pcommon.Map
 		if m.IsCardinalityLimitReached() {
@@ -111,7 +128,7 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 			key = overflowKey
 
 			// check if overflowKey already exists
-			h, ok = m.metrics[key]
+			h, ok = m.get(key)
 			if ok {
 				return h, limitReached
 			}
@@ -129,10 +146,9 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 			bucketCounts:     make([]uint64, len(m.bounds)+1),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
-			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
-		m.metrics[key] = h
+		m.pending[key] = h
 	}
 	h.lastSeen = lastSeen
 	return h, limitReached
@@ -146,38 +162,49 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 ) {
 	metric.SetEmptyHistogram().SetAggregationTemporality(temporality)
 	dps := metric.Histogram().DataPoints()
-	dps.EnsureCapacity(len(m.metrics))
+	dps.EnsureCapacity(len(m.metrics) + len(m.zeroed) + len(m.pending))
+	maps.Copy(m.metrics, m.zeroed)
+	clear(m.zeroed)
+	if temporality != pmetric.AggregationTemporalityCumulative {
+		if len(m.metrics) == 0 {
+			m.metrics, m.pending = m.pending, m.metrics
+		} else {
+			maps.Copy(m.metrics, m.pending)
+			clear(m.pending)
+		}
+	}
 	for k, h := range m.metrics {
 		dp := dps.AppendEmpty()
 		startTimestamp := startTimeStampGenerator(k, h.startTimestamp)
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
 		dp.ExplicitBounds().FromRaw(h.bounds)
-		if temporality == pmetric.AggregationTemporalityCumulative && h.isFirst {
-			// Report an empty histogram for the first flush of a new series.
-			dp.BucketCounts().FromRaw(make([]uint64, len(h.bucketCounts)))
-			dp.SetCount(0)
-			dp.SetSum(0)
-			h.isFirst = false
-		} else {
-			dp.BucketCounts().FromRaw(h.bucketCounts)
-			dp.SetCount(h.count)
-			dp.SetSum(h.sum)
-			for i := 0; i < h.exemplars.Len(); i++ {
-				h.exemplars.At(i).SetTimestamp(timestamp)
-			}
-			h.exemplars.CopyTo(dp.Exemplars())
-			h.reported = true
+		dp.BucketCounts().FromRaw(h.bucketCounts)
+		dp.SetCount(h.count)
+		dp.SetSum(h.sum)
+		for i := 0; i < h.exemplars.Len(); i++ {
+			h.exemplars.At(i).SetTimestamp(timestamp)
 		}
+		h.exemplars.CopyTo(dp.Exemplars())
 		h.attributes.CopyTo(dp.Attributes())
 	}
+	for k, h := range m.pending {
+		dp := dps.AppendEmpty()
+		startTimestamp := startTimeStampGenerator(k, h.startTimestamp)
+		dp.SetStartTimestamp(startTimestamp)
+		dp.SetTimestamp(timestamp)
+		dp.ExplicitBounds().FromRaw(h.bounds)
+		dp.BucketCounts().FromRaw(m.zeroBuckets)
+		dp.SetCount(0)
+		dp.SetSum(0)
+		h.attributes.CopyTo(dp.Attributes())
+	}
+	m.zeroed, m.pending = m.pending, m.zeroed
 }
 
 func (m *explicitHistogramMetrics) ClearExemplars() {
 	for _, h := range m.metrics {
-		if h.reported {
-			h.exemplars = pmetric.NewExemplarSlice()
-		}
+		h.exemplars = pmetric.NewExemplarSlice()
 	}
 }
 
@@ -186,19 +213,30 @@ func (m *explicitHistogramMetrics) ExpireSeries(expiration time.Duration, now ti
 		return
 	}
 	for k, h := range m.metrics {
-		if h.reported && now.Sub(h.lastSeen) >= expiration {
+		if now.Sub(h.lastSeen) >= expiration {
 			delete(m.metrics, k)
 		}
 	}
 }
 
 func (m *exponentialHistogramMetrics) IsCardinalityLimitReached() bool {
-	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
+	return m.cardinalityLimit > 0 && len(m.metrics)+len(m.zeroed)+len(m.pending) >= m.cardinalityLimit
+}
+
+func (m *exponentialHistogramMetrics) get(key Key) (*exponentialHistogram, bool) {
+	if h, ok := m.metrics[key]; ok {
+		return h, true
+	}
+	if h, ok := m.zeroed[key]; ok {
+		return h, true
+	}
+	h, ok := m.pending[key]
+	return h, ok
 }
 
 func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimeStamp pcommon.Timestamp, lastSeen time.Time) (Histogram, bool) {
 	limitReached := false
-	h, ok := m.metrics[key]
+	h, ok := m.get(key)
 	if !ok {
 		histogram := new(structure.Histogram[float64])
 		cfg := structure.NewConfig(
@@ -212,7 +250,7 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 			key = overflowKey
 
 			// check if overflowKey already exists
-			h, ok = m.metrics[key]
+			h, ok = m.get(key)
 			if ok {
 				return h, limitReached
 			}
@@ -229,10 +267,9 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimeStamp,
-			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
-		m.metrics[key] = h
+		m.pending[key] = h
 	}
 	h.lastSeen = lastSeen
 	return h, limitReached
@@ -246,25 +283,38 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 ) {
 	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(temporality)
 	dps := metric.ExponentialHistogram().DataPoints()
-	dps.EnsureCapacity(len(m.metrics))
+	dps.EnsureCapacity(len(m.metrics) + len(m.zeroed) + len(m.pending))
+	maps.Copy(m.metrics, m.zeroed)
+	clear(m.zeroed)
+	if temporality != pmetric.AggregationTemporalityCumulative {
+		if len(m.metrics) == 0 {
+			m.metrics, m.pending = m.pending, m.metrics
+		} else {
+			maps.Copy(m.metrics, m.pending)
+			clear(m.pending)
+		}
+	}
 	for k, e := range m.metrics {
 		dp := dps.AppendEmpty()
 		startTimestamp := startTimeStampGenerator(k, e.startTimestamp)
 		dp.SetStartTimestamp(startTimestamp)
 		dp.SetTimestamp(timestamp)
-		if temporality == pmetric.AggregationTemporalityCumulative && e.isFirst {
-			emptyExponentialDataPoint(e.histogram, dp)
-			e.isFirst = false
-		} else {
-			expoHistToExponentialDataPoint(e.histogram, dp)
-			for i := 0; i < e.exemplars.Len(); i++ {
-				e.exemplars.At(i).SetTimestamp(timestamp)
-			}
-			e.exemplars.CopyTo(dp.Exemplars())
-			e.reported = true
+		expoHistToExponentialDataPoint(e.histogram, dp)
+		for i := 0; i < e.exemplars.Len(); i++ {
+			e.exemplars.At(i).SetTimestamp(timestamp)
 		}
+		e.exemplars.CopyTo(dp.Exemplars())
 		e.attributes.CopyTo(dp.Attributes())
 	}
+	for k, e := range m.pending {
+		dp := dps.AppendEmpty()
+		startTimestamp := startTimeStampGenerator(k, e.startTimestamp)
+		dp.SetStartTimestamp(startTimestamp)
+		dp.SetTimestamp(timestamp)
+		dp.SetScale(e.histogram.Scale())
+		e.attributes.CopyTo(dp.Attributes())
+	}
+	m.zeroed, m.pending = m.pending, m.zeroed
 }
 
 // expoHistToExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
@@ -298,15 +348,9 @@ func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetri
 	}
 }
 
-func emptyExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
-	dp.SetScale(agg.Scale())
-}
-
 func (m *exponentialHistogramMetrics) ClearExemplars() {
-	for _, h := range m.metrics {
-		if h.reported {
-			h.exemplars = pmetric.NewExemplarSlice()
-		}
+	for _, m := range m.metrics {
+		m.exemplars = pmetric.NewExemplarSlice()
 	}
 }
 
@@ -315,7 +359,7 @@ func (m *exponentialHistogramMetrics) ExpireSeries(expiration time.Duration, now
 		return
 	}
 	for k, h := range m.metrics {
-		if h.reported && now.Sub(h.lastSeen) >= expiration {
+		if now.Sub(h.lastSeen) >= expiration {
 			delete(m.metrics, k)
 		}
 	}
@@ -375,22 +419,18 @@ type Sum struct {
 	maxExemplarCount int
 
 	startTimestamp pcommon.Timestamp
-	// isFirst is used to track if this datapoint is new to the Sum. This
-	// is used to ensure that new Sum metrics being with 0, and then are incremented
-	// to the desired value.  This avoids Prometheus throwing away the first
-	// value in the series, due to the transition from null -> x.
-	isFirst  bool
-	reported bool
-	lastSeen time.Time
+	lastSeen       time.Time
 }
 
 func (s *Sum) Add(value uint64) {
 	s.count += value
 }
 
-func NewSumMetrics(maxExemplarCount, cardinalityLimit int) SumMetrics {
-	return SumMetrics{
+func NewSumMetrics(maxExemplarCount, cardinalityLimit int) *SumMetrics {
+	return &SumMetrics{
 		metrics:          make(map[Key]*Sum),
+		zeroed:           make(map[Key]*Sum),
+		pending:          make(map[Key]*Sum),
 		maxExemplarCount: maxExemplarCount,
 		cardinalityLimit: cardinalityLimit,
 	}
@@ -398,17 +438,30 @@ func NewSumMetrics(maxExemplarCount, cardinalityLimit int) SumMetrics {
 
 type SumMetrics struct {
 	metrics          map[Key]*Sum
+	zeroed           map[Key]*Sum
+	pending          map[Key]*Sum
 	maxExemplarCount int
 	cardinalityLimit int
 }
 
 func (m *SumMetrics) IsCardinalityLimitReached() bool {
-	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
+	return m.cardinalityLimit > 0 && len(m.metrics)+len(m.zeroed)+len(m.pending) >= m.cardinalityLimit
+}
+
+func (m *SumMetrics) get(key Key) (*Sum, bool) {
+	if s, ok := m.metrics[key]; ok {
+		return s, true
+	}
+	if s, ok := m.zeroed[key]; ok {
+		return s, true
+	}
+	s, ok := m.pending[key]
+	return s, ok
 }
 
 func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp, lastSeen time.Time) (*Sum, bool) {
 	limitReached := false
-	s, ok := m.metrics[key]
+	s, ok := m.get(key)
 	if !ok {
 		var attributes pcommon.Map
 		// check when new key coming
@@ -417,7 +470,7 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 			key = overflowKey
 
 			// check if overflowKey already exists
-			s, ok = m.metrics[key]
+			s, ok = m.get(key)
 			if ok {
 				return s, limitReached
 			}
@@ -433,10 +486,9 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
-			isFirst:          true,
 			lastSeen:         lastSeen,
 		}
-		m.metrics[key] = s
+		m.pending[key] = s
 	}
 	s.lastSeen = lastSeen
 
@@ -463,32 +515,43 @@ func (m *SumMetrics) BuildMetrics(
 	metric.Sum().SetAggregationTemporality(temporality)
 
 	dps := metric.Sum().DataPoints()
-	dps.EnsureCapacity(len(m.metrics))
+	dps.EnsureCapacity(len(m.metrics) + len(m.zeroed) + len(m.pending))
+	maps.Copy(m.metrics, m.zeroed)
+	clear(m.zeroed)
+	if temporality != pmetric.AggregationTemporalityCumulative {
+		if len(m.metrics) == 0 {
+			m.metrics, m.pending = m.pending, m.metrics
+		} else {
+			maps.Copy(m.metrics, m.pending)
+			clear(m.pending)
+		}
+	}
 	for k, s := range m.metrics {
 		dp := dps.AppendEmpty()
 		startTimeStamp := startTimeStampGenerator(k, s.startTimestamp)
 		dp.SetStartTimestamp(startTimeStamp)
 		dp.SetTimestamp(timestamp)
-		if temporality == pmetric.AggregationTemporalityCumulative && s.isFirst {
-			dp.SetIntValue(0)
-			s.isFirst = false
-		} else {
-			dp.SetIntValue(int64(s.count))
-			for i := 0; i < s.exemplars.Len(); i++ {
-				s.exemplars.At(i).SetTimestamp(timestamp)
-			}
-			s.exemplars.CopyTo(dp.Exemplars())
-			s.reported = true
+		dp.SetIntValue(int64(s.count))
+		for i := 0; i < s.exemplars.Len(); i++ {
+			s.exemplars.At(i).SetTimestamp(timestamp)
 		}
+		s.exemplars.CopyTo(dp.Exemplars())
 		s.attributes.CopyTo(dp.Attributes())
 	}
+	for k, s := range m.pending {
+		dp := dps.AppendEmpty()
+		startTimeStamp := startTimeStampGenerator(k, s.startTimestamp)
+		dp.SetStartTimestamp(startTimeStamp)
+		dp.SetTimestamp(timestamp)
+		dp.SetIntValue(0)
+		s.attributes.CopyTo(dp.Attributes())
+	}
+	m.zeroed, m.pending = m.pending, m.zeroed
 }
 
 func (m *SumMetrics) ClearExemplars() {
 	for _, sum := range m.metrics {
-		if sum.reported {
-			sum.exemplars = pmetric.NewExemplarSlice()
-		}
+		sum.exemplars = pmetric.NewExemplarSlice()
 	}
 }
 
@@ -497,7 +560,7 @@ func (m *SumMetrics) ExpireSeries(expiration time.Duration, now time.Time) {
 		return
 	}
 	for k, s := range m.metrics {
-		if s.reported && now.Sub(s.lastSeen) >= expiration {
+		if now.Sub(s.lastSeen) >= expiration {
 			delete(m.metrics, k)
 		}
 	}

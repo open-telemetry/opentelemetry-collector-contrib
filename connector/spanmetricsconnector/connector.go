@@ -103,8 +103,8 @@ type connectorImp struct {
 
 type resourceMetrics struct {
 	histograms metrics.HistogramMetrics
-	sums       metrics.SumMetrics
-	events     metrics.SumMetrics
+	sums       *metrics.SumMetrics
+	events     *metrics.SumMetrics
 	attributes pcommon.Map
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
