@@ -32,6 +32,7 @@ The following settings can be optionally configured:
     - `compression` (default = none): allows to set the compression type (defaults BestSpeed for all) before forwarding to kinesis (available is `flate`, `gzip`, `zlib` or `none`)
 - `max_records_per_batch` (default = 500, PutRecords limit): The number of records that can be batched together then sent to kinesis.
 - `max_record_size` (default = 1Mb, PutRecord(s) limit on record size): The max allowed size that can be exported to kinesis
+- `idle_conn_timeout` (default = 90s): Controls how long idle HTTP connections are retained in the connection pool before being discarded. In environments where the execution environment freezes between invocations (such as AWS Lambda), idle connections can be dropped by the network while still appearing open to the client; configuring a short timeout (e.g. `2s`) ensures stale connections are discarded promptly rather than causing the next request to hang.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 - `retry_on_failure`
   - `enabled` (default = true)
@@ -51,6 +52,7 @@ Example Configuration:
 ```yaml
 exporters:
   awskinesis:
+    idle_conn_timeout: 2s
     aws:
       stream_name: raw-trace-stream
       region: us-east-1

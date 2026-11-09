@@ -20,14 +20,6 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 		switch metric.ID {
 		case "Status.JVM.CPU.Load":
 			_ = s.mb.RecordFlinkJvmCPULoadDataPoint(now, metric.Value)
-		case "Status.JVM.GarbageCollector.PS_MarkSweep.Time":
-			_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSMarkSweep)
-		case "Status.JVM.GarbageCollector.PS_Scavenge.Time":
-			_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSScavenge)
-		case "Status.JVM.GarbageCollector.PS_MarkSweep.Count":
-			_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSMarkSweep)
-		case "Status.JVM.GarbageCollector.PS_Scavenge.Count":
-			_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNamePSScavenge)
 		case "Status.Flink.Memory.Managed.Used":
 			_ = s.mb.RecordFlinkMemoryManagedUsedDataPoint(now, metric.Value)
 		case "Status.Flink.Memory.Managed.Total":
@@ -64,6 +56,8 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 			_ = s.mb.RecordFlinkJvmMemoryHeapMaxDataPoint(now, metric.Value)
 		case "Status.JVM.Memory.Heap.Used":
 			_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
+		default:
+			s.recordGarbageCollectorMetric(now, metric.ID, metric.Value)
 		}
 	}
 	rb := s.mb.NewResourceBuilder()
@@ -72,18 +66,35 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
+// recordGarbageCollectorMetric records Status.JVM.GarbageCollector.<name>.Count
+// and .Time for the collector names the receiver supports. The JobManager and
+// the TaskManagers expose the same garbage collector metrics, and the names
+// depend on the garbage collector the JVM uses, so both components share this.
+func (s *flinkmetricsScraper) recordGarbageCollectorMetric(now pcommon.Timestamp, id, value string) {
+	rest, ok := strings.CutPrefix(id, "Status.JVM.GarbageCollector.")
+	if !ok {
+		return
+	}
+	collector, kind, ok := strings.Cut(rest, ".")
+	if !ok {
+		return
+	}
+	name, ok := metadata.MapAttributeGarbageCollectorName[collector]
+	if !ok {
+		return
+	}
+	switch kind {
+	case "Count":
+		_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, value, name)
+	case "Time":
+		_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, value, name)
+	}
+}
+
 func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, taskmanagerMetricInstances []*models.TaskmanagerMetrics) {
 	for _, taskmanagerMetrics := range taskmanagerMetricInstances {
 		for _, metric := range taskmanagerMetrics.Metrics {
 			switch metric.ID {
-			case "Status.JVM.GarbageCollector.G1_Young_Generation.Count":
-				_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1YoungGeneration)
-			case "Status.JVM.GarbageCollector.G1_Old_Generation.Count":
-				_ = s.mb.RecordFlinkJvmGcCollectionsCountDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1OldGeneration)
-			case "Status.JVM.GarbageCollector.G1_Old_Generation.Time":
-				_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1OldGeneration)
-			case "Status.JVM.GarbageCollector.G1_Young_Generation.Time":
-				_ = s.mb.RecordFlinkJvmGcCollectionsTimeDataPoint(now, metric.Value, metadata.AttributeGarbageCollectorNameG1YoungGeneration)
 			case "Status.JVM.CPU.Load":
 				_ = s.mb.RecordFlinkJvmCPULoadDataPoint(now, metric.Value)
 			case "Status.Flink.Memory.Managed.Used":
@@ -122,6 +133,8 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 				_ = s.mb.RecordFlinkJvmMemoryHeapMaxDataPoint(now, metric.Value)
 			case "Status.JVM.Memory.Heap.Used":
 				_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
+			default:
+				s.recordGarbageCollectorMetric(now, metric.ID, metric.Value)
 			}
 		}
 		rb := s.mb.NewResourceBuilder()

@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
@@ -56,4 +58,23 @@ func TestCreateMetricsExportHelperError(t *testing.T) {
 
 	assert.Nil(t, exp)
 	assert.Error(t, err)
+}
+
+func TestExporterHelperBatchingEnabled(t *testing.T) {
+	for _, enabled := range []bool{true, false} {
+		cfg := createDefaultConfig().(*Config)
+		cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+		queueCfg := cfg.QueueBatchConfig.GetOrInsertDefault()
+		if enabled {
+			queueCfg.Batch.GetOrInsertDefault()
+		} else {
+			queueCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
+		}
+
+		exp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+		require.NoError(t, err)
+		b, ok := exp.(interface{ ExporterHelperBatchingEnabled() bool })
+		require.True(t, ok)
+		assert.Equal(t, enabled, b.ExporterHelperBatchingEnabled())
+	}
 }

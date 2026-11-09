@@ -1,4 +1,0 @@
-change_type: enhancement
-component: receiver/udp_log
-note: Add `resolve_names` option to allow disabling reverse DNS lookups when network attributes are enabled.
-issues: [52603]
