@@ -719,7 +719,7 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
 		!s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
-		s.logger.Warn("db.server.procedure.definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+		s.logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
 	}
 
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)

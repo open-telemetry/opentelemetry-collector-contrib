@@ -474,7 +474,7 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 
 // TestProcedureDefinitionContent verifies the oracledb.procedure.definition attribute value
 // for various source-row scenarios. Each sub-test enables the definition event, rebuilds lb,
-// calls scrapeLogs, and checks the attribute on the emitted db.server.procedure.definition event.
+// calls scrapeLogs, and checks the attribute on the emitted db.server.procedure_definition event.
 func TestProcedureDefinitionContent(t *testing.T) {
 	const ddlDefault = "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
 	const ddlWrappedName = "CREATE OR REPLACE PROCEDURE ADMIN.WRAPPED_ORDERS_REPORT AS BEGIN NULL; END;"
@@ -538,14 +538,14 @@ func TestProcedureDefinitionContent(t *testing.T) {
 
 			records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			for i := range records.Len() {
-				if records.At(i).EventName() == "db.server.procedure.definition" {
+				if records.At(i).EventName() == "db.server.procedure_definition" {
 					def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
 					require.True(t, ok)
 					assert.Equal(t, tc.wantDefinition, def.Str())
 					return
 				}
 			}
-			t.Fatal("expected a db.server.procedure.definition event")
+			t.Fatal("expected a db.server.procedure_definition event")
 		})
 	}
 }
@@ -558,7 +558,7 @@ func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
 
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := range records.Len() {
-		assert.NotEqual(t, "db.server.procedure.definition", records.At(i).EventName(),
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
 			"procedure_definition must not be emitted when disabled")
 	}
 }
@@ -586,7 +586,7 @@ func TestProcedureDefinitionNotEmittedWhenFetchFails(t *testing.T) {
 
 	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := range records.Len() {
-		assert.NotEqual(t, "db.server.procedure.definition", records.At(i).EventName(),
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
 			"procedure_definition must not be emitted when definitions fetch fails")
 	}
 }
@@ -602,7 +602,7 @@ func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
 
-	entries := observed.FilterMessage("db.server.procedure.definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
+	entries := observed.FilterMessage("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
 	require.Len(t, entries, 1)
 }
 

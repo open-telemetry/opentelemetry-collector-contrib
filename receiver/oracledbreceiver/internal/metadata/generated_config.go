@@ -6068,7 +6068,7 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for oracledb events.
 type EventsConfig struct {
-	DbServerProcedureDefinition EventConfig `mapstructure:"db.server.procedure.definition"`
+	DbServerProcedureDefinition EventConfig `mapstructure:"db.server.procedure_definition"`
 	DbServerQueryPlan           EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample         EventConfig `mapstructure:"db.server.query_sample"`
 	DbServerSessionWaitSample   EventConfig `mapstructure:"db.server.session.wait_sample"`

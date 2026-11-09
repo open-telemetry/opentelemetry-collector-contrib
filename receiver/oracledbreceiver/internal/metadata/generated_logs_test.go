@@ -192,9 +192,9 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
-				case "db.server.procedure.definition":
-					assert.False(t, validatedEvents["db.server.procedure.definition"], "Found a duplicate in the events slice: db.server.procedure.definition")
-					validatedEvents["db.server.procedure.definition"] = true
+				case "db.server.procedure_definition":
+					assert.False(t, validatedEvents["db.server.procedure_definition"], "Found a duplicate in the events slice: db.server.procedure_definition")
+					validatedEvents["db.server.procedure_definition"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
 					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
