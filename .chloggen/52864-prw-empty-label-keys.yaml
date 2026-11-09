@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Refuse series whose label set carries an empty label name, and stop emitting a scope attribute with an empty key.
+note: Refuse series whose label set carries an empty label name, and stop emitting attributes with an empty key.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52864]
@@ -16,9 +16,8 @@ issues: [52864]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  An empty label name cannot become an attribute key, so the series is refused explicitly instead
-  of being caught by the duplicate label check. A label named exactly `otel_scope_` leaves nothing
-  behind once the scope prefix is stripped, so it loses its scope attribute and the series is kept.
+  An empty label name cannot become an attribute key: a series carrying one is refused, and an
+  exemplar label carrying one is dropped.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

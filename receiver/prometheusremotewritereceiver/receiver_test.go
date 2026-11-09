@@ -3539,6 +3539,89 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			// The exemplar label name resolves to symbol 0, the empty string the symbol table
+			// starts with, so the name is empty without the series itself being malformed. Only
+			// the attribute that label would become is unusable, so the exemplar is kept and the
+			// label dropped.
+			name: "exemplar label with an empty name is dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms", // 1,2
+					"job", "production/service_a", // 3,4
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 5,6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							1, 2, // __name__
+							3, 4, // job
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.5,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									5, 6, // trace_id
+									0, 2, // an empty name, carrying the metric name as its value
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				m.SetName("request_duration_ms")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				// No filtered attributes: the label with the empty name has nowhere to go.
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.5)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Samples:   1,
+				Exemplars: 1,
+				Confirmed: true,
+			},
+		},
+		{
 			name: "counter metric with exemplar, multiple data points",
 			request: &writev2.Request{
 				Symbols: []string{

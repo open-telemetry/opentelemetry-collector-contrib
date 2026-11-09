@@ -577,9 +577,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 // common senders such as Prometheus treat a 400 as non-recoverable and answer by dropping the batch.
 //
 // An empty name is refused instead of dropped because every attribute it could feed would be
-// unnamed, so no part of the label can be kept. The bare otel_scope_ prefix is the mirror image:
-// only the attribute it would produce is unusable, so that one is dropped and the series is kept
-// (see extractScopeInfo).
+// unnamed, so no part of the label can be kept. An exemplar label is the exception: it annotates a
+// data point rather than identifying a series, so an empty name costs only that one attribute and
+// the label is dropped (see copyExemplarAttributes). The bare otel_scope_ prefix is the mirror
+// image: only the attribute it would produce is unusable, so that one is dropped and the series is
+// kept (see extractScopeInfo).
 //
 // ToLabels returns the labels sorted, so duplicate names are adjacent.
 func validateSeriesLabels(ls labels.Labels) error {
