@@ -162,6 +162,9 @@ attributes:
   postgresql.backend.connection.start:
     description: UTC timestamp (RFC3339) when this backend was started.
     type: string
+  postgresql.backend.type:
+    description: "Type of the backend. Possible values include client backend, autovacuum worker, parallel worker and walsender."
+    type: string
   postgresql.blocking.lock.mode:
     description: The lock mode being requested by the blocked session (e.g. RowExclusiveLock, AccessExclusiveLock). Empty string when not blocked.
     type: string
@@ -324,6 +327,7 @@ events:
       - postgresql.pid
       - postgresql.backend.connection.start
       - postgresql.application_name
+      - postgresql.backend.type
       - network.peer.address
       - network.peer.port
       - postgresql.client_hostname

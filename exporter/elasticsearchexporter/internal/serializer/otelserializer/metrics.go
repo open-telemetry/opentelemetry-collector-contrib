@@ -30,6 +30,7 @@ func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL
 		first = w.writeTimestampEpochMillisField("start_timestamp", dp0.StartTimestamp(), first)
 	}
 	first = w.writeStringFieldSkipDefault("unit", dp0.Metric().Unit(), first)
+	first = w.writeStringFieldSkipDefault("temporality", dp0.Temporality(), first)
 	first = w.writeDataStream(idx, first)
 	first = w.writeAttributes(dp0.Attributes(), true, first)
 	first = w.writeResource(resource, resourceSchemaURL, true, first)

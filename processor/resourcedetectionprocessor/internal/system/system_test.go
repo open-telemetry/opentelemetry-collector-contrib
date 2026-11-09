@@ -14,8 +14,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -473,7 +476,7 @@ func TestDetectOSNameAndBuildID(t *testing.T) {
 	require.NoError(t, err)
 	attrs := res.Attributes().AsRaw()
 	assert.Equal(t, "MyOS", attrs["os.name"])
-	assert.Equal(t, "Build123", attrs["os.build.id"])
+	assert.Equal(t, "Build123", attrs["os.build_id"])
 	md.AssertExpectations(t)
 }
 
@@ -645,7 +648,7 @@ func TestDetectOptionalAttributeErrors(t *testing.T) {
 			res, _, err := detector.Detect(t.Context())
 			require.NoError(t, err)
 			_, hasOSName := res.Attributes().Get("os.name")
-			_, hasOSBuildID := res.Attributes().Get("os.build.id")
+			_, hasOSBuildID := res.Attributes().Get("os.build_id")
 			assert.Equal(t, method != "OSName", hasOSName)
 			assert.Equal(t, method != "OSBuildID", hasOSBuildID)
 		})
@@ -696,4 +699,85 @@ func TestValidate(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, Config{ResourceAttributes: metadata.DefaultResourceAttributesConfig()}, CreateDefaultConfig())
+}
+
+func TestOSBuildIDDeprecatedAttribute(t *testing.T) {
+	tests := []struct {
+		name          string
+		resAttrs      map[string]any
+		expectOld     bool
+		expectNew     bool
+		expectWarning bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:          "deprecated key",
+			resAttrs:      map[string]any{"os.build.id": map[string]any{"enabled": true}},
+			expectOld:     true,
+			expectWarning: true,
+		},
+		{
+			name:      "new key",
+			resAttrs:  map[string]any{"os.build_id": map[string]any{"enabled": true}},
+			expectNew: true,
+		},
+		{
+			name: "both keys",
+			resAttrs: map[string]any{
+				"os.build.id": map[string]any{"enabled": true},
+				"os.build_id": map[string]any{"enabled": true},
+			},
+			expectOld:     true,
+			expectNew:     true,
+			expectWarning: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Unmarshal through a parent struct, like the processor config does.
+			var parent struct {
+				System Config `mapstructure:"system"`
+			}
+			parent.System = CreateDefaultConfig()
+			conf := confmap.NewFromStringMap(map[string]any{
+				"system": map[string]any{
+					"hostname_sources":    []any{"os"},
+					"resource_attributes": tt.resAttrs,
+				},
+			})
+			require.NoError(t, conf.Unmarshal(&parent))
+			cfg := parent.System
+			assert.Equal(t, tt.expectOld, cfg.deprecatedOSBuildID.Enabled)
+			assert.Equal(t, tt.expectNew, cfg.ResourceAttributes.OsBuildID.Enabled)
+
+			core, logs := observer.New(zapcore.WarnLevel)
+			set := processortest.NewNopSettings(processortest.NopType)
+			set.Logger = zap.New(core)
+			d, err := NewDetector(set, cfg, false)
+			require.NoError(t, err)
+			if tt.expectWarning {
+				require.Equal(t, 1, logs.FilterMessage("the os.build.id resource attribute is deprecated, use os.build_id instead").Len())
+			} else {
+				require.Zero(t, logs.Len())
+			}
+
+			detector := d.(*Detector)
+			detector.provider = newFullMock()
+			res, _, err := detector.Detect(t.Context())
+			require.NoError(t, err)
+
+			oldVal, hasOld := res.Attributes().Get("os.build.id")
+			newVal, hasNew := res.Attributes().Get("os.build_id")
+			assert.Equal(t, tt.expectOld, hasOld)
+			assert.Equal(t, tt.expectNew, hasNew)
+			if hasOld {
+				assert.Equal(t, "22H2", oldVal.Str())
+			}
+			if hasNew {
+				assert.Equal(t, "22H2", newVal.Str())
+			}
+		})
+	}
 }
