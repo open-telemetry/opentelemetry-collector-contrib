@@ -130,9 +130,11 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 		lifetime     time.Duration
 		wantSTSCalls int32
 		wantKey      string
+		externalID   string
 	}{
 		{name: "reuse valid credentials", lifetime: 5 * time.Minute, wantSTSCalls: 1, wantKey: "AKID1"},
 		{name: "refresh expired credentials", lifetime: -time.Minute, wantSTSCalls: 2, wantKey: "AKID2"},
+		{name: "send external id on every assume role call", lifetime: -time.Minute, wantSTSCalls: 2, wantKey: "AKID2", externalID: "my-external-id"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			// Given an assumed role backed by a local endpoint serving both STS and S3.
@@ -150,6 +152,9 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 						t.Errorf("unexpected STS action: %s", r.Form.Get("Action"))
 						w.WriteHeader(http.StatusBadRequest)
 						return
+					}
+					if got := r.Form.Get("ExternalId"); got != tt.externalID {
+						t.Errorf("unexpected ExternalId: got %q, want %q", got, tt.externalID)
 					}
 					call := stsCalls.Add(1)
 					lifetime := tt.lifetime
@@ -191,6 +196,7 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 			conf.S3Uploader.S3Bucket = "my-awesome-bucket"
 			conf.S3Uploader.Endpoint = server.URL
 			conf.S3Uploader.RoleArn = "arn:aws:iam::123456789012:role/test"
+			conf.S3Uploader.ExternalID = tt.externalID
 			conf.S3Uploader.S3ForcePathStyle = true
 			conf.S3Uploader.DisableSSL = true
 
