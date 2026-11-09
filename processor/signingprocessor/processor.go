@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
@@ -48,13 +49,14 @@ type signingProcessor struct {
 	config       *Config
 	logger       *zap.Logger
 	nextLogs     consumer.Logs
+	nextTraces   consumer.Traces
 	provider     KeyMaterialProvider
 	hashFunc     func() hash.Hash
 	jwaAlgorithm string // audit.integrity.algorithm value (e.g. "RS256")
 	certRef      string // audit.integrity.certificate value (fingerprint or full DER)
 }
 
-func newProcessor(ctx context.Context, cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
+func newProcessor(ctx context.Context, cfg *Config, settings processor.Settings) (*signingProcessor, error) {
 	provider, err := newKeyMaterialProvider(ctx, cfg, settings.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize key material provider: %w", err)
@@ -81,7 +83,6 @@ func newProcessor(ctx context.Context, cfg *Config, nextLogs consumer.Logs, sett
 	return &signingProcessor{
 		config:       cfg,
 		logger:       settings.Logger,
-		nextLogs:     nextLogs,
 		provider:     provider,
 		hashFunc:     hashFunc,
 		jwaAlgorithm: cfg.Algorithm,
@@ -117,10 +118,7 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 		// this ResourceLogs block have been signed successfully, and only when at
 		// least one record was actually signed.
 		if signed > 0 {
-			resourceLog.Resource().Attributes().PutStr("audit.integrity.algorithm", p.jwaAlgorithm)
-			if p.certRef != "" {
-				resourceLog.Resource().Attributes().PutStr("audit.integrity.certificate", p.certRef)
-			}
+			p.putResourceIntegrity(resourceLog.Resource().Attributes())
 		}
 	}
 
@@ -151,6 +149,57 @@ func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	lr.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
 	lr.Attributes().PutStr("audit.integrity.signer", "collector")
 	return nil
+}
+
+// ConsumeTraces signs every span the same way ConsumeLogs signs log records.
+func (p *signingProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	resourceSpans := td.ResourceSpans()
+	for i := 0; i < resourceSpans.Len(); i++ {
+		resourceSpan := resourceSpans.At(i)
+
+		signed := 0
+		scopeSpans := resourceSpan.ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			spans := scopeSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				if err := p.processSpan(spans.At(k)); err != nil {
+					return fmt.Errorf("failed to process span: %w", err)
+				}
+				signed++
+			}
+		}
+
+		if signed > 0 {
+			p.putResourceIntegrity(resourceSpan.Resource().Attributes())
+		}
+	}
+
+	return p.nextTraces.ConsumeTraces(ctx, td)
+}
+
+func (p *signingProcessor) processSpan(span ptrace.Span) error {
+	spanData, err := p.serializeSpan(span)
+	if err != nil {
+		return fmt.Errorf("failed to serialize span: %w", err)
+	}
+
+	signature, err := p.sign(spanData)
+	if err != nil {
+		return fmt.Errorf("failed to sign span: %w", err)
+	}
+
+	span.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
+	span.Attributes().PutStr("audit.integrity.signer", "collector")
+	return nil
+}
+
+// putResourceIntegrity sets the Resource-level audit.integrity.algorithm and
+// audit.integrity.certificate attributes.
+func (p *signingProcessor) putResourceIntegrity(attrs pcommon.Map) {
+	attrs.PutStr("audit.integrity.algorithm", p.jwaAlgorithm)
+	if p.certRef != "" {
+		attrs.PutStr("audit.integrity.certificate", p.certRef)
+	}
 }
 
 // sign produces a signature over payload using the configured JWA algorithm.
@@ -249,9 +298,19 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 		data["span_id"] = lr.SpanID().String()
 	}
 
-	attrs := make(map[string]any)
+	if err := p.putAttributes(data, lr.Attributes()); err != nil {
+		return nil, err
+	}
+
+	return p.marshalJCS(data)
+}
+
+// putAttributes sets data["attributes"] to the encoded attrs, leaving out
+// audit.integrity.* keys, and omits the key when nothing is left.
+func (p *signingProcessor) putAttributes(data map[string]any, attrs pcommon.Map) error {
+	out := make(map[string]any)
 	var attrErr error
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		if strings.HasPrefix(k, "audit.integrity.") {
 			return true
 		}
@@ -264,15 +323,104 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 			attrErr = err
 			return false
 		}
-		attrs[k] = val
+		out[k] = val
 		return true
 	})
 	if attrErr != nil {
-		return nil, attrErr
+		return attrErr
 	}
-	if len(attrs) > 0 {
-		data["attributes"] = attrs
+	if len(out) > 0 {
+		data["attributes"] = out
 	}
+	return nil
+}
+
+// serializeSpan produces a canonical JSON representation of the span for
+// signing, using the same encoding as serializeLogRecord. Excluded from the
+// signed payload:
+//   - audit.integrity.* attributes, on the span, its events and its links
+//   - TraceState and Flags, on the span and its links (W3C trace-context
+//     sampling data; not audit-relevant, like log record Flags)
+//   - dropped attribute, event and link counts
+func (p *signingProcessor) serializeSpan(span ptrace.Span) ([]byte, error) {
+	data := make(map[string]any)
+
+	if !span.TraceID().IsEmpty() {
+		data["trace_id"] = span.TraceID().String()
+	}
+	if !span.SpanID().IsEmpty() {
+		data["span_id"] = span.SpanID().String()
+	}
+	if !span.ParentSpanID().IsEmpty() {
+		data["parent_span_id"] = span.ParentSpanID().String()
+	}
+	if span.Name() != "" {
+		if err := checkUTF8(span.Name(), "span name"); err != nil {
+			return nil, err
+		}
+		data["name"] = span.Name()
+	}
+	data["kind"] = int32(span.Kind())
+	if span.StartTimestamp() != 0 {
+		data["start_time"] = strconv.FormatInt(span.StartTimestamp().AsTime().UnixNano(), 10)
+	}
+	if span.EndTimestamp() != 0 {
+		data["end_time"] = strconv.FormatInt(span.EndTimestamp().AsTime().UnixNano(), 10)
+	}
+
+	if err := p.putAttributes(data, span.Attributes()); err != nil {
+		return nil, err
+	}
+
+	if span.Events().Len() > 0 {
+		events := make([]any, 0, span.Events().Len())
+		for i := 0; i < span.Events().Len(); i++ {
+			ev := span.Events().At(i)
+			event := make(map[string]any)
+			if ev.Name() != "" {
+				if err := checkUTF8(ev.Name(), "span event name"); err != nil {
+					return nil, err
+				}
+				event["name"] = ev.Name()
+			}
+			if ev.Timestamp() != 0 {
+				event["timestamp"] = strconv.FormatInt(ev.Timestamp().AsTime().UnixNano(), 10)
+			}
+			if err := p.putAttributes(event, ev.Attributes()); err != nil {
+				return nil, fmt.Errorf("span event %d: %w", i, err)
+			}
+			events = append(events, event)
+		}
+		data["events"] = events
+	}
+
+	if span.Links().Len() > 0 {
+		links := make([]any, 0, span.Links().Len())
+		for i := 0; i < span.Links().Len(); i++ {
+			l := span.Links().At(i)
+			link := make(map[string]any)
+			if !l.TraceID().IsEmpty() {
+				link["trace_id"] = l.TraceID().String()
+			}
+			if !l.SpanID().IsEmpty() {
+				link["span_id"] = l.SpanID().String()
+			}
+			if err := p.putAttributes(link, l.Attributes()); err != nil {
+				return nil, fmt.Errorf("span link %d: %w", i, err)
+			}
+			links = append(links, link)
+		}
+		data["links"] = links
+	}
+
+	status := map[string]any{"code": int32(span.Status().Code())}
+	if msg := span.Status().Message(); msg != "" {
+		if err := checkUTF8(msg, "span status message"); err != nil {
+			return nil, err
+		}
+		status["message"] = msg
+	}
+	data["status"] = status
 
 	return p.marshalJCS(data)
 }
