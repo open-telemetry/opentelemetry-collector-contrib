@@ -1018,8 +1018,8 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 }
 
 // splitResourceSpansByTrace moves spans from rss into one ResourceSpans per
-// trace ID in one pass, instead of grouping into a slice first. The resource
-// and scopes are copied, since several traces may share them.
+// trace ID in one pass, instead of grouping into a slice first. The resource,
+// scopes, and their schema URLs are copied, since several traces may share them.
 //
 // We walk scopes in order and never go back, so lastScope is enough to open
 // dest scopes in first-seen order.
@@ -1044,12 +1044,14 @@ func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 			if !ok {
 				rs := ptrace.NewResourceSpans()
 				rss.Resource().CopyTo(rs.Resource())
+				rs.SetSchemaUrl(rss.SchemaUrl())
 				b = &builder{rs: rs, lastScope: -1}
 				builders[id] = b
 			}
 			if b.lastScope != j {
 				dest := b.rs.ScopeSpans().AppendEmpty()
 				srcScope.Scope().CopyTo(dest.Scope())
+				dest.SetSchemaUrl(srcScope.SchemaUrl())
 				b.destScope = dest
 				b.lastScope = j
 			}

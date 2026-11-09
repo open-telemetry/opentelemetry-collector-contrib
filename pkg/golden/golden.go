@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // ReadMetrics reads a pmetric.Metrics from the specified YAML or JSON file.
@@ -233,8 +233,12 @@ func WriteProfiles(tb testing.TB, filePath string, profiles pprofile.Profiles) e
 // WriteProfilesToFile writes a pprofile.Profiles to the specified file in YAML format.
 // Prefer using WriteProfiles in tests.
 func WriteProfilesToFile(filePath string, profiles pprofile.Profiles) error {
+	// MarshalProfiles converts strings to dictionary references in place,
+	// so marshal a copy to avoid mutating the caller's profiles.
+	profilesCopy := pprofile.NewProfiles()
+	profiles.CopyTo(profilesCopy)
 	unmarshaler := &pprofile.JSONMarshaler{}
-	fileBytes, err := unmarshaler.MarshalProfiles(profiles)
+	fileBytes, err := unmarshaler.MarshalProfiles(profilesCopy)
 	if err != nil {
 		return err
 	}

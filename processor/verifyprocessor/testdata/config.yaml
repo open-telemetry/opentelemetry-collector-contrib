@@ -17,6 +17,14 @@ verify/cert_mark:
     file:
       certificate: /etc/otelcol/cert.pem
 
+# Drop failed records, export the rest, return permanent error with failed ids.
+verify/drop:
+  failure_mode: drop
+  key_source:
+    type: file
+    file:
+      hmac_key: /etc/otelcol/hmac.key
+
 # Environment-variable key material (via Collector confmap ${env:} expansion).
 verify/env:
   key_source:
