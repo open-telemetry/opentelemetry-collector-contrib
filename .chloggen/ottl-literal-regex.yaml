@@ -1,5 +1,0 @@
-change_type: enhancement
-component: pkg/ottl
-note: Use substring matching for literal-only patterns in IsMatch, delete_matching_keys, keep_matching_keys, replace_pattern and replace_all_patterns without changing regex semantics.
-issues: [52593]
-change_logs: [user]
