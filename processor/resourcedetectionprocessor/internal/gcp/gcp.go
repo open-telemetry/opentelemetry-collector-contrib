@@ -131,7 +131,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			setFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 			setFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			setFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
-			setFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
+			setIntFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
 		)
 	case gcp.CloudFunctions:
 		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPCloudFunctions.Value.AsString())
