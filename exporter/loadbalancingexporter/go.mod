@@ -7,11 +7,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.8
 	github.com/aws/smithy-go v1.28.7
 	github.com/goccy/go-json v0.10.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componenttest v0.165.0
@@ -19,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.71.0
 	go.opentelemetry.io/collector/confmap v1.71.0
 	go.opentelemetry.io/collector/consumer v1.71.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.165.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.0
 	go.opentelemetry.io/collector/exporter v1.71.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.165.0
@@ -36,7 +35,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
-	gopkg.in/yaml.v3 v3.0.1
+	go.yaml.in/yaml/v3 v3.0.6
 	k8s.io/api v0.37.2
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.2
@@ -139,6 +138,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.165.0 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.165.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.165.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.165.0 // indirect
@@ -184,7 +184,6 @@ require (
 	go.opentelemetry.io/otel/sdk/log v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
 	golang.org/x/net v0.62.0 // indirect

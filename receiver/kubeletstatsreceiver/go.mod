@@ -5,13 +5,13 @@ go 1.26.0
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componenttest v0.165.0
@@ -166,7 +166,6 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect

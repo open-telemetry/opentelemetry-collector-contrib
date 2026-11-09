@@ -100,7 +100,6 @@ extension/datadogextension/                                      @open-telemetry
 extension/dbauth/                                                @open-telemetry/collector-contrib-approvers @XSAM
 extension/dbauth/awsiamdbauthextension/                          @open-telemetry/collector-contrib-approvers @XSAM
 extension/encoding/                                              @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @MovieStoreGuy @VihasMakwana
-extension/encoding/avrologencodingextension/                     @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/awscloudwatchmetricstreamsencodingextension/  @open-telemetry/collector-contrib-approvers @constanca-m @Kavindu-Dodan
 extension/encoding/awslogsencodingextension/                     @open-telemetry/collector-contrib-approvers @constanca-m @Kavindu-Dodan @MichaelKatsoulis
 extension/encoding/azureencodingextension/                       @open-telemetry/collector-contrib-approvers @constanca-m
@@ -416,6 +415,7 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 # Start unmaintained components list
 
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers
+extension/encoding/avrologencodingextension/                     @open-telemetry/collector-contrib-approvers
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers
 
 # End unmaintained components list

@@ -13,13 +13,13 @@ require (
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.20.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1
 	github.com/tinylib/msgp v1.6.5
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -141,7 +141,6 @@ require (
 	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	google.golang.org/grpc v1.85.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
