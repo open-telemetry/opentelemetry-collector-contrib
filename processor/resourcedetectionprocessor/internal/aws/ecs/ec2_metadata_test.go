@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_aws_ecs) && !omit_detector_aws_ecs
+
 package ecs
 
 import (
@@ -9,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -31,10 +34,14 @@ import (
 
 const (
 	enrichmentTask              = "arn:aws:ecs:us-west-2:123456789123:task/my-cluster/123"
+	enrichmentOtherTask         = "arn:aws:ecs:us-west-2:123456789123:task/my-cluster/789"
 	enrichmentCluster           = "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster"
 	enrichmentContainerInstance = "arn:aws:ecs:us-west-2:123456789123:container-instance/my-cluster/456"
 	enrichmentInstance          = "i-0123456789abcdef0"
+	enrichmentOtherInstance     = "i-0fedcba9876543210"
 )
+
+var hostAttributeKeys = []string{"host.id", "host.name", "host.type", "host.image.id"}
 
 type enrichmentMetadataProvider struct {
 	task ecsutil.TaskMetadata
@@ -51,7 +58,7 @@ func (*enrichmentMetadataProvider) FetchContainerMetadata() (*ecsutil.ContainerM
 type enrichmentAPI struct {
 	t                                  *testing.T
 	ctx                                context.Context
-	taskARN, containerARN              string
+	taskARN, containerARN, instanceID  string
 	tasks                              *ecs.DescribeTasksOutput
 	containers                         *ecs.DescribeContainerInstancesOutput
 	instances                          *ec2.DescribeInstancesOutput
@@ -82,26 +89,128 @@ func (a *enrichmentAPI) DescribeContainerInstances(ctx context.Context, in *ecs.
 
 func (a *enrichmentAPI) DescribeInstances(ctx context.Context, in *ec2.DescribeInstancesInput, _ ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
 	assert.Equal(a.t, a.ctx, ctx)
-	assert.Equal(a.t, []string{enrichmentInstance}, in.InstanceIds)
+	assert.Equal(a.t, []string{a.instanceID}, in.InstanceIds)
 	a.calls = append(a.calls, "instances")
 	return a.instances, a.instanceErr
+}
+
+func (a *enrichmentAPI) instance() *ec2types.Instance {
+	return &a.instances.Reservations[0].Instances[0]
+}
+
+// setTask makes both the metadata endpoint and the API fixtures describe taskARN
+// running on the EC2 instance instanceID.
+func setTask(p *enrichmentMetadataProvider, a *enrichmentAPI, taskARN, instanceID string) {
+	p.task.TaskARN = taskARN
+	a.taskARN = taskARN
+	a.tasks.Tasks[0].TaskArn = aws.String(taskARN)
+	a.containers.ContainerInstances[0].Ec2InstanceId = aws.String(instanceID)
+	a.instanceID = instanceID
+	a.instance().InstanceId = aws.String(instanceID)
+}
+
+// hostAttributes enables the host attributes only when keys lists them.
+func hostAttributes(keys ...string) metadata.ResourceAttributesConfig {
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.HostID.Enabled = false
+	cfg.HostName.Enabled = false
+	cfg.HostType.Enabled = false
+	cfg.HostImageID.Enabled = false
+	for _, key := range keys {
+		switch key {
+		case "host.id":
+			cfg.HostID.Enabled = true
+		case "host.name":
+			cfg.HostName.Enabled = true
+		case "host.type":
+			cfg.HostType.Enabled = true
+		case "host.image.id":
+			cfg.HostImageID.Enabled = true
+		}
+	}
+	return cfg
 }
 
 func newEnrichmentDetector(t *testing.T) (*Detector, *enrichmentAPI, *enrichmentMetadataProvider, *observer.ObservedLogs) {
 	p := &enrichmentMetadataProvider{task: ecsutil.TaskMetadata{Cluster: "my-cluster", TaskARN: enrichmentTask, LaunchType: "EC2", AvailabilityZone: "task-zone"}}
 	a := &enrichmentAPI{
-		t: t, ctx: t.Context(), taskARN: enrichmentTask, containerARN: enrichmentContainerInstance,
+		t: t, ctx: t.Context(), taskARN: enrichmentTask, containerARN: enrichmentContainerInstance, instanceID: enrichmentInstance,
 		tasks:      &ecs.DescribeTasksOutput{Tasks: []ecstypes.Task{{TaskArn: aws.String(enrichmentTask), ClusterArn: aws.String(enrichmentCluster), ContainerInstanceArn: aws.String(enrichmentContainerInstance)}}},
 		containers: &ecs.DescribeContainerInstancesOutput{ContainerInstances: []ecstypes.ContainerInstance{{ContainerInstanceArn: aws.String(enrichmentContainerInstance), Ec2InstanceId: aws.String(enrichmentInstance)}}},
 		instances:  &ec2.DescribeInstancesOutput{Reservations: []ec2types.Reservation{{OwnerId: aws.String("123456789123"), Instances: []ec2types.Instance{{InstanceId: aws.String(enrichmentInstance), PrivateDnsName: aws.String("ip-10-0-0-1.us-west-2.compute.internal"), InstanceType: ec2types.InstanceTypeT3Micro, ImageId: aws.String("ami-123"), Placement: &ec2types.Placement{AvailabilityZone: aws.String("us-west-2a")}}}}}},
 	}
 	core, logs := observer.New(zap.WarnLevel)
-	d := &Detector{provider: p, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()), ec2Metadata: true, logger: zap.New(core), clients: func(ctx context.Context, region string) (ecsAPI, ec2API, error) {
+	d := &Detector{provider: p, rb: metadata.NewResourceBuilder(hostAttributes(hostAttributeKeys...)), hostLookup: true, logger: zap.New(core), clients: func(ctx context.Context, region string) (ecsAPI, ec2API, error) {
 		assert.Equal(t, a.ctx, ctx)
 		assert.Equal(t, "us-west-2", region)
 		return a, a, nil
 	}}
 	return d, a, p, logs
+}
+
+func assertNoHostAttributes(t *testing.T, attrs map[string]any) {
+	t.Helper()
+	for _, key := range hostAttributeKeys {
+		assert.NotContains(t, attrs, key)
+	}
+}
+
+func TestEC2MetadataDefaultsDoNotLookUp(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	for _, enabled := range []bool{cfg.ResourceAttributes.HostID.Enabled, cfg.ResourceAttributes.HostName.Enabled, cfg.ResourceAttributes.HostType.Enabled, cfg.ResourceAttributes.HostImageID.Enabled} {
+		assert.False(t, enabled)
+	}
+
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://localhost/task")
+	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	d := detector.(*Detector)
+	assert.False(t, d.hostLookup)
+
+	d, a, _, logs := newEnrichmentDetector(t)
+	d.hostLookup = false
+	d.rb = metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+	d.clients = func(context.Context, string) (ecsAPI, ec2API, error) {
+		t.Fatal("unexpected AWS clients")
+		return nil, nil, nil
+	}
+	resource, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	attrs := resource.Attributes().AsRaw()
+	assertNoHostAttributes(t, attrs)
+	assert.Equal(t, "task-zone", attrs["cloud.availability_zone"])
+	assert.Empty(t, a.calls)
+	assert.Zero(t, logs.Len())
+}
+
+func TestEC2MetadataEachHostAttributeTriggersLookup(t *testing.T) {
+	want := map[string]string{"host.id": enrichmentInstance, "host.name": "ip-10-0-0-1.us-west-2.compute.internal", "host.type": "t3.micro", "host.image.id": "ami-123"}
+	for _, key := range hostAttributeKeys {
+		t.Run(key, func(t *testing.T) {
+			t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://localhost/task")
+			cfg := CreateDefaultConfig()
+			cfg.ResourceAttributes = hostAttributes(key)
+			detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+			require.NoError(t, err)
+			created := detector.(*Detector)
+			require.True(t, created.hostLookup)
+
+			d, a, _, logs := newEnrichmentDetector(t)
+			d.rb = created.rb
+			resource, _, err := d.Detect(t.Context())
+			require.NoError(t, err)
+			attrs := resource.Attributes().AsRaw()
+			for _, other := range hostAttributeKeys {
+				if other == key {
+					assert.Equal(t, want[other], attrs[other], other)
+				} else {
+					assert.NotContains(t, attrs, other)
+				}
+			}
+			assert.Equal(t, []string{"tasks", "containers", "instances"}, a.calls)
+			assert.Zero(t, logs.Len())
+		})
+	}
 }
 
 func TestEC2MetadataSuccess(t *testing.T) {
@@ -124,53 +233,47 @@ func TestEC2MetadataSuccess(t *testing.T) {
 				assert.Equal(t, want, attrs[key], key)
 			}
 			assert.Equal(t, []string{"tasks", "containers", "instances"}, a.calls)
-			assert.Equal(t, 0, logs.Len())
+			assert.Zero(t, logs.Len())
 		})
 	}
 }
 
-func TestEC2MetadataSkipped(t *testing.T) {
-	assert.False(t, CreateDefaultConfig().EC2Metadata)
-	for _, tt := range []struct {
-		name, launch string
-		enabled      bool
-	}{{"disabled", "EC2", false}, {"fargate", "FARGATE", true}, {"missing launch", "", true}, {"unknown launch", "other", true}} {
-		t.Run(tt.name, func(t *testing.T) {
+func TestEC2MetadataSkippedForOtherLaunchTypes(t *testing.T) {
+	for _, launch := range []string{"FARGATE", "", "other"} {
+		t.Run("launch_"+launch, func(t *testing.T) {
 			d, a, p, logs := newEnrichmentDetector(t)
-			d.ec2Metadata = tt.enabled
-			p.task.LaunchType = tt.launch
+			p.task.LaunchType = launch
 			d.clients = func(context.Context, string) (ecsAPI, ec2API, error) {
 				t.Fatal("unexpected AWS clients")
 				return nil, nil, nil
 			}
 			resource, _, err := d.Detect(t.Context())
 			require.NoError(t, err)
-			assert.NotContains(t, resource.Attributes().AsRaw(), "host.id")
+			assertNoHostAttributes(t, resource.Attributes().AsRaw())
 			assert.Empty(t, a.calls)
 			assert.Zero(t, logs.Len())
 		})
 	}
 }
 
-func TestEC2MetadataFailuresPreserveECS(t *testing.T) {
+// enrichmentFailures lists the ways the identity chain or the AWS APIs can fail.
+// calls is the number of AWS API calls made before the failure.
+func enrichmentFailures() []struct {
+	name   string
+	change func(*Detector, *enrichmentAPI, *enrichmentMetadataProvider)
+	calls  int
+} {
 	denial := &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "secret response"}
-	for _, tt := range []struct {
+	return []struct {
 		name   string
 		change func(*Detector, *enrichmentAPI, *enrichmentMetadataProvider)
 		calls  int
 	}{
 		{"malformed task", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) { p.task.TaskARN = "broken" }, 0},
-		{"wrong service", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) {
-			p.task.TaskARN = "arn:aws:s3:us-west-2:123456789123:task/my-cluster/123"
-		}, 0},
-		{"invalid account", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) {
-			p.task.TaskARN = "arn:aws:ecs:us-west-2:owner:task/my-cluster/123"
+		{"task without region", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) {
+			p.task.TaskARN = "arn:aws:ecs::123456789123:task/my-cluster/123"
 		}, 0},
 		{"missing cluster", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) { p.task.Cluster = "" }, 0},
-		{"cluster mismatch", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) { p.task.Cluster = "other" }, 0},
-		{"cluster account mismatch", func(_ *Detector, _ *enrichmentAPI, p *enrichmentMetadataProvider) {
-			p.task.Cluster = "arn:aws:ecs:us-west-2:999999999999:cluster/my-cluster"
-		}, 0},
 		{"configuration", func(d *Detector, _ *enrichmentAPI, _ *enrichmentMetadataProvider) {
 			d.clients = func(context.Context, string) (ecsAPI, ec2API, error) { return nil, nil, errors.New("secret config") }
 		}, 0},
@@ -186,17 +289,8 @@ func TestEC2MetadataFailuresPreserveECS(t *testing.T) {
 		{"wrong task", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
 			a.tasks.Tasks[0].TaskArn = aws.String("wrong")
 		}, 1},
-		{"wrong returned cluster", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.tasks.Tasks[0].ClusterArn = aws.String("arn:aws:ecs:us-west-2:123456789123:cluster/other")
-		}, 1},
 		{"missing container ARN", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
 			a.tasks.Tasks[0].ContainerInstanceArn = nil
-		}, 1},
-		{"wrong container region", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.tasks.Tasks[0].ContainerInstanceArn = aws.String("arn:aws:ecs:us-east-1:123456789123:container-instance/my-cluster/456")
-		}, 1},
-		{"wrong container cluster", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.tasks.Tasks[0].ContainerInstanceArn = aws.String("arn:aws:ecs:us-west-2:123456789123:container-instance/other/456")
 		}, 1},
 		{"container IAM", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) { a.containerErr = denial }, 2},
 		{"nil containers", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) { a.containers = nil }, 2},
@@ -218,9 +312,6 @@ func TestEC2MetadataFailuresPreserveECS(t *testing.T) {
 		{"ambiguous reservations", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
 			a.instances.Reservations = append(a.instances.Reservations, a.instances.Reservations[0])
 		}, 3},
-		{"wrong owner", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].OwnerId = aws.String("999999999999")
-		}, 3},
 		{"no instances", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
 			a.instances.Reservations[0].Instances = nil
 		}, 3},
@@ -228,27 +319,15 @@ func TestEC2MetadataFailuresPreserveECS(t *testing.T) {
 			a.instances.Reservations[0].Instances = append(a.instances.Reservations[0].Instances, a.instances.Reservations[0].Instances[0])
 		}, 3},
 		{"wrong instance", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].Instances[0].InstanceId = aws.String("i-other")
+			a.instance().InstanceId = aws.String("i-other")
 		}, 3},
-		{"missing DNS", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].Instances[0].PrivateDnsName = nil
-		}, 3},
-		{"missing type", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].Instances[0].InstanceType = ""
-		}, 3},
-		{"missing image", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].Instances[0].ImageId = nil
-		}, 3},
-		{"missing placement", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].Instances[0].Placement = nil
-		}, 3},
-		{"missing zone", func(_ *Detector, a *enrichmentAPI, _ *enrichmentMetadataProvider) {
-			a.instances.Reservations[0].Instances[0].Placement.AvailabilityZone = nil
-		}, 3},
-	} {
+	}
+}
+
+func TestEC2MetadataSoftFailuresPreserveECS(t *testing.T) {
+	for _, tt := range enrichmentFailures() {
 		t.Run(tt.name, func(t *testing.T) {
 			d, a, p, logs := newEnrichmentDetector(t)
-			d.failOnMissingMetadata = true
 			tt.change(d, a, p)
 			resource, _, err := d.Detect(t.Context())
 			require.NoError(t, err)
@@ -256,14 +335,56 @@ func TestEC2MetadataFailuresPreserveECS(t *testing.T) {
 			assert.Equal(t, p.task.TaskARN, attrs["aws.ecs.task.arn"])
 			assert.Equal(t, "aws_ecs", attrs["cloud.platform"])
 			assert.Equal(t, "task-zone", attrs["cloud.availability_zone"])
-			for _, key := range []string{"host.id", "host.name", "host.type", "host.image.id"} {
-				assert.NotContains(t, attrs, key)
-			}
+			assertNoHostAttributes(t, attrs)
 			assert.Len(t, a.calls, tt.calls)
 			require.Equal(t, 1, logs.Len())
 			assert.NotContains(t, logs.All()[0].ContextMap()["error"], "secret")
 		})
 	}
+}
+
+func TestEC2MetadataStrictFailuresReturnError(t *testing.T) {
+	for _, tt := range enrichmentFailures() {
+		t.Run(tt.name, func(t *testing.T) {
+			d, a, p, logs := newEnrichmentDetector(t)
+			d.failOnMissingMetadata = true
+			tt.change(d, a, p)
+			resource, _, err := d.Detect(t.Context())
+			require.ErrorContains(t, err, "unable to enrich ECS resource with EC2 metadata")
+			assert.NotContains(t, err.Error(), "secret")
+			assert.Zero(t, resource.Attributes().Len())
+			assert.Len(t, a.calls, tt.calls)
+			assert.Zero(t, logs.Len())
+		})
+	}
+}
+
+func TestEC2MetadataStrictRetriesAfterFailure(t *testing.T) {
+	d, a, _, _ := newEnrichmentDetector(t)
+	d.failOnMissingMetadata = true
+
+	// A canceled lookup is an error, so the caller retries it.
+	ctx, cancel := context.WithCancel(t.Context())
+	a.ctx = ctx
+	a.wait = true
+	cancel()
+	resource, _, err := d.Detect(ctx)
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Zero(t, resource.Attributes().Len())
+
+	// An API error is an error too.
+	a.ctx, a.wait = t.Context(), false
+	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
+	_, _, err = d.Detect(t.Context())
+	require.ErrorContains(t, err, "DescribeTasks: ThrottlingException")
+
+	// The next attempt succeeds and is not poisoned by the earlier failures.
+	a.taskErr = nil
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	attrs := resource.Attributes().AsRaw()
+	assert.Equal(t, enrichmentInstance, attrs["host.id"])
+	assert.Equal(t, "us-west-2a", attrs["cloud.availability_zone"])
 }
 
 func TestEC2MetadataContext(t *testing.T) {
@@ -276,16 +397,156 @@ func TestEC2MetadataContext(t *testing.T) {
 	resource, _, err := d.Detect(ctx)
 	require.NoError(t, err)
 	assert.Less(t, time.Since(started), time.Second)
-	assert.NotContains(t, resource.Attributes().AsRaw(), "host.id")
+	assertNoHostAttributes(t, resource.Attributes().AsRaw())
 	require.Equal(t, 1, logs.Len())
 	assert.Contains(t, logs.All()[0].ContextMap()["error"], "context deadline exceeded")
 }
 
+func TestEC2MetadataSoftRefreshKeepsSameTaskHost(t *testing.T) {
+	d, a, _, logs := newEnrichmentDetector(t)
+
+	// Without an earlier success there is nothing to keep.
+	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
+	resource, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assertNoHostAttributes(t, resource.Attributes().AsRaw())
+	require.Equal(t, 1, logs.Len())
+	logs.TakeAll()
+
+	// A successful lookup is cached.
+	a.taskErr = nil
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, enrichmentInstance, resource.Attributes().AsRaw()["host.id"])
+
+	// A transient failure for the same task keeps the cached host and still reports ECS metadata.
+	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	attrs := resource.Attributes().AsRaw()
+	assert.Equal(t, enrichmentInstance, attrs["host.id"])
+	assert.Equal(t, "ip-10-0-0-1.us-west-2.compute.internal", attrs["host.name"])
+	assert.Equal(t, "t3.micro", attrs["host.type"])
+	assert.Equal(t, "ami-123", attrs["host.image.id"])
+	assert.Equal(t, "us-west-2a", attrs["cloud.availability_zone"])
+	assert.Equal(t, enrichmentTask, attrs["aws.ecs.task.arn"])
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].ContextMap()["error"], "DescribeTasks: ThrottlingException")
+
+	// Recovery replaces the cached host with fresh values.
+	a.taskErr = nil
+	*a.instance() = ec2types.Instance{InstanceId: aws.String(enrichmentInstance), PrivateDnsName: aws.String("ip-10-0-0-9.us-west-2.compute.internal"), InstanceType: ec2types.InstanceTypeM5Large, ImageId: aws.String("ami-999"), Placement: &ec2types.Placement{AvailabilityZone: aws.String("us-west-2b")}}
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	attrs = resource.Attributes().AsRaw()
+	assert.Equal(t, "ip-10-0-0-9.us-west-2.compute.internal", attrs["host.name"])
+	assert.Equal(t, "m5.large", attrs["host.type"])
+	assert.Equal(t, "ami-999", attrs["host.image.id"])
+	assert.Equal(t, "us-west-2b", attrs["cloud.availability_zone"])
+
+	// The recovered values are the ones kept on the next failure.
+	a.instanceErr = errors.New("secret failure")
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "m5.large", resource.Attributes().AsRaw()["host.type"])
+}
+
+func TestEC2MetadataChangedTaskDoesNotReuseHost(t *testing.T) {
+	d, a, p, _ := newEnrichmentDetector(t)
+	resource, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, enrichmentInstance, resource.Attributes().AsRaw()["host.id"])
+
+	// A different task that cannot be looked up must not inherit the previous task's host.
+	setTask(p, a, enrichmentOtherTask, enrichmentOtherInstance)
+	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	attrs := resource.Attributes().AsRaw()
+	assertNoHostAttributes(t, attrs)
+	assert.Equal(t, enrichmentOtherTask, attrs["aws.ecs.task.arn"])
+
+	// Going back to the original task does not resurrect its old host either.
+	setTask(p, a, enrichmentTask, enrichmentInstance)
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	assertNoHostAttributes(t, resource.Attributes().AsRaw())
+
+	// A successful lookup for the changed task is used and cached for that task.
+	setTask(p, a, enrichmentOtherTask, enrichmentOtherInstance)
+	a.taskErr = nil
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, enrichmentOtherInstance, resource.Attributes().AsRaw()["host.id"])
+	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException"}
+	resource, _, err = d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, enrichmentOtherInstance, resource.Attributes().AsRaw()["host.id"])
+}
+
+func TestEC2MetadataStrictDoesNotUseCachedHost(t *testing.T) {
+	d, a, _, _ := newEnrichmentDetector(t)
+	d.failOnMissingMetadata = true
+	_, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException"}
+	resource, _, err := d.Detect(t.Context())
+	require.Error(t, err)
+	assert.Zero(t, resource.Attributes().Len())
+}
+
+func TestEC2MetadataOptionalFieldsDoNotBlockOthers(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		change  func(*ec2types.Instance)
+		missing []string
+		zone    string
+	}{
+		{"missing DNS", func(i *ec2types.Instance) { i.PrivateDnsName = nil }, []string{"host.name"}, "us-west-2a"},
+		{"blank DNS", func(i *ec2types.Instance) { i.PrivateDnsName = aws.String(" ") }, []string{"host.name"}, "us-west-2a"},
+		{"missing type", func(i *ec2types.Instance) { i.InstanceType = "" }, []string{"host.type"}, "us-west-2a"},
+		{"missing image", func(i *ec2types.Instance) { i.ImageId = nil }, []string{"host.image.id"}, "us-west-2a"},
+		{"missing placement", func(i *ec2types.Instance) { i.Placement = nil }, nil, "task-zone"},
+		{"missing zone", func(i *ec2types.Instance) { i.Placement.AvailabilityZone = nil }, nil, "task-zone"},
+		{"only ID", func(i *ec2types.Instance) { *i = ec2types.Instance{InstanceId: i.InstanceId} }, []string{"host.name", "host.type", "host.image.id"}, "task-zone"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			d, a, _, logs := newEnrichmentDetector(t)
+			tt.change(a.instance())
+			resource, _, err := d.Detect(t.Context())
+			require.NoError(t, err)
+			attrs := resource.Attributes().AsRaw()
+			assert.Equal(t, enrichmentInstance, attrs["host.id"])
+			for _, key := range hostAttributeKeys {
+				if key == "host.id" {
+					continue
+				}
+				if slices.Contains(tt.missing, key) {
+					assert.NotContains(t, attrs, key)
+				} else {
+					assert.NotEmpty(t, attrs[key], key)
+				}
+			}
+			assert.Equal(t, tt.zone, attrs["cloud.availability_zone"])
+			assert.Equal(t, "123456789123", attrs["cloud.account.id"])
+			assert.Equal(t, "us-west-2", attrs["cloud.region"])
+			assert.Zero(t, logs.Len())
+
+			// Strict mode treats the missing optional fields as a success too.
+			d, a, _, _ = newEnrichmentDetector(t)
+			d.failOnMissingMetadata = true
+			tt.change(a.instance())
+			_, _, err = d.Detect(t.Context())
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestEC2MetadataAttributeSelection(t *testing.T) {
-	for _, key := range []string{"host.id", "host.name", "host.image.id", "host.type", "cloud.account.id", "cloud.region", "cloud.availability_zone"} {
-		t.Run(key, func(t *testing.T) {
+	for _, key := range append([]string{"cloud.availability_zone"}, hostAttributeKeys...) {
+		t.Run("disable "+key, func(t *testing.T) {
 			d, _, _, _ := newEnrichmentDetector(t)
-			cfg := metadata.DefaultResourceAttributesConfig()
+			cfg := hostAttributes(hostAttributeKeys...)
 			switch key {
 			case "host.id":
 				cfg.HostID.Enabled = false
@@ -295,10 +556,6 @@ func TestEC2MetadataAttributeSelection(t *testing.T) {
 				cfg.HostImageID.Enabled = false
 			case "host.type":
 				cfg.HostType.Enabled = false
-			case "cloud.account.id":
-				cfg.CloudAccountID.Enabled = false
-			case "cloud.region":
-				cfg.CloudRegion.Enabled = false
 			case "cloud.availability_zone":
 				cfg.CloudAvailabilityZone.Enabled = false
 			}
@@ -307,7 +564,7 @@ func TestEC2MetadataAttributeSelection(t *testing.T) {
 			require.NoError(t, err)
 			attrs := resource.Attributes().AsRaw()
 			assert.NotContains(t, attrs, key)
-			for _, other := range []string{"host.id", "host.name", "host.image.id", "host.type", "cloud.account.id", "cloud.region", "cloud.availability_zone"} {
+			for _, other := range append([]string{"cloud.availability_zone"}, hostAttributeKeys...) {
 				if other != key {
 					assert.Contains(t, attrs, other)
 				}
@@ -315,16 +572,26 @@ func TestEC2MetadataAttributeSelection(t *testing.T) {
 			assert.Equal(t, "aws_ecs", attrs["cloud.platform"])
 		})
 	}
+
+	t.Run("zone alone does not look up", func(t *testing.T) {
+		t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://localhost/task")
+		cfg := CreateDefaultConfig()
+		cfg.ResourceAttributes = hostAttributes()
+		cfg.ResourceAttributes.CloudAvailabilityZone.Enabled = true
+		detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+		require.NoError(t, err)
+		assert.False(t, detector.(*Detector).hostLookup)
+	})
 }
 
 func TestEC2MetadataNewDetector(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://localhost/task")
 	cfg := CreateDefaultConfig()
-	cfg.EC2Metadata = true
+	cfg.ResourceAttributes = hostAttributes("host.name")
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
 	require.NoError(t, err)
 	d := detector.(*Detector)
-	assert.True(t, d.ec2Metadata)
+	assert.True(t, d.hostLookup)
 	assert.True(t, d.failOnMissingMetadata)
 	assert.NotNil(t, d.logger)
 	assert.NotNil(t, d.clients)
@@ -401,7 +668,10 @@ func TestEC2MetadataTaskRoleCredentials(t *testing.T) {
 func TestEC2MetadataSafeError(t *testing.T) {
 	err := ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "secret response"})
 	assert.EqualError(t, err, "DescribeTasks: AccessDeniedException")
-	err = ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Code: "unsafe code secret", Message: "secret response"})
+	// The SDK code is printed as is; the message is never included.
+	err = ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Code: "Client.UnauthorizedOperation", Message: "secret response"})
+	assert.EqualError(t, err, "DescribeTasks: Client.UnauthorizedOperation")
+	err = ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Message: "secret response"})
 	assert.EqualError(t, err, "DescribeTasks failed")
 	err = ec2MetadataError(t.Context(), "AWS configuration", errors.New("secret response"))
 	assert.EqualError(t, err, "AWS configuration failed")

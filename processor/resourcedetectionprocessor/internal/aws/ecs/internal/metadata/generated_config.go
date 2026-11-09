@@ -96,16 +96,16 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		HostID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostImageID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostType: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

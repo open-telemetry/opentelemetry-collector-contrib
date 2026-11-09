@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_aws_ecs
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_aws_ecs) && !omit_detector_aws_ecs
 
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 
@@ -26,7 +26,12 @@ import (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	ec2Metadata           bool
+	// hostLookup is true when any host.* attribute is enabled, which makes the
+	// detector query the ECS and EC2 APIs for tasks running on EC2.
+	hostLookup bool
+	// lastHost is the last successful EC2 lookup, reused only for the same task
+	// when a later lookup fails and fail_on_missing_metadata is false.
+	lastHost              *ec2Host
 	logger                *zap.Logger
 	clients               func(context.Context, string) (ecsAPI, ec2API, error)
 	provider              ecsutil.MetadataProvider
@@ -44,7 +49,9 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOn
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{ec2Metadata: cfg.EC2Metadata, logger: params.Logger, clients: newEC2MetadataClients, provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
+	ra := cfg.ResourceAttributes
+	hostLookup := ra.HostID.Enabled || ra.HostName.Enabled || ra.HostType.Enabled || ra.HostImageID.Enabled
+	return &Detector{hostLookup: hostLookup, logger: params.Logger, clients: newEC2MetadataClients, provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
@@ -98,8 +105,13 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetAwsEcsLaunchtype("fargate")
 	}
 
-	if d.ec2Metadata && strings.EqualFold(tmdeResp.LaunchType, "EC2") {
+	if d.hostLookup && strings.EqualFold(tmdeResp.LaunchType, "EC2") {
 		if enrichmentErr := d.enrichEC2(ctx, tmdeResp); enrichmentErr != nil {
+			if d.failOnMissingMetadata {
+				// Discard partial attributes before a retry can observe a different task.
+				d.rb.Emit()
+				return pcommon.NewResource(), "", fmt.Errorf("unable to enrich ECS resource with EC2 metadata: %w", enrichmentErr)
+			}
 			d.logger.Warn("Unable to enrich ECS resource with EC2 metadata", zap.Error(enrichmentErr))
 		}
 	}
@@ -108,6 +120,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	if err != nil || selfMetaData == nil {
 		if err != nil && d.failOnMissingMetadata {
+			d.rb.Emit()
 			return pcommon.NewResource(), "", fmt.Errorf("ecs container metadata unavailable: %w", err)
 		}
 		// Task metadata was retrieved successfully, so return it without the container
@@ -118,6 +131,28 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	addValidLogData(tmdeResp.Containers, selfMetaData, account, d.rb)
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+// enrichEC2 adds the EC2 host attributes. When the lookup fails and the caller
+// tolerates it, the host of the previous successful lookup is reused, but only
+// if it belongs to the same task; a different task never inherits another
+// task's host.
+func (d *Detector) enrichEC2(ctx context.Context, meta *ecsutil.TaskMetadata) error {
+	host, err := d.lookupEC2Host(ctx, meta)
+	if err != nil {
+		if d.failOnMissingMetadata {
+			return err
+		}
+		if d.lastHost != nil && d.lastHost.taskARN == meta.TaskARN {
+			d.applyEC2Host(d.lastHost)
+		} else {
+			d.lastHost = nil
+		}
+		return err
+	}
+	d.lastHost = host
+	d.applyEC2Host(host)
+	return nil
 }
 
 func constructClusterArn(cluster, region, account string) string {
