@@ -81,7 +81,6 @@ extension/datadogextension extension/datadog
 extension/dbauth extension/dbauth
 extension/dbauth/awsiamdbauthextension extension/dbauth/awsiamdbauth
 extension/encoding extension/encoding
-extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
 extension/encoding/awslogsencodingextension extension/encoding/awslogsencoding
 extension/encoding/azureencodingextension extension/encoding/azureencoding
@@ -375,4 +374,5 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/logicmonitorexporter exporter/logicmonitor
+extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 receiver/riakreceiver receiver/riak
