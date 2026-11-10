@@ -201,13 +201,13 @@ func TestOAuthJwtGrantTypeSettings(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.settings.Scopes, rc.Scopes)
 			assert.Equal(t, test.settings.TokenURL, rc.TokenURL)
-			assert.EqualValues(t, test.settings.ClientCertificateKey, rc.PrivateKey)
+			assert.EqualValues(t, test.settings.ClientCertificateKey, rc.signer.key)
 			assert.Equal(t, test.settings.ClientID, rc.Subject)
-			assert.Equal(t, test.settings.SignatureAlgorithm, rc.SigningAlgorithm.Name)
-			assert.Equal(t, test.settings.ClientCertificateKeyID, rc.PrivateKeyID)
+			assert.Equal(t, test.settings.SignatureAlgorithm, rc.signer.method.Name)
+			assert.Equal(t, test.settings.ClientCertificateKeyID, rc.signer.keyID)
 			assert.Equal(t, test.settings.EndpointParams, rc.EndpointParams)
 			assert.Equal(t, test.settings.Iss, rc.Iss)
-			assert.Equal(t, test.settings.Claims, rc.PrivateClaims)
+			assert.Equal(t, test.settings.Claims, rc.signer.privateClaims)
 		})
 	}
 }

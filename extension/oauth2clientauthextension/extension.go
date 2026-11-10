@@ -74,7 +74,14 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 			return nil, err
 		}
 	case grantTypeClientCredentials, "":
-		credentials = newClientCredentialsGrantTypeConfig(cfg)
+		if cfg.TokenEndpointAuthMethod == authMethodPrivateKeyJWT {
+			credentials, err = newPrivateKeyJWTConfig(cfg)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			credentials = newClientCredentialsGrantTypeConfig(cfg)
+		}
 	default:
 		return nil, fmt.Errorf("unknown grant type %q", cfg.GrantType)
 	}

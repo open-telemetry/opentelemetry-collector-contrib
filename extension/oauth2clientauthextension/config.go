@@ -5,6 +5,7 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -19,6 +20,15 @@ var (
 	errInvalidSignatureAlg         = errors.New("invalid signature algorithm")
 	errNoTokenURLProvided          = errors.New("no TokenURL provided in OAuth Client Credentials configuration")
 	errNoClientSecretProvided      = errors.New("no ClientSecret provided in OAuth Client Credentials configuration")
+	errInvalidAuthMethod           = errors.New("invalid token_endpoint_auth_method")
+	errClientSecretWithPrivateKey  = errors.New("client_secret and client_secret_file must not be set when token_endpoint_auth_method is private_key_jwt")
+	errAuthMethodWithJWTBearer     = errors.New("token_endpoint_auth_method is not supported with the jwt-bearer grant type")
+)
+
+const (
+	authMethodClientSecretBasic = "client_secret_basic"
+	authMethodClientSecretPost  = "client_secret_post"
+	authMethodPrivateKeyJWT     = "private_key_jwt"
 )
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
@@ -38,15 +48,18 @@ type Config struct {
 	ClientSecretFile string `mapstructure:"client_secret_file"`
 
 	// ClientCertificateKeyID is the Key ID to include in the jwt. Only used if
-	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or
+	// TokenEndpointAuthMethod is set to "private_key_jwt".
 	ClientCertificateKeyID string `mapstructure:"client_certificate_key_id"`
 
-	// ClientCertificateKey is the application's private key. Only used if
-	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+	// ClientCertificateKey is the application's PEM encoded RSA private key. Only used if
+	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or
+	// TokenEndpointAuthMethod is set to "private_key_jwt".
 	ClientCertificateKey configopaque.String `mapstructure:"client_certificate_key"`
 
-	// ClientSecrClientCertificateKeyFileetFile is the file pathg to read the application's secret from. Only used if
-	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+	// ClientCertificateKeyFile is the file path to read the application's private key from. Only used if
+	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or
+	// TokenEndpointAuthMethod is set to "private_key_jwt".
 	ClientCertificateKeyFile string `mapstructure:"client_certificate_key_file"`
 
 	// GrantType is the OAuth2 grant type to use. It can be one of
@@ -54,8 +67,15 @@ type Config struct {
 	// Default value is "client_credentials"
 	GrantType string `mapstructure:"grant_type"`
 
+	// TokenEndpointAuthMethod is the method used to authenticate the client at the
+	// token endpoint when GrantType is "client_credentials". It can be one of
+	// "client_secret_basic", "client_secret_post" or "private_key_jwt" (RFC 7523 section 2.2).
+	// If empty, the client secret is sent and the placement (header or body) is auto-detected.
+	TokenEndpointAuthMethod string `mapstructure:"token_endpoint_auth_method,omitempty"`
+
 	// SignatureAlgorithm is the RSA algorithm used to sign JWT token. Only used if
-	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or
+	// TokenEndpointAuthMethod is set to "private_key_jwt".
 	// Default value is RS256 and valid values RS256, RS384, RS512
 	SignatureAlgorithm string `mapstructure:"signature_algorithm,omitempty"`
 
@@ -64,14 +84,15 @@ type Config struct {
 	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
 	Iss string `mapstructure:"iss,omitempty"`
 
-	// Audience optionally specifies the intended audience of the
-	// request.  If empty, the value of TokenURL is used as the
-	// intended audience. Only used if
-	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+	// Audience optionally specifies the "aud" claim of the signed JWT.
+	// If empty, the value of TokenURL is used. Only used if
+	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or
+	// TokenEndpointAuthMethod is set to "private_key_jwt".
 	Audience string `mapstructure:"audience,omitempty"`
 
 	// Claims is a map of claims to be added to the JWT token. Only used if
-	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+	// GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or
+	// TokenEndpointAuthMethod is set to "private_key_jwt".
 	Claims map[string]any `mapstructure:"claims,omitempty"`
 
 	// EndpointParams specifies additional parameters for requests to the token endpoint.
@@ -104,12 +125,30 @@ func (cfg *Config) Validate() error {
 	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return errNoClientIDProvided
 	}
-	if cfg.GrantType == grantTypeJWTBearer {
-		if cfg.ClientCertificateKey == "" && cfg.ClientCertificateKeyFile == "" {
+	switch cfg.TokenEndpointAuthMethod {
+	case "", authMethodClientSecretBasic, authMethodClientSecretPost, authMethodPrivateKeyJWT:
+	default:
+		return fmt.Errorf("%w %q", errInvalidAuthMethod, cfg.TokenEndpointAuthMethod)
+	}
+	hasKey := cfg.ClientCertificateKey != "" || cfg.ClientCertificateKeyFile != ""
+	hasSecret := cfg.ClientSecret != "" || cfg.ClientSecretFile != ""
+	switch {
+	case cfg.GrantType == grantTypeJWTBearer:
+		if cfg.TokenEndpointAuthMethod != "" {
+			return errAuthMethodWithJWTBearer
+		}
+		if !hasKey {
 			return errNoClientCertificateProvided
 		}
-	} else {
-		if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
+	case cfg.TokenEndpointAuthMethod == authMethodPrivateKeyJWT:
+		if !hasKey {
+			return errNoClientCertificateProvided
+		}
+		if hasSecret {
+			return errClientSecretWithPrivateKey
+		}
+	default:
+		if !hasSecret {
 			return errNoClientSecretProvided
 		}
 	}
