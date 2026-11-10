@@ -980,14 +980,38 @@ func TestCacheSyncFailureErrorModes(t *testing.T) {
 func TestCacheSyncFailureRecovers(t *testing.T) {
 	enableInformerObserver(t)
 
-	for _, initialDelay := range []time.Duration{0, 50 * time.Millisecond} {
+	tests := []struct {
+		name   string
+		object K8sObjectsConfig
+		// watchNewPod skips the pre-created pod and instead expects the watch event
+		// for a pod created after the API recovers (include_initial_state stays false).
+		watchNewPod bool
+	}{
+		{
+			name:   "pull",
+			object: K8sObjectsConfig{Name: "pods", Mode: k8sinventory.PullMode, Interval: time.Hour},
+		},
+		{
+			name:   "pull/initial_delay",
+			object: K8sObjectsConfig{Name: "pods", Mode: k8sinventory.PullMode, Interval: time.Hour, InitialDelay: 50 * time.Millisecond},
+		},
+		{
+			name:        "watch",
+			object:      K8sObjectsConfig{Name: "pods", Mode: k8sinventory.WatchMode},
+			watchNewPod: true,
+		},
+	}
+
+	for _, tt := range tests {
 		for _, errorMode := range []ErrorMode{IgnoreError, SilentError} {
-			t.Run(string(errorMode)+"/initial_delay="+initialDelay.String(), func(t *testing.T) {
+			t.Run(string(errorMode)+"/"+tt.name, func(t *testing.T) {
 				var apiDown atomic.Bool
 				var failedLists atomic.Int32
 				apiDown.Store(true)
 				mockClient := newMockDynamicClient()
-				mockClient.createPods(generatePod("pod1", "default", nil, "1"))
+				if !tt.watchNewPod {
+					mockClient.createPods(generatePod("pod1", "default", nil, "1"))
+				}
 				mockClient.client.(*fake.FakeDynamicClient).PrependReactor("list", "pods", func(_ k8s_testing.Action) (bool, runtime.Object, error) {
 					if apiDown.Load() {
 						failedLists.Add(1)
@@ -1001,12 +1025,14 @@ func TestCacheSyncFailureRecovers(t *testing.T) {
 				rCfg.makeDiscoveryClient = getMockDiscoveryClient
 				rCfg.ErrorMode = errorMode
 				rCfg.CacheSyncTimeout = 200 * time.Millisecond
-				rCfg.Objects = []*K8sObjectsConfig{
-					{Name: "pods", Mode: k8sinventory.PullMode, Interval: time.Hour, InitialDelay: initialDelay},
-				}
+				object := tt.object
+				rCfg.Objects = []*K8sObjectsConfig{&object}
 
+				core, logs := observer.New(zap.InfoLevel)
+				settings := receivertest.NewNopSettings(metadata.Type)
+				settings.Logger = zap.New(core)
 				consumer := newMockLogConsumer()
-				r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumer)
+				r, err := newReceiver(settings, rCfg, consumer)
 				require.NoError(t, err)
 				r.(*k8sobjectsreceiver).startRetryBackoff = wait.Backoff{Duration: 10 * time.Millisecond, Factor: 1, Steps: math.MaxInt32}
 				t.Cleanup(func() { _ = r.Shutdown(t.Context()) })
@@ -1016,6 +1042,14 @@ func TestCacheSyncFailureRecovers(t *testing.T) {
 				assert.Zero(t, consumer.Count())
 
 				apiDown.Store(false)
+				if tt.watchNewPod {
+					// A pod created before the retried handler syncs would land in the initial list and be suppressed.
+					require.Eventually(t, func() bool {
+						return logs.FilterMessage("informer cache synced, observer ready").Len() > 0
+					}, 15*time.Second, 10*time.Millisecond)
+					assert.Zero(t, consumer.Count())
+					mockClient.createPods(generatePod("pod2", "default", nil, "2"))
+				}
 				assert.Eventually(t, func() bool { return consumer.Count() == 1 }, 15*time.Second, 50*time.Millisecond)
 			})
 		}
