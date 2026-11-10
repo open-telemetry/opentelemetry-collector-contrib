@@ -337,6 +337,8 @@ sampler:
   fingerprint_attributes:
     - resource.attributes["service.name"]
     - span.attributes["http.status_code"]
+    - trace.duration                      # optional latency bucket key
+  duration_buckets: [2ms, 24ms, 100ms, 1s] # required with duration selectors
   adjustment_interval: 15s                # how often the ema recalculates
   weight: 0.5                             # ema weighting factor in [0, 1); 0 or omitted = 0.5
   max_keys: 500                           # omit for the default of 500; 0 = unlimited
@@ -392,7 +394,7 @@ The `fingerprint_attributes` field names the attributes that identify what kind 
 >
 > To get the sampling result you actually want, choose classifying attributes (route, status code, method, service) over identifying ones (user ID, request ID, session ID, raw URL), as described above.
 
-Each entry is a scoped attribute selector of the form `<origin>.attributes["<name>"]`, where origin is one of `resource`, `scope`, `span` or `any`. Prefixing with `root.` restricts the read to the trace's root span:
+Each entry is a scoped attribute selector of the form `<origin>.attributes["<name>"]`, where origin is one of `resource`, `scope`, `span` or `any`. Prefixing with `root.` restricts the read to the trace's root span. Duration selectors bucket latency with operator-defined cut points in `duration_buckets`:
 
 | Selector | Reads from |
 |----------|------------|
@@ -401,19 +403,26 @@ Each entry is a scoped attribute selector of the form `<origin>.attributes["<nam
 | `span.`     | every span's attributes |
 | `any.`      | the union of resource, instrumentation scope and span attributes across the trace |
 | `root.<origin>.` | the same origin, but only for the span(s) matching the configured `root_span_condition`, eg `root.resource.` for the entry-point service or `root.any.` for the root span's union |
+| `span.duration` | each span's `(end - start)` duration, mapped through `duration_buckets` |
+| `root.span.duration` | the root span's duration only |
+| `trace.duration` | whole-trace latency (`max(end) - min(start)` across spans with valid timestamps) |
 
 The `resource.`, `scope.` and `span.` origins match OTTL's span-context path names, so conditions and fingerprint entries share one spelling. `any.` and the `root.` prefix are trace-level, which OTTL cannot express (fingerprints are built from the whole trace, while OTTL evaluates one span at a time). `root.` must always name an origin, so `root.resource.attributes["service.name"]` reads the entry-point service specifically rather than the trace-wide union `resource.` gives. Note that fingerprint entries are selectors, not OTTL expressions. The two concepts have distinct jobs throughout the config: OTTL conditions appear wherever a single span is evaluated (`conditions`, `root_span_condition`), and selectors appear wherever a trace-level value is collected. Qualifying every path in conditions keeps the two styles identical in practice.
+
+`duration_buckets` lists ascending positive cut points. A duration `d` maps to half-open labels: for `[2ms, 24ms, 1s]` the buckets are `<2ms`, `2ms-24ms`, `24ms-1s`, and `>=1s`. Duration selectors require `duration_buckets`; setting buckets without a duration selector is rejected. Prefer coarse buckets so cardinality stays bounded — raw millisecond values would defeat adaptive sampling the same way request IDs do.
 
 ```yaml
 fingerprint_attributes:
   - resource.attributes["service.name"]
   - span.attributes["http.route"]
   - root.span.attributes["http.status_code"]
+  - trace.duration
+duration_buckets: [2ms, 24ms, 100ms, 1s]
 ```
 
 Every scope collects **all** distinct matching values, there is no first-match or precedence: `any.` is simply the widest search, and a value present at several origins appears once. The fingerprint for a trace is built by sorting the distinct values each selector matched and joining them with `,` within each entry, then joining the entries with the `•` separator. A trace whose spans carry several values for one selector keys as the combination (e.g. `checkout,billing•/api`), which is worth knowing when debugging unexpectedly high key cardinality. Selectors that match nothing are replaced with `<missing>`.
 
-Extraction cost scales with the origin: `resource.` and `scope.` are independent of trace size, while `span.`, `any.` and every `root.` selector walk every span of the trace at decision time. `root.` selectors additionally evaluate the root-span condition per span, which is cheap for the default condition but costs an OTTL evaluation per span for custom ones.
+Extraction cost scales with the origin: `resource.` and `scope.` are independent of trace size, while `span.`, `any.`, duration selectors, and every `root.` selector walk every span of the trace at decision time. `root.` selectors additionally evaluate the root-span condition per span, which is cheap for the default condition but costs an OTTL evaluation per span for custom ones.
 
 ## Worked examples
 
