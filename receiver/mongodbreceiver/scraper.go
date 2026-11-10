@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -90,7 +91,9 @@ type mongodbScraper struct {
 	logger                *zap.Logger
 	config                *Config
 	client                client
-	secondaryClients      []client
+	members               []*member
+	settings              receiver.Settings
+	lastDiscovery         time.Time
 	mongoVersion          *version.Version
 	mb                    *metadata.MetricsBuilder
 	lb                    *metadata.LogsBuilder
@@ -112,6 +115,7 @@ type mongodbScraper struct {
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
 		logger:             settings.Logger,
+		settings:           settings,
 		config:             config,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
@@ -151,29 +155,99 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 		return nil
 	}
 
-	secondaries, err := s.findSecondaryHosts(ctx)
+	s.discoverMembers(ctx)
+	return nil
+}
+
+// member is a replica set member other than the one the main client scrapes. child is set when
+// metrics or top queries are collected from the member; it carries the member's own scrape state
+// so that rates and query windows are computed per member.
+type member struct {
+	host    string
+	client  client
+	child   *mongodbScraper
+	failing bool
+}
+
+// discoverMembers reconciles the member list with the deployment's current topology: members that
+// appeared are connected, and members that left are disconnected.
+func (s *mongodbScraper) discoverMembers(ctx context.Context) {
+	s.lastDiscovery = time.Now()
+	hosts, err := s.findSecondaryHosts(ctx)
 	if err != nil {
 		s.logger.Warn("failed to find secondary hosts", zap.Error(err))
-		return nil
+		return
 	}
 
-	for _, secondary := range secondaries {
-		secondaryConfig := *s.config
-		secondaryConfig.Hosts = []confignet.TCPAddrConfig{
-			{
-				Endpoint: secondary,
-			},
-		}
+	wanted := make(map[string]struct{}, len(hosts))
+	for _, h := range hosts {
+		wanted[h] = struct{}{}
+	}
 
-		secondaryClient, err := newClient(ctx, &secondaryConfig, s.logger, true)
-		if err != nil {
-			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
+	kept := s.members[:0]
+	for _, m := range s.members {
+		if _, ok := wanted[m.host]; ok {
+			kept = append(kept, m)
+			delete(wanted, m.host)
 			continue
 		}
-		s.secondaryClients = append(s.secondaryClients, secondaryClient)
+		s.logger.Info("replica set member left the topology, no longer scraping it", zap.String("host", m.host))
+		if err := m.client.Disconnect(ctx); err != nil {
+			s.logger.Debug("failed to disconnect from removed member", zap.String("host", m.host), zap.Error(err))
+		}
 	}
+	s.members = kept
 
-	return nil
+	for _, h := range hosts {
+		if _, isNew := wanted[h]; !isNew {
+			continue
+		}
+		memberConfig := *s.config
+		memberConfig.Hosts = []confignet.TCPAddrConfig{{Endpoint: h}}
+		memberConfig.Secondaries = SecondariesConfig{}
+
+		c, err := newClient(ctx, &memberConfig, s.logger, true)
+		if err != nil {
+			s.logger.Warn("failed to connect to secondary", zap.String("host", h), zap.Error(err))
+			continue
+		}
+		m := &member{host: h, client: c}
+		if s.config.Secondaries.CollectMetrics || s.config.Secondaries.CollectTopQuery {
+			child := newMongodbScraper(s.settings, &memberConfig)
+			child.client = c
+			child.collectorHostName = s.collectorHostName
+			if s.planCache != nil {
+				child.planCache = buildPlanCache(&memberConfig, s.logger)
+			}
+			m.child = child
+		}
+		s.members = append(s.members, m)
+		s.logger.Info("scraping discovered replica set member", zap.String("host", h))
+	}
+}
+
+// refreshMembers re-runs discovery when the configured refresh interval has elapsed.
+func (s *mongodbScraper) refreshMembers(ctx context.Context) {
+	interval := s.config.Secondaries.RefreshInterval
+	if interval <= 0 || s.config.secondaryDiscoverySkipReason() != "" || time.Since(s.lastDiscovery) < interval {
+		return
+	}
+	s.discoverMembers(ctx)
+}
+
+// recordMemberHealth logs a member's reachability when it changes, at warn level when it becomes
+// unreachable, so a member that cannot be reached is visible without debug logging and without
+// repeating the message on every scrape.
+func (s *mongodbScraper) recordMemberHealth(m *member, err error) {
+	switch {
+	case err != nil && !m.failing:
+		m.failing = true
+		s.logger.Warn("replica set member is unreachable, its data is missing until it recovers",
+			zap.String("host", m.host), zap.Error(err))
+	case err == nil && m.failing:
+		m.failing = false
+		s.logger.Info("replica set member is reachable again", zap.String("host", m.host))
+	}
 }
 
 func (s *mongodbScraper) shutdown(ctx context.Context) error {
@@ -185,8 +259,8 @@ func (s *mongodbScraper) shutdown(ctx context.Context) error {
 		}
 	}
 
-	for _, client := range s.secondaryClients {
-		if err := client.Disconnect(ctx); err != nil {
+	for _, m := range s.members {
+		if err := m.client.Disconnect(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -211,40 +285,116 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	s.refreshMembers(ctx)
+
 	errs := &scrapererror.ScrapeErrors{}
 	s.collectMetrics(ctx, errs)
-	return s.mb.Emit(), errs.Combine()
+	out := s.mb.Emit()
+
+	if s.config.Secondaries.CollectMetrics {
+		results := make([]pmetric.Metrics, len(s.members))
+		errsByMember := make([]error, len(s.members))
+		s.forEachMember(ctx, func(ctx context.Context, i int, m *member) {
+			if m.child == nil {
+				results[i] = pmetric.NewMetrics()
+				return
+			}
+			results[i], errsByMember[i] = m.child.scrape(ctx)
+		})
+		for i, m := range s.members {
+			s.recordMemberHealth(m, errsByMember[i])
+			if errsByMember[i] != nil {
+				errs.AddPartial(1, fmt.Errorf("replica set member %s: %w", m.host, errsByMember[i]))
+			}
+			results[i].ResourceMetrics().MoveAndAppendTo(out.ResourceMetrics())
+		}
+	}
+	return out, errs.Combine()
+}
+
+// memberScrapeTimeout bounds one member's share of a scrape. Members are scraped concurrently and
+// each gets its own deadline, so a member that hangs (for example one being removed from the set)
+// delays only its own data rather than every member's.
+func (s *mongodbScraper) memberScrapeTimeout() time.Duration {
+	timeout := s.config.ControllerConfig.CollectionInterval
+	if s.config.Timeout > 0 && s.config.Timeout < timeout {
+		timeout = s.config.Timeout
+	}
+	if timeout <= 0 {
+		timeout = time.Minute
+	}
+	return timeout
+}
+
+// forEachMember runs fn for every member concurrently, each with its own deadline, and waits for all.
+func (s *mongodbScraper) forEachMember(ctx context.Context, fn func(ctx context.Context, i int, m *member)) {
+	var wg sync.WaitGroup
+	timeout := s.memberScrapeTimeout()
+	for i, m := range s.members {
+		wg.Go(func() {
+			mctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+			fn(mctx, i, m)
+		})
+	}
+	wg.Wait()
 }
 
 func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.scrapeLogsFromClient(ctx, s.client, now)
+	s.refreshMembers(ctx)
 
-	for _, c := range s.secondaryClients {
-		s.scrapeLogsFromClient(ctx, c, now)
+	// Reading each member's current operations is the slow, network-bound part, so it runs
+	// concurrently; turning them into log records shares the logs builder and stays sequential.
+	snapshots := make([]currentOpSnapshot, len(s.members))
+	s.forEachMember(ctx, func(ctx context.Context, i int, m *member) {
+		snapshots[i] = fetchCurrentOp(ctx, m.client)
+	})
+
+	_ = s.scrapeLogsFromClient(ctx, s.client, now)
+
+	for i, m := range s.members {
+		s.recordMemberHealth(m, s.emitCurrentOp(ctx, snapshots[i], now))
 	}
 
 	return s.lb.Emit(), nil
 }
 
-func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) {
+// currentOpSnapshot is one node's server status and in-progress operations, read for query samples.
+type currentOpSnapshot struct {
+	serverStatus bson.M
+	operations   []bson.M
+	err          error
+}
+
+func fetchCurrentOp(ctx context.Context, c client) currentOpSnapshot {
 	serverStatus, err := c.ServerStatus(ctx, "admin")
 	if err != nil {
-		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
-		return
+		return currentOpSnapshot{err: err}
 	}
+	operations, err := c.CurrentOp(ctx)
+	if err != nil {
+		return currentOpSnapshot{err: err}
+	}
+	return currentOpSnapshot{serverStatus: serverStatus, operations: operations}
+}
+
+func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) error {
+	return s.emitCurrentOp(ctx, fetchCurrentOp(ctx, c), now)
+}
+
+func (s *mongodbScraper) emitCurrentOp(ctx context.Context, snap currentOpSnapshot, now pcommon.Timestamp) error {
+	if snap.err != nil {
+		s.logger.Debug("Failed to get server status or current operations for logs", zap.Error(snap.err))
+		return snap.err
+	}
+	serverStatus, operations := snap.serverStatus, snap.operations
 
 	serverAddress, serverPort, err := s.resolveServerAddress(serverStatus)
 	if err != nil {
 		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
-		return
-	}
-
-	operations, err := c.CurrentOp(ctx)
-	if err != nil {
-		s.logger.Error("Failed to get current operations", zap.Error(err))
-		return
+		return err
 	}
 
 	s.processCurrentOp(ctx, operations, now)
@@ -252,6 +402,7 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 	rb := s.lb.NewResourceBuilder()
 	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
+	return nil
 }
 
 func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
@@ -992,36 +1143,36 @@ func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bs
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }
 
+// findSecondaryHosts returns the address of every replica set member other than the one the main
+// client is connected to. It reads them from hello rather than replSetGetStatus: hello reports
+// members under the replica set horizon that matches the name the client connected with, which
+// is how a deployment behind a private endpoint or other address translation makes its members
+// reachable. replSetGetStatus always reports the internal member names. Arbiters hold no data and
+// hidden members are not advertised, so neither is returned.
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
-	result, err := s.client.RunCommand(ctx, adminDatabase, bson.M{replSetGetStatusCommand: 1})
+	result, err := s.client.RunCommand(ctx, adminDatabase, bson.M{"hello": 1})
 	if err != nil {
-		s.logger.Error("Failed to get replica set status", zap.Error(err))
-		return nil, fmt.Errorf("failed to get replica set status: %w", err)
+		return nil, fmt.Errorf("failed to run hello: %w", err)
+	}
+	if _, ok := result["setName"]; !ok {
+		return nil, nil
 	}
 
-	members, ok := result[replicaSetMembersKey].(bson.A)
-	if !ok {
-		return nil, fmt.Errorf("invalid members format: expected type bson.A but got %T, value: %v", result["members"], result["members"])
-	}
-
+	self, _ := result["me"].(string)
 	var hosts []string
-	for _, member := range members {
-		// A member arrives as a bson.D, which is how the driver decodes an embedded document
-		// held in a bson.M, so read it through lookup rather than asserting a concrete type.
-		state := getValue[string](member, "stateStr")
-		name := getValue[string](member, "name")
-		if name == "" {
+	for _, key := range []string{"hosts", "passives"} {
+		list, ok := result[key].(bson.A)
+		if !ok {
 			continue
 		}
-
-		// Only add actual secondaries, not arbiters or other states
-		if state == "SECONDARY" {
-			s.logger.Debug("Found secondary",
-				zap.String("host", name),
-				zap.String("state", state))
-			hosts = append(hosts, name)
+		for _, v := range list {
+			host, ok := v.(string)
+			if !ok || host == "" || strings.EqualFold(host, self) {
+				continue
+			}
+			s.logger.Debug("Found replica set member", zap.String("host", host))
+			hosts = append(hosts, host)
 		}
 	}
-
 	return hosts, nil
 }

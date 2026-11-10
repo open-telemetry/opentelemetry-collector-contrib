@@ -5,6 +5,20 @@ $defs:
       max_rows_per_query:
         type: integer
         x-customType: uint64
+  secondaries_config:
+    description: SecondariesConfig controls collection from the replica set members the receiver discovers. Query samples are always collected from every discovered member; metrics and top queries are opt-in because they multiply the emitted series by the number of members.
+    type: object
+    properties:
+      collect_metrics:
+        description: CollectMetrics scrapes metrics from every discovered member, one resource per member.
+        type: boolean
+      collect_top_query:
+        description: CollectTopQuery collects db.server.top_query events from every discovered member.
+        type: boolean
+      refresh_interval:
+        description: RefreshInterval re-runs member discovery on this interval so that members added or removed after start are picked up without a restart. Zero discovers only at start.
+        type: string
+        format: duration
   top_query_collection:
     description: TopQueryCollection holds configuration for the db.server.top_query log event collection.
     type: object
@@ -51,6 +65,9 @@ properties:
     type: string
   scheme:
     type: string
+  secondaries:
+    description: Secondaries controls what the receiver collects from discovered replica set members.
+    $ref: secondaries_config
   timeout:
     type: string
     format: duration

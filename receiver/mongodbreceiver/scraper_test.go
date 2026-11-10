@@ -4,7 +4,9 @@
 package mongodbreceiver
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -21,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/drivertest"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -848,10 +851,9 @@ func TestSecondaryDiscoverySkipReason(t *testing.T) {
 			wantReason: "direct_connection is enabled",
 		},
 		{
-			name:       "mongodb+srv cannot pass its implicit TLS to secondaries",
-			configure:  func(c *Config) { c.Scheme = "mongodb+srv" },
-			wantSkip:   true,
-			wantReason: "the mongodb+srv scheme applies TLS that secondary connections cannot inherit",
+			name:      "mongodb+srv discovers secondaries, which get the same TLS",
+			configure: func(c *Config) { c.Scheme = "mongodb+srv" },
+			wantSkip:  false,
 		},
 	}
 
@@ -996,8 +998,8 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 			scraper.client = tc.setupPrimaryClient(t)
 
 			secondaryFakes := tc.setupSecondaryClients(t)
-			for _, fc := range secondaryFakes {
-				scraper.secondaryClients = append(scraper.secondaryClients, fc)
+			for i, fc := range secondaryFakes {
+				scraper.members = append(scraper.members, &member{host: fmt.Sprintf("secondary-%d:27017", i), client: fc})
 			}
 
 			logs, err := scraper.scrapeLogs(t.Context())
@@ -1020,15 +1022,6 @@ func TestScrapeLogsWithSecondaries(t *testing.T) {
 }
 
 func TestFindSecondaryHosts(t *testing.T) {
-	// The driver decodes an embedded document held in a bson.M as a bson.D, so this is the
-	// shape replSetGetStatus members actually arrive in.
-	bsonDMembers := bson.A{
-		bson.D{bson.E{Key: "name", Value: "mongo-0:27017"}, bson.E{Key: "stateStr", Value: "PRIMARY"}},
-		bson.D{bson.E{Key: "name", Value: "mongo-1:27017"}, bson.E{Key: "stateStr", Value: "SECONDARY"}},
-		bson.D{bson.E{Key: "name", Value: "mongo-2:27017"}, bson.E{Key: "stateStr", Value: "ARBITER"}},
-		bson.D{bson.E{Key: "name", Value: "mongo-3:27017"}, bson.E{Key: "stateStr", Value: "SECONDARY"}},
-	}
-
 	testCases := []struct {
 		desc          string
 		result        bson.M
@@ -1037,45 +1030,39 @@ func TestFindSecondaryHosts(t *testing.T) {
 		expectedErr   string
 	}{
 		{
-			desc:          "members decoded as bson.D",
-			result:        bson.M{"members": bsonDMembers},
+			desc: "horizon names, self excluded",
+			result: bson.M{
+				"setName": "rs0", "me": "pl-0.example.net:1024",
+				"hosts": bson.A{"pl-0.example.net:1024", "pl-0.example.net:1025", "pl-0.example.net:1026"},
+			},
+			expectedHosts: []string{"pl-0.example.net:1025", "pl-0.example.net:1026"},
+		},
+		{
+			desc: "passives included, arbiters ignored",
+			result: bson.M{
+				"setName": "rs0", "me": "mongo-0:27017",
+				"hosts":    bson.A{"mongo-0:27017", "mongo-1:27017"},
+				"passives": bson.A{"mongo-3:27017"},
+				"arbiters": bson.A{"mongo-2:27017"},
+			},
 			expectedHosts: []string{"mongo-1:27017", "mongo-3:27017"},
 		},
 		{
-			desc: "members decoded as bson.M",
-			result: bson.M{"members": bson.A{
-				bson.M{"name": "mongo-0:27017", "stateStr": "PRIMARY"},
-				bson.M{"name": "mongo-1:27017", "stateStr": "SECONDARY"},
-			}},
-			expectedHosts: []string{"mongo-1:27017"},
-		},
-		{
-			desc: "member without a name",
-			result: bson.M{"members": bson.A{
-				bson.D{bson.E{Key: "stateStr", Value: "SECONDARY"}},
-			}},
+			desc:          "standalone has no members",
+			result:        bson.M{"isWritablePrimary": true},
 			expectedHosts: nil,
-		},
-		{
-			desc:        "members missing",
-			result:      bson.M{"set": "rs0"},
-			expectedErr: "invalid members format",
 		},
 		{
 			desc:        "command failed",
 			resultErr:   errors.New("not authorized"),
-			expectedErr: "failed to get replica set status",
+			expectedErr: "failed to run hello",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			fc := &fakeClient{}
-			if tc.resultErr != nil {
-				fc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(nil, tc.resultErr)
-			} else {
-				fc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(tc.result, nil)
-			}
+			fc.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(tc.result, tc.resultErr)
 
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
 			scraper.client = fc
@@ -1090,6 +1077,60 @@ func TestFindSecondaryHosts(t *testing.T) {
 			require.Equal(t, tc.expectedHosts, hosts)
 		})
 	}
+}
+
+func TestDiscoverMembersReconciles(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+
+	primary := &fakeClient{}
+	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(bson.M{
+		"setName": "rs0", "me": "a:1", "hosts": bson.A{"a:1", "b:1", "c:1"},
+	}, nil).Once()
+	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(bson.M{
+		"setName": "rs0", "me": "a:1", "hosts": bson.A{"a:1", "c:1", "d:1"},
+	}, nil).Once()
+	scraper.client = primary
+
+	created := map[string]*fakeClient{}
+	orig := newClient
+	t.Cleanup(func() { newClient = orig })
+	newClient = func(_ context.Context, c *Config, _ *zap.Logger, secondary bool) (client, error) {
+		require.True(t, secondary)
+		fc := &fakeClient{}
+		fc.On("Disconnect", mock.Anything).Return(nil)
+		created[c.Hosts[0].Endpoint] = fc
+		return fc, nil
+	}
+
+	scraper.discoverMembers(t.Context())
+	require.Equal(t, []string{"b:1", "c:1"}, memberHosts(scraper))
+
+	scraper.discoverMembers(t.Context())
+	require.Equal(t, []string{"c:1", "d:1"}, memberHosts(scraper))
+	created["b:1"].AssertCalled(t, "Disconnect", mock.Anything)
+}
+
+func memberHosts(s *mongodbScraper) []string {
+	hosts := make([]string, 0, len(s.members))
+	for _, m := range s.members {
+		hosts = append(hosts, m.host)
+	}
+	return hosts
+}
+
+func TestSecondaryClientOptionsInheritSRVTLS(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = "mongodb+srv"
+	cfg.ClientConfig.Insecure = true
+	cfg.Hosts = []confignet.TCPAddrConfig{{Endpoint: "member.example.net:27017"}}
+
+	opts := cfg.ClientOptions(true)
+	require.NotNil(t, opts.TLSConfig, "secondary of a mongodb+srv deployment must use TLS")
+	require.Equal(t, memberServerSelectionTimeout, *opts.ServerSelectionTimeout)
+
+	cfg.Scheme = "mongodb"
+	require.Nil(t, cfg.ClientOptions(true).TLSConfig, "plain mongodb with tls.insecure stays plaintext")
 }
 
 func TestShouldIncludeOperation(t *testing.T) {

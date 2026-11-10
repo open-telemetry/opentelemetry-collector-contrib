@@ -415,8 +415,20 @@ func TestLoadConfigSRV(t *testing.T) {
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
 	expected.ControllerConfig.CollectionInterval = time.Minute
+	expected.Secondaries.CollectMetrics = true
+	expected.Secondaries.CollectTopQuery = true
+	expected.Secondaries.RefreshInterval = 5 * time.Minute
 
 	require.Equal(t, expected, cfg)
+}
+
+func TestValidateSecondariesRefreshInterval(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Secondaries.RefreshInterval = -time.Second
+	require.ErrorContains(t, confmap.Validate(cfg), "secondaries.refresh_interval must not be negative")
+
+	cfg.Secondaries.RefreshInterval = 0
+	require.NoError(t, confmap.Validate(cfg))
 }
 
 // defaultTopQueryCollection returns a fully-populated TopQueryCollection

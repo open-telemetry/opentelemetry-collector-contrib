@@ -96,6 +96,29 @@ func buildPlanCache(config *Config, logger *zap.Logger) *lru.LRU[string, string]
 }
 
 func (s *mongodbScraper) scrapeTopQueryLogs(ctx context.Context) (plog.Logs, error) {
+	s.refreshMembers(ctx)
+	out, err := s.scrapeOwnTopQueryLogs(ctx)
+	if !s.config.Secondaries.CollectTopQuery {
+		return out, err
+	}
+	results := make([]plog.Logs, len(s.members))
+	errsByMember := make([]error, len(s.members))
+	s.forEachMember(ctx, func(ctx context.Context, i int, m *member) {
+		if m.child == nil {
+			results[i] = plog.NewLogs()
+			return
+		}
+		results[i], errsByMember[i] = m.child.scrapeOwnTopQueryLogs(ctx)
+	})
+	for i, m := range s.members {
+		s.recordMemberHealth(m, errsByMember[i])
+		results[i].ResourceLogs().MoveAndAppendTo(out.ResourceLogs())
+	}
+	return out, err
+}
+
+// scrapeOwnTopQueryLogs collects top queries from the node this scraper's client is connected to.
+func (s *mongodbScraper) scrapeOwnTopQueryLogs(ctx context.Context) (plog.Logs, error) {
 	if interval := s.config.TopQueryCollection.CollectionInterval; interval > 0 {
 		if !s.lastTopQueryExecution.IsZero() && time.Since(s.lastTopQueryExecution) < interval {
 			s.logger.Debug("Skipping top_query collection, interval has not elapsed")

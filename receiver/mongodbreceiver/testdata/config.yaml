@@ -18,3 +18,7 @@ mongodb/srv:
   username: otel
   password: ${env:MONGO_PASSWORD}
   collection_interval: 60s
+  secondaries:
+    collect_metrics: true
+    collect_top_query: true
+    refresh_interval: 5m
