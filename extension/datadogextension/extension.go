@@ -100,9 +100,9 @@ type datadogExtension struct {
 }
 
 var (
-	_ extensioncapabilities.ConfigSnapshotWatcher = (*datadogExtension)(nil)
-	_ extensioncapabilities.PipelineWatcher       = (*datadogExtension)(nil)
-	_ componentstatus.Watcher                     = (*datadogExtension)(nil)
+	_ extensioncapabilities.ConfigSnapshotWatcher  = (*datadogExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher        = (*datadogExtension)(nil)
+	_ extensioncapabilities.ComponentStatusWatcher = (*datadogExtension)(nil)
 )
 
 // NotifyConfigSnapshot implements the extensioncapabilities.ConfigSnapshotWatcher interface, which allows
@@ -208,8 +208,8 @@ func (*datadogExtension) NotReady() error {
 	return nil
 }
 
-// ComponentStatusChanged implements the componentstatus.Watcher interface.
-func (*datadogExtension) ComponentStatusChanged(
+// Changed implements the extensioncapabilities.ComponentStatusWatcher interface.
+func (*datadogExtension) Changed(
 	*componentstatus.InstanceID,
 	*componentstatus.Event,
 ) {

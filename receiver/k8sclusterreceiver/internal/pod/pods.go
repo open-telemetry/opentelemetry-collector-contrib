@@ -63,7 +63,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	for i := range pod.Spec.Containers {
 		c := &pod.Spec.Containers[i]
 		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
-			Name: c.Name,
+			Name:  c.Name,
+			Image: c.Image,
 			Resources: corev1.ResourceRequirements{
 				Requests: c.Resources.Requests,
 				Limits:   c.Resources.Limits,
@@ -277,6 +278,10 @@ func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experime
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for i := range pod.Status.ContainerStatuses {
 		cs := pod.Status.ContainerStatuses[i]
+		// Containers that haven't been created by the runtime yet have no ID to identify them by.
+		if cs.ContainerID == "" {
+			continue
+		}
 		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}

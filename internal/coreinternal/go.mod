@@ -5,21 +5,21 @@ go 1.26.0
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/elastic/lunes v0.2.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.164.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.164.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
-	go.opentelemetry.io/collector/client v1.70.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/component v1.70.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/component/componenttest v0.164.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/consumer v1.70.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/consumer/consumererror v0.164.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/consumer/consumertest v0.164.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/featuregate v1.70.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/pdata v1.70.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/pdata/pprofile v0.164.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/receiver v1.70.1-0.20261029175530-9afdf701f333
-	go.opentelemetry.io/collector/receiver/receivertest v0.164.1-0.20261029175530-9afdf701f333
+	go.opentelemetry.io/collector/client v1.71.0
+	go.opentelemetry.io/collector/component v1.71.0
+	go.opentelemetry.io/collector/component/componenttest v0.165.0
+	go.opentelemetry.io/collector/consumer v1.71.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.165.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.165.0
+	go.opentelemetry.io/collector/featuregate v1.71.0
+	go.opentelemetry.io/collector/pdata v1.71.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.165.0
+	go.opentelemetry.io/collector/receiver v1.71.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.165.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
 	go.uber.org/goleak v1.3.0
@@ -50,7 +50,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.7 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
@@ -74,11 +74,11 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.164.1-0.20261029175530-9afdf701f333 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.164.1-0.20261029175530-9afdf701f333 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.164.1-0.20261029175530-9afdf701f333 // indirect
-	go.opentelemetry.io/collector/pipeline v1.70.1-0.20261029175530-9afdf701f333 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.164.1-0.20261029175530-9afdf701f333 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.165.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.71.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.165.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
@@ -89,7 +89,6 @@ require (
 	golang.org/x/sys v0.48.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 retract (

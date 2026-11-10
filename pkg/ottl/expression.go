@@ -917,6 +917,10 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (string, b
 		result = v
 	case []byte:
 		result = hex.EncodeToString(v)
+	case int64:
+		result = strconv.FormatInt(v, 10)
+	case bool:
+		result = strconv.FormatBool(v)
 	case pcommon.Map:
 		resultBytes, err := json.Marshal(v.AsRaw())
 		if err != nil {
