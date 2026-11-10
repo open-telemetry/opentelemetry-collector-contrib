@@ -67,6 +67,10 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
+	var targetInfoCandidates []targetInfoCandidate
+	if !settings.DisableTargetInfo {
+		targetInfoCandidates = make([]targetInfoCandidate, 0, resourceMetricsSlice.Len())
+	}
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
@@ -145,7 +149,15 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 				}
 			}
 		}
-		errs = multierr.Append(errs, c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp))
+		if !settings.DisableTargetInfo && mostRecentTimestamp != 0 {
+			targetInfoCandidates = append(targetInfoCandidates, targetInfoCandidate{
+				resource:  resource,
+				timestamp: mostRecentTimestamp,
+			})
+		}
+	}
+	for _, cand := range selectTargetInfoResources(targetInfoCandidates, settings) {
+		errs = multierr.Append(errs, c.addResourceTargetInfoV2(cand.resource, settings, cand.timestamp))
 	}
 
 	return errs

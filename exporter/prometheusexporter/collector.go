@@ -520,16 +520,18 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
 	var lastErr error
 
-	// deduplicate resourceAttrs by job and instance
+	// deduplicate resourceAttrs by job and instance, keeping the last-seen resource for each signature.
 	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
-	seenResource := map[string]struct{}{}
+	seenResource := map[string]int{}
 	for _, attrs := range resourceAttrs {
 		sig := resourceSignature(attrs)
 		if sig == "" {
 			continue
 		}
-		if _, ok := seenResource[sig]; !ok {
-			seenResource[sig] = struct{}{}
+		if idx, ok := seenResource[sig]; ok {
+			deduplicatedResourceAttrs[idx] = attrs
+		} else {
+			seenResource[sig] = len(deduplicatedResourceAttrs)
 			deduplicatedResourceAttrs = append(deduplicatedResourceAttrs, attrs)
 		}
 	}
