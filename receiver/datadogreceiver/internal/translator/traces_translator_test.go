@@ -1229,6 +1229,15 @@ func TestSetSpanLinks(t *testing.T) {
 		})
 		assertLink(t, span, 0)
 	})
+
+	t.Run("meta _dd.span_links skips an invalid link and keeps the next one", func(t *testing.T) {
+		invalidThenValid := `[{"trace_id":"00000000000000000000000000000000","span_id":"0000000000000004"},` + hexLinks[1:]
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{"_dd.span_links": invalidThenValid},
+		})
+		assertLink(t, span, 0)
+	})
 }
 
 func TestSetSpanEvents(t *testing.T) {
@@ -1285,6 +1294,17 @@ func TestSetSpanEvents(t *testing.T) {
 			},
 		})
 		assertEvents(t, span)
+	})
+
+	t.Run("meta events that is not span-event JSON stays a span attribute", func(t *testing.T) {
+		span := translateSingleSpan(t, &pb.Span{
+			TraceID: 1, SpanID: 1,
+			Meta: map[string]string{"events": "1"},
+		})
+		assert.Equal(t, 0, span.Events().Len())
+		v, ok := span.Attributes().Get("events")
+		require.True(t, ok, "a non-JSON events tag must be kept")
+		assert.Equal(t, "1", v.Str())
 	})
 
 	t.Run("native span_events typed attributes", func(t *testing.T) {
