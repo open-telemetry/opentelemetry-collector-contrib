@@ -1,31 +1,31 @@
-basicauth:
+basic_auth:
 
-basicauth/client:
+basic_auth/client:
   client_auth:
     username: username
     password: password
 
-basicauth/server:
+basic_auth/server:
   htpasswd:
     inline: |
       username1:password1
       username2:password2
 
-basicauth/both:
+basic_auth/both:
   client_auth:
     username: user
     password: pass
   htpasswd:
     file: /etc/nginx/htpasswd
 
-basicauth/client_secret_provider:
+basic_auth/client_secret_provider:
   client_auth:
     secret_provider:
       id: "awssecretsmanagerprovider"
       username_key: "username"
       password_key: "password"
 
-basicauth/server_secret_provider:
+basic_auth/server_secret_provider:
   htpasswd:
     secret_provider:
       id: "awssecretsmanagerprovider"

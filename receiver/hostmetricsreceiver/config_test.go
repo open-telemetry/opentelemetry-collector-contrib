@@ -257,6 +257,18 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	require.ErrorContains(t, cm.Unmarshal(cfg), "invalid scraper key: invalidscraperkey")
 }
 
+func TestLoadInvalidConfig_InvalidScraperKeyName(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-invalidscraperkeyname.yaml"))
+	require.NoError(t, err)
+
+	err = cm.Unmarshal(cfg)
+	require.ErrorContains(t, err, "invalid scraper key name: cpu-usage")
+	require.ErrorContains(t, err, `invalid character(s) in type "cpu-usage"`)
+}
+
 func TestLoadHardwareConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-hardware.yaml"))
 	require.NoError(t, err)
