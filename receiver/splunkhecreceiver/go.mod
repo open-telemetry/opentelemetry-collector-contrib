@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/goccy/go-json v0.10.6
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1

@@ -71,6 +71,8 @@ go.opentelemetry.io/collector/extension/extensioncapabilities v0.165.0 h1:1mXJoJ
 go.opentelemetry.io/collector/extension/extensioncapabilities v0.165.0/go.mod h1:zPQ6GHq+bvUUS9IUAlqINdzCoLwHCWdkwfVHEldQr+w=
 go.opentelemetry.io/collector/extension/extensiontest v0.165.0 h1:rtyi7uO5ORtZxHjgRVoc3VuH5Q+ULyuvTIok00SJvJQ=
 go.opentelemetry.io/collector/extension/extensiontest v0.165.0/go.mod h1:MAm0R8KmMNAdHzTZ/Wusr2Ev5+8UGd4FLEAxlYznfc0=
+go.opentelemetry.io/collector/extension/xextension v0.165.0 h1:iyVDTZQfsTxwBJLsCKOLKHNUM0yAN9fN23fv3if3F3o=
+go.opentelemetry.io/collector/extension/xextension v0.165.0/go.mod h1:QNltGCc3ifeHZV7wt+u0he96gjRM8RP6Q91znWsbFXw=
 go.opentelemetry.io/collector/featuregate v1.71.0 h1:6s5QhoU11lK5QxaikFhPzsANjRwz1Yh/28ULqAIWX4w=
 go.opentelemetry.io/collector/featuregate v1.71.0/go.mod h1:dRYifiJa2vQ6LWpPwHny4mL82mnGWsWEVeVWw+DhYJw=
 go.opentelemetry.io/collector/internal/componentalias v0.165.0 h1:Mzq1DpllMj+zUwJKC4M66wQQXObRojkigYT1fgoY2cs=
