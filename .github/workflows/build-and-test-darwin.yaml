@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ macos-14, macos-15 ]
+        os: [ macos-15, macos-26 ]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-14, macos-15 ]
+        os: [ macos-15, macos-26 ]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     steps:
@@ -62,7 +62,7 @@ jobs:
       - name: Zip test binaries
         run: zip -r testbinaries.zip  . --include \*builtunitetest.test
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ matrix.os == 'macos-14' }}
+        if: ${{ matrix.os == 'macos-15' }}
         with:
           name: testbinaries
           path: ./testbinaries.zip
@@ -74,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14]
+        os: [macos-15]
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     steps:
