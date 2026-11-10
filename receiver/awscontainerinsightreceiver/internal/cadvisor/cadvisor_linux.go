@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/google/cadvisor/container/docker"
+	cInfo "github.com/google/cadvisor/info/v1"
 	"github.com/google/cadvisor/lib/cache/memory"
 	cadvisormetrics "github.com/google/cadvisor/lib/container"
 	"github.com/google/cadvisor/lib/container/containerd"
 	"github.com/google/cadvisor/lib/container/crio"
 	"github.com/google/cadvisor/lib/container/systemd"
 	// Register filesystem plugins via init() functions
-	cInfo "github.com/google/cadvisor/info/v1"
 	_ "github.com/google/cadvisor/lib/fs/overlay/install"
 	_ "github.com/google/cadvisor/lib/fs/tmpfs/install"
 	_ "github.com/google/cadvisor/lib/fs/vfs/install"
