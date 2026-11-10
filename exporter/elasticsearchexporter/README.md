@@ -451,7 +451,7 @@ Metrics support is currently in development.
 The metric types supported are:
 
 - Gauge
-- Sum
+- Sum (Both Delta and Cumulative temporality supported)
 - Histogram (Both Delta and Cumulative temporality supported)
 - Exponential histogram (Both Delta and Cumulative temporality supported)
 - Summary
@@ -481,7 +481,7 @@ is only used in OTel mapping mode.
 
 ### Temporality
 
-In OTel mapping mode, metric documents for histograms and exponential histograms contain a `temporality` field,
+In OTel mapping mode, metric documents for sums, histograms and exponential histograms contain a `temporality` field,
 set to `delta` or `cumulative`. This matches the ES OTLP endpoint. This field is only written when the temporality is known.
 
 `temporality` is a time series dimension: cumulative and delta series with the same name and attributes are stored as **separate**
