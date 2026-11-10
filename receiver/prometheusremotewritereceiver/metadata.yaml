@@ -48,3 +48,11 @@ tests:
       top:
         # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
         - "go.opencensus.io/stats/view.(*worker).start"
+
+feature_gates:
+  - id: receiver.prometheus_remote_write.disableJobSplit
+    stage: alpha
+    description: >-
+      When enabled, the prometheusremotewritereceiver will disable the splitting of the job label by '/' to derive service.namespace and service.name, instead mapping the entire job string to service.name.
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52626
