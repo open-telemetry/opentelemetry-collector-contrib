@@ -476,6 +476,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/azure/azurevm v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/hetzner v0.19.0 // indirect
+	go.opentelemetry.io/contrib/detectors/ibmcloud/classic v0.0.0-20261106092722-ca27f49bc143 // indirect
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/openshift v0.19.0 // indirect
