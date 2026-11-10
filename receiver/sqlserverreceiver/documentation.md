@@ -488,7 +488,9 @@ This metric is only available when the receiver is configured to directly connec
 
 ### sqlserver.database.tempdb.space
 
-Total free space in temporary DB.
+TempDB space usage, broken down by state. The values are mutually exclusive and sum to total tempdb space.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -498,7 +500,7 @@ Total free space in temporary DB.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| tempdb.state | The status of the tempdb space usage. | Str: ``free``, ``used`` | Recommended | - |
+| tempdb.state | The tempdb space usage category. The values are mutually exclusive and partition total tempdb space. | Str: ``free``, ``user_objects``, ``internal_objects``, ``version_store``, ``mixed_extents`` | Recommended | - |
 
 ### sqlserver.database.tempdb.version_store.size
 
@@ -1175,6 +1177,55 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | task.result | The result of the task activation. | Str: ``started``, ``aborted`` | Recommended | - |
 
+### sqlserver.tempdb.allocation.waiters.count
+
+Number of tasks currently waiting on a tempdb page latch, broken down by page type.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {waiters} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.tempdb.allocation.page_type | The type of tempdb page latch wait. `other` covers page latch waits on ordinary (non-allocation-map) pages. | Str: ``gam``, ``sgam``, ``pfs``, ``other`` | Recommended | - |
+
+### sqlserver.tempdb.file.size
+
+Size of each tempdb data or log file.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file_type | The type of file being monitored. | Any Str | Recommended | - |
+| sqlserver.tempdb.file.id | Numeric identifier of the tempdb file. | Any Int | Recommended | - |
+
+### sqlserver.thread_pool.task.count
+
+Number of SQL Server tasks tracked by schedulers.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {task} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| sqlserver.thread_pool.task.state | State of a SQL Server task tracked for thread-pool diagnostics. | Str: ``current``, ``waiting_for_threadpool`` | Required | - |
+
 ### sqlserver.transaction.delay
 
 Time consumed in transaction delays.
@@ -1253,6 +1304,20 @@ events:
     enabled: true
 ```
 
+### db.server.procedure_definition
+
+The SQL source text of stored procedures observed in db.server.top_procedure. Correlates with db.server.top_procedure via sqlserver.procedure_id and db.namespace.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str | - |
+| db.namespace | The database name. | Any Str | - |
+| sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str | - |
+| sqlserver.procedure_name | The name of the stored procedure, if any | Any Str | - |
+| sqlserver.procedure.definition | The SQL source text of the stored procedure as returned by sys.dm_exec_sql_text. Empty string when the procedure is encrypted (WITH ENCRYPTION) or its plan has been evicted from cache. | Any Str | - |
+
 ### db.server.query_plan
 
 query execution plan. When enabled, the plan is reported here instead of on db.server.top_query, so an oversized plan payload cannot drop the lightweight query statistics alongside it
@@ -1310,6 +1375,7 @@ query sample
 | sqlserver.transaction_id | Unique ID of the active transaction. | Any Int | - |
 | sqlserver.transaction_isolation_level | Transaction isolation level used in the session. Represented as numeric constant. | Any Int | - |
 | sqlserver.wait_resource | The resource for which the session is waiting. | Any Str | - |
+| sqlserver.wait.start_time | Timestamp of when the current wait started (ISO 8601 format). Empty if not waiting. | Any Str | - |
 | sqlserver.wait_time | Duration in seconds the request has been waiting. | Any Double | - |
 | sqlserver.wait_type | Type of wait encountered by the request. Empty if none. | Any Str | - |
 | sqlserver.writes | Number of writes performed by the query. | Any Int | - |
