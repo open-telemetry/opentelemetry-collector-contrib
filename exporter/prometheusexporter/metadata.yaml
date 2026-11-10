@@ -14,13 +14,14 @@ status:
 feature_gates:
   - id: exporter.prometheus.DisableResourceToTelemetryConversion
     description: When enabled, the deprecated resource_to_telemetry_conversion section and legacy conversion fields are disabled, and resource_constant_labels must be used instead
-    stage: alpha
+    stage: beta
     from_version: "v0.160.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861
   - id: exporter.prometheusexporter.DisableAddMetricSuffixes
     description: When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used
-    stage: beta
+    stage: stable
     from_version: "v0.132.0"
+    to_version: "v0.167.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4533
 
 sending_queue:
