@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.16
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.8
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.344.2
-	github.com/aws/aws-sdk-go-v2/service/ecs v1.99.1
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.104.2
 	github.com/aws/smithy-go v1.28.8
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
