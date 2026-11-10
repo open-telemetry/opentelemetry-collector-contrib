@@ -6,7 +6,7 @@ require (
 	github.com/nats-io/jwt/v2 v2.8.2
 	github.com/nats-io/nats-server/v2 v2.15.2
 	github.com/nats-io/nats.go v1.55.0
-	github.com/nats-io/nkeys v0.4.16
+	github.com/nats-io/nkeys v0.4.17
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/config/configopaque v1.71.0
 	go.opentelemetry.io/collector/config/configtls v1.71.0
