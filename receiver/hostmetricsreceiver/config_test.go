@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
@@ -254,4 +255,28 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	require.NoError(t, err)
 
 	require.ErrorContains(t, cm.Unmarshal(cfg), "invalid scraper key: invalidscraperkey")
+}
+
+func TestLoadHardwareConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-hardware.yaml"))
+	require.NoError(t, err)
+
+	t.Run("receiver root with nested temperature filters", func(t *testing.T) {
+		sub, subErr := cm.Sub("hostmetrics")
+		require.NoError(t, subErr)
+		cfg := createDefaultConfig().(*Config)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.Equal(t, "/hostfs", cfg.RootPath)
+		hardware, ok := cfg.Scrapers[component.MustNewType("hardware")].(*hardwarescraper.Config)
+		require.True(t, ok)
+		expected := hardwarescraper.NewFactory().CreateDefaultConfig().(*hardwarescraper.Config)
+		expected.Temperature.Include.Sensors = []string{"Core.*"}
+		require.Equal(t, expected, hardware)
+	})
+
+	t.Run("removed hwmon_path is rejected", func(t *testing.T) {
+		sub, subErr := cm.Sub("hostmetrics/removed-path")
+		require.NoError(t, subErr)
+		require.ErrorContains(t, sub.Unmarshal(createDefaultConfig()), "invalid keys: hwmon_path")
+	})
 }
