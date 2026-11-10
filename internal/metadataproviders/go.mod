@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sync v0.24.0
+	golang.org/x/sync v0.25.0
 	k8s.io/api v0.37.2
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.2
