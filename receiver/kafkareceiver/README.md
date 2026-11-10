@@ -130,7 +130,6 @@ The following settings can be optionally configured:
   - `max_prefetch`:
     - `batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
     - `bytes` (default = 0, no cap): Fetching for a partition pauses once the batches waiting for its worker reach this many bytes. Bytes are counted as in `max_in_flight.bytes`. A batch that crosses the cap is still admitted, so the overshoot is at most one batch. Must not be negative. Applies only when `independent` is true and `batches` is above 1.
-  - `max_buffered_batches` (deprecated, use `max_prefetch.batches`): Same as `max_prefetch.batches`. Setting both is an error. Will be removed in v0.166.0.
   - `max_in_flight`:
     - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Applies only when `independent` is true. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
     - `bytes` (default = 0, no cap): Maximum bytes held by the records of each partition worker that have started and are not marked yet. A record counts its key, value, and headers after decompression, plus a fixed overhead of about 250 bytes per record and 40 per header. Must not be negative. Applies only when `independent` is true and `records` is above 1. A record above the cap still runs, alone.
