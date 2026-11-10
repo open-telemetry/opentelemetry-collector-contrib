@@ -46,8 +46,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	gyaml "go.yaml.in/yaml/v3"
 	"google.golang.org/protobuf/proto"
-	gyaml "gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -394,15 +394,6 @@ func (s *Supervisor) Start(ctx context.Context) error {
 				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
 		)
 		return errors.New("accepts_packages capability is not yet fully implemented")
-	}
-
-	if s.config.Capabilities.ReportsRemoteConfig { //nolint:staticcheck // SA1019: deprecated field is read only to warn about its use
-		s.telemetrySettings.Logger.Error(
-			"The reports_remote_config capability is deprecated and has no effect. " +
-				"Remote config status is reported whenever accepts_remote_config is enabled. " +
-				"Remove reports_remote_config from the supervisor config; it will be removed in a future release. " +
-				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763 for details.",
-		)
 	}
 
 	if err = s.getFeatureGates(); err != nil {
@@ -1123,19 +1114,30 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	if settings.Headers != nil {
 		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
 	}
+	// Per the OpAMP spec, TLS settings only change when an offer includes the tls field,
+	// which the Supervisor doesn't support, so the configured settings are kept.
+	// https://github.com/open-telemetry/opamp-spec/blob/61372c6916c4be08eb0409f7e1001e25cedb891f/specification.md?plain=1#L2303-L2311
+	newServerConfig.TLS = s.config.Server.TLS
+	// An offer without a certificate means no client certificate, and an offered certificate
+	// replaces the previous one, so the client certificate is always reset. cert_file and
+	// key_file can only come from the startup config, and clearing them lets the offered
+	// PEMs take effect since configtls doesn't allow both a file and a PEM.
+	// https://github.com/open-telemetry/opamp-spec/blob/61372c6916c4be08eb0409f7e1001e25cedb891f/specification.md?plain=1#L2109-L2116
+	newServerConfig.TLS.CertFile = ""
+	newServerConfig.TLS.CertPem = ""
+	newServerConfig.TLS.KeyFile = ""
+	newServerConfig.TLS.KeyPem = ""
+	newServerConfig.TLS.TPMConfig = configtls.TPMConfig{}
 	if settings.Certificate != nil {
-		if len(settings.Certificate.CaCert) != 0 {
-			newServerConfig.TLS.CAPem = configopaque.String(settings.Certificate.CaCert)
-		}
 		if len(settings.Certificate.Cert) != 0 {
 			newServerConfig.TLS.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLS.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
-	} else {
-		newServerConfig.TLS = configtls.NewDefaultClientConfig()
-		newServerConfig.TLS.InsecureSkipVerify = true
+		// settings.Certificate.CaCert is ignored. It's the CA that signed the client certificate, not a CA
+		// for verifying the server, and the proto says not to accept it as an authority for any purposes.
+		// https://github.com/open-telemetry/opamp-spec/blob/61372c6916c4be08eb0409f7e1001e25cedb891f/proto/opamp/v1/opamp.proto#L498-L503
 	}
 
 	if err := newServerConfig.Validate(); err != nil {

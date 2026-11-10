@@ -76,6 +76,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpFrequencyOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNtpFrequencyOffsetDataPoint(ts+1, 3, AttributeLeapStatusInsertSecond)
+				assert.Equal(t, 2, mb.metricNtpFrequencyOffset.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -88,24 +91,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpTimeCorrectionDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNtpTimeCorrectionDataPoint(ts+1, 3, AttributeLeapStatusInsertSecond)
+				assert.Equal(t, 2, mb.metricNtpTimeCorrection.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpTimeLastOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNtpTimeLastOffsetDataPoint(ts+1, 3, AttributeLeapStatusInsertSecond)
+				assert.Equal(t, 2, mb.metricNtpTimeLastOffset.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpTimeRmsOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNtpTimeRmsOffsetDataPoint(ts+1, 3, AttributeLeapStatusInsertSecond)
+				assert.Equal(t, 2, mb.metricNtpTimeRmsOffset.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordNtpTimeRootDelayDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordNtpTimeRootDelayDataPoint(ts+1, 3, AttributeLeapStatusInsertSecond)
+				assert.Equal(t, 2, mb.metricNtpTimeRootDelay.data.Gauge().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -163,7 +178,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["ntp.frequency.offset"], "Found a duplicate in the metrics slice: ntp.frequency.offset")
 						validatedMetrics["ntp.frequency.offset"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.", mi.Description())
 						assert.Equal(t, "[ppm]", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -227,7 +244,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["ntp.time.correction"], "Found a duplicate in the metrics slice: ntp.time.correction")
 						validatedMetrics["ntp.time.correction"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of seconds difference between the system's clock and the reference clock", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -267,7 +286,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
 						validatedMetrics["ntp.time.last_offset"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The estimated local offset on the last clock update", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -307,7 +328,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
 						validatedMetrics["ntp.time.rms_offset"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "the long term average of the offset value", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -347,7 +370,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
 						validatedMetrics["ntp.time.root_delay"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

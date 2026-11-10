@@ -8,7 +8,11 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [pcwiese, hgaol]
+    active: [hgaol]
+    emeritus: [pcwiese]
+
+sending_queue:
+  support: default
 
 tests:
   config:

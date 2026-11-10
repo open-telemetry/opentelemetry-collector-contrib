@@ -18,7 +18,7 @@ import (
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -93,13 +93,9 @@ func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 // configureLabelNamer configures the LabelNamer based on the translation strategy or legacy configuration
 func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
-	permissiveSanitization := prometheustranslator.DropSanitizationGate.IsEnabled()
 	return otlptranslator.LabelNamer{
-		UTF8Allowed: utf8Allowed,
-		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
-		UnderscoreLabelSanitization: !permissiveSanitization, //nolint:staticcheck
-		PreserveMultipleUnderscores: permissiveSanitization,
+		UTF8Allowed:                 utf8Allowed,
+		PreserveMultipleUnderscores: true,
 	}
 }
 
@@ -196,12 +192,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-// defaultZeroThreshold matches the remote-write translator's default for native histograms
-// when an explicit zero threshold is not provided in the datapoint.
-const (
-	defaultZeroThreshold = 1e-128
-	cbnhScale            = -53
-)
+const cbnhScale = -53
 
 func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
 	counts := buckets.BucketCounts()
@@ -239,6 +230,9 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	if schema < -4 {
 		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)
 	}
+	if !dp.HasSum() {
+		return nil, errors.New("cannot convert exponential to native histogram: sum is not set")
+	}
 	var scaleDown int32
 	if schema > 8 {
 		scaleDown = schema - 8
@@ -248,31 +242,21 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	pos := bucketsToNativeMap(dp.Positive(), scaleDown)
 	neg := bucketsToNativeMap(dp.Negative(), scaleDown)
 
-	zeroThresh := dp.ZeroThreshold()
-	if zeroThresh == 0 {
-		zeroThresh = defaultZeroThreshold
-	}
-
 	// Use created timestamp if start time is set (> 0), else zero value.
 	created := time.Time{}
 	if dp.StartTimestamp().AsTime().Unix() > 0 {
 		created = dp.StartTimestamp().AsTime()
 	}
 
-	sumVal := 0.0
-	if dp.HasSum() {
-		sumVal = dp.Sum()
-	}
-
 	m, err := prometheus.NewConstNativeHistogram(
 		desc,
 		dp.Count(),
-		sumVal,
+		dp.Sum(),
 		pos,
 		neg,
 		dp.ZeroCount(),
 		schema,
-		zeroThresh,
+		dp.ZeroThreshold(),
 		created,
 		attributes...,
 	)
@@ -555,19 +539,20 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		// map ensures no duplicate label name
 		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
 
-		// Use resource attributes (other than those used for job+instance) as the
-		// metric labels for the target info metric
+		// Use resource attributes as labels for the target info metric.
 		attributes := pcommon.NewMap()
 		rAttributes.CopyTo(attributes)
-		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
-			switch k {
-			case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
-				// Remove resource attributes used for job + instance
-				return true
-			default:
-				return false
-			}
-		})
+		if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+			attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
+				switch k {
+				case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
+					// Remove resource attributes used for job + instance
+					return true
+				default:
+					return false
+				}
+			})
+		}
 
 		var multiErrs error
 		for k, v := range attributes.All() {

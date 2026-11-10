@@ -25,7 +25,7 @@ The following settings are required:
 
 - `log_group_name`: The group name of the CloudWatch Logs. If it does not exist it will be created automatically. It supports several placeholder names. One valid example is `/aws/metrics/{ClusterName}`. It will search for ClusterName (or aws.ecs.cluster.name) resource attribute in the metrics data and replace with the actual cluster name. If none of them are found in the resource attribute map, {ClusterName} will be replaced by undefined. Similar way, for the {TaskId}, it searches for TaskId (or aws.ecs.task.id) key in the resource attribute map. For {NodeName}, it searches for NodeName (or k8s.node.name)
   - List of valid placeholders:
-    - `{ClusterName}`: `aws.ecs.cluster.name`
+    - `{ClusterName}`:          `aws.ecs.cluster.name` or `k8s.cluster.name`
     - `{TaskId}`:               `aws.ecs.task.id`
     - `{NodeName}`:             `k8s.node.name`
     - `{PodName}`:              `pod` or `k8s.pod.name`

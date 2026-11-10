@@ -141,8 +141,8 @@ func TestNewDetector(t *testing.T) {
 	t.Cleanup(func() { newScalewayClient = orig })
 
 	// Force the SDK to hit our test server instead of 169.254.42.42
-	newScalewayClient = func() *instance.MetadataAPI {
-		api := instance.NewMetadataAPI()
+	newScalewayClient = func(opts ...instance.MetadataAPIOption) *instance.MetadataAPI {
+		api := instance.NewMetadataAPI(opts...)
 		api.MetadataURL = &srv.URL
 		return api
 	}
@@ -166,8 +166,8 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 
 	orig := newScalewayClient
 	t.Cleanup(func() { newScalewayClient = orig })
-	newScalewayClient = func() *instance.MetadataAPI {
-		api := instance.NewMetadataAPI()
+	newScalewayClient = func(opts ...instance.MetadataAPIOption) *instance.MetadataAPI {
+		api := instance.NewMetadataAPI(opts...)
 		api.MetadataURL = &srv.URL
 		return api
 	}
@@ -203,8 +203,8 @@ func TestScalewayDetector_NotOnScaleway(t *testing.T) {
 
 	orig := newScalewayClient
 	t.Cleanup(func() { newScalewayClient = orig })
-	newScalewayClient = func() *instance.MetadataAPI {
-		api := instance.NewMetadataAPI()
+	newScalewayClient = func(opts ...instance.MetadataAPIOption) *instance.MetadataAPI {
+		api := instance.NewMetadataAPI(opts...)
 		api.MetadataURL = &srv.URL
 		return api
 	}

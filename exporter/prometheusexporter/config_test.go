@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 					SendTimestamps:    true,
 					MetricExpiration:  60 * time.Minute,
 					AddMetricSuffixes: false,
+					QueueBatchConfig:  createDefaultConfig().(*Config).QueueBatchConfig,
 				}
 			}(),
 		},

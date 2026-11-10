@@ -352,9 +352,6 @@ func TestHandleDNSFeatureAttributes(t *testing.T) {
 }
 
 func TestHandleVMInstanceAttributes(t *testing.T) {
-	vmInstanceID := int64(123456789)
-	vmInstanceIDZero := int64(0)
-
 	tests := []struct {
 		name     string
 		log      *dnslog
@@ -363,35 +360,35 @@ func TestHandleVMInstanceAttributes(t *testing.T) {
 		{
 			name: "all fields populated",
 			log: &dnslog{
-				VMInstanceID:   &vmInstanceID,
-				VMInstanceName: "test-instance",
-				VMProjectID:    "test-project",
-				VMZoneName:     "us-central1-a",
+				VMInstanceIDString: "123456789",
+				VMInstanceName:     "test-instance",
+				VMProjectID:        "test-project",
+				VMZoneName:         "us-central1-a",
 			},
 			expected: map[string]any{
-				"host.id":                 int64(123456789),
+				"host.id":                 "123456789",
 				"host.name":               "test-instance",
 				gcpProjectID:              "test-project",
 				"cloud.availability_zone": "us-central1-a",
 			},
 		},
 		{
-			name: "zero instance ID",
+			name: "instance ID above int64 max",
 			log: &dnslog{
-				VMInstanceID:   &vmInstanceIDZero,
-				VMInstanceName: "instance-0",
+				VMInstanceIDString: "18446744073709551615",
+				VMInstanceName:     "test-instance",
 			},
 			expected: map[string]any{
-				"host.id":   int64(0),
-				"host.name": "instance-0",
+				"host.id":   "18446744073709551615",
+				"host.name": "test-instance",
 			},
 		},
 		{
-			name: "nil instance ID",
+			name: "empty instance ID",
 			log: &dnslog{
-				VMInstanceID:   nil,
-				VMInstanceName: "test-instance",
-				VMProjectID:    "test-project",
+				VMInstanceIDString: "",
+				VMInstanceName:     "test-instance",
+				VMProjectID:        "test-project",
 			},
 			expected: map[string]any{
 				"host.name":  "test-instance",
@@ -401,10 +398,10 @@ func TestHandleVMInstanceAttributes(t *testing.T) {
 		{
 			name: "empty fields",
 			log: &dnslog{
-				VMInstanceID:   nil,
-				VMInstanceName: "",
-				VMProjectID:    "",
-				VMZoneName:     "",
+				VMInstanceIDString: "",
+				VMInstanceName:     "",
+				VMProjectID:        "",
+				VMZoneName:         "",
 			},
 			expected: map[string]any{},
 		},
@@ -457,7 +454,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				"network.transport":       "udp",
 				gcpDNSServerLatency:       5.0,
 				gcpDNSDNS64Translated:     false,
-				"host.id":                 int64(2838092002611613700),
+				"host.id":                 "2838092002611613780",
 				"host.name":               "228025391384.instance-20251126-211431",
 				gcpProjectID:              "elastic-logstash",
 				"cloud.availability_zone": "europe-west1-c",
@@ -556,6 +553,28 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 				gcpDNSResponseCode:    "NOERROR",
 				gcpDNSDNS64Translated: true,
 				"network.transport":   "tcp",
+			},
+		},
+		{
+			name: "vmInstanceId in exponent notation",
+			payload: []byte(`{
+				"queryName": "example.internal.",
+				"vmInstanceId": 8.2659214032182354e+18,
+				"vmInstanceIdString": "8265921403218235074"
+			}`),
+			expected: map[string]any{
+				"dns.question.name": "example.internal.",
+				"host.id":           "8265921403218235074",
+			},
+		},
+		{
+			name: "vmInstanceId without vmInstanceIdString",
+			payload: []byte(`{
+				"queryName": "example.internal.",
+				"vmInstanceId": 8.2659214032182354e+18
+			}`),
+			expected: map[string]any{
+				"dns.question.name": "example.internal.",
 			},
 		},
 		{

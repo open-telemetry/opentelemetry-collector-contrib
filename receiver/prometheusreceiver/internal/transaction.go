@@ -84,19 +84,18 @@ func newTransaction(
 	useMetadata bool,
 ) *transaction {
 	return &transaction{
-		ctx:             ctx,
-		families:        make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
-		isNew:           true,
-		trimSuffixes:    trimSuffixes,
-		useMetadata:     useMetadata,
-		sink:            sink,
-		externalLabels:  externalLabels,
-		logger:          settings.Logger,
-		buildInfo:       settings.BuildInfo,
-		obsrecv:         obsrecv,
-		bufBytes:        make([]byte, 0, 1024),
-		scopeAttributes: make(map[resourceKey]map[scopeID]pcommon.Map),
-		nodeResources:   map[resourceKey]pcommon.Resource{},
+		ctx:            ctx,
+		families:       make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily, 1),
+		isNew:          true,
+		trimSuffixes:   trimSuffixes,
+		useMetadata:    useMetadata,
+		sink:           sink,
+		externalLabels: externalLabels,
+		logger:         settings.Logger,
+		buildInfo:      settings.BuildInfo,
+		obsrecv:        obsrecv,
+		bufBytes:       make([]byte, 0, 1024),
+		nodeResources:  make(map[resourceKey]pcommon.Resource, 1),
 	}
 }
 
@@ -151,17 +150,17 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 		return 0, nil, 0
 	}
 
-	parsedScope, attrs := getScopeID(ls)
+	parsedScope, attrs, hasScopeLabels := getScopeID(ls)
 	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
 
 	if value.IsStaleNaN(val) {
-		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, parsedScope, metricName, ls) {
+		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, parsedScope, metricName, ls, hasScopeLabels) {
 			return 0, nil, 0
 		}
 	}
 
 	curMF := t.getOrCreateMetricFamily(rKey, parsedScope, metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
 
 	if stMs != 0 {
 		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
@@ -182,7 +181,7 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
 // and stores a native histogram staleness marker.
-func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key resourceKey, scope scopeID, metricName string, ls labels.Labels) bool {
+func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key resourceKey, scope scopeID, metricName string, ls labels.Labels, hasScopeLabels bool) bool {
 	// Detect the special case of stale native histogram series.
 	// Currently Prometheus does not store the histogram type in
 	// its staleness tracker.
@@ -204,7 +203,7 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key res
 	t.addingNHCB = false
 
 	curMF := t.getOrCreateMetricFamily(key, scope, metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
 
 	_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: math.Float64frombits(value.StaleNaN)}, nil)
 	// ignore errors here, this is best effort.
@@ -227,23 +226,15 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	curMf, ok := t.families[key][scope][mfKey]
 
 	if !ok {
-		fn := mn
-		if _, ok := t.mc.GetMetadata(mn); !ok {
-			fn = normalizeMetricName(mn)
-			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
-			if isCounterCreatedLine(mn, fn, t.mc) {
-				fn += metricSuffixTotal
+		md, fn := metadataForMetric(mn, t.mc)
+		if fn != mn {
+			fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
+			if mf, exists := t.families[key][scope][fnKey]; exists && mf.includesMetric(mn) {
+				return mf
 			}
-			// END NB (eriksywu)
 		}
-		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
-		mf, ok := t.families[key][scope][fnKey]
-		if !ok || !mf.includesMetric(mn) {
-			curMf = newMetricFamily(mn, t.mc, t.logger, t.addingNativeHistogram, t.addingNHCB)
-			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
-			return curMf
-		}
-		curMf = mf
+		curMf = newMetricFamilyWithMetadata(mn, fn, md, t.logger, t.addingNativeHistogram, t.addingNHCB)
+		t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 	}
 	return curMf
 }
@@ -271,13 +262,13 @@ func (t *transaction) appendExemplar(l labels.Labels, e exemplar.Exemplar) error
 		return errMetricNameNotFound
 	}
 
-	scope, attrs := getScopeID(l)
+	scope, attrs, hasScopeLabels := getScopeID(l)
 	t.addScopeAttributesFromLabels(rKey, scope, attrs)
 	mf := t.getOrCreateMetricFamily(rKey, scope, mn)
 	if mf.mtype == pmetric.MetricTypeSummary {
 		return nil
 	}
-	seriesRef := t.getSeriesRef(l, mf.mtype)
+	seriesRef := t.getSeriesRef(l, mf.mtype, hasScopeLabels)
 	mf.addExemplar(seriesRef, e)
 
 	return nil
@@ -309,11 +300,11 @@ func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram
 // When stMs != 0, it also records a creation timestamp on the metric family.
 // It is shared by both V1 and V2 appender paths.
 func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, *metricFamily, uint64) {
-	parsedScope, attrs := getScopeID(ls)
+	parsedScope, attrs, hasScopeLabels := getScopeID(ls)
 	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
 
 	curMF := t.getOrCreateMetricFamily(rKey, parsedScope, metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
 
 	if stMs != 0 {
 		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
@@ -403,10 +394,10 @@ func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (sto
 		return 0, err
 	}
 
-	scope, attrs := getScopeID(ls)
+	scope, attrs, hasScopeLabels := getScopeID(ls)
 	t.addScopeAttributesFromLabels(rKey, scope, attrs)
 	curMF := t.getOrCreateMetricFamily(rKey, scope, metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype, hasScopeLabels)
 	curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 
 	return storage.SeriesRef(seriesRef), nil
@@ -416,8 +407,14 @@ func (*transaction) SetOptions(_ *storage.AppendOptions) {
 	// TODO: implement this func
 }
 
-func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {
-	hash, bufBytes := getSeriesRefWithoutScopeLabels(t.bufBytes, ls, mtype)
+func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType, hasScopeLabels bool) uint64 {
+	var names []string
+	if hasScopeLabels {
+		names = getSortedNotUsefulLabelsForSeries(mtype, ls)
+	} else {
+		names = getSortedNotUsefulLabels(mtype)
+	}
+	hash, bufBytes := ls.HashWithoutLabels(t.bufBytes, names...)
 	t.bufBytes = bufBytes
 	return hash
 }
@@ -430,6 +427,7 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 	}
 
 	md := pmetric.NewMetrics()
+	md.ResourceMetrics().EnsureCapacity(len(t.families))
 
 	for rKey, families := range t.families {
 		if len(families) == 0 {
@@ -441,6 +439,7 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 		}
 		rms := md.ResourceMetrics().AppendEmpty()
 		resource.CopyTo(rms.Resource())
+		rms.ScopeMetrics().EnsureCapacity(len(families))
 
 		for scope, mfs := range families {
 			ils := rms.ScopeMetrics().AppendEmpty()
@@ -463,6 +462,7 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 				}
 			}
 			metrics := ils.Metrics()
+			metrics.EnsureCapacity(len(mfs))
 			for _, mf := range mfs {
 				mf.appendMetric(metrics, t.trimSuffixes)
 			}
@@ -486,10 +486,15 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func getScopeID(ls labels.Labels) (scopeID, pcommon.Map) {
+func getScopeID(ls labels.Labels) (scopeID, pcommon.Map, bool) {
 	var scope scopeID
-	attrs := pcommon.NewMap()
+	var attrs pcommon.Map
+	var hasAttrs, hasScopeLabels bool
 	ls.Range(func(lbl labels.Label) {
+		if !strings.HasPrefix(lbl.Name, prometheus.ScopeLabelPrefix) {
+			return
+		}
+		hasScopeLabels = true
 		switch lbl.Name {
 		case prometheus.ScopeNameLabelKey:
 			scope.name = lbl.Value
@@ -501,22 +506,28 @@ func getScopeID(ls labels.Labels) (scopeID, pcommon.Map) {
 			scope.schemaURL = lbl.Value
 			return
 		}
-		if !strings.HasPrefix(lbl.Name, prometheus.ScopeLabelPrefix) {
-			return
+		if !hasAttrs {
+			attrs = pcommon.NewMap()
+			hasAttrs = true
 		}
 		attrKey := strings.TrimPrefix(lbl.Name, prometheus.ScopeLabelPrefix)
 		attrs.PutStr(attrKey, lbl.Value)
 	})
-	scope.attrsHash = xhash.MapHash(attrs)
-	return scope, attrs
+	if hasAttrs {
+		scope.attrsHash = xhash.MapHash(attrs)
+	}
+	return scope, attrs, hasScopeLabels
 }
 
 func (t *transaction) addScopeAttributesFromLabels(key resourceKey, scope scopeID, attrs pcommon.Map) {
-	if attrs.Len() == 0 {
+	if attrs == (pcommon.Map{}) || attrs.Len() == 0 {
 		return
 	}
+	if t.scopeAttributes == nil {
+		t.scopeAttributes = make(map[resourceKey]map[scopeID]pcommon.Map, 1)
+	}
 	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
+		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map, 1)
 	}
 	if _, exists := t.scopeAttributes[key][scope]; exists {
 		return
@@ -550,7 +561,7 @@ func (t *transaction) initTransaction(lbs labels.Labels) (resourceKey, error) {
 		t.mc = emptyMetadataStoreInstance
 	}
 
-	t.nodeResources[rKey] = CreateResource(rKey.job, rKey.instance, target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
+	t.nodeResources[rKey] = CreateResource(rKey.job, rKey.instance, target.GetValue(model.AddressLabel), target.GetValue(model.SchemeLabel), target.DiscoveredLabels(labels.NewBuilder(labels.EmptyLabels())))
 
 	t.isNew = false
 	return rKey, nil

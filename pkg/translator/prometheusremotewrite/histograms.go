@@ -18,8 +18,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-const defaultZeroThreshold = 1e-128
-
 // explicitToNHCB converts an OTLP explicit-bucket histogram data point to a
 // Prometheus histogram with custom buckets (schema -53) via Prometheus' own
 // convertnhcb helper. Exactly one of the returned histograms is non-nil.
@@ -99,13 +97,12 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		ts, _ := c.getOrCreateTimeSeries(lbls)
-
 		histogram, err := exponentialToNativeHistogram(pt)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
+		ts, _ := c.getOrCreateTimeSeries(lbls)
 		ts.Histograms = append(ts.Histograms, histogram)
 
 		exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
@@ -123,6 +120,9 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		return prompb.Histogram{},
 			fmt.Errorf("cannot convert exponential to native histogram."+
 				" Scale must be >= -4, was %d", scale)
+	}
+	if !p.Flags().NoRecordedValue() && !p.HasSum() {
+		return prompb.Histogram{}, errors.New("cannot convert exponential to native histogram: sum is not set")
 	}
 
 	var scaleDown int32
@@ -147,7 +147,8 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		ResetHint: prompb.Histogram_UNKNOWN,
 		Schema:    scale,
 
-		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
+		ZeroThreshold: p.ZeroThreshold(),
+		ZeroCount:     &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -157,19 +158,11 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		Timestamp: convertTimeStamp(p.Timestamp()),
 	}
 
-	if p.ZeroThreshold() != 0 {
-		h.ZeroThreshold = p.ZeroThreshold()
-	} else {
-		h.ZeroThreshold = defaultZeroThreshold
-	}
-
 	if p.Flags().NoRecordedValue() {
 		h.Sum = math.Float64frombits(value.StaleNaN)
 		h.Count = &prompb.Histogram_CountInt{CountInt: value.StaleNaN}
 	} else {
-		if p.HasSum() {
-			h.Sum = p.Sum()
-		}
+		h.Sum = p.Sum()
 		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
 	}
 	return h, nil
