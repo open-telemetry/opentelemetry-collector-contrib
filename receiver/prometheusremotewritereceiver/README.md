@@ -153,6 +153,36 @@ This approach has some limitations, for example:
 
 The receiver reports every eviction in the `otelcol_receiver_prometheusremotewrite_resource_cache_evictions` internal metric. A counter that keeps growing means the cache is smaller than the number of job/instance pairs sent to the receiver.
 
+### Job and Instance Label Mapping
+
+For each `job` and `instance` pair:
+- `instance` (when non-empty) is mapped to the `service.instance.id` resource attribute.
+- By default, if `job` contains a single `/` (`<namespace>/<name>`), it is split into `service.namespace` and `service.name`; otherwise the full `job` value is mapped to `service.name`.
+- When the `receiver.prometheus_remote_write.disableJobSplit` feature gate is enabled (`--feature-gates=receiver.prometheus_remote_write.disableJobSplit`), the receiver maps the entire `job` value directly to `service.name` without splitting on `/`, matching `prometheusreceiver`. Because a valid `service.name` may itself contain `/`, the receiver cannot distinguish a `/` within `service.name` from a concatenated `<service.namespace>/<service.name>` value.
+- Any attributes present on `target_info` series for the same `job`/`instance` pair take precedence and overwrite resource attributes derived from `job` and `instance`.
+
+#### Migrating to `receiver.prometheus_remote_write.disableJobSplit`
+
+If you rely on `service.namespace` being populated when `receiver.prometheus_remote_write.disableJobSplit` is enabled (or once it becomes the default):
+
+1. **OTLP -> Prometheus -> Remote Write -> OTLP round-trip via `target_info`**:
+   In the [OTLP-to-Prometheus specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1), `service.namespace` and `service.name` are concatenated into `job="<service.namespace>/<service.name>"`. For round-trip preservation of `service.namespace` and `service.name` without splitting `job`:
+   - Configure the OTLP-to-Prometheus sender to include identifying resource attributes on `target_info` (e.g., `keep_identifying_resource_attributes: true` in `prometheusexporter` / `prometheusremotewriteexporter`, or `keep_identifying_attributes` in Prometheus OTLP ingestion) so `service.namespace` and `service.name` are emitted as labels on `target_info` (for Prometheus native OTLP ingestion, see also [prometheus/prometheus#20086](https://github.com/prometheus/prometheus/pull/20086)).
+   - Disable dot-to-underscore label translation on the sender/Prometheus side (preserve UTF-8 dots in label names, e.g. `translation_strategy: NoUTF8EscapingWithSuffixes`) so `target_info` carries `service.namespace` and `service.name` rather than `service_namespace` and `service_name`.
+
+2. **Splitting `job` via the `transform` processor (when `target_info` is not used)**:
+   If your sender encodes `<service.namespace>/<service.name>` in `job` without emitting `service.namespace` on `target_info`, you can preserve the `<namespace>/<name>` split downstream using the [`transform` processor](../../processor/transformprocessor/README.md):
+
+   ```yaml
+   processors:
+     transform:
+       metric_statements:
+         - context: resource
+           statements:
+             - set(attributes["service.namespace"], Split(attributes["service.name"], "/")[0]) where IsMatch(attributes["service.name"], "^[^/]+/[^/]+$") and attributes["service.namespace"] == nil
+             - set(attributes["service.name"], Split(attributes["service.name"], "/")[1]) where IsMatch(attributes["service.name"], "^[^/]+/[^/]+$")
+   ```
+
 ## Internal Telemetry
 
-See [documentation.md](./documentation.md) for the list of internal metrics emitted by this receiver.
+See [documentation.md](./documentation.md) for the list of internal metrics and feature gates for this receiver.
