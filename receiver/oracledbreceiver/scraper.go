@@ -550,44 +550,38 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
-// buildNamedList generates named bind placeholders and sql.Named args for a column.
-func buildNamedList(prefix string, values []string) ([]string, []any) {
-	placeholders := make([]string, 0, len(values))
-	args := make([]any, 0, len(values))
-	for i, v := range values {
-		name := prefix + strconv.Itoa(i)
-		placeholders = append(placeholders, ":"+name)
-		args = append(args, sql.Named(name, v))
-	}
-	return placeholders, args
-}
-
-// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN clauses
-// using named bind parameters. CON_ID is included only when isCDB is true.
+// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN
+// clauses using named bind parameters. CON_ID is included only when isCDB is true.
 func buildProcedureSourceQuery(hits []*procedureMetricCacheHit, isCDB bool) (string, []any) {
-	owners := make([]string, len(hits))
-	names := make([]string, len(hits))
-	types := make([]string, len(hits))
-	conIDs := make([]string, len(hits))
-	for i := range hits {
-		owners[i], names[i], types[i], conIDs[i] = hits[i].schemaName, hits[i].objectName, hits[i].procedureType, hits[i].conID
-	}
-	ownerPH, ownerArgs := buildNamedList("owner", owners)
-	namePH, nameArgs := buildNamedList("name", names)
-	typePH, typeArgs := buildNamedList("type", types)
+	ownerPH := make([]string, len(hits))
+	namePH := make([]string, len(hits))
+	typePH := make([]string, len(hits))
+	conIDPH := make([]string, len(hits))
 
-	argCount := len(ownerArgs) + len(nameArgs) + len(typeArgs)
+	argsPerHit := 3
 	if isCDB {
-		argCount += len(hits)
+		argsPerHit = 4
 	}
-	args := make([]any, 0, argCount)
-	args = append(args, ownerArgs...)
-	args = append(args, nameArgs...)
-	args = append(args, typeArgs...)
+	args := make([]any, 0, len(hits)*argsPerHit)
+
+	for i, hit := range hits {
+		id := hit.identity()
+		n := strconv.Itoa(i)
+		ownerPH[i] = ":owner" + n
+		namePH[i] = ":name" + n
+		typePH[i] = ":type" + n
+		args = append(args,
+			sql.Named("owner"+n, id.owner),
+			sql.Named("name"+n, id.name),
+			sql.Named("type"+n, id.procType),
+		)
+		if isCDB {
+			conIDPH[i] = ":conid" + n
+			args = append(args, sql.Named("conid"+n, id.conID))
+		}
+	}
 
 	if isCDB {
-		conIDPH, conIDArgs := buildNamedList("conid", conIDs)
-		args = append(args, conIDArgs...)
 		return fmt.Sprintf(oracleProcedureSourceCDBSQL,
 			strings.Join(ownerPH, ","),
 			strings.Join(namePH, ","),
