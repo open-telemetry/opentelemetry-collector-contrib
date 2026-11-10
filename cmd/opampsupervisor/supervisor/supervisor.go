@@ -46,7 +46,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	gyaml "go.yaml.in/yaml/v3"
+	gyaml "go.yaml.in/yaml/v4"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
