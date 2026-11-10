@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add OTLP/HTTP backend support for metrics
+issues: [52508]
+subtext: Breaking change: Protocol.OTLP field type changed from otlpexporter.Config to configoptional.Optional[otlpexporter.Config]. Go code constructing or reading this field directly must be updated. YAML configuration remains backward compatible.

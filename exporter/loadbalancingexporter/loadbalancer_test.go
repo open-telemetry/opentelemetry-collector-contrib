@@ -28,7 +28,7 @@ func TestNewLoadBalancerNoResolver(t *testing.T) {
 	cfg := &Config{}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	require.Nil(t, p)
@@ -45,7 +45,7 @@ func TestNewLoadBalancerInvalidStaticResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	require.Nil(t, p)
@@ -64,7 +64,7 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	require.Nil(t, p)
@@ -83,7 +83,7 @@ func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	assert.Nil(t, p)
@@ -95,7 +95,7 @@ func TestLoadBalancerStart(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -119,7 +119,7 @@ func TestWithDNSResolver(t *testing.T) {
 		},
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -142,7 +142,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 		},
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -179,7 +179,7 @@ func TestMultipleResolvers(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	assert.Nil(t, p)
@@ -191,7 +191,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
 
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -231,7 +231,7 @@ func TestOnBackendChanges(t *testing.T) {
 		return newNopMockExporter(), nil
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -255,7 +255,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 		return newNopMockExporter(), nil
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -267,7 +267,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.exporters, 1)
-	assert.NotContains(t, p.exporters, endpointWithPort("endpoint-2"))
+	assert.NotContains(t, p.exporters, p.endpointWithPort("endpoint-2"))
 }
 
 func TestAddMissingExporters(t *testing.T) {
@@ -284,12 +284,13 @@ func TestAddMissingExporters(t *testing.T) {
 		return newNopMockTracesExporter(), nil
 	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := cfg.Protocol.OTLP
-		oCfg.ClientConfig.Endpoint = endpoint
-		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(exporterFactory.Type()), &oCfg)
+		oCfg := cfg.Protocol.OTLP.Get()
+		cfgCopy := oCfg
+		cfgCopy.ClientConfig.Endpoint = endpoint
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(exporterFactory.Type()), &cfgCopy)
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -319,12 +320,13 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		return nil, expectedErr
 	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := cfg.Protocol.OTLP
-		oCfg.ClientConfig.Endpoint = endpoint
-		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), &oCfg)
+		oCfg := cfg.Protocol.OTLP.Get()
+		cfgCopy := oCfg
+		cfgCopy.ClientConfig.Endpoint = endpoint
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), &cfgCopy)
 	}
 
-	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -340,6 +342,11 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 }
 
 func TestEndpointWithPort(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
+	require.NoError(t, err)
+
 	for _, tt := range []struct {
 		input, expected string
 	}{
@@ -352,7 +359,7 @@ func TestEndpointWithPort(t *testing.T) {
 			"endpoint-1:55690",
 		},
 	} {
-		assert.Equal(t, tt.expected, endpointWithPort(tt.input))
+		assert.Equal(t, tt.expected, p.endpointWithPort(tt.input))
 	}
 }
 
@@ -369,7 +376,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -381,7 +388,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	// this behavior. As the solution would require more locks/syncs/checks, we should probably wait to see
 	// if this is really a problem in the real world
 	resEndpoint := "endpoint-2"
-	delete(p.exporters, endpointWithPort(resEndpoint))
+	delete(p.exporters, p.endpointWithPort(resEndpoint))
 
 	// sanity check
 	require.Contains(t, p.res.(*staticResolver).endpoints, resEndpoint)
@@ -413,7 +420,7 @@ func TestNewLoadBalancerInvalidNamespaceAwsResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	assert.Nil(t, p)
@@ -433,7 +440,7 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb, "4317")
 
 	// verify
 	assert.Nil(t, p)

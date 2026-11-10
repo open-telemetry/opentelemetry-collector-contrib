@@ -56,7 +56,11 @@ $defs:
     type: object
     properties:
       otlp:
+        x-optional: true
         $ref: go.opentelemetry.io/collector/exporter/otlpexporter.config
+      otlp_http:
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/exporter/otlphttpexporter.config
   resolver_settings:
     description: ResolverSettings defines the configurations for the backend resolver
     type: object

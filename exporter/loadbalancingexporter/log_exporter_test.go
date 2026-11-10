@@ -126,7 +126,7 @@ func TestLogExporterStart(t *testing.T) {
 			"error",
 			func() *logExporterImp {
 				// prepare
-				lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
+				lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb, "4317")
 				require.NoError(t, err)
 				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 
@@ -175,7 +175,7 @@ func TestConsumeLogs(t *testing.T) {
 		return newNopMockLogsExporter(), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -302,7 +302,7 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	}
 	ts, tb := getTelemetryAssets(t)
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -341,7 +341,7 @@ func TestLogBatchWithTwoServices(t *testing.T) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -381,7 +381,7 @@ func TestLogsWithMissingServiceName(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -427,7 +427,7 @@ func TestConsumeLogs_ConcurrentResolverChange(t *testing.T) {
 		}
 		return te, nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -519,7 +519,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1021,7 +1021,7 @@ func TestConsumeLogsWithServiceRouting(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1062,7 +1062,7 @@ func TestConsumeLogsWithResourceRouting(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
 		RoutingKey: resourceRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1106,7 +1106,7 @@ func TestConsumeLogsWithAttributeRouting(t *testing.T) {
 		RoutingKey:        attrRoutingStr,
 		RoutingAttributes: []string{"env"},
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1150,7 +1150,7 @@ func TestConsumeLogsConsistentRouting(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1197,7 +1197,7 @@ func TestConsumeLogsWithResourceRoutingConsistent(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}})},
 		RoutingKey: resourceRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1241,7 +1241,7 @@ func TestConsumeLogsMixedServiceNames(t *testing.T) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1296,7 +1296,7 @@ func TestConsumeLogsTripleEndpoint(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1356,7 +1356,7 @@ func TestConsumeLogsExportFailure(t *testing.T) {
 		}), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1391,7 +1391,7 @@ func TestConsumeLogsEmptyBatch(t *testing.T) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb, "4317")
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -1530,7 +1530,7 @@ func TestConsumeLogsWithTraceIDRouting(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}})},
 		RoutingKey: traceIDRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -1584,7 +1584,7 @@ func TestE2ERoutingIsolation(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -1684,7 +1684,7 @@ func TestE2EResourceRoutingIsolation(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 		RoutingKey: resourceRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -1758,7 +1758,7 @@ func TestDataIntegrityThroughRouting(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -1933,7 +1933,7 @@ func TestDataIntegrityNoCrossContaminationBetweenServices(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -2021,7 +2021,7 @@ func TestDataIntegrityLogCountPreserved(t *testing.T) {
 				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 				RoutingKey: svcRoutingStr,
 			}
-			lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+			lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 			require.NoError(t, err)
 
 			p, err := newLogsExporter(ts, cfg)
@@ -2085,7 +2085,7 @@ func TestConsumeLogsMissingServiceMultipleEndpoints(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -2363,7 +2363,7 @@ func TestConsumeLogsPartialBackendFailure(t *testing.T) {
 		Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
 		RoutingKey: svcRoutingStr,
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -2458,7 +2458,7 @@ func TestHighCardinalityAttributeRouting(t *testing.T) {
 		RoutingKey:        attrRoutingStr,
 		RoutingAttributes: []string{"request.id"},
 	}
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 
 	p, err := newLogsExporter(ts, cfg)
@@ -2518,7 +2518,7 @@ func benchConsumeLogs(b *testing.B, routingKey string, endpointsCount, rlCount, 
 		RoutingKey: routingKey,
 	}
 
-	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb, "4317")
 	require.NotNil(b, lb)
 	require.NoError(b, err)
 

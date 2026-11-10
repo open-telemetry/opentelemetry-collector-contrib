@@ -181,7 +181,7 @@ func TestLoadBalancerWithK8sResolverCreation(t *testing.T) {
 	}
 
 	// Creating loadbalancer should succeed even outside k8s cluster
-	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb, "4317")
 	require.NoError(t, err)
 	require.NotNil(t, lb)
 	require.NotNil(t, lb.res, "resolver should be initialized")

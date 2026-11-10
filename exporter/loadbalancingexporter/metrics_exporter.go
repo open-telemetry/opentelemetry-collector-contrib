@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
@@ -44,15 +45,33 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 	if err != nil {
 		return nil, err
 	}
-	exporterFactory := otlpexporter.NewFactory()
-	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
 
-		return exporterFactory.CreateMetrics(ctx, oParams, &oCfg)
+	config := cfg.(*Config)
+	var cfFunc componentFactory
+
+	if config.Protocol.OTLPHTTP.HasValue() {
+		// Use OTLP/HTTP exporter for metrics
+		exporterFactory := otlphttpexporter.NewFactory()
+		cfFunc = func(ctx context.Context, endpoint string) (component.Component, error) {
+			var httpCfg *otlphttpexporter.Config
+			httpCfg, err = buildHTTPExporterConfig(config, endpoint)
+			if err != nil {
+				return nil, err
+			}
+			oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+			return exporterFactory.CreateMetrics(ctx, oParams, httpCfg)
+		}
+	} else {
+		// Use OTLP/gRPC exporter (default, or when explicitly configured)
+		exporterFactory := otlpexporter.NewFactory()
+		cfFunc = func(ctx context.Context, endpoint string) (component.Component, error) {
+			oCfg := buildExporterConfig(config, endpoint)
+			oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+			return exporterFactory.CreateMetrics(ctx, oParams, oCfg)
+		}
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry, config.defaultPort())
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +83,7 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		logger:       params.Logger,
 	}
 
-	switch cfg.(*Config).RoutingKey {
+	switch config.RoutingKey {
 	case svcRoutingStr, "":
 		// default case for empty routing key
 		metricExporter.routingKey = svcRouting
@@ -76,9 +95,9 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		metricExporter.routingKey = streamIDRouting
 	case attrRoutingStr:
 		metricExporter.routingKey = attrRouting
-		metricExporter.routingAttrs = cfg.(*Config).RoutingAttributes
+		metricExporter.routingAttrs = config.RoutingAttributes
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: %q", config.RoutingKey)
 	}
 	return &metricExporter, nil
 }
