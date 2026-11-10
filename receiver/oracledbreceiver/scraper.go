@@ -549,48 +549,44 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
-// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN
-// clauses using named bind parameters. CON_ID is included only when isCDB is true.
-func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (string, []any) {
-	ownerPH := make([]string, len(hits))
-	namePH := make([]string, len(hits))
-	typePH := make([]string, len(hits))
-	conIDPH := make([]string, len(hits))
-
-	argsPerHit := 3
+// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query using a tuple-IN
+// clause with named bind parameters. Each identity is bound as one tuple so the database
+// returns only the (OWNER, NAME, TYPE[, CON_ID]) combinations we requested, not every
+// cross-product that would match if columns were filtered independently. CON_ID is
+// included only when isCDB is true.
+func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) (string, []any) {
+	tuples := make([]string, len(identities))
+	argsPerIdentity := 3
 	if isCDB {
-		argsPerHit = 4
+		argsPerIdentity = 4
 	}
-	args := make([]any, 0, len(hits)*argsPerHit)
+	args := make([]any, 0, len(identities)*argsPerIdentity)
 
-	for i := range hits {
-		id := hits[i].identity()
+	for i, id := range identities {
 		n := strconv.Itoa(i)
-		ownerPH[i] = ":owner" + n
-		namePH[i] = ":name" + n
-		typePH[i] = ":type" + n
-		args = append(args,
-			sql.Named("owner"+n, id.owner),
-			sql.Named("name"+n, id.name),
-			sql.Named("type"+n, id.procType),
-		)
 		if isCDB {
-			conIDPH[i] = ":conid" + n
-			args = append(args, sql.Named("conid"+n, id.conID))
+			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s, :conid%s)", n, n, n, n)
+			args = append(args,
+				sql.Named("owner"+n, id.owner),
+				sql.Named("name"+n, id.name),
+				sql.Named("type"+n, id.procType),
+				sql.Named("conid"+n, id.conID),
+			)
+		} else {
+			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s)", n, n, n)
+			args = append(args,
+				sql.Named("owner"+n, id.owner),
+				sql.Named("name"+n, id.name),
+				sql.Named("type"+n, id.procType),
+			)
 		}
 	}
 
+	tmpl := oracleProcedureSourceSQL
 	if isCDB {
-		return fmt.Sprintf(oracleProcedureSourceCDBSQL,
-			strings.Join(ownerPH, ","),
-			strings.Join(namePH, ","),
-			strings.Join(typePH, ","),
-			strings.Join(conIDPH, ",")), args
+		tmpl = oracleProcedureSourceCDBSQL
 	}
-	return fmt.Sprintf(oracleProcedureSourceSQL,
-		strings.Join(ownerPH, ","),
-		strings.Join(namePH, ","),
-		strings.Join(typePH, ",")), args
+	return fmt.Sprintf(tmpl, strings.Join(tuples, ",")), args
 }
 
 // isWrappedDefinition reports whether a procedure's source begins with Oracle's
@@ -634,7 +630,11 @@ func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []pr
 		return nil, nil
 	}
 
-	sqlQuery, args := buildProcedureSourceQuery(hits, s.useCDBProceduresView)
+	identities := make([]procedureIdentity, len(hits))
+	for i := range hits {
+		identities[i] = hits[i].identity()
+	}
+	sqlQuery, args := buildProcedureSourceQuery(identities, s.useCDBProceduresView)
 
 	rawRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, args...)
 	if err != nil {
