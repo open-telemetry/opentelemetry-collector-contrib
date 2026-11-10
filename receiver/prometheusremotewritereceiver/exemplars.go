@@ -10,7 +10,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/schema"
-	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -30,11 +29,9 @@ import (
 func collectExemplars(
 	req *writev2.Request,
 	settings receiver.Settings,
-	stats *promremote.WriteResponseStats,
 ) map[exemplarKey]pmetric.ExemplarSlice {
 	result := make(map[exemplarKey]pmetric.ExemplarSlice)
 	builder := labels.NewScratchBuilder(0)
-	stats.Exemplars = 0
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
 		if len(ts.Exemplars) == 0 {
@@ -58,6 +55,9 @@ func collectExemplars(
 			settings.Logger.Warn("missing metric name in labels")
 			continue
 		}
+		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) || ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+			continue
+		}
 
 		key := makeExemplarKey(ls)
 		slice, ok := result[key]
@@ -78,7 +78,6 @@ func collectExemplars(
 
 			traceIDSet, spanIDSet := setTraceAndSpan(exemplar, promExemplar.Labels)
 			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels, traceIDSet, spanIDSet)
-			stats.Exemplars++
 		}
 
 		result[key] = slice

@@ -575,7 +575,7 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 1, stats.Exemplars, "counted when the request is parsed, before the histogram is refused")
+	assert.Equal(t, 0, stats.Exemplars, "exemplars on a dropped histogram are not attached and not counted as written")
 
 	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 		ExponentialHistogram().DataPoints()
@@ -5345,13 +5345,14 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 	}
 }
 
-func TestRefusedRequestReportsNothingWritten(t *testing.T) {
-	// A refused request is not passed on, so the Written headers report zero, including for the
-	// series in it that translated.
+func TestPartialWriteOnBadRequest(t *testing.T) {
+	// When a request mixes valid series with refused items, valid data points are still passed on
+	// to the consumer and counted in the Written response headers, while the HTTP status is 400.
 	gauge := writev2.TimeSeries{
 		Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 		LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 		Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{8, 9}, Value: 1, Timestamp: 1}},
 	}
 	for _, tc := range []struct {
 		name    string
@@ -5397,22 +5398,20 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 					"__name__", "test_gauge", // 1, 2
 					"job", "service-x/test", // 3, 4
 					"instance", "107cn001", // 5, 6
-					"test_histogram", // 7
+					"test_histogram",                               // 7
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 8, 9
 				},
 				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
 			})
 			defer resp.Body.Close()
 
 			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-			for _, header := range []string{
-				"X-Prometheus-Remote-Write-Samples-Written",
-				"X-Prometheus-Remote-Write-Histograms-Written",
-				"X-Prometheus-Remote-Write-Exemplars-Written",
-			} {
-				assert.Equal(t, "0", resp.Header.Get(header), header)
-			}
-			assert.Empty(t, sink.AllMetrics())
-			assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			require.Len(t, sink.AllMetrics(), 1)
+			assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+			assert.Equal(t, 1, prwReceiver.rmCache.Len())
 		})
 	}
 }

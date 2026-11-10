@@ -241,37 +241,31 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	m, stats, commitRMCache, err := prw.translateV2WithStagedCache(req.Context(), &prw2Req)
-	if err != nil {
-		// A refused request is not passed on, so nothing in it was written.
-		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
-		return
-	}
-
-	// Return early if metric count is 0.
-	if m.MetricCount() == 0 {
-		commitRMCache()
-		stats.SetHeaders(w)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+	m, stats, commitRMCache, badRequestErr := prw.translateV2WithStagedCache(req.Context(), &prw2Req)
 
 	dataPointCount := m.DataPointCount()
-	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
-	err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", dataPointCount, err)
-	if err != nil {
-		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		if consumererror.IsPermanent(err) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	if dataPointCount > 0 {
+		obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+		err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
+		prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", dataPointCount, err)
+		if err != nil {
+			prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+			if consumererror.IsPermanent(err) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
 		}
-		return
 	}
 
 	commitRMCache()
 	stats.SetHeaders(w)
+	if badRequestErr != nil {
+		http.Error(w, badRequestErr.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -375,7 +369,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		targetInfoModified     = make(map[uint64]bool)
 
 		// exemplarMap holds exemplars under the series key collectExemplars builds.
-		exemplarMap = collectExemplars(req, prw.settings, &stats)
+		exemplarMap = collectExemplars(req, prw.settings)
 
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
@@ -453,6 +447,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			if len(ts.Samples) != 0 {
 				stats.Samples += len(ts.Samples)
 				stats.Histograms += len(ts.Histograms)
+				if len(exemplarMap) > 0 {
+					key := makeExemplarKey(ls)
+					if ex, ok := exemplarMap[key]; ok {
+						stats.Exemplars += ex.Len()
+						delete(exemplarMap, key)
+					}
+				}
 				droppedClassicHistogramSeries++
 				prw.logDroppedSeries(ls, "classic_histogram")
 				continue
@@ -532,6 +533,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				// Drop summary series as we will not handle them. A summary metric is never cached,
 				// so every summary series goes through here.
 				stats.Samples += len(ts.Samples)
+				if len(exemplarMap) > 0 {
+					key := makeExemplarKey(ls)
+					if ex, ok := exemplarMap[key]; ok {
+						stats.Exemplars += ex.Len()
+						delete(exemplarMap, key)
+					}
+				}
 				droppedSummarySeries++
 				prw.logDroppedSeries(ls, "summary")
 				continue
@@ -543,21 +551,23 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			metric.SetDescription(description)
 		}
 
+		var dataPoints pmetric.NumberDataPointSlice
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
-			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
+			dataPoints = metric.Gauge().DataPoints()
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
-			dataPoints := metric.Sum().DataPoints()
-			before := dataPoints.Len()
-			addNumberDatapoints(dataPoints, ls, ts, &stats)
-			// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
-			// metric built from the same labels, differing only by type or unit, from publishing a copy.
-			if len(exemplarMap) > 0 && dataPoints.Len() > before {
-				key := makeExemplarKey(ls)
-				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
-					ex.CopyTo(dataPoints.At(before).Exemplars())
-					delete(exemplarMap, key)
-				}
+			dataPoints = metric.Sum().DataPoints()
+		}
+		before := dataPoints.Len()
+		addNumberDatapoints(dataPoints, ls, ts, &stats)
+		// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
+		// metric built from the same labels, differing only by type or unit, from publishing a copy.
+		if len(exemplarMap) > 0 && dataPoints.Len() > before {
+			key := makeExemplarKey(ls)
+			if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+				ex.CopyTo(dataPoints.At(before).Exemplars())
+				stats.Exemplars += ex.Len()
+				delete(exemplarMap, key)
 			}
 		}
 	}
@@ -618,8 +628,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 //
 // What the Prometheus data model equates with absence is normalized rather than refused: a label
 // with an empty value is dropped where it would have become an attribute, as if it were not there.
-// Refusing it would fail the whole request, because the receiver has no partial write path, and
-// common senders such as Prometheus treat a 400 as non-recoverable and answer by dropping the batch.
+// Common senders such as Prometheus treat a 400 as non-recoverable and answer by dropping the batch.
 //
 // An empty name is refused instead of dropped because every attribute it could feed would be
 // unnamed, so no part of the label can be kept. An exemplar label is the exception: it annotates a
@@ -874,6 +883,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 		exemplars.CopyTo(exemplarSlice)
+		stats.Exemplars += exemplars.Len()
 		delete(exemplarMap, exemplarsKey)
 		haveExemplars = false
 	}

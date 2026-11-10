@@ -36,7 +36,7 @@ Because such a label is the same as an absent one, two series that differ only b
 
 For the same reason, a label that arrives with an empty value does not clear a value an earlier `target_info` cached for the same job/instance, exactly as an absent label does not (see [Resource Metrics Cache](#resource-metrics-cache)).
 
-An empty label *name* is different: it cannot become an attribute key, so a series that carries one is refused with `400 Bad Request` and none of the request is passed on. An exemplar label with an empty name is dropped instead, since the exemplar is an annotation on a data point and the rest of it stays meaningful. A label named exactly `otel_scope_` is the other way around: its name is not empty, but nothing is left of it once the scope prefix is stripped, so it loses its scope attribute and the series is kept.
+An empty label *name* is different: it cannot become an attribute key, so a series that carries one is refused with `400 Bad Request` while any valid data points in the request are still passed on. An exemplar label with an empty name is dropped instead, since the exemplar is an annotation on a data point and the rest of it stays meaningful. A label named exactly `otel_scope_` is the other way around: its name is not empty, but nothing is left of it once the scope prefix is stripped, so it loses its scope attribute and the series is kept.
 
 ## Configuring `PrometheusRemoteWriteReceiver`
 
@@ -128,7 +128,7 @@ Without metadata, every series arrives untyped, and the ones carrying samples, i
 
 ### Only integer, counter flavored Native Histograms are translated
 
-The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or buckets do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name. If Prometheus' own validation refuses such a histogram too, for example because its spans and buckets disagree or a bucket count is negative, the request is answered with `400 Bad Request` and none of it is passed on.
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or buckets do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name. If Prometheus' own validation refuses such a histogram too, for example because its spans and buckets disagree or a bucket count is negative, the request is answered with `400 Bad Request` while any valid data points in the request are still forwarded and counted in the `Written` response headers.
 
 The data point count is rebuilt from the buckets the translation emitted, rather than copied from the count Prometheus sent. Those differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket, so a count here can be lower than the one in Prometheus. When nothing could be represented the count is zero and so is the sum, which is what OpenTelemetry requires of a data point that recorded nothing.
 
