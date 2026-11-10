@@ -512,13 +512,19 @@ type HPA struct {
 
 // K8SHPALabel and K8SHPAAnnotation mirror the generated per-resource label/annotation
 // functions in go.opentelemetry.io/otel/semconv (e.g. K8SCronJobLabel) for the other
-// workload types this processor supports. k8s.hpa.label/k8s.hpa.annotation aren't yet
-// part of that package, so they're declared locally here pending semantic-conventions
-// approval (tracked alongside this change).
+// workload types this processor supports. k8s.hpa.label/k8s.hpa.annotation are not yet
+// part of a released semconv Go package, so they're declared locally here.
+
+// K8SHPALabel returns the k8s.hpa.label.<key> attribute.
+// TODO: replace with semconv.K8SHPALabel once available in go.opentelemetry.io/otel/semconv.
+// See https://github.com/open-telemetry/semantic-conventions/blob/main/docs/registry/attributes/k8s.md#k8s-hpa-label
 func K8SHPALabel(key, val string) attribute.KeyValue {
 	return attribute.String("k8s.hpa.label."+key, val)
 }
 
+// K8SHPAAnnotation returns the k8s.hpa.annotation.<key> attribute.
+// TODO: replace with semconv.K8SHPAAnnotation once available in go.opentelemetry.io/otel/semconv.
+// See https://github.com/open-telemetry/semantic-conventions/blob/main/docs/registry/attributes/k8s.md#k8s-hpa-annotation
 func K8SHPAAnnotation(key, val string) attribute.KeyValue {
 	return attribute.String("k8s.hpa.annotation."+key, val)
 }
