@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 
-	api "github.com/hashicorp/consul/api/v2"
+	"github.com/hashicorp/consul/api"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
