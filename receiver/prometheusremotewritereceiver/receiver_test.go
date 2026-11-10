@@ -340,6 +340,14 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 			Exemplars:  exemplars,
 		}
 	}
+	gauge := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: labelRefs,
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			Exemplars:  exemplars,
+		}
+	}
 	info := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
 		return writev2.TimeSeries{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
@@ -372,6 +380,8 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 		{"two units", []writev2.TimeSeries{counter(7, theExemplar), counter(8, nil)}},
 		{"counter then info", []writev2.TimeSeries{counter(7, theExemplar), info(nil)}},
 		{"info then counter", []writev2.TimeSeries{info(theExemplar), counter(7, nil)}},
+		{"gauge then counter", []writev2.TimeSeries{gauge(theExemplar), counter(7, nil)}},
+		{"the same gauge twice", []writev2.TimeSeries{gauge(theExemplar), gauge(nil)}},
 		{"counter then histogram", []writev2.TimeSeries{counter(7, theExemplar), histogram(nil)}},
 		{"histogram then counter", []writev2.TimeSeries{histogram(theExemplar), counter(7, nil)}},
 		{"the same counter twice", []writev2.TimeSeries{counter(7, theExemplar), counter(7, nil)}},
@@ -393,6 +403,11 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 					ms := sms.At(j).Metrics()
 					for k := 0; k < ms.Len(); k++ {
 						switch m := ms.At(k); m.Type() {
+						case pmetric.MetricTypeGauge:
+							dps := m.Gauge().DataPoints()
+							for d := 0; d < dps.Len(); d++ {
+								attached += dps.At(d).Exemplars().Len()
+							}
 						case pmetric.MetricTypeSum:
 							dps := m.Sum().DataPoints()
 							for d := 0; d < dps.Len(); d++ {
@@ -5433,6 +5448,14 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
 				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with invalid exemplar label refs",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
 			},
 		},
 	} {
