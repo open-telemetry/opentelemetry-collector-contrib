@@ -368,7 +368,6 @@ FROM (
 
 	// Procedure metrics columns
 	conIDAttr           = "CON_ID"
-	definitionAttr      = "DEFINITION"
 	innerObjectNameAttr = "OBJECT_NAME"
 	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
 )
@@ -552,7 +551,7 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 
 // buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query with separate IN
 // clauses using named bind parameters. CON_ID is included only when isCDB is true.
-func buildProcedureSourceQuery(hits []*procedureMetricCacheHit, isCDB bool) (string, []any) {
+func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (string, []any) {
 	ownerPH := make([]string, len(hits))
 	namePH := make([]string, len(hits))
 	typePH := make([]string, len(hits))
@@ -630,7 +629,7 @@ func groupSourceRowsByIdentity(rows []metricRow) map[procedureIdentity]string {
 
 // fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
 // IN-clause query (one DB roundtrip) and returns them grouped by procedureIdentity.
-func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []*procedureMetricCacheHit) (map[procedureIdentity]string, error) {
+func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[procedureIdentity]string, error) {
 	if len(hits) == 0 {
 		return nil, nil
 	}
@@ -2389,7 +2388,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	metricNames := getProcedureMetricNames()
 	resourceMetricNames := getProcedureResourceMetricNames()
 	var discardedHits int
-	var hits []*procedureMetricCacheHit
+	var hits []procedureMetricCacheHit
 	for _, row := range metricRows {
 		newCacheVal := make(map[string]int64, len(metricNames))
 		for _, columnName := range metricNames {
@@ -2443,12 +2442,11 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.metrics[queryExecutionMetric] = max(execDelta, 0)
 
 			// Gated on the resource counters; gating on the execution heuristic drops procedures that burned CPU.
-			hitCopy := hit
 			switch {
 			case possiblePurge:
 				discardedHits++
 			case hit.metrics[elapsedTimeMetric] > 0 || hit.metrics[cpuTimeMetric] > 0:
-				hits = append(hits, &hitCopy)
+				hits = append(hits, hit)
 			}
 		}
 		s.procedureMetricCache.Add(cacheKey, newCacheVal)
