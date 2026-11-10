@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
@@ -56,6 +58,12 @@ func (factory *pubsubReceiverFactory) ensureReceiver(settings receiver.Settings,
 		return receiver, nil
 	}
 	rconfig := config.(*Config)
+	if rconfig.IgnoreEncodingError != nil {
+		settings.Logger.Warn("ignore_encoding_error is deprecated and will be removed no earlier than v0.177.0; use on_decode_error instead",
+			zap.String("replacement", "on_decode_error: ignore"),
+			zap.String("documentation", "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/googlecloudpubsubreceiver/README.md#error-handling"),
+		)
+	}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              reportTransport,
@@ -65,10 +73,11 @@ func (factory *pubsubReceiverFactory) ensureReceiver(settings receiver.Settings,
 		return nil, err
 	}
 	receiver = &pubsubReceiver{
-		settings:  settings,
-		obsrecv:   obsrecv,
-		userAgent: strings.ReplaceAll(rconfig.UserAgent, "{{version}}", settings.BuildInfo.Version),
-		config:    rconfig,
+		settings:   settings,
+		obsrecv:    obsrecv,
+		userAgent:  strings.ReplaceAll(rconfig.UserAgent, "{{version}}", settings.BuildInfo.Version),
+		config:     rconfig,
+		decodeWarn: rate.Sometimes{Interval: decodeWarnInterval},
 	}
 	factory.receivers[config.(*Config)] = receiver
 	return receiver, nil
