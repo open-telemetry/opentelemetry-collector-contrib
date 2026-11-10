@@ -8,6 +8,7 @@ import (
 	"math"
 	"reflect"
 	"regexp"
+	"slices"
 	"time"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -18,6 +19,80 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
+
+// SortPointsChronologically sorts a slice of monitoringpb.Point in-place in ascending chronological order.
+// The primary sort key is EndTime ascending; the secondary sort key is StartTime ascending.
+func SortPointsChronologically(points []*monitoringpb.Point) {
+	if len(points) <= 1 {
+		return
+	}
+	slices.SortStableFunc(points, func(a, b *monitoringpb.Point) int {
+		if a == nil || b == nil {
+			if a == nil && b == nil {
+				return 0
+			}
+			if a == nil {
+				return 1
+			}
+			return -1
+		}
+
+		aInt, bInt := a.GetInterval(), b.GetInterval()
+		if aInt == nil || bInt == nil {
+			if aInt == nil && bInt == nil {
+				return 0
+			}
+			if aInt == nil {
+				return 1
+			}
+			return -1
+		}
+
+		aEnd, bEnd := aInt.GetEndTime(), bInt.GetEndTime()
+		if aEnd.IsValid() && bEnd.IsValid() {
+			if aEnd.Seconds != bEnd.Seconds {
+				if aEnd.Seconds < bEnd.Seconds {
+					return -1
+				}
+				return 1
+			}
+			if aEnd.Nanos != bEnd.Nanos {
+				if aEnd.Nanos < bEnd.Nanos {
+					return -1
+				}
+				return 1
+			}
+		} else if aEnd.IsValid() != bEnd.IsValid() {
+			if !aEnd.IsValid() {
+				return 1
+			}
+			return -1
+		}
+
+		aStart, bStart := aInt.GetStartTime(), bInt.GetStartTime()
+		if aStart.IsValid() && bStart.IsValid() {
+			if aStart.Seconds != bStart.Seconds {
+				if aStart.Seconds < bStart.Seconds {
+					return -1
+				}
+				return 1
+			}
+			if aStart.Nanos != bStart.Nanos {
+				if aStart.Nanos < bStart.Nanos {
+					return -1
+				}
+				return 1
+			}
+		} else if aStart.IsValid() != bStart.IsValid() {
+			if !aStart.IsValid() {
+				return 1
+			}
+			return -1
+		}
+
+		return 0
+	})
+}
 
 type MetricsBuilder struct {
 	logger *zap.Logger
@@ -156,11 +231,14 @@ func (mb *MetricsBuilder) ConvertDeltaToMetrics(ts *monitoringpb.TimeSeries, m p
 
 // ConvertDistributionToMetrics converts from Google cloud monitoring distributions to OpenTelemetry histograms.
 // See https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#Distribution for information on distribution metrics.
-func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeries, m pmetric.Metric) pmetric.Metric {
+// The temporality of the resulting histogram must match the metric kind of the source time series, that is,
+// pmetric.AggregationTemporalityDelta for DELTA metrics and pmetric.AggregationTemporalityCumulative for
+// CUMULATIVE metrics.
+func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeries, m pmetric.Metric, temporality pmetric.AggregationTemporality) pmetric.Metric {
 	m.SetName(ts.GetMetric().GetType())
 	m.SetUnit(ts.GetUnit())
 	histogram := m.SetEmptyHistogram()
-	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	histogram.SetAggregationTemporality(temporality)
 
 	// Note: Google cloud monitoring distributions use inclusive lower bound and exclusive upper bound (see
 	// https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#bucketoptions), while OpenTelemetry histograms use
@@ -241,6 +319,10 @@ func (mb *MetricsBuilder) ConvertDistributionToMetrics(ts *monitoringpb.TimeSeri
 					reflect.TypeOf(bucketOptions.Options).String(),
 				))
 			continue
+		}
+
+		if count := distributionValue.GetCount(); count > 0 {
+			targetDataPoint.SetSum(distributionValue.GetMean() * float64(count))
 		}
 
 		targetBucketCounts := targetDataPoint.BucketCounts()

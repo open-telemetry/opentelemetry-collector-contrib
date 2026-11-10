@@ -261,3 +261,9 @@ transform/shared_cache:
     - shared_cache: true
       statements:
         - set(resource.attributes["name"], "bear")
+
+transform/flatten:
+  flatten:
+    log: true
+  log_statements:
+    - set(resource.attributes["host.name"], log.attributes["host.name"])

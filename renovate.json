@@ -5,7 +5,7 @@
     "dependencies"
   ],
   "constraints": {
-    "go": "1.26"
+    "go": "1.26.0"
   },
   "schedule": [
     "on tuesday"
@@ -38,7 +38,7 @@
         "/^pkg/semconvtest/semconvtest\\.go$/"
       ],
       "matchStrings": [
-        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*defaultWeaverVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+        "// renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\""
       ]
     }
   ],
@@ -287,6 +287,12 @@
     },
     {
       "matchPackageNames": [
+        "github.com/hashicorp/consul/api"
+      ],
+      "allowedVersions": "<2.0.0"
+    },
+    {
+      "matchPackageNames": [
         "github.com/vmware/govmomi"
       ],
       "allowedVersions": "!/v0.51.0$/"
@@ -299,6 +305,7 @@
   "prConcurrentLimit": 200,
   "prHourlyLimit": 5,
   "postUpdateOptions": [
-    "gomodTidyAll"
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
   ]
 }

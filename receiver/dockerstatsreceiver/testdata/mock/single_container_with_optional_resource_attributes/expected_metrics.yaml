@@ -1,6 +1,6 @@
 resourceMetrics:
   - resource: {}
-    schemaUrl: https://opentelemetry.io/schemas/1.40.0
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead
@@ -39,6 +39,9 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
+        - key: container.label.app
+          value:
+            stringValue: my-app
         - key: container.name
           value:
             stringValue: bold_sinoussi
@@ -48,7 +51,7 @@ resourceMetrics:
         - key: env-var-metric-label
           value:
             stringValue: env-var
-    schemaUrl: https://opentelemetry.io/schemas/1.40.0
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
     scopeMetrics:
       - metrics:
           - description: Number of bytes transferred to/from the disk by the group and descendant groups.

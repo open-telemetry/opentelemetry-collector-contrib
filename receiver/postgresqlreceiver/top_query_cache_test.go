@@ -22,7 +22,7 @@ func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 	columns := []string{
 		callsColumnName, "datname", sharedBlksDirtiedColumnName, sharedBlksHitColumnName,
 		sharedBlksReadColumnName, sharedBlksWrittenColumnName, tempBlksReadColumnName,
-		tempBlksWrittenColumnName, "query", queryidColumnName, "rolname", rowsColumnName,
+		tempBlksWrittenColumnName, "query", queryidColumnName, "userid", "rolname", rowsColumnName,
 		totalExecTimeColumnName, totalPlanTimeColumnName,
 	}
 	cfg := createDefaultConfig().(*Config)
@@ -113,7 +113,7 @@ func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
 	columns := []string{
 		callsColumnName, "datname", sharedBlksDirtiedColumnName, sharedBlksHitColumnName,
 		sharedBlksReadColumnName, sharedBlksWrittenColumnName, tempBlksReadColumnName,
-		tempBlksWrittenColumnName, "query", queryidColumnName, "rolname", rowsColumnName,
+		tempBlksWrittenColumnName, "query", queryidColumnName, "userid", "rolname", rowsColumnName,
 		totalExecTimeColumnName, totalPlanTimeColumnName,
 	}
 	cfg := createDefaultConfig().(*Config)
@@ -133,15 +133,19 @@ func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
 	for _, identity := range []struct {
 		database string
 		role     string
+		userid   string
 	}{
-		{database: "db_a", role: "app"},
-		{database: "db_b", role: "app"},
-		{database: "db_a", role: "reporting"},
+		// app is the same role cluster-wide, so it carries the same userid in both
+		// databases: database, not userid, is what disambiguates these two rows.
+		{database: "db_a", role: "app", userid: "101"},
+		{database: "db_b", role: "app", userid: "101"},
+		{database: "db_a", role: "reporting", userid: "102"},
 	} {
 		values := map[string]driver.Value{
 			"datname":         identity.database,
 			"query":           "SELECT count(*) FROM pg_class",
 			queryidColumnName: "42",
+			"userid":          identity.userid,
 			"rolname":         identity.role,
 		}
 		for _, column := range columns {
@@ -161,6 +165,81 @@ func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 	require.Equal(t, 3, logs.LogRecordCount())
+	mock.ExpectClose()
+}
+
+// TestTopQueryCacheSeparatesDroppedRoles guards the counter-cache key against
+// two dropped roles (empty rolname) colliding and sharing one delta.
+func TestTopQueryCacheSeparatesDroppedRoles(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.MaxRowsPerQuery = 3
+	cfg.TopQueryCollection.TopNQuery = 3
+	cfg.TopQueryCollection.MaxExplainEachInterval = 0
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, db.Close()) })
+
+	scraper, err := newTopQueryScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{db: db})
+	require.NoError(t, err)
+
+	buildRows := func(callsA, callsB, totalExecTimeA, totalExecTimeB string) *sqlmock.Rows {
+		rows := sqlmock.NewRows(topQueryColumns)
+		for _, r := range []struct {
+			userid        string
+			calls         string
+			totalExecTime string
+		}{
+			{userid: "16415", calls: callsA, totalExecTime: totalExecTimeA},
+			{userid: "16416", calls: callsB, totalExecTime: totalExecTimeB},
+		} {
+			values := map[string]driver.Value{
+				"datname":               "postgres",
+				"query":                 "SELECT count(*) FROM pg_class",
+				queryidColumnName:       "42",
+				"userid":                r.userid,
+				"rolname":               "",
+				callsColumnName:         r.calls,
+				totalExecTimeColumnName: r.totalExecTime,
+			}
+			for _, column := range topQueryColumns {
+				if _, exists := values[column]; !exists {
+					values[column] = "0"
+				}
+			}
+			row := make([]driver.Value, len(topQueryColumns))
+			for i, column := range topQueryColumns {
+				row[i] = values[column]
+			}
+			rows.AddRow(row...)
+		}
+		return rows
+	}
+
+	mock.ExpectQuery("LIMIT 3").WillReturnRows(buildRows("100", "5000", "1000", "2000"))
+	_, err = scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	// Second scrape: each role's cumulative calls advances by 10.
+	mock.ExpectQuery("LIMIT 3").WillReturnRows(buildRows("110", "5010", "1100", "2200"))
+	logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	gotCalls := make(map[string]int64, 2)
+	for _, rl := range logs.ResourceLogs().All() {
+		for _, sl := range rl.ScopeLogs().All() {
+			for _, lr := range sl.LogRecords().All() {
+				attrs := lr.Attributes().AsRaw()
+				userid := attrs[dbAttributePrefix+"userid"].(string)
+				gotCalls[userid] = attrs[dbAttributePrefix+callsColumnName].(int64)
+			}
+		}
+	}
+	assert.Equal(t, map[string]int64{"16415": 10, "16416": 10}, gotCalls,
+		"each dropped role's calls delta must be computed against its own cumulative value")
 	mock.ExpectClose()
 }
 
@@ -184,11 +263,14 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 	statements := []struct {
 		database string
 		role     string
+		userid   string
 		plan     string
 	}{
-		{database: "db_a", role: "app", plan: `[{"Plan":{"Node Type":"Seq Scan"}}]`},
-		{database: "db_b", role: "app", plan: `[{"Plan":{"Node Type":"Index Scan"}}]`},
-		{database: "db_a", role: "reporting", plan: `[{"Plan":{"Node Type":"Index Only Scan"}}]`},
+		// app is the same role cluster-wide, so it carries the same userid in both
+		// databases: database, not userid, is what disambiguates these two rows.
+		{database: "db_a", role: "app", userid: "101", plan: `[{"Plan":{"Node Type":"Seq Scan"}}]`},
+		{database: "db_b", role: "app", userid: "101", plan: `[{"Plan":{"Node Type":"Index Scan"}}]`},
+		{database: "db_a", role: "reporting", userid: "102", plan: `[{"Plan":{"Node Type":"Index Only Scan"}}]`},
 	}
 	expectedPlans := make(map[[2]string]string, len(statements))
 	for _, statement := range statements {
@@ -208,6 +290,7 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 				values := map[string]driver.Value{
 					"datname":               statement.database,
 					"rolname":               statement.role,
+					"userid":                statement.userid,
 					"query":                 "SELECT count(*) FROM pg_class",
 					queryidColumnName:       "42",
 					totalExecTimeColumnName: fmt.Sprint((3-i)*10000 + scrape*(i+1)*1000),
@@ -264,6 +347,91 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 			}
 			require.NoError(t, mock.ExpectationsWereMet())
 		})
+	}
+	mock.ExpectClose()
+}
+
+// TestTopQueryPlanCacheSeparatesDroppedRoles guards the plan cache key against
+// two dropped roles (empty rolname) colliding and sharing one cached plan.
+func TestTopQueryPlanCacheSeparatesDroppedRoles(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.MaxRowsPerQuery = 3
+	cfg.TopQueryCollection.TopNQuery = 3
+	cfg.TopQueryCollection.MaxExplainEachInterval = 3
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, db.Close()) })
+
+	scraper, err := newTopQueryScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{db: db})
+	require.NoError(t, err)
+
+	statements := []struct {
+		userid string
+		plan   string
+	}{
+		{userid: "16415", plan: `[{"Plan":{"Node Type":"Seq Scan"}}]`},
+		{userid: "16416", plan: `[{"Plan":{"Node Type":"Index Scan"}}]`},
+	}
+	expectedPlans := make(map[string]string, len(statements))
+	for _, statement := range statements {
+		expectedPlans[statement.userid] = statement.plan
+	}
+
+	rows := sqlmock.NewRows(topQueryColumns)
+	for i, statement := range statements {
+		values := map[string]driver.Value{
+			"datname":               "postgres",
+			"userid":                statement.userid,
+			"rolname":               "", // both roles are dropped: rolname alone cannot tell them apart
+			"query":                 "SELECT count(*) FROM pg_class",
+			queryidColumnName:       "42",
+			totalExecTimeColumnName: fmt.Sprint((2 - i) * 10000),
+		}
+		row := make([]driver.Value, len(topQueryColumns))
+		for j, column := range topQueryColumns {
+			if value, exists := values[column]; exists {
+				row[j] = value
+			} else {
+				row[j] = "10000"
+			}
+		}
+		rows.AddRow(row...)
+	}
+	mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
+
+	for _, statement := range statements {
+		mock.ExpectQuery(regexp.QuoteMeta("/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_42 AS SELECT count(*) FROM pg_class;")).
+			WillReturnRows(sqlmock.NewRows([]string{"result"}))
+		mock.ExpectQuery(regexp.QuoteMeta("/* otel-collector-ignore */ SELECT COALESCE(array_length(parameter_types, 1), 0) AS param_count FROM pg_prepared_statements WHERE name = 'otel_42';")).
+			WillReturnRows(sqlmock.NewRows([]string{"param_count"}).AddRow("0"))
+		mock.ExpectQuery(regexp.QuoteMeta("EXPLAIN(FORMAT JSON) EXECUTE otel_42;")).
+			WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(statement.plan))
+		mock.ExpectExec(regexp.QuoteMeta("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_42")).
+			WillReturnResult(sqlmock.NewResult(0, 0))
+	}
+
+	logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+	require.Equal(t, len(statements), logs.LogRecordCount())
+	assert.Equal(t, len(statements), scraper.queryPlanCache.Len(),
+		"each dropped role must get its own plan cache entry, not share one keyed on empty rolname")
+
+	seen := make(map[string]bool, len(statements))
+	for _, resourceLogs := range logs.ResourceLogs().All() {
+		for _, scopeLogs := range resourceLogs.ScopeLogs().All() {
+			for _, record := range scopeLogs.LogRecords().All() {
+				attrs := record.Attributes().AsRaw()
+				userid := attrs[dbAttributePrefix+"userid"].(string)
+				expectedPlan, exists := expectedPlans[userid]
+				require.True(t, exists, "unexpected userid: %v", userid)
+				assert.NotContains(t, seen, userid)
+				seen[userid] = true
+				assert.JSONEq(t, expectedPlan, attrs[dbAttributePrefix+"query_plan"].(string))
+			}
+		}
 	}
 	mock.ExpectClose()
 }

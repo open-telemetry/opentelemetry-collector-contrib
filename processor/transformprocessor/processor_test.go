@@ -18,19 +18,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-func TestFlattenDataDisabledByDefault(t *testing.T) {
+func TestFlattenLogDisabledByDefault(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	assert.False(t, oCfg.FlattenData)
+	assert.False(t, oCfg.Flatten.Log)
 	require.NoError(t, oCfg.Validate())
 }
 
-func TestFlattenDataRequiresGate(t *testing.T) {
+func TestFlattenLogRequiresGate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
+	oCfg.Flatten.Log = true
 	assert.Equal(t, errFlatLogsGateDisabled, oCfg.Validate())
 }
 
@@ -68,7 +68,7 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
+	oCfg.Flatten.Log = true
 	oCfg.LogStatements = []common.ContextStatements{
 		{
 			Context: "log",
@@ -124,7 +124,7 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.FlattenData = true
+	oCfg.Flatten.Log = true
 	oCfg.LogStatements = []common.ContextStatements{
 		{
 			Context: "log",

@@ -89,6 +89,9 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 			fmt.Errorf("cannot convert exponential to native histogram."+
 				" Scale must be >= -4, was %d", scale)
 	}
+	if !p.Flags().NoRecordedValue() && !p.HasSum() {
+		return writev2.Histogram{}, errors.New("cannot convert exponential to native histogram: sum is not set")
+	}
 
 	var scaleDown int32
 	if scale > 8 {
@@ -98,11 +101,6 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 
 	pSpans, pDeltas := convertBucketsLayoutV2(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayoutV2(p.Negative(), scaleDown)
-
-	zeroThreshold := p.ZeroThreshold()
-	if zeroThreshold == 0 {
-		zeroThreshold = defaultZeroThreshold
-	}
 
 	h := writev2.Histogram{
 		// The counter reset detection must be compatible with Prometheus to
@@ -118,7 +116,7 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		Schema:    scale,
 
 		ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		ZeroThreshold: zeroThreshold,
+		ZeroThreshold: p.ZeroThreshold(),
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
@@ -135,9 +133,7 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		h.Sum = math.Float64frombits(value.StaleNaN)
 		h.Count = &writev2.Histogram_CountInt{CountInt: value.StaleNaN}
 	} else {
-		if p.HasSum() {
-			h.Sum = p.Sum()
-		}
+		h.Sum = p.Sum()
 		h.Count = &writev2.Histogram_CountInt{CountInt: p.Count()}
 	}
 	return h, nil

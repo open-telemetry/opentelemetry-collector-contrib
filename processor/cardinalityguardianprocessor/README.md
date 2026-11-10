@@ -48,13 +48,13 @@ flowchart LR
 
 Key design decisions:
 
-- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate using dual-epoch HyperLogLog++ sketches, so legitimate high-cardinality metrics aren't penalized.
+- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate with dual-epoch HyperLogLog++ sketches: the delta is the number of values seen this epoch that were absent from the previous one, so a stable high-cardinality set reads as zero growth while a label that keeps producing new values is caught every epoch.
 
 - **256-way sharding.** Each shard has its own `RWMutex`. With 50 concurrent goroutines across 256 shards, average occupancy is ~0.4 per shard. Contention is near zero. Shard selection is `hash & 0xFF` — one CPU cycle.
 
-- **HLL++ with ~2KB per tracker.** Each sketch estimates cardinality regardless of whether 100 or 100M unique values have been observed. 1-2% accuracy. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
+- **HLL++ with bounded sketch reuse.** Each tracker retains two p=14 sketches — the per-epoch sketch and the two-epoch window. Sketches start sparse and may grow to dense registers of about 16 KiB each. At rotation the per-epoch sketch becomes the next window, and the retired window is reused only when its distinct count guarantees it stayed sparse; otherwise it is replaced with a fresh sparse one. This avoids repeatedly clearing dense registers and lets dense storage be reclaimed as cardinality falls. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
 
-- **Stale eviction.** Trackers that haven't been seen for two epochs are cleaned up. Memory stays bounded.
+- **Stale eviction.** Trackers that haven't been seen for two epochs are evicted and their sketch storage becomes eligible for garbage collection. However, shard-map capacity and storage retained by active trackers can reflect historical peak load. Set `max_tracker_count` to limit the number of concurrently retained trackers; `0` permits unlimited growth.
 
 ## Comparison with existing processors
 
@@ -66,7 +66,6 @@ Key design decisions:
 | Tag-only mode | Yes | No | No |
 | Per-metric overrides | Yes | N/A | N/A |
 | Top-N offender reporting | Yes | No | No |
-| Memory per tracker | ~2KB (HLL++) | N/A | N/A |
 
 `filterprocessor` and `metricstransformprocessor` are configuration-driven: you tell them what to drop. This processor is data-driven: it figures out what to drop based on observed behavior. The use cases are complementary, not competing.
 
@@ -122,7 +121,64 @@ enforcement_mode: tag_only
 
 Preserves all attributes and injects `otel.metric.overflow: true` on data points that exceed the threshold. No data is modified — this is the safest mode and recommended for initial deployment.
 
-> **Note:** `tag_only` does **not** protect your TSDB on its own — high-cardinality labels still reach your backend unchanged. You must pair it with a downstream [routing processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector) to split tagged metrics to cheap storage.
+> **Note:** `tag_only` does **not** protect your TSDB on its own — high-cardinality labels still reach your backend unchanged. You must pair it with a downstream [routing connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/routingconnector) to split tagged metrics to cheap storage.
+
+#### Routing tagged data points
+
+The routing connector reads the tag in a `datapoint` condition and sends tagged data points to a separate pipeline. Untagged data points use `default_pipelines`:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  cardinality_guardian:
+    max_cardinality_delta_per_epoch: 100
+    epoch_duration_seconds: 300
+    enforcement_mode: tag_only
+  batch:
+
+connectors:
+  routing:
+    default_pipelines:
+      - metrics/primary
+    table:
+      - condition: datapoint.attributes["otel.metric.overflow"] == true
+        pipelines:
+          - metrics/overflow
+
+exporters:
+  otlp/primary:
+    endpoint: primary-backend:4317
+  otlp/overflow:
+    endpoint: overflow-backend:4317
+
+service:
+  pipelines:
+    metrics/in:
+      receivers:
+        - otlp
+      processors:
+        - cardinality_guardian
+        - batch
+      exporters:
+        - routing
+    metrics/primary:
+      receivers:
+        - routing
+      exporters:
+        - otlp/primary
+    metrics/overflow:
+      receivers:
+        - routing
+      exporters:
+        - otlp/overflow
+```
+
+> **Note:** `otel.metric.overflow` is a boolean attribute, so the condition compares it with `true`, not the string `"true"`. A string comparison is valid configuration, produces no warning and never matches: every data point goes to `default_pipelines`. Prometheus renders the label value as `true` either way, which makes the mismatch easy to miss.
 
 ### Overflow Attribute
 

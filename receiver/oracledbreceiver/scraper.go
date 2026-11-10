@@ -441,27 +441,31 @@ type oracleScraper struct {
 	sysmetricClient          dbClient
 	sysmetricCDBClient       dbClient
 	db                       *sql.DB
-	clientProviderFunc       clientProviderFunc
-	mb                       *metadata.MetricsBuilder
-	lb                       *metadata.LogsBuilder
-	dbProviderFunc           dbProviderFunc
-	logger                   *zap.Logger
-	id                       component.ID
-	instanceName             string
-	hostName                 string
-	scrapeCfg                scraperhelper.ControllerConfig
-	startTime                pcommon.Timestamp
-	metricsBuilderConfig     metadata.MetricsBuilderConfig
-	logsBuilderConfig        metadata.LogsBuilderConfig
-	metricCache              *lru.Cache[string, map[string]int64]
-	topQueryCollectCfg       TopQueryCollection
-	obfuscator               *obfuscator
-	querySampleCfg           QuerySample
-	sessionWaitEventCfg      SessionWaitEvent
-	serviceInstanceID        string
-	serverAddress            string
-	serverPort               int64
-	lastExecutionTimestamp   time.Time
+	// dbCleanup, if set, releases resources tied to the db connection (e.g. the
+	// gokrb5 client and its TGT-renewal goroutine for Kerberos auth). Called on
+	// shutdown after the db is closed.
+	dbCleanup              func()
+	clientProviderFunc     clientProviderFunc
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	dbProviderFunc         dbProviderFunc
+	logger                 *zap.Logger
+	id                     component.ID
+	instanceName           string
+	hostName               string
+	scrapeCfg              scraperhelper.ControllerConfig
+	startTime              pcommon.Timestamp
+	metricsBuilderConfig   metadata.MetricsBuilderConfig
+	logsBuilderConfig      metadata.LogsBuilderConfig
+	metricCache            *lru.Cache[string, map[string]int64]
+	topQueryCollectCfg     TopQueryCollection
+	obfuscator             *obfuscator
+	querySampleCfg         QuerySample
+	sessionWaitEventCfg    SessionWaitEvent
+	serviceInstanceID      string
+	serverAddress          string
+	serverPort             int64
+	lastExecutionTimestamp time.Time
 
 	oracleProcedureMetricsClient  dbClient
 	procedureMetricCache          *lru.Cache[string, map[string]int64]
@@ -473,7 +477,7 @@ type oracleScraper struct {
 	instanceInfo oracleInstanceInfo
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string) (scraper.Metrics, error) {
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string, dbCleanup func()) (scraper.Metrics, error) {
 	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, logger)
 	s := &oracleScraper{
 		mb:                   metricsBuilder,
@@ -481,6 +485,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		scrapeCfg:            scrapeCfg,
 		logger:               logger,
 		dbProviderFunc:       providerFunc,
+		dbCleanup:            dbCleanup,
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 		hostName:             hostName,
@@ -493,7 +498,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 
 func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadata.LogsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig,
 	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string, metricCache *lru.Cache[string, map[string]int64],
-	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, sessionWaitEventCfg SessionWaitEvent, hostName string,
+	topQueryCollectCfg TopQueryCollection, querySampleCfg QuerySample, sessionWaitEventCfg SessionWaitEvent, hostName string, dbCleanup func(),
 	procedureMetricCache *lru.Cache[string, map[string]int64], procedureMetricsCfg ProcedureMetrics,
 ) (scraper.Logs, error) {
 	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, logger)
@@ -503,6 +508,7 @@ func newLogsScraper(logsBuilder *metadata.LogsBuilder, logsBuilderConfig metadat
 		scrapeCfg:            scrapeCfg,
 		logger:               logger,
 		dbProviderFunc:       providerFunc,
+		dbCleanup:            dbCleanup,
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 		metricCache:          metricCache,
@@ -2408,6 +2414,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const finalBlockingSession = "FINAL_BLOCKING_SESSION"
 	const blockingSessionStatus = "BLOCKING_SESSION_STATUS"
 	const secondsInWait = "SECONDS_IN_WAIT"
+	const waitStartTime = "WAIT_START_TIME"
 	const blockingStartTime = "BLOCKING_START_TIME"
 	const lockType = "LOCK_TYPE"
 	const lockMode = "LOCK_MODE"
@@ -2488,7 +2495,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 
 		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[dbNamespaceCol], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
-			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
+			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, row[waitStartTime], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration, queryComments, row[sqlExecStart], row[logonTime], sessionDurationSec,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
 			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])
@@ -2672,6 +2679,11 @@ func (*oracleScraper) getTopNMetricNames() []string {
 }
 
 func (s *oracleScraper) shutdown(_ context.Context) error {
+	// Release auth resources (e.g. the gokrb5 client and its TGT-renewal
+	// goroutine) after closing the db, regardless of whether the db was opened.
+	if s.dbCleanup != nil {
+		defer s.dbCleanup()
+	}
 	if s.db == nil {
 		return nil
 	}

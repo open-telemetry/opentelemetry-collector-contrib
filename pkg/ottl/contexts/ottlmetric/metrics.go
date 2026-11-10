@@ -67,7 +67,6 @@ type TransformContextOption func(*TransformContext)
 // pcommon.Map is not safe for concurrent use, so a shared cache must not be used by
 // multiple goroutines at the same time.
 // If cache is nil, the option has no effect and the TransformContext uses its own cache.
-// Experimental: *NOTE* this option is subject to change or removal in the future.
 func WithCache(cache *pcommon.Map) TransformContextOption {
 	return func(tCtx *TransformContext) {
 		if cache != nil {
