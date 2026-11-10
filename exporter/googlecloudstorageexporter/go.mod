@@ -66,6 +66,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.8.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.71.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.165.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.1-0.20261110201837-2af832434dc6 // indirect

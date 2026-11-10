@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelar
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.165.1
 	github.com/open-telemetry/otel-arrow/go v0.60.2
@@ -78,6 +78,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.71.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/confmap v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261110201837-2af832434dc6 // indirect

@@ -12,7 +12,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.67.0
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.1
@@ -110,6 +110,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.71.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/exporter v1.71.1-0.20261110201837-2af832434dc6 // indirect

@@ -53,7 +53,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
@@ -77,6 +77,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.71.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/consumer v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261110201837-2af832434dc6 // indirect

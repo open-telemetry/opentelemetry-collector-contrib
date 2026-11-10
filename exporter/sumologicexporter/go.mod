@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumolo
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.1-0.20261110201837-2af832434dc6
@@ -70,6 +70,7 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.71.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261110201837-2af832434dc6 // indirect

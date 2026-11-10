@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/json-iterator/go v1.1.12
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1
