@@ -10,6 +10,8 @@ require (
 	go.uber.org/goleak v1.3.0
 )
 
+require go.yaml.in/yaml/v3 v3.0.5 // indirect
+
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
@@ -19,5 +21,5 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.165.0
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.6
+	go.yaml.in/yaml/v4 v4.0.0
 )
