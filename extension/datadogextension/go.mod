@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/metrics v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/serializer v0.84.0-devel.0.20261030015547-4fcf7d423463
-	github.com/DataDog/datadog-agent/pkg/tagset v0.85.0
+	github.com/DataDog/datadog-agent/pkg/tagset v0.85.2
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.165.1
@@ -95,7 +95,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.85.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.85.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.85.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/sort v0.85.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/sort v0.85.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.85.0 // indirect
