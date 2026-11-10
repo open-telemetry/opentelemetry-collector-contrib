@@ -163,6 +163,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.165.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.165.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.165.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.165.0 // indirect
 	go.opentelemetry.io/collector/internal/statusutil v0.165.0 // indirect
