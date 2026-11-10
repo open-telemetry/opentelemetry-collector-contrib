@@ -853,7 +853,7 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| workload_group.name | The name of the SQL Server Resource Governor workload group. | Str: ``default``, ``internal`` | Recommended | - |
+| sqlserver.workload_group.name | The name of the SQL Server Resource Governor workload group. | Any Str | Recommended | - |
 
 ### sqlserver.lock.wait_time.total
 
@@ -949,7 +949,7 @@ Total memory in use.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource_pool.name | The name of the SQL Server Resource Governor resource pool. | Str: ``default``, ``internal`` | Recommended | - |
+| sqlserver.resource_pool.name | The name of the SQL Server Resource Governor resource pool. | Any Str | Recommended | - |
 
 ### sqlserver.os.wait.duration
 

@@ -216,7 +216,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName},
+						EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName},
 					},
 					SqlserverLockWaitRate: SqlserverLockWaitRateMetricConfig{
 						Enabled: true,
@@ -254,7 +254,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeyResourcePoolName},
+						EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName},
 					},
 					SqlserverOsWaitDuration: SqlserverOsWaitDurationMetricConfig{
 						Enabled:             true,
@@ -616,7 +616,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName},
+						EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName},
 					},
 					SqlserverLockWaitRate: SqlserverLockWaitRateMetricConfig{
 						Enabled: false,
@@ -654,7 +654,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeyResourcePoolName},
+						EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName},
 					},
 					SqlserverOsWaitDuration: SqlserverOsWaitDurationMetricConfig{
 						Enabled:             false,
@@ -1054,7 +1054,7 @@ func TestSqlserverLockWaitCountMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverLockWaitCountMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.lock.wait.count doesn't have an attribute invalid, valid attributes: [workload_group.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.lock.wait.count doesn't have an attribute invalid, valid attributes: [sqlserver.workload_group.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverLockWaitCount
 	cfg.AggregationStrategy = "invalid"
@@ -1102,7 +1102,7 @@ func TestSqlserverMemoryUsageMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverMemoryUsageMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.memory.usage doesn't have an attribute invalid, valid attributes: [resource_pool.name]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.memory.usage doesn't have an attribute invalid, valid attributes: [sqlserver.resource_pool.name]")
 
 	cfg = DefaultMetricsConfig().SqlserverMemoryUsage
 	cfg.AggregationStrategy = "invalid"

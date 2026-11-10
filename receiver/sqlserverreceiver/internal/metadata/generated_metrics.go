@@ -344,32 +344,6 @@ var MapAttributeRequestState = map[string]AttributeRequestState{
 	"waiting": AttributeRequestStateWaiting,
 }
 
-// AttributeResourcePoolName specifies the value resource_pool.name attribute.
-type AttributeResourcePoolName int
-
-const (
-	_ AttributeResourcePoolName = iota
-	AttributeResourcePoolNameDefault
-	AttributeResourcePoolNameInternal
-)
-
-// String returns the string representation of the AttributeResourcePoolName.
-func (av AttributeResourcePoolName) String() string {
-	switch av {
-	case AttributeResourcePoolNameDefault:
-		return "default"
-	case AttributeResourcePoolNameInternal:
-		return "internal"
-	}
-	return ""
-}
-
-// MapAttributeResourcePoolName is a helper map of string to AttributeResourcePoolName attribute value.
-var MapAttributeResourcePoolName = map[string]AttributeResourcePoolName{
-	"default":  AttributeResourcePoolNameDefault,
-	"internal": AttributeResourcePoolNameInternal,
-}
-
 // AttributeSqlserverAccessScanType specifies the value sqlserver.access.scan.type attribute.
 type AttributeSqlserverAccessScanType int
 
@@ -928,32 +902,6 @@ var MapAttributeWorkerState = map[string]AttributeWorkerState{
 	"waiting_for_cpu": AttributeWorkerStateWaitingForCPU,
 }
 
-// AttributeWorkloadGroupName specifies the value workload_group.name attribute.
-type AttributeWorkloadGroupName int
-
-const (
-	_ AttributeWorkloadGroupName = iota
-	AttributeWorkloadGroupNameDefault
-	AttributeWorkloadGroupNameInternal
-)
-
-// String returns the string representation of the AttributeWorkloadGroupName.
-func (av AttributeWorkloadGroupName) String() string {
-	switch av {
-	case AttributeWorkloadGroupNameDefault:
-		return "default"
-	case AttributeWorkloadGroupNameInternal:
-		return "internal"
-	}
-	return ""
-}
-
-// MapAttributeWorkloadGroupName is a helper map of string to AttributeWorkloadGroupName attribute value.
-var MapAttributeWorkloadGroupName = map[string]AttributeWorkloadGroupName{
-	"default":  AttributeWorkloadGroupNameDefault,
-	"internal": AttributeWorkloadGroupNameInternal,
-}
-
 var MetricsInfo = metricsInfo{
 	SqlserverAccessScanRate: metricInfo{
 		Name:       "sqlserver.access.scan.rate",
@@ -1130,7 +1078,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverLockWaitCount: metricInfo{
 		Name:       "sqlserver.lock.wait.count",
-		Attributes: []string{"workload_group.name"},
+		Attributes: []string{"sqlserver.workload_group.name"},
 	},
 	SqlserverLockWaitRate: metricInfo{
 		Name: "sqlserver.lock.wait.rate",
@@ -1164,7 +1112,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverMemoryUsage: metricInfo{
 		Name:       "sqlserver.memory.usage",
-		Attributes: []string{"resource_pool.name"},
+		Attributes: []string{"sqlserver.resource_pool.name"},
 	},
 	SqlserverOsWaitDuration: metricInfo{
 		Name:       "sqlserver.os.wait.duration",
@@ -4795,7 +4743,7 @@ func (m *metricSqlserverLockWaitCount) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverLockWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, workloadGroupNameAttributeValue string) {
+func (m *metricSqlserverLockWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverWorkloadGroupNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4803,8 +4751,8 @@ func (m *metricSqlserverLockWaitCount) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName) {
-		dp.Attributes().PutStr("workload_group.name", workloadGroupNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName) {
+		dp.Attributes().PutStr("sqlserver.workload_group.name", sqlserverWorkloadGroupNameAttributeValue)
 	}
 
 	var s string
@@ -5465,7 +5413,7 @@ func (m *metricSqlserverMemoryUsage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, resourcePoolNameAttributeValue string) {
+func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverResourcePoolNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5473,8 +5421,8 @@ func (m *metricSqlserverMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryUsageMetricAttributeKeyResourcePoolName) {
-		dp.Attributes().PutStr("resource_pool.name", resourcePoolNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName) {
+		dp.Attributes().PutStr("sqlserver.resource_pool.name", sqlserverResourcePoolNameAttributeValue)
 	}
 
 	var s string
@@ -8985,8 +8933,8 @@ func (mb *MetricsBuilder) RecordSqlserverLockTimeoutRateDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverLockWaitCountDataPoint adds a data point to sqlserver.lock.wait.count metric.
-func (mb *MetricsBuilder) RecordSqlserverLockWaitCountDataPoint(ts pcommon.Timestamp, val int64, workloadGroupNameAttributeValue AttributeWorkloadGroupName) {
-	mb.metricSqlserverLockWaitCount.recordDataPoint(mb.startTime, ts, val, workloadGroupNameAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverLockWaitCountDataPoint(ts pcommon.Timestamp, val int64, sqlserverWorkloadGroupNameAttributeValue string) {
+	mb.metricSqlserverLockWaitCount.recordDataPoint(mb.startTime, ts, val, sqlserverWorkloadGroupNameAttributeValue)
 }
 
 // RecordSqlserverLockWaitRateDataPoint adds a data point to sqlserver.lock.wait.rate metric.
@@ -9035,8 +8983,8 @@ func (mb *MetricsBuilder) RecordSqlserverMemoryPageCountDataPoint(ts pcommon.Tim
 }
 
 // RecordSqlserverMemoryUsageDataPoint adds a data point to sqlserver.memory.usage metric.
-func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, resourcePoolNameAttributeValue AttributeResourcePoolName) {
-	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val, resourcePoolNameAttributeValue.String())
+func (mb *MetricsBuilder) RecordSqlserverMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, sqlserverResourcePoolNameAttributeValue string) {
+	mb.metricSqlserverMemoryUsage.recordDataPoint(mb.startTime, ts, val, sqlserverResourcePoolNameAttributeValue)
 }
 
 // RecordSqlserverOsWaitDurationDataPoint adds a data point to sqlserver.os.wait.duration metric.

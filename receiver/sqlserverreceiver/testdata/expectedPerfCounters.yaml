@@ -1939,7 +1939,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 24944
                   attributes:
-                    - key: resource_pool.name
+                    - key: sqlserver.resource_pool.name
                       value:
                         stringValue: default
                   startTimeUnixNano: "2000000"
@@ -2284,7 +2284,7 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 234720
                   attributes:
-                    - key: resource_pool.name
+                    - key: sqlserver.resource_pool.name
                       value:
                         stringValue: internal
                   startTimeUnixNano: "2000000"
@@ -2629,7 +2629,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: workload_group.name
+                    - key: sqlserver.workload_group.name
                       value:
                         stringValue: default
                   startTimeUnixNano: "2000000"
@@ -2671,7 +2671,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "20"
                   attributes:
-                    - key: workload_group.name
+                    - key: sqlserver.workload_group.name
                       value:
                         stringValue: internal
                   startTimeUnixNano: "2000000"

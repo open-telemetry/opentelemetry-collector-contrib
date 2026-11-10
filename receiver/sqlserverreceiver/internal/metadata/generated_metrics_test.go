@@ -372,11 +372,11 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1, AttributeSqlserverLockTimeoutTypeAll)
 
 			allMetricsCount++
-			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1, AttributeWorkloadGroupNameDefault)
+			mb.RecordSqlserverLockWaitCountDataPoint(ts, 1, "sqlserver.workload_group.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverLockWaitCountDataPoint(ts, 3, AttributeWorkloadGroupNameInternal)
+				mb.RecordSqlserverLockWaitCountDataPoint(ts, 3, "sqlserver.workload_group.name-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordSqlserverLockWaitCountDataPoint(ts+1, 3, AttributeWorkloadGroupNameInternal)
+				mb.RecordSqlserverLockWaitCountDataPoint(ts+1, 3, "sqlserver.workload_group.name-val-2")
 				assert.Equal(t, 2, mb.metricSqlserverLockWaitCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
@@ -426,11 +426,11 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverMemoryUsageDataPoint(ts, 1, AttributeResourcePoolNameDefault)
+			mb.RecordSqlserverMemoryUsageDataPoint(ts, 1, "sqlserver.resource_pool.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverMemoryUsageDataPoint(ts, 3, AttributeResourcePoolNameInternal)
+				mb.RecordSqlserverMemoryUsageDataPoint(ts, 3, "sqlserver.resource_pool.name-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordSqlserverMemoryUsageDataPoint(ts+1, 3, AttributeResourcePoolNameInternal)
+				mb.RecordSqlserverMemoryUsageDataPoint(ts+1, 3, "sqlserver.resource_pool.name-val-2")
 				assert.Equal(t, 2, mb.metricSqlserverMemoryUsage.data.Sum().DataPoints().Len())
 			}
 
@@ -2073,9 +2073,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						workloadGroupNameAttrVal, ok := dp.Attributes().Get("workload_group.name")
+						sqlserverWorkloadGroupNameAttrVal, ok := dp.Attributes().Get("sqlserver.workload_group.name")
 						assert.True(t, ok)
-						assert.Equal(t, "default", workloadGroupNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.workload_group.name-val", sqlserverWorkloadGroupNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.lock.wait.count"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.count")
 						validatedMetrics["sqlserver.lock.wait.count"] = true
@@ -2101,7 +2101,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
-						_, ok := dp.Attributes().Get("workload_group.name")
+						_, ok := dp.Attributes().Get("sqlserver.workload_group.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.lock.wait.rate":
@@ -2321,9 +2321,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						resourcePoolNameAttrVal, ok := dp.Attributes().Get("resource_pool.name")
+						sqlserverResourcePoolNameAttrVal, ok := dp.Attributes().Get("sqlserver.resource_pool.name")
 						assert.True(t, ok)
-						assert.Equal(t, "default", resourcePoolNameAttrVal.Str())
+						assert.Equal(t, "sqlserver.resource_pool.name-val", sqlserverResourcePoolNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.memory.usage")
 						validatedMetrics["sqlserver.memory.usage"] = true
@@ -2349,7 +2349,7 @@ func TestMetricsBuilder(t *testing.T) {
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
 						}
-						_, ok := dp.Attributes().Get("resource_pool.name")
+						_, ok := dp.Attributes().Get("sqlserver.resource_pool.name")
 						assert.False(t, ok)
 					}
 				case "sqlserver.os.wait.duration":

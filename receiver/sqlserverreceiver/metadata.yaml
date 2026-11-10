@@ -165,11 +165,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [waiting]
-  resource_pool.name:
-    description: The name of the SQL Server Resource Governor resource pool.
-    type: string
-    requirement_level: recommended
-    enum: [default, internal]
   sqlserver.access.scan.type:
     description: The type of access method scan being performed.
     type: string
@@ -357,6 +352,10 @@ attributes:
     description: Status of the request (e.g., running, suspended).
     type: string
     requirement_level: recommended
+  sqlserver.resource_pool.name:
+    description: The name of the SQL Server Resource Governor resource pool.
+    type: string
+    requirement_level: recommended
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
@@ -447,6 +446,10 @@ attributes:
     description: Type of wait encountered by the request. Empty if none.
     type: string
     requirement_level: recommended
+  sqlserver.workload_group.name:
+    description: The name of the SQL Server Resource Governor workload group.
+    type: string
+    requirement_level: recommended
   sqlserver.writes:
     description: Number of writes performed by the query.
     type: int
@@ -504,11 +507,6 @@ attributes:
     type: string
     requirement_level: recommended
     enum: [maximum, active, available, waiting_for_cpu]
-  workload_group.name:
-    description: The name of the SQL Server Resource Governor workload group.
-    type: string
-    requirement_level: recommended
-    enum: [default, internal]
   # attributes for events
   ## common
 events:
@@ -1088,7 +1086,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [workload_group.name]
+    attributes: [sqlserver.workload_group.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
@@ -1178,7 +1176,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: double
-    attributes: [resource_pool.name]
+    attributes: [sqlserver.resource_pool.name]
   sqlserver.os.wait.duration:
     enabled: false
     description: Total wait time for this wait type

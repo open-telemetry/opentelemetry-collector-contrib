@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/sql_server
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `workload_group.name` attribute to `sqlserver.lock.wait.count` and `resource_pool.name` attribute to `sqlserver.memory.usage`, so data points reported per Resource Governor workload group/resource pool are no longer indistinguishable.
+note: Add `sqlserver.workload_group.name` attribute to `sqlserver.lock.wait.count` and `sqlserver.resource_pool.name` attribute to `sqlserver.memory.usage`, so data points reported per Resource Governor workload group/resource pool are no longer indistinguishable.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52680]

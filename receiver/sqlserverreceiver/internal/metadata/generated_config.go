@@ -1549,7 +1549,7 @@ func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 type SqlserverLockWaitCountMetricAttributeKey string
 
 const (
-	SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName SqlserverLockWaitCountMetricAttributeKey = "workload_group.name"
+	SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName SqlserverLockWaitCountMetricAttributeKey = "sqlserver.workload_group.name"
 )
 
 // SqlserverLockWaitCountMetricConfig provides config for the sqlserver.lock.wait.count metric.
@@ -1578,9 +1578,9 @@ func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 func (ms *SqlserverLockWaitCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName:
+		case SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName:
 		default:
-			return fmt.Errorf("metric sqlserver.lock.wait.count doesn't have an attribute %v, valid attributes: [workload_group.name]", val)
+			return fmt.Errorf("metric sqlserver.lock.wait.count doesn't have an attribute %v, valid attributes: [sqlserver.workload_group.name]", val)
 		}
 	}
 
@@ -1861,7 +1861,7 @@ func (ms *SqlserverMemoryPageCountMetricConfig) Validate() error {
 type SqlserverMemoryUsageMetricAttributeKey string
 
 const (
-	SqlserverMemoryUsageMetricAttributeKeyResourcePoolName SqlserverMemoryUsageMetricAttributeKey = "resource_pool.name"
+	SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName SqlserverMemoryUsageMetricAttributeKey = "sqlserver.resource_pool.name"
 )
 
 // SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric.
@@ -1890,9 +1890,9 @@ func (ms *SqlserverMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *SqlserverMemoryUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverMemoryUsageMetricAttributeKeyResourcePoolName:
+		case SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName:
 		default:
-			return fmt.Errorf("metric sqlserver.memory.usage doesn't have an attribute %v, valid attributes: [resource_pool.name]", val)
+			return fmt.Errorf("metric sqlserver.memory.usage doesn't have an attribute %v, valid attributes: [sqlserver.resource_pool.name]", val)
 		}
 	}
 
@@ -3417,7 +3417,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeyWorkloadGroupName},
+			EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName},
 		},
 		SqlserverLockWaitRate: SqlserverLockWaitRateMetricConfig{
 			Enabled: true,
@@ -3455,7 +3455,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeyResourcePoolName},
+			EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName},
 		},
 		SqlserverOsWaitDuration: SqlserverOsWaitDurationMetricConfig{
 			Enabled:             false,
