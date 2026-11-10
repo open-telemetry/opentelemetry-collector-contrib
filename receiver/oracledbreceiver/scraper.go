@@ -563,8 +563,8 @@ func buildProcedureSourceQuery(hits []procedureMetricCacheHit, isCDB bool) (stri
 	}
 	args := make([]any, 0, len(hits)*argsPerHit)
 
-	for i, hit := range hits {
-		id := hit.identity()
+	for i := range hits {
+		id := hits[i].identity()
 		n := strconv.Itoa(i)
 		ownerPH[i] = ":owner" + n
 		namePH[i] = ":name" + n
@@ -2486,7 +2486,8 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
-	for _, hit := range hits {
+	for i := range hits {
+		hit := &hits[i]
 		s.lb.RecordDbServerTopProcedureEvent(context.Background(),
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
