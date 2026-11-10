@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cw
 go 1.26.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.47.5
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.91.0
-	github.com/aws/smithy-go v1.28.7
+	github.com/aws/aws-sdk-go-v2 v1.47.8
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.92.1
+	github.com/aws/smithy-go v1.28.8
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.uber.org/goleak v1.3.0
@@ -13,9 +13,9 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.25 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.8 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.8 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.26 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.11 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
