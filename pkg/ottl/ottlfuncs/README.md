@@ -1356,9 +1356,6 @@ Examples:
 - `IsBool(false)`
 
 
-- `IsBool(false)`
-
-
 - `IsBool(42)`
 
 
