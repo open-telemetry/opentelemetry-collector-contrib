@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.4.1/v0.165.1
+
+### 🧰 Bug fixes 🧰
+
+- `processor/resourcedetection` Revert consul api/v2 bump and pin api to <2.0.0 (#52874)
+
 ## v1.4.0/v0.165.0
 
 ### 🛑 Breaking changes 🛑

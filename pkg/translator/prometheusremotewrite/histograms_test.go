@@ -732,6 +732,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantNativeHist(), got)
 			validateNativeHistogramCount(t, got)
+			validateNoZeroBucketOverlap(t, got.ToIntHistogram())
 		})
 	}
 }
@@ -765,6 +766,18 @@ func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
 		actualCount += uint64(prevBucket)
 	}
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
+}
+
+// validateNoZeroBucketOverlap checks that no populated bucket overlaps the zero bucket.
+func validateNoZeroBucketOverlap(t *testing.T, h *histogram.Histogram) {
+	for it := h.PositiveBucketIterator(); it.Next(); {
+		b := it.At()
+		assert.GreaterOrEqualf(t, b.Lower, h.ZeroThreshold, "positive bucket %s overlaps the zero bucket with threshold %g", b.String(), h.ZeroThreshold)
+	}
+	for it := h.NegativeBucketIterator(); it.Next(); {
+		b := it.At()
+		assert.LessOrEqualf(t, b.Upper, -h.ZeroThreshold, "negative bucket %s overlaps the zero bucket with threshold %g", b.String(), h.ZeroThreshold)
+	}
 }
 
 func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
