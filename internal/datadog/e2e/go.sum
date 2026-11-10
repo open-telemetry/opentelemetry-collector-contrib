@@ -1149,6 +1149,8 @@ go.opentelemetry.io/contrib/detectors/aws/eks v1.47.0 h1:V5cCzW9EXrnAirFbdZtorEM
 go.opentelemetry.io/contrib/detectors/aws/eks v1.47.0/go.mod h1:areuIDMmi0YqcdXGW4TBMaKsRTapKZsaeSJvPsMr14k=
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.19.0 h1:U5lXYh/n93SXxBOvBp9B1e1AeC+Nc5j/VYna6cBP5qI=
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.19.0/go.mod h1:jsVPMhQ3RildJe+CK9ntl7zDr5euA32RCNMJNhUob6M=
+go.opentelemetry.io/contrib/detectors/azure/azureaks v0.0.0-20261106092722-ca27f49bc143 h1:9ERa05lNgu0BvZWFUzSd+QjH5gU6WCqXUeqWM8ub64Q=
+go.opentelemetry.io/contrib/detectors/azure/azureaks v0.0.0-20261106092722-ca27f49bc143/go.mod h1:CrUSRJhUEBxL5OMrVuq672xo+d1RZ2M/cUCN7KbFAOk=
 go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.19.0 h1:VKQWNR6IxVq9DyZxsGEciogNo8wQST3IeFw7Dp0jtV0=
 go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.19.0/go.mod h1:mKi5v9l4xrzN2sfMh5vODheeIfjv+bLTBcijiEQLmMw=
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.19.0 h1:jod9iGbB4p8smBQ0IRILOXq444KGnvBMHDJF6jqVDTo=
