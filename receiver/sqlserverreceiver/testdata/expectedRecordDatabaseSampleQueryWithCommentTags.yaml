@@ -133,6 +133,9 @@ resourceLogs:
               - key: sqlserver.wait_resource
                 value:
                   stringValue: 'KEY: 5:72057594043359232 (ce52f1d31b65)'
+              - key: sqlserver.wait.start_time
+                value:
+                  stringValue: ""
               - key: sqlserver.wait_time
                 value:
                   doubleValue: 2.45
@@ -157,7 +160,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6a7169203331
-            timeUnixNano: "1792813122896457000"
+            timeUnixNano: "1794288733698012000"
             traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

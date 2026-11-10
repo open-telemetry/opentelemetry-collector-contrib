@@ -6475,9 +6475,23 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 	})
 }
 
+type mutatingMetricsConsumer struct{}
+
+func (*mutatingMetricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (*mutatingMetricsConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	dest := pmetric.NewMetrics()
+	md.ResourceMetrics().MoveAndAppendTo(dest.ResourceMetrics())
+	return nil
+}
+
 // TestEndMetricsOpReportsDataPointCount verifies that EndMetricsOp is called with the
-// number of data points, not the number of resource metric groups.
+// number of data points, not the number of resource metric groups, even when downstream
+// consumers mutate or move the metric data.
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48306
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52819
 func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	// Build a request with 3 gauge time series all from the same job/instance.
 	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
@@ -6527,8 +6541,7 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	settings.TelemetrySettings = tt.NewTelemetrySettings()
 	settings.ID = receiverID
 
-	sink := &consumertest.MetricsSink{}
-	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, &mutatingMetricsConsumer{})
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -6552,7 +6565,8 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
 
 	// The accepted metric points must equal the data point count (3), not the
-	// resource group count (1). This is the regression check for #48306.
+	// resource group count (1). This also verifies data point count is preserved
+	// even when downstream consumers mutate the data (#48306, #52819).
 	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
