@@ -568,7 +568,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 	return otelMetrics, stats, badRequestErrors
 }
 
-// validateSeriesLabels reports a duplicate label name, where the set does not say which value
+// validateSeriesLabels reports what makes a label set unreadable: an empty name, which cannot
+// become an OTLP attribute key, and a duplicate name, where the set does not say which value
 // applies.
 //
 // What the Prometheus data model equates with absence is normalized rather than refused: a label
@@ -576,8 +577,24 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 // Refusing it would fail the whole request, because the receiver has no partial write path, and
 // common senders such as Prometheus treat a 400 as non-recoverable and answer by dropping the batch.
 //
+// An empty name is refused instead of dropped because every attribute it could feed would be
+// unnamed, so no part of the label can be kept. An exemplar label is the exception: it annotates a
+// data point rather than identifying a series, so an empty name costs only that one attribute and
+// the label is dropped (see copyExemplarAttributes). The bare otel_scope_ prefix is the mirror
+// image: only the attribute it would produce is unusable, so that one is dropped and the series is
+// kept (see extractScopeInfo).
+//
 // ToLabels returns the labels sorted, so duplicate names are adjacent.
 func validateSeriesLabels(ls labels.Labels) error {
+	emptyName := false
+	ls.Range(func(l labels.Label) {
+		if l.Name == "" {
+			emptyName = true
+		}
+	})
+	if emptyName {
+		return errors.New("empty label name in labels")
+	}
 	if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
 		return fmt.Errorf("duplicate label %q in labels", duplicateLabel)
 	}
@@ -1303,7 +1320,9 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 		case "otel_scope_schema_url":
 			si.SchemaURL = l.Value
 		default:
-			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok {
+			// A label named exactly otel_scope_ leaves no key once the prefix is stripped, and an
+			// empty attribute key cannot be emitted, so the label is dropped like an empty value.
+			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok && attrKey != "" {
 				si.scopeAttrs = append(si.scopeAttrs, attribute{Key: attrKey, Value: l.Value})
 			}
 		}
