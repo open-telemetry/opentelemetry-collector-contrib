@@ -239,6 +239,12 @@ func Test_comparison(t *testing.T) {
 		{"comparePMap pvalue type mismatch", pm1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
 		{"compareSlice pvalue type mismatch", sl1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
 		{"comparePSlice pvalue type mismatch", psl1, pcommon.NewValueInt(1), []bool{false, true, false, false, false, false}},
+		{"uncomparable []string equal", []string{"a", "b"}, []string{"a", "b"}, []bool{true, false, false, false, false, false}},
+		{"uncomparable []int64 equal", []int64{1, 2}, []int64{1, 2}, []bool{true, false, false, false, false, false}},
+		{"uncomparable []float64 equal", []float64{1.5}, []float64{1.5}, []bool{true, false, false, false, false, false}},
+		{"uncomparable map[string]string equal", map[string]string{"k": "v"}, map[string]string{"k": "v"}, []bool{true, false, false, false, false, false}},
+		{"uncomparable []string differ", []string{"a"}, []string{"b"}, []bool{false, true, false, false, false, false}},
+		{"uncomparable []string vs nil", []string{"a"}, nil, []bool{false, true, false, false, false, false}},
 	}
 	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	comp := NewValueComparator()
