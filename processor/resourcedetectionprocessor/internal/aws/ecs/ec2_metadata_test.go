@@ -8,10 +8,12 @@ package ecs
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"slices"
+	"syscall"
 	"testing"
 	"time"
 
@@ -338,7 +340,7 @@ func TestEC2MetadataSoftFailuresPreserveECS(t *testing.T) {
 			assertNoHostAttributes(t, attrs)
 			assert.Len(t, a.calls, tt.calls)
 			require.Equal(t, 1, logs.Len())
-			assert.NotContains(t, logs.All()[0].ContextMap()["error"], "secret")
+			assert.NotEmpty(t, logs.All()[0].ContextMap()["error"])
 		})
 	}
 }
@@ -351,7 +353,6 @@ func TestEC2MetadataStrictFailuresReturnError(t *testing.T) {
 			tt.change(d, a, p)
 			resource, _, err := d.Detect(t.Context())
 			require.ErrorContains(t, err, "unable to enrich ECS resource with EC2 metadata")
-			assert.NotContains(t, err.Error(), "secret")
 			assert.Zero(t, resource.Attributes().Len())
 			assert.Len(t, a.calls, tt.calls)
 			assert.Zero(t, logs.Len())
@@ -376,7 +377,7 @@ func TestEC2MetadataStrictRetriesAfterFailure(t *testing.T) {
 	a.ctx, a.wait = t.Context(), false
 	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
 	_, _, err = d.Detect(t.Context())
-	require.ErrorContains(t, err, "DescribeTasks: ThrottlingException")
+	require.ErrorContains(t, err, "DescribeTasks: api error ThrottlingException: secret response")
 
 	// The next attempt succeeds and is not poisoned by the earlier failures.
 	a.taskErr = nil
@@ -402,53 +403,54 @@ func TestEC2MetadataContext(t *testing.T) {
 	assert.Contains(t, logs.All()[0].ContextMap()["error"], "context deadline exceeded")
 }
 
-func TestEC2MetadataSoftRefreshKeepsSameTaskHost(t *testing.T) {
-	d, a, _, logs := newEnrichmentDetector(t)
+func TestEC2MetadataSuccessfulHostIsCachedForSameTask(t *testing.T) {
+	for _, strict := range []bool{false, true} {
+		t.Run(map[bool]string{false: "soft", true: "strict"}[strict], func(t *testing.T) {
+			d, a, _, logs := newEnrichmentDetector(t)
+			d.failOnMissingMetadata = strict
 
-	// Without an earlier success there is nothing to keep.
-	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
-	resource, _, err := d.Detect(t.Context())
-	require.NoError(t, err)
-	assertNoHostAttributes(t, resource.Attributes().AsRaw())
-	require.Equal(t, 1, logs.Len())
-	logs.TakeAll()
+			// A failed lookup is not cached and is retried.
+			a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "throttled"}
+			resource, _, err := d.Detect(t.Context())
+			if strict {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assertNoHostAttributes(t, resource.Attributes().AsRaw())
+				require.Equal(t, 1, logs.Len())
+			}
+			assert.Equal(t, []string{"tasks"}, a.calls)
+			assert.Nil(t, d.lastHost)
 
-	// A successful lookup is cached.
-	a.taskErr = nil
-	resource, _, err = d.Detect(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, enrichmentInstance, resource.Attributes().AsRaw()["host.id"])
+			// The retry succeeds and populates the cache.
+			a.taskErr = nil
+			a.calls = nil
+			resource, _, err = d.Detect(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, enrichmentInstance, resource.Attributes().AsRaw()["host.id"])
+			assert.Equal(t, []string{"tasks", "containers", "instances"}, a.calls)
 
-	// A transient failure for the same task keeps the cached host and still reports ECS metadata.
-	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "secret response"}
-	resource, _, err = d.Detect(t.Context())
-	require.NoError(t, err)
-	attrs := resource.Attributes().AsRaw()
-	assert.Equal(t, enrichmentInstance, attrs["host.id"])
-	assert.Equal(t, "ip-10-0-0-1.us-west-2.compute.internal", attrs["host.name"])
-	assert.Equal(t, "t3.micro", attrs["host.type"])
-	assert.Equal(t, "ami-123", attrs["host.image.id"])
-	assert.Equal(t, "us-west-2a", attrs["cloud.availability_zone"])
-	assert.Equal(t, enrichmentTask, attrs["aws.ecs.task.arn"])
-	require.Equal(t, 1, logs.Len())
-	assert.Contains(t, logs.All()[0].ContextMap()["error"], "DescribeTasks: ThrottlingException")
-
-	// Recovery replaces the cached host with fresh values.
-	a.taskErr = nil
-	*a.instance() = ec2types.Instance{InstanceId: aws.String(enrichmentInstance), PrivateDnsName: aws.String("ip-10-0-0-9.us-west-2.compute.internal"), InstanceType: ec2types.InstanceTypeM5Large, ImageId: aws.String("ami-999"), Placement: &ec2types.Placement{AvailabilityZone: aws.String("us-west-2b")}}
-	resource, _, err = d.Detect(t.Context())
-	require.NoError(t, err)
-	attrs = resource.Attributes().AsRaw()
-	assert.Equal(t, "ip-10-0-0-9.us-west-2.compute.internal", attrs["host.name"])
-	assert.Equal(t, "m5.large", attrs["host.type"])
-	assert.Equal(t, "ami-999", attrs["host.image.id"])
-	assert.Equal(t, "us-west-2b", attrs["cloud.availability_zone"])
-
-	// The recovered values are the ones kept on the next failure.
-	a.instanceErr = errors.New("secret failure")
-	resource, _, err = d.Detect(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, "m5.large", resource.Attributes().AsRaw()["host.type"])
+			// Later detections for the same task make no API calls, even if the
+			// APIs would now fail or report other values.
+			a.calls = nil
+			a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException", Message: "throttled"}
+			a.instance().InstanceType = ec2types.InstanceTypeM5Large
+			logs.TakeAll()
+			for range 3 {
+				resource, _, err = d.Detect(t.Context())
+				require.NoError(t, err)
+				attrs := resource.Attributes().AsRaw()
+				assert.Equal(t, enrichmentInstance, attrs["host.id"])
+				assert.Equal(t, "ip-10-0-0-1.us-west-2.compute.internal", attrs["host.name"])
+				assert.Equal(t, "t3.micro", attrs["host.type"])
+				assert.Equal(t, "ami-123", attrs["host.image.id"])
+				assert.Equal(t, "us-west-2a", attrs["cloud.availability_zone"])
+				assert.Equal(t, enrichmentTask, attrs["aws.ecs.task.arn"])
+			}
+			assert.Empty(t, a.calls)
+			assert.Zero(t, logs.Len())
+		})
+	}
 }
 
 func TestEC2MetadataChangedTaskDoesNotReuseHost(t *testing.T) {
@@ -479,20 +481,27 @@ func TestEC2MetadataChangedTaskDoesNotReuseHost(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, enrichmentOtherInstance, resource.Attributes().AsRaw()["host.id"])
 	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException"}
+	a.calls = nil
 	resource, _, err = d.Detect(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, enrichmentOtherInstance, resource.Attributes().AsRaw()["host.id"])
+	assert.Empty(t, a.calls)
 }
 
-func TestEC2MetadataStrictDoesNotUseCachedHost(t *testing.T) {
-	d, a, _, _ := newEnrichmentDetector(t)
+func TestEC2MetadataStrictChangedTaskDoesNotReuseHost(t *testing.T) {
+	d, a, p, _ := newEnrichmentDetector(t)
 	d.failOnMissingMetadata = true
 	_, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
+
+	setTask(p, a, enrichmentOtherTask, enrichmentOtherInstance)
 	a.taskErr = &smithy.GenericAPIError{Code: "ThrottlingException"}
+	a.calls = nil
 	resource, _, err := d.Detect(t.Context())
 	require.Error(t, err)
 	assert.Zero(t, resource.Attributes().Len())
+	assert.Equal(t, []string{"tasks"}, a.calls)
+	assert.Nil(t, d.lastHost)
 }
 
 func TestEC2MetadataOptionalFieldsDoNotBlockOthers(t *testing.T) {
@@ -665,17 +674,76 @@ func TestEC2MetadataTaskRoleCredentials(t *testing.T) {
 	assert.Equal(t, "task-token", credentials.SessionToken)
 }
 
-func TestEC2MetadataSafeError(t *testing.T) {
-	err := ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "secret response"})
-	assert.EqualError(t, err, "DescribeTasks: AccessDeniedException")
-	// The SDK code is printed as is; the message is never included.
-	err = ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Code: "Client.UnauthorizedOperation", Message: "secret response"})
-	assert.EqualError(t, err, "DescribeTasks: Client.UnauthorizedOperation")
-	err = ec2MetadataError(t.Context(), "DescribeTasks", &smithy.GenericAPIError{Message: "secret response"})
-	assert.EqualError(t, err, "DescribeTasks failed")
-	err = ec2MetadataError(t.Context(), "AWS configuration", errors.New("secret response"))
-	assert.EqualError(t, err, "AWS configuration failed")
-	ctx, cancel := context.WithCancel(t.Context())
-	cancel()
-	assert.ErrorIs(t, ec2MetadataError(ctx, "DescribeTasks", errors.New("secret response")), context.Canceled)
+func TestEC2MetadataErrorsArePreserved(t *testing.T) {
+	credentialErr := errors.New("failed to retrieve credentials: no EC2 IMDS role found")
+	networkErr := &net.OpError{Op: "dial", Net: "tcp", Err: syscall.ECONNREFUSED}
+	apiErr := &smithy.GenericAPIError{Code: "AccessDeniedException", Message: "not authorized to perform ecs:DescribeTasks"}
+
+	tests := []struct {
+		name      string
+		change    func(*Detector, *enrichmentAPI)
+		operation string
+		target    error
+	}{
+		{"configuration credentials", func(d *Detector, _ *enrichmentAPI) {
+			d.clients = func(context.Context, string) (ecsAPI, ec2API, error) { return nil, nil, credentialErr }
+		}, "AWS configuration", credentialErr},
+		{"DescribeTasks API", func(_ *Detector, a *enrichmentAPI) { a.taskErr = apiErr }, "DescribeTasks", apiErr},
+		{"DescribeTasks network", func(_ *Detector, a *enrichmentAPI) { a.taskErr = networkErr }, "DescribeTasks", networkErr},
+		{"DescribeContainerInstances API", func(_ *Detector, a *enrichmentAPI) { a.containerErr = apiErr }, "DescribeContainerInstances", apiErr},
+		{"DescribeContainerInstances credentials", func(_ *Detector, a *enrichmentAPI) { a.containerErr = credentialErr }, "DescribeContainerInstances", credentialErr},
+		{"DescribeInstances API", func(_ *Detector, a *enrichmentAPI) { a.instanceErr = apiErr }, "DescribeInstances", apiErr},
+		{"DescribeInstances network", func(_ *Detector, a *enrichmentAPI) { a.instanceErr = networkErr }, "DescribeInstances", networkErr},
+		{"DescribeInstances deadline", func(_ *Detector, a *enrichmentAPI) { a.instanceErr = context.DeadlineExceeded }, "DescribeInstances", context.DeadlineExceeded},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, a, p, _ := newEnrichmentDetector(t)
+			tt.change(d, a)
+			_, err := d.lookupEC2Host(t.Context(), &p.task)
+			require.Error(t, err)
+			assert.ErrorIs(t, err, tt.target)
+			assert.ErrorContains(t, err, tt.operation+": ")
+			assert.ErrorContains(t, err, tt.target.Error())
+		})
+	}
+
+	t.Run("API error is reachable with errors.As", func(t *testing.T) {
+		d, a, p, _ := newEnrichmentDetector(t)
+		a.taskErr = &smithy.OperationError{ServiceID: "ECS", OperationName: "DescribeTasks", Err: apiErr}
+		_, err := d.lookupEC2Host(t.Context(), &p.task)
+		api, ok := errors.AsType[smithy.APIError](err)
+		require.True(t, ok)
+		assert.Equal(t, "AccessDeniedException", api.ErrorCode())
+
+		d, a, p, _ = newEnrichmentDetector(t)
+		a.instanceErr = networkErr
+		_, err = d.lookupEC2Host(t.Context(), &p.task)
+		require.Error(t, err)
+		netErr, ok := errors.AsType[*net.OpError](err)
+		require.True(t, ok)
+		assert.Equal(t, "dial", netErr.Op)
+	})
+
+	t.Run("client context error propagates", func(t *testing.T) {
+		d, a, p, _ := newEnrichmentDetector(t)
+		ctx, cancel := context.WithCancel(t.Context())
+		a.ctx = ctx
+		a.wait = true
+		cancel()
+		_, err := d.lookupEC2Host(ctx, &p.task)
+		require.ErrorIs(t, err, context.Canceled)
+		assert.ErrorContains(t, err, "DescribeTasks: ")
+	})
+
+	t.Run("arbitrary error is not replaced by context error", func(t *testing.T) {
+		d, a, p, _ := newEnrichmentDetector(t)
+		ctx, cancel := context.WithCancel(t.Context())
+		a.ctx = ctx
+		a.taskErr = apiErr
+		cancel()
+		_, err := d.lookupEC2Host(ctx, &p.task)
+		require.ErrorIs(t, err, apiErr)
+		assert.NotErrorIs(t, err, context.Canceled)
+	})
 }

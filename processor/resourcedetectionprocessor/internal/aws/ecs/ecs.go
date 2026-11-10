@@ -29,8 +29,8 @@ type Detector struct {
 	// hostLookup is true when any host.* attribute is enabled, which makes the
 	// detector query the ECS and EC2 APIs for tasks running on EC2.
 	hostLookup bool
-	// lastHost is the last successful EC2 lookup, reused only for the same task
-	// when a later lookup fails and fail_on_missing_metadata is false.
+	// lastHost is the last successful EC2 lookup. It is reused for the lifetime
+	// of the same task, in strict and soft mode, without further API calls.
 	lastHost              *ec2Host
 	logger                *zap.Logger
 	clients               func(context.Context, string) (ecsAPI, ec2API, error)
@@ -133,21 +133,20 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
-// enrichEC2 adds the EC2 host attributes. When the lookup fails and the caller
-// tolerates it, the host of the previous successful lookup is reused, but only
-// if it belongs to the same task; a different task never inherits another
-// task's host.
+// enrichEC2 adds the EC2 host attributes. A task ARN identifies an immutable
+// placement, so a successful lookup is cached and reused for the same task
+// without further API calls. A different task never inherits another task's
+// host. Failed lookups are not cached and are retried on the next detection.
 func (d *Detector) enrichEC2(ctx context.Context, meta *ecsutil.TaskMetadata) error {
+	if d.lastHost != nil {
+		if d.lastHost.taskARN == meta.TaskARN {
+			d.applyEC2Host(d.lastHost)
+			return nil
+		}
+		d.lastHost = nil
+	}
 	host, err := d.lookupEC2Host(ctx, meta)
 	if err != nil {
-		if d.failOnMissingMetadata {
-			return err
-		}
-		if d.lastHost != nil && d.lastHost.taskARN == meta.TaskARN {
-			d.applyEC2Host(d.lastHost)
-		} else {
-			d.lastHost = nil
-		}
 		return err
 	}
 	d.lastHost = host

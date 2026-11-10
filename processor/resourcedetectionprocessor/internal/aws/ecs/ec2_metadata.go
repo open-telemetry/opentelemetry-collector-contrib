@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ecs"
-	"github.com/aws/smithy-go"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
@@ -65,12 +64,12 @@ func (d *Detector) lookupEC2Host(ctx context.Context, meta *ecsutil.TaskMetadata
 	}
 	ecsc, ec2c, err := d.clients(ctx, task.Region)
 	if err != nil {
-		return nil, ec2MetadataError(ctx, "AWS configuration", err)
+		return nil, fmt.Errorf("AWS configuration: %w", err)
 	}
 
 	tasks, err := ecsc.DescribeTasks(ctx, &ecs.DescribeTasksInput{Cluster: aws.String(meta.Cluster), Tasks: []string{meta.TaskARN}})
 	if err != nil {
-		return nil, ec2MetadataError(ctx, "DescribeTasks", err)
+		return nil, fmt.Errorf("DescribeTasks: %w", err)
 	}
 	if tasks == nil || len(tasks.Failures) != 0 || len(tasks.Tasks) != 1 || aws.ToString(tasks.Tasks[0].TaskArn) != meta.TaskARN {
 		return nil, errors.New("DescribeTasks returned missing or mismatched task")
@@ -82,7 +81,7 @@ func (d *Detector) lookupEC2Host(ctx context.Context, meta *ecsutil.TaskMetadata
 
 	containers, err := ecsc.DescribeContainerInstances(ctx, &ecs.DescribeContainerInstancesInput{Cluster: aws.String(meta.Cluster), ContainerInstances: []string{containerInstance}})
 	if err != nil {
-		return nil, ec2MetadataError(ctx, "DescribeContainerInstances", err)
+		return nil, fmt.Errorf("DescribeContainerInstances: %w", err)
 	}
 	if containers == nil || len(containers.Failures) != 0 || len(containers.ContainerInstances) != 1 || aws.ToString(containers.ContainerInstances[0].ContainerInstanceArn) != containerInstance {
 		return nil, errors.New("DescribeContainerInstances returned missing or mismatched container instance")
@@ -94,7 +93,7 @@ func (d *Detector) lookupEC2Host(ctx context.Context, meta *ecsutil.TaskMetadata
 
 	instances, err := ec2c.DescribeInstances(ctx, &ec2.DescribeInstancesInput{InstanceIds: []string{id}})
 	if err != nil {
-		return nil, ec2MetadataError(ctx, "DescribeInstances", err)
+		return nil, fmt.Errorf("DescribeInstances: %w", err)
 	}
 	if instances == nil || len(instances.Reservations) != 1 || len(instances.Reservations[0].Instances) != 1 || aws.ToString(instances.Reservations[0].Instances[0].InstanceId) != id {
 		return nil, errors.New("DescribeInstances returned missing or mismatched instance")
@@ -132,16 +131,4 @@ func (d *Detector) applyEC2Host(host *ec2Host) {
 	if host.zone != "" {
 		d.rb.SetCloudAvailabilityZone(host.zone)
 	}
-}
-
-// Log the operation name and the API error code only, never the error message,
-// which can contain endpoint URLs or response bodies.
-func ec2MetadataError(ctx context.Context, operation string, err error) error {
-	if ctx.Err() != nil {
-		return fmt.Errorf("%s: %w", operation, ctx.Err())
-	}
-	if api, ok := errors.AsType[smithy.APIError](err); ok && api.ErrorCode() != "" {
-		return fmt.Errorf("%s: %s", operation, api.ErrorCode())
-	}
-	return fmt.Errorf("%s failed", operation)
 }

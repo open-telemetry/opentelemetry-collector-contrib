@@ -482,15 +482,17 @@ How a failed lookup is handled depends on
   credentials, insufficient permissions, an ambiguous API response or a timeout
   are all reported this way.
 - When it is `false` (the default), the detector logs a warning and returns the
-  ECS metadata it could read, without the host attributes. If an earlier lookup
-  for the **same task** succeeded, the detector keeps reporting that task's host
-  attributes while later lookups fail transiently. A different task never reuses
-  the host attributes of another task.
+  ECS metadata it could read, without the host attributes.
+
+In both modes, a successful host resolution is cached for the lifetime of the
+same task and reused without further API calls, including on periodic refreshes.
+A different task never reuses the host attributes of another task. Failed
+lookups are not cached and are retried on subsequent detection.
 
 The lookup runs during resource detection at startup. In strict mode, a failed
 lookup can be retried according to the processor's retry settings. Set a
 non-zero `refresh_interval` to repeat detection periodically after startup. Its
-default is `0`, which disables periodic lookups. If a running collector has
+default is `0`, which disables periodic detection. If a running collector has
 already tolerated a failed lookup, an IAM permission change alone does not
 trigger another attempt; restart it or configure periodic refresh.
 
