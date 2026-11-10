@@ -4,6 +4,7 @@
 package bearertokenauthextension
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -20,9 +21,19 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
+
+// contextTokenSource mirrors the unexported interface that the Kafka exporter
+// and receiver type-assert an `oauthbearer_token_source` extension to, so that
+// the signature cannot drift without this package failing to build.
+type contextTokenSource interface {
+	Token(context.Context) (*oauth2.Token, error)
+}
+
+var _ contextTokenSource = (*bearerTokenAuth)(nil)
 
 func TestPerRPCAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
@@ -507,6 +518,75 @@ func TestBearerTokenFileWithComments(t *testing.T) {
 	}, 5*time.Second, 50*time.Millisecond)
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
+func TestBearerTokenAuthToken(t *testing.T) {
+	t.Run("inline token", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.BearerToken = "sometoken"
+
+		bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+		require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
+
+		token, err := bauth.Token(t.Context())
+		require.NoError(t, err)
+		// The scheme is an HTTP concern and must not leak into the token.
+		assert.Equal(t, "sometoken", token.AccessToken)
+	})
+
+	t.Run("multiple tokens returns the first", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Tokens = []configopaque.String{"first", "second"}
+
+		bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+		require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
+
+		token, err := bauth.Token(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, "first", token.AccessToken)
+	})
+
+	t.Run("token file is parsed and refreshed", func(t *testing.T) {
+		filename := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(filename, []byte("filetoken # primary\n"), 0o600))
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Filename = filename
+
+		bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+		require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
+
+		// Start reads the file asynchronously, so wait for the token to show up.
+		// Comments must be stripped, and the whole file must not be returned verbatim.
+		requireTokenEventually(t, bauth, "filetoken")
+
+		require.NoError(t, os.WriteFile(filename, []byte("rotated\n"), 0o600))
+		requireTokenEventually(t, bauth, "rotated")
+	})
+
+	t.Run("no token available", func(t *testing.T) {
+		bauth := newBearerTokenAuth(createDefaultConfig().(*Config), zaptest.NewLogger(t))
+		require.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
+
+		token, err := bauth.Token(t.Context())
+		assert.EqualError(t, err, "no bearer token available")
+		assert.Nil(t, token)
+	})
+}
+
+func requireTokenEventually(t *testing.T, bauth *bearerTokenAuth, expected string) {
+	t.Helper()
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		token, err := bauth.Token(t.Context())
+		if !assert.NoError(c, err) {
+			return
+		}
+		assert.Equal(c, expected, token.AccessToken)
+	}, 5*time.Second, 50*time.Millisecond)
 }
 
 func TestBearerStartWithRetryOnFailure(t *testing.T) {

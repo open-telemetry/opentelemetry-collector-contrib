@@ -118,10 +118,15 @@ func setTraceAndSpan(exemplar pmetric.Exemplar, labels labels.Labels) (traceIDSe
 }
 
 // copyExemplarAttributes copies all labels into dest, skipping the trace and span
-// ID labels only when setTraceAndSpan converted them. A rejected label is copied
-// like any other, so the value the sender wrote is not lost.
+// ID labels only when setTraceAndSpan converted them. A rejected trace or span ID
+// label is copied like any other, so the value the sender wrote is not lost. Labels
+// with an empty value are dropped, as the Prometheus data model equates an empty label
+// with an absent one; the Prometheus receiver drops them from exemplars too.
 func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels, traceIDSet, spanIDSet bool) {
 	for k, v := range labels.Map() {
+		if v == "" {
+			continue
+		}
 		if k == prometheus.ExemplarTraceIDKey && traceIDSet {
 			continue
 		}

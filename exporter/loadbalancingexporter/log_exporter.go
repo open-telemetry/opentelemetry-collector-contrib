@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -165,10 +165,14 @@ func splitLogsByServiceName(ld plog.Logs) map[string]plog.Logs {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rm := ld.ResourceLogs().At(i)
 
-		key := ""
-		svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
-		if ok {
+		// A resource without a service name is routed by the hash of its resource
+		// attributes (as with routing_key "resource") instead of one shared key.
+		// This keeps each resource on one backend and spreads them over all backends.
+		var key string
+		if svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey)); ok && svc.Str() != "" {
 			key = svc.Str()
+		} else {
+			key = identity.OfResource(rm.Resource()).String()
 		}
 
 		existing, ok := results[key]

@@ -28,6 +28,14 @@ As the protocol specification changes, we update our implementation to match, wh
 
 The breaking change in Prometheus 3.8.0 ([prometheus/prometheus#17411](https://github.com/prometheus/prometheus/pull/17411)) updated the Remote Write 2.0 spec from rc.3 to rc.4, renaming `CreatedTimestamp` to `StartTimestamp` and moving it from the `TimeSeries` message to individual `Sample` and `Histogram` messages. This is a wire-protocol incompatibility, so mismatched versions will not work correctly together.
 
+### Labels with empty values
+
+In the Prometheus data model a label with an empty value is the same as an absent label, so the receiver does not turn one into an attribute. Such a label is dropped from data point attributes, `target_info` resource attributes, `otel_scope_*` scope fields and exemplar filtered attributes alike, and the series itself is still accepted: refusing it would cost the sender every other series of the same request, since a Remote-Write request is written as a whole.
+
+Because such a label is the same as an absent one, two series that differ only by it are the same series once translated, so a request that carries both spellings yields two data points with the same attributes for the same timestamp. A Prometheus sender cannot produce that, as it drops these labels before writing.
+
+For the same reason, a label that arrives with an empty value does not clear a value an earlier `target_info` cached for the same job/instance, exactly as an absent label does not (see [Resource Metrics Cache](#resource-metrics-cache)).
+
 ## Configuring `PrometheusRemoteWriteReceiver`
 
 This component's configuration is based on [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
@@ -112,6 +120,16 @@ As mentioned in [Histogram Atomicity](#histogram-atomicity), Prometheus Classic 
 
 Summaries suffer from the same problem, a working Summary is composed by several time series just like Classic Histograms. The only difference is that instead of bucket boundaries, these time series represent pre-calculated quantiles. Since the quantiles can be sent in separate Remote Write requests, it's impossible to determine if the amount of quantiles received are enough to generate a complete Summary.
 
+When the sender includes metadata (see [Metadata WAL Records feature flag](#metadata-wal-records-feature-flag)), the series of a Classic Histogram (`_bucket`, `_sum`, `_count`) and of a Summary (quantiles, `_sum`, `_count`) are dropped and nothing is emitted for them. The receiver still accepts the request, so their samples are counted in the `X-Prometheus-Remote-Write-Samples-Written` response header, in line with the [specification's definition of "written"](https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#glossary). Otherwise a Prometheus sender would count them as failed samples and report a partial write. Each dropped series is counted in the `otelcol_receiver_prometheusremotewrite_dropped_series` internal metric, by `metric_type` (`classic_histogram` or `summary`), and logged at Debug level with its labels (see [documentation.md](./documentation.md)). To keep histograms, configure Prometheus to convert Classic Histograms into Native Histograms with custom buckets (`convert_classic_histograms_to_nhcb`); to avoid sending Summaries, drop their series with `write_relabel_configs`.
+
+Without metadata, every series arrives untyped, and the ones carrying samples, including the series of Classic Histograms and Summaries, are translated into gauges.
+
+### Only integer, counter flavored Native Histograms are translated
+
+The Prometheus compatibility specification requires native histograms of the float or gauge flavors to be dropped, and this receiver drops them. A native histogram whose bounds or buckets do not describe a histogram it can represent is dropped as well, and logged at error level with the metric name. If Prometheus' own validation refuses such a histogram too, for example because its spans and buckets disagree or a bucket count is negative, the request is answered with `400 Bad Request` and none of it is passed on.
+
+The data point count is rebuilt from the buckets the translation emitted, rather than copied from the count Prometheus sent. Those differ whenever an observation is not represented by a bucket, which happens for observations of NaN and for the overflow bucket, so a count here can be lower than the one in Prometheus. When nothing could be represented the count is zero and so is the sum, which is what OpenTelemetry requires of a data point that recorded nothing.
+
 ### Native Histogram expansion limits
 
 Prometheus sends Native Histogram buckets as spans of populated buckets separated by gaps, while OTLP wants one contiguous list, so a short list of spans can describe a very wide one. Two limits bound what that expansion is allowed to cost:
@@ -135,6 +153,36 @@ This approach has some limitations, for example:
 
 The receiver reports every eviction in the `otelcol_receiver_prometheusremotewrite_resource_cache_evictions` internal metric. A counter that keeps growing means the cache is smaller than the number of job/instance pairs sent to the receiver.
 
+### Job and Instance Label Mapping
+
+For each `job` and `instance` pair:
+- `instance` (when non-empty) is mapped to the `service.instance.id` resource attribute.
+- By default, if `job` contains a single `/` (`<namespace>/<name>`), it is split into `service.namespace` and `service.name`; otherwise the full `job` value is mapped to `service.name`.
+- When the `receiver.prometheus_remote_write.disableJobSplit` feature gate is enabled (`--feature-gates=receiver.prometheus_remote_write.disableJobSplit`), the receiver maps the entire `job` value directly to `service.name` without splitting on `/`, matching `prometheusreceiver`. Because a valid `service.name` may itself contain `/`, the receiver cannot distinguish a `/` within `service.name` from a concatenated `<service.namespace>/<service.name>` value.
+- Any attributes present on `target_info` series for the same `job`/`instance` pair take precedence and overwrite resource attributes derived from `job` and `instance`.
+
+#### Migrating to `receiver.prometheus_remote_write.disableJobSplit`
+
+If you rely on `service.namespace` being populated when `receiver.prometheus_remote_write.disableJobSplit` is enabled (or once it becomes the default):
+
+1. **OTLP -> Prometheus -> Remote Write -> OTLP round-trip via `target_info`**:
+   In the [OTLP-to-Prometheus specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1), `service.namespace` and `service.name` are concatenated into `job="<service.namespace>/<service.name>"`. For round-trip preservation of `service.namespace` and `service.name` without splitting `job`:
+   - Configure the OTLP-to-Prometheus sender to include identifying resource attributes on `target_info` (e.g., `keep_identifying_resource_attributes: true` in `prometheusexporter` / `prometheusremotewriteexporter`, or `keep_identifying_attributes` in Prometheus OTLP ingestion) so `service.namespace` and `service.name` are emitted as labels on `target_info` (for Prometheus native OTLP ingestion, see also [prometheus/prometheus#20086](https://github.com/prometheus/prometheus/pull/20086)).
+   - Disable dot-to-underscore label translation on the sender/Prometheus side (preserve UTF-8 dots in label names, e.g. `translation_strategy: NoUTF8EscapingWithSuffixes`) so `target_info` carries `service.namespace` and `service.name` rather than `service_namespace` and `service_name`.
+
+2. **Splitting `job` via the `transform` processor (when `target_info` is not used)**:
+   If your sender encodes `<service.namespace>/<service.name>` in `job` without emitting `service.namespace` on `target_info`, you can preserve the `<namespace>/<name>` split downstream using the [`transform` processor](../../processor/transformprocessor/README.md):
+
+   ```yaml
+   processors:
+     transform:
+       metric_statements:
+         - context: resource
+           statements:
+             - set(attributes["service.namespace"], Split(attributes["service.name"], "/")[0]) where IsMatch(attributes["service.name"], "^[^/]+/[^/]+$") and attributes["service.namespace"] == nil
+             - set(attributes["service.name"], Split(attributes["service.name"], "/")[1]) where IsMatch(attributes["service.name"], "^[^/]+/[^/]+$")
+   ```
+
 ## Internal Telemetry
 
-See [documentation.md](./documentation.md) for the list of internal metrics emitted by this receiver.
+See [documentation.md](./documentation.md) for the list of internal metrics and feature gates for this receiver.
