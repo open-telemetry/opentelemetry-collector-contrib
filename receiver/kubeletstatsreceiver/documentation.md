@@ -18,7 +18,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Double | Cumulative | true | Beta | [container.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/system/container-metrics.md#metric-containercputime) |
+| s | Sum | Double | Cumulative | true | Beta | [container.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/container-metrics.md#metric-containercputime) |
 
 ### container.cpu.usage
 

@@ -131,6 +131,14 @@ Direct connection options (optional, but all must be specified to enable):
 - `server`: IP Address or hostname of SQL Server instance to connect to.
 - `port`: Port of the SQL Server instance to connect to.
 
+For extension-provided credentials, configure `db_auth` with the component ID of
+an extension implementing `dbauth.Provider` instead of `password`. The provider
+is resolved from the Collector's `extensions` map and may refresh credentials
+for each new database connection. `db_auth` and `password` are mutually
+exclusive; `username` may still be supplied as provider input. The `azure_auth`
+extension implements this provider interface. Its `scopes` setting controls
+the token audience; when unset, Azure Public SQL is used by default.
+
 For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
 Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
 
@@ -146,6 +154,31 @@ with the `connection_pool` options (all optional):
 The defaults are derived from the number of enabled scrapers so that every scraper can query concurrently
 while keeping the total number of connections bounded. Most deployments do not need to set these; tune them
 only when connecting to an instance with strict connection limits or a large number of enabled scrapers.
+
+The databases reported on over a direct connection can be limited with:
+- `databases` (default = `[]`): Report only on these databases. Empty reports on every database.
+- `exclude_databases` (default = `[]`): Do not report on these databases. A database in both lists is excluded.
+
+```yaml
+sql_server:
+  databases: [sales, inventory]
+  exclude_databases: [rdsadmin]
+```
+
+Names match case-insensitively. The filter applies to:
+- the `db.server.top_query`, `db.server.query_plan`, `db.server.query_sample` and `db.server.top_procedure`
+  events. It is applied in the query, so `max_query_sample_count`, `max_rows_per_query` and
+  `max_procedure_sample_count` count only rows of the allowed databases. A query whose database SQL Server
+  does not resolve has an empty database name, which `exclude_databases` keeps and `databases` drops.
+  Idle sessions that block a reported query sample are reported whatever their database.
+- the per-database metrics: database IO, availability group replica, index physical stats, and the
+  `SQLServer:Databases` performance counters. Index physical stats are only scanned in the allowed
+  databases, except on Azure SQL Database, where the connected database is scanned.
+
+Metrics of the whole instance, such as wait stats, CPU, memory, worker threads, tempdb and
+`sqlserver.database.count`, are reported regardless of the filter, as are the metrics collected from
+Windows performance counters. Wait stats carry the name of the connected database in
+`sqlserver.database.name`.
 
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.

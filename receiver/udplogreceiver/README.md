@@ -25,6 +25,7 @@ The UDP Log Receiver receives logs over UDP.
 | `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
 | `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
 | `add_attributes`          | false                | Adds network attributes to each log record. By default the deprecated `net.*` attributes are added (see [deprecated network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#deprecated-network-attributes)). Enable the `stanza.udp.useStableNetworkAttributes` feature gate to emit the [stable network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#network-attributes) instead. See [Feature Gates](#feature-gates). |
+| `resolve_names`           | true                 | When `add_attributes` is true, controls whether reverse DNS resolution is performed to populate hostname attributes (`net.host.name` and `net.peer.name`, or `server.address` and `client.address`). Set to `false` to disable reverse DNS resolution, avoiding synchronous lookup overhead and potential ingestion delays. See [Disabling Reverse DNS Resolution](#disabling-reverse-dns-resolution). |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
@@ -100,6 +101,29 @@ The deprecated component type `udplog` is still accepted:
 receivers:
   udplog:
     listen_address: "0.0.0.0:54525"
+```
+
+### Disabling Reverse DNS Resolution
+
+When `add_attributes` is enabled (`true`), the receiver performs reverse DNS lookups to determine hostnames from incoming IP addresses and populates hostname attributes (`net.host.name` and `net.peer.name` by default, or `server.address` and `client.address` when using stable network semantic conventions). Because reverse DNS resolution is performed synchronously on the message ingestion path, slow DNS servers or unresolvable IP addresses can delay log processing.
+
+Setting `resolve_names: false` disables reverse DNS lookups completely while continuing to collect all IP and port network attributes:
+
+- **Available attributes when `resolve_names: false`:**
+  - Deprecated: `net.transport`, `net.host.ip`, `net.host.port`, `net.peer.ip`, `net.peer.port`
+  - Stable: `network.transport`, `network.local.address`, `server.port`, `network.peer.address`, `client.port`
+- **Unavailable attributes when `resolve_names: false`:**
+  - Deprecated: `net.host.name`, `net.peer.name`
+  - Stable: `server.address`, `client.address`
+
+Configuration:
+
+```yaml
+receivers:
+  udp_log:
+    listen_address: "0.0.0.0:54525"
+    add_attributes: true
+    resolve_names: false
 ```
 
 ## Feature Gates
