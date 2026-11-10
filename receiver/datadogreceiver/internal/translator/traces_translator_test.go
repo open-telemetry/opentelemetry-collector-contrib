@@ -100,7 +100,13 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
 	assert.Equal(t, "my-name", span.Name())
-	assert.Equal(t, 10, span.Attributes().Len(), "missing attributes")
+	assert.Equal(t, 13, span.Attributes().Len(), "missing attributes")
+	operationName, _ := span.Attributes().Get("operation.name")
+	assert.Equal(t, "my-name", operationName.Str())
+	resourceName, _ := span.Attributes().Get("resource.name")
+	assert.Equal(t, "my-resource", resourceName.Str())
+	spanType, _ := span.Attributes().Get("span.type")
+	assert.Equal(t, "sql", spanType.Str())
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name attribute value incorrect")
@@ -546,6 +552,62 @@ func TestToTracesServiceName(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestToTracesKeepsDatadogNames checks that operation.name and resource.name keep the
+// Datadog names even when the span itself is renamed (an http.request span becomes "GET").
+func TestToTracesKeepsDatadogNames(t *testing.T) {
+	payload := &pb.TracerPayload{
+		Chunks: traceChunksFromSpans([]pb.Span{
+			{Name: "http.request", Resource: "GET", Type: "http", SpanID: 1, Meta: map[string]string{"http.method": "GET", "http.route": "/users/:id"}},
+			{Name: "aws.command", Resource: "s3.put_object", SpanID: 2, Meta: map[string]string{"aws.service": "s3", "aws.operation": "put_object"}},
+		}),
+	}
+
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, nil)
+	require.NoError(t, err)
+
+	got := map[string][2]string{}
+	for _, rs := range traces.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				op, _ := span.Attributes().Get("operation.name")
+				res, _ := span.Attributes().Get("resource.name")
+				got[span.Name()] = [2]string{op.Str(), res.Str()}
+			}
+		}
+	}
+	assert.Equal(t, map[string][2]string{
+		"GET /users/:id": {"http.request", "GET"},
+		"s3/put_object":  {"aws.command", "s3.put_object"},
+	}, got)
+}
+
+// TestToTracesKeepsSpanType checks that the Datadog span type is kept as span.type, which
+// the Datadog exporter and the Datadog Agent's OTLP intake read back into the span's type.
+func TestToTracesKeepsSpanType(t *testing.T) {
+	payload := &pb.TracerPayload{
+		Chunks: traceChunksFromSpans([]pb.Span{
+			{Name: "rack.request", Type: "web", SpanID: 1},
+			{Name: "mysql2.query", Type: "sql", SpanID: 2},
+			{Name: "custom", SpanID: 3},
+		}),
+	}
+
+	traces, err := ToTraces(zap.NewNop(), payload, &http.Request{Header: http.Header{}}, nil)
+	require.NoError(t, err)
+
+	types := map[string]string{}
+	for _, rs := range traces.ResourceSpans().All() {
+		for _, ss := range rs.ScopeSpans().All() {
+			for _, span := range ss.Spans().All() {
+				if v, ok := span.Attributes().Get("span.type"); ok {
+					types[span.Name()] = v.Str()
+				}
+			}
+		}
+	}
+	assert.Equal(t, map[string]string{"rack.request": "web", "mysql2.query": "sql"}, types)
 }
 
 // TestToTracesBaseServicePreservesPerSpanServiceName verifies the DD→OTEL→DD
