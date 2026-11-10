@@ -8,12 +8,6 @@ elasticsearch/trace:
   headers:
     myheader: test
   traces_index: trace_index
-  traces_dynamic_index:
-    enabled: false
-  logs_dynamic_index:
-    enabled: false
-  metrics_dynamic_index:
-    enabled: false
   pipeline: mypipeline
   user: elastic
   password: search
@@ -30,12 +24,6 @@ elasticsearch/metric:
     insecure: false
   endpoints: [http://localhost:9200]
   metrics_index: my_metric_index
-  traces_dynamic_index:
-    enabled: false
-  logs_dynamic_index:
-    enabled: false
-  metrics_dynamic_index:
-    enabled: false
   timeout: 2m
   headers:
     myheader: test
@@ -55,12 +43,6 @@ elasticsearch/log:
     insecure: false
   endpoints: [http://localhost:9200]
   logs_index: my_log_index
-  traces_dynamic_index:
-    enabled: false
-  logs_dynamic_index:
-    enabled: false
-  metrics_dynamic_index:
-    enabled: false
   timeout: 2m
   headers:
     myheader: test
@@ -79,10 +61,6 @@ elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]
   logstash_format:
     enabled: true
-elasticsearch/raw:
-  endpoints: [http://localhost:9200]
-  mapping:
-    mode: raw
 elasticsearch/cloudid:
   cloudid: foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=
 elasticsearch/confighttp_endpoint:
