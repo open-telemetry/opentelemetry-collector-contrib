@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/sdnot
 go 1.26.0
 
 require (
-	// v22.7.0 broke compatability with BSD and Solaris by assuming that `unix.CLOCK_MONOTONIC`
-	// is defined across all Unix plaforms. Until the issue is fixed we will pin
-	// to version v22.6.0. Based on my undestanding the fix is relatively easy
+	// v22.7.0 broke compatibility with BSD and Solaris by assuming that `unix.CLOCK_MONOTONIC`
+	// is defined across all Unix platforms. Until the issue is fixed we will pin
+	// to version v22.6.0. Based on my understanding the fix is relatively easy
 	// for FreeBSD, OpenBSD, Dragonfly, Solaris, but NetBSD and Aix don't support
 	// these symbols.
 	//
