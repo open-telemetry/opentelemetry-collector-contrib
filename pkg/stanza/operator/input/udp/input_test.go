@@ -8,6 +8,7 @@ import (
 	"math/rand/v2"
 	"net"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -244,6 +246,497 @@ func TestFailToBind(t *testing.T) {
 	}()
 	_, err = startUDP(port)
 	require.Error(t, err, "expected second udp operator to fail to start")
+}
+
+type mockResolver struct {
+	calls     atomic.Int64
+	blockChan chan struct{}
+	hostMap   map[string]string
+}
+
+func (m *mockResolver) GetHostFromIP(ip string) string {
+	m.calls.Add(1)
+	if m.blockChan != nil {
+		<-m.blockChan
+	}
+	if m.hostMap != nil {
+		if host, ok := m.hostMap[ip]; ok {
+			return host
+		}
+	}
+	return "mocked-host.example.com"
+}
+
+func (*mockResolver) Stop() {}
+
+func TestInputResolveNamesFalse(t *testing.T) {
+	for _, useStable := range []bool{false, true} {
+		testName := "DeprecatedAttributes"
+		if useStable {
+			testName = "StableAttributes"
+		}
+		t.Run(testName, func(t *testing.T) {
+			if useStable {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaUDPUseStableNetworkAttributesFeatureGate.ID(), true))
+				t.Cleanup(func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaUDPUseStableNetworkAttributesFeatureGate.ID(), false))
+				})
+			}
+
+			cfg := NewConfigWithID("test_input")
+			cfg.ListenAddress = "127.0.0.1:0"
+			cfg.AddAttributes = true
+			cfg.ResolveNames = configoptional.Some(false)
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			mockOutput := testutil.Operator{}
+			udpInput, ok := op.(*Input)
+			require.True(t, ok)
+			require.Nil(t, udpInput.resolver, "resolver should not be initialized when resolve_names is false")
+
+			udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+			entryChan := make(chan *entry.Entry, 1)
+			mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				entryChan <- args.Get(1).(*entry.Entry)
+			}).Return(nil)
+
+			err = udpInput.Start(testutil.NewUnscopedMockPersister())
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, udpInput.Stop())
+			}()
+
+			conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+			require.NoError(t, err)
+			defer conn.Close()
+
+			_, err = conn.Write([]byte("test log\n"))
+			require.NoError(t, err)
+
+			select {
+			case entry := <-entryChan:
+				require.Equal(t, "test log", entry.Body)
+				if useStable {
+					assert.Equal(t, "udp", entry.Attributes["network.transport"])
+					assert.Equal(t, "127.0.0.1", entry.Attributes["network.local.address"])
+					assert.NotEmpty(t, entry.Attributes["server.port"])
+					assert.Equal(t, "127.0.0.1", entry.Attributes["network.peer.address"])
+					assert.NotEmpty(t, entry.Attributes["client.port"])
+					assert.NotContains(t, entry.Attributes, "server.address", "server.address should be omitted when resolve_names is false")
+					assert.NotContains(t, entry.Attributes, "client.address", "client.address should be omitted when resolve_names is false")
+				} else {
+					assert.Equal(t, "IP.UDP", entry.Attributes["net.transport"])
+					assert.Equal(t, "127.0.0.1", entry.Attributes["net.host.ip"])
+					assert.NotEmpty(t, entry.Attributes["net.host.port"])
+					assert.Equal(t, "127.0.0.1", entry.Attributes["net.peer.ip"])
+					assert.NotEmpty(t, entry.Attributes["net.peer.port"])
+					assert.NotContains(t, entry.Attributes, "net.host.name", "net.host.name should be omitted when resolve_names is false")
+					assert.NotContains(t, entry.Attributes, "net.peer.name", "net.peer.name should be omitted when resolve_names is false")
+				}
+			case <-time.After(2 * time.Second):
+				require.FailNow(t, "Timed out waiting for entry")
+			}
+		})
+	}
+}
+
+func TestInputZeroDNSCallsWhenResolveNamesFalse(t *testing.T) {
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = "127.0.0.1:0"
+	cfg.AddAttributes = true
+	cfg.ResolveNames = configoptional.Some(false)
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput, ok := op.(*Input)
+	require.True(t, ok)
+
+	if udpInput.resolver != nil {
+		udpInput.resolver.Stop()
+	}
+	mockRes := &mockResolver{}
+	udpInput.resolver = mockRes
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 10)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	for i := range 5 {
+		_, err = fmt.Fprintf(conn, "msg %d\n", i)
+		require.NoError(t, err)
+	}
+
+	for i := range 5 {
+		select {
+		case entry := <-entryChan:
+			require.Equal(t, fmt.Sprintf("msg %d", i), entry.Body)
+		case <-time.After(2 * time.Second):
+			require.FailNow(t, "Timed out waiting for entry")
+		}
+	}
+
+	assert.Equal(t, int64(0), mockRes.calls.Load(), "Expected zero reverse DNS calls when resolve_names is false")
+}
+
+func TestInputSlowResolverDoesNotBlockWhenResolveNamesFalse(t *testing.T) {
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = "127.0.0.1:0"
+	cfg.AddAttributes = true
+	cfg.ResolveNames = configoptional.Some(false)
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput, ok := op.(*Input)
+	require.True(t, ok)
+
+	// mock resolver with a blockChan to simulate an unresponsive resolver
+	blockChan := make(chan struct{})
+	mockRes := &mockResolver{blockChan: blockChan}
+	udpInput.resolver = mockRes
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		close(blockChan)
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = conn.Write([]byte("fast log\n"))
+	require.NoError(t, err)
+
+	select {
+	case entry := <-entryChan:
+		require.Equal(t, "fast log", entry.Body)
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Timed out waiting for fast log; resolver blocked when it should not have")
+	}
+
+	assert.Equal(t, int64(0), mockRes.calls.Load(), "Should not invoke slow resolver when resolve_names is false")
+}
+
+func TestInputSlowResolverBlocksWhenResolveNamesTrue(t *testing.T) {
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = "127.0.0.1:0"
+	cfg.AddAttributes = true
+	cfg.ResolveNames = configoptional.Some(true)
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput, ok := op.(*Input)
+	require.True(t, ok)
+
+	if udpInput.resolver != nil {
+		udpInput.resolver.Stop()
+	}
+	blockChan := make(chan struct{})
+	mockRes := &mockResolver{blockChan: blockChan}
+	udpInput.resolver = mockRes
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = conn.Write([]byte("blocked log\n"))
+	require.NoError(t, err)
+
+	// Ensure no message arrives while blocked
+	select {
+	case <-entryChan:
+		require.FailNow(t, "Message should not arrive while resolver is blocked")
+	case <-time.After(100 * time.Millisecond):
+		// Expected: still waiting on resolver
+	}
+
+	assert.GreaterOrEqual(t, mockRes.calls.Load(), int64(1), "Resolver should have been called")
+
+	// Now unblock resolver
+	close(blockChan)
+
+	select {
+	case entry := <-entryChan:
+		require.Equal(t, "blocked log", entry.Body)
+		assert.Equal(t, "mocked-host.example.com", entry.Attributes["net.peer.name"])
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Timed out waiting for message after resolver unblocked")
+	}
+}
+
+func TestInputResolveNamesTrue(t *testing.T) {
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = "127.0.0.1:0"
+	cfg.AddAttributes = true
+	cfg.ResolveNames = configoptional.Some(true)
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput, ok := op.(*Input)
+	require.True(t, ok)
+
+	if udpInput.resolver != nil {
+		udpInput.resolver.Stop()
+	}
+	mockRes := &mockResolver{
+		hostMap: map[string]string{
+			"127.0.0.1": "custom.resolved.host",
+		},
+	}
+	udpInput.resolver = mockRes
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = conn.Write([]byte("resolvable log\n"))
+	require.NoError(t, err)
+
+	select {
+	case entry := <-entryChan:
+		require.Equal(t, "resolvable log", entry.Body)
+		assert.Equal(t, "custom.resolved.host", entry.Attributes["net.peer.name"])
+		assert.Equal(t, "127.0.0.1", entry.Attributes["net.peer.ip"])
+		assert.NotEmpty(t, entry.Attributes["net.peer.port"])
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Timed out waiting for message")
+	}
+}
+
+func TestInputDNSUnresolvable(t *testing.T) {
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = "127.0.0.1:0"
+	cfg.AddAttributes = true
+	cfg.ResolveNames = configoptional.Some(true)
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput, ok := op.(*Input)
+	require.True(t, ok)
+
+	if udpInput.resolver != nil {
+		udpInput.resolver.Stop()
+	}
+	// Simulating unresolvable IP where resolver returns IP as fallback
+	mockRes := &mockResolver{
+		hostMap: map[string]string{
+			"127.0.0.1": "127.0.0.1",
+		},
+	}
+	udpInput.resolver = mockRes
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = conn.Write([]byte("unresolvable log\n"))
+	require.NoError(t, err)
+
+	select {
+	case entry := <-entryChan:
+		require.Equal(t, "unresolvable log", entry.Body)
+		assert.Equal(t, "127.0.0.1", entry.Attributes["net.peer.name"])
+		assert.Equal(t, "127.0.0.1", entry.Attributes["net.peer.ip"])
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Timed out waiting for message")
+	}
+}
+
+func TestInputDNSCaching(t *testing.T) {
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = "127.0.0.1:0"
+	cfg.AddAttributes = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput, ok := op.(*Input)
+	require.True(t, ok)
+	require.NotNil(t, udpInput.resolver, "standard resolver should be initialized")
+
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 10)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	for i := range 5 {
+		_, err = fmt.Fprintf(conn, "repeated msg %d\n", i)
+		require.NoError(t, err)
+	}
+
+	for i := range 5 {
+		select {
+		case entry := <-entryChan:
+			require.Equal(t, fmt.Sprintf("repeated msg %d", i), entry.Body)
+			assert.NotEmpty(t, entry.Attributes["net.peer.name"])
+			assert.Equal(t, "127.0.0.1", entry.Attributes["net.peer.ip"])
+		case <-time.After(2 * time.Second):
+			require.FailNow(t, "Timed out waiting for entry")
+		}
+	}
+}
+
+func TestInputIPv6(t *testing.T) {
+	testConn, err := net.ListenUDP("udp6", &net.UDPAddr{IP: net.IPv6loopback, Port: 0})
+	if err != nil {
+		t.Skip("IPv6 not supported on this host")
+	}
+	_ = testConn.Close()
+
+	for _, resolve := range []bool{false, true} {
+		testName := "ResolveNamesFalse"
+		if resolve {
+			testName = "ResolveNamesTrue"
+		}
+		t.Run(testName, func(t *testing.T) {
+			cfg := NewConfigWithID("test_input")
+			cfg.ListenAddress = "[::1]:0"
+			cfg.AddAttributes = true
+			cfg.ResolveNames = configoptional.Some(resolve)
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			mockOutput := testutil.Operator{}
+			udpInput, ok := op.(*Input)
+			require.True(t, ok)
+
+			if resolve {
+				if udpInput.resolver != nil {
+					udpInput.resolver.Stop()
+				}
+				mockRes := &mockResolver{
+					hostMap: map[string]string{
+						"::1": "ipv6.example.com",
+					},
+				}
+				udpInput.resolver = mockRes
+			}
+
+			udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+			entryChan := make(chan *entry.Entry, 1)
+			mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				entryChan <- args.Get(1).(*entry.Entry)
+			}).Return(nil)
+
+			err = udpInput.Start(testutil.NewUnscopedMockPersister())
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, udpInput.Stop())
+			}()
+
+			conn, err := net.Dial("udp6", udpInput.connection.LocalAddr().String())
+			require.NoError(t, err)
+			defer conn.Close()
+
+			_, err = conn.Write([]byte("ipv6 message\n"))
+			require.NoError(t, err)
+
+			select {
+			case entry := <-entryChan:
+				require.Equal(t, "ipv6 message", entry.Body)
+				assert.Equal(t, "::1", entry.Attributes["net.peer.ip"])
+				assert.NotEmpty(t, entry.Attributes["net.peer.port"])
+				if resolve {
+					assert.Equal(t, "ipv6.example.com", entry.Attributes["net.peer.name"])
+				} else {
+					assert.NotContains(t, entry.Attributes, "net.peer.name")
+				}
+			case <-time.After(2 * time.Second):
+				require.FailNow(t, "Timed out waiting for IPv6 message")
+			}
+		})
+	}
 }
 
 func BenchmarkUDPInput(b *testing.B) {

@@ -4,13 +4,24 @@
 package prometheusreceiver
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
+	"time"
 
+	"github.com/prometheus/common/promslog"
+	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const targetExternalLabels = `
@@ -974,4 +985,76 @@ func verifyScopeInfoMetricIgnored(t *testing.T, td *testData, rms []pmetric.Reso
 	animal, found := dp.Attributes().Get("animal")
 	require.True(t, found)
 	require.Equal(t, "rabbit", animal.Str())
+}
+
+func TestUseTargetURLForServerAddressWithRelabeling(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
+	})
+
+	tlsSrv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(targetRelabelJobInstance))
+	}))
+	t.Cleanup(tlsSrv.Close)
+
+	tlsURL, err := url.Parse(tlsSrv.URL)
+	require.NoError(t, err)
+
+	yamlCfg := fmt.Sprintf(`
+scrape_configs:
+  - job_name: target1
+    scrape_interval: 100ms
+    scheme: http
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: [%q]
+    relabel_configs:
+      - action: replace
+        regex: (.*)
+        target_label: instance
+        replacement: logical-instance-1
+      - action: replace
+        regex: (.*)
+        target_label: __scheme__
+        replacement: https
+`, tlsURL.Host)
+
+	pCfg, err := promcfg.Load(yamlCfg, promslog.NewNopLogger())
+	require.NoError(t, err)
+
+	cms := newSignalingSink(1)
+	set := receivertest.NewNopSettings(metadata.Type)
+	_ = newTestReceiverSettingsConsumer(t, &Config{
+		PrometheusConfig: (*PromConfig)(pCfg),
+		skipOffsetting:   true,
+	}, set, cms)
+
+	cms.Wait(t, 10*time.Second)
+
+	var validRM pmetric.ResourceMetrics
+	require.Eventually(t, func() bool {
+		for _, md := range cms.AllMetrics() {
+			rms := md.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				if isValidScrape(rms.At(i)) {
+					validRM = rms.At(i)
+					return true
+				}
+			}
+		}
+		return false
+	}, 10*time.Second, 20*time.Millisecond)
+
+	attrs := validRM.Resource().Attributes()
+	require.Equal(t, map[string]any{
+		"service.name":        "target1",
+		"service.instance.id": "logical-instance-1",
+		"server.port":         tlsURL.Port(),
+		"url.scheme":          "https",
+	}, attrs.AsRaw())
+	_, hasServerAddress := attrs.Get("server.address")
+	require.False(t, hasServerAddress, "loopback scrape target address should omit server.address")
 }
