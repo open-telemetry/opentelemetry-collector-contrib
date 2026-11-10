@@ -28,6 +28,11 @@
       THEN CONVERT(NVARCHAR, TODATETIMEOFFSET(DATEADD(MILLISECOND, -r.wait_time, GETDATE()), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126)
     ELSE ''
   END AS blocking_start_time,
+  CASE
+    WHEN r.wait_type IS NOT NULL
+      THEN CONVERT(NVARCHAR, TODATETIMEOFFSET(CAST(DATEADD(MILLISECOND, -r.wait_time, SYSDATETIME()) AS DATETIME2(0)), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126)
+    ELSE ''
+  END AS wait_start_time,
   ISNULL(r.wait_type, '') AS wait_type,
   r.wait_time,
   r.wait_resource,
