@@ -11,8 +11,8 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.315.1
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/featuregate v1.71.0
-	go.opentelemetry.io/collector/pdata v1.71.0
+	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261110201837-2af832434dc6
+	go.opentelemetry.io/collector/pdata v1.71.1-0.20261110201837-2af832434dc6
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
