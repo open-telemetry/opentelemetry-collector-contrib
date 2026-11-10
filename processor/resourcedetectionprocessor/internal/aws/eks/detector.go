@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
@@ -47,10 +48,17 @@ const (
 	imdsCheckMaxRetry = 1
 )
 
+// newAPIProvider is overridden in tests to substitute the EKS API provider.
+var newAPIProvider = apiprovider.NewProvider
+
 // detector for EKS
 type detector struct {
-	cfg                   Config
-	logger                *zap.Logger
+	cfg    Config
+	logger *zap.Logger
+	// mu serializes Detect, which lazily creates the providers below and mutates rb.
+	mu sync.Mutex
+	// imdsProvider and apiProvider are created on first use by initProviders, so that
+	// the detector can be built outside Kubernetes and AWS.
 	imdsProvider          imdsprovider.Provider
 	apiProvider           apiprovider.Provider
 	ra                    metadata.ResourceAttributesConfig
@@ -74,35 +82,75 @@ var _ internal.Detector = (*detector)(nil)
 var _ detectorUtils = (*eksDetectorUtils)(nil)
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
+// The AWS configuration and the Kubernetes client are created on the first Detect call
+// that finds a Kubernetes environment, so the detector can be built anywhere.
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	utils := &eksDetectorUtils{cfg: cfg, logger: set.Logger}
-
-	awsConfig, err := utils.getAWSConfig(context.Background(), false)
-	if err != nil {
-		return nil, err
-	}
-
-	nodeName := os.Getenv(cfg.NodeFromEnvVar)
-	apiProvider, err := apiprovider.NewProvider(awsConfig, nodeName, k8sconfig.FromConfigTypes(cfg.APIConfig))
-	if err != nil {
+	if err := cfg.APIConfig.Validate(); err != nil {
 		return nil, err
 	}
 
 	return &detector{
 		cfg:                   cfg,
 		logger:                set.Logger,
-		apiProvider:           apiProvider,
-		imdsProvider:          imdsprovider.NewProvider(awsConfig),
 		ra:                    cfg.ResourceAttributes,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		utils:                 utils,
+		utils:                 &eksDetectorUtils{cfg: cfg, logger: set.Logger},
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
+// initProviders creates the AWS and Kubernetes API providers if they don't exist yet.
+// A failure is not cached, so the next Detect call tries again. The caller holds d.mu.
+func (d *detector) initProviders(ctx context.Context) error {
+	if d.apiProvider != nil {
+		return nil
+	}
+
+	// With only part of the in-cluster environment, an in-cluster client cannot be built.
+	if err := internal.CheckInClusterEnv(d.cfg.APIConfig); err != nil {
+		return err
+	}
+
+	awsConfig, err := d.utils.getAWSConfig(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	nodeName := os.Getenv(d.cfg.NodeFromEnvVar)
+	apiProvider, err := newAPIProvider(awsConfig, nodeName, k8sconfig.FromConfigTypes(d.cfg.APIConfig))
+	if err != nil {
+		return err
+	}
+
+	d.apiProvider = apiProvider
+	d.imdsProvider = imdsprovider.NewProvider(awsConfig)
+	return nil
+}
+
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	// Outside Kubernetes isEKS reports false without the providers. Inside, they are
+	// needed both to identify EKS and to collect its metadata. An incomplete in-cluster
+	// environment means not running in Kubernetes. Any other failure to create them is
+	// reported whatever fail_on_missing_metadata says, as NewDetector used to, and is
+	// retried on the next call.
+	if os.Getenv(kubernetesServiceHostEnvVar) != "" {
+		if err := d.initProviders(ctx); err != nil {
+			if !errors.Is(err, internal.ErrNotInKubernetes) {
+				return pcommon.NewResource(), "", fmt.Errorf("failed initializing eks detector: %w", err)
+			}
+			if d.failOnMissingMetadata {
+				return pcommon.NewResource(), "", fmt.Errorf("eks metadata unavailable: %w", err)
+			}
+			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
+			return pcommon.NewResource(), "", nil
+		}
+	}
+
 	// Check if running on EKS.
 	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
