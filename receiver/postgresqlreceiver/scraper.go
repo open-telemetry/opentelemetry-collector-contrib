@@ -427,7 +427,6 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 			attrInt64(atts, dbAttributePrefix+querySampleColumnPID),
 			attrString(atts, dbAttributePrefix+querySampleColumnBackendStart),
 			attrString(atts, dbAttributePrefix+querySampleColumnApplicationName),
-			attrString(atts, dbAttributePrefix+querySampleColumnBackendType),
 			attrString(atts, string(conventions.NetworkPeerAddressKey)),
 			attrInt64(atts, string(conventions.NetworkPeerPortKey)),
 			attrString(atts, dbAttributePrefix+querySampleColumnClientHostname),

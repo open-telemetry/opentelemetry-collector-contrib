@@ -136,34 +136,6 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
-			desc: "valid config with databases and exclude_databases",
-			cfg: &Config{
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				Databases:            []string{"sales", "hr"},
-				ExcludeDatabases:     []string{"hr"},
-			},
-			expectedSuccess: true,
-		},
-		{
-			desc: "config with an empty name in databases",
-			cfg: &Config{
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				Databases:            []string{"sales", ""},
-			},
-			expectedSuccess: false,
-		},
-		{
-			desc: "config with an empty name in exclude_databases",
-			cfg: &Config{
-				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
-				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-				ExcludeDatabases:     []string{""},
-			},
-			expectedSuccess: false,
-		},
-		{
 			desc: "config with invalid MaxProcedureSampleCount value",
 			cfg: &Config{
 				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
@@ -377,8 +349,6 @@ func TestLoadConfig(t *testing.T) {
 		expected.QuerySample = QuerySample{
 			MaxRowsPerQuery: 1450,
 		}
-		expected.Databases = []string{"sales", "hr"}
-		expected.ExcludeDatabases = []string{"hr"}
 
 		sub, err := cm.Sub("sql_server/named")
 		require.NoError(t, err)

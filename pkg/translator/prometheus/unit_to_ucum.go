@@ -3,11 +3,7 @@
 
 package prometheus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 
-import (
-	"strings"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus/internal/metadata"
-)
+import "strings"
 
 var wordToUCUM = map[string]string{
 	// Time
@@ -77,16 +73,6 @@ func UnitWordToUCUM(unit string) string {
 // the specified "basic" unit. Returns the specified unit if not found in
 // wordToUCUM.
 func wordToUCUMOrDefault(unit string) string {
-	if metadata.PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
-		switch unit {
-		case "tebibytes":
-			return "TiBy"
-		case "tibibytes":
-			return unit
-		case "kilobytes":
-			return "kBy"
-		}
-	}
 	if promUnit, ok := wordToUCUM[unit]; ok {
 		return promUnit
 	}
@@ -96,16 +82,6 @@ func wordToUCUMOrDefault(unit string) string {
 // perWordToUCUMOrDefault retrieve the Prometheus "per" unit corresponding to
 // the specified "per" unit. Returns the specified unit if not found in perWordToUCUM.
 func perWordToUCUMOrDefault(perUnit string) string {
-	if metadata.PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate.IsEnabled() {
-		switch perUnit {
-		case "minute":
-			return "min"
-		case "week":
-			return "wk"
-		case "year":
-			return "a"
-		}
-	}
 	if promPerUnit, ok := perWordToUCUM[perUnit]; ok {
 		return promPerUnit
 	}

@@ -9,5 +9,4 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [atoulme]
-    emeritus: [dmitryax]
+    active: [dmitryax, atoulme]

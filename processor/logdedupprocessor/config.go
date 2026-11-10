@@ -13,16 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// TimestampMode defines how the timestamp of the emitted log record is set.
-type TimestampMode string
-
-const (
-	// TimestampModeAggregated sets the log record timestamp to when the aggregated log was emitted.
-	TimestampModeAggregated TimestampMode = "aggregated"
-	// TimestampModePreserved preserves the log record timestamp from the first log received in the aggregation window.
-	TimestampModePreserved TimestampMode = "preserved"
-)
-
 // Config defaults
 const (
 	// defaultInterval is the default export interval.
@@ -33,9 +23,6 @@ const (
 
 	// defaultTimezone is the default timezone
 	defaultTimezone = "UTC"
-
-	// defaultTimestampMode is the default timestamp mode
-	defaultTimestampMode = TimestampModeAggregated
 
 	// bodyField is the name of the body field
 	bodyField = "body"
@@ -50,7 +37,6 @@ var (
 	errInvalidInterval          = errors.New("interval must be greater than 0")
 	errCannotExcludeBody        = errors.New("cannot exclude the entire body")
 	errCannotIncludeBody        = errors.New("cannot include the entire body")
-	errInvalidTimestampMode     = errors.New("timestamp_mode must be one of 'aggregated' or 'preserved'")
 )
 
 // Config is the config of the processor.
@@ -61,7 +47,6 @@ type Config struct {
 	ExcludeFields     []string      `mapstructure:"exclude_fields"`
 	IncludeFields     []string      `mapstructure:"include_fields"`
 	Conditions        []string      `mapstructure:"conditions"`
-	TimestampMode     TimestampMode `mapstructure:"timestamp_mode"`
 	MetadataKeys      []string      `mapstructure:"metadata_keys"`
 	// MetadataCardinalityLimit limits the number of unique metadata combinations
 	// tracked simultaneously. 0 (default) means unbounded.
@@ -74,7 +59,6 @@ func createDefaultConfig() component.Config {
 		LogCountAttribute:        defaultLogCountAttribute,
 		Interval:                 defaultInterval,
 		Timezone:                 defaultTimezone,
-		TimestampMode:            defaultTimestampMode,
 		ExcludeFields:            []string{},
 		IncludeFields:            []string{},
 		Conditions:               []string{},
@@ -115,12 +99,6 @@ func (c Config) Validate() error {
 	err = c.validateMetadataKeys()
 	if err != nil {
 		return err
-	}
-
-	switch c.TimestampMode {
-	case TimestampModeAggregated, TimestampModePreserved:
-	default:
-		return errInvalidTimestampMode
 	}
 
 	return nil

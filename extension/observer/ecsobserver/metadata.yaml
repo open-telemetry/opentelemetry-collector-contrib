@@ -7,5 +7,5 @@ status:
     beta: [extension]
   distributions: [contrib]
   codeowners:
-    active: [pjanotti]
-    emeritus: [rmfitzpatrick, dmitryax]
+    active: [dmitryax]
+    emeritus: [rmfitzpatrick]

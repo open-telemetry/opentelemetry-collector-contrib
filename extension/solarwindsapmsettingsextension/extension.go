@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
@@ -76,7 +75,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 		serviceName = keyArr[1]
 	}
 	httpClientConfig := confighttp.NewDefaultClientConfig()
-	httpClientConfig.Keepalive = configoptional.None[confighttp.KeepaliveClientConfig]()
+	httpClientConfig.DisableKeepAlives = true //nolint:staticcheck // SA1019: DisableKeepAlives is deprecated in favor of Keepalive.Enabled.
 	extension.client, err = httpClientConfig.ToClient(ctx, host.GetExtensions(), extension.telemetrySettings)
 	if err != nil {
 		return err

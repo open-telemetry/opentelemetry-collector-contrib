@@ -19,5 +19,8 @@
   },
   {
     "cpu.wait": null
+  },
+  {
+    "disk_ops.pending": null
   }
 ]

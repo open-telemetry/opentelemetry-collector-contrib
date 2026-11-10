@@ -10,8 +10,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [dloucasfx]
-    emeritus: [dmitryax]
+    active: [dmitryax]
 
 resource_attributes:
   dns.domain:

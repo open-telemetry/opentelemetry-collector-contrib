@@ -9,10 +9,10 @@ status:
   disable_codecov_badge: true
   class: extension
   stability:
-    unmaintained: [extension]
+    development: [extension]
   distributions: []
   codeowners:
-    emeritus: [thmshmm]
+    active: [thmshmm]
 
 tests:
   config:

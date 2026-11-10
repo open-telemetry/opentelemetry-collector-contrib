@@ -1,5 +1,4 @@
 status:
   disable_codecov_badge: true
   codeowners:
-    active: [jinja2]
-    emeritus: [dmitryax]
+    active: [dmitryax]

@@ -1,5 +1,4 @@
 status:
   disable_codecov_badge: true
   codeowners:
-    active: [atoulme, crobert-1]
-    emeritus: [dmitryax]
+    active: [atoulme, dmitryax, crobert-1]

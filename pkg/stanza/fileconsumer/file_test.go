@@ -1274,7 +1274,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	})
 
-	// Wait until both readers enter their emit callbacks.
+	// Wait until both files have been read. A file is deleted synchronously
+	// before its tokens are emitted (see Reader.readContents), so once the short
+	// file's line is emitted the short file has already been deleted.
 	for _, ch := range []chan struct{}{shortEmitted, longEmitted} {
 		select {
 		case <-ch:
@@ -1283,10 +1285,8 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		}
 	}
 
-	// The short file is deleted only after its emit callback returns.
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		assert.NoFileExists(c, shortFile.Name())
-	}, 5*time.Second, 10*time.Millisecond)
+	// Short file was fully consumed and should already be deleted.
+	require.NoFileExists(t, shortFile.Name())
 
 	// Stop consuming before long file has been fully consumed
 	cancel()

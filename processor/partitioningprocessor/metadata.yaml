@@ -13,8 +13,8 @@ status:
     development: [profiles]
   distributions: [contrib]
   codeowners:
-    active: [paulojmdias, pjanotti]
-    emeritus: [axw, dmitryax]
+    active: [paulojmdias, dmitryax]
+    emeritus: [axw]
 
 tests:
   # Each partition is forwarded with a derived context carrying its partition

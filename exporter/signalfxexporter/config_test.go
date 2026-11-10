@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v7"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -448,7 +448,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 		{
 			name:              "empty config",
 			cfg:               &Config{},
-			excludeMetricsLen: 11,
+			excludeMetricsLen: 10,
 		},
 		{
 			name: "existing exclude config",
@@ -459,7 +459,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 					},
 				},
 			},
-			excludeMetricsLen: 12,
+			excludeMetricsLen: 11,
 		},
 		{
 			name: "existing empty exclude config",

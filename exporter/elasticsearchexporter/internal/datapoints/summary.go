@@ -48,7 +48,3 @@ func (dp Summary) DocCount() uint64 {
 func (dp Summary) Metric() pmetric.Metric {
 	return dp.metric
 }
-
-func (Summary) Temporality() string {
-	return ""
-}

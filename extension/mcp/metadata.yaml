@@ -7,8 +7,7 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [pavolloffay, codeboten]
-    emeritus: [dmitryax]
+    active: [pavolloffay, codeboten, dmitryax]
 
 tests:
   config:

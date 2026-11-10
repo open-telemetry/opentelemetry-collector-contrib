@@ -72,7 +72,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 		switch mode {
 		case modeValue:
 			for _, value := range val.All() {
-				if value.Type() != pcommon.ValueTypeStr || !compiledPattern.matchString(cp, value.Str()) {
+				if value.Type() != pcommon.ValueTypeStr || !cp.MatchString(value.Str()) {
 					continue
 				}
 				if !fn.IsEmpty() {
@@ -88,7 +88,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 		case modeKey:
 			hasMatch := false
 			for key := range val.All() {
-				if compiledPattern.matchString(cp, key) {
+				if cp.MatchString(key) {
 					hasMatch = true
 					break
 				}
@@ -102,7 +102,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetSetter[K], mode string, regexP
 			updated := pcommon.NewMap()
 			updated.EnsureCapacity(val.Len())
 			for key, value := range val.All() {
-				if !compiledPattern.matchString(cp, key) {
+				if !cp.MatchString(key) {
 					value.MoveTo(updated.PutEmpty(key))
 					continue
 				}

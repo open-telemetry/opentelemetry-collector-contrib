@@ -125,8 +125,8 @@ func (hc *HealthCheckExtension) Shutdown(ctx context.Context) error {
 	return err
 }
 
-// Changed implements the extensioncapabilities.ComponentStatusWatcher interface.
-func (hc *HealthCheckExtension) Changed(
+// ComponentStatusChanged implements the extension.StatusWatcher interface.
+func (hc *HealthCheckExtension) ComponentStatusChanged(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {

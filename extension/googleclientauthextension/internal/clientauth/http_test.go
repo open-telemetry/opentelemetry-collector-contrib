@@ -4,6 +4,7 @@
 package clientauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/clientauth"
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,10 +12,9 @@ import (
 	"os"
 	"testing"
 
-	"cloud.google.com/go/auth"
-	"cloud.google.com/go/auth/credentials/idtoken"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
+	"google.golang.org/api/idtoken"
 )
 
 func init() {
@@ -90,10 +90,8 @@ func TestRoundTripperWithIDToken(t *testing.T) {
 			Audience:     "http://example.com",
 			TokenHeader:  authorizationHeader,
 		},
-		newIDTokenCredentials: func(_ *idtoken.Options) (*auth.Credentials, error) {
-			return auth.NewCredentials(&auth.CredentialsOptions{
-				TokenProvider: &mockTokenProvider{token: "dummy token"},
-			}), nil
+		newIDTokenSource: func(_ context.Context, _ string, _ ...idtoken.ClientOption) (oauth2.TokenSource, error) {
+			return &mockIDTokenSource{token: "dummy token"}, nil
 		},
 	}
 	err := ca.Start(t.Context(), nil)

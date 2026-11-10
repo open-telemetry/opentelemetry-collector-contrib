@@ -15,126 +15,136 @@ func TestCreateDefaultProcessorConfig(t *testing.T) {
 	require.Equal(t, defaultInterval, cfg.Interval)
 	require.Equal(t, defaultLogCountAttribute, cfg.LogCountAttribute)
 	require.Equal(t, defaultTimezone, cfg.Timezone)
-	require.Equal(t, defaultTimestampMode, cfg.TimestampMode)
 	require.Equal(t, []string{}, cfg.ExcludeFields)
 }
 
 func TestValidateConfig(t *testing.T) {
 	testCases := []struct {
 		desc        string
-		configure   func(*Config)
+		cfg         *Config
 		expectedErr error
 	}{
 		{
 			desc: "invalid LogCountAttribute config",
-			configure: func(cfg *Config) {
-				cfg.LogCountAttribute = ""
+			cfg: &Config{
+				LogCountAttribute: "",
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
 			},
 			expectedErr: errInvalidLogCountAttribute,
 		},
 		{
 			desc: "invalid Interval config",
-			configure: func(cfg *Config) {
-				cfg.Interval = -1
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          -1,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
 			},
 			expectedErr: errInvalidInterval,
 		},
 		{
 			desc: "invalid Timezone config",
-			configure: func(cfg *Config) {
-				cfg.Timezone = "not a timezone"
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          "not a timezone",
+				ExcludeFields:     []string{},
 			},
 			expectedErr: errors.New("timezone is invalid"),
 		},
 		{
 			desc: "invalid exclude entire body",
-			configure: func(cfg *Config) {
-				cfg.ExcludeFields = []string{bodyField}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{bodyField},
 			},
 			expectedErr: errCannotExcludeBody,
 		},
 		{
 			desc: "invalid exclude field body",
-			configure: func(cfg *Config) {
-				cfg.ExcludeFields = []string{"not.value"}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{"not.value"},
 			},
 			expectedErr: errors.New("an excludefield must start with"),
 		},
 		{
 			desc: "invalid duplicate exclude field",
-			configure: func(cfg *Config) {
-				cfg.ExcludeFields = []string{"body.thing", "body.thing"}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{"body.thing", "body.thing"},
 			},
 			expectedErr: errors.New("duplicate exclude_field"),
 		},
 		{
 			desc: "invalid include_fields using entire body",
-			configure: func(cfg *Config) {
-				cfg.IncludeFields = []string{bodyField}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				IncludeFields:     []string{bodyField},
 			},
 			expectedErr: errors.New("cannot include the entire body"),
 		},
 		{
 			desc: "invalid include_fields not starting with body or attributes",
-			configure: func(cfg *Config) {
-				cfg.IncludeFields = []string{"not.valid"}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				IncludeFields:     []string{"not.valid"},
 			},
 			expectedErr: errors.New("an include_fields must start with body or attributes"),
 		},
 		{
 			desc: "empty include_fields is the default behavior",
-			configure: func(cfg *Config) {
-				cfg.IncludeFields = []string{}
-			},
-			expectedErr: nil,
-		},
-		{
-			desc: "empty timestamp_mode",
-			configure: func(cfg *Config) {
-				cfg.TimestampMode = ""
-			},
-			expectedErr: errInvalidTimestampMode,
-		},
-		{
-			desc: "invalid timestamp_mode",
-			configure: func(cfg *Config) {
-				cfg.TimestampMode = "invalid"
-			},
-			expectedErr: errInvalidTimestampMode,
-		},
-		{
-			desc: "valid timestamp_mode aggregated",
-			configure: func(cfg *Config) {
-				cfg.TimestampMode = TimestampModeAggregated
-			},
-			expectedErr: nil,
-		},
-		{
-			desc: "valid timestamp_mode preserved",
-			configure: func(cfg *Config) {
-				cfg.TimestampMode = TimestampModePreserved
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				IncludeFields:     []string{},
 			},
 			expectedErr: nil,
 		},
 		{
 			desc: "valid config",
-			configure: func(cfg *Config) {
-				cfg.ExcludeFields = []string{"body.thing", "attributes.otherthing"}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},
 			expectedErr: nil,
 		},
 		{
 			desc: "valid config include_fields",
-			configure: func(cfg *Config) {
-				cfg.IncludeFields = []string{"body.thing", "attributes.otherthing"}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				IncludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},
 			expectedErr: nil,
 		},
 		{
 			desc: "invalid config defines both exclude_fields and include_fields",
-			configure: func(cfg *Config) {
-				cfg.ExcludeFields = []string{"body.thing", "attributes.otherthing"}
-				cfg.IncludeFields = []string{"body.thing", "attributes.otherthing"}
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
+				IncludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},
 			expectedErr: errors.New("cannot define both exclude_fields and include_fields"),
 		},
@@ -142,9 +152,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cfg := createDefaultConfig().(*Config)
-			tc.configure(cfg)
-			err := cfg.Validate()
+			err := tc.cfg.Validate()
 			if tc.expectedErr != nil {
 				require.ErrorContains(t, err, tc.expectedErr.Error())
 			} else {

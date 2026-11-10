@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 type FakeBuilder struct {

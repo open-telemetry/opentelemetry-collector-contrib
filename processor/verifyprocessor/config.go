@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 const (
@@ -19,7 +18,6 @@ const (
 	modeSync = "sync"
 
 	failureModeStrict = "strict"
-	failureModeDrop   = "drop"
 	failureModeMark   = "mark"
 
 	keySourceK8sSecret = "k8s_secret"
@@ -33,13 +31,12 @@ const (
 
 var (
 	errInvalidMode            = errors.New("mode must be sync")
-	errInvalidFailureMode     = errors.New("failure_mode must be strict, drop, or mark")
+	errInvalidFailureMode     = errors.New("failure_mode must be strict or mark")
 	errInvalidKeySourceType   = errors.New("key_source.type must be k8s_secret, env, file, or bao")
 	errMissingKeySourceConfig = errors.New("key_source config block is missing for the specified type")
 	errKeySourceNeedsMaterial = errors.New("key_source must provide a certificate or hmac_key")
-	errKeySourceBothMaterials = errors.New("key_source must provide exactly one of certificate or hmac_key")
 	errDeadLetterNeedsStorage = errors.New("dead_letter.enabled requires dead_letter.storage")
-	errInvalidDeadLetterMode  = errors.New("dead_letter.failure_modes entries must be strict, drop, or mark")
+	errInvalidDeadLetterMode  = errors.New("dead_letter.failure_modes entries must be strict or mark")
 )
 
 type Config struct {
@@ -90,10 +87,10 @@ type K8sSecretConfig struct {
 // SecretPath is the path to the secret within that mount (e.g. "verify").
 // certificate and hmac_key are field names within the secret at SecretPath.
 type BaoKeyConfig struct {
-	Address      string              `mapstructure:"address"`
-	Token        configopaque.String `mapstructure:"token"`
-	MountPath    string              `mapstructure:"mount_path"`
-	SecretPath   string              `mapstructure:"secret_path"`
+	Address      string `mapstructure:"address"`
+	Token        string `mapstructure:"token"`
+	MountPath    string `mapstructure:"mount_path"`
+	SecretPath   string `mapstructure:"secret_path"`
 	SecretConfig `mapstructure:",squash"`
 }
 
@@ -131,7 +128,7 @@ func (c *Config) Validate() error {
 
 	if c.FailureMode == "" {
 		c.FailureMode = defaultFailureMode
-	} else if c.FailureMode != failureModeStrict && c.FailureMode != failureModeDrop && c.FailureMode != failureModeMark {
+	} else if c.FailureMode != failureModeStrict && c.FailureMode != failureModeMark {
 		return errInvalidFailureMode
 	}
 
@@ -186,16 +183,10 @@ func (c *Config) validateKeySource() error {
 }
 
 func validateSecretMaterial(sc SecretConfig) error {
-	hasCert := sc.Certificate != ""
-	hasHMAC := sc.HMACKey != ""
-	switch {
-	case !hasCert && !hasHMAC:
+	if sc.Certificate == "" && sc.HMACKey == "" {
 		return errKeySourceNeedsMaterial
-	case hasCert && hasHMAC:
-		return errKeySourceBothMaterials
-	default:
-		return nil
 	}
+	return nil
 }
 
 func (dl *DeadLetterConfig) validate() error {
@@ -209,7 +200,7 @@ func (dl *DeadLetterConfig) validate() error {
 		dl.KeyPrefix = defaultDeadLetterKeyPrefix
 	}
 	for _, mode := range dl.FailureModes {
-		if mode != failureModeStrict && mode != failureModeDrop && mode != failureModeMark {
+		if mode != failureModeStrict && mode != failureModeMark {
 			return errInvalidDeadLetterMode
 		}
 	}

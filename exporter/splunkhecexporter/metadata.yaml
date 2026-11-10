@@ -8,8 +8,7 @@ status:
     development: [profiles]
   distributions: [contrib]
   codeowners:
-    active: [atoulme]
-    emeritus: [dmitryax]
+    active: [atoulme, dmitryax]
 
 telemetry:
   metrics:

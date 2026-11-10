@@ -102,6 +102,11 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 	pSpans, pDeltas := convertBucketsLayoutV2(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayoutV2(p.Negative(), scaleDown)
 
+	zeroThreshold := p.ZeroThreshold()
+	if zeroThreshold == 0 {
+		zeroThreshold = defaultZeroThreshold
+	}
+
 	h := writev2.Histogram{
 		// The counter reset detection must be compatible with Prometheus to
 		// safely set ResetHint to NO. This is not ensured currently.
@@ -116,7 +121,7 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		Schema:    scale,
 
 		ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		ZeroThreshold: p.ZeroThreshold(),
+		ZeroThreshold: zeroThreshold,
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,

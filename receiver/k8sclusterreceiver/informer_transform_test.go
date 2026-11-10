@@ -36,6 +36,7 @@ func TestTransformObject(t *testing.T) {
 					testutils.NewPodSpecWithContainer("container-name"),
 					testutils.NewPodStatusWithContainer("container-name", "container-id"),
 				)
+				pod.Spec.Containers[0].Image = ""
 				return pod
 			}(),
 			same: false,

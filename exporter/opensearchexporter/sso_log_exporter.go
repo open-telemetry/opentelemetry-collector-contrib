@@ -51,7 +51,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 	dataset := cfg.Dataset
 	namespace := cfg.Namespace
 	if cfg.MappingsSettings.Mode == MappingOTelV1.String() {
-		defaultPrefix = otelV1LogsIndexAlias
+		defaultPrefix = "otel-v1-logs"
 		dataset = ""
 		namespace = ""
 	}
@@ -80,19 +80,8 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 	l.client = client
 
 	if l.config.MappingsSettings.ManageIndexTemplate {
-		tm, tmErr := newTemplateManager(client, l.telemetry.Logger, l.config.MappingsSettings.IndexTemplateFile)
-		if tmErr != nil {
-			return tmErr
-		}
+		tm := newTemplateManager(client, l.telemetry.Logger)
 		tm.ensureTemplates(ctx)
-	}
-
-	if l.config.MappingsSettings.ISM.Enabled {
-		im, imErr := newISMManager(l.httpSettings.Endpoint, httpClient.Transport, client, l.config.MappingsSettings.ISM, l.telemetry.Logger)
-		if imErr != nil {
-			return imErr
-		}
-		im.setupISM(ctx, otelV1LogsIndexAlias)
 	}
 
 	return nil

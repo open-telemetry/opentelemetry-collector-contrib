@@ -12,8 +12,8 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [crobert-1]
-    emeritus: [pmcollins, dmitryax]
+    active: [dmitryax, crobert-1]
+    emeritus: [pmcollins]
 
 tests:
   goleak:

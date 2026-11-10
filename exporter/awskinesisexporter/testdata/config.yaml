@@ -11,7 +11,3 @@ awskinesis:
     enabled: false
   encoding:
     name: otlp-proto
-awskinesis/custom_timeout:
-  idle_conn_timeout: 2s
-  aws:
-    stream_name: test-stream

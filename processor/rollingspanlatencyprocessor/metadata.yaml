@@ -1,4 +1,3 @@
-display_name: Rolling Span Latency Processor
 type: rolling_span_latency
 
 status:

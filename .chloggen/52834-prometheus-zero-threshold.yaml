@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: exporter/prometheus
-note: Preserve the zero threshold when converting exponential histograms to Prometheus native histograms.
-issues: [52834]
-change_logs: [user]

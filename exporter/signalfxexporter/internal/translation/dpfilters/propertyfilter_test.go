@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 func TestPropertyFilterUnmarshaling(t *testing.T) {

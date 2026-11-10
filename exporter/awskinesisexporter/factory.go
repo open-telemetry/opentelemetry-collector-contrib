@@ -48,7 +48,6 @@ func createDefaultConfig() component.Config {
 		},
 		MaxRecordsPerBatch: batch.MaxBatchedRecords,
 		MaxRecordSize:      batch.MaxRecordSize,
-		IdleConnTimeout:    defaultIdleConnTimeout,
 	}
 }
 

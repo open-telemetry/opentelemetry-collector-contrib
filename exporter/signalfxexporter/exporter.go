@@ -38,36 +38,15 @@ type baseMetricsExporter struct {
 	consumer.Metrics
 }
 
-// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
-func (e *baseMetricsExporter) ExporterHelperBatchingEnabled() bool {
-	return batchingEnabled(e.Component)
-}
-
 // TODO: Find a place for this to be shared.
 type baseLogsExporter struct {
 	component.Component
 	consumer.Logs
 }
 
-// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
-func (e *baseLogsExporter) ExporterHelperBatchingEnabled() bool {
-	return batchingEnabled(e.Component)
-}
-
 type signalfMetadataExporter struct {
 	exporter.Metrics
 	exporter *signalfxExporter
-}
-
-// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
-func (sme *signalfMetadataExporter) ExporterHelperBatchingEnabled() bool {
-	return batchingEnabled(sme.Metrics)
-}
-
-// batchingEnabled reports whether c is an exporterhelper exporter with batching enabled.
-func batchingEnabled(c any) bool {
-	b, ok := c.(interface{ ExporterHelperBatchingEnabled() bool })
-	return ok && b.ExporterHelperBatchingEnabled()
 }
 
 func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
@@ -219,7 +198,7 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		version:                createSettings.BuildInfo.Version,
 		logger:                 createSettings.Logger,
 		telemetrySettings:      createSettings.TelemetrySettings,
-		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties, config.DimensionClient.StripK8sLabelPrefix),
+		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties),
 	}, nil
 }
 
@@ -330,26 +309,17 @@ func (se *signalfxExporter) processEntityEvents(logs plog.LogRecordSlice) error 
 	return nil
 }
 
-// deprecatedMetrics lists metrics excluded by default that are deprecated, along with what to use instead.
-var deprecatedMetrics = []struct {
-	name        string
-	replacement string
-}{
-	{"container_cpu_utilization", `"container.cpu.usage"`},
-	{"memory.total", `"system.memory.limit" (disabled by default in the hostmetrics receiver)`},
-	{"process.cpu_time_seconds", `"process.cpu.time" summed across the "user" and "system" states`},
-	{"system.disk.operations.total", `"system.disk.operations" summed across "device"`},
-	{"system.network.io.total", `"system.network.io" summed across "device"`},
-	{"system.network.packets.total", `"system.network.packets" (excluded by default) summed across "device"`},
-}
-
 // Log deprecation warning for any "include_metrics" entry that's deprecated on collector startup
 func (se *signalfxExporter) logDeprecatedMetricsWarnings() {
+	// Maps deprecated metric name to log message
+	deprecatedMetrics := make(map[string]string)
+	deprecatedMetrics["container_cpu_utilization"] = "The metric \"container_cpu_utilization\" has been deprecated and will " +
+		"be removed in a future release. Please use \"container.cpu.usage\" instead."
+
 	for _, include := range se.config.IncludeMetrics {
-		for _, deprecated := range deprecatedMetrics {
-			if deprecated.name == include.MetricName || slices.Contains(include.MetricNames, deprecated.name) {
-				se.logger.Warn(fmt.Sprintf("The metric %q has been deprecated and will be removed in a future release. "+
-					"Please use %s instead.", deprecated.name, deprecated.replacement))
+		for deprecatedMetric, deprecationWarning := range deprecatedMetrics {
+			if deprecatedMetric == include.MetricName || slices.Contains(include.MetricNames, deprecatedMetric) {
+				se.logger.Warn(deprecationWarning)
 			}
 		}
 	}

@@ -529,33 +529,6 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 		wantErrMessage  string
 	}{
 		{
-			name: "preserve zero threshold with tiny positive and negative buckets",
-			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
-				pt := pmetric.NewExponentialHistogramDataPoint()
-				pt.SetScale(0)
-				pt.SetCount(2)
-				pt.SetSum(0)
-				pt.SetZeroCount(0)
-				pt.SetZeroThreshold(0)
-				// At scale 0, bucket -432 has upper bound 2^-431, below 1e-128.
-				pt.Positive().SetOffset(-432)
-				pt.Positive().BucketCounts().FromRaw([]uint64{1})
-				pt.Negative().SetOffset(-432)
-				pt.Negative().BucketCounts().FromRaw([]uint64{1})
-				return pt
-			},
-			wantNativeHist: func() prompb.Histogram {
-				return prompb.Histogram{
-					Count:          &prompb.Histogram_CountInt{CountInt: 2},
-					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
-					PositiveSpans:  []prompb.BucketSpan{{Offset: -431, Length: 1}},
-					PositiveDeltas: []int64{1},
-					NegativeSpans:  []prompb.BucketSpan{{Offset: -431, Length: 1}},
-					NegativeDeltas: []int64{1},
-				}
-			},
-		},
-		{
 			name: "convert exp. to native histogram",
 			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
 				pt := pmetric.NewExponentialHistogramDataPoint()
@@ -579,7 +552,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Count:          &prompb.Histogram_CountInt{CountInt: 4},
 					Sum:            10.1,
 					Schema:         1,
-					ZeroThreshold:  0,
+					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{1, 0},
@@ -677,7 +650,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Count:          &prompb.Histogram_CountInt{CountInt: 6},
 					Sum:            10.1,
 					Schema:         8,
-					ZeroThreshold:  0,
+					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 3}},
 					PositiveDeltas: []int64{1, 0, 0}, // 1, 1, 1
@@ -709,7 +682,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Count:          &prompb.Histogram_CountInt{CountInt: 6},
 					Sum:            10.1,
 					Schema:         8,
-					ZeroThreshold:  0,
+					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					PositiveSpans:  []prompb.BucketSpan{{Offset: 1, Length: 2}},
 					PositiveDeltas: []int64{1, 1}, // 0+1, 1+1 = 1, 2
@@ -812,7 +785,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 7},
 								Schema:         1,
-								ZeroThreshold:  0,
+								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{4, -2},
@@ -820,7 +793,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 4},
 								Schema:         1,
-								ZeroThreshold:  0,
+								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 3}},
 								PositiveDeltas: []int64{4, -2, -1},
@@ -878,7 +851,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 7},
 								Schema:         1,
-								ZeroThreshold:  0,
+								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{4, -2},
@@ -894,7 +867,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 4},
 								Schema:         1,
-								ZeroThreshold:  0,
+								ZeroThreshold:  defaultZeroThreshold,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								NegativeSpans:  []prompb.BucketSpan{{Offset: 0, Length: 3}},
 								NegativeDeltas: []int64{4, -2, -1},

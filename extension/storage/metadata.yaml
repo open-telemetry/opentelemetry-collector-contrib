@@ -1,4 +1,4 @@
 status:
   codeowners:
-    active: [atoulme, swiatekm, VihasMakwana]
-    emeritus: [djaglowski, dmitryax]
+    active: [dmitryax, atoulme, swiatekm, VihasMakwana]
+    emeritus: [djaglowski]

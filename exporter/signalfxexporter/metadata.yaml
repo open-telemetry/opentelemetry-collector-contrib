@@ -12,8 +12,7 @@ status:
       date: "2026-05-29"
   distributions: [contrib]
   codeowners:
-    active: [crobert-1]
-    emeritus: [dmitryax]
+    active: [dmitryax, crobert-1]
 
 feature_gates:
   - id: exporter.signalfx.consumeEntityEvents

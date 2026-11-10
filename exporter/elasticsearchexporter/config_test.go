@@ -37,6 +37,11 @@ func TestConfig(t *testing.T) {
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
 	defaultLogstashFormatCfg.(*Config).Retry.RetryOnDocumentStatus = defaultLogstashFormatCfg.(*Config).Retry.RetryOnStatus
 
+	defaultRawCfg := createDefaultConfig()
+	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
+
 	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
@@ -67,7 +72,16 @@ func TestConfig(t *testing.T) {
 				Endpoints: []string{
 					"https://elastic.example.com:9200",
 				},
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
 				TracesIndex: "trace_index",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
@@ -110,6 +124,7 @@ func TestConfig(t *testing.T) {
 					},
 				},
 				Mapping: MappingsSettings{
+					Mode: "otel",
 					AllowedModes: []string{
 						"bodymap",
 						"ecs",
@@ -148,6 +163,15 @@ func TestConfig(t *testing.T) {
 				}()),
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
@@ -183,6 +207,7 @@ func TestConfig(t *testing.T) {
 					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
+					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -213,8 +238,17 @@ func TestConfig(t *testing.T) {
 					batch.MaxSize = 5000000
 					return qs
 				}()),
-				Endpoints:    []string{"http://localhost:9200"},
+				Endpoints: []string{"http://localhost:9200"},
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
 				MetricsIndex: "my_metric_index",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
@@ -250,6 +284,7 @@ func TestConfig(t *testing.T) {
 					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
+					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -269,6 +304,11 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
 			configFile: "config.yaml",
 			expected:   defaultLogstashFormatCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "raw"),
+			configFile: "config.yaml",
+			expected:   defaultRawCfg,
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "cloudid"),
@@ -486,6 +526,14 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.ClientConfig.Compression = configcompression.TypeSnappy
 			}),
 			err: `compression must be one of [none, gzip]`,
+		},
+		"both max_retries and max_requests specified": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Retry.MaxRetries = 1
+				cfg.Retry.MaxRequests = 1
+			}),
+			err: `must not specify both retry::max_requests and retry::max_retries`,
 		},
 		"duplicate metadata_keys specified": {
 			config: withDefaultConfig(func(cfg *Config) {

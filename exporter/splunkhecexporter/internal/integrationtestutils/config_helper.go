@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 var configFilePath = "./testdata/integration_tests_config.yaml"

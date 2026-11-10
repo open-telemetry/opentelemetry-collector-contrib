@@ -85,9 +85,3 @@ type wrapMetricsExporter struct {
 	exporter.Metrics
 	exporter *prometheusExporter
 }
-
-// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
-func (e *wrapMetricsExporter) ExporterHelperBatchingEnabled() bool {
-	b, ok := e.Metrics.(interface{ ExporterHelperBatchingEnabled() bool })
-	return ok && b.ExporterHelperBatchingEnabled()
-}

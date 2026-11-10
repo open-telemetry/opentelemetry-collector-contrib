@@ -72,8 +72,7 @@ func TestQueryContents(t *testing.T) {
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
-			// Without a database filter the placeholders render to nothing.
-			actual := databaseFilter{}.apply(tt.getQuery())
+			actual := tt.getQuery()
 			require.Equal(t, expected, actual)
 		})
 	}
@@ -102,7 +101,8 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expected, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
 			require.NoError(t, err)
-			actual := databaseFilter{}.apply(tt.getQuery())
+			actual := tt.getQuery()
+			require.NoError(t, err)
 			require.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(actual))
 		})
 	}
@@ -131,7 +131,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			require.NoError(t, err)
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-			actual := strings.ReplaceAll(databaseFilter{}.apply(tt.getQuery()), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}

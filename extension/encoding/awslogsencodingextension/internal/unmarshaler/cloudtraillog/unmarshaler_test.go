@@ -438,7 +438,7 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 		wantMethod     string
 	}{
 		{
-			name:           "neither gate enabled: only v0 attributes",
+			name:           "default: only v0 attributes",
 			wantSystem:     true,
 			wantService:    true,
 			wantSystemName: false,
@@ -463,16 +463,14 @@ func TestRPCAttributeFeatureGates(t *testing.T) {
 		},
 	}
 
-	origEmitV1 := metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.IsEnabled()
-	origDontEmitV0 := metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.IsEnabled()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			registry := featuregate.GlobalRegistry()
 			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), tt.emitV1))
 			require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), tt.dontEmitV0))
 			t.Cleanup(func() {
-				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), origEmitV1))
-				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), origDontEmitV0))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), true))
+				require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
 			})
 
 			u := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test"}, false)

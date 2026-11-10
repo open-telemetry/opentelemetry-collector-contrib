@@ -127,7 +127,7 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern, replacement o
 			if err != nil {
 				return nil, err
 			}
-			if compiledPattern.matchString(cp, originalValStr) {
+			if cp.MatchString(originalValStr) {
 				if !fn.IsEmpty() {
 					var updatedString string
 					updatedString, err = applyOptReplaceFunction[K](ctx, tCtx, cp, fn, originalValStr, replacementVal, replacementFormat)

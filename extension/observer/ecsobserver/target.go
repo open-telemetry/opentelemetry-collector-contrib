@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 // target.go defines labels and structs in exported target.

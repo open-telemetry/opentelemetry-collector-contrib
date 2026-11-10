@@ -75,7 +75,6 @@ func NewFranzSyncProducer(
 		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
 		kgo.BrokerMaxWriteBytes(int32(cfg.MaxBrokerWriteBytes)),
 		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
-		kgo.MaxProduceRequestsInflightPerBroker(cfg.MaxInflightRequestsPerBroker),
 	)...)
 	if err != nil {
 		return nil, err

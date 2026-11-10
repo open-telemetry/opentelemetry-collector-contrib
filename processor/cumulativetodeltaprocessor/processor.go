@@ -68,18 +68,10 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger, telemetry
 		telemetry:  telemetry,
 	}
 	if len(config.Include.Metrics) > 0 {
-		includeFS, err := filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
-		if err != nil {
-			return nil, fmt.Errorf("invalid include filter: %w", err)
-		}
-		p.includeFS = includeFS
+		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
 	}
 	if len(config.Exclude.Metrics) > 0 {
-		excludeFS, err := filterset.CreateFilterSet(config.Exclude.Metrics, &config.Exclude.Config)
-		if err != nil {
-			return nil, fmt.Errorf("invalid exclude filter: %w", err)
-		}
-		p.excludeFS = excludeFS
+		p.excludeFS, _ = filterset.CreateFilterSet(config.Exclude.Metrics, &config.Exclude.Config)
 	}
 
 	if len(config.Include.MetricTypes) > 0 {

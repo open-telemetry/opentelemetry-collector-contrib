@@ -12,8 +12,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dloucasfx]
-    emeritus: [dmitryax]
+    active: [dmitryax]
 
 resource_attributes:
   kafka.cluster.alias:

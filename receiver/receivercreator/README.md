@@ -10,8 +10,8 @@ This receiver can instantiate other receivers at runtime based on whether observ
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Freceivercreator%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Freceivercreator) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Freceivercreator%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Freceivercreator) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_receivercreator)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_receivercreator&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ChrsMark](https://www.github.com/ChrsMark), [@pjanotti](https://www.github.com/pjanotti), [@jinja2](https://www.github.com/jinja2) |
-| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@ChrsMark](https://www.github.com/ChrsMark) |
+| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -180,7 +180,7 @@ Similar to the per-endpoint type `resource_attributes` described above but for i
 
 ## Rule Expressions
 
-Each rule must start with `type == <endpoint_type> &&` such that the rule matches
+Each rule must start with `type == ("pod"|"port"|"pod.container"|"hostport"|"container"|"k8s.service"|"k8s.node"|"k8s.ingress") &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 

@@ -5,6 +5,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"strconv"
 	"sync"
@@ -31,17 +32,19 @@ func (prwe *prwExporter) pushMetricsV2(ctx context.Context, md pmetric.Metrics) 
 }
 
 // exportV2 sends a Snappy-compressed writev2.Request containing writev2.TimeSeries to a remote write endpoint.
-// input is a channel filled and closed by queueRequests.
-func (prwe *prwExporter) exportV2(ctx context.Context, input chan *writev2.Request) error {
+func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Request) error {
 	ctx, cancel := prwe.exportContext(ctx)
 	defer cancel()
 
-	// queueRequests sizes the channel for the requests.
-	total := cap(input)
+	input := make(chan *writev2.Request, len(requests))
+	for _, request := range requests {
+		input <- request
+	}
+	close(input)
 
 	var wg sync.WaitGroup
 
-	concurrencyLimit := min(prwe.concurrency, total)
+	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	var mu sync.Mutex
@@ -61,11 +64,13 @@ func (prwe *prwExporter) exportV2(ctx context.Context, input chan *writev2.Reque
 	}
 	wg.Wait()
 
-	return appendUnsentRequestsError(ctx, errs, len(input), total)
+	return appendUnsentRequestsError(ctx, errs, len(input), len(requests))
 }
 
 func (prwe *prwExporter) handleRequestsV2(ctx context.Context, input chan *writev2.Request) error {
 	var errs error
+	buf := bufferPool.Get().(*buffer)
+	defer bufferPool.Put(buf)
 	for {
 		// Stop as soon as the context is done. The input channel is closed once it was filled, so
 		// receiving from it never blocks.
@@ -77,7 +82,7 @@ func (prwe *prwExporter) handleRequestsV2(ctx context.Context, input chan *write
 			return errs
 		}
 
-		reqBuf, errMarshal := encodeRequest(request)
+		reqBuf, errMarshal := buf.MarshalAndEncode(request)
 		if errMarshal != nil {
 			return multierr.Append(errs, errMarshal)
 		}
@@ -103,8 +108,7 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 
 	// TODO implement WAl support, can be done after #15277 is fixed
 
-	// See export.
-	return prwe.exportV2(ctx, queueRequests(requests))
+	return prwe.exportV2(ctx, requests)
 }
 
 func (prwe *prwExporter) handleHeader(ctx context.Context, resp *http.Response, headerName, metricType string, recordFunc func(context.Context, int64)) {

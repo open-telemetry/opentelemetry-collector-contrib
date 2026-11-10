@@ -21,18 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-type ipResolver interface {
-	GetHostFromIP(ip string) string
-	Stop()
-}
-
 // Input is an operator that listens to a socket for log entries.
 type Input struct {
 	buffer []byte
 	helper.InputOperator
 	address                    *net.UDPAddr
 	addAttributes              bool
-	resolveNames               bool
 	useStableNetworkAttributes bool
 	OneLogPerPacket            bool
 	AsyncConfig                *AsyncConfig
@@ -44,7 +38,7 @@ type Input struct {
 
 	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
-	resolver  ipResolver
+	resolver  *helper.IPResolver
 
 	messageQueue   chan messageAndAddress
 	readBufferPool sync.Pool
@@ -214,18 +208,14 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *enc
 				ip := addr.IP.String()
 				entry.AddAttribute(string(conventions.NetworkLocalAddressKey), ip)
 				entry.AddAttribute(string(conventions.ServerPortKey), strconv.FormatInt(int64(addr.Port), 10))
-				if i.resolveNames && i.resolver != nil {
-					entry.AddAttribute(string(conventions.ServerAddressKey), i.resolver.GetHostFromIP(ip))
-				}
+				entry.AddAttribute(string(conventions.ServerAddressKey), i.resolver.GetHostFromIP(ip))
 			}
 
 			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
 				ip := addr.IP.String()
 				entry.AddAttribute(string(conventions.NetworkPeerAddressKey), ip)
 				entry.AddAttribute(string(conventions.ClientPortKey), strconv.FormatInt(int64(addr.Port), 10))
-				if i.resolveNames && i.resolver != nil {
-					entry.AddAttribute(string(conventions.ClientAddressKey), i.resolver.GetHostFromIP(ip))
-				}
+				entry.AddAttribute(string(conventions.ClientAddressKey), i.resolver.GetHostFromIP(ip))
 			}
 		} else {
 			entry.AddAttribute("net.transport", "IP.UDP")
@@ -233,18 +223,14 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *enc
 				ip := addr.IP.String()
 				entry.AddAttribute("net.host.ip", addr.IP.String())
 				entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-				if i.resolveNames && i.resolver != nil {
-					entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
-				}
+				entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
 			}
 
 			if addr, ok := remoteAddr.(*net.UDPAddr); ok {
 				ip := addr.IP.String()
 				entry.AddAttribute("net.peer.ip", ip)
 				entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-				if i.resolveNames && i.resolver != nil {
-					entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
-				}
+				entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
 			}
 		}
 	}

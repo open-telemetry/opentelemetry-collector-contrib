@@ -42,7 +42,8 @@ var (
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
 
 	notUsefulLabelsOther = sortString([]string{
-		model.MetricNameLabel, model.InstanceLabel, model.JobLabel,
+		model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel,
+		model.MetricsPathLabel, model.JobLabel,
 	})
 	notUsefulLabelsHistogram = sortString(append(notUsefulLabelsOther, model.BucketLabel))
 	notUsefulLabelsSummary   = sortString(append(notUsefulLabelsOther, model.QuantileLabel))

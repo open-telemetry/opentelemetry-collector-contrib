@@ -11,8 +11,7 @@ status:
     alpha: [extension]
   distributions: [contrib, k8s]
   codeowners:
-    active: [rakesh-garimella, jinja2]
-    emeritus: [dmitryax]
+    active: [dmitryax, rakesh-garimella]
 
 tests:
   config:

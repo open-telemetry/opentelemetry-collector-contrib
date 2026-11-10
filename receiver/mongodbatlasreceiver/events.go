@@ -58,7 +58,7 @@ type eventRecord struct {
 }
 
 func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) (*eventsReceiver, error) {
-	client, err := internal.NewMongoDBAtlasClient(c.BaseURL, c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger, settings.BuildInfo)
+	client, err := internal.NewMongoDBAtlasClient(c.BaseURL, c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MongoDB Atlas client for events receiver: %w", err)
 	}

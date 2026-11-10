@@ -1,4 +1,4 @@
-azure_data_explorer:
+azuredataexplorer:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # Client ID
@@ -17,7 +17,7 @@ azure_data_explorer:
   traces_table_name: "OTELTraces"
   # type of ingestion managed or queued
   ingestion_type: "managed"
-azure_data_explorer/2:
+azuredataexplorer/2:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # Client ID
@@ -37,7 +37,7 @@ azure_data_explorer/2:
   # type of ingestion managed or queued
   ingestion_type: ""
 # Additional config for error tests
-azure_data_explorer/3:
+azuredataexplorer/3:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # Client ID
@@ -56,7 +56,7 @@ azure_data_explorer/3:
   traces_table_name: "OTELTraces"
   # type of ingestion is invalid
   ingestion_type: "streaming"
-azure_data_explorer/4:
+azuredataexplorer/4:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # managed identity id
@@ -71,7 +71,7 @@ azure_data_explorer/4:
   traces_table_name: "OTELTraces"
   # type of ingestion managed or queued
   ingestion_type: "managed"
-azure_data_explorer/5:
+azuredataexplorer/5:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # managed identity id
@@ -86,7 +86,7 @@ azure_data_explorer/5:
   traces_table_name: "OTELTraces"
   # type of ingestion managed or queued
   ingestion_type: "managed"
-azure_data_explorer/6:
+azuredataexplorer/6:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # managed identity id
@@ -101,7 +101,7 @@ azure_data_explorer/6:
   traces_table_name: "OTELTraces"
   # type of ingestion managed or queued
   ingestion_type: "managed"
-azure_data_explorer/7:
+azuredataexplorer/7:
   # Kusto cluster uri
   cluster_uri: ""
   # managed identity id
@@ -116,7 +116,7 @@ azure_data_explorer/7:
   traces_table_name: "OTELTraces"
   # type of ingestion managed or queued
   ingestion_type: "managed"  
-azure_data_explorer/8:
+azuredataexplorer/8:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # Client ID
@@ -146,7 +146,7 @@ azure_data_explorer/8:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
-azure_data_explorer/9:
+azuredataexplorer/9:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # weather to use the default azure auth

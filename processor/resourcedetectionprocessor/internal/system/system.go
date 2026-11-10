@@ -46,9 +46,6 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, _ bool) (in
 	if len(cfg.HostnameSources) == 0 {
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
-	if cfg.deprecatedOSBuildID.Enabled {
-		p.Logger.Warn("the os.build.id resource attribute is deprecated, use os.build_id instead")
-	}
 
 	return &Detector{
 		provider: system.NewProvider(),
@@ -162,10 +159,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 					d.logger.Warn("failed to get OS name", zap.Error(err2))
 				}
 			}
-			var osBuildID string
-			if d.cfg.ResourceAttributes.OsBuildID.Enabled || d.cfg.deprecatedOSBuildID.Enabled {
-				var err2 error
-				if osBuildID, err2 = d.provider.OSBuildID(ctx); err2 == nil {
+			if d.cfg.ResourceAttributes.OsBuildID.Enabled {
+				if osBuildID, err2 := d.provider.OSBuildID(ctx); err2 == nil {
 					d.rb.SetOsBuildID(osBuildID)
 				} else {
 					d.logger.Warn("failed to get OS build id", zap.Error(err2))
@@ -174,11 +169,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			if len(cpuInfo) > 0 {
 				setHostCPUInfo(d, cpuInfo[0])
 			}
-			res := d.rb.Emit()
-			if d.cfg.deprecatedOSBuildID.Enabled && osBuildID != "" {
-				res.Attributes().PutStr("os.build.id", osBuildID)
-			}
-			return res, conventions.SchemaURL, nil
+			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
 	}

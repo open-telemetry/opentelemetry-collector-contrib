@@ -70,7 +70,7 @@ func TestCreateProcessors(t *testing.T) {
 				consumertest.NewNop(),
 			)
 
-			if strings.Contains(k, "invalid") || strings.HasSuffix(k, "missing_match_type") {
+			if strings.Contains(k, "invalid") {
 				assert.Error(t, mErr)
 				assert.Nil(t, mp)
 				return

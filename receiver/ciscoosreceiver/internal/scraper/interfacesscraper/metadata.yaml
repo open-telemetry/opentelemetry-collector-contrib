@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [etserend]
+    active: []
 
 resource_attributes:
   host.ip:

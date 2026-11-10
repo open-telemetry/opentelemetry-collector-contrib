@@ -7,10 +7,8 @@ status:
     development: [profiles]
     beta: [traces, metrics, logs]
   distributions: [core, contrib, k8s]
-  warnings: [Identity Conflict]
   codeowners:
-    active: [jinja2, jkoronaAtCisco]
-    emeritus: [dmitryax]
+    active: [dmitryax]
 
 tests:
   config:

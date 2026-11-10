@@ -2,5 +2,4 @@ status:
   disable_codecov_badge: true
   class: pkg
   codeowners:
-    active: [atoulme]
-    emeritus: [dmitryax]
+    active: [atoulme, dmitryax]

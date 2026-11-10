@@ -120,9 +120,6 @@ type DecoderOptions struct {
 	Offset     int64
 }
 
-// NewDecoderOptions applies [DecoderOption] values to the defaults for streaming
-// decoders created by [LogsDecoderFactory] and [MetricsDecoderFactory].
-// For message decoder extensions, use [NewDecodeConfig].
 func NewDecoderOptions(opts ...DecoderOption) DecoderOptions {
 	options := DecoderOptions{
 		FlushBytes: defaultFlushBytes,
@@ -136,9 +133,7 @@ func NewDecoderOptions(opts ...DecoderOption) DecoderOptions {
 	return options
 }
 
-// DecoderOption configures streaming decoders created by [LogsDecoderFactory]
-// and [MetricsDecoderFactory]. Streaming factories apply these options with [NewDecoderOptions].
-// For message decoder extension interfaces, use [MessageDecodeOption].
+// DecoderOption defines the functional option for DecoderOptions.
 type DecoderOption func(*DecoderOptions)
 
 // WithFlushBytes sets the number of bytes after stream decoder should flush.

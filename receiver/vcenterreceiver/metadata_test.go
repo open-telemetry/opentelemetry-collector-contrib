@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 // TestVSANMetricsFromMetadata ensures hasEnabledVSANMetrics() covers all vSAN metrics

@@ -12,14 +12,12 @@ import (
 )
 
 type EntityEventTransformer struct {
-	defaultProperties   map[string]string
-	stripK8sLabelPrefix bool
+	defaultProperties map[string]string
 }
 
-func NewEntityEventTransformer(defaultProperties map[string]string, stripK8sLabelPrefix bool) *EntityEventTransformer {
+func NewEntityEventTransformer(defaultProperties map[string]string) *EntityEventTransformer {
 	return &EntityEventTransformer{
-		defaultProperties:   defaultProperties,
-		stripK8sLabelPrefix: stripK8sLabelPrefix,
+		defaultProperties: defaultProperties,
 	}
 }
 
@@ -37,8 +35,7 @@ func (t *EntityEventTransformer) TransformEntityEvent(event metadata.EntityEvent
 		return nil, err
 	}
 
-	skipSanitization := resourceIDsSkipSanitization[dimKey]
-	properties, tags := t.extractPropertiesAndTags(state.Attributes(), skipSanitization)
+	properties, tags := t.extractPropertiesAndTags(state.Attributes())
 
 	return &DimensionUpdate{
 		Name:       dimKey,
@@ -49,7 +46,7 @@ func (t *EntityEventTransformer) TransformEntityEvent(event metadata.EntityEvent
 	}, nil
 }
 
-func (t *EntityEventTransformer) extractPropertiesAndTags(attrs pcommon.Map, skipSanitization bool) (map[string]*string, map[string]bool) {
+func (t *EntityEventTransformer) extractPropertiesAndTags(attrs pcommon.Map) (map[string]*string, map[string]bool) {
 	properties := make(map[string]*string)
 	tags := make(map[string]bool)
 
@@ -62,21 +59,13 @@ func (t *EntityEventTransformer) extractPropertiesAndTags(attrs pcommon.Map, ski
 			return true
 		}
 
-		key := k
-		if !skipSanitization {
-			key = sanitizeProperty(k, t.stripK8sLabelPrefix)
-			if key == "" {
-				return true
-			}
-		}
-
 		valueStr := v.AsString()
 
 		if valueStr == "" {
-			tags[key] = true
+			tags[k] = true
 		} else {
 			propVal := valueStr
-			properties[key] = &propVal
+			properties[k] = &propVal
 		}
 
 		return true

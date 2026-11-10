@@ -1,4 +1,4 @@
 status:
   codeowners:
-    active: [jinja2, pjanotti]
-    emeritus: [rmfitzpatrick, dmitryax]
+    active: [dmitryax]
+    emeritus: [rmfitzpatrick]

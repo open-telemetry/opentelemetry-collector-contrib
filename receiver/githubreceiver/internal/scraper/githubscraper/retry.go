@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff/v7"
+	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
 

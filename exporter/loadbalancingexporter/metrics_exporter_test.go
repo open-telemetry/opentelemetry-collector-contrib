@@ -27,10 +27,9 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -227,7 +226,9 @@ func expectedMetricsByEndpoint(t *testing.T, md pmetric.Metrics, routingKey stri
 	var batches map[string]pmetric.Metrics
 	switch routingKey {
 	case svcRoutingStr:
-		batches = splitMetricsByResourceServiceName(md)
+		var errs []error
+		batches, errs = splitMetricsByResourceServiceName(md)
+		require.Empty(t, errs)
 	case resourceRoutingStr:
 		batches = splitMetricsByResourceID(md)
 	case metricNameRoutingStr:
@@ -268,32 +269,21 @@ func TestSplitMetricsByResourceServiceName(t *testing.T) {
 
 			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
 
-			output := splitMetricsByResourceServiceName(input)
+			output, errs := splitMetricsByResourceServiceName(input)
+			require.Nil(t, errs)
 			compareMetricsMaps(t, expectedOutput, output)
 		})
 	}
 }
 
-func TestSplitMetricsByResourceServiceNameMissingServiceName(t *testing.T) {
+func TestSplitMetricsByResourceServiceNameFailsIfMissingServiceNameAttribute(t *testing.T) {
 	t.Parallel()
 
 	input, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "split_metrics", "missing_service_name", "input.yaml"))
 	require.NoError(t, err)
 
-	output := splitMetricsByResourceServiceName(input)
-	require.Len(t, output, 1)
-	for key, batch := range output {
-		require.Equal(t, identity.OfResource(input.ResourceMetrics().At(0).Resource()).String(), key)
-		require.Equal(t, 1, batch.ResourceMetrics().Len())
-	}
-
-	// An empty service name is treated as missing.
-	input.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.name", "")
-	output = splitMetricsByResourceServiceName(input)
-	require.Len(t, output, 1)
-	for key := range output {
-		require.NotEmpty(t, key)
-	}
+	_, errs := splitMetricsByResourceServiceName(input)
+	require.NotNil(t, errs)
 }
 
 func TestSplitMetrics(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 // The decimal-place count is part of the key, so it is matched by prefix.

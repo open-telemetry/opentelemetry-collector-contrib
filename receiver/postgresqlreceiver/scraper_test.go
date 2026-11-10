@@ -22,9 +22,9 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -711,7 +711,6 @@ var querySampleColumns = []string{
 	querySampleColumnQueryID,
 	querySampleColumnPID,
 	querySampleColumnApplicationName,
-	querySampleColumnBackendType,
 	querySampleColumnQueryStartTimestamp,
 	querySampleColumnState,
 	querySampleColumnQuery,
@@ -791,7 +790,6 @@ func TestScrapeQuerySample(t *testing.T) {
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",
-		querySampleColumnBackendType:          "client backend",
 		querySampleColumnQueryStartTimestamp:  "123445.123",
 		querySampleColumnState:                "idle",
 		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
@@ -839,7 +837,6 @@ func TestScrapeQuerySampleSemconv(t *testing.T) {
 		querySampleColumnQueryID:              "123131231231",
 		querySampleColumnPID:                  "1450",
 		querySampleColumnApplicationName:      "receiver",
-		querySampleColumnBackendType:          "client backend",
 		querySampleColumnQueryStartTimestamp:  "123445.123",
 		querySampleColumnState:                "idle",
 		querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
@@ -2275,7 +2272,7 @@ func TestStart_VersionDetectionConnectFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
-	assert.Empty(t, scraper.dbVersion)
+	assert.Equal(t, "", scraper.dbVersion)
 	assert.Equal(t, 1, logs.FilterMessage("failed to connect for version detection. db.system.version will not be set").Len())
 }
 
@@ -2295,7 +2292,7 @@ func TestStart_VersionDetectionQueryFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
-	assert.Empty(t, scraper.dbVersion)
+	assert.Equal(t, "", scraper.dbVersion)
 	assert.Equal(t, 1, logs.FilterMessage("failed to detect PostgreSQL version. db.system.version will not be set").Len())
 	factory.AssertExpectations(t)
 	versionClient.AssertExpectations(t)

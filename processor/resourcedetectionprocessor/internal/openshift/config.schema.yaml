@@ -11,4 +11,4 @@ properties:
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
   token:
     description: Token is used to identify against the openshift api server
-    $ref: go.opentelemetry.io/collector/config/configopaque.string
+    type: string

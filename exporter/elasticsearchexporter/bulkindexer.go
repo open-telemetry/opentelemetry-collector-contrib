@@ -413,25 +413,24 @@ func flushBulkIndexer(
 		}
 
 		// Log failed docs
-		// Build a fresh slice per document so fields do not accumulate across docs.
-		docFields := slices.Concat(fields, []zap.Field{
+		fields = append(fields,
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
 			zap.Int("http.response.status_code", resp.Status),
-		})
+		)
 
 		if getErrorHintFunc != nil {
 			if hint := getErrorHintFunc(resp.Index, resp.Error.Type); hint != "" {
-				docFields = append(docFields, zap.String("hint", hint))
+				fields = append(fields, zap.String("hint", hint))
 			}
 		}
-		logger.Error("failed to index document", docFields...)
+		logger.Error("failed to index document", fields...)
 
 		if resp.Input != "" {
-			docFields = append(docFields, zap.String("input", resp.Input))
+			fields = append(fields, zap.String("input", resp.Input))
 		}
-		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", docFields...)
+		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
 	}
 	addIndexedAndFailureStoreDocs := func(index string, indexed int64, failureStore docappender.FailureStoreDocsStat) {
 		addDocsProcessed(indexed, index,

@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_query
+
+note: Support Microsoft Entra authentication for Azure SQL and Azure Database for PostgreSQL, including managed identities.
+
+issues: [50294]
+
+subtext:
+
+change_logs: [user]
