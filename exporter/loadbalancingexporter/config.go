@@ -141,15 +141,6 @@ type AWSCloudMapResolver struct {
 	OwnerAccount  *string                  `mapstructure:"owner_account"`
 }
 
-// selectedProtocol returns the protocol to use for backend connections.
-// If neither is explicitly configured, defaults to OTLP/gRPC for backward compatibility.
-func (c *Config) selectedProtocol() string {
-	if c.Protocol.OTLPHTTP.HasValue() {
-		return "otlp_http"
-	}
-	return "otlp"
-}
-
 // defaultPort returns the default port for the selected protocol.
 func (c *Config) defaultPort() string {
 	if c.Protocol.OTLPHTTP.HasValue() {

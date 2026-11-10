@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
@@ -35,8 +36,8 @@ func TestHTTPMetricsHTTPS(t *testing.T) {
 	err := cfg.Validate()
 	require.NoError(t, err)
 
-	// Verify the selected protocol is HTTP
-	require.Equal(t, "otlp_http", cfg.selectedProtocol())
+	// Verify the protocol is HTTP
+	require.True(t, cfg.Protocol.OTLPHTTP.HasValue())
 	require.Equal(t, defaultHTTPPort, cfg.defaultPort())
 }
 
@@ -131,7 +132,8 @@ func TestSelectedProtocol(t *testing.T) {
 				}),
 			},
 		}
-		require.Equal(t, "otlp", cfg.selectedProtocol())
+		require.True(t, cfg.Protocol.OTLP.HasValue())
+		require.False(t, cfg.Protocol.OTLPHTTP.HasValue())
 		require.Equal(t, defaultGRPCPort, cfg.defaultPort())
 	})
 
@@ -145,7 +147,7 @@ func TestSelectedProtocol(t *testing.T) {
 				}),
 			},
 		}
-		require.Equal(t, "otlp_http", cfg.selectedProtocol())
+		require.True(t, cfg.Protocol.OTLPHTTP.HasValue())
 		require.Equal(t, defaultHTTPPort, cfg.defaultPort())
 	})
 
@@ -156,7 +158,7 @@ func TestSelectedProtocol(t *testing.T) {
 				OTLPHTTP: configoptional.None[otlphttpexporter.Config](),
 			},
 		}
-		require.Equal(t, "otlp", cfg.selectedProtocol())
+		require.False(t, cfg.Protocol.OTLPHTTP.HasValue())
 		require.Equal(t, defaultGRPCPort, cfg.defaultPort())
 	})
 }
@@ -207,5 +209,74 @@ func TestHTTPEncodingDefaults(t *testing.T) {
 		httpCfg, err := buildHTTPExporterConfig(cfg, "backend:4318")
 		require.NoError(t, err)
 		require.Equal(t, otlphttpexporter.EncodingJSON, httpCfg.Encoding)
+	})
+}
+
+func TestHTTPConfigIsolation(t *testing.T) {
+	cfg := &Config{
+		Protocol: Protocol{
+			OTLPHTTP: configoptional.Some(otlphttpexporter.Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "http://placeholder:4318/v1/metrics",
+				},
+			}),
+		},
+	}
+
+	// Build config for first backend
+	cfg1, err := buildHTTPExporterConfig(cfg, "backend1:4318")
+	require.NoError(t, err)
+	require.Equal(t, "http://backend1:4318/v1/metrics", cfg1.ClientConfig.Endpoint)
+
+	// Build config for second backend
+	cfg2, err := buildHTTPExporterConfig(cfg, "backend2:4318")
+	require.NoError(t, err)
+	require.Equal(t, "http://backend2:4318/v1/metrics", cfg2.ClientConfig.Endpoint)
+
+	// Verify they are different pointers
+	require.NotSame(t, cfg1, cfg2)
+
+	// Verify original config was not mutated
+	originalEndpoint := cfg.Protocol.OTLPHTTP.Get().ClientConfig.Endpoint
+	require.Equal(t, "http://placeholder:4318/v1/metrics", originalEndpoint)
+}
+
+func TestOTLPDefaultInheritance(t *testing.T) {
+	// Test that OTLP configuration builder produces a valid config
+	// Note: This test uses configoptional.Some, so manually constructed values are used directly
+	// Real default inheritance happens through YAML unmarshaling with configoptional.Default
+	cfg := &Config{
+		Protocol: Protocol{
+			OTLP: configoptional.Some(otlpexporter.Config{
+				ClientConfig: configgrpc.ClientConfig{
+					Endpoint: "localhost:4317",
+				},
+			}),
+		},
+	}
+
+	// Get the config through the builder
+	result := buildExporterConfig(cfg, "backend:4317")
+
+	// Verify the endpoint was set correctly
+	require.Equal(t, "backend:4317", result.ClientConfig.Endpoint)
+}
+
+func TestRetryConfigurationSemantics(t *testing.T) {
+	// Test that explicit retry configuration is preserved
+	t.Run("explicitly disable retry", func(t *testing.T) {
+		cfg := &Config{
+			Protocol: Protocol{
+				OTLP: configoptional.Some(otlpexporter.Config{
+					RetryConfig: configretry.BackOffConfig{
+						Enabled: false,
+					},
+				}),
+			},
+		}
+
+		result := buildExporterConfig(cfg, "backend:4317")
+		// Explicit false should be preserved
+		require.False(t, result.RetryConfig.Enabled)
 	})
 }
