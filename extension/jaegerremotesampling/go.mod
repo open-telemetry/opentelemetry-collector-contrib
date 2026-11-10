@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/jaegertracing/jaeger-idl v0.14.0
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componentstatus v0.165.0
