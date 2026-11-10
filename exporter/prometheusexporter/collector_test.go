@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/prometheus/otlptranslator"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1022,11 +1023,39 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 					require.InDelta(t, tt.wantSum, h.GetSampleSum(), 1e-12)
 					require.Equal(t, tt.wantSchema, h.GetSchema())
 					require.Equal(t, tt.wantZeroCount, h.GetZeroCount())
+					requireNoZeroBucketOverlap(t, h)
 					require.InDelta(t, tt.wantZeroThresh, h.GetZeroThreshold(), 0)
 				}
 				require.Equal(t, 1, n)
 			})
 		}
+	}
+}
+
+// requireNoZeroBucketOverlap checks that no populated bucket overlaps the zero bucket.
+func requireNoZeroBucketOverlap(t *testing.T, h *io_prometheus_client.Histogram) {
+	toSpans := func(spans []*io_prometheus_client.BucketSpan) []histogram.Span {
+		out := make([]histogram.Span, 0, len(spans))
+		for _, s := range spans {
+			out = append(out, histogram.Span{Offset: s.GetOffset(), Length: s.GetLength()})
+		}
+		return out
+	}
+	nh := &histogram.Histogram{
+		Schema:          h.GetSchema(),
+		ZeroThreshold:   h.GetZeroThreshold(),
+		PositiveSpans:   toSpans(h.GetPositiveSpan()),
+		PositiveBuckets: h.GetPositiveDelta(),
+		NegativeSpans:   toSpans(h.GetNegativeSpan()),
+		NegativeBuckets: h.GetNegativeDelta(),
+	}
+	for it := nh.PositiveBucketIterator(); it.Next(); {
+		b := it.At()
+		require.GreaterOrEqualf(t, b.Lower, nh.ZeroThreshold, "positive bucket %s overlaps the zero bucket with threshold %g", b.String(), nh.ZeroThreshold)
+	}
+	for it := nh.NegativeBucketIterator(); it.Next(); {
+		b := it.At()
+		require.LessOrEqualf(t, b.Upper, -nh.ZeroThreshold, "negative bucket %s overlaps the zero bucket with threshold %g", b.String(), nh.ZeroThreshold)
 	}
 }
 
@@ -1325,6 +1354,7 @@ func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
 			out := &io_prometheus_client.Metric{}
 			require.NoError(t, m.Write(out))
 			h := out.GetHistogram()
+			requireNoZeroBucketOverlap(t, h)
 			require.Equal(t, tt.threshold, h.GetZeroThreshold())
 			require.Equal(t, uint64(3), h.GetSampleCount())
 			require.Equal(t, uint64(1), h.GetZeroCount())
