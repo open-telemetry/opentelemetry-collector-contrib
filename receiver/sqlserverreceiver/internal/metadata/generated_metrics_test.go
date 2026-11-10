@@ -145,7 +145,7 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordSqlserverBatchCompilationUtilizationDataPoint(ts, 1)
+			mb.RecordSqlserverBatchCompilationRatioDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
@@ -478,7 +478,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverPageSplitUtilizationDataPoint(ts, 1)
+			mb.RecordSqlserverPageSplitRatioDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverParameterizationRateDataPoint(ts, 1, AttributeSqlserverParameterizationResultAutoAttempted)
@@ -891,13 +891,13 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("sqlserver.replica.name")
 						assert.False(t, ok)
 					}
-				case "sqlserver.batch.compilation.utilization":
-					assert.False(t, validatedMetrics["sqlserver.batch.compilation.utilization"], "Found a duplicate in the metrics slice: sqlserver.batch.compilation.utilization")
-					validatedMetrics["sqlserver.batch.compilation.utilization"] = true
+				case "sqlserver.batch.compilation.ratio":
+					assert.False(t, validatedMetrics["sqlserver.batch.compilation.ratio"], "Found a duplicate in the metrics slice: sqlserver.batch.compilation.ratio")
+					validatedMetrics["sqlserver.batch.compilation.ratio"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of SQL compilations per batch request.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
+					assert.Equal(t, "Ratio of SQL compilations to batch requests, expressed as a percentage.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -2542,13 +2542,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.page.split.utilization":
-					assert.False(t, validatedMetrics["sqlserver.page.split.utilization"], "Found a duplicate in the metrics slice: sqlserver.page.split.utilization")
-					validatedMetrics["sqlserver.page.split.utilization"] = true
+				case "sqlserver.page.split.ratio":
+					assert.False(t, validatedMetrics["sqlserver.page.split.ratio"], "Found a duplicate in the metrics slice: sqlserver.page.split.ratio")
+					validatedMetrics["sqlserver.page.split.ratio"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of page splits per batch request.", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
+					assert.Equal(t, "Ratio of page splits to batch requests, expressed as a percentage.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

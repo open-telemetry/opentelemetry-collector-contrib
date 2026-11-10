@@ -96,6 +96,42 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
+          - description: Number of pages split as a result of overflowing index pages.
+            gauge:
+              dataPoints:
+                - asDouble: 274
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: sqlserver.page.split.rate
+            unit: '{pages}/s'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
           - description: Number of lock escalations per second (locks on a table escalated to a larger granularity).
             gauge:
               dataPoints:
@@ -4010,22 +4046,22 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Number of SQL compilations per batch request.
+          - description: Ratio of SQL compilations to batch requests, expressed as a percentage.
             gauge:
               dataPoints:
-                - asDouble: 0.6125290023201856
+                - asDouble: 61.25290023201856
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            name: sqlserver.batch.compilation.utilization
-            unit: "1"
-          - description: Number of page splits per batch request.
+            name: sqlserver.batch.compilation.ratio
+            unit: '%'
+          - description: Ratio of page splits to batch requests, expressed as a percentage.
             gauge:
               dataPoints:
-                - asDouble: 0.6357308584686775
+                - asDouble: 63.57308584686775
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            name: sqlserver.page.split.utilization
-            unit: "1"
+            name: sqlserver.page.split.ratio
+            unit: '%'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

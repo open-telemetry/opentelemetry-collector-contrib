@@ -629,7 +629,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 
 	return metrics.SqlserverAccessScanRate.Enabled ||
 		metrics.SqlserverAttentionRate.Enabled ||
-		metrics.SqlserverBatchCompilationUtilization.Enabled ||
+		metrics.SqlserverBatchCompilationRatio.Enabled ||
 		metrics.SqlserverBatchRequestRate.Enabled ||
 		metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
@@ -674,7 +674,8 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverPageCompressionRate.Enabled ||
 		metrics.SqlserverPageLookupRate.Enabled ||
 		metrics.SqlserverPageReadAheadRate.Enabled ||
-		metrics.SqlserverPageSplitUtilization.Enabled ||
+		metrics.SqlserverPageSplitRate.Enabled ||
+		metrics.SqlserverPageSplitRatio.Enabled ||
 		metrics.SqlserverParameterizationRate.Enabled ||
 		metrics.SqlserverPlanExecutionRate.Enabled ||
 		metrics.SqlserverProcessesBlocked.Enabled ||

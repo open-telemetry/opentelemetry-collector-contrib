@@ -199,13 +199,13 @@ func (ms *SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig) Val
 	return nil
 }
 
-// SqlserverBatchCompilationUtilizationMetricConfig provides config for the sqlserver.batch.compilation.utilization metric.
-type SqlserverBatchCompilationUtilizationMetricConfig struct {
+// SqlserverBatchCompilationRatioMetricConfig provides config for the sqlserver.batch.compilation.ratio metric.
+type SqlserverBatchCompilationRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverBatchCompilationUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverBatchCompilationRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2194,13 +2194,13 @@ func (ms *SqlserverPageSplitRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// SqlserverPageSplitUtilizationMetricConfig provides config for the sqlserver.page.split.utilization metric.
-type SqlserverPageSplitUtilizationMetricConfig struct {
+// SqlserverPageSplitRatioMetricConfig provides config for the sqlserver.page.split.ratio metric.
+type SqlserverPageSplitRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SqlserverPageSplitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SqlserverPageSplitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3131,7 +3131,7 @@ type MetricsConfig struct {
 	SqlserverAvailabilityGroupDatabaseReplicaQueueRate    SqlserverAvailabilityGroupDatabaseReplicaQueueRateMetricConfig    `mapstructure:"sqlserver.availability_group.database_replica.queue.rate"`
 	SqlserverAvailabilityGroupDatabaseReplicaQueueSize    SqlserverAvailabilityGroupDatabaseReplicaQueueSizeMetricConfig    `mapstructure:"sqlserver.availability_group.database_replica.queue.size"`
 	SqlserverAvailabilityGroupDatabaseReplicaSecondaryLag SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricConfig `mapstructure:"sqlserver.availability_group.database_replica.secondary_lag"`
-	SqlserverBatchCompilationUtilization                  SqlserverBatchCompilationUtilizationMetricConfig                  `mapstructure:"sqlserver.batch.compilation.utilization"`
+	SqlserverBatchCompilationRatio                        SqlserverBatchCompilationRatioMetricConfig                        `mapstructure:"sqlserver.batch.compilation.ratio"`
 	SqlserverBatchRequestRate                             SqlserverBatchRequestRateMetricConfig                             `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate                      SqlserverBatchSQLCompilationRateMetricConfig                      `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate                    SqlserverBatchSQLRecompilationRateMetricConfig                    `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
@@ -3200,7 +3200,7 @@ type MetricsConfig struct {
 	SqlserverPageOperationRate                            SqlserverPageOperationRateMetricConfig                            `mapstructure:"sqlserver.page.operation.rate"`
 	SqlserverPageReadAheadRate                            SqlserverPageReadAheadRateMetricConfig                            `mapstructure:"sqlserver.page.read_ahead.rate"`
 	SqlserverPageSplitRate                                SqlserverPageSplitRateMetricConfig                                `mapstructure:"sqlserver.page.split.rate"`
-	SqlserverPageSplitUtilization                         SqlserverPageSplitUtilizationMetricConfig                         `mapstructure:"sqlserver.page.split.utilization"`
+	SqlserverPageSplitRatio                               SqlserverPageSplitRatioMetricConfig                               `mapstructure:"sqlserver.page.split.ratio"`
 	SqlserverParameterizationRate                         SqlserverParameterizationRateMetricConfig                         `mapstructure:"sqlserver.parameterization.rate"`
 	SqlserverPlanExecutionRate                            SqlserverPlanExecutionRateMetricConfig                            `mapstructure:"sqlserver.plan.execution.rate"`
 	SqlserverProcessesBlocked                             SqlserverProcessesBlockedMetricConfig                             `mapstructure:"sqlserver.processes.blocked"`
@@ -3256,7 +3256,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKey{SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverAvailabilityGroupName, SqlserverAvailabilityGroupDatabaseReplicaSecondaryLagMetricAttributeKeySqlserverReplicaName},
 		},
-		SqlserverBatchCompilationUtilization: SqlserverBatchCompilationUtilizationMetricConfig{
+		SqlserverBatchCompilationRatio: SqlserverBatchCompilationRatioMetricConfig{
 			Enabled: false,
 		},
 		SqlserverBatchRequestRate: SqlserverBatchRequestRateMetricConfig{
@@ -3505,7 +3505,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverPageSplitRate: SqlserverPageSplitRateMetricConfig{
 			Enabled: true,
 		},
-		SqlserverPageSplitUtilization: SqlserverPageSplitUtilizationMetricConfig{
+		SqlserverPageSplitRatio: SqlserverPageSplitRatioMetricConfig{
 			Enabled: false,
 		},
 		SqlserverParameterizationRate: SqlserverParameterizationRateMetricConfig{

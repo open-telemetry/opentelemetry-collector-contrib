@@ -38,7 +38,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	// Some of these metrics are enabled by default, but it's still helpful to include
 	// in the case of using a config that may have previously disabled a metric.
 	cfg.MetricsBuilderConfig.Metrics.SqlserverAccessScanRate.Enabled = enabled
-	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchCompilationUtilization.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchCompilationRatio.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverCPUUtilization.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = enabled
@@ -100,7 +100,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverPageOperationRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverPageReadAheadRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverPageSplitRate.Enabled = enabled
-	cfg.MetricsBuilderConfig.Metrics.SqlserverPageSplitUtilization.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageSplitRatio.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverReplicaDataRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskOperations.Enabled = enabled
@@ -2563,17 +2563,21 @@ func TestIsWorkerThreadsQueryEnabled(t *testing.T) {
 	assert.True(t, isWorkerThreadsQueryEnabled(metrics))
 }
 
-func TestIsPerfCounterQueryEnabledForDerivedUtilizationMetrics(t *testing.T) {
+func TestIsPerfCounterQueryEnabledForDerivedRatioMetrics(t *testing.T) {
 	assert.False(t, isPerfCounterQueryEnabled(nil))
 
 	metrics := &metadata.MetricsConfig{}
 	assert.False(t, isPerfCounterQueryEnabled(metrics))
 
-	metrics.SqlserverBatchCompilationUtilization.Enabled = true
+	metrics.SqlserverBatchCompilationRatio.Enabled = true
 	assert.True(t, isPerfCounterQueryEnabled(metrics))
 
-	metrics.SqlserverBatchCompilationUtilization.Enabled = false
-	metrics.SqlserverPageSplitUtilization.Enabled = true
+	metrics.SqlserverBatchCompilationRatio.Enabled = false
+	metrics.SqlserverPageSplitRatio.Enabled = true
+	assert.True(t, isPerfCounterQueryEnabled(metrics))
+
+	metrics.SqlserverPageSplitRatio.Enabled = false
+	metrics.SqlserverPageSplitRate.Enabled = true
 	assert.True(t, isPerfCounterQueryEnabled(metrics))
 }
 
