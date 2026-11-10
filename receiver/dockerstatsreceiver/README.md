@@ -39,8 +39,17 @@ The following settings are optional:
 - `endpoint` (default = `unix:///var/run/docker.sock` (Linux) , default = `npipe:////./pipe/docker_engine` (Windows) ): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
-- `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
-as the specified metric label key.
+- `container_labels_to_resource_attributes` (no default): A list of filters selecting container
+labels to record as resource attributes. A label is recorded if its key matches any filter. Each
+filter sets either `strict` (exact match) or `regexp` (a [Go regular expression](https://golang.org/pkg/regexp/)).
+Matching labels are recorded as `container.label.<key>`, following the
+[container resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md).
+Each matching label adds a resource attribute, so broad patterns such as `.*` can significantly increase
+cardinality; prefer `strict` filters for only the labels you need.
+- `container_labels_to_metric_labels` (no default, **deprecated**): A map of Docker container label names whose label values to use
+as the specified metric label key. Use `container_labels_to_resource_attributes` instead, which follows the
+semantic conventions. Note that it records labels under `container.label.<key>` rather than a custom name;
+use the `transform` processor if you need to rename them.
 - `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
 as the specified metric label key.
 - `excluded_images` (no default, all running containers monitored): A list of strings,
@@ -64,9 +73,9 @@ receivers:
     collection_interval: 2s
     timeout: 20s
     api_version: "1.25"
-    container_labels_to_metric_labels:
-      my.container.label: my-metric-label
-      my.other.container.label: my-other-metric-label
+    container_labels_to_resource_attributes:
+      - strict: my.container.label
+      - regexp: my.container.prefix.*
     env_vars_to_metric_labels:
       MY_ENVIRONMENT_VARIABLE: my-metric-label
       MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label

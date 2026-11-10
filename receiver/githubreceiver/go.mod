@@ -7,7 +7,6 @@ require (
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v93 v93.0.0
-	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1

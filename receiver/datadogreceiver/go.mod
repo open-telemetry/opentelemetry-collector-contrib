@@ -4,8 +4,8 @@ go 1.26.9
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.215
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.85.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.85.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.84.0-devel.0.20261030015547-4fcf7d423463
