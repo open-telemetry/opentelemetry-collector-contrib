@@ -26,9 +26,9 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.165.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.165.0
-	go.opentelemetry.io/collector/processor/processortest v0.165.0
+	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261110201837-2af832434dc6
+	go.opentelemetry.io/collector/consumer/consumertest v0.165.1-0.20261110201837-2af832434dc6
+	go.opentelemetry.io/collector/processor/processortest v0.165.1-0.20261110201837-2af832434dc6
 	golang.org/x/time v0.16.0
 )
 
@@ -64,14 +64,14 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.71.1-0.20261110201837-2af832434dc6 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.165.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.165.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.165.0 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.165.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.165.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.165.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.165.1-0.20261110201837-2af832434dc6 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.165.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/collector/pipeline v1.71.1-0.20261110201837-2af832434dc6 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.165.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.165.1-0.20261110201837-2af832434dc6 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

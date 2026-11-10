@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component/componenttest v0.165.0
+	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261110201837-2af832434dc6
 	go.opentelemetry.io/collector/pdata v1.71.1-0.20261110201837-2af832434dc6
-	go.opentelemetry.io/collector/pdata/xpdata v0.165.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.165.1-0.20261110201837-2af832434dc6
 	go.uber.org/goleak v1.3.0
 )
 
