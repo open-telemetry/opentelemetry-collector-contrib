@@ -252,9 +252,10 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
+	dataPointCount := m.DataPointCount()
 	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
 	err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
+	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", dataPointCount, err)
 	if err != nil {
 		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		if consumererror.IsPermanent(err) {
@@ -834,11 +835,13 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 		dest.PutStr("service.instance.id", instance)
 	}
 	if job != "" {
-		parts := strings.Split(job, "/")
-		if len(parts) == 2 {
-			dest.PutStr("service.namespace", parts[0])
-			dest.PutStr("service.name", parts[1])
-			return
+		if !metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.IsEnabled() {
+			parts := strings.Split(job, "/")
+			if len(parts) == 2 {
+				dest.PutStr("service.namespace", parts[0])
+				dest.PutStr("service.name", parts[1])
+				return
+			}
 		}
 		dest.PutStr("service.name", job)
 	}
