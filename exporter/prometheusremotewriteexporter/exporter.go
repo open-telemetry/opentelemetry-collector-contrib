@@ -115,12 +115,13 @@ func (b *buffer) MarshalAndEncode(req gogoProto) ([]byte, error) {
 // newEncodeBuffers returns a channel that holds the buffers of an exporter for serializing
 // protobufs and compressing them with Snappy.
 //
-// It holds min(concurrency, GOMAXPROCS) buffers. The buffers are given back before the payload is
-// sent, so that encoding only uses the CPU, and more buffers would not encode more requests at the
-// same time. Every buffer grows to the size of the largest request it encoded, so the number of
-// buffers bounds the memory they keep.
-func newEncodeBuffers(concurrency int) chan *buffer {
-	n := max(1, min(concurrency, runtime.GOMAXPROCS(0)))
+// It holds min(encoders, GOMAXPROCS) buffers, encoders being the number of goroutines of the exporter
+// that can encode a request at the same time. The buffers are given back before the payload is sent,
+// so that encoding only uses the CPU, and more buffers would not encode more requests at the same
+// time. Every buffer grows to the size of the largest request it encoded, so the number of buffers
+// bounds the memory they keep.
+func newEncodeBuffers(encoders int) chan *buffer {
+	n := max(1, min(encoders, runtime.GOMAXPROCS(0)))
 	buffers := make(chan *buffer, n)
 	for range n {
 		buffers <- &buffer{}
@@ -246,6 +247,15 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
+	// Every call to export encodes with up to concurrency workers. With the feature gate enabled, the
+	// queue calls PushMetrics from num_consumers goroutines at the same time, unless the WAL holds the
+	// requests: a single goroutine then exports them.
+	encoders := concurrency
+	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() &&
+		cfg.RemoteWriteQueue.Enabled && !cfg.WAL.HasValue() {
+		encoders *= max(1, cfg.RemoteWriteQueue.NumConsumers)
+	}
+
 	shutdownCtx, cancelShutdownCtx := context.WithCancel(context.Background())
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,
@@ -256,7 +266,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
-		encodeBuffers:       newEncodeBuffers(concurrency),
+		encodeBuffers:       newEncodeBuffers(encoders),
 		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,

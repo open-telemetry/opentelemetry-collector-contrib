@@ -415,16 +415,39 @@ func TestExportKeepsRequests(t *testing.T) {
 	assert.Equal(t, int64(len(want)), server.attempts.Load())
 }
 
-// TestEncodeBuffers checks that an exporter keeps min(concurrency, GOMAXPROCS) encoding buffers.
+// TestEncodeBuffers checks that an exporter keeps an encoding buffer for every goroutine that can
+// encode a request at the same time, and no more than GOMAXPROCS of them.
 func TestEncodeBuffers(t *testing.T) {
 	procs := runtime.GOMAXPROCS(0)
-	for _, parallelism := range []int{1, procs, procs + 1} {
-		t.Run(strconv.Itoa(parallelism), func(t *testing.T) {
+	for _, tt := range []struct {
+		name            string
+		multipleWorkers bool
+		queueDisabled   bool
+		wal             bool
+		numConsumers    int
+		parallelism     int
+		want            int
+	}{
+		{name: "one worker", numConsumers: 1, parallelism: 1, want: 1},
+		{name: "GOMAXPROCS workers", numConsumers: 1, parallelism: procs, want: procs},
+		{name: "more workers than GOMAXPROCS", numConsumers: 1, parallelism: procs + 1, want: procs},
+		{name: "single consumer without the feature gate", numConsumers: 4, parallelism: 1, want: 1},
+		{name: "every consumer with the feature gate", multipleWorkers: true, numConsumers: 4, parallelism: 2, want: min(8, procs)},
+		{name: "no queue with the feature gate", multipleWorkers: true, queueDisabled: true, numConsumers: 4, parallelism: 2, want: min(2, procs)},
+		{name: "WAL with the feature gate", multipleWorkers: true, wal: true, numConsumers: 4, parallelism: 2, want: min(2, procs)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate, tt.multipleWorkers)()
 			cfg := createDefaultConfig().(*Config)
-			cfg.MaxBatchRequestParallelism = &parallelism
+			cfg.RemoteWriteQueue.Enabled = !tt.queueDisabled
+			cfg.RemoteWriteQueue.NumConsumers = tt.numConsumers
+			cfg.MaxBatchRequestParallelism = &tt.parallelism
+			if tt.wal {
+				cfg.WAL = configoptional.Some(WALConfig{Directory: t.TempDir()})
+			}
 			prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
-			assert.Equal(t, min(parallelism, procs), cap(prwe.encodeBuffers))
+			assert.Equal(t, tt.want, cap(prwe.encodeBuffers))
 			assert.Len(t, prwe.encodeBuffers, cap(prwe.encodeBuffers))
 		})
 	}

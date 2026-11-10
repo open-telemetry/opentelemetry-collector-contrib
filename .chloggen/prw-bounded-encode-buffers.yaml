@@ -16,9 +16,8 @@ issues: [52820]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Each exporter keeps min(`max_batch_request_parallelism`, GOMAXPROCS) buffers, and a request waits
-  for one of them to be encoded. The buffers are no longer dropped by the garbage collector and
-  allocated again, and their number no longer grows with the number of requests encoded at the same time.
+  Each exporter keeps a buffer for every worker that can encode a request at the same time, at most
+  GOMAXPROCS of them, and a request waits for a free buffer to be encoded.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
