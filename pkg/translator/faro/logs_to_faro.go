@@ -85,7 +85,6 @@ const (
 	faroNetworkConnectionType    = "network_connection_type"
 	faroNetworkConnectionSubtype = "network_connection_subtype"
 	faroNetworkCarrierName       = "network_carrier_name"
-	faroNetworkReachable         = "network_reachable"
 
 	faroGeoContinentIso   = "geo_continent_iso"
 	faroGeoCountryIso     = "geo_country_iso"
@@ -345,10 +344,7 @@ func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes
 	if err != nil {
 		return meta, err
 	}
-	network, err := extractNetworkFromKeyVal(kv)
-	if err != nil {
-		return meta, err
-	}
+	network := extractNetworkFromKeyVal(kv)
 	geo := extractGeoFromKeyVal(kv)
 	k6, err := extractK6FromKeyVal(kv)
 	if err != nil {
@@ -686,7 +682,7 @@ func extractOSFromKeyVal(kv map[string]string) (faroTypes.OS, error) {
 	return osMeta, nil
 }
 
-func extractNetworkFromKeyVal(kv map[string]string) (faroTypes.Network, error) {
+func extractNetworkFromKeyVal(kv map[string]string) faroTypes.Network {
 	var network faroTypes.Network
 	if connectionType, ok := kv[faroNetworkConnectionType]; ok {
 		network.ConnectionType = connectionType
@@ -697,14 +693,7 @@ func extractNetworkFromKeyVal(kv map[string]string) (faroTypes.Network, error) {
 	if carrierName, ok := kv[faroNetworkCarrierName]; ok {
 		network.CarrierName = carrierName
 	}
-	if reachable, ok := kv[faroNetworkReachable]; ok {
-		parsed, err := strconv.ParseBool(reachable)
-		if err != nil {
-			return network, err
-		}
-		network.Reachable = &parsed
-	}
-	return network, nil
+	return network
 }
 
 func extractGeoFromKeyVal(kv map[string]string) faroTypes.Geo {
