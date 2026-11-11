@@ -2308,14 +2308,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	return resources, errors.Join(errs...)
 }
 
-// queryTextColumnFor picks the column db.query.text is built from. By default that
-// is the statement column, which SQL Server's DMVs bound by byte offset so it holds
-// only the statement that ran. With collect_full_query_text the whole batch the
-// statement came from is reported instead, which is what carries any surrounding
-// statements and the comments clients inject.
-//
-// It falls back to the statement column when the batch text came back empty — the
-// DMV can return NULL — so enabling the option never empties db.query.text.
+// queryTextColumnFor picks the column db.query.text is built from: the batch when
+// collect_full_query_text is set, otherwise the statement. Falls back to the
+// statement if the DMV returned no batch text, so the option never empties it.
 func queryTextColumnFor(row sqlquery.StringMap, statementColumn, batchColumn string, collectFullQueryText bool) string {
 	if collectFullQueryText && row[batchColumn] != "" {
 		return batchColumn
@@ -2323,16 +2318,10 @@ func queryTextColumnFor(row sqlquery.StringMap, statementColumn, batchColumn str
 	return statementColumn
 }
 
-// extractCommentTags derives the db.query.comment_tags attribute value from the
-// raw batch text of a row. It is empty when the collection named no keys, and the
-// caller passes it on regardless, since the generated event builder emits every
-// declared attribute.
-//
-// The batch text is read rather than db.query.text because the latter is bounded
-// by the statement offsets, which exclude a comment that precedes the statement —
-// the usual placement. It is read before obfuscation because the obfuscator strips
-// comments, so anything not harvested here is gone. The batch text itself is never
-// emitted.
+// extractCommentTags derives db.query.comment_tags from a row's raw batch text.
+// The batch is read rather than db.query.text because a comment preceding the
+// statement falls outside the statement offsets, and it is read before obfuscation
+// because the obfuscator strips comments.
 func extractCommentTags(rawBatchText string, allowedCommentKeys []string) string {
 	if rawBatchText == "" || len(allowedCommentKeys) == 0 {
 		return ""

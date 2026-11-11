@@ -223,30 +223,25 @@ Query sample collection related options (only useful when query sample is enable
 
 ### Full query text and comment tags
 
-`db.query.text` is extracted from SQL Server's DMVs by byte offset, so by default it covers only the
-statement that ran. Anything else the surrounding batch carried is dropped, including the `key=value`
-pairs applications and ORM frameworks inject as a leading SQL comment — how
-[sqlcommenter](https://google.github.io/sqlcommenter/) marks the code that issued a query. Two
-options recover that, configured inside `top_query_collection` and/or `query_sample_collection` so
-each event opts in independently:
+`db.query.text` covers only the statement that ran, because SQL Server's DMVs bound it by byte
+offset. Two options recover more, set inside `top_query_collection` and/or
+`query_sample_collection` so each event opts in independently:
 
-- `collect_full_query_text` (optional, default = `false`): Report the whole SQL batch the statement
-  came from in `db.query.text`, instead of just the statement. No separate attribute is added; this
-  changes what `db.query.text` holds for that collection. On `db.server.top_query` this makes the
-  record's text broader than its metrics — see the warning below before enabling it there.
-- `allowed_comment_keys` (optional, default = unset): The comment keys to export as
-  `db.query.comment_tags`, a comma-separated `key=value` string, letting a query be attributed to the
-  application that ran it. Only the keys listed here are exported, so no comment content leaves the
-  receiver until you name the keys you consider safe. Leaving it unset opts the collection out, and
-  `db.query.comment_tags` is then present but empty on its events.
+- `collect_full_query_text` (optional, default = `false`): report the whole SQL batch the statement
+  came from in `db.query.text`, rather than just the statement. No new attribute is added. Read the
+  warning below before enabling this on `db.server.top_query`.
+- `allowed_comment_keys` (optional, default = unset): export these keys from the statement's leading
+  `/* key=value */` comment as `db.query.comment_tags`, a comma-separated string, attributing a query
+  to the application that ran it. Only the keys listed here are exported. Left unset, the attribute
+  is present but empty.
 
-The two are independent — either can be used without the other.
+Either option works without the other. `db.query.text` is always obfuscated, and obfuscation strips
+comments, so `db.query.comment_tags` is the only place comment metadata survives.
 
 ```yaml
     receivers:
-      sqlserver:
+      sql_server:
         top_query_collection:
-          collect_full_query_text: true
           allowed_comment_keys:
             - application_name
             - application_id
@@ -258,40 +253,17 @@ The two are independent — either can be used without the other.
 ```
 
 > [!WARNING]
-> List only **low-cardinality** keys, such as an application name or an application id.
-> `db.server.top_query` aggregates by query, so a key whose value differs from one execution to the
-> next turns every execution into its own row and defeats that aggregation.
+> List only low-cardinality keys, such as an application name or id. `db.server.top_query` aggregates
+> by query, so a key whose value differs per execution gives every execution its own record.
 
 > [!WARNING]
-> **`collect_full_query_text` on `db.server.top_query` makes the record's text broader than its
-> metrics.** `sys.dm_exec_query_stats` is keyed per statement, which is why the query slices one
-> statement out of the batch using `statement_start_offset` and `statement_end_offset`. The batch text
-> is per batch. So when a batch holds several statements, every record from that batch reports the
-> same `db.query.text` while keeping its own distinct `sqlserver.total_worker_time`,
-> `sqlserver.execution_count` and the rest.
->
-> No metric is affected and no extra records are produced — only the text field changes. But records
-> can no longer be told apart by their text, so grouping `db.server.top_query` by `db.query.text`
-> collapses the statements of a batch into one group whose total belongs to the batch rather than to
-> any single statement, and the most expensive statement in it stops being identifiable. Group by
-> `sqlserver.query_hash` or `sqlserver.query_plan_hash` instead, which stay distinct per statement.
->
-> This does not apply to `db.server.query_sample`, which reads `sys.dm_exec_requests`: that is a
-> snapshot of one request, so the batch is what the session actually submitted. Enabling the option
-> there is unaffected. The batch text also costs payload — a multi-statement procedure body is far
-> larger than one statement.
+> On `db.server.top_query`, `collect_full_query_text` makes a record's text broader than its metrics.
+> `sys.dm_exec_query_stats` is keyed per statement while the batch text is per batch, so every record
+> from a multi-statement batch reports the same `db.query.text` while keeping its own metrics. No
+> metric or record count changes, but the records can no longer be told apart by text: group by
+> `sqlserver.query_hash` instead. `db.server.query_sample` reads `sys.dm_exec_requests`, a single
+> request, and is unaffected.
 
-`db.query.text` is obfuscated either way, and obfuscation strips comments — so even with
-`collect_full_query_text` the comment itself is not readable there, and `db.query.comment_tags` is
-the only place that metadata survives. Tags are harvested from the raw batch text before obfuscation,
-which is also why they are read from the batch rather than from the statement: a comment preceding the
-statement falls outside the statement offsets. The batch-text column is only added to the underlying
-query when a collection sets one of these options, so using neither costs nothing. If the DMV returns
-no batch text, `db.query.text` falls back to the statement.
-
-Extraction uses the shared extractor in `internal/common/sqlcomments`, the same one the `oracledb`
-receiver uses, which reads only **leading** `/* */` block comments — a trailing comment, a `--` line
-comment, or a comment placed after `sp_executesql` parameter declarations is not recognized.
 Example:
 
 ```yaml

@@ -31,13 +31,9 @@ type QuerySample struct {
 	_ struct{}
 }
 
-// needsBatchText reports whether this collection needs the batch-text column: to
-// put it in db.query.text, to read comment tags out of it, or both.
-//
-// Both the query text and the scraper dispatch depend on this answer, so they must
-// all derive it from here: the column is only selected when it is true, and
-// ScrapeLogs picks the scrape to run by comparing its query string against the
-// ones built in setupLogQueries.
+// needsBatchText reports whether the batch-text column must be selected. Every
+// caller must derive it from here: the answer is baked into the query string, and
+// ScrapeLogs dispatches by comparing against that string.
 func (q QuerySample) needsBatchText() bool {
 	return q.CollectFullQueryText || len(q.AllowedCommentKeys) > 0
 }
@@ -96,7 +92,7 @@ type TopQueryCollection struct {
 	AllowedCommentKeys []string `mapstructure:"allowed_comment_keys,omitempty"`
 }
 
-// needsBatchText reports whether this collection needs the batch-text column.
+// needsBatchText reports whether the batch-text column must be selected.
 // See QuerySample.needsBatchText.
 func (t TopQueryCollection) needsBatchText() bool {
 	return t.CollectFullQueryText || len(t.AllowedCommentKeys) > 0
