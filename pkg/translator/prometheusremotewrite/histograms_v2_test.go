@@ -756,6 +756,7 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantNativeHist(), got)
 			validateNativeHistogramCountV2(t, got)
+			validateNoZeroBucketOverlap(t, got.ToIntHistogram())
 		})
 	}
 }

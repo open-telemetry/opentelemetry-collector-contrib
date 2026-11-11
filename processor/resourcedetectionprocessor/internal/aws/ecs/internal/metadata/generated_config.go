@@ -42,6 +42,10 @@ type ResourceAttributesConfig struct {
 	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion           ResourceAttributeConfig `mapstructure:"cloud.region"`
+	HostID                ResourceAttributeConfig `mapstructure:"host.id"`
+	HostImageID           ResourceAttributeConfig `mapstructure:"host.image.id"`
+	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
+	HostType              ResourceAttributeConfig `mapstructure:"host.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -90,6 +94,18 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		CloudRegion: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		HostID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostImageID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostType: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

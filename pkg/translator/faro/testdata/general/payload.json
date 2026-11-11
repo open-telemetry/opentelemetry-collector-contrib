@@ -326,8 +326,7 @@
       "network": {
         "connection_type": "cell",
         "connection_subtype": "lte",
-        "carrier_name": "TestCarrier",
-        "reachable": true
+        "carrier_name": "TestCarrier"
       },
       "view": {
         "name": "foobar"
