@@ -369,7 +369,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		targetInfoModified     = make(map[uint64]bool)
 
 		// exemplarMap holds exemplars under the series key collectExemplars builds.
-		exemplarMap = collectExemplars(req, prw.settings)
+		exemplarMap          = collectExemplars(req, prw.settings)
+		droppedHistogramKeys = make(map[exemplarKey]struct{})
 
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
@@ -447,18 +448,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			if len(ts.Samples) != 0 {
 				stats.Samples += len(ts.Samples)
 				stats.Histograms += len(ts.Histograms)
-				if len(exemplarMap) > 0 {
-					key := makeExemplarKey(ls)
-					if ex, ok := exemplarMap[key]; ok {
-						stats.Exemplars += ex.Len()
-						delete(exemplarMap, key)
-					}
-				}
 				droppedClassicHistogramSeries++
 				prw.logDroppedSeries(ls, "classic_histogram")
 				continue
 			}
-			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget); err != nil {
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, droppedHistogramKeys, &bucketBudget); err != nil {
 				badRequestErrors = errors.Join(badRequestErrors, err)
 			}
 			continue
@@ -533,13 +527,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				// Drop summary series as we will not handle them. A summary metric is never cached,
 				// so every summary series goes through here.
 				stats.Samples += len(ts.Samples)
-				if len(exemplarMap) > 0 {
-					key := makeExemplarKey(ls)
-					if ex, ok := exemplarMap[key]; ok {
-						stats.Exemplars += ex.Len()
-						delete(exemplarMap, key)
-					}
-				}
 				droppedSummarySeries++
 				prw.logDroppedSeries(ls, "summary")
 				continue
@@ -569,6 +556,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				stats.Exemplars += ex.Len()
 				delete(exemplarMap, key)
 			}
+		}
+	}
+
+	// Exemplars still in exemplarMap had no data point to attach to (for example when a
+	// TimeSeries carries exemplars without samples, or its series is a classic histogram or
+	// summary dropped by design). Count them as written, unless their series only had dropped
+	// or refused native histograms, so the sender does not report a partial write on a 2xx response.
+	for key, ex := range exemplarMap {
+		if _, dropped := droppedHistogramKeys[key]; !dropped {
+			stats.Exemplars += ex.Len()
 		}
 	}
 
@@ -676,6 +673,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
+	droppedHistogramKeys map[exemplarKey]struct{},
 	bucketBudget *histogramBucketBudget,
 ) error {
 	attrs := extractAttributes(ls)
@@ -886,6 +884,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		stats.Exemplars += exemplars.Len()
 		delete(exemplarMap, exemplarsKey)
 		haveExemplars = false
+	}
+	if len(ts.Histograms) > 0 && haveExemplars {
+		droppedHistogramKeys[exemplarsKey] = struct{}{}
 	}
 	return invalid
 }

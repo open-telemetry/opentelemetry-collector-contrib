@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Forward valid translated metrics when a remote-write 2.0 request contains partially invalid data and only count exemplars in `X-Prometheus-Remote-Write-Exemplars-Written` when attached to an emitted data point.
+note: Forward valid translated metrics when a remote-write 2.0 request contains partially invalid data and do not count exemplars on refused series or dropped native histograms in `X-Prometheus-Remote-Write-Exemplars-Written`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [50340]
@@ -16,7 +16,7 @@ issues: [50340]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Previously, any validation error in a remote-write 2.0 batch dropped the entire translated metric batch without forwarding valid series to the next consumer, and `X-Prometheus-Remote-Write-Exemplars-Written` counted exemplars before checking whether their parent series produced a valid data point.
+  Previously, any validation error in a remote-write 2.0 batch dropped the entire translated metric batch without forwarding valid series to the next consumer, and `X-Prometheus-Remote-Write-Exemplars-Written` counted exemplars up front even when their parent series was refused or their native histogram was dropped.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

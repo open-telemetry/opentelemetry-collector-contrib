@@ -44,8 +44,8 @@ func collectExemplars(
 			continue
 		}
 
-		// A series that validateSeriesLabels would refuse is skipped here: its exemplars are discarded
-		// with the request, and the label lookups below assume a readable label set.
+		// A series that validateSeriesLabels would refuse is skipped here: its exemplars are refused
+		// with the series, and the label lookups below assume a readable label set.
 		if validateSeriesLabels(ls) != nil {
 			continue
 		}
@@ -57,6 +57,19 @@ func collectExemplars(
 		}
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) || ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
 			continue
+		}
+		if metadata.Name != "target_info" {
+			switch ts.Metadata.Type {
+			case writev2.Metadata_METRIC_TYPE_GAUGE,
+				writev2.Metadata_METRIC_TYPE_UNSPECIFIED,
+				writev2.Metadata_METRIC_TYPE_COUNTER,
+				writev2.Metadata_METRIC_TYPE_INFO,
+				writev2.Metadata_METRIC_TYPE_STATESET,
+				writev2.Metadata_METRIC_TYPE_SUMMARY,
+				writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+			default:
+				continue
+			}
 		}
 
 		key := makeExemplarKey(ls)

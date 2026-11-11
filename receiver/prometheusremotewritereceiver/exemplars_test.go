@@ -139,7 +139,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			expectedWarnMsgs:  nil,
 		},
 		{
-			// A series that validateSeriesLabels would refuse loses the whole request, so its exemplars
+			// A series that validateSeriesLabels would refuse is not written, so its exemplars
 			// are not collected either.
 			name: "series with an empty label name is skipped",
 			req: &writev2.Request{
@@ -180,6 +180,77 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 						LabelsRefs: []uint32{1, 2, 1, 2},
 						Exemplars: []writev2.Exemplar{
 							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with out-of-bounds UnitRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							UnitRef: 99,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with out-of-bounds HelpRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 99,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with unsupported metric type is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_MetricType(99),
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
 						},
 					},
 				},
