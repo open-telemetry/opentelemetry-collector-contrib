@@ -4,9 +4,9 @@ go 1.26.0
 
 require (
 	github.com/maxmind/MaxMind-DB v0.0.0-20240605211347-880f6b4b5eb6
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v1.4.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/oschwald/geoip2-golang/v2 v2.5.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
@@ -134,7 +134,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest

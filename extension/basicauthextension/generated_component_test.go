@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
-var typ = component.MustNewType("basicauth")
+var typ = component.MustNewType("basic_auth")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())
