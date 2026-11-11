@@ -48,6 +48,34 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "gauge with exemplars drops exemplars",
+			metric: func() pmetric.Metric {
+				m := getIntGaugeMetric(
+					"test",
+					pcommon.NewMap(),
+					1, ts,
+				)
+				m.Gauge().DataPoints().At(0).Exemplars().AppendEmpty().SetDoubleValue(2)
+				return m
+			},
+			want: func() map[uint64]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
+				}
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{
+								Value:     1,
+								Timestamp: convertTimeStamp(pcommon.Timestamp(ts)),
+							},
+						},
+					},
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
