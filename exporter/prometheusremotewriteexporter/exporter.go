@@ -175,8 +175,10 @@ type prwExporter struct {
 // encodeRequest serializes req and compresses it with Snappy into a payload of its own.
 //
 // It waits for one of the buffers of the exporter, and returns the cause of ctx if ctx is done
-// first. The protobuf and Snappy buffers are sized for the uncompressed request, which is often an
-// order of magnitude larger than the payload, and they are given back before the payload is sent.
+// first. An error serializing req is permanent, since a retry would not serialize it either.
+//
+// The protobuf and Snappy buffers are sized for the uncompressed request, which is often an order of
+// magnitude larger than the payload, and they are given back before the payload is sent.
 // A request that waits for a slow endpoint or between retries then holds only the compressed
 // payload, instead of both buffers for the whole duration of the send.
 func (prwe *prwExporter) encodeRequest(ctx context.Context, req gogoProto) ([]byte, error) {
@@ -189,7 +191,7 @@ func (prwe *prwExporter) encodeRequest(ctx context.Context, req gogoProto) ([]by
 	defer func() { prwe.encodeBuffers <- buf }()
 	compressed, err := buf.MarshalAndEncode(req)
 	if err != nil {
-		return nil, err
+		return nil, consumererror.NewPermanent(err)
 	}
 	return bytes.Clone(compressed), nil
 }
@@ -579,11 +581,6 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 		}
 		reqBuf, errMarshal := prwe.encodeRequest(ctx, request)
 		if errMarshal != nil {
-			// The context ending while waiting for a buffer is not a failure of the request, but a
-			// request that could not be serialized would not be on a retry either.
-			if ctx.Err() == nil {
-				errMarshal = consumererror.NewPermanent(errMarshal)
-			}
 			return multierr.Append(errs, errMarshal)
 		}
 		// The request is not used after this point: the attempts send reqBuf.

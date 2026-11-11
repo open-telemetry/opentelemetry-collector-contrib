@@ -480,7 +480,31 @@ func TestEncodeRequestWaitsForBuffer(t *testing.T) {
 	cancel(cause)
 	_, err = prwe.encodeRequest(ctx, req)
 	require.ErrorIs(t, err, cause)
+	assert.False(t, consumererror.IsPermanent(err))
 	prwe.encodeBuffers <- buf
+}
+
+// unmarshalableRequest is a request that fails to serialize.
+type unmarshalableRequest struct{ err error }
+
+func (*unmarshalableRequest) Size() int { return 1 }
+
+func (r *unmarshalableRequest) MarshalToSizedBuffer([]byte) (int, error) { return 0, r.err }
+
+// TestEncodeRequestPermanentError checks that encodeRequest fails with a permanent error for a
+// request that cannot be serialized, and still gives its buffer back.
+func TestEncodeRequestPermanentError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	parallelism := 1
+	cfg.MaxBatchRequestParallelism = &parallelism
+	prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	errMarshal := errors.New("marshal failed")
+	_, err = prwe.encodeRequest(t.Context(), &unmarshalableRequest{err: errMarshal})
+	require.ErrorIs(t, err, errMarshal)
+	assert.True(t, consumererror.IsPermanent(err))
+	require.Len(t, prwe.encodeBuffers, 1, "the buffer is given back")
 }
 
 // TestExportStopsWaitingForBuffer checks that an export that ends while every encoding buffer is in
