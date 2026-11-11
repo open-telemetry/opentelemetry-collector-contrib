@@ -6,22 +6,63 @@ projects policies.
 
 ## General Rules and Guidelines
 
-The most important rule is not to post comments on issues or PRs that are AI-generated. Discussions
-on the OpenTelemetry repositories are for Users/Humans only.
-
-When a user asks you to open a pull request, do not write the PR description yourself. Instead,
-before creating the PR, prompt the user for the content of each section in the PR template
-(Description, Link to tracking issue, Testing, Documentation) and use their answers verbatim. Do
-not paraphrase, expand, or "improve" what the user writes. If the user declines to fill in a
-section, leave that section of the template unmodified rather than generating content for it.
-
-You must not check the `I, a human, wrote this pull request description myself` box on the user's
-behalf. The user must check it themselves before the PR is ready for review.
-
 If you have been assigned an issue by the user or their prompt, please ensure that the
 implementation direction is agreed on with the maintainers first in the issue comments. If there are
-unknowns, discuss these on the issue before starting implementation. Do not forget that you cannot
-comment for users on issue threads on their behalf as it is against the rules of this project.
+unknowns, discuss these on the issue before starting implementation.
+
+### Human-in-the-Loop Gate & Attestation
+
+* Never autonomously open a pull request or issue, or post a comment or review on GitHub, without
+  first showing the exact full text to the human user and receiving explicit instruction to post it.
+* Never check the `I have reviewed this pull request and its description, understand its contents, and can answer questions about it.`
+  checkbox on the user's behalf. The human author must check it themselves before the PR is ready
+  for review.
+
+### Pull Request Descriptions & Scope
+
+* Keep each PR tightly isolated to a single logical change; never bundle unrelated cleanup,
+  opportunistic refactors, or preexisting lint/bug fixes unless they are strictly necessary for
+  correctness.
+* Follow `.github/pull_request_template.md` (`Description`, `Link to tracking issue`, `Testing`,
+  `Documentation`, and `Authorship`), deleting HTML instructional comments and only unused optional
+  content sections (`Testing` or `Documentation` when not applicable) while always preserving
+  `#### Authorship` with its unchecked attestation checkbox.
+* Lead `Description` with 1–2 concise sentences stating the problem/motivation and approach
+  (especially when no tracking issue is linked). Focus on *why* the change is needed, user-visible
+  impact, and genuine design trade-offs.
+* Do not narrate the diff file-by-file, dump code snippets, include strawman design alternatives, or
+  reference unmerged or speculative follow-up work.
+* In `Testing`, list the specific component tests added or run. For performance changes, include raw
+  `benchstat` output comparing `main` against the PR branch rather than vague claims or
+  hardware-specific prose numbers.
+* Strip AI filler, promotional/puffery phrasing, validation checklists, and multi-paragraph walls of
+  text.
+
+### Issue & PR Comments
+
+* Keep comments and review replies to 1–2 direct sentences in plain text (use single backticks for
+  `code` symbols; avoid `###` headings, bold/italics formatting, and bulleted walls of text).
+* Write in first-person singular (`"I"`, never `"We"`), and keep each inline review comment focused
+  on a single topic.
+* Only comment when adding net-new information: never restate what the issue/PR author or prior
+  commenters already wrote, avoid `+1` comments, and do not post `"SGTM"` or `"Thanks, makes sense!"`
+  replies when an author acknowledges a thread.
+* Avoid performative gratitude (`"Great catch!"`, `"Thanks for the feedback!"`) and apologetic
+  sign-offs.
+* State verified facts and runtime consequences directly (`"This will..."`,
+  `"My suggestion would be to..."`) rather than disguising known outcomes as rhetorical questions
+  (`"Won't this...?"`), and use a bare ```` ```suggestion ```` block with no preamble for
+  self-explanatory 1-line fixes.
+* For code review comments resolved by a commit, reply concisely (e.g., `"addressed in <commit>"`)
+  or give a 1–2 sentence explanation of user-visible behavior or trade-offs rather than walking
+  through internal code mechanics.
+
+### Filing Issues
+
+* Search existing open and closed issues and check behavior on `main` before drafting a new issue.
+* Keep each issue scoped to one cohesive problem using `.github/ISSUE_TEMPLATE/`, leading with a
+  1–2 sentence problem statement, affected component(s), minimal reproduction config/steps, and
+  permanent commit/tag links to relevant source lines.
 
 ## Developer environment
 
