@@ -3925,7 +3925,7 @@
   },
   {
     "computer_name": "abcde",
-    "counter": "Total Pages",
+    "counter": "Total pages",
     "counter_type": "65792",
     "instance": "",
     "instance_raw": "",
@@ -3949,7 +3949,7 @@
   },
   {
     "computer_name": "abcde",
-    "counter": "Stolen Pages",
+    "counter": "Stolen pages",
     "counter_type": "65792",
     "instance": "",
     "instance_raw": "",
@@ -3961,7 +3961,7 @@
   },
   {
     "computer_name": "abcde",
-    "counter": "Reserved Pages",
+    "counter": "Reserved pages",
     "counter_type": "65792",
     "instance": "",
     "instance_raw": "",
@@ -3973,7 +3973,7 @@
   },
   {
     "computer_name": "abcde",
-    "counter": "Free Pages",
+    "counter": "Free pages",
     "counter_type": "65792",
     "instance": "",
     "instance_raw": "",
