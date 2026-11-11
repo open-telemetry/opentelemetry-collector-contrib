@@ -467,6 +467,7 @@ require (
 	go.opentelemetry.io/collector/service/hostcapabilities v0.165.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 // indirect
 	go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143 // indirect
+	go.opentelemetry.io/contrib/detectors/alibaba/ecs v0.0.0-20261106092722-ca27f49bc143 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ecs v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/eks v1.47.0 // indirect

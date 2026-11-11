@@ -448,6 +448,8 @@ go.opentelemetry.io/collector/receiver/xreceiver v0.165.0 h1:QPlJ40SdhrE3nqlq7hN
 go.opentelemetry.io/collector/receiver/xreceiver v0.165.0/go.mod h1:V3WOnz2O0D7viKGoGG9rb1gtYKwK3vqP3BBXNCJXCaU=
 go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143 h1:jEv1ZHpuUhC6t5TayCyn11INWBSQBFD1jj2qE3mlwnQ=
 go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143/go.mod h1:VVjztbExNS3+n4dMtcpZHiLcbQgNCY3BF79M0DC/cZs=
+go.opentelemetry.io/contrib/detectors/alibaba/ecs v0.0.0-20261106092722-ca27f49bc143 h1:rgM/eQL7vTwljox5UgZBRHZVuGMe3Ng894Js9e2Zu5I=
+go.opentelemetry.io/contrib/detectors/alibaba/ecs v0.0.0-20261106092722-ca27f49bc143/go.mod h1:/a0fNtIuE7uaVhPGDTY+OhGwRaABcfB+/BMU8SdkW0M=
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.19.0 h1:U5lXYh/n93SXxBOvBp9B1e1AeC+Nc5j/VYna6cBP5qI=
 go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.19.0/go.mod h1:jsVPMhQ3RildJe+CK9ntl7zDr5euA32RCNMJNhUob6M=
 go.opentelemetry.io/contrib/detectors/azure/azureaks v0.0.0-20261106092722-ca27f49bc143 h1:9ERa05lNgu0BvZWFUzSd+QjH5gU6WCqXUeqWM8ub64Q=
