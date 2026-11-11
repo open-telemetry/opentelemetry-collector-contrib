@@ -625,7 +625,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 //
 // What the Prometheus data model equates with absence is normalized rather than refused: a label
 // with an empty value is dropped where it would have become an attribute, as if it were not there.
-// Common senders such as Prometheus treat a 400 as non-recoverable and answer by dropping the batch.
+// Refusing it would lose the series, since common senders such as Prometheus treat a 400 as
+// non-recoverable and do not retry the batch.
 //
 // An empty name is refused instead of dropped because every attribute it could feed would be
 // unnamed, so no part of the label can be kept. An exemplar label is the exception: it annotates a

@@ -5498,7 +5498,7 @@ func TestExemplarWithoutSampleIsCountedAsWritten(t *testing.T) {
 
 func TestEmptyLabelValueIsAcceptedNotRefused(t *testing.T) {
 	// A label with an empty value normalizes to an absent label instead of being refused. See
-	// validateSeriesLabels for why refusing it would cost the sender the whole request.
+	// validateSeriesLabels for why refusing it would lose the series.
 	sink := &consumertest.MetricsSink{}
 	resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
 		Symbols: []string{

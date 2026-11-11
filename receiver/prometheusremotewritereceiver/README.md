@@ -30,7 +30,7 @@ The breaking change in Prometheus 3.8.0 ([prometheus/prometheus#17411](https://g
 
 ### Labels with empty values
 
-In the Prometheus data model a label with an empty value is the same as an absent label, so the receiver does not turn one into an attribute. Such a label is dropped from data point attributes, `target_info` resource attributes, `otel_scope_*` scope fields and exemplar filtered attributes alike, and the series itself is still accepted: refusing it would cost the sender every other series of the same request, since a Remote-Write request is written as a whole.
+In the Prometheus data model a label with an empty value is the same as an absent label, so the receiver does not turn one into an attribute. Such a label is dropped from data point attributes, `target_info` resource attributes, `otel_scope_*` scope fields and exemplar filtered attributes alike, and the series itself is still accepted: refusing it would lose the series, since common senders such as Prometheus treat a `400 Bad Request` as non-recoverable and do not retry the batch.
 
 Because such a label is the same as an absent one, two series that differ only by it are the same series once translated, so a request that carries both spellings yields two data points with the same attributes for the same timestamp. A Prometheus sender cannot produce that, as it drops these labels before writing.
 
