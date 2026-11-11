@@ -6025,6 +6025,36 @@ func targetInfoRequest(region string) *writev2.Request {
 	}
 }
 
+func TestTargetInfoUpdatesCachedResource(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	prw := setupMetricsReceiverWithConsumer(t, sink)
+	plain := &writev2.Request{
+		Symbols: []string{"", "job", "j", "instance", "i", "__name__", "m"},
+		Timeseries: []writev2.TimeSeries{{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		}},
+	}
+	info := &writev2.Request{
+		Symbols: []string{"", "job", "j", "instance", "i", "__name__", "target_info", "region", "eu"},
+		Timeseries: []writev2.TimeSeries{{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+		}},
+	}
+	for _, r := range []*writev2.Request{plain, info, plain} {
+		resp := sendPRW(t, prw, r)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	}
+	all := sink.AllMetrics()
+	require.Len(t, all, 2)
+	v, ok := all[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+	require.True(t, ok, "third request lost the target_info attribute: %v", all[1].ResourceMetrics().At(0).Resource().Attributes().AsRaw())
+	require.Equal(t, "eu", v.Str())
+}
+
 // TestLRUCacheResourceMetrics verifies the LRU cache behavior for resource metrics:
 // 1. Caching: Metrics with same job/instance share resource attributes
 // 2. Eviction: When cache is full, least recently used entries are evicted
