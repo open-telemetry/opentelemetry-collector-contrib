@@ -8,7 +8,7 @@ component: exporter/cassandra
 note: Store Cassandra spans by trace id, store every log record, and return insert errors.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [0]
+issues: [53043]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
