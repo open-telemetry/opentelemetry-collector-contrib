@@ -5445,7 +5445,7 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 					"__name__", "test_gauge", // 1, 2
 					"job", "service-x/test", // 3, 4
 					"instance", "107cn001", // 5, 6
-					"test_histogram",                                // 7
+					"test_histogram",                               // 7
 					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 8, 9
 				},
 				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
