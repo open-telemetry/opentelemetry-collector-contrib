@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -41,6 +43,11 @@ const (
 	watchRestartResetInterval = 2 * time.Minute
 	watchRestartFactor        = 2
 	watchRestartJitter        = 1.0
+	// re-list after this many restarts in a row in which the watch neither
+	// moved its resourceVersion nor stayed up for watchHealthyDuration; at
+	// RetryWatcher's one restart per second that is about a minute
+	watchNoProgressRestarts = 60
+	watchHealthyDuration    = 10 * time.Second
 )
 
 type Config struct {
@@ -59,6 +66,7 @@ type Observer struct {
 	handleWatchEventFunc        func(event *apiWatch.Event)
 	resourceVersionRetryBackoff wait.Backoff
 	watchRestartBackoff         wait.Backoff
+	noProgressRestarts          int
 }
 
 func New(client dynamic.Interface, config Config, logger *zap.Logger, storageClient storage.Client, handleWatchEventFunc func(event *apiWatch.Event)) (*Observer, error) {
@@ -81,6 +89,7 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 			Cap:      watchRestartCap,
 			Steps:    math.MaxInt32,
 		},
+		noProgressRestarts: watchNoProgressRestarts,
 	}
 
 	// Initialize checkpointer if a storage client is provided
@@ -206,6 +215,9 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 		flushCheckpoint()
 	}
 
+	// Copy the configured resourceVersion so a restart can drop it without
+	// writing to o.config, which every namespace goroutine reads.
+	configVersion := o.config.ResourceVersion
 	restartDelay := o.watchRestartBackoff.DelayWithReset(clock.RealClock{}, watchRestartResetInterval)
 	_ = restartDelay.Until(cancelCtx, true, true, func(newCtx context.Context) (bool, error) {
 		var resourceVersion string
@@ -216,7 +228,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 			initialListRV = ""
 		} else {
 			var err error
-			resourceVersion, err = o.getResourceVersionWithRetry(newCtx, resource, namespace, stopperChan)
+			resourceVersion, err = o.getResourceVersionWithRetry(newCtx, resource, namespace, configVersion, stopperChan)
 			if err != nil {
 				o.logger.Error("could not retrieve a resourceVersion",
 					zap.String("resource", o.config.Gvr.String()),
@@ -232,8 +244,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 		}
 
 		// need to restart with a fresh resource version
-		// Clear the config resourceVersion
-		o.config.ResourceVersion = ""
+		configVersion = ""
 
 		// Delete the persisted resourceVersion so we don't reuse the stale/expired value
 		// This handles 410 Gone errors where the persisted resourceVersion is too old
@@ -251,7 +262,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 
 // getResourceVersionWithRetry retries getResourceVersion using an exponential
 // backoff until it succeeds, the context is cancelled, or the stopper is signaled.
-func (o *Observer) getResourceVersionWithRetry(ctx context.Context, resource dynamic.ResourceInterface, namespace string, stopperChan chan struct{}) (string, error) {
+func (o *Observer) getResourceVersionWithRetry(ctx context.Context, resource dynamic.ResourceInterface, namespace, configVersion string, stopperChan chan struct{}) (string, error) {
 	backoff := o.resourceVersionRetryBackoff
 	for {
 		select {
@@ -262,7 +273,7 @@ func (o *Observer) getResourceVersionWithRetry(ctx context.Context, resource dyn
 		default:
 		}
 
-		resourceVersion, err := o.getResourceVersion(ctx, resource, namespace)
+		resourceVersion, err := o.getResourceVersion(ctx, resource, namespace, configVersion)
 		if err == nil {
 			return resourceVersion, nil
 		}
@@ -379,11 +390,13 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 	return listRV
 }
 
-// doWatch returns whether watching is done and whether the resource version expired.
+// doWatch returns whether watching is done and whether the resource version expired
+// or the watch got stuck on it.
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) (done, expired bool) {
-	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFuncWithContext: watchFunc})
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, namespace string, watchFunc func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) (done, expired bool) {
+	stall := newStallDetector(o.noProgressRestarts)
+	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFuncWithContext: stall.wrap(watchFunc)})
 	if err != nil {
 		o.logger.Error("error in watching object",
 			zap.String("resource", o.config.Gvr.String()),
@@ -442,11 +455,147 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watch
 				}
 			}
 
+		case <-stall.detected:
+			fields := []zap.Field{
+				zap.String("resource", o.config.Gvr.String()),
+				zap.String("namespace", namespace),
+				zap.Error(stall.err),
+			}
+			if apierrors.IsResourceExpired(stall.err) || apierrors.IsGone(stall.err) {
+				o.logger.Info("received a 410, grabbing new resource version", fields...)
+			} else {
+				o.logger.Warn("watch is stuck, grabbing new resource version", fields...)
+			}
+			return false, true
+
 		case <-stopperChan:
 			watcher.Stop()
 			return true, false
 		}
 	}
+}
+
+// stallDetector wraps the watch function used by client-go's RetryWatcher.
+// RetryWatcher keeps retrying from the same resourceVersion when the watch
+// request fails with 410 Gone, or when every attempt fails or ends before
+// delivering anything, and it never closes its result channel in either case.
+// stallDetector closes detected instead so that doWatch can re-list.
+type stallDetector struct {
+	maxRestarts int
+	now         func() time.Time
+
+	detected chan struct{}
+	err      error // set before detected is closed
+
+	// RetryWatcher runs one attempt at a time on a single goroutine, so these
+	// need no locking.
+	restarts  int
+	lastRV    string
+	lastStart time.Time
+
+	// unavailable is set when an attempt fails because the apiserver cannot
+	// serve the watch right now (see isAPIServerUnavailable). A re-list would
+	// not help there, so such an attempt does not count as a restart without
+	// progress.
+	unavailable atomic.Bool
+}
+
+func newStallDetector(maxRestarts int) *stallDetector {
+	return &stallDetector{
+		maxRestarts: maxRestarts,
+		now:         time.Now,
+		detected:    make(chan struct{}),
+	}
+}
+
+func (d *stallDetector) stall(err error) {
+	d.err = err
+	close(d.detected)
+}
+
+func (d *stallDetector) wrap(watchFunc func(context.Context, metav1.ListOptions) (apiWatch.Interface, error)) func(context.Context, metav1.ListOptions) (apiWatch.Interface, error) {
+	return func(ctx context.Context, options metav1.ListOptions) (apiWatch.Interface, error) {
+		if d.err != nil {
+			return nil, d.err
+		}
+
+		// RetryWatcher calls this once per attempt and only moves the
+		// resourceVersion on events and newer bookmarks, so the previous
+		// attempt made progress if the version moved or it stayed up long
+		// enough.
+		now := d.now()
+		unavailable := d.unavailable.Swap(false)
+		switch {
+		case options.ResourceVersion != d.lastRV || now.Sub(d.lastStart) >= watchHealthyDuration:
+			d.restarts = 0
+		case !unavailable:
+			d.restarts++
+		}
+		d.lastRV, d.lastStart = options.ResourceVersion, now
+		if d.restarts >= d.maxRestarts {
+			d.stall(fmt.Errorf("watch restarted %d times without progress from resourceVersion %s", d.restarts, options.ResourceVersion))
+			return nil, d.err
+		}
+
+		w, err := watchFunc(ctx, options)
+		switch {
+		case apierrors.IsResourceExpired(err) || apierrors.IsGone(err):
+			d.stall(err)
+		case isAPIServerUnavailable(err):
+			d.unavailable.Store(true)
+		case err == nil && w != nil:
+			return d.forward(w), nil
+		}
+		return w, err
+	}
+}
+
+// forward relays the events of w, noting in-band errors that mean the
+// apiserver is unavailable. RetryWatcher retries those itself, so they never
+// reach doWatch.
+func (d *stallDetector) forward(w apiWatch.Interface) apiWatch.Interface {
+	ch := make(chan apiWatch.Event)
+	proxy := apiWatch.NewProxyWatcher(ch)
+	go func() {
+		defer close(ch)
+		defer w.Stop()
+		for {
+			select {
+			case ev, ok := <-w.ResultChan():
+				if !ok {
+					return
+				}
+				if ev.Type == apiWatch.Error && isAPIServerUnavailable(apierrors.FromObject(ev.Object)) {
+					d.unavailable.Store(true)
+				}
+				select {
+				case ch <- ev:
+				case <-proxy.StopChan():
+					return
+				}
+			case <-proxy.StopChan():
+				return
+			}
+		}
+	}()
+	return proxy
+}
+
+// isAPIServerUnavailable reports whether err means the apiserver could not be
+// reached or would not serve the watch right now: a network error, or a 401,
+// 403, 429, 503, 504 or server timeout response. A re-list would fail the same
+// way, so the watch keeps its resourceVersion. A 504 for a resourceVersion
+// newer than the server has is left out, since a re-list does fix that.
+func isAPIServerUnavailable(err error) bool {
+	var netErr net.Error
+	switch {
+	case errors.As(err, &netErr):
+		return true
+	case apierrors.HasStatusCause(err, metav1.CauseTypeResourceVersionTooLarge):
+		return false
+	}
+	return apierrors.IsUnauthorized(err) || apierrors.IsForbidden(err) || apierrors.IsTooManyRequests(err) ||
+		apierrors.IsServiceUnavailable(err) || apierrors.IsTimeout(err) || apierrors.IsServerTimeout(err)
 }
 
 // fetchListResourceVersion performs a List operation and returns the latest resourceVersion.
@@ -479,7 +628,7 @@ func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynami
 // 1. Persisted resourceVersion (if checkpointer is not nil)
 // 2. Config resourceVersion (if checkpointer is nil)
 // 3. List resourceVersion (if no persisted/config version available)
-func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.ResourceInterface, namespace string) (string, error) {
+func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.ResourceInterface, namespace, configVersion string) (string, error) {
 	// Priority 1: Check for persisted resourceVersion if checkpointer is available
 	if o.checkpointer != nil {
 		persistedVersion, err := o.checkpointer.GetCheckpoint(ctx, namespace, o.config.Gvr.Resource)
@@ -529,7 +678,6 @@ func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.Reso
 	}
 
 	// Priority 2: No checkpointer - check config resourceVersion
-	configVersion := o.config.ResourceVersion
 	if configVersion != "" && configVersion != "0" {
 		return configVersion, nil
 	}
