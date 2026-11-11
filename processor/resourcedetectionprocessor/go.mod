@@ -60,6 +60,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0
 	go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0
 	go.opentelemetry.io/contrib/detectors/openshift v0.19.0
+	go.opentelemetry.io/contrib/detectors/openstack/nova v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/scaleway v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/vultr v0.19.0
 	go.opentelemetry.io/otel v1.47.0
