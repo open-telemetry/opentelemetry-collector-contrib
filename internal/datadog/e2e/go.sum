@@ -1170,6 +1170,8 @@ go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0 h1:rDvASawsxGFjokcb1ztkpMG
 go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0/go.mod h1:Z6X+V9BjLNC5vNwOjE7c03lkQfvOhj5QsLP06/jJW/o=
 go.opentelemetry.io/contrib/detectors/openshift v0.19.0 h1:aB79K0O6F9w275yLeHYYk5g+pmRp62A9r8FpNQfr8us=
 go.opentelemetry.io/contrib/detectors/openshift v0.19.0/go.mod h1:vgFY5LC9WbKGUxrQKDWEOd0LA1fOCRpSPi98aDoDtN0=
+go.opentelemetry.io/contrib/detectors/scaleway v0.0.0-20261106092722-ca27f49bc143 h1:e9hvgOnDsDJA7mNuqy9EKWgxXCEkjdBEZDoWHMBy6nk=
+go.opentelemetry.io/contrib/detectors/scaleway v0.0.0-20261106092722-ca27f49bc143/go.mod h1:sNTtaHtKIjXUBeg2eOFI68a3b3V6CZe0/dGI9psW3mY=
 go.opentelemetry.io/contrib/detectors/vultr v0.19.0 h1:xFmRazM+v0Kbk7YbkgeX5JajCL5HC+U6cGN3gbpow6k=
 go.opentelemetry.io/contrib/detectors/vultr v0.19.0/go.mod h1:Jmz+cuPSup8pd8LOSRPd7ioFoy+n9Z8ScYmCXbgpQVo=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0 h1:Tq+E65HaNbZTeqcLw6QUhsV+/EIWdkfUH2CQzcrlE5M=
