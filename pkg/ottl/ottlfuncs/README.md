@@ -2767,7 +2767,7 @@ Examples:
   "user_agent.original": "curl/7.81.0",
   "os.name": "Other",
   ```
-- - `UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0")`
+- `UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0")`
   ```yaml
   "user_agent.name": "Firefox"
   "user_agent.version": "126.0"
