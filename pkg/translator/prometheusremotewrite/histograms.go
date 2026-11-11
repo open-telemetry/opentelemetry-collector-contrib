@@ -131,6 +131,18 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		scale = 8
 	}
 
+	timestamp := convertTimeStamp(p.Timestamp())
+	if p.Flags().NoRecordedValue() {
+		// Staleness is signaled by a stale-NaN Sum; Count is 0 and ZeroCount/buckets are left empty.
+		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
+		return prompb.Histogram{
+			Schema:        scale,
+			ZeroThreshold: p.ZeroThreshold(),
+			Sum:           math.Float64frombits(value.StaleNaN),
+			Timestamp:     timestamp,
+		}, nil
+	}
+
 	pSpans, pDeltas := convertBucketsLayout(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayout(p.Negative(), scaleDown)
 
@@ -155,15 +167,9 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeSpans:  nSpans,
 		NegativeDeltas: nDeltas,
 
-		Timestamp: convertTimeStamp(p.Timestamp()),
-	}
-
-	if p.Flags().NoRecordedValue() {
-		h.Sum = math.Float64frombits(value.StaleNaN)
-		h.Count = &prompb.Histogram_CountInt{CountInt: value.StaleNaN}
-	} else {
-		h.Sum = p.Sum()
-		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
+		Timestamp: timestamp,
+		Sum:       p.Sum(),
+		Count:     &prompb.Histogram_CountInt{CountInt: p.Count()},
 	}
 	return h, nil
 }
