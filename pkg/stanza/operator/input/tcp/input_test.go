@@ -5,6 +5,7 @@ package tcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"math/rand/v2"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -835,6 +837,65 @@ func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
 	case entry := <-entryChan:
 		t.Errorf("expected no entry to be emitted after read error, got: %q", entry.Body)
 	case <-time.After(500 * time.Millisecond):
+	}
+}
+
+// TestTCPInput_OneLogPerPacket_MaxLogSize checks that data over max_log_size is
+// dropped while reading, and not kept in memory until the connection closes.
+func TestTCPInput_OneLogPerPacket_MaxLogSize(t *testing.T) {
+	const (
+		maxLogSize = minMaxLogSize
+		chunkSize  = 1024 * 1024
+		chunks     = 64
+		// Old code kept all sent data (64 MiB) in memory.
+		maxAllocBytes = 16 * 1024 * 1024
+	)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.OneLogPerPacket = true
+	cfg.MaxLogSize = maxLogSize
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	tcpInput, entryChan := newTCPInput(t, op)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	chunk := bytes.Repeat([]byte("a"), chunkSize)
+
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+	for range chunks {
+		_, err = conn.Write(chunk)
+		require.NoError(t, err)
+	}
+	require.NoError(t, conn.Close())
+
+	select {
+	case e := <-entryChan:
+		require.Equal(t, string(chunk[:maxLogSize]), e.Body)
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "Timed out waiting for entry")
+	}
+
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
+	require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(maxAllocBytes))
+
+	select {
+	case e := <-entryChan:
+		require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", e))
+	case <-time.After(100 * time.Millisecond):
 	}
 }
 

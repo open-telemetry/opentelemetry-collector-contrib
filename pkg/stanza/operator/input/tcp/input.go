@@ -5,7 +5,6 @@ package tcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
@@ -223,13 +222,17 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 
 		dec := i.encoding.NewDecoder()
 		if i.OneLogPerPacket {
-			var buf bytes.Buffer
-			_, err := io.Copy(&buf, conn)
+			// Keep only the first MaxLogSize bytes in memory.
+			log, err := io.ReadAll(io.LimitReader(conn, int64(i.MaxLogSize)))
 			if err != nil {
 				i.Logger().Error("IO copy net connection buffer error", zap.Error(err))
 				return
 			}
-			log := truncateMaxLog(buf.Bytes(), i.MaxLogSize)
+			// Drop the rest until the client closes the connection.
+			if _, err = io.Copy(io.Discard, conn); err != nil {
+				i.Logger().Error("IO copy net connection buffer error", zap.Error(err))
+				return
+			}
 			i.handleMessage(ctx, conn, dec, log)
 			return
 		}
@@ -312,18 +315,6 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 	if err != nil {
 		i.Logger().Error("Failed to write entry", zap.Error(err))
 	}
-}
-
-func truncateMaxLog(data []byte, maxLogSize int) (token []byte) {
-	if len(data) >= maxLogSize {
-		return data[:maxLogSize]
-	}
-
-	if len(data) == 0 {
-		return nil
-	}
-
-	return data
 }
 
 // Stop will stop listening for log entries over TCP.
