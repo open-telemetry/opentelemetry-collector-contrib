@@ -7,7 +7,7 @@ description: |
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [jacobmarble]
+    emeritus: [jacobmarble]
