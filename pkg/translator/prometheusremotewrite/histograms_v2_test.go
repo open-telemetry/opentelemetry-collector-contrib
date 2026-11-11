@@ -426,6 +426,7 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 		wantBuckets        []nhcbBucket
 		wantStartTimestamp int64
 		stale              bool
+		wantErrMessage     string
 	}{
 		{
 			name:        "consistent count and buckets",
@@ -487,10 +488,7 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 				pt.SetCount(10)
 				return pt
 			},
-			wantValues:  []float64{1, 2, 3},
-			wantCount:   10,
-			wantSum:     0,
-			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+			wantErrMessage: "sum is not set",
 		},
 		{
 			name: "no explicit bounds (single +Inf bucket)",
@@ -519,10 +517,24 @@ func TestExplicitToNHCBHistogramV2(t *testing.T) {
 			},
 			stale: true,
 		},
+		{
+			name: "stale marker without sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.RemoveSum()
+				pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
+				return pt
+			},
+			stale: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h, err := explicitToNHCBHistogramV2(tt.hist())
+			if tt.wantErrMessage != "" {
+				require.ErrorContains(t, err, tt.wantErrMessage)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
 			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
