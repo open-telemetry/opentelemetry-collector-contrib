@@ -117,21 +117,21 @@ processors:
 
 ## Output attributes
 
-### Per log record
+### Per log and span record
 
 | Attribute                | Type   | Description                                                                                                     |
 |--------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
 | `audit.integrity.value`  | string | Base64-encoded signature (or MAC for HMAC-SHA256) of the JCS-canonical payload, using the configured algorithm. |
 | `audit.integrity.signer` | string | Always `"collector"` — identifies that the Collector signing processor added the integrity value.               |
 
-### Per Resource (set once per ResourceLogs block)
+### Per Resource (set once per ResourceLogs or ResourceSpans block)
 
 | Attribute                     | Type   | Description                                                                                                                    |
 |-------------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------|
 | `audit.integrity.algorithm`   | string | JWA/IANA algorithm identifier matching the configured `algorithm` field (e.g. `RS256`, `ES256`, `EdDSA`, `HMAC-SHA256`).       |
 | `audit.integrity.certificate` | string | Certificate reference: `sha256:<hex>` fingerprint or full base64 DER, depending on `certificate_ref`. Not set for HMAC-SHA256. |
 
-## Signed payload
+## Signed log payload
 
 The processor serialises the following log-record fields into a JSON object,
 canonicalises it with RFC 8785 (JCS), and signs the result. All
@@ -185,13 +185,24 @@ identical canonical JSON.
 | `slice`   | JSON array (elements encoded recursively; max nesting depth 128)  |
 | `map`     | JSON object (values encoded recursively; max nesting depth 128)   |
 
-Serialization fails with a hard error if the total pre-JCS JSON size exceeds
-2 MiB, if the attribute nesting depth exceeds 128 levels, or if the event name,
-an attribute key, a map key, or a string value is not valid UTF-8. The check
-exists because `json.Marshal` would otherwise replace each invalid byte with
-U+FFFD, and two records differing only in such bytes would share a signature.
+When the JSON size before JCS is more than 2 MiB, serialization fails.
+When the attribute nesting depth is more than 128 levels, serialization fails.
+Serialization fails when one of these strings is not valid UTF-8:
 
-## Example pipeline
+- A log event name
+- A span name
+- A span event name
+- A span status message
+- An attribute key
+- A map key
+- A string value.
+
+`json.Marshal` replaces each invalid byte with U+FFFD.
+Then two records that differ only in those bytes share one signature.
+
+## Example configuration
+
+When the pipeline signal is traces, the same processor signs each span.
 
 ```yaml
 receivers:
@@ -216,6 +227,10 @@ exporters:
 service:
   pipelines:
     logs:
+      receivers:  [otlp]
+      processors: [signing]
+      exporters:  [otlp]
+    traces:
       receivers:  [otlp]
       processors: [signing]
       exporters:  [otlp]

@@ -434,7 +434,7 @@ func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
 		return nil, err
 	}
 	if len(raw) > jsonMaxInputBytes {
-		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
+		return nil, fmt.Errorf("serialized payload exceeds the size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
 	}
 	return jcs.Transform(raw)
 }
@@ -493,11 +493,11 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	}
 }
 
-// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal would
-// otherwise replace each invalid byte with U+FFFD, so two records that differ
-// only in such bytes would canonicalize to the same payload and share a
-// signature. Every string that reaches the payload passes through here: the
-// event name, attribute keys, nested map keys, and string values.
+// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal replaces
+// each invalid byte with U+FFFD. Then two records that differ only in those
+// bytes share one signature. The check covers the log event name, the span
+// name, the span event name, and the span status message. The check also
+// covers attribute keys, map keys, and string values.
 func checkUTF8(s, what string) error {
 	if !utf8.ValidString(s) {
 		return fmt.Errorf("%s contains invalid UTF-8", what)
