@@ -31,6 +31,29 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).DSN = defaultDSN
 	defaultCfg.(*Config).Port = defaultPort
+	defaults := defaultCfg.(*Config)
+
+	customCfg := &Config{
+		DSN:        "10.0.0.1",
+		Port:       9043,
+		Timeout:    5 * time.Second,
+		Keyspace:   "custom_keyspace",
+		TraceTable: "custom_spans",
+		LogsTable:  "custom_logs",
+		Replication: Replication{
+			Class:             "NetworkTopologyStrategy",
+			ReplicationFactor: 3,
+		},
+		Compression: Compression{
+			Algorithm: "ZstdCompressor",
+		},
+		Auth: Auth{
+			UserName: "user",
+			Password: "password",
+		},
+		QueueSettings: defaults.QueueSettings,
+		BackOffConfig: defaults.BackOffConfig,
+	}
 
 	tests := []struct {
 		id          component.ID
@@ -42,26 +65,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "custom"),
-			expected: &Config{
-				DSN:        "10.0.0.1",
-				Port:       9043,
-				Timeout:    5 * time.Second,
-				Keyspace:   "custom_keyspace",
-				TraceTable: "custom_spans",
-				LogsTable:  "custom_logs",
-				Replication: Replication{
-					Class:             "NetworkTopologyStrategy",
-					ReplicationFactor: 3,
-				},
-				Compression: Compression{
-					Algorithm: "ZstdCompressor",
-				},
-				Auth: Auth{
-					UserName: "user",
-					Password: "password",
-				},
-			},
+			id:       component.NewIDWithName(metadata.Type, "custom"),
+			expected: customCfg,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_dsn"),

@@ -8,18 +8,23 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type Config struct {
-	Auth        Auth          `mapstructure:"auth"`
-	DSN         string        `mapstructure:"dsn"`
-	Keyspace    string        `mapstructure:"keyspace"`
-	TraceTable  string        `mapstructure:"trace_table"`
-	LogsTable   string        `mapstructure:"logs_table"`
-	Compression Compression   `mapstructure:"compression"`
-	Replication Replication   `mapstructure:"replication"`
-	Port        int           `mapstructure:"port"`
-	Timeout     time.Duration `mapstructure:"timeout"`
+	Auth          Auth                                                     `mapstructure:"auth"`
+	DSN           string                                                   `mapstructure:"dsn"`
+	Keyspace      string                                                   `mapstructure:"keyspace"`
+	TraceTable    string                                                   `mapstructure:"trace_table"`
+	LogsTable     string                                                   `mapstructure:"logs_table"`
+	Compression   Compression                                              `mapstructure:"compression"`
+	Replication   Replication                                              `mapstructure:"replication"`
+	Port          int                                                      `mapstructure:"port"`
+	Timeout       time.Duration                                            `mapstructure:"timeout"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	BackOffConfig configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 }
 
 type Replication struct {
