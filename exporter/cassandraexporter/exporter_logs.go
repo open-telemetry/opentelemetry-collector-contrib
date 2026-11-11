@@ -6,8 +6,6 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"time"
 
 	gocql "github.com/apache/cassandra-gocql-driver/v2"
@@ -20,6 +18,7 @@ import (
 
 type logsExporter struct {
 	client *gocql.Session
+	exec   queryExecutor
 	logger *zap.Logger
 	cfg    *Config
 }
@@ -28,124 +27,79 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 	return &logsExporter{logger: logger, cfg: cfg}
 }
 
-func initializeLogKernel(cfg *Config) error {
-	ctx := context.Background()
-	cluster, err := newCluster(cfg)
-	if err != nil {
+func (e *logsExporter) Start(ctx context.Context, _ component.Host) error {
+	if err := initializeLogKernel(ctx, e.cfg); err != nil {
 		return err
 	}
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
-	cluster.Timeout = cfg.Timeout
-
-	session, err := cluster.CreateSession()
-	if err != nil {
-		return err
-	}
-
-	defer session.Close()
-
-	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).ExecContext(ctx)
-	if createDatabaseError != nil {
-		return createDatabaseError
-	}
-	createLogTableError := session.Query(parseCreateLogTableSQL(cfg)).ExecContext(ctx)
-	if createLogTableError != nil {
-		return createLogTableError
-	}
-
-	return nil
-}
-
-func newCluster(cfg *Config) (*gocql.ClusterConfig, error) {
-	cluster := gocql.NewCluster(cfg.DSN)
-	if cfg.Auth.UserName != "" && cfg.Auth.Password == "" {
-		return nil, errors.New("empty auth.password")
-	}
-	if cfg.Auth.Password != "" && cfg.Auth.UserName == "" {
-		return nil, errors.New("empty auth.username")
-	}
-	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
-		cluster.Authenticator = gocql.PasswordAuthenticator{
-			Username: cfg.Auth.UserName,
-			Password: string(cfg.Auth.Password),
-		}
-	}
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
-	return cluster, nil
-}
-
-func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
-	cluster, err := newCluster(e.cfg)
-	if err != nil {
-		return err
-	}
-	cluster.Keyspace = e.cfg.Keyspace
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = e.cfg.Port
-	cluster.Timeout = e.cfg.Timeout
-
-	session, err := cluster.CreateSession()
+	session, err := newDataSession(e.cfg)
 	if err != nil {
 		return err
 	}
 	e.client = session
-	initializeErr := initializeLogKernel(e.cfg)
-	return initializeErr
+	e.exec = gocqlExecutor{session: session}
+	return nil
 }
 
 func (e *logsExporter) Shutdown(_ context.Context) error {
 	if e.client != nil {
 		e.client.Close()
 	}
-
 	return nil
-}
-
-func parseCreateLogTableSQL(cfg *Config) string {
-	return fmt.Sprintf(createLogTableSQL, cfg.Keyspace, cfg.LogsTable, cfg.Compression.Algorithm)
 }
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
+	rows, err := logRows(ld)
+	if err != nil {
+		return err
+	}
+	if err := writeRows(ctx, e.exec, parseInsertLogSQL(e.cfg), rows); err != nil {
+		return err
+	}
+	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()), zap.String("cost", time.Since(start).String()))
+	return nil
+}
 
+func logRows(ld plog.Logs) ([]insertRow, error) {
+	rows := make([]insertRow, 0, ld.LogRecordCount())
+	index := 0
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		logs := ld.ResourceLogs().At(i)
-		res := logs.Resource()
-		resAttr := attributesToMap(res.Attributes().AsRaw())
-
-		for j := 0; j < logs.ScopeLogs().Len(); j++ {
-			rs := logs.ScopeLogs().At(j).LogRecords()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				logAttr := attributesToMap(r.Attributes().AsRaw())
-				bodyByte, err := json.Marshal(r.Body().AsRaw())
+		resourceLogs := ld.ResourceLogs().At(i)
+		resourceAttrs := attributesToMap(resourceLogs.Resource().Attributes().AsRaw())
+		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+			records := resourceLogs.ScopeLogs().At(j).LogRecords()
+			for k := 0; k < records.Len(); k++ {
+				record := records.At(k)
+				body, err := json.Marshal(record.Body().AsRaw())
 				if err != nil {
-					return err
+					return nil, err
 				}
-
-				insertLogError := e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
-					r.Timestamp().AsTime(),
-					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
-					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
-					uint32(r.Flags()),
-					r.SeverityText(),
-					int32(r.SeverityNumber()),
-					string(bodyByte),
-					resAttr,
-					logAttr,
-				).ExecContext(ctx)
-
-				if insertLogError != nil {
-					e.logger.Error("insert log error", zap.Error(insertLogError))
-				}
+				traceID := traceutil.TraceIDToHexOrEmptyString(record.TraceID())
+				spanID := traceutil.SpanIDToHexOrEmptyString(record.SpanID())
+				ts := record.Timestamp().AsTime()
+				logAttrs := attributesToMap(record.Attributes().AsRaw())
+				partition := logPartitionKey(traceID, ts)
+				flags := uint32(record.Flags())
+				severity := int32(record.SeverityNumber())
+				rows = append(rows, insertRow{
+					partition: partition,
+					args: []any{
+						logRecordID(index, partition, traceID, spanID, ts, flags, record.SeverityText(), severity, string(body), resourceAttrs, logAttrs),
+						ts,
+						partition,
+						traceID,
+						spanID,
+						int32(flags),
+						record.SeverityText(),
+						severity,
+						string(body),
+						resourceAttrs,
+						logAttrs,
+					},
+				})
+				index++
 			}
 		}
 	}
-
-	duration := time.Since(start)
-	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
-		zap.String("cost", duration.String()))
-	return nil
+	return rows, nil
 }

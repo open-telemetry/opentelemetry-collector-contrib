@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -37,6 +38,8 @@ func createDefaultConfig() component.Config {
 		Compression: Compression{
 			Algorithm: "LZ4Compressor",
 		},
+		QueueSettings: metadata.NewDefaultSendingQueueConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}
 }
 
@@ -44,12 +47,30 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 	c := cfg.(*Config)
 	exp := newTracesExporter(set.Logger, c)
 
-	return exporterhelper.NewTraces(ctx, set, cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown), exporterhelper.WithStart(exp.Start))
+	return exporterhelper.NewTraces(
+		ctx,
+		set,
+		cfg,
+		exp.pushTraceData,
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
+	)
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	exp := newLogsExporter(set.Logger, c)
 
-	return exporterhelper.NewLogs(ctx, set, cfg, exp.pushLogsData, exporterhelper.WithShutdown(exp.Shutdown), exporterhelper.WithStart(exp.Start))
+	return exporterhelper.NewLogs(
+		ctx,
+		set,
+		cfg,
+		exp.pushLogsData,
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
+	)
 }

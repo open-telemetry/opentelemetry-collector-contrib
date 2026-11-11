@@ -22,10 +22,29 @@ The following settings can be optionally configured:
 - `timeout` (default = 10s): The Cassandra server connection timeout
 - `keyspace` (default = otel): The keyspace name.
 - `trace_table` (default = otel_spans): The table name for traces.
+- `logs_table` (default = otel_logs): The table name for logs.
 - `replication` (default = class: SimpleStrategy, replication_factor: 1): The strategy of
   replication. https://cassandra.apache.org/doc/4.1/cassandra/architecture/dynamo.html#replication-strategy
 - `compression` (default = LZ4Compressor): https://cassandra.apache.org/doc/4.0/cassandra/operating/compression.html
 - `auth` (default = username: "", password: "") Authorization for the Cassandra.
+- `sending_queue`: [Exporter helper sending queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#sending-queue). Enabled by default.
+- `retry_on_failure`: [Exporter helper retry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#retry-on-failure). Enabled by default.
+
+## Data model
+
+Spans are stored with `PRIMARY KEY ((trace_id), span_id)`, so a trace is one partition:
+
+```sql
+SELECT * FROM otel.otel_spans WHERE trace_id = '<trace-id>';
+```
+
+Each span row includes its events and links. Logs are stored with `PRIMARY KEY ((partition_key), ts, id)`. `partition_key` is the trace id, or `untraced/<UTC hour>` when the record has no trace id. `id` is deterministic for a record in an export request, so a retry overwrites that row.
+
+```sql
+SELECT * FROM otel.otel_logs WHERE partition_key = '<trace-id>';
+```
+
+The exporter creates the keyspace, tables, and `span_event` / `span_link` types when it starts. Existing `otel_spans` and `otel_logs` tables from older versions of this exporter must be dropped first; `CREATE TABLE IF NOT EXISTS` does not change a primary key.
 
 ## Example
 

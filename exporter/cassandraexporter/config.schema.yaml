@@ -34,6 +34,11 @@ properties:
     type: integer
   replication:
     $ref: replication
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
   timeout:
     type: string
     format: duration
