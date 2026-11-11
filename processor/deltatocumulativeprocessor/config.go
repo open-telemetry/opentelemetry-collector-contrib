@@ -20,6 +20,8 @@ var _ confmap.Validator = (*Config)(nil)
 type Config struct {
 	MaxStale   time.Duration `mapstructure:"max_stale"`
 	MaxStreams int           `mapstructure:"max_streams"`
+
+	StorageID *component.ID `mapstructure:"storage"`
 }
 
 func (c *Config) Validate() error {

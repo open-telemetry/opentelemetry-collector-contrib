@@ -26,16 +26,77 @@ processors:
     delta_to_cumulative:
         # how long until a series not receiving new samples is removed
         [ max_stale: <duration> | default = 5m ]
- 
+
         # upper limit of streams to track. new streams exceeding this limit
         # will be dropped
         [ max_streams: <int> | default = 9223372036854775807 (max int) ]
+
+        # optional: reference to a storage extension for persistent state.
+        # when set, accumulated stream state survives collector restarts.
+        [ storage: <component.ID> ]
 
 ```
 
 There is no further configuration required. All delta samples are converted to cumulative.
 
+### Persistent storage
+
+By default, all accumulated state is held in memory and lost on restart.
+Setting `storage` to a [storage extension](https://opentelemetry.io/docs/collector/configuration/#storage-extension) ID
+enables the processor to persist stream state across collector restarts.
+
+State is loaded from storage on first access. All cached stream state is saved
+once per minute and during graceful shutdown. This write-back mode supports a
+single Collector owning each stored stream; it does not coordinate aggregation
+between Collectors sharing the same storage.
+
+An abrupt stop can lose updates since the last successful flush. A storage outage
+can extend this loss window. When a stream's state cannot be read or decoded, its
+incoming points are dropped with an error rather than overwriting its saved state.
+These load failures are reported as permanent errors because other points in the
+same batch may already have been accumulated and forwarded. Flush and cleanup
+failures are logged and retried on later flushes.
+
+Inactive streams are removed according to `max_stale`. Unaccessed state from a
+previous run is eligible for cleanup after `max_stale` from startup, on the next
+flush. Pending cleanup keys are preserved across restarts until deletion succeeds.
+
+Storage I/O and serialization scale with the number of cached streams on every
+flush. Configure `max_streams` and `max_stale` to bound memory and storage usage.
+
+#### Example: write-back with Redis storage
+
+``` yaml
+extensions:
+    redis_storage:
+        endpoint: localhost:6379
+        tls:
+            insecure: true
+
+processors:
+    delta_to_cumulative:
+        storage: redis_storage
+
+service:
+    extensions: [redis_storage]
+    pipelines:
+        metrics:
+            processors: [delta_to_cumulative]
+```
+
+## Warnings
+
+### Statefulness
+
+This processor **accumulates state** in memory (or in a configured storage extension).
+The amount of state scales linearly with the number of unique metric streams.
+
+Without a `storage` extension, cumulative state resets on Collector restart.
+Persistent storage can resume the saved cumulative series, subject to the flush
+and failure behavior described above. It does not provide exactly-once delivery
+or shared-state high availability.
+
 ## Troubleshooting
 
 When [Telemetry is
-enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md). 
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md).
