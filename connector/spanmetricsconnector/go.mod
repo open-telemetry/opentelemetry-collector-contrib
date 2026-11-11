@@ -8,9 +8,9 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componenttest v0.165.0
@@ -59,7 +59,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

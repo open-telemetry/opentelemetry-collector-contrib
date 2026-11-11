@@ -6,8 +6,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/open-telemetry/opamp-go v0.25.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.165.1
 	github.com/shirou/gopsutil/v4 v4.26.10
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
@@ -26,8 +26,8 @@ require (
 	go.opentelemetry.io/collector/service/hostcapabilities v0.165.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
+	go.yaml.in/yaml/v3 v3.0.6
 	google.golang.org/grpc v1.85.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -90,7 +90,6 @@ require (
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.1 // indirect
-	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect

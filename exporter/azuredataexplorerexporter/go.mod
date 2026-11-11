@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azured
 go 1.26.0
 
 require (
-	github.com/Azure/azure-kusto-go/azkustodata v1.2.2
-	github.com/Azure/azure-kusto-go/azkustoingest v1.2.2
+	github.com/Azure/azure-kusto-go/azkustodata v1.2.3
+	github.com/Azure/azure-kusto-go/azkustoingest v1.2.3
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componenttest v0.165.0
@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/exporter v1.71.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.165.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.165.0
+	go.opentelemetry.io/collector/exporter/xexporter v0.165.0
 	go.opentelemetry.io/collector/featuregate v1.71.0
 	go.opentelemetry.io/collector/pdata v1.71.0
 	go.uber.org/goleak v1.3.0
@@ -60,7 +61,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.165.0 // indirect
 	go.opentelemetry.io/collector/extension v1.71.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.165.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
@@ -80,9 +80,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1 // indirect
 	google.golang.org/grpc v1.85.0 // indirect

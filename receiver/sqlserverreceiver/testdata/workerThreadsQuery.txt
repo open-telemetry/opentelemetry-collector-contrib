@@ -15,6 +15,8 @@ SELECT
 	,si.max_workers_count - SUM(s.active_workers_count) AS [available_threads]
 	,SUM(s.runnable_tasks_count) AS [waiting_for_cpu_threads]
 	,SUM(s.work_queue_count) AS [requests_waiting_for_threads]
+	,SUM(s.current_tasks_count) AS [current_tasks]
+	,(SELECT COUNT(*) FROM sys.dm_os_waiting_tasks WITH (NOLOCK) WHERE wait_type = 'THREADPOOL') AS [tasks_waiting_for_threadpool]
 FROM sys.dm_os_schedulers s
 CROSS JOIN sys.dm_os_sys_info si
 WHERE s.status = 'VISIBLE ONLINE'

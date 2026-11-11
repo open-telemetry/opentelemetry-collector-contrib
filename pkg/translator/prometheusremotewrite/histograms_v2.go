@@ -51,7 +51,7 @@ func explicitToNHCBHistogramV2(pt pmetric.HistogramDataPoint) (writev2.Histogram
 }
 
 func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, name string, metadata metadata,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, name string, metadata metadata,
 ) error {
 	var errs error
 	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
@@ -64,7 +64,7 @@ func (c *prometheusConverterV2) addExponentialHistogramDataPoints(dataPoints pme
 			continue
 		}
 
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -102,11 +102,6 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 	pSpans, pDeltas := convertBucketsLayoutV2(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayoutV2(p.Negative(), scaleDown)
 
-	zeroThreshold := p.ZeroThreshold()
-	if zeroThreshold == 0 {
-		zeroThreshold = defaultZeroThreshold
-	}
-
 	h := writev2.Histogram{
 		// The counter reset detection must be compatible with Prometheus to
 		// safely set ResetHint to NO. This is not ensured currently.
@@ -121,7 +116,7 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		Schema:    scale,
 
 		ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		ZeroThreshold: zeroThreshold,
+		ZeroThreshold: p.ZeroThreshold(),
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
