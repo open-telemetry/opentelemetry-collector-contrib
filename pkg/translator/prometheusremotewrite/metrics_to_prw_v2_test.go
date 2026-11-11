@@ -222,6 +222,7 @@ func TestScopeAttributesV2(t *testing.T) {
 
 	// Scope 1
 	sm1 := rm.ScopeMetrics().AppendEmpty()
+	sm1.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
 	scope1 := sm1.Scope()
 	scope1.SetName("scope1")
 	scope1.SetVersion("1.0.0")
@@ -252,10 +253,12 @@ func TestScopeAttributesV2(t *testing.T) {
 	dp2.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
 	dp2.SetIntValue(2)
 
-	tsMap, _, err := FromMetricsV2(md, settings)
+	tsMap, symbolsTable, err := FromMetricsV2(md, settings)
 	require.NoError(t, err)
 
 	require.Len(t, tsMap, 2)
+	require.Contains(t, symbolsTable.Symbols(), "otel_scope_schema_url")
+	require.Contains(t, symbolsTable.Symbols(), "https://opentelemetry.io/schemas/1.7.0")
 }
 
 func getMetricNameV2(t *testing.T, ts *writev2.TimeSeries, symbols []string) string {
