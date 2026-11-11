@@ -198,6 +198,7 @@ func TestIngestedPayloadIsGzip(t *testing.T) {
 			require.NoError(t, push())
 			require.Greater(t, len(ingestor.raw), 2)
 			assert.Equal(t, []byte{0x1f, 0x8b}, ingestor.raw[:2], "payload must start with the gzip magic number")
+			assert.True(t, ingestor.seekable, "the reader must be seekable: the client retries a failed queued upload against another storage container by seeking back to the start")
 
 			zr, err := gzip.NewReader(bytes.NewReader(ingestor.raw))
 			require.NoError(t, err)
@@ -318,13 +319,15 @@ func TestCreateKcsb(t *testing.T) {
 }
 
 type mockingestor struct {
-	records []string
-	raw     []byte // the payload exactly as the exporter handed it over
-	lastCtx context.Context
+	records  []string
+	raw      []byte // the payload exactly as the exporter handed it over
+	seekable bool   // whether the reader the exporter handed over can seek
+	lastCtx  context.Context
 }
 
 func (m *mockingestor) FromReader(ctx context.Context, reader io.Reader, _ ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
 	m.lastCtx = ctx
+	_, m.seekable = reader.(io.Seeker)
 	m.raw, _ = io.ReadAll(reader)
 	bufbytes := m.raw
 	if zr, err := gzip.NewReader(bytes.NewReader(m.raw)); err == nil {

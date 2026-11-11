@@ -76,7 +76,9 @@ func (e *adxDataProducer) ingestData(ctx context.Context, b []string) error {
 		return err
 	}
 
-	if _, err := e.ingestor.FromReader(ctx, &compressed, e.ingestOptions...); err != nil {
+	// A *bytes.Reader, not the buffer: when a queued upload fails the client seeks the reader back to the start and retries
+	// against another storage container, and a *bytes.Buffer cannot seek. It reuses the same bytes, so nothing is copied.
+	if _, err := e.ingestor.FromReader(ctx, bytes.NewReader(compressed.Bytes()), e.ingestOptions...); err != nil {
 		e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
 		return err
 	}
