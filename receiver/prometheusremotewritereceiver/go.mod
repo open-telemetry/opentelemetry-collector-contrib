@@ -6,9 +6,9 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.165.1
 	github.com/prometheus/client_golang/exp v0.0.0-20260907100614-57bb367da472
 	github.com/prometheus/common v0.72.1
 	github.com/prometheus/prometheus v0.315.1
@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.71.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.0
+	go.opentelemetry.io/collector/featuregate v1.71.0
 	go.opentelemetry.io/collector/pdata v1.71.0
 	go.opentelemetry.io/collector/receiver v1.71.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.165.0
@@ -93,7 +94,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.165.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.165.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
@@ -115,7 +116,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.71.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.165.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.165.0 // indirect
