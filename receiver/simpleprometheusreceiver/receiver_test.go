@@ -5,6 +5,8 @@ package simpleprometheusreceiver
 
 import (
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -430,6 +432,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 }
 
 func TestGetPrometheusConfigScheme(t *testing.T) {
+	certPem, keyPem := generateSelfSignedPEM(t)
+	certFile := filepath.Join(t.TempDir(), "cert.pem")
+	keyFile := filepath.Join(t.TempDir(), "key.pem")
+	require.NoError(t, os.WriteFile(certFile, certPem, 0o600))
+	require.NoError(t, os.WriteFile(keyFile, keyPem, 0o600))
+
 	tests := []struct {
 		name       string
 		tls        configtls.ClientConfig
@@ -470,6 +478,19 @@ func TestGetPrometheusConfigScheme(t *testing.T) {
 				InsecureSkipVerify: true,
 			},
 			wantScheme: "http",
+		},
+		{
+			name: "cert_file and key_file with insecure false",
+			tls: configtls.ClientConfig{
+				Config:   configtls.Config{CertFile: certFile, KeyFile: keyFile},
+				Insecure: false,
+			},
+			wantScheme: "https",
+			wantTLS: configutil.TLSConfig{
+				CertFile:   certFile,
+				KeyFile:    keyFile,
+				MinVersion: configutil.TLSVersions["TLS12"],
+			},
 		},
 	}
 	for _, tt := range tests {
