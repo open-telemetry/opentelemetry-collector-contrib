@@ -575,20 +575,26 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedSummarySeries, droppedSummaryAttrs)
 	}
 
-	// Snapshot modified resource attributes before returning otelMetrics so commitRMCache never
-	// reads from otelMetrics after ownership is transferred to nextConsumer.ConsumeMetrics.
+	// Snapshot newly created or target_info-modified resource attributes before returning
+	// otelMetrics so commitRMCache never reads from otelMetrics after ownership is transferred
+	// to nextConsumer.ConsumeMetrics. Cache hits without target_info only need their LRU
+	// recency updated via Get on commit.
 	type stagedRMEntry struct {
 		snapshot           pmetric.ResourceMetrics
+		hasSnapshot        bool
 		targetInfoModified bool
 	}
 	stagedRMCache := make(map[uint64]stagedRMEntry, len(modifiedResourceMetric))
 	for hashed, rm := range modifiedResourceMetric {
-		snapshot := pmetric.NewResourceMetrics()
-		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
-		stagedRMCache[hashed] = stagedRMEntry{
-			snapshot:           snapshot,
+		entry := stagedRMEntry{
 			targetInfoModified: targetInfoModified[hashed],
 		}
+		if entry.targetInfoModified || !prw.rmCache.Contains(hashed) {
+			entry.snapshot = pmetric.NewResourceMetrics()
+			rm.Resource().Attributes().CopyTo(entry.snapshot.Resource().Attributes())
+			entry.hasSnapshot = true
+		}
+		stagedRMCache[hashed] = entry
 	}
 	commitRMCache := func() {
 		for hashed, entry := range stagedRMCache {
@@ -597,7 +603,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				continue
 			}
 			// Touch existing entry to update LRU recency, or add the detached snapshot on cache miss.
-			if _, ok := prw.rmCache.Get(hashed); !ok {
+			if _, ok := prw.rmCache.Get(hashed); !ok && entry.hasSnapshot {
 				prw.rmCache.Add(hashed, entry.snapshot)
 			}
 		}
