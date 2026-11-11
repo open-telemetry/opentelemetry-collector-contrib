@@ -16,7 +16,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -238,6 +240,56 @@ func TestStoppingCollectionDoesNotLogPollErrors(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(t.Context()))
 
 	require.Zero(t, logs.Len(), "canceling an in-flight poll is not an error: %v", logs.All())
+}
+
+// exportingConsumer holds a batch the way a slow exporter does, and gives up only if the
+// receiver cancels the batch's context.
+type exportingConsumer struct {
+	consumertest.LogsSink
+	exporting chan struct{}
+	release   chan struct{}
+}
+
+func (*exportingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (c *exportingConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	close(c.exporting)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-c.release:
+		return c.LogsSink.ConsumeLogs(ctx, ld)
+	}
+}
+
+func TestStoppingCollectionDeliversBatchInFlight(t *testing.T) {
+	core, logs := observer.New(zapcore.ErrorLevel)
+	cfg := leaderElectedLogsConfig()
+	cfg.K8sLeaderElector = nil
+	cfg.StorageID = nil
+
+	sink := &exportingConsumer{exporting: make(chan struct{}), release: make(chan struct{})}
+	rcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.New(core),
+		},
+	}, sink)
+	rcvr.client = &pagingClient{emitted: make(chan struct{})}
+
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	<-sink.exporting
+
+	shutdownDone := make(chan error, 1)
+	go func() { shutdownDone <- rcvr.Shutdown(t.Context()) }()
+	require.Never(t, func() bool { return len(shutdownDone) > 0 }, 100*time.Millisecond, 10*time.Millisecond,
+		"shutdown must wait for the batch being exported instead of canceling it")
+
+	close(sink.release)
+	require.NoError(t, <-shutdownDone)
+	require.Equal(t, 1, sink.LogRecordCount())
+	require.Zero(t, logs.Len(), "stopping collection must not fail the batch in flight: %v", logs.All())
 }
 
 func TestLogsStartRejectsLeaderElectionWithoutStorage(t *testing.T) {

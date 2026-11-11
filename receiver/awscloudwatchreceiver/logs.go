@@ -394,7 +394,9 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			observedTime := pcommon.NewTimestampFromTime(nowFunc())
 			logs := l.processEvents(observedTime, logGroup, resp)
 			if logs.LogRecordCount() > 0 {
-				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
+				// A page already read is delivered even when collection stops mid-export, as
+				// scraperhelper does for scrapes. Canceling it would drop the page.
+				if err = l.consumer.ConsumeLogs(context.WithoutCancel(ctx), logs); err != nil {
 					l.settings.Logger.Error("unable to consume logs",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
