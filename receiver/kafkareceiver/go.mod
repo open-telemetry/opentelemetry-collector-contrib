@@ -19,7 +19,7 @@ require (
 	github.com/twmb/franz-go v1.22.2
 	github.com/twmb/franz-go/pkg/kadm v1.19.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
-	github.com/twmb/franz-go/pkg/kmsg v1.15.0
+	github.com/twmb/franz-go/pkg/kmsg v1.15.1
 	go.opentelemetry.io/collector/client v1.71.0
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componentstatus v0.165.0
@@ -51,20 +51,20 @@ require (
 require (
 	github.com/apache/thrift v0.25.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.47.5 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.33.13 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.13 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.5 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.8 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.8 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.12.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.39.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6 // indirect
-	github.com/aws/smithy-go v1.28.7 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.47.8 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.33.16 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.16 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.24 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.11 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.12.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.39.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.9 // indirect
+	github.com/aws/smithy-go v1.28.8 // indirect
 	github.com/cenkalti/backoff/v7 v7.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4 // indirect
@@ -116,7 +116,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
-	golang.org/x/oauth2 v0.37.0 // indirect
+	golang.org/x/oauth2 v0.38.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1 // indirect
 	google.golang.org/grpc v1.85.0 // indirect

@@ -7,14 +7,13 @@ package cadvisor
 
 import (
 	"errors"
-	"net/http"
 	"testing"
 
-	"github.com/google/cadvisor/cache/memory"
-	"github.com/google/cadvisor/container"
 	info "github.com/google/cadvisor/info/v1"
-	"github.com/google/cadvisor/manager"
-	"github.com/google/cadvisor/utils/sysfs"
+	"github.com/google/cadvisor/lib/cache/memory"
+	"github.com/google/cadvisor/lib/container"
+	"github.com/google/cadvisor/lib/manager"
+	"github.com/google/cadvisor/lib/utils/sysfs"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -50,7 +49,7 @@ func (*mockCadvisorManager2) SubcontainersInfo(string, *info.ContainerInfoReques
 
 func newMockCreateManager(t *testing.T) createCadvisorManager {
 	return func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig,
-		container.MetricSet, *http.Client, []string,
+		container.MetricSet, []string,
 		string,
 	) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
@@ -58,14 +57,14 @@ func newMockCreateManager(t *testing.T) createCadvisorManager {
 }
 
 var mockCreateManager2 = func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig,
-	container.MetricSet, *http.Client, []string,
+	container.MetricSet, []string,
 	string,
 ) (cadvisorManager, error) {
 	return &mockCadvisorManager2{}, nil
 }
 
 var mockCreateManagerWithError = func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig,
-	container.MetricSet, *http.Client, []string,
+	container.MetricSet, []string,
 	string,
 ) (cadvisorManager, error) {
 	return nil, errors.New("error")
