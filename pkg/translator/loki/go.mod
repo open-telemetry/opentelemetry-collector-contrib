@@ -5,8 +5,8 @@ go 1.26.0
 require (
 	github.com/go-logfmt/logfmt v0.6.1
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/prometheus/common v0.72.1
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.315.1
@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/collector/pdata/xpdata v0.165.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect

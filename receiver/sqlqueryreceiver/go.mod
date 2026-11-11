@@ -4,19 +4,19 @@ go 1.26.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
-	github.com/SAP/go-hdb v1.20.2
+	github.com/SAP/go-hdb v1.21.0
 	github.com/docker/go-connections v0.8.1 // indirect
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/lib/pq v1.12.3
 	github.com/microsoft/go-mssqldb v1.11.2
 	github.com/moby/moby/api v1.56.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.165.1
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/snowflakedb/gosnowflake/v2 v2.3.0
 	github.com/stretchr/testify v1.12.1
@@ -147,7 +147,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/paulmach/orb v0.13.0 // indirect
@@ -187,7 +187,7 @@ require (
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260924152758-ed294f943157 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
