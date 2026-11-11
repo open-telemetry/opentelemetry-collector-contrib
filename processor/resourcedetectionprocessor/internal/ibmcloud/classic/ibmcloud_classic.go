@@ -7,26 +7,33 @@ package classic // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	classicdetector "go.opentelemetry.io/contrib/detectors/ibmcloud/classic"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	classicprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/ibmcloud/classic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
+
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return classicdetector.NewResourceDetector()
+}
 
 var _ internal.Detector = (*Detector)(nil)
 
-// Detector queries the IBM Cloud Classic (SoftLayer) Resource Metadata Service
-// and emits resource attributes.
+// Detector is an IBM Cloud Classic (SoftLayer) metadata detector. Detection is
+// delegated to the upstream SDK detector so that the attributes reported here
+// match the ones the collector's own telemetry reports.
 type Detector struct {
-	provider              classicprovider.Provider
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -35,32 +42,39 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		provider:              classicprovider.NewProvider(),
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
 // Detect detects IBM Cloud Classic instance metadata and returns a resource with the available attributes.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	meta, err := d.provider.InstanceMetadata(ctx)
+	// Detection runs unfiltered so that an empty result answers "is this process on an IBM
+	// Cloud Classic instance?"; the configured attributes are applied afterwards. A partial
+	// result still came from a reachable metadata service, so the bridge keeps what it did
+	// return. fail_on_missing_metadata covers an unusable metadata service, not individual
+	// fields absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
-		d.logger.Debug("IBM Cloud Classic metadata not available", zap.Error(err))
+		d.logger.Debug("IBM Cloud Classic metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", fmt.Errorf("ibmcloud classic metadata unavailable: %w", err)
+			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.CloudProviderIBMCloud.Value.AsString())
-	// TODO: Use semconv constant once CloudPlatformIBMCloudClassic is added.
-	d.rb.SetCloudPlatform("ibm_cloud.classic")
-	d.rb.SetCloudAccountID(meta.AccountID)
-	d.rb.SetCloudAvailabilityZone(meta.Datacenter)
-	d.rb.SetCloudResourceID(meta.GlobalIdentifier)
-	d.rb.SetHostID(meta.ID)
-	d.rb.SetHostName(meta.Hostname)
+	// The SDK detector reports an empty resource and no error both when the metadata
+	// service is unreachable and when running outside IBM Cloud Classic.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("IBM Cloud Classic detector: metadata unavailable or not running on an IBM Cloud Classic instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("ibmcloud classic metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
+	}
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }

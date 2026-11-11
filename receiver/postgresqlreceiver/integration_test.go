@@ -200,7 +200,6 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				Env: map[string]string{
@@ -277,7 +276,6 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				Env: map[string]string{
@@ -356,7 +354,6 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				// Needed for the prepared transaction below.
@@ -540,7 +537,6 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 		ci, err := testcontainers.GenericContainer(
 			t.Context(),
 			testcontainers.GenericContainerRequest{
-				ProviderType: testcontainers.ProviderPodman,
 				ContainerRequest: testcontainers.ContainerRequest{
 					Image: fmt.Sprintf("postgres:%s", pgVersion),
 					Env: map[string]string{
@@ -668,7 +664,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
 				Env: map[string]string{
