@@ -17,7 +17,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.34.4
-	github.com/linode/go-metadata v0.3.1
 	github.com/moby/moby/api v1.56.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.165.1
@@ -49,6 +48,7 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.165.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.165.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.165.0
+	go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.19.0
 	go.opentelemetry.io/contrib/detectors/azure/azureaks v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.19.0
@@ -146,6 +146,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
+	github.com/linode/go-metadata v0.3.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect

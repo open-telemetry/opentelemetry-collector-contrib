@@ -1138,6 +1138,8 @@ go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.165.0 h1:Ztm4R/
 go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.165.0/go.mod h1:8dgk9kNw2yKygsx0xM7jF7x5Dl4KUQuJ/68Ss7zlpUQ=
 go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 h1:p23nklcy3VVRcfZ2ce5AXQa6RHQPQvIMM+fW3GzXCU0=
 go.opentelemetry.io/contrib/bridges/otelzap v0.21.0/go.mod h1:7NPD4VToURMipQu1xgz6seTz8aXmbCqQNZs7bQADEjU=
+go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143 h1:jEv1ZHpuUhC6t5TayCyn11INWBSQBFD1jj2qE3mlwnQ=
+go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143/go.mod h1:VVjztbExNS3+n4dMtcpZHiLcbQgNCY3BF79M0DC/cZs=
 go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 h1:DercSDxi3/a76k9pY+RM2xK2c0fpRHNoXnoFrgcJbOA=
 go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0/go.mod h1:TgoOI5Pe7ZbxQtotuhj3czM7Ma87d0DaAlVZkbptToc=
 go.opentelemetry.io/contrib/detectors/aws/ecs v1.47.0 h1:oNVuvzYQVO0K/ewiWQ0QvJHZmBsI+INJP9Jjf5IR3Ek=
