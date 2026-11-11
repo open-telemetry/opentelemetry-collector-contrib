@@ -2676,10 +2676,14 @@ func TestConsumeLogs_NoConsumeWGLeakOnResolveError(t *testing.T) {
 	svcGood := serviceForEndpoint(t, lb.ring, "good")
 	svcMissing := serviceForEndpoint(t, lb.ring, "missing")
 
+	// Map iteration order is random: if the missing backend is visited first, the call
+	// returns before incrementing the healthy backend's consumeWG, so the leak does not
+	// trigger. Repeat to make it likely that the triggering order is exercised.
 	for range 20 {
 		ld := simpleLogWithServiceName(svcGood)
 		simpleLogWithServiceName(svcMissing).ResourceLogs().MoveAndAppendTo(ld.ResourceLogs())
 		require.Error(t, e.ConsumeLogs(t.Context(), ld))
 	}
-	require.Eventually(t, func() bool { return e.Shutdown(t.Context()) == nil }, time.Second, 10*time.Millisecond, "Shutdown hangs")
+	require.True(t, waitGroupReturns(&good.consumeWG, time.Second),
+		"consumeWG leaked on resolve error: Shutdown's Wait() would hang")
 }
