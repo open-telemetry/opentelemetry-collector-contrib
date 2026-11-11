@@ -298,6 +298,64 @@ func TestRouterDoesNotSplitBatches(t *testing.T) {
 	require.Len(t, passedEntries2, 3) // Three entries match route2
 }
 
+func TestRouterCopiesEntriesForFanOut(t *testing.T) {
+	for _, processBatch := range []bool{false, true} {
+		name := "Process"
+		if processBatch {
+			name = "ProcessBatch"
+		}
+		t.Run(name, func(t *testing.T) {
+			cfg := &Config{
+				BasicConfig: helper.BasicConfig{
+					OperatorID:   "test_router",
+					OperatorType: "router",
+				},
+				Routes: []*RouteConfig{{
+					AttributerConfig: helper.NewAttributerConfig(),
+					Expression:       `true`,
+					OutputIDs:        []string{"output1", "output2"},
+				}},
+			}
+
+			op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			var firstOutputEntry *entry.Entry
+			mock1 := testutil.NewMockOperator("output1")
+			mock2 := testutil.NewMockOperator("output2")
+			if processBatch {
+				mock1.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+					firstOutputEntry = args.Get(1).([]*entry.Entry)[0]
+					firstOutputEntry.Body = "first output"
+				})
+				mock2.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+					secondOutputEntry := args.Get(1).([]*entry.Entry)[0]
+					require.NotSame(t, firstOutputEntry, secondOutputEntry)
+					require.Equal(t, "original", secondOutputEntry.Body)
+				})
+			} else {
+				mock1.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+					firstOutputEntry = args.Get(1).(*entry.Entry)
+					firstOutputEntry.Body = "first output"
+				})
+				mock2.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+					secondOutputEntry := args.Get(1).(*entry.Entry)
+					require.NotSame(t, firstOutputEntry, secondOutputEntry)
+					require.Equal(t, "original", secondOutputEntry.Body)
+				})
+			}
+
+			require.NoError(t, op.SetOutputs([]operator.Operator{mock1, mock2}))
+			input := &entry.Entry{Body: "original"}
+			if processBatch {
+				require.NoError(t, op.ProcessBatch(t.Context(), []*entry.Entry{input}))
+			} else {
+				require.NoError(t, op.Process(t.Context(), input))
+			}
+		})
+	}
+}
+
 func TestProcessBatchContinuesOnExpressionError(t *testing.T) {
 	// This test verifies that when vm.Run fails for one entry,
 	// other entries in the batch are still processed correctly.

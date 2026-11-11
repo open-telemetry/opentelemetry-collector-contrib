@@ -151,7 +151,7 @@ func (i *Input) goListen(ctx context.Context) {
 			}
 
 			if i.connectionIdleTimeout > 0 {
-				if derr := conn.SetDeadline(time.Now().Add(i.connectionIdleTimeout)); derr != nil {
+				if derr := conn.SetReadDeadline(time.Now().Add(i.connectionIdleTimeout)); derr != nil {
 					i.Logger().Error("Failed to set connection deadline", zap.Error(derr))
 					if cerr := conn.Close(); cerr != nil {
 						i.Logger().Error("Failed to close connection", zap.Error(cerr))
@@ -241,11 +241,21 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 
 		scanner.Split(i.shutdownAwareSplitFunc(ctx))
 
-		for scanner.Scan() {
+		for {
 			if i.connectionIdleTimeout > 0 {
-				if err := conn.SetDeadline(time.Now().Add(i.connectionIdleTimeout)); err != nil {
+				if err := conn.SetReadDeadline(time.Now().Add(i.connectionIdleTimeout)); err != nil {
 					// error setting deadline is due to os.ErrDeadlineExceeded, connection is closing at this point
 					i.Logger().Debug("Failed to set connection deadline", zap.Error(err))
+					break
+				}
+			}
+			if !scanner.Scan() {
+				break
+			}
+
+			if i.connectionIdleTimeout > 0 {
+				if err := conn.SetReadDeadline(time.Time{}); err != nil {
+					i.Logger().Debug("Failed to clear connection deadline", zap.Error(err))
 					break
 				}
 			}
