@@ -673,7 +673,7 @@ func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
 	scrpr.logsBuilderConfig.Events.DbServerTopProcedure.Enabled = false
 
 	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
-	defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
 
 	entries := observed.FilterMessage("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
 	require.Len(t, entries, 1)

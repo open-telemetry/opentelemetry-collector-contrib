@@ -2500,10 +2500,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	maxHitsSize := min(len(hits), int(s.procedureMetricsCfg.TopProcedureCount))
 	hits = hits[:maxHitsSize]
 
-	// Fetch all procedure definitions in one query if the event is enabled.
-	// A nil definitions map means fetch failed or was not attempted; in that case
-	// no definition events are emitted (avoids confusing genuinely empty definitions
-	// from wrapped/missing procedures with a failed fetch).
+	// nil definitions means fetch failed; don't emit events so empty definitions remain unambiguous.
 	var definitions map[procedureIdentity]string
 	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
 		var defErr error
