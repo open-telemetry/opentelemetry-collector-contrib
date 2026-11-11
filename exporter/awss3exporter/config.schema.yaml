@@ -72,6 +72,13 @@ $defs:
       unique_key_func_name:
         description: 'UniqueKeyFuncName specifies a function to use for generating a unique string as part of the S3 key. If unspecified, a default function will be used that generates a random string. Valid values are: "uuidv7"'
         type: string
+  telemetry_config:
+    description: TelemetryConfig configures the internal telemetry of the exporter.
+    type: object
+    properties:
+      enabled:
+        description: Enabled emits the upload metrics of the exporter, otelcol.awss3.upload.duration and otelcol.awss3.uploaded.size. Disabled by default.
+        type: boolean
 description: Config contains the main configuration options for the s3 exporter
 type: object
 properties:
@@ -93,5 +100,8 @@ properties:
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  telemetry:
+    description: Telemetry configures the internal telemetry of the exporter.
+    $ref: telemetry_config
 allOf:
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config

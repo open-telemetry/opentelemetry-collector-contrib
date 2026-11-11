@@ -784,3 +784,19 @@ func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 	}, e,
 	)
 }
+
+func TestConfigTelemetry(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-telemetry.yaml"), factories,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	assert.True(t, e.Telemetry.Enabled)
+}

@@ -24,3 +24,34 @@ sending_queue:
         partition:
             metadata_keys: []  # default
 ```
+
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+### otelcol.awss3.upload.duration
+
+Duration of S3 uploads.
+
+Includes the retries, and their backoff, done by the AWS SDK within one upload. Only emitted when `telemetry::enabled` is set in the exporter configuration.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
+| error.type | The type of error that made the upload fail. One of `timeout`, `canceled`, `dns`, `connection_refused`, `network`, `other`, or the S3 API error code of an error response, such as `AccessDenied` or `SlowDown`. | Any Str | - |
+
+### otelcol.awss3.uploaded.size
+
+Size of the objects uploaded to S3, after compression.
+
+Only successful uploads are counted. Only emitted when `telemetry::enabled` is set in the exporter configuration.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
