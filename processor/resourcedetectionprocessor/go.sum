@@ -462,6 +462,8 @@ go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.19.0 h1:jod9iG
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.19.0/go.mod h1:Do2FZ7+9YKeCiUuDDI3OcnRhBvrmQFowkviZOZWLDJc=
 go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0 h1:Dn5+LcOW0qvxP/2eNDZr3HA+RoJe3L/UhjwWAEFzPz0=
 go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0/go.mod h1:El4KDS9Hl9yQyTkypuHezFz2WenecSuImht7JSUsUNQ=
+go.opentelemetry.io/contrib/detectors/dynatrace v0.0.0-20261106092722-ca27f49bc143 h1:ahtqFa3jAbvsjHvNtab05Z4lOB37QM0fsgIZN75+ekk=
+go.opentelemetry.io/contrib/detectors/dynatrace v0.0.0-20261106092722-ca27f49bc143/go.mod h1:zfQzIHjvSKcRXXORQTfN+wV8jKMWgd0yQchkqFhVBSc=
 go.opentelemetry.io/contrib/detectors/hetzner v0.19.0 h1:bt2D4vPOIxDjgvZiBQ69UhMmWR7+K7TbXwv9c25+lQ4=
 go.opentelemetry.io/contrib/detectors/hetzner v0.19.0/go.mod h1:FOnmN7SZe1oDvotWLiZSmUdHG9hFE4KQvJeI3A+whfI=
 go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0 h1:jxs+/EjbVFUyPmqWWF/4FZ8mzdKrjcjTE9FLAuK8g/c=
