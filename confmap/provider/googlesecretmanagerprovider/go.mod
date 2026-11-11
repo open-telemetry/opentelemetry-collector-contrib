@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provide
 go 1.26.0
 
 require (
-	cloud.google.com/go/secretmanager v1.23.1
+	cloud.google.com/go/secretmanager v1.24.0
 	github.com/googleapis/gax-go/v2 v2.27.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/confmap v1.71.0

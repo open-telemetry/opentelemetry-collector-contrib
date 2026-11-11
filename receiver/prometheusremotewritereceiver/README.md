@@ -36,6 +36,8 @@ Because such a label is the same as an absent one, two series that differ only b
 
 For the same reason, a label that arrives with an empty value does not clear a value an earlier `target_info` cached for the same job/instance, exactly as an absent label does not (see [Resource Metrics Cache](#resource-metrics-cache)).
 
+An empty label *name* is different: it cannot become an attribute key, so a series that carries one is refused with `400 Bad Request` and none of the request is passed on. An exemplar label with an empty name is dropped instead, since the exemplar is an annotation on a data point and the rest of it stays meaningful. A label named exactly `otel_scope_` is the other way around: its name is not empty, but nothing is left of it once the scope prefix is stripped, so it loses its scope attribute and the series is kept.
+
 ## Configuring `PrometheusRemoteWriteReceiver`
 
 This component's configuration is based on [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
