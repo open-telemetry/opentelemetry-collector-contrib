@@ -50,10 +50,6 @@ func (cfg *Config) Validate() error {
 			return err
 		}
 
-		if err := cfg.Servers[i].TLS.Validate(); err != nil {
-			return err
-		}
-
 		if cfg.Servers[i].TLS.Insecure {
 			return errors.New("tls::insecure is not supported")
 		}

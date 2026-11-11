@@ -67,15 +67,10 @@ func NewClient(computerSystemID, addr, user string, pwd configopaque.String, opt
 		opt(clientOpts)
 	}
 
-	tlsConfig := clientOpts.TLSConfig
-	if tlsConfig == nil {
-		tlsConfig = &tls.Config{}
-	}
-
 	return &Client{
 		client: http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: tlsConfig,
+				TLSClientConfig: clientOpts.TLSConfig,
 				Proxy:           http.ProxyFromEnvironment,
 			},
 			Timeout: clientOpts.ClientTimeout,

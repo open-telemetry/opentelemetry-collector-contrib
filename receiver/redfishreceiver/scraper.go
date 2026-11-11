@@ -58,9 +58,7 @@ func (s *redfishScraper) start(ctx context.Context, _ component.Host) error {
 		if tlsErr != nil {
 			return tlsErr
 		}
-		if tlsConfig != nil {
-			opts = append(opts, redfish.WithTLSConfig(tlsConfig))
-		}
+		opts = append(opts, redfish.WithTLSConfig(tlsConfig))
 
 		if server.Redfish.Version != "" {
 			opts = append(opts, redfish.WithRedfishVersion(server.Redfish.Version))

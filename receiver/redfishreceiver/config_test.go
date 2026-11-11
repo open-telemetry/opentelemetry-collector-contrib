@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -112,7 +113,9 @@ func TestConfig_Validate(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := tc.cfg.Validate()
+			cfg := createDefaultConfig().(*Config)
+			cfg.Servers = tc.cfg.Servers
+			err := confmap.Validate(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
