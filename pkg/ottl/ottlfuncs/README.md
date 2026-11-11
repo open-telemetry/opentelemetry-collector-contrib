@@ -561,8 +561,8 @@ Available Converters:
 - [Day](#day)
 - [Double](#double)
 - [Duration](#duration)
-- [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
+- [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -929,22 +929,6 @@ Examples:
 - `Duration("333ms")`
 - `Duration("1000000h")`
 
-### ExtractPatterns
-
-`ExtractPatterns(target, pattern)`
-
-The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
-
-`target` is a Getter that returns a string. `pattern` is a regex string.
-
-If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup.
-
-Examples:
-
-- `ExtractPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
-
-- `ExtractPatterns(log.body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
-
 ### ExtractGrokPatterns
 
 `ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly], Optional[patternDefinitions])`
@@ -958,7 +942,7 @@ It returns a `pcommon.Map` struct that is a result of extracting named capture g
 - `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`. 
 This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming. 
 
-If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
+If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractGrokPatterns` errors on startup.
 
 Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file) library.
 Grok is a regular expression dialect that supports reusable aliased expressions. It sits on `re2` regex library so any valid `re2` expressions are valid in grok.
@@ -1002,7 +986,7 @@ Examples:
 
 - _Uses regex pattern with named captures to extract_:
 
-  `ExtractGrokPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+  `ExtractGrokPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\\w+)")`
 
 - _Uses regex pattern with named captures to extract_:
 
@@ -1034,6 +1018,22 @@ Examples:
   - Return values: 
      - `user.name`: smith
      - `user.password`: pass123
+
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a regex string.
+
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup.
+
+Examples:
+
+- `ExtractPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\\w+)")`
+
+- `ExtractPatterns(log.body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### FNV
 
@@ -1128,7 +1128,7 @@ Examples:
 
 - `FormatTime(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
 - `FormatTime(UnixNano(span.attributes["time_nanoseconds"]), "%b %d %Y %H:%M:%S")`
-- `FormatTime(TruncateTime(spanevent.time, Duration("10h 20m"))), "%Y-%m-%d %H:%M:%S")`
+- `FormatTime(TruncateTime(spanevent.time, Duration("10h20m")), "%Y-%m-%d %H:%M:%S")`
 
 ### GetXML
 
