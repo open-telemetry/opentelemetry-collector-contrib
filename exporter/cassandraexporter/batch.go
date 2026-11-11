@@ -5,6 +5,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	gocql "github.com/apache/cassandra-gocql-driver/v2"
@@ -45,7 +46,7 @@ func writeRows(ctx context.Context, exec queryExecutor, stmt string, rows []inse
 		return nil
 	}
 	if exec == nil {
-		return fmt.Errorf("cassandra exporter is not started")
+		return errors.New("cassandra exporter is not started")
 	}
 
 	grouped := make(map[string][][]any)
@@ -60,10 +61,7 @@ func writeRows(ctx context.Context, exec queryExecutor, stmt string, rows []inse
 	for _, key := range order {
 		args := grouped[key]
 		for start := 0; start < len(args); start += maxStatementsPerBatch {
-			end := start + maxStatementsPerBatch
-			if end > len(args) {
-				end = len(args)
-			}
+			end := min(start+maxStatementsPerBatch, len(args))
 			if err := exec.Execute(ctx, stmt, args[start:end]); err != nil {
 				return fmt.Errorf("insert into cassandra: %w", err)
 			}

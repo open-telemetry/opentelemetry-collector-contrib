@@ -4,7 +4,6 @@
 package cassandraexporter
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -39,7 +38,7 @@ func TestPushTraceDataBatchesByTraceAndReturnsInsertError(t *testing.T) {
 	fake := &fakeExecutor{}
 	exp := &tracesExporter{cfg: cfg, logger: zap.NewNop(), exec: fake}
 
-	err := exp.pushTraceData(context.Background(), testTraces())
+	err := exp.pushTraceData(t.Context(), testTraces())
 	require.NoError(t, err)
 	require.Len(t, fake.batches, 2)
 	require.Len(t, fake.batches[0], 2)
@@ -60,7 +59,7 @@ func TestPushTraceDataBatchesByTraceAndReturnsInsertError(t *testing.T) {
 	require.Equal(t, int64(time.Second), duration)
 
 	fake.err = errors.New("unavailable")
-	err = exp.pushTraceData(context.Background(), testTraces())
+	err = exp.pushTraceData(t.Context(), testTraces())
 	require.ErrorContains(t, err, "unavailable")
 }
 
@@ -72,7 +71,7 @@ func TestPushTraceDataChunksLargePartitions(t *testing.T) {
 	traces := ptrace.NewTraces()
 	spans := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	traceID := pcommon.TraceID{1}
-	for i := 0; i < maxStatementsPerBatch+1; i++ {
+	for i := range maxStatementsPerBatch + 1 {
 		span := spans.AppendEmpty()
 		span.SetName("span")
 		span.SetTraceID(traceID)
@@ -81,7 +80,7 @@ func TestPushTraceDataChunksLargePartitions(t *testing.T) {
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 1).UTC()))
 	}
 
-	require.NoError(t, exp.pushTraceData(context.Background(), traces))
+	require.NoError(t, exp.pushTraceData(t.Context(), traces))
 	require.Len(t, fake.batches, 2)
 	require.Len(t, fake.batches[0], maxStatementsPerBatch)
 	require.Len(t, fake.batches[1], 1)
@@ -89,7 +88,7 @@ func TestPushTraceDataChunksLargePartitions(t *testing.T) {
 
 func TestPushTraceDataRequiresStart(t *testing.T) {
 	exp := &tracesExporter{cfg: withDefaultConfig(), logger: zap.NewNop()}
-	err := exp.pushTraceData(context.Background(), testTraces())
+	err := exp.pushTraceData(t.Context(), testTraces())
 	require.ErrorContains(t, err, "not started")
 }
 

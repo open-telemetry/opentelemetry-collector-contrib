@@ -76,7 +76,7 @@ func TestPushLogsDataDoesNotCollapseRecordsAndReturnsError(t *testing.T) {
 	exp := &logsExporter{cfg: cfg, logger: zap.NewNop(), exec: fake}
 
 	logs := testLogs()
-	require.NoError(t, exp.pushLogsData(context.Background(), logs))
+	require.NoError(t, exp.pushLogsData(t.Context(), logs))
 	require.Len(t, fake.batches, 2)
 
 	traced := fake.batches[0]
@@ -93,13 +93,13 @@ func TestPushLogsDataDoesNotCollapseRecordsAndReturnsError(t *testing.T) {
 
 	again := &fakeExecutor{}
 	exp.exec = again
-	require.NoError(t, exp.pushLogsData(context.Background(), logs))
+	require.NoError(t, exp.pushLogsData(t.Context(), logs))
 	require.Equal(t, fake.batches[0][0][0], again.batches[0][0][0])
 	require.Equal(t, fake.batches[0][1][0], again.batches[0][1][0])
 
 	fake.err = errors.New("unavailable")
 	exp.exec = fake
-	err := exp.pushLogsData(context.Background(), logs)
+	err := exp.pushLogsData(t.Context(), logs)
 	require.ErrorContains(t, err, "unavailable")
 }
 
