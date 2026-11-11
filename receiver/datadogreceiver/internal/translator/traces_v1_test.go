@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace/idx"
 	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	"github.com/stretchr/testify/assert"
@@ -146,4 +147,113 @@ func TestToTracesV1StringReferenceOutOfRange(t *testing.T) {
 	_, err := ToTracesV1(zap.NewNop(), v1PayloadWithSpan(span, strs), &http.Request{Header: http.Header{}})
 
 	require.Error(t, err)
+}
+
+// convertedByAgent decodes a v0.4 trace the way the Datadog Agent does when it converts traces to the v1 format.
+func convertedByAgent(t *testing.T, span *pb.Span) *idx.InternalTracerPayload {
+	t.Helper()
+	body, err := pb.Traces{pb.Trace{span}}.MarshalMsg(nil)
+	require.NoError(t, err)
+	var payload idx.InternalTracerPayload
+	_, err = payload.UnmarshalMsgConverted(body)
+	require.NoError(t, err)
+	return &payload
+}
+
+// These are the spans as the agent's converter produces them, not as we expect it to. It sets the internal kind on
+// spans without a span.kind and keeps the tags that it also promotes to fields.
+func TestToTracesV1ConvertedByAgent(t *testing.T) {
+	links := `[{"trace_id":"00000000000000000000000000000abc","span_id":"0000000000000def"}]`
+	events := `[{"time_unix_nano":5,"name":"boom","attributes":{"k":"v"}}]`
+
+	for name, tc := range map[string]struct {
+		spanType string
+		kindTag  string
+		wantKind ptrace.SpanKind
+	}{
+		"web span without span.kind":       {spanType: "web", wantKind: ptrace.SpanKindServer},
+		"http span without span.kind":      {spanType: "http", wantKind: ptrace.SpanKindClient},
+		"other span without span.kind":     {spanType: "custom", wantKind: ptrace.SpanKindInternal},
+		"web span with span.kind internal": {spanType: "web", kindTag: "internal", wantKind: ptrace.SpanKindInternal},
+		"web span with span.kind client":   {spanType: "web", kindTag: "client", wantKind: ptrace.SpanKindClient},
+	} {
+		t.Run(name, func(t *testing.T) {
+			meta := map[string]string{
+				"_dd.span_links": links,
+				"events":         events,
+				"_dd.origin":     "synthetics",
+				"_dd.p.dm":       "-4",
+			}
+			if tc.kindTag != "" {
+				meta["span.kind"] = tc.kindTag
+			}
+			payload := convertedByAgent(t, &pb.Span{Service: "svc", Name: "n", TraceID: 1, SpanID: 2, Type: tc.spanType, Meta: meta})
+
+			traces, err := ToTracesV1(zap.NewNop(), payload, &http.Request{Header: http.Header{}})
+			require.NoError(t, err)
+
+			got := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			assert.Equal(t, tc.wantKind, got.Kind())
+			assert.Equal(t, 1, got.Links().Len())
+			assert.Equal(t, 1, got.Events().Len())
+			attrs := got.Attributes().AsRaw()
+			assert.NotContains(t, attrs, "_dd.span_links")
+			assert.NotContains(t, attrs, "events")
+			assert.Equal(t, "synthetics", attrs["_dd.origin"])
+			assert.Equal(t, "-4", attrs["_dd.p.dm"])
+			assert.Equal(t, "v04", attrs[attributeConvertedV1])
+			if tc.kindTag != "" {
+				assert.Equal(t, tc.kindTag, attrs["span.kind"], "the agent keeps an explicit span.kind as an attribute")
+			}
+		})
+	}
+}
+
+// In the v1 format the origin, the sampling decision maker and the tags are on the chunk. The older formats have them as
+// span attributes.
+func TestToTracesV1ChunkFields(t *testing.T) {
+	for name, tc := range map[string]struct {
+		origin    string
+		mechanism uint32
+		want      map[string]any
+		wantNone  []string
+	}{
+		"all set": {
+			origin: "synthetics", mechanism: 4,
+			want: map[string]any{"_dd.origin": "synthetics", "_dd.p.dm": "-4", "_dd.p.team": "apm", "shared": "span"},
+		},
+		"none set": {
+			want:     map[string]any{"_dd.p.team": "apm", "shared": "span"},
+			wantNone: []string{"_dd.origin", "_dd.p.dm"},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			strs := idx.NewStringTable()
+			str := func(s string) *idx.AnyValue {
+				return &idx.AnyValue{Value: &idx.AnyValue_StringValueRef{StringValueRef: strs.Add(s)}}
+			}
+			chunkAttrs := map[uint32]*idx.AnyValue{strs.Add("_dd.p.team"): str("apm"), strs.Add("shared"): str("chunk")}
+			span := idx.NewInternalSpan(strs, &idx.Span{
+				ServiceRef: strs.Add("svc"), SpanID: 1,
+				Attributes: map[uint32]*idx.AnyValue{strs.Add("shared"): str("span")},
+			})
+			payload := &idx.InternalTracerPayload{
+				Strings: strs,
+				Chunks: []*idx.InternalTraceChunk{
+					idx.NewInternalTraceChunk(strs, 1, tc.origin, chunkAttrs, []*idx.InternalSpan{span}, false, make([]byte, 16), tc.mechanism),
+				},
+			}
+
+			traces, err := ToTracesV1(zap.NewNop(), payload, &http.Request{Header: http.Header{}})
+			require.NoError(t, err)
+
+			attrs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().AsRaw()
+			for k, v := range tc.want {
+				assert.Equal(t, v, attrs[k], k)
+			}
+			for _, k := range tc.wantNone {
+				assert.NotContains(t, attrs, k)
+			}
+		})
+	}
 }

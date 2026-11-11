@@ -1664,7 +1664,7 @@ func newV1TracerPayload() *idx.InternalTracerPayload {
 		Chunks: []*idx.InternalTraceChunk{idx.NewInternalTraceChunk(
 			strs, 1, "rum", nil,
 			[]*idx.InternalSpan{idx.NewInternalSpan(strs, root), idx.NewInternalSpan(strs, child)},
-			false, traceID, 0,
+			false, traceID, 4,
 		)},
 	}
 	payload.SetLanguageName("go")
@@ -1680,6 +1680,8 @@ func newV1TracerPayload() *idx.InternalTracerPayload {
 var v1RootSpanAttributes = map[string]any{
 	"dd.span.Resource":            "GET /cart",
 	"sampling.priority":           "1.000000",
+	"_dd.origin":                  "rum",
+	"_dd.p.dm":                    "-4",
 	"datadog.span.id":             "1",
 	"datadog.trace.id":            "4386",
 	"deployment.environment.name": "prod",

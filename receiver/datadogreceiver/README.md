@@ -87,12 +87,6 @@ their native types (bool, int, double, bytes, array and map), and the trace id i
 breaking change for your data: attributes that arrive as strings or doubles over the older endpoints may arrive with a
 different type.
 
-**Warning:** do not enable this endpoint on a receiver that untrusted clients can reach. The decoder of the v1 format
-allocates memory for the array and map sizes that a request declares before it reads their elements, so the memory use
-of `/v1.0/traces` is not bounded by `max_request_body_size`. A request of a few bytes can make the receiver allocate
-hundreds of megabytes (see [DataDog/datadog-agent#59778](https://github.com/DataDog/datadog-agent/issues/59778)).
-Normal tracers do not send such requests.
-
 Default: `false`
 
 ### logs.decode_json_message (Optional)
@@ -173,8 +167,9 @@ formats. Instead of only string tags and double metrics, attributes can be bool,
 receiver translates v1 traces to OpenTelemetry directly, so these types are kept, and other details follow the
 OpenTelemetry model too. For example, the trace id is the full 128-bit id from the trace chunk (so the
 `trace_id_cache_size` option and the `receiver.datadogreceiver.Enable128BitTraceID` feature gate do not apply), and the
-span kind is only set as the OpenTelemetry span kind, not also as a `span.kind` attribute. The resulting data can
-therefore differ from what the older formats produce for the same span.
+span kind of a span that was sent in the v1 format is only set as the OpenTelemetry span kind, not also as a
+`span.kind` attribute. The resulting data can therefore differ from what the older formats produce for the same span.
+Spans that a Datadog Agent converted from an older format keep the `span.kind` attribute.
 
 Traces in the v1 format can arrive in two ways:
 

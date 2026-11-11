@@ -97,7 +97,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.85.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.85.4 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.85.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.85.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect

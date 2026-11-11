@@ -121,6 +121,15 @@ func spanToOTelV1(logger *zap.Logger, newSpan ptrace.Span, span *idx.InternalSpa
 			attrs.PutStr(k, v)
 		}
 	}
+	// The origin, the sampling decision maker and the tags of the chunk are on the chunk in the v1 format. The older
+	// formats have them as span attributes. Span attributes come last, so their values win.
+	if origin := chunk.Origin(); origin != "" {
+		attrs.PutStr("_dd.origin", origin)
+	}
+	if mechanism := chunk.SamplingMechanism(); mechanism != 0 {
+		attrs.PutStr("_dd.p.dm", "-"+strconv.FormatUint(uint64(mechanism), 10))
+	}
+	putV1Attributes(attrs, chunk.Attributes, strs, true)
 	putV1Attributes(attrs, span.Attributes(), strs, true)
 
 	_, converted := span.GetAttributeAsString(attributeConvertedV1)
@@ -135,8 +144,11 @@ func spanToOTelV1(logger *zap.Logger, newSpan ptrace.Span, span *idx.InternalSpa
 		newSpan.SetKind(ptrace.SpanKindConsumer)
 	case idx.SpanKind_SPAN_KIND_INTERNAL:
 		newSpan.SetKind(ptrace.SpanKindInternal)
-		// The agent sets internal on converted spans that have no span.kind, so the span type is more telling.
-		if kind := kindFromType(span.Type()); converted && kind != ptrace.SpanKindUnspecified {
+		// The agent sets internal on converted spans that have no span.kind, so the span type is more telling. It
+		// keeps an explicit span.kind as an attribute, and that one is left as it is. GetAttributeAsString cannot be
+		// used to look for it, because it answers from the kind field.
+		_, hasKindTag := span.Attributes()[strs.Lookup("span.kind")]
+		if kind := kindFromType(span.Type()); converted && !hasKindTag && kind != ptrace.SpanKindUnspecified {
 			newSpan.SetKind(kind)
 		}
 	default:
