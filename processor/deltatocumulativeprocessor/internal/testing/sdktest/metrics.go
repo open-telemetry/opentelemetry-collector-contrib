@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	sdk "go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // Spec is the partial metric specification. To be used with [Compare]
