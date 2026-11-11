@@ -15,8 +15,7 @@ issues: [50340]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Previously, any validation error in a remote-write 2.0 batch dropped the entire translated metric batch without forwarding valid series to the next consumer, and `X-Prometheus-Remote-Write-Exemplars-Written` counted exemplars up front even when their parent series was refused or their native histogram was dropped.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
