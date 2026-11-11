@@ -44,6 +44,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
 | `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                            | "aws"       | Optional |
 | `s3_force_path_style`   | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| `decompression`         | Algorithm used to decompress objects whose key does not end with `.gz` or `.zst`. See [Decompression](#decompression).                    | none        | Optional |
 | `sqs:`                  |                                                                                                                                            |             |          |
 | `queue_url`             | The URL of the SQS queue that receives S3 bucket notifications                                                                             |             | Required if fetching by SQS notification |
 | `region`                | AWS region of the SQS queue                                                                                                                |             | Required if fetching by SQS notification |
@@ -88,6 +89,19 @@ By default, the receiver understands the following encodings:
 - otlp_proto (OpenTelemetry Protocol format represented as Protocol Buffers) with a suffix of `.binpb`
 
 The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes.
+
+### Decompression
+Objects with a key ending in `.gz` or `.zst` are always decompressed with gzip or zstd respectively, and the
+compression suffix is removed before the encoding is selected.
+
+The `s3downloader::decompression` option sets the algorithm used to decompress all other objects, for example objects
+that were compressed but written without a compression suffix:
+- `none` (default): No decompression is applied.
+- `gzip`: Objects are decompressed with gzip.
+- `zstd`: Objects are decompressed with zstd.
+
+When `decompression` is set, every object without a `.gz` or `.zst` suffix must be compressed with the configured
+algorithm. An object that fails to decompress is handled the same as any other object that fails to be processed.
 
 
 ### Example Configuration

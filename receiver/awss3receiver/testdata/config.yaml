@@ -42,3 +42,15 @@ aws_s3/5:
     queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue"
     region: "us-east-1"
     endpoint: "http://localhost:4575"
+aws_s3/6:
+  s3downloader:
+    s3_bucket: abucket
+    decompression: zstd
+  starttime: "2024-01-31 15:00"
+  endtime: "2024-02-03"
+aws_s3/7:
+  s3downloader:
+    s3_bucket: abucket
+    decompression: snappy
+  starttime: "2024-01-31 15:00"
+  endtime: "2024-02-03"
