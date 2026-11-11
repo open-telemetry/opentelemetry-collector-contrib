@@ -367,9 +367,15 @@ FROM (
 	planHashValueAttr = "PLAN_HASH_VALUE"
 
 	// Procedure metrics columns
-	conIDAttr           = "CON_ID"
+	connectionIDAttr    = "CON_ID"
 	innerObjectNameAttr = "OBJECT_NAME"
 	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
+
+	// Procedure source columns
+	procOwnerAttr = "OWNER"
+	procNameAttr  = "NAME"
+	procTypeAttr  = "TYPE"
+	procTextAttr  = "TEXT"
 )
 
 var (
@@ -549,12 +555,20 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
+type procedureSourceQuery struct {
+	sql  string
+	args []any
+}
+
+func (q procedureSourceQuery) SQL() string { return q.sql }
+func (q procedureSourceQuery) Args() []any { return q.args }
+
 // buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query using a tuple-IN
 // clause with named bind parameters. Each identity is bound as one tuple so the database
 // returns only the (OWNER, NAME, TYPE[, CON_ID]) combinations we requested, not every
 // cross-product that would match if columns were filtered independently. CON_ID is
 // included only when isCDB is true.
-func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) (string, []any) {
+func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) procedureSourceQuery {
 	tuples := make([]string, len(identities))
 	argsPerIdentity := 3
 	if isCDB {
@@ -565,12 +579,12 @@ func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) (stri
 	for i, id := range identities {
 		n := strconv.Itoa(i)
 		if isCDB {
-			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s, :conid%s)", n, n, n, n)
+			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s, :connectionid%s)", n, n, n, n)
 			args = append(args,
 				sql.Named("owner"+n, id.owner),
 				sql.Named("name"+n, id.name),
 				sql.Named("type"+n, id.procType),
-				sql.Named("conid"+n, id.conID),
+				sql.Named("connectionid"+n, id.connectionID),
 			)
 		} else {
 			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s)", n, n, n)
@@ -586,7 +600,10 @@ func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) (stri
 	if isCDB {
 		tmpl = oracleProcedureSourceCDBSQL
 	}
-	return fmt.Sprintf(tmpl, strings.Join(tuples, ",")), args
+	return procedureSourceQuery{
+		sql:  fmt.Sprintf(tmpl, strings.Join(tuples, ",")),
+		args: args,
+	}
 }
 
 // isWrappedDefinition reports whether a procedure's source begins with Oracle's
@@ -603,14 +620,28 @@ func isWrappedDefinition(definition string) bool {
 // groupSourceRowsByIdentity concatenates source lines per procedure identity.
 // Wrapped (encrypted) procedures map to an empty string so the encoded payload
 // is never shipped downstream.
-func groupSourceRowsByIdentity(rows []metricRow) map[procedureIdentity]string {
+func groupSourceRowsByIdentity(rows []metricRow, isCDB bool) map[procedureIdentity]string {
 	builders := make(map[procedureIdentity]*strings.Builder)
 	for _, row := range rows {
-		id := procedureIdentity{row["OWNER"], row["NAME"], row["TYPE"], row["CON_ID"]}
+		if _, ok := row[procOwnerAttr]; !ok {
+			continue
+		}
+		if _, ok := row[procNameAttr]; !ok {
+			continue
+		}
+		if _, ok := row[procTypeAttr]; !ok {
+			continue
+		}
+		if isCDB {
+			if _, ok := row[connectionIDAttr]; !ok {
+				continue
+			}
+		}
+		id := procedureIdentity{owner: row[procOwnerAttr], name: row[procNameAttr], procType: row[procTypeAttr], connectionID: row[connectionIDAttr]}
 		if builders[id] == nil {
 			builders[id] = &strings.Builder{}
 		}
-		builders[id].WriteString(row["TEXT"])
+		builders[id].WriteString(row[procTextAttr])
 	}
 	result := make(map[procedureIdentity]string, len(builders))
 	for id, b := range builders {
@@ -634,14 +665,14 @@ func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []pr
 	for i := range hits {
 		identities[i] = hits[i].identity()
 	}
-	sqlQuery, args := buildProcedureSourceQuery(identities, s.useCDBProceduresView)
+	q := buildProcedureSourceQuery(identities, s.useCDBProceduresView)
 
-	rawRows, err := s.clientProviderFunc(s.db, sqlQuery, s.logger).metricRows(ctx, args...)
+	rawRows, err := s.clientProviderFunc(s.db, q.SQL(), s.logger).metricRows(ctx, q.Args()...)
 	if err != nil {
 		return nil, err
 	}
 
-	return groupSourceRowsByIdentity(rawRows), nil
+	return groupSourceRowsByIdentity(rawRows, s.useCDBProceduresView), nil
 }
 
 func (s *oracleScraper) buildTopQuerySQL() string {
@@ -2322,15 +2353,15 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	return errors.Join(errs...)
 }
 
-// procedureIdentity uniquely identifies a stored procedure. In a CDB context the same
-// owner/name/type combination can exist in multiple PDBs, so conID is part of identity;
-// for direct-PDB connections conID is empty. Used as a map key so Go's native struct
-// equality handles the lookup instead of a hand-encoded composite string.
+// In a CDB context the same owner/name/type combination can exist in multiple PDBs, so
+// connectionID is part of identity; for direct-PDB connections connectionID is empty.
+// Used as a map key so Go's native struct equality handles the lookup instead of a
+// hand-encoded composite string.
 type procedureIdentity struct {
-	owner    string
-	name     string
-	procType string
-	conID    string
+	owner        string
+	name         string
+	procType     string
+	connectionID string
 }
 
 type procedureMetricCacheHit struct {
@@ -2341,20 +2372,18 @@ type procedureMetricCacheHit struct {
 	programID      int64
 	dbNamespace    string
 	service        string
-	conID          string
+	connectionID   string
 	firstLoadTime  string
 	lastActiveTime string
 	metrics        map[string]int64
 }
 
-// identity returns the procedure identity for a cache hit, used to match the hit
-// against its source-text rows without a hand-encoded composite string key.
 func (h *procedureMetricCacheHit) identity() procedureIdentity {
 	return procedureIdentity{
-		owner:    h.schemaName,
-		name:     h.objectName,
-		procType: h.procedureType,
-		conID:    h.conID,
+		owner:        h.schemaName,
+		name:         h.objectName,
+		procType:     h.procedureType,
+		connectionID: h.connectionID,
 	}
 }
 
@@ -2414,7 +2443,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 				procedureType:  row[objectTypeAttr],
 				dbNamespace:    row[dbNamespaceAttr],
 				service:        row[serviceAttr],
-				conID:          row[conIDAttr],
+				connectionID:   row[connectionIDAttr],
 				firstLoadTime:  row[firstLoadTimeAttr],
 				lastActiveTime: row[lastActiveTimeAttr],
 				metrics:        make(map[string]int64, len(metricNames)),

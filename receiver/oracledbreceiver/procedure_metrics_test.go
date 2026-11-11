@@ -203,6 +203,79 @@ func TestProcedureMetricsSQLDoesNotRankInDatabase(t *testing.T) {
 	}
 }
 
+func TestBuildProcedureSourceQuery(t *testing.T) {
+	identities := []procedureIdentity{
+		{owner: "ADMIN", name: "MY_PROC", procType: "PROCEDURE", connectionID: "1"},
+		{owner: "SYS", name: "OTHER_PROC", procType: "FUNCTION", connectionID: "2"},
+	}
+
+	t.Run("non-CDB uses DBA_SOURCE with 3 args per identity", func(t *testing.T) {
+		q := buildProcedureSourceQuery(identities, false)
+		assert.Contains(t, q.SQL(), "DBA_SOURCE")
+		assert.NotContains(t, q.SQL(), "CDB_SOURCE")
+		assert.NotContains(t, q.SQL(), ":connectionid")
+		assert.Len(t, q.Args(), 6) // 3 per identity × 2 identities
+	})
+
+	t.Run("CDB uses CDB_SOURCE with 4 args per identity", func(t *testing.T) {
+		q := buildProcedureSourceQuery(identities, true)
+		assert.Contains(t, q.SQL(), "CDB_SOURCE")
+		assert.NotContains(t, q.SQL(), "DBA_SOURCE")
+		assert.Contains(t, q.SQL(), ":connectionid0")
+		assert.Contains(t, q.SQL(), ":connectionid1")
+		assert.Len(t, q.Args(), 8) // 4 per identity × 2 identities
+	})
+
+	t.Run("one tuple per identity", func(t *testing.T) {
+		q := buildProcedureSourceQuery(identities, false)
+		assert.Equal(t, 2, strings.Count(q.SQL(), ":owner"))
+	})
+}
+
+func TestGroupSourceRowsByIdentity(t *testing.T) {
+	t.Run("concatenates multiple lines for same identity", func(t *testing.T) {
+		rows := []metricRow{
+			{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "line1\n"},
+			{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "line2\n"},
+		}
+		result := groupSourceRowsByIdentity(rows, false)
+		assert.Equal(t, "line1\nline2\n", result[procedureIdentity{owner: "ADMIN", name: "MY_PROC", procType: "PROCEDURE"}])
+	})
+
+	t.Run("skips row missing OWNER", func(t *testing.T) {
+		rows := []metricRow{{"NAME": "MY_PROC", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, false))
+	})
+
+	t.Run("skips row missing NAME", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, false))
+	})
+
+	t.Run("skips row missing TYPE", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "NAME": "MY_PROC", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, false))
+	})
+
+	t.Run("CDB skips row missing CON_ID", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, true))
+	})
+
+	t.Run("non-CDB accepts row without CON_ID", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Len(t, groupSourceRowsByIdentity(rows, false), 1)
+	})
+
+	t.Run("wrapped procedure maps to empty string", func(t *testing.T) {
+		rows := []metricRow{
+			{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "MY_PROC wrapped\nabc123encodedpayload"},
+		}
+		result := groupSourceRowsByIdentity(rows, false)
+		assert.Empty(t, result[procedureIdentity{owner: "ADMIN", name: "MY_PROC", procType: "PROCEDURE"}])
+	})
+}
+
 func TestScraper_ScrapeProcedureMetricsLogs(t *testing.T) {
 	tests := []struct {
 		name       string
