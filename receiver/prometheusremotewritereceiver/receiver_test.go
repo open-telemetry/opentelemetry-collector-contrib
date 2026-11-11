@@ -575,12 +575,28 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 1, stats.Exemplars, "counted when the request is parsed, before the histogram is refused")
+	assert.Equal(t, 0, stats.Exemplars, "exemplars on a dropped histogram are not attached and not counted as written")
 
 	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 		ExponentialHistogram().DataPoints()
 	require.Equal(t, 1, dps.Len(), "only the first histogram produced a data point")
 	assert.Equal(t, 0, dps.At(0).Exemplars().Len(), "a dropped histogram must not reach an earlier data point")
+
+	// When a later TimeSeries in the same request carries a valid histogram for the dropped series,
+	// its exemplar stays in the map and attaches to that later valid data point.
+	metrics, stats, err = prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{
+			series(9, pastOverflow, theExemplar()),
+			series(9, exemplarHistogram([]int64{1, 1}), nil),
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Exemplars, "exemplar is claimed by the subsequent valid histogram for the same series")
+	dps = metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 1, dps.Len())
+	assert.Equal(t, 1, dps.At(0).Exemplars().Len())
 }
 
 func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
@@ -5345,13 +5361,15 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 	}
 }
 
-func TestRefusedRequestReportsNothingWritten(t *testing.T) {
-	// A refused request is not passed on, so the Written headers report zero, including for the
-	// series in it that translated.
+func TestPartialWriteOnBadRequest(t *testing.T) {
+	// When a request mixes valid series with refused items, valid data points are still passed on
+	// to the consumer and counted in the Written response headers, while the HTTP status is 400.
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{8, 9}, Value: 1, Timestamp: 1}}
 	gauge := writev2.TimeSeries{
 		Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 		LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 		Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		Exemplars:  exemplar,
 	}
 	for _, tc := range []struct {
 		name    string
@@ -5369,6 +5387,7 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 					PositiveDeltas: []int64{2, -5},
 				}},
+				Exemplars: exemplar,
 			},
 		},
 		{
@@ -5377,6 +5396,7 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 				LabelsRefs: []uint32{3, 4, 5, 6},
 				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
 			},
 		},
 		{
@@ -5385,6 +5405,34 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 0, 2},
 				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an out-of-bounds unit ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 99},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an out-of-bounds help ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 99},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an unsupported metric type",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_MetricType(99)},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
 			},
 		},
 	} {
@@ -5397,29 +5445,67 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 					"__name__", "test_gauge", // 1, 2
 					"job", "service-x/test", // 3, 4
 					"instance", "107cn001", // 5, 6
-					"test_histogram", // 7
+					"test_histogram",                               // 7
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 8, 9
 				},
 				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
 			})
 			defer resp.Body.Close()
 
 			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-			for _, header := range []string{
-				"X-Prometheus-Remote-Write-Samples-Written",
-				"X-Prometheus-Remote-Write-Histograms-Written",
-				"X-Prometheus-Remote-Write-Exemplars-Written",
-			} {
-				assert.Equal(t, "0", resp.Header.Get(header), header)
-			}
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			require.Len(t, sink.AllMetrics(), 1)
+			assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+			dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+			assert.Equal(t, 1, dp.Exemplars().Len())
+			assert.Equal(t, 1, prwReceiver.rmCache.Len())
+		})
+	}
+}
+
+func TestExemplarWithoutSampleIsCountedAsWritten(t *testing.T) {
+	// Prometheus's populateV2TimeSeries puts each exemplar in a TimeSeries of its own without a
+	// sample or histogram. When a batch carries an exemplar without a sample or histogram of its
+	// series, the receiver has no data point to attach it to, but still counts it as written so the
+	// 204 response does not report a partial write.
+	for _, metricType := range []writev2.Metadata_MetricType{
+		writev2.Metadata_METRIC_TYPE_COUNTER,
+		writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+	} {
+		t.Run(metricType.String(), func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 			assert.Empty(t, sink.AllMetrics())
-			assert.Equal(t, 0, prwReceiver.rmCache.Len())
 		})
 	}
 }
 
 func TestEmptyLabelValueIsAcceptedNotRefused(t *testing.T) {
 	// A label with an empty value normalizes to an absent label instead of being refused. See
-	// validateSeriesLabels for why refusing it would cost the sender the whole request.
+	// validateSeriesLabels for why refusing it would lose the series.
 	sink := &consumertest.MetricsSink{}
 	resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
 		Symbols: []string{
@@ -6982,7 +7068,7 @@ func droppedSeriesRequest(typed bool) *writev2.Request {
 			{Metadata: histogram, LabelsRefs: []uint32{1, 3, 11, 12, 9, 10}, Samples: sample},
 			{Metadata: histogram, LabelsRefs: []uint32{1, 4, 11, 12, 9, 10}, Samples: sample},
 			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 17}, Samples: sample},
-			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample, Exemplars: exemplar},
 			{Metadata: summary, LabelsRefs: []uint32{1, 6, 11, 12, 9, 10}, Samples: sample},
 			{Metadata: summary, LabelsRefs: []uint32{1, 7, 11, 12, 9, 10}, Samples: sample},
 			{
