@@ -5467,33 +5467,40 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 
 func TestExemplarWithoutSampleIsCountedAsWritten(t *testing.T) {
 	// Prometheus's populateV2TimeSeries puts each exemplar in a TimeSeries of its own without a
-	// sample. When a batch carries an exemplar without a sample of its series, the receiver has no
-	// data point to attach it to, but still counts it as written so the 204 response does not report
-	// a partial write.
-	sink := &consumertest.MetricsSink{}
-	resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
-		Symbols: []string{
-			"",
-			"__name__", "test_counter_total", // 1, 2
-			"job", "service-x/test", // 3, 4
-			"instance", "107cn001", // 5, 6
-			"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
-		},
-		Timeseries: []writev2.TimeSeries{
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
-				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
-			},
-		},
-	})
-	defer resp.Body.Close()
+	// sample or histogram. When a batch carries an exemplar without a sample or histogram of its
+	// series, the receiver has no data point to attach it to, but still counts it as written so the
+	// 204 response does not report a partial write.
+	for _, metricType := range []writev2.Metadata_MetricType{
+		writev2.Metadata_METRIC_TYPE_COUNTER,
+		writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+	} {
+		t.Run(metricType.String(), func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-	assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
-	assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
-	assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
-	assert.Empty(t, sink.AllMetrics())
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			assert.Empty(t, sink.AllMetrics())
+		})
+	}
 }
 
 func TestEmptyLabelValueIsAcceptedNotRefused(t *testing.T) {
