@@ -5390,7 +5390,8 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
-			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			resp := sendPRW(t, prwReceiver, &writev2.Request{
 				Symbols: []string{
 					"",
 					"__name__", "test_gauge", // 1, 2
@@ -5411,6 +5412,7 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 				assert.Equal(t, "0", resp.Header.Get(header), header)
 			}
 			assert.Empty(t, sink.AllMetrics())
+			assert.Equal(t, 0, prwReceiver.rmCache.Len())
 		})
 	}
 }
@@ -6023,6 +6025,36 @@ func targetInfoRequest(region string) *writev2.Request {
 	}
 }
 
+func TestTargetInfoUpdatesCachedResource(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	prw := setupMetricsReceiverWithConsumer(t, sink)
+	plain := &writev2.Request{
+		Symbols: []string{"", "job", "j", "instance", "i", "__name__", "m"},
+		Timeseries: []writev2.TimeSeries{{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		}},
+	}
+	info := &writev2.Request{
+		Symbols: []string{"", "job", "j", "instance", "i", "__name__", "target_info", "region", "eu"},
+		Timeseries: []writev2.TimeSeries{{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+		}},
+	}
+	for _, r := range []*writev2.Request{plain, info, plain} {
+		resp := sendPRW(t, prw, r)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	}
+	all := sink.AllMetrics()
+	require.Len(t, all, 2)
+	v, ok := all[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+	require.True(t, ok, "third request lost the target_info attribute: %v", all[1].ResourceMetrics().At(0).Resource().Attributes().AsRaw())
+	require.Equal(t, "eu", v.Str())
+}
+
 // TestLRUCacheResourceMetrics verifies the LRU cache behavior for resource metrics:
 // 1. Caching: Metrics with same job/instance share resource attributes
 // 2. Eviction: When cache is full, least recently used entries are evicted
@@ -6618,7 +6650,7 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		assert.Len(t, sink.AllMetrics(), 1)
 	})
 
-	t.Run("retryable error returns 500", func(t *testing.T) {
+	t.Run("retryable error returns 500 and leaves Written headers at zero and rmCache untouched", func(t *testing.T) {
 		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewErr(errors.New("temporary failure")))
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
@@ -6629,15 +6661,42 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		resp := w.Result()
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		for _, header := range []string{
+			"X-Prometheus-Remote-Write-Samples-Written",
+			"X-Prometheus-Remote-Write-Histograms-Written",
+			"X-Prometheus-Remote-Write-Exemplars-Written",
+		} {
+			assert.Equal(t, "0", resp.Header.Get(header), header)
+		}
+		assert.Equal(t, 0, prwReceiver.rmCache.Len())
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "temporary failure")
 	})
 
-	t.Run("permanent error returns 400", func(t *testing.T) {
+	t.Run("permanent error returns 400 and leaves Written headers at zero and rmCache untouched", func(t *testing.T) {
 		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("permanent failure"))))
 
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
+		// Include target_info in the failing request to verify rmCache is not updated when ConsumeMetrics fails.
+		withTargetInfo := &writev2.Request{
+			Symbols: []string{"", "__name__", "target_info", "test_metric", "job", "test-job", "instance", "test-instance", "region", "us-west"},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+					Samples:    []writev2.Sample{{Value: 2, Timestamp: 1}},
+				},
+			},
+		}
+		tiBuf := proto.NewBuffer(nil)
+		require.NoError(t, tiBuf.Marshal(withTargetInfo))
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(tiBuf.Bytes()))
 		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
 
 		w := httptest.NewRecorder()
@@ -6645,9 +6704,37 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		resp := w.Result()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		for _, header := range []string{
+			"X-Prometheus-Remote-Write-Samples-Written",
+			"X-Prometheus-Remote-Write-Histograms-Written",
+			"X-Prometheus-Remote-Write-Exemplars-Written",
+		} {
+			assert.Equal(t, "0", resp.Header.Get(header), header)
+		}
+		assert.Equal(t, 0, prwReceiver.rmCache.Len())
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
+	})
+
+	t.Run("corrupt protobuf returns 400 with zero Written headers", func(t *testing.T) {
+		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewNop())
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer([]byte("not a valid protobuf")))
+		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+
+		w := httptest.NewRecorder()
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		for _, header := range []string{
+			"X-Prometheus-Remote-Write-Samples-Written",
+			"X-Prometheus-Remote-Write-Histograms-Written",
+			"X-Prometheus-Remote-Write-Exemplars-Written",
+		} {
+			assert.Equal(t, "0", resp.Header.Get(header), header)
+		}
 	})
 }
 
@@ -6658,6 +6745,11 @@ func (*mutatingMetricsConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (*mutatingMetricsConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		attrs := md.ResourceMetrics().At(i).Resource().Attributes()
+		attrs.Remove("service.name")
+		attrs.PutStr("mutated_by_consumer", "true")
+	}
 	dest := pmetric.NewMetrics()
 	md.ResourceMetrics().MoveAndAppendTo(dest.ResourceMetrics())
 	return nil
@@ -6739,6 +6831,14 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	writeReceiver.handlePRW(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
+	require.Equal(t, 1, writeReceiver.rmCache.Len())
+	for _, cachedRM := range writeReceiver.rmCache.Values() {
+		serviceName, ok := cachedRM.Resource().Attributes().Get("service.name")
+		require.True(t, ok, "cached resource must keep unmutated service.name")
+		assert.Equal(t, "test-job", serviceName.Str())
+		_, polluted := cachedRM.Resource().Attributes().Get("mutated_by_consumer")
+		assert.False(t, polluted, "downstream consumer mutations must not pollute rmCache")
+	}
 
 	// The accepted metric points must equal the data point count (3), not the
 	// resource group count (1). This also verifies data point count is preserved
