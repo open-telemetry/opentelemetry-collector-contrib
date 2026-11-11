@@ -6,6 +6,7 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -138,6 +140,56 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			expectedWarnMsgs:  nil,
 		},
 		{
+			// A series that validateSeriesLabels would refuse loses the whole request, so its exemplars
+			// are not collected either.
+			name: "series with an empty label name is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"http_method", "GET",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						LabelsRefs: []uint32{1, 2, 0, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with a duplicate label name is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"http_method", "GET",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						LabelsRefs: []uint32{1, 2, 1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
 			name: "mixed valid and invalid exemplars logs once and keeps valid",
 			req: &writev2.Request{
 				Symbols: []string{
@@ -202,6 +254,49 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCollectExemplars_DropsEmptyLabelNames(t *testing.T) {
+	// The exemplar label name resolves to symbol 0, the empty string the writev2 symbol table
+	// starts with, so the name is empty without the request being malformed on its face. Such a
+	// label has no attribute key to land under; the rest of the exemplar is kept.
+	t.Run("empty label name is dropped", func(t *testing.T) {
+		req := &writev2.Request{
+			Symbols: []string{"", "__name__", "request_duration_ms", "orphan_value", "http_method", "GET"},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2},
+					Exemplars: []writev2.Exemplar{
+						{
+							Value:      2.5,
+							Timestamp:  1,
+							LabelsRefs: []uint32{0, 3, 4, 5},
+						},
+					},
+				},
+			},
+		}
+
+		stats := &promremote.WriteResponseStats{}
+		settings := receiver.Settings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: zap.NewNop(),
+			},
+		}
+
+		result := collectExemplars(req, settings, stats)
+		require.Equal(t, 1, stats.Exemplars)
+
+		// The exemplar stays filed under the series it arrived with, and only the empty-named label
+		// is gone: the value, the timestamp and the labels around it are kept.
+		exemplars, ok := result[makeExemplarKey(labels.FromStrings("__name__", "request_duration_ms"))]
+		require.True(t, ok, "the exemplar stays under its own series")
+		require.Equal(t, 1, exemplars.Len())
+		assert.Equal(t, map[string]any{"http_method": "GET"}, exemplars.At(0).FilteredAttributes().AsRaw())
+		assert.Equal(t, 2.5, exemplars.At(0).DoubleValue())
+		assert.Equal(t, pcommon.Timestamp(int64(time.Millisecond)), exemplars.At(0).Timestamp())
+	})
 }
 
 func TestSetTraceAndSpan(t *testing.T) {
@@ -297,6 +392,13 @@ func TestSetTraceAndSpan(t *testing.T) {
 		{
 			name:              "empty label values are dropped, as an empty label means an absent one",
 			labels:            labels.FromStrings("http_method", "GET", "empty_label", "", "trace_id", "", "span_id", ""),
+			wantTraceID:       "",
+			wantSpanID:        "",
+			wantFilteredAttrs: map[string]any{"http_method": "GET"},
+		},
+		{
+			name:              "a label with an empty name is dropped, as it cannot become an attribute key",
+			labels:            labels.FromStrings("", "orphan_value", "http_method", "GET"),
 			wantTraceID:       "",
 			wantSpanID:        "",
 			wantFilteredAttrs: map[string]any{"http_method": "GET"},

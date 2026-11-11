@@ -40,6 +40,30 @@ func TestNew_EmptyConfig(t *testing.T) {
 	require.Empty(t, exts.GetExtensions())
 }
 
+func TestBasicAuthTypeAlias(t *testing.T) {
+	for _, typ := range []string{"basic_auth", "basicauth"} {
+		t.Run(typ, func(t *testing.T) {
+			id := component.MustNewIDWithName(typ, "client")
+			var cfg Config
+			err := cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{
+				id.String(): map[string]any{
+					"client_auth": map[string]any{
+						"username": "username",
+						"password": "password",
+					},
+				},
+			}))
+			require.NoError(t, err)
+			require.NoError(t, confmap.Validate(cfg))
+			exts, err := New(t.Context(), cfg, Factories(), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.Contains(t, exts.GetExtensions(), id)
+			require.NoError(t, exts.Start(t.Context()))
+			require.NoError(t, exts.Shutdown(t.Context()))
+		})
+	}
+}
+
 func TestNew_SingleNopExtension(t *testing.T) {
 	id := component.NewID(extensiontest.NopType)
 	cfg := nopConfig(t, id)

@@ -33,7 +33,6 @@ func TestOTLPHTTPAllOptions(t *testing.T) {
 				"traces_endpoint":         "http://placeholder:4318/t",
 				"metrics_endpoint":        "http://placeholder:4318/m",
 				"logs_endpoint":           "http://placeholder:4318/l",
-				"profiles_endpoint":       "http://placeholder:4318/p",
 				"encoding":                "json",
 				"timeout":                 "7s",
 				"compression":             "zstd",
@@ -64,7 +63,6 @@ func TestOTLPHTTPAllOptions(t *testing.T) {
 	assert.Equal(t, "http://10.0.0.1:4318/t", h.TracesEndpoint)
 	assert.Equal(t, "http://10.0.0.1:4318/m", h.MetricsEndpoint)
 	assert.Equal(t, "http://10.0.0.1:4318/l", h.LogsEndpoint)
-	assert.Equal(t, "http://10.0.0.1:4318/p", h.ProfilesEndpoint)
 	assert.Equal(t, otlphttpexporter.EncodingJSON, h.Encoding)
 	assert.Equal(t, 7*time.Second, h.ClientConfig.Timeout)
 	assert.Equal(t, "zstd", string(h.ClientConfig.Compression))

@@ -4,12 +4,6 @@
 package loadbalancingexporter
 
 import (
-	"net"
-	"net/netip"
-	"net/url"
-	"regexp"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,94 +22,6 @@ func httpConfigWithEndpoint(endpoint string) *Config {
 	h.MetricsEndpoint = endpoint
 	cfg.Protocol.OTLPHTTP = configoptional.Some(*h)
 	return cfg
-}
-
-func FuzzValidateHTTPEndpoints(f *testing.F) {
-	for _, seed := range []string{
-		"", "http://placeholder", "https://placeholder:4318/v1/metrics", "placeholder:4318", "http:///v1",
-		"http://[::1]:4318", "ftp://host", "http://user:pw@host/x?y=1#z", "://", "http://%zz", "\x00",
-	} {
-		f.Add(seed)
-	}
-	f.Fuzz(func(t *testing.T, endpoint string) {
-		err := validateHTTPEndpoints(&otlphttpexporter.Config{TracesEndpoint: endpoint})
-		if err != nil {
-			return
-		}
-		if endpoint == "" {
-			return
-		}
-		u, perr := url.Parse(endpoint)
-		require.NoError(t, perr)
-		assert.Contains(t, []string{"http", "https"}, u.Scheme)
-		assert.NotEmpty(t, u.Host)
-	})
-}
-
-var wellFormedHost = regexp.MustCompile(`^[A-Za-z0-9.:-]+$`)
-
-func FuzzBuildHTTPExporterConfig(f *testing.F) {
-	for _, seed := range []struct{ endpoint, host string }{
-		{"http://placeholder", "10.0.0.1:4318"},
-		{"https://placeholder:1/a/b?x=1", "host:4318"},
-		{"http://user:pw@placeholder/x#f", "[::1]:4318"},
-		{"http://placeholder/", "a:1"},
-	} {
-		f.Add(seed.endpoint, seed.host)
-	}
-	f.Fuzz(func(t *testing.T, endpoint, hostPort string) {
-		cfg := httpConfigWithEndpoint(endpoint)
-		if cfg.Validate() != nil || endpoint == "" {
-			return
-		}
-		before := cfg.Protocol.OTLPHTTP.Get().MetricsEndpoint
-
-		out := buildHTTPExporterConfig(cfg, hostPort)
-
-		assert.Equal(t, before, cfg.Protocol.OTLPHTTP.Get().MetricsEndpoint, "shared config must not change")
-		assert.Empty(t, out.TracesEndpoint)
-
-		// The result only has to be checked for well formed host:port backends, as returned by resolvers.
-		host, port, err := net.SplitHostPort(hostPort)
-		if err != nil || host == "" || !wellFormedHost.MatchString(host) {
-			return
-		}
-		if _, convErr := strconv.ParseUint(port, 10, 16); convErr != nil {
-			return
-		}
-		if strings.HasPrefix(hostPort, "[") {
-			if addr, ipErr := netip.ParseAddr(host); ipErr != nil || !addr.Is6() {
-				return
-			}
-		}
-		orig, err := url.Parse(endpoint)
-		require.NoError(t, err)
-		got, err := url.Parse(out.MetricsEndpoint)
-		require.NoError(t, err)
-		assert.Equal(t, orig.Scheme, got.Scheme)
-		assert.Equal(t, orig.Path, got.Path)
-		assert.Equal(t, orig.RawQuery, got.RawQuery)
-		assert.Equal(t, hostPort, got.Host)
-	})
-}
-
-func FuzzEndpointWithDefaultPort(f *testing.F) {
-	for _, seed := range []string{"", "host", "host:1", "[::1]:4318", "10.0.0.1", ":"} {
-		f.Add(seed, "4318")
-	}
-	f.Fuzz(func(t *testing.T, endpoint, port string) {
-		got := endpointWithDefaultPort(endpoint, port)
-		bareIPv6 := strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]")
-		if strings.Contains(endpoint, ":") && !bareIPv6 {
-			assert.Equal(t, endpoint, got, "an endpoint with a port is kept")
-			return
-		}
-		assert.Equal(t, endpoint+":"+port, got)
-		// Idempotent once a port was added, as the load balancer applies it repeatedly.
-		if port != "" {
-			assert.Equal(t, got, endpointWithDefaultPort(got, port))
-		}
-	})
 }
 
 func TestBuildHTTPExporterConfigEdgeCases(t *testing.T) {

@@ -111,7 +111,6 @@ func httpEndpoints(cfg *otlphttpexporter.Config) []httpEndpoint {
 		{"traces_endpoint", &cfg.TracesEndpoint},
 		{"metrics_endpoint", &cfg.MetricsEndpoint},
 		{"logs_endpoint", &cfg.LogsEndpoint},
-		{"profiles_endpoint", &cfg.ProfilesEndpoint},
 	}
 }
 
@@ -119,10 +118,16 @@ func httpEndpoints(cfg *otlphttpexporter.Config) []httpEndpoint {
 // The host and port are replaced by the resolved backend, the rest of the URL is kept. The otlphttp exporter
 // appends /v1/<signal> to endpoint, so it cannot carry a query or a fragment.
 func validateHTTPEndpoints(cfg *otlphttpexporter.Config) error {
+	// The exporter only handles traces, metrics and logs, so a profiles endpoint would never be used.
+	if cfg.ProfilesEndpoint != "" {
+		return errors.New("protocol::otlp_http::profiles_endpoint is not supported, the exporter handles traces, metrics and logs only")
+	}
+	hasEndpoint := false
 	for _, e := range httpEndpoints(cfg) {
 		if *e.value == "" {
 			continue
 		}
+		hasEndpoint = true
 		u, err := url.Parse(*e.value)
 		if err != nil {
 			return fmt.Errorf("protocol::otlp_http::%s is not a valid URL: %w", e.name, err)
@@ -134,7 +139,21 @@ func validateHTTPEndpoints(cfg *otlphttpexporter.Config) error {
 			return fmt.Errorf("protocol::otlp_http::endpoint must not have a query or a fragment, use a per signal endpoint instead, got %q", *e.value)
 		}
 	}
+	if !hasEndpoint {
+		return errors.New("protocol::otlp_http: at least one of endpoint, traces_endpoint, metrics_endpoint or logs_endpoint must be set")
+	}
 	return nil
+}
+
+// httpPort returns the port of the first configured OTLP/HTTP endpoint that has one, or the OTLP/HTTP default.
+// It is used for resolved backends that come without a port.
+func httpPort(cfg *otlphttpexporter.Config) string {
+	for _, e := range httpEndpoints(cfg) {
+		if u, err := url.Parse(*e.value); err == nil && u.Port() != "" {
+			return u.Port()
+		}
+	}
+	return defaultHTTPPort
 }
 
 // checkHTTPSignalEndpoint fails when the OTLP/HTTP exporter has no endpoint for the signal, as the otlphttp

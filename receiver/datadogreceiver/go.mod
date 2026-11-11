@@ -4,8 +4,8 @@ go 1.26.9
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.215
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.85.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.85.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.84.0-devel.0.20261030015547-4fcf7d423463
@@ -13,13 +13,13 @@ require (
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.20.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/stretchr/testify v1.12.1
 	github.com/tinylib/msgp v1.6.5
 	github.com/vmihailenco/msgpack/v5 v5.4.1

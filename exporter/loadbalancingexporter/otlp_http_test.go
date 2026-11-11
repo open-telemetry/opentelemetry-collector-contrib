@@ -202,10 +202,12 @@ func TestLoadBalancerDefaultPort(t *testing.T) {
 	tests := []struct {
 		name     string
 		http     bool
+		endpoint string
 		expected string
 	}{
 		{name: "otlp grpc keeps 4317", expected: "host:4317"},
 		{name: "otlp http uses 4318", http: true, expected: "host:4318"},
+		{name: "otlp http takes the configured port", http: true, endpoint: "http://placeholder:8429/x", expected: "host:8429"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -214,6 +216,9 @@ func TestLoadBalancerDefaultPort(t *testing.T) {
 			if tt.http {
 				h := httpDefaults()
 				h.ClientConfig.Endpoint = "http://placeholder"
+				if tt.endpoint != "" {
+					h.ClientConfig.Endpoint = tt.endpoint
+				}
 				cfg.Protocol.OTLPHTTP = configoptional.Some(*h)
 			}
 			lb, err := newLoadBalancer(exportertest.NewNopSettings(metadata.Type).Logger, cfg, nil, nil)
@@ -394,4 +399,11 @@ func TestOTLPHTTPExportJSONWithHeaders(t *testing.T) {
 	assert.Empty(t, got[0].contentEncoding)
 	assert.Equal(t, "value", got[0].header)
 	assert.Contains(t, string(got[0].body), `"metric"`)
+}
+
+func TestOTLPHTTPProfilesEndpointRejected(t *testing.T) {
+	h := httpDefaults()
+	h.ProfilesEndpoint = "http://placeholder:4318/p"
+	require.ErrorContains(t, validateHTTPEndpoints(h), "profiles_endpoint is not supported")
+	require.ErrorContains(t, validateHTTPEndpoints(httpDefaults()), "at least one of endpoint")
 }

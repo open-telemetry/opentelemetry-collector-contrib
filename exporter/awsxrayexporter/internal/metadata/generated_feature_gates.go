@@ -24,7 +24,7 @@ var ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate = featuregate.Glo
 
 var ExporterAwsxrayEmitV1DBConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.awsxray.EmitV1DBConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the AWS X-Ray exporter reads database span attributes using semconv v1.38.0 keys (db.namespace, db.system.name, db.query.text, user.name) instead of the deprecated v1.12.0 keys (db.name, db.system, db.statement, db.user)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
