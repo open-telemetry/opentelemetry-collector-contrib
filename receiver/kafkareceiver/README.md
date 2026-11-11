@@ -83,9 +83,6 @@ The following settings can be optionally configured:
 - `max_decompress_batch_bytes` (default = `1073741824`, 1 GiB): The maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after decompression, so it bounds the memory required for a decompressed record batch. This setting is independent of `max_fetch_size` and `max_partition_fetch_size`, which limit compressed bytes on the wire. If a record batch exceeds this decompression limit, the partition will stop making progress until the configuration is increased and the consumer is restarted.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
-  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
-    - `username`: The username to use.
-    - `password`: The password to use
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use.
@@ -93,7 +90,6 @@ The following settings can be optionally configured:
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
     - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client`, `azure_auth` or `bearertokenauth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
-  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
