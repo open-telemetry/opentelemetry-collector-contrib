@@ -406,13 +406,14 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 
 func TestExplicitToNHCBHistogram(t *testing.T) {
 	tests := []struct {
-		name        string
-		hist        func() pmetric.HistogramDataPoint
-		wantValues  []float64
-		wantCount   uint64
-		wantSum     float64
-		wantBuckets []nhcbBucket
-		stale       bool
+		name           string
+		hist           func() pmetric.HistogramDataPoint
+		wantValues     []float64
+		wantCount      uint64
+		wantSum        float64
+		wantBuckets    []nhcbBucket
+		stale          bool
+		wantErrMessage string
 	}{
 		{
 			name:        "consistent count and buckets",
@@ -461,10 +462,7 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 				pt.SetCount(10)
 				return pt
 			},
-			wantValues:  []float64{1, 2, 3},
-			wantCount:   10,
-			wantSum:     0,
-			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+			wantErrMessage: "sum is not set",
 		},
 		{
 			name: "no explicit bounds (single +Inf bucket)",
@@ -493,17 +491,41 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 			},
 			stale: true,
 		},
+		{
+			name: "stale marker without sum",
+			hist: func() pmetric.HistogramDataPoint {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(testHistTimestamp)
+				pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+				pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				pt.SetCount(10)
+				pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
+				return pt
+			},
+			stale: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h, err := explicitToNHCBHistogram(tt.hist())
+			if tt.wantErrMessage != "" {
+				require.ErrorContains(t, err, tt.wantErrMessage)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
 			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
 
 			if tt.stale {
-				assert.True(t, math.IsNaN(h.Sum), "stale marker signaled by stale-NaN sum")
+				assert.True(t, value.IsStaleNaN(h.Sum), "stale marker signaled by stale-NaN sum")
 				assert.Zero(t, h.GetCountInt(), "stale marker leaves count unset")
+				assert.Empty(t, h.PositiveSpans)
+				assert.Empty(t, h.PositiveDeltas)
+				assert.Empty(t, h.CustomValues)
+				require.NoError(t, h.ToIntHistogram().Validate())
 				return
 			}
 

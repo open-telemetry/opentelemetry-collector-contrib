@@ -22,6 +22,9 @@ import (
 // Prometheus histogram with custom buckets (schema -53) via Prometheus' own
 // convertnhcb helper. Exactly one of the returned histograms is non-nil.
 func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histogram.FloatHistogram, error) {
+	if !pt.HasSum() {
+		return nil, nil, errors.New("cannot convert explicit to native histogram: sum is not set")
+	}
 	th := convertnhcb.NewTempHistogram()
 	bounds := pt.ExplicitBounds()
 	counts := pt.BucketCounts()
@@ -50,10 +53,8 @@ func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histo
 	if err := th.SetCount(float64(cumulative)); err != nil {
 		return nil, nil, err
 	}
-	if pt.HasSum() {
-		if err := th.SetSum(pt.Sum()); err != nil {
-			return nil, nil, err
-		}
+	if err := th.SetSum(pt.Sum()); err != nil {
+		return nil, nil, err
 	}
 	return th.Convert()
 }

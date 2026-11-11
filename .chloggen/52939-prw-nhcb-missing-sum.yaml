@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: pkg/translator/prometheusremotewrite
+note: Drop explicit-bucket histograms converted to NHCB when Sum is not set.
+issues: [52939]
+subtext: |
+  Explicit-bucket histograms converted to NHCB (`ConvertExplicitHistogramsToNHCB`) without `Sum` set
+  (and `NoRecordedValue` unset) are now dropped with an error per the OpenTelemetry Prometheus
+  compatibility specification instead of emitting a Native Histogram with `Sum = 0`.
+change_logs: [user, api]

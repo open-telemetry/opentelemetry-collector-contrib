@@ -1262,6 +1262,25 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				require.NotNil(t, findSeriesTS(converter, "test_hist_count"), "classic series still emitted on NHCB error")
 			},
 		},
+		{
+			name: "NHCB without sum drops native point",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(testHistTimestamp)
+				pt.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+				pt.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				pt.SetCount(10)
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverter) {
+				assert.Empty(t, converter.unique, "missing sum drops NHCB data point")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
