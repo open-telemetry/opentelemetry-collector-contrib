@@ -10,6 +10,39 @@ status:
     active: [atoulme, Erog38]
     emeritus: [pdelewski]
 
+attributes:
+  error.type:
+    description: The type of error that made the upload fail. One of `timeout`, `canceled`, `dns`, `connection_refused`, `network`, `other`, or the S3 API error code of an error response, such as `AccessDenied` or `SlowDown`.
+    type: string
+  outcome:
+    description: The operation outcome.
+    type: string
+    enum: [success, failure]
+
+telemetry:
+  metrics:
+    awss3.upload.duration:
+      prefix: otelcol.
+      stability: development
+      enabled: true
+      description: Duration of S3 uploads.
+      extended_documentation: Includes the retries, and their backoff, done by the AWS SDK within one upload. Only emitted when `telemetry::enabled` is set in the exporter configuration.
+      unit: s
+      histogram:
+        value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]
+      attributes: [outcome, error.type]
+    awss3.uploaded.size:
+      prefix: otelcol.
+      stability: development
+      enabled: true
+      description: Size of the objects uploaded to S3, after compression.
+      extended_documentation: Only successful uploads are counted. Only emitted when `telemetry::enabled` is set in the exporter configuration.
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+
 sending_queue:
   support: default
 

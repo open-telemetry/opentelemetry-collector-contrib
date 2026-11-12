@@ -28,6 +28,7 @@ func newUploadManager(
 	metadata string,
 	format string,
 	isCompressed bool,
+	extraOpts ...upload.ManagerOpt,
 ) (upload.Manager, error) {
 	configOpts := []func(*config.LoadOptions) error{}
 
@@ -87,6 +88,8 @@ func newUploadManager(
 		managerOpts = append(managerOpts,
 			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
 	}
+
+	managerOpts = append(managerOpts, extraOpts...)
 
 	var uniqueKeyFunc func() string
 	switch conf.S3Uploader.UniqueKeyFuncName {

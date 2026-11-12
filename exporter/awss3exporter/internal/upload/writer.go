@@ -37,6 +37,7 @@ type s3manager struct {
 	uploader     *transfermanager.Client
 	storageClass s3types.StorageClass
 	acl          s3types.ObjectCannedACL
+	telemetry    *Telemetry
 }
 
 var _ Manager = (*s3manager)(nil)
@@ -106,8 +107,13 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		uploadInput.ContentEncoding = aws.String(encoding)
 	}
 
+	// The upload consumes the body, so take its size beforehand.
+	size := content.Len()
+
 	sw.logger.Debug("uploading object", zap.String("bucket", overrideBucket), zap.String("key", key))
+	start := sw.telemetry.StartUpload(ctx)
 	_, err = sw.uploader.UploadObject(ctx, uploadInput)
+	sw.telemetry.RecordUpload(ctx, size, start, err)
 	return err
 }
 
@@ -153,5 +159,15 @@ func WithACL(acl s3types.ObjectCannedACL) func(Manager) {
 			return
 		}
 		s3m.acl = acl
+	}
+}
+
+func WithTelemetry(t *Telemetry) func(Manager) {
+	return func(m Manager) {
+		s3m, ok := m.(*s3manager)
+		if !ok {
+			return
+		}
+		s3m.telemetry = t
 	}
 }
