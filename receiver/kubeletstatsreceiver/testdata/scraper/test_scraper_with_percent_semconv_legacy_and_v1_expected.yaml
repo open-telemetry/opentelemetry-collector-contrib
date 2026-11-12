@@ -1,0 +1,166 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-scheduler-minikube
+        - key: k8s.pod.uid
+          value:
+            stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
+    scopeMetrics:
+      - metrics:
+          - description: The ratio of Pod CPU usage to its current CPU limit.
+            gauge:
+              dataPoints:
+                - asDouble: 0.90502575
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.cpu.limit.utilization
+            unit: "1"
+          - description: The ratio of Pod CPU usage to its current CPU request.
+            gauge:
+              dataPoints:
+                - asDouble: 1.8100515
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.cpu.request.utilization
+            unit: "1"
+          - description: Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 0.90502575
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.cpu_limit_utilization
+            unit: "1"
+          - description: Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 1.8100515
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.cpu_request_utilization
+            unit: "1"
+          - description: The ratio of Pod memory working set to its current memory limit.
+            gauge:
+              dataPoints:
+                - asDouble: 0.12230656
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.memory.limit.utilization
+            unit: "1"
+          - description: The ratio of Pod memory working set to its current memory request.
+            gauge:
+              dataPoints:
+                - asDouble: 1.2230656
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.memory.request.utilization
+            unit: "1"
+          - description: Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 0.14290944
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.memory_limit_utilization
+            unit: "1"
+          - description: Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+            gauge:
+              dataPoints:
+                - asDouble: 1.4290944
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.pod.memory_request_utilization
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.container.name
+          value:
+            stringValue: kube-scheduler
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-scheduler-minikube
+        - key: k8s.pod.uid
+          value:
+            stringValue: 5795d0c442cb997ff93c49feeb9f6386
+    schemaUrl: https://opentelemetry.io/schemas/1.44.0
+    scopeMetrics:
+      - metrics:
+          - description: The ratio of container CPU usage to its current CPU limit.
+            gauge:
+              dataPoints:
+                - asDouble: 0.8596562499999999
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu.limit.utilization
+            unit: "1"
+          - description: The ratio of container CPU usage to its current CPU request.
+            gauge:
+              dataPoints:
+                - asDouble: 1.7193124999999998
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu.request.utilization
+            unit: "1"
+          - description: Container cpu utilization as a ratio of the container's limits
+            gauge:
+              dataPoints:
+                - asDouble: 0.8596562499999999
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_limit_utilization
+            unit: "1"
+          - description: Container cpu utilization as a ratio of the container's requests
+            gauge:
+              dataPoints:
+                - asDouble: 1.7193124999999998
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request_utilization
+            unit: "1"
+          - description: The ratio of container memory working set to its current memory limit.
+            gauge:
+              dataPoints:
+                - asDouble: 0.11640832
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory.limit.utilization
+            unit: "1"
+          - description: The ratio of container memory working set to its current memory request.
+            gauge:
+              dataPoints:
+                - asDouble: 1.1640832
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory.request.utilization
+            unit: "1"
+          - description: Container memory utilization as a ratio of the container's limits
+            gauge:
+              dataPoints:
+                - asDouble: 0.1370112
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_limit_utilization
+            unit: "1"
+          - description: Container memory utilization as a ratio of the container's requests
+            gauge:
+              dataPoints:
+                - asDouble: 1.370112
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_request_utilization
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest

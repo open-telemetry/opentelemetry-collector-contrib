@@ -6,6 +6,22 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.kubelet_stats.DontEmitV0K8sConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the receiver stops emitting the legacy k8s.{pod,container}.{cpu,memory}_{limit,request}_utilization metrics. Requires receiver.kubelet_stats.EmitV1K8sConventions to be enabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40444"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
+var ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.kubelet_stats.EmitV1K8sConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the receiver emits the semantic-conventions-compliant k8s.{pod,container}.{cpu,memory}.{limit,request}.utilization metrics. The memory variants use the memory working set as the numerator."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40444"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.kubeletstats.cpuUsageScrapeBased",
 	featuregate.StageBeta,

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -779,6 +780,166 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithPercentMetricsSemconvFeatureGates(t *testing.T) {
+	tests := []struct {
+		name          string
+		emitV1        bool
+		dontEmitV0    bool
+		expectedFile  string
+		expectedNames []string
+	}{
+		{
+			name:         "legacy_only",
+			expectedFile: "test_scraper_with_percent_semconv_legacy_only_expected.yaml",
+			expectedNames: []string{
+				"k8s.container.cpu_limit_utilization",
+				"k8s.container.cpu_request_utilization",
+				"k8s.container.memory_limit_utilization",
+				"k8s.container.memory_request_utilization",
+				"k8s.pod.cpu_limit_utilization",
+				"k8s.pod.cpu_request_utilization",
+				"k8s.pod.memory_limit_utilization",
+				"k8s.pod.memory_request_utilization",
+			},
+		},
+		{
+			name:         "legacy_and_v1",
+			emitV1:       true,
+			expectedFile: "test_scraper_with_percent_semconv_legacy_and_v1_expected.yaml",
+			expectedNames: []string{
+				"k8s.container.cpu_limit_utilization",
+				"k8s.container.cpu_request_utilization",
+				"k8s.container.memory_limit_utilization",
+				"k8s.container.memory_request_utilization",
+				"k8s.pod.cpu_limit_utilization",
+				"k8s.pod.cpu_request_utilization",
+				"k8s.pod.memory_limit_utilization",
+				"k8s.pod.memory_request_utilization",
+				"k8s.container.cpu.limit.utilization",
+				"k8s.container.cpu.request.utilization",
+				"k8s.container.memory.limit.utilization",
+				"k8s.container.memory.request.utilization",
+				"k8s.pod.cpu.limit.utilization",
+				"k8s.pod.cpu.request.utilization",
+				"k8s.pod.memory.limit.utilization",
+				"k8s.pod.memory.request.utilization",
+			},
+		},
+		{
+			name:         "v1_only",
+			emitV1:       true,
+			dontEmitV0:   true,
+			expectedFile: "test_scraper_with_percent_semconv_v1_only_expected.yaml",
+			expectedNames: []string{
+				"k8s.container.cpu.limit.utilization",
+				"k8s.container.cpu.request.utilization",
+				"k8s.container.memory.limit.utilization",
+				"k8s.container.memory.request.utilization",
+				"k8s.pod.cpu.limit.utilization",
+				"k8s.pod.cpu.request.utilization",
+				"k8s.pod.memory.limit.utilization",
+				"k8s.pod.memory.request.utilization",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.emitV1)()
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.dontEmitV0)()
+
+			metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+			metricsConfig.Metrics.K8sContainerCPULimitUtilization.Enabled = true
+			metricsConfig.Metrics.K8sContainerCPURequestUtilization.Enabled = true
+			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled = true
+			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled = true
+			metricsConfig.Metrics.K8sPodCPULimitUtilization.Enabled = true
+			metricsConfig.Metrics.K8sPodCPURequestUtilization.Enabled = true
+			metricsConfig.Metrics.K8sPodMemoryLimitUtilization.Enabled = true
+			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled = true
+			metricsConfig.Metrics.K8sContainerCPULimitUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sContainerCPURequestUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sContainerMemoryLimitUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sContainerMemoryRequestUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sPodCPULimitUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sPodCPURequestUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sPodMemoryLimitUtilizationV1.Enabled = true
+			metricsConfig.Metrics.K8sPodMemoryRequestUtilizationV1.Enabled = true
+
+			r, err := newKubeletScraper(
+				&fakeRestClient{},
+				receivertest.NewNopSettings(metadata.Type),
+				&scraperOptions{
+					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+						kubelet.ContainerMetricGroup: true,
+						kubelet.PodMetricGroup:       true,
+					},
+				},
+				metricsConfig,
+				"worker-42",
+			)
+			require.NoError(t, err)
+
+			md, err := r.ScrapeMetrics(t.Context())
+			require.NoError(t, err)
+
+			keepUtilizationMetrics(md)
+			require.ElementsMatch(t, tt.expectedNames, metricNames(md))
+
+			expectedFile := filepath.Join("testdata", "scraper", tt.expectedFile)
+
+			// Uncomment to regenerate '*_expected.yaml' files
+			// golden.WriteMetrics(t, expectedFile, md)
+
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
+		})
+	}
+}
+
+// keepUtilizationMetrics drops every metric that is not a {cpu,memory}
+// {limit,request} utilization metric, along with the scopes and resources
+// left empty.
+func keepUtilizationMetrics(md pmetric.Metrics) {
+	keep := func(name string) bool {
+		return strings.HasSuffix(name, "_limit_utilization") ||
+			strings.HasSuffix(name, "_request_utilization") ||
+			strings.HasSuffix(name, ".limit.utilization") ||
+			strings.HasSuffix(name, ".request.utilization")
+	}
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+				return !keep(m.Name())
+			})
+			return sm.Metrics().Len() == 0
+		})
+		return rm.ScopeMetrics().Len() == 0
+	})
+}
+
+// metricNames returns the distinct metric names present in md.
+func metricNames(md pmetric.Metrics) []string {
+	seen := map[string]struct{}{}
+	var names []string
+	for _, rm := range md.ResourceMetrics().All() {
+		for _, sm := range rm.ScopeMetrics().All() {
+			for _, m := range sm.Metrics().All() {
+				if _, ok := seen[m.Name()]; !ok {
+					seen[m.Name()] = struct{}{}
+					names = append(names, m.Name())
+				}
+			}
+		}
+	}
+	return names
 }
 
 func TestScraperWithMetricGroups(t *testing.T) {
