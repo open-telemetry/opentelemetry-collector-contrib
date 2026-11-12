@@ -45,17 +45,24 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	scr := newCloudWatchMetricsScraper(cfg, settings)
-	ms, err := scraper.NewMetrics(scr.scrape, scraper.WithStart(scr.start))
-	if err != nil {
-		return nil, err
+	newController := func() (receiver.Metrics, error) {
+		scr := newCloudWatchMetricsScraper(cfg, settings)
+		ms, err := scraper.NewMetrics(scr.scrape, scraper.WithStart(scr.start))
+		if err != nil {
+			return nil, err
+		}
+		return scraperhelper.NewMetricsController(
+			&cfg.Metrics.ControllerConfig,
+			settings,
+			consumer,
+			scraperhelper.AddMetricsScraper(metadata.Type, ms),
+		)
 	}
-	return scraperhelper.NewMetricsController(
-		&cfg.Metrics.ControllerConfig,
-		settings,
-		consumer,
-		scraperhelper.AddMetricsScraper(metadata.Type, ms),
-	)
+
+	if cfg.K8sLeaderElector != nil {
+		return newLeaderElectedMetrics(*cfg.K8sLeaderElector, settings.Logger, newController), nil
+	}
+	return newController()
 }
 
 func createDefaultConfig() component.Config {

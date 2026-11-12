@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/aws_cloudwatch
+note: Add optional `k8s_leader_elector` support so several collector replicas can share one CloudWatch receiver configuration without duplicating API calls
+issues: [51596]
+subtext: Logs collection with `k8s_leader_elector` requires a shared `storage` extension, such as `redis_storage`.
+change_logs: [user]
