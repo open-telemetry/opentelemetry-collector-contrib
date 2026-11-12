@@ -9,9 +9,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/relvacode/iso8601 v1.8.3
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.71.0
-	go.opentelemetry.io/collector/featuregate v1.71.0
-	go.opentelemetry.io/collector/pdata v1.71.0
+	go.opentelemetry.io/collector/component v1.71.1-0.20261112090518-6cdf06bb71bc
+	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261112090518-6cdf06bb71bc
+	go.opentelemetry.io/collector/pdata v1.71.1-0.20261112090518-6cdf06bb71bc
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
