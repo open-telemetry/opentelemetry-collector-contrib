@@ -112,7 +112,7 @@ Documents are statically or dynamically routed to the target index / data stream
 2. "Dynamic - Index attribute mode": Route to index name specified in `elasticsearch.index` attribute (precedence: log record / data point / span attribute > scope attribute > resource attribute) if the attribute exists. [^3]
 3. "Dynamic - Data stream routing mode": Route to data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans, and is static. [^3]
-  In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
+  In a special case with the `bodymap` mapping mode, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
   The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
@@ -148,7 +148,7 @@ This can be customised through the following settings:
 
 #### Document routing exceptions for OTel data mode
 
-In OTel mapping mode (`mapping::mode: otel`), there is special handling in addition to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
+In OTel mapping mode, there is special handling in addition to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
 The order to determine the routing mode is the same as [Elasticsearch document routing](#elasticsearch-document-routing).
 
 1. "Static mode": Span events are separate documents routed to `logs_index` if non-empty.
@@ -193,7 +193,7 @@ See below for a description of each mapping mode.
 
 #### Migration: Setting mapping mode via scope attribute
 
-Since the `mapping::mode` config option is deprecated, use the following method to set the mapping mode:
+Use the following method to set the mapping mode:
 
 **Use scope attribute via transform processor**
 
@@ -356,7 +356,6 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, e.g. during a shutdown, it is not retried. Timeout errors are retried only before the connection is ready, including during DNS, the TCP handshake, and the TLS handshake. A timeout after the connection is ready, including while the request is being written or while waiting for the response, is not retried, to avoid duplicates. Other transport errors are retried.
-  - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
@@ -527,8 +526,6 @@ Example:
 exporters:
   elasticsearch:
     endpoint: https://elastic.example.com:9200
-    mapping:
-      mode: otel
 ```
 
 > [!IMPORTANT]
@@ -587,7 +584,7 @@ Each profiling signal type is written to a dedicated backing index:
 
 `elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
 
-When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+When the `ecs` mapping mode is used, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
 If the target ECS field name is specified as an empty string (`""`), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
@@ -701,8 +698,6 @@ For traces, you can use the `transform` processor to set the document ID based o
 ```yaml
 exporters:
   elasticsearch:
-    mapping:
-      mode: otel  # Required for span events to be separate documents
     traces_dynamic_id:
       enabled: true
 
@@ -788,7 +783,7 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 ```
 
 In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` bulk action metadata is not supported.
-This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.

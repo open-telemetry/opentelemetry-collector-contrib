@@ -18,10 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -245,6 +248,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
+					withLabelMatchers(filter.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -264,6 +268,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
+					withLabelMatchers(filter.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -339,6 +344,7 @@ func TestScrapeV2(t *testing.T) {
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
 					withResourceAttributes(allResourceAttributesEnabled).
+					withLabelMatchers(filter.Config{Strict: "app"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 		}
@@ -501,12 +507,40 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 		"ENV_VAR_2": "env-var-metric-label-2",
 	}
 	cb.config.ContainerLabelsToMetricLabels = map[string]string{
-		"container.label":   "container-metric-label",
+		"team":              "container-metric-label",
 		"container.label.2": "container-metric-label-2",
 	}
 	return cb
 }
 
+func (cb *testConfigBuilder) withLabelMatchers(filters ...filter.Config) *testConfigBuilder {
+	cb.config.ContainerLabelsToResourceAttributes = filters
+	return cb
+}
+
 func (cb *testConfigBuilder) build() *Config {
 	return cb.config
+}
+
+func TestContainerLabelsToMetricLabelsDeprecationWarning(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		labels   map[string]string
+		wantLogs int
+	}{
+		{name: "set", labels: map[string]string{"app": "app"}, wantLogs: 1},
+		{name: "unset", labels: nil, wantLogs: 0},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			core, logs := observer.New(zap.WarnLevel)
+			set := receivertest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+			cfg := createDefaultConfig().(*Config)
+			cfg.ContainerLabelsToMetricLabels = tt.labels
+
+			newMetricsReceiver(set, cfg)
+
+			assert.Equal(t, tt.wantLogs, logs.FilterMessageSnippet("container_labels_to_metric_labels").Len())
+		})
+	}
 }

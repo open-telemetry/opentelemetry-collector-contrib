@@ -203,7 +203,7 @@ pkg/translator/zipkin/                                           @open-telemetry
 pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @pjanotti
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 pkg/xstreamencoding/                                             @open-telemetry/collector-contrib-approvers @Kavindu-Dodan
-processor/adaptivetailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ @jmacd
+processor/adaptivetailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ @jmacd @robbkidd
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
 processor/awsecsattributesprocessor/                             @open-telemetry/collector-contrib-approvers @povilasv @iblancasa
 processor/cardinalityguardianprocessor/                          @open-telemetry/collector-contrib-approvers @atoulme @YElayyat @jmacd
@@ -306,6 +306,7 @@ receiver/hostmetricsreceiver/                                    @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/diskscraper/       @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/ @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
+receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/   @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/loadscraper/       @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper/     @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/networkscraper/    @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti

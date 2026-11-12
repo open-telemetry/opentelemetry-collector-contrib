@@ -7,30 +7,42 @@ package nova // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	novadetector "go.opentelemetry.io/contrib/detectors/openstack/nova"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	novaprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openstack/nova"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
 // LabelPrefix is the attribute prefix for Nova metadata keys (user/tenant-provided).
 const LabelPrefix = "openstack.nova.meta."
 
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+// metaKeyFilter is nil when no labels are configured.
+var newResourceDetector = func(metaKeyFilter func(string) bool) sdkresource.Detector {
+	if metaKeyFilter == nil {
+		return novadetector.NewResourceDetector()
+	}
+	return novadetector.NewResourceDetector(novadetector.WithMetaKeyFilter(metaKeyFilter))
+}
+
 var _ internal.Detector = (*Detector)(nil)
 
-// Detector queries the OpenStack Nova metadata service and emits resource attributes.
+// Detector is an OpenStack Nova metadata detector. Detection is delegated to the
+// upstream SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
-	metadataProvider      novaprovider.Provider
-	labelRegexes          []*regexp.Regexp
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -43,17 +55,26 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 		return nil, err
 	}
 
+	var metaKeyFilter func(string) bool
+	if len(rs) > 0 {
+		metaKeyFilter = func(key string) bool { return regexArrayMatch(rs, key) }
+	}
+
 	return &Detector{
+		detector:              newResourceDetector(metaKeyFilter),
 		logger:                set.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		metadataProvider:      novaprovider.NewProvider(),
-		labelRegexes:          rs,
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
+// Detect queries the Nova metadata service and returns a populated resource.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	// A partial result still came from a reachable metadata service, so the bridge keeps
+	// what it did return. fail_on_missing_metadata covers an unusable metadata service,
+	// not individual fields absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
+	if err != nil {
 		d.logger.Debug("OpenStack Nova metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
 			return pcommon.NewResource(), "", err
@@ -61,42 +82,29 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	meta, err := d.metadataProvider.Get(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting Nova metadata: %w", err)
+	// The SDK detector reports an empty resource and no error both when the
+	// metadata service is unreachable and when running outside OpenStack.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("OpenStack Nova detector: metadata unavailable or not running on a Nova instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("nova metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
-	hostname, err := d.metadataProvider.Hostname(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
-	}
-
-	// Optional: EC2‑compatible instance type (don’t fail if missing)
-	if instanceType, err := d.metadataProvider.InstanceType(ctx); err == nil && instanceType != "" {
-		d.rb.SetHostType(instanceType)
-	} else if err != nil {
-		d.logger.Debug("EC2-compatible instance type unavailable", zap.Error(err))
-	}
-
-	d.rb.SetCloudProvider("openstack")
-	d.rb.SetCloudPlatform("openstack_nova")
-	d.rb.SetCloudAccountID(meta.ProjectID)
-	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)
-	d.rb.SetHostID(meta.UUID)
-	d.rb.SetHostName(hostname)
-	res := d.rb.Emit()
-
-	// Optional: capture selected meta labels under openstack.meta.<key>
-	if len(d.labelRegexes) > 0 && meta.Meta != nil {
-		attrs := res.Attributes()
-		for k, v := range meta.Meta {
-			if regexArrayMatch(d.labelRegexes, k) {
-				attrs.PutStr(LabelPrefix+k, v)
-			}
+	// RemoveDisabledAttributes drops undeclared keys, so the dynamic meta keys are put back after it.
+	meta := pcommon.NewMap()
+	for k, v := range res.Attributes().All() {
+		if strings.HasPrefix(k, LabelPrefix) {
+			v.CopyTo(meta.PutEmpty(k))
 		}
 	}
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	for k, v := range meta.All() {
+		v.CopyTo(res.Attributes().PutEmpty(k))
+	}
 
-	return res, conventions.SchemaURL, nil
+	return res, schemaURL, nil
 }
 
 func compileRegexes(pats []string) ([]*regexp.Regexp, error) {

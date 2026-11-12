@@ -87,12 +87,12 @@ func explicitToNHCBHistogram(pt pmetric.HistogramDataPoint) (prompb.Histogram, e
 }
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, baseName string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, baseName)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, baseName)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue

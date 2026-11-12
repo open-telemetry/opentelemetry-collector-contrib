@@ -33,6 +33,9 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
+        - key: container.label.team
+          value:
+            stringValue: container-label
         - key: container.name
           value:
             stringValue: bold_sinoussi

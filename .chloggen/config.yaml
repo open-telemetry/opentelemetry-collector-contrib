@@ -85,7 +85,7 @@ components:
     - extension/awsproxy
     - extension/azure_auth
     - extension/azure_encoding
-    - extension/basicauth
+    - extension/basic_auth
     - extension/bearertokenauth
     - extension/cfgarden_observer
     - extension/cgroup_runtime
@@ -367,6 +367,7 @@ components:
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/hardware
     - scraper/interfaces
     - scraper/load
     - scraper/memory
