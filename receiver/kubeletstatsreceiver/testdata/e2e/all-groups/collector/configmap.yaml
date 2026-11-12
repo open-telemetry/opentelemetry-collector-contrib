@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp_grpc:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    receivers:
+      kubelet_stats:
+        auth_type: "serviceAccount"
+        endpoint: "https://${env:K8S_NODE_IP}:10250"
+        collection_interval: 10s
+        node: ${env:K8S_NODE_NAME}
+        k8s_api_config:
+          auth_type: serviceAccount
+        metric_groups:
+        - node
+        - pod
+        - container
+        - volume
+        extra_metadata_labels:
+        - container.id
+        - k8s.volume.type
+        metrics:
+          k8s.pod.cpu.node.utilization:
+            enabled: true
+          k8s.pod.memory.node.utilization:
+            enabled: true
+          k8s.pod.cpu_limit_utilization:
+            enabled: true
+          k8s.pod.cpu_request_utilization:
+            enabled: true
+          k8s.pod.memory_limit_utilization:
+            enabled: true
+          k8s.pod.memory_request_utilization:
+            enabled: true
+          k8s.container.cpu.node.utilization:
+            enabled: true
+          k8s.container.memory.node.utilization:
+            enabled: true
+          k8s.container.cpu_limit_utilization:
+            enabled: true
+          k8s.container.cpu_request_utilization:
+            enabled: true
+          k8s.container.memory_limit_utilization:
+            enabled: true
+          k8s.container.memory_request_utilization:
+            enabled: true
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      extensions:
+      - health_check
+      pipelines:
+        metrics:
+          exporters:
+          - otlp_grpc
+          receivers:
+          - kubelet_stats
