@@ -114,7 +114,7 @@ All metrics that the receiver emits in EKS mode are gauges, so no start-time pro
 
 When you use the `otel/opentelemetry-collector-contrib` image in the DaemonSet, make these changes to the EKS (EMF) sample:
 
-* Replace `command` with `args: ["--config=/conf/otel-agent-config.yaml", "--feature-gates=receiver.awscontainerinsightreceiver.useNewTypeName"]`. The image's entrypoint is the Collector binary, and the feature gate enables the `awscontainerinsight` type name.
+* Replace `command` with `args: ["--config=/conf/otel-agent-config.yaml"]`. The image's entrypoint is the Collector binary.
 * Add `securityContext: {runAsUser: 0}` to the container. The image runs as a non-root user by default, and the receiver needs root. See [Root permissions](#root-permissions).
 * Set the `AWS_REGION` environment variable.
 * Give the node role (or the pod's IAM role) `cloudwatch:PutMetricData`, `ec2:DescribeTags`, `ec2:DescribeVolumes`, and `ec2:DescribeInstances`.
@@ -783,7 +783,6 @@ All metrics that the receiver emits in ECS mode are gauges, so no start-time pro
 
 The daemon task needs:
 
-* **Collector arguments:** `["--config", "<path or env:VAR>", "--feature-gates=receiver.awscontainerinsightreceiver.useNewTypeName"]`. The feature gate enables the `awscontainerinsight` type name.
 * **Host access:** `networkMode: host`, `privileged: true`, and read-only bind mounts of `/` (as `/rootfs`), `/sys`, `/dev/disk`, `/var/run/docker.sock`, and `/var/lib/docker`. The collector must run as root; the `otel/opentelemetry-collector-contrib` image runs as a non-root user by default, so set `"user": "0"` in the container definition. See [Root permissions](#root-permissions).
 * **Task role permissions:** `ecs:ListContainerInstances`, `ecs:DescribeContainerInstances`, `ecs:ListTasks`, `ecs:DescribeTasks`, `ecs:DescribeServices`, `ec2:DescribeInstances`, `ec2:DescribeTags`, `ec2:DescribeVolumes`, and `cloudwatch:PutMetricData`.
 
