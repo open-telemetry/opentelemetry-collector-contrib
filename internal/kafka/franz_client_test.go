@@ -290,6 +290,20 @@ func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 	}
 }
 
+func TestNewFranzSyncProducerMaxInflightRequestsPerBroker(t *testing.T) {
+	_, clientCfg := kafkatest.NewCluster(t)
+	tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
+	prodCfg := configkafka.NewDefaultProducerConfig()
+	prodCfg.MaxInflightRequestsPerBroker = 100
+	cl, err := NewFranzSyncProducer(
+		t.Context(), componenttest.NewNopHost(), clientCfg,
+		prodCfg, time.Second, tl,
+	)
+	require.NoError(t, err)
+	t.Cleanup(cl.Close)
+	assert.Equal(t, 100, cl.OptValue(kgo.MaxProduceRequestsInflightPerBroker))
+}
+
 func acksToString(tb testing.TB, acks configkafka.RequiredAcks) string {
 	switch acks {
 	case configkafka.NoResponse:

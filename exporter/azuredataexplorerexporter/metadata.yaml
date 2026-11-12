@@ -1,4 +1,5 @@
-type: azuredataexplorer
+type: azure_data_explorer
+deprecated_type: azuredataexplorer
 display_name: Azure Data Explorer Exporter
 
 status:
@@ -7,7 +8,7 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [Abhimanyu9988]
+    active: [Abhimanyu9988, tanmaya-panda1]
     emeritus: [asaharn, ag-ramachandran]
 
 # TODO: Update the exporter to pass the tests

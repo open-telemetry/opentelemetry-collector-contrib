@@ -137,15 +137,16 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Skip known compliance gaps:
-	// - samples_sorted: receiver/prometheus deduplicates multiple samples for the same series in one scrape.
-	// - start_timestamp_*: receiver/prometheus truncates float64 _created timestamps by up to 1ms.
-	// - float_histogram: pmetric exponential histograms store bucket counts as uint64.
-	// - type_info_and_stateset: OpenTelemetry does not support INFO/STATESET, those are gauges.
+	// - samples_sorted (MUST): receiver/prometheus deduplicates multiple samples for the same series in one scrape.
+	// - start_timestamp_* (SHOULD): receiver/prometheus truncates float64 _created timestamps by up to 1ms.
+	// - float_histogram (MUST): pmetric exponential histograms store bucket counts as uint64.
+	// - type_info_and_stateset (SHOULD): OpenTelemetry does not support INFO/STATESET, those are gauges.
 	skip := strings.Join([]string{
 		"TestRemoteWriteSender/otelcol-contrib/samples_sorted",
 		"TestRemoteWriteSender/otelcol-contrib/samples/rw2/start_timestamp_for_.*",
 		"TestRemoteWriteSender/otelcol-contrib/native_histograms/rw2/(float_histogram|start_timestamp_before_timestamp|histograms_sorted)",
 		"TestRemoteWriteSender/otelcol-contrib/metadata/rw2/type_info_and_stateset",
+		"TestRemoteWriteSender/otelcol-contrib/retry_on_5xx/rw2/backoff_between_retries",
 	}, "|")
 	if existing := flag.Lookup("test.skip").Value.String(); existing != "" {
 		skip = existing + "|" + skip
