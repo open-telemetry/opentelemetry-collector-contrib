@@ -21,7 +21,9 @@ data:
         # so every scrape sees a fresh CPU sample for the idle test container.
         # With a shorter interval two scrapes can read the same sample, and the
         # scrape-based CPU usage (and the CPU utilization metrics derived from
-        # it) is skipped for that scrape.
+        # it) is skipped for that scrape. This applies while the
+        # receiver.kubeletstats.cpuUsageScrapeBased feature gate is enabled
+        # (beta, on by default).
         collection_interval: 20s
         node: ${env:K8S_NODE_NAME}
         k8s_api_config:

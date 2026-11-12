@@ -95,15 +95,23 @@ func TestE2EAllMetricGroups(t *testing.T) {
 		}
 	}()
 
-	// The collection interval is 20s; a few batches are enough because the
-	// scrape-based CPU usage only needs one earlier scrape.
+	// waitForData waits for more than wantEntries batches: 4 batches, about 80s
+	// at the 20s collection interval. The scrape-based CPU usage only needs one
+	// earlier scrape of the same container.
 	wantEntries := 3 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	actualMetrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
-	// To regenerate: uncomment, run the test once, re-comment.
-	// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics))
-	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
+	// Assert on the latest batch until it matches: a single scrape can lack a
+	// metric (for example a duplicate kubelet CPU sample skips CPU usage), and
+	// batches from a previous test's collector that is still terminating can
+	// reach the shared sink.
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		all := metricsConsumer.AllMetrics()
+		actualMetrics := all[len(all)-1]
+		// To regenerate: uncomment, run the test once, re-comment.
+		// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics))
+		assert.NoError(tt, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
+	}, 2*time.Minute, 5*time.Second)
 }
 
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {

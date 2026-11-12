@@ -4,7 +4,10 @@ signal: metrics
 # container and its emptyDir volume) and the node are asserted. The other pods
 # on the kind node (control plane, CNI, the collector itself) are tolerated
 # through /include. Within each listed resource, the metric set is exact, so a
-# missing or unexpected metric fails the test.
+# missing or unexpected metric fails the test. Utilization values are checked
+# for a sane range: node and memory limit utilization within [0, 1] (the pod
+# is OOM-killed above its memory limit), the others non-negative (usage may
+# exceed a request, and the scrape-based CPU usage may briefly exceed a limit).
 resources/include:
     # The node resource is only checked for presence here; its metric set is
     # pinned by the default e2e scenario (testdata/e2e/expected.yaml).
@@ -39,12 +42,19 @@ resources/include:
             - name: k8s.pod.cpu.node.utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
             - name: k8s.pod.cpu_limit_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
             - name: k8s.pod.cpu_request_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
             - name: k8s.pod.filesystem.available
               type: gauge
               unit: "By"
@@ -63,6 +73,9 @@ resources/include:
             - name: k8s.pod.memory.node.utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
             - name: k8s.pod.memory.page_faults
               type: gauge
               unit: "1"
@@ -78,9 +91,14 @@ resources/include:
             - name: k8s.pod.memory_limit_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
             - name: k8s.pod.memory_request_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
             # Only the direction permutations are asserted, so the test does
             # not depend on the pod interface names of the CNI in use.
             - name: k8s.pod.network.errors
@@ -152,21 +170,36 @@ resources/include:
             - name: k8s.container.cpu.node.utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
             - name: k8s.container.cpu_limit_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
             - name: k8s.container.cpu_request_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
             - name: k8s.container.memory.node.utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
             - name: k8s.container.memory_limit_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
             - name: k8s.container.memory_request_utilization
               type: gauge
               unit: "1"
+              datapoints:
+                - double_value/gte: 0
     # emptyDir volume resource. k8s.volume.type comes from extra_metadata_labels.
     - attributes:
         k8s.namespace.name: default
