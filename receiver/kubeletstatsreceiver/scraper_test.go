@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -90,6 +91,84 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithV1K8sConventions(t *testing.T) {
+	v1Metrics := []string{
+		"container.memory.available",
+		"container.memory.rss",
+		"container.memory.usage",
+		"container.memory.working_set",
+	}
+	tests := []struct {
+		name     string
+		dontEmit bool
+	}{
+		{name: "emit_v1"},
+		{name: "emit_v1_dont_emit_v0", dontEmit: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, true)()
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.dontEmit)()
+
+			r, err := newKubeletScraper(
+				&fakeRestClient{},
+				receivertest.NewNopSettings(metadata.Type),
+				&scraperOptions{
+					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+						kubelet.ContainerMetricGroup: true,
+					},
+				},
+				metadata.NewDefaultMetricsBuilderConfig(),
+				"worker-42",
+			)
+			require.NoError(t, err)
+
+			md, err := r.ScrapeMetrics(t.Context())
+			require.NoError(t, err)
+			// Legacy and v1 metrics share the same name, so only the v1 version is
+			// emitted and the number of data points stays the same.
+			require.Equal(t, numContainers*containerMetrics, md.DataPointCount())
+
+			found := map[string]int{}
+			rms := md.ResourceMetrics()
+			for i := 0; i < rms.Len(); i++ {
+				sms := rms.At(i).ScopeMetrics()
+				for j := 0; j < sms.Len(); j++ {
+					ms := sms.At(j).Metrics()
+					for k := 0; k < ms.Len(); k++ {
+						m := ms.At(k)
+						if !slices.Contains(v1Metrics, m.Name()) {
+							continue
+						}
+						found[m.Name()]++
+						require.Equal(t, pmetric.MetricTypeSum, m.Type(), m.Name())
+						require.False(t, m.Sum().IsMonotonic(), m.Name())
+						require.Equal(t, pmetric.AggregationTemporalityCumulative, m.Sum().AggregationTemporality(), m.Name())
+					}
+				}
+			}
+			for _, name := range v1Metrics {
+				require.Equal(t, numContainers, found[name], name)
+			}
+
+			expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_v1_k8s_conventions_expected.yaml")
+
+			// Uncomment to regenerate '*_expected.yaml' files
+			// golden.WriteMetrics(t, expectedFile, md)
+
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
+		})
+	}
 }
 
 func TestScraperWithCPUUsageScrapeBased(t *testing.T) {

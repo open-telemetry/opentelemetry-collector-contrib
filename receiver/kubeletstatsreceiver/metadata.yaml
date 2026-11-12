@@ -126,6 +126,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: container.memory.available@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.memory.available@v1:
+    enabled: false
+    description: "Container memory available."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   container.memory.major_page_faults:
     enabled: true
     description: "Container memory major_page_faults"
@@ -150,6 +165,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: container.memory.rss@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.memory.rss@v1:
+    enabled: false
+    description: "Container memory RSS."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   container.memory.usage:
     enabled: true
     description: "Container memory usage"
@@ -158,6 +188,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: container.memory.usage@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.memory.usage@v1:
+    enabled: false
+    description: "Memory usage of the container."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   container.memory.working_set:
     enabled: true
     description: "Container memory working_set"
@@ -165,6 +210,21 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+    migration:
+      to: container.memory.working_set@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.memory.working_set@v1:
+    enabled: false
+    description: "Container memory working set."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: []
   container.uptime:
     enabled: false
@@ -663,6 +723,19 @@ metrics:
     attributes: []
 
 feature_gates:
+  - id: receiver.kubelet_stats.DontEmitV0K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, the legacy (pre semantic conventions) version of the migrated metrics is not emitted.
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728
+  - id: receiver.kubelet_stats.EmitV1K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, metrics that are release candidate in the K8s/container semantic conventions
+      are emitted following the latest semantic conventions definition.
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728
   - id: receiver.kubeletstats.cpuUsageScrapeBased
     stage: beta
     description: >-
