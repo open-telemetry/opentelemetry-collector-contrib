@@ -6,6 +6,7 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,14 +15,103 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
+
+func TestLogsRetryAfterOneDestinationRejects(t *testing.T) {
+	var healthyBackend, recoveringBackend consumertest.LogsSink
+	recoveringBackendCalls := 0
+	sendToRecoveringBackend := func(ctx context.Context, logs plog.Logs) error {
+		recoveringBackendCalls++
+		// Model a full exporter queue that can accept data on the next attempt.
+		if recoveringBackendCalls == 1 {
+			return exporterhelper.ErrQueueIsFull
+		}
+		return recoveringBackend.ConsumeLogs(ctx, logs)
+	}
+	recoveringExporter, err := consumer.NewLogs(sendToRecoveringBackend)
+	require.NoError(t, err)
+
+	healthyID := pipeline.NewIDWithName(pipeline.SignalLogs, "healthy")
+	recoveringID := pipeline.NewIDWithName(pipeline.SignalLogs, "recovering")
+	routingConfig := &Config{
+		Table: []RoutingTableItem{
+			{
+				Condition: `resource.attributes["k8s.pod.name"] == "healthy"`,
+				Pipelines: []pipeline.ID{healthyID},
+			},
+			{
+				Condition: `resource.attributes["k8s.pod.name"] == "recovering"`,
+				Pipelines: []pipeline.ID{recoveringID},
+			},
+		},
+	}
+	require.NoError(t, routingConfig.Validate())
+
+	destinations := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		healthyID:    &healthyBackend,
+		recoveringID: recoveringExporter,
+	})
+	routingConnector, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), routingConfig, destinations.(consumer.Logs))
+	require.NoError(t, err)
+	require.NoError(t, routingConnector.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, routingConnector.Shutdown(context.WithoutCancel(t.Context())))
+	})
+
+	var batchSizesAtRouting []int
+	recordBatchSizeAndRoute := func(ctx context.Context, logs plog.Logs) error {
+		batchSizesAtRouting = append(batchSizesAtRouting, logs.LogRecordCount())
+		return routingConnector.ConsumeLogs(ctx, logs)
+	}
+	routingWithAttemptRecording, err := consumer.NewLogs(
+		recordBatchSizeAndRoute,
+		consumer.WithCapabilities(routingConnector.Capabilities()),
+	)
+	require.NoError(t, err)
+
+	retryConfig := consumerretry.Config{
+		Enabled:         true,
+		InitialInterval: time.Millisecond,
+		MaxInterval:     time.Millisecond,
+		MaxElapsedTime:  0,
+	}
+	// Use filelog's retry mechanism, with the recorder between retries and routing.
+	receiverWithRetry := consumerretry.NewLogs(retryConfig, zap.NewNop(), routingWithAttemptRecording)
+
+	inputBatch := plog.NewLogs()
+	for _, pod := range []string{"healthy", "recovering"} {
+		rl := inputBatch.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("k8s.pod.name", pod)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(pod + "-1")
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	err = receiverWithRetry.ConsumeLogs(ctx, inputBatch)
+
+	t.Logf("Batch sizes received by routing on each attempt: %v", batchSizesAtRouting)
+	t.Logf("Calls to the recovering destination: %d", recoveringBackendCalls)
+	t.Logf("Records delivered: healthy=%d, recovering=%d",
+		healthyBackend.LogRecordCount(), recoveringBackend.LogRecordCount())
+
+	require.NoError(t, err, "retry must succeed after the destination recovers")
+	require.Equal(t, 1, healthyBackend.LogRecordCount(), "the healthy destination must not receive duplicates")
+	require.Equal(t, 1, recoveringBackend.LogRecordCount(), "the rejected record must be delivered on retry")
+	assert.Equal(t, []int{2, 1}, batchSizesAtRouting)
+	assert.Equal(t, "healthy-1", healthyBackend.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+	assert.Equal(t, "recovering-1", recoveringBackend.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
