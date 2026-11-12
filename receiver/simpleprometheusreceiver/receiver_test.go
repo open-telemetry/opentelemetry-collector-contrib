@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
@@ -69,6 +70,59 @@ func TestReceiver(t *testing.T) {
 			}
 
 			require.Error(t, r.Start(t.Context(), componenttest.NewNopHost()))
+		})
+	}
+}
+
+func TestGetPrometheusConfigServiceAccount(t *testing.T) {
+	tokenFile := filepath.Join(t.TempDir(), "token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("token"), 0o600))
+
+	tests := []struct {
+		name       string
+		restConfig *rest.Config
+		wantErr    string
+	}{
+		{
+			name:       "uses token file",
+			restConfig: &rest.Config{BearerToken: "token", BearerTokenFile: tokenFile},
+		},
+		{
+			name:       "empty token",
+			restConfig: &rest.Config{BearerTokenFile: tokenFile},
+			wantErr:    "bearer token was empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			orig := inClusterConfig
+			t.Cleanup(func() { inClusterConfig = orig })
+			inClusterConfig = func() (*rest.Config, error) { return tt.restConfig, nil }
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.UseServiceAccount = true
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+
+			wantAuth := &configutil.Authorization{Type: "Bearer", CredentialsFile: tokenFile}
+			assertAuth := func(httpConfig configutil.HTTPClientConfig) {
+				t.Helper()
+				assert.Equal(t, wantAuth, httpConfig.Authorization)
+				assert.Empty(t, httpConfig.BearerToken)
+				assert.Empty(t, httpConfig.BearerTokenFile)
+			}
+			assertAuth(got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig)
+
+			// The prometheus receiver re-marshals its config through YAML on
+			// start; the token file must survive that round trip so the token
+			// is re-read on each scrape instead of being fixed at start.
+			require.NoError(t, got.PrometheusConfig.Reload())
+			require.Len(t, got.PrometheusConfig.ScrapeConfigs, 1)
+			assertAuth(got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig)
 		})
 	}
 }
