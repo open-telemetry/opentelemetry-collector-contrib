@@ -485,7 +485,8 @@ func TestTransform(t *testing.T) {
 			NodeName: "node-1",
 			Containers: []corev1.Container{
 				{
-					Name: "my-failing-container",
+					Name:  "my-failing-container",
+					Image: "redis:latest",
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
@@ -498,7 +499,8 @@ func TestTransform(t *testing.T) {
 					},
 				},
 				{
-					Name: "my-container",
+					Name:  "my-container",
+					Image: "nginx:latest",
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
@@ -607,6 +609,45 @@ func TestPodMetadata(t *testing.T) {
 			assert.Equal(t, allExpectedMetadata, podMeta)
 		})
 	}
+}
+
+func TestPodMetadataSkipsContainersWithoutID(t *testing.T) {
+	pod := podWithOwnerReference("ReplicaSet")
+	pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+		{
+			Name:  "running",
+			Image: "image:1.0",
+			State: corev1.ContainerState{
+				Running: &corev1.ContainerStateRunning{},
+			},
+			ContainerID: containerIDWithPrefix("running-id"),
+		},
+		{
+			Name:  "pulling-1",
+			Image: "image:1.0",
+			State: corev1.ContainerState{
+				Waiting: &corev1.ContainerStateWaiting{Reason: "ImagePullBackOff"},
+			},
+		},
+		{
+			Name:  "pulling-2",
+			Image: "image:1.0",
+			State: corev1.ContainerState{
+				Waiting: &corev1.ContainerStateWaiting{Reason: "ContainerCreating"},
+			},
+		},
+	}
+
+	metadataStore := mockMetadataStore(testCaseOptions{
+		kind:         "ReplicaSet",
+		withParentOR: true,
+	})
+	meta := GetMetadata(pod, metadataStore, zap.NewNop())
+
+	assert.Len(t, meta, 2)
+	assert.Contains(t, meta, experimentalmetricmetadata.ResourceID("test-pod-0-uid"))
+	assert.Contains(t, meta, experimentalmetricmetadata.ResourceID("running-id"))
+	assert.NotContains(t, meta, experimentalmetricmetadata.ResourceID(""))
 }
 
 func TestPodContainerStateMetrics(t *testing.T) {

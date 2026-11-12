@@ -11,13 +11,14 @@ const (
 	DriverPostgres   = "postgres"
 	DriverSnowflake  = "snowflake"
 	DriverSQLServer  = "sqlserver"
+	DriverAzureSQL   = "azuresql"
 	DriverTDS        = "tds"
 )
 
 // IsValidDriver checks if the given driver name is supported
 func IsValidDriver(driver string) bool {
 	switch driver {
-	case DriverClickHouse, DriverHDB, DriverMySQL, DriverOracle, DriverPostgres, DriverSnowflake, DriverSQLServer, DriverTDS:
+	case DriverClickHouse, DriverHDB, DriverMySQL, DriverOracle, DriverPostgres, DriverSnowflake, DriverSQLServer, DriverAzureSQL, DriverTDS:
 		return true
 	default:
 		return false

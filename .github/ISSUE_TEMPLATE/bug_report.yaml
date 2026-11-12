@@ -179,6 +179,7 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/contexts/xspanlink
       - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
@@ -307,6 +308,7 @@ body:
       - receiver/hostmetrics/internal/scraper/cpuscraper
       - receiver/hostmetrics/internal/scraper/diskscraper
       - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/hardwarescraper
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
