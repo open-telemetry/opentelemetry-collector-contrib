@@ -1388,6 +1388,60 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+            gauge:
+              dataPoints:
+                - asDouble: 2147483647
+                  attributes:
+                    - key: mysql.column.name
+                      value:
+                        stringValue: id
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.table.auto_increment.limit
+            unit: "1"
+          - description: The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+            gauge:
+              dataPoints:
+                - asDouble: 1073741823
+                  attributes:
+                    - key: mysql.column.name
+                      value:
+                        stringValue: id
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.table.auto_increment.usage
+            unit: "1"
+          - description: The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
+            gauge:
+              dataPoints:
+                - asDouble: 0.5
+                  attributes:
+                    - key: mysql.column.name
+                      value:
+                        stringValue: id
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mysql.table.auto_increment.utilization
+            unit: "1"
           - description: The average row length in bytes for a given table.
             name: mysql.table.average_row_length
             sum:

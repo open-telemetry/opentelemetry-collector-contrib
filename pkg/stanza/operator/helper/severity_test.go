@@ -552,6 +552,30 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 	}
 }
 
+func TestSeverityParserDropField(t *testing.T) {
+	t.Parallel()
+
+	parseFrom := entry.NewBodyField("severity_field")
+	cfg := &SeverityConfig{
+		ParseFrom:       &parseFrom,
+		DropFieldConfig: DropFieldConfig{DropField: true},
+	}
+
+	set := componenttest.NewNopTelemetrySettings()
+	severityParser, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	ent := entry.New()
+	require.NoError(t, ent.Set(parseFrom, "INFO"))
+
+	err = severityParser.Parse(ent)
+	require.NoError(t, err)
+
+	require.Equal(t, entry.Info, ent.Severity)
+	_, ok := ent.Get(parseFrom)
+	require.False(t, ok, "expected parseFrom field to be dropped")
+}
+
 func TestBuildCustomMapping(t *testing.T) {
 	t.Parallel()
 
@@ -622,6 +646,15 @@ func TestUnmarshalSeverityConfig(t *testing.T) {
 					c := newHelpersConfig()
 					c.Severity = NewSeverityConfig()
 					c.Severity.Preset = "http"
+					return c
+				}(),
+			},
+			{
+				Name: "drop_field",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Severity = NewSeverityConfig()
+					c.Severity.DropField = true
 					return c
 				}(),
 			},

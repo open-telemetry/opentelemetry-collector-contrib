@@ -35,31 +35,39 @@ const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.
 // added here once they are promoted.
 var semconvCompliantMetrics = []string{
 	"container.cpu.time",
+	"k8s.node.cpu.time",
+	"k8s.pod.cpu.time",
 }
 
-// TestSemconvComplianceContainerMetrics checks the container metrics, and the
+// TestSemconvCompliance checks the container, pod and node metrics, and the
 // resource attributes they carry, against semantic conventions.
-func TestSemconvComplianceContainerMetrics(t *testing.T) {
-	r, err := newKubeletScraper(
-		&fakeRestClient{},
-		receivertest.NewNopSettings(metadata.Type),
-		&scraperOptions{
-			metricGroupsToCollect: map[kubelet.MetricGroup]bool{
-				kubelet.ContainerMetricGroup: true,
-			},
-		},
-		metadata.NewDefaultMetricsBuilderConfig(),
-		"worker-42",
-	)
-	require.NoError(t, err)
+func TestSemconvCompliance(t *testing.T) {
+	for name, group := range map[string]kubelet.MetricGroup{
+		"container": kubelet.ContainerMetricGroup,
+		"pod":       kubelet.PodMetricGroup,
+		"node":      kubelet.NodeMetricGroup,
+	} {
+		t.Run(name, func(t *testing.T) {
+			r, err := newKubeletScraper(
+				&fakeRestClient{},
+				receivertest.NewNopSettings(metadata.Type),
+				&scraperOptions{
+					metricGroupsToCollect: map[kubelet.MetricGroup]bool{group: true},
+				},
+				metadata.NewDefaultMetricsBuilderConfig(),
+				"worker-42",
+			)
+			require.NoError(t, err)
 
-	md, err := r.ScrapeMetrics(t.Context())
-	require.NoError(t, err)
+			md, err := r.ScrapeMetrics(t.Context())
+			require.NoError(t, err)
 
-	keepSemconvCompliantMetrics(md)
-	require.Positive(t, md.MetricCount(), "expected at least one semconv-compliant metric")
+			keepSemconvCompliantMetrics(md)
+			require.Positive(t, md.MetricCount(), "expected at least one semconv-compliant metric")
 
-	semconvtest.TestMetrics(t, md, semconvtest.WithRegistry(semconvRegistry))
+			semconvtest.TestMetrics(t, md, semconvtest.WithRegistry(semconvRegistry))
+		})
+	}
 }
 
 // keepSemconvCompliantMetrics drops every metric that is not listed in

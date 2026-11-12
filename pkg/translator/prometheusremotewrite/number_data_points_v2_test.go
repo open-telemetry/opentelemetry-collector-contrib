@@ -144,6 +144,36 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "gauge with exemplars drops exemplars",
+			metric: func() pmetric.Metric {
+				m := getIntGaugeMetric(
+					"test",
+					pcommon.NewMap(),
+					1, ts,
+				)
+				m.Gauge().DataPoints().At(0).Exemplars().AppendEmpty().SetDoubleValue(2)
+				return m
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test"},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					timeSeriesSignature(labels): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+						},
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_GAUGE,
+							HelpRef: 3,
+							UnitRef: 4,
+						},
+					},
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -162,7 +192,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				Help: metric.Description(),
 				Unit: unitNamer.Build(metric.Unit()),
 			}
-			err := converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), pcommon.NewInstrumentationScope(), settings, metric.Name(), m)
+			err := converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), pcommon.NewInstrumentationScope(), "", settings, metric.Name(), m)
 			require.NoError(t, err)
 			w := tt.want()
 
@@ -219,7 +249,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		Help: metric1.Description(),
 		Unit: unitNamer.Build(metric1.Unit()),
 	}
-	err := converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), pcommon.NewInstrumentationScope(), settings, metric1.Name(), m1)
+	err := converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), pcommon.NewInstrumentationScope(), "", settings, metric1.Name(), m1)
 	require.NoError(t, err)
 
 	m2 := metadata{
@@ -227,7 +257,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		Help: metric2.Description(),
 		Unit: unitNamer.Build(metric2.Unit()),
 	}
-	err = converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), pcommon.NewInstrumentationScope(), settings, metric2.Name(), m2)
+	err = converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), pcommon.NewInstrumentationScope(), "", settings, metric2.Name(), m2)
 	require.NoError(t, err)
 
 	assert.Equal(t, want(), converter.unique)
@@ -419,6 +449,7 @@ func TestPrometheusConverterV2_addSumNumberDataPoints(t *testing.T) {
 				metric.Sum().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				metric,
 				Settings{},
 				metric.Name(),
