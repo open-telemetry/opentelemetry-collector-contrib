@@ -7,93 +7,116 @@ package consul // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"strings"
 
-	"github.com/hashicorp/consul/api"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	consuldetector "go.opentelemetry.io/contrib/detectors/consul"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
-// metaAttributePrefix namespaces consul node metadata keys when the
+// metaAttributePrefix namespaces consul node metadata keys. The SDK detector always emits it;
+// the collector keeps it only when the
 // processor.resourcedetection.consul.prefixMetaAttributes feature gate is enabled.
 const metaAttributePrefix = "consul.meta."
 
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+// Options are set only when configured so that the Consul client's CONSUL_* environment
+// defaults still apply.
+var newResourceDetector = func(cfg Config) sdkresource.Detector {
+	var opts []consuldetector.Option
+	if cfg.Address != "" {
+		opts = append(opts, consuldetector.WithAddress(cfg.Address))
+	}
+	if cfg.Datacenter != "" {
+		opts = append(opts, consuldetector.WithDatacenter(cfg.Datacenter))
+	}
+	if cfg.Namespace != "" {
+		opts = append(opts, consuldetector.WithNamespace(cfg.Namespace))
+	}
+	if cfg.Token != "" {
+		opts = append(opts, consuldetector.WithToken(string(cfg.Token)))
+	}
+	if cfg.TokenFile != "" {
+		opts = append(opts, consuldetector.WithTokenFile(cfg.TokenFile))
+	}
+	if len(cfg.MetaLabels) > 0 {
+		opts = append(opts, consuldetector.WithMetaKeyFilter(func(key string) bool {
+			_, ok := cfg.MetaLabels[key]
+			return ok
+		}))
+	}
+	return consuldetector.NewResourceDetector(opts...)
+}
+
 var _ internal.Detector = (*Detector)(nil)
 
-// Detector is a system metadata detector
+// Detector is a Consul agent metadata detector. Detection is delegated to the upstream SDK
+// detector so that the attributes reported here match the ones the collector's own telemetry
+// reports.
 type Detector struct {
-	provider              consul.Provider
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
-// buildConsulAPIConfig translates the detector Config into a hashicorp consul api.Config.
-func buildConsulAPIConfig(userCfg Config) *api.Config {
-	cfg := api.DefaultConfig()
-
-	if userCfg.Address != "" {
-		cfg.Address = userCfg.Address
-	}
-	if userCfg.Datacenter != "" {
-		cfg.Datacenter = userCfg.Datacenter
-	}
-	if userCfg.Namespace != "" {
-		cfg.Namespace = userCfg.Namespace
-	}
-	if userCfg.Token != "" {
-		cfg.Token = string(userCfg.Token)
-	}
-	if userCfg.TokenFile != "" {
-		cfg.TokenFile = userCfg.TokenFile
-	}
-
-	return cfg
-}
-
+// NewDetector creates a new Consul metadata detector.
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
-	userCfg := dcfg.(Config)
-	cfg := buildConsulAPIConfig(userCfg)
+	cfg := dcfg.(Config)
 
-	client, err := api.NewClient(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating consul client: %w", err)
-	}
-
-	provider := consul.NewProvider(client, userCfg.MetaLabels)
-	return &Detector{provider: provider, logger: p.Logger, rb: metadata.NewResourceBuilder(userCfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
+	return &Detector{
+		detector:              newResourceDetector(cfg),
+		logger:                p.Logger,
+		resourceAttributes:    cfg.ResourceAttributes,
+		failOnMissingMetadata: failOnMissingMetadata,
+	}, nil
 }
 
-// Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	md, err := d.provider.Metadata(ctx)
+// Detect queries the local Consul agent and returns a populated resource.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
 		d.logger.Debug("consul metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
+			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetHostName(md.Hostname)
-	d.rb.SetCloudRegion(md.Datacenter)
-	d.rb.SetHostID(md.NodeID)
+	// The SDK detector reports an empty resource and no error when no agent can be reached.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("consul detector: metadata unavailable or no agent reachable")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("consul metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
+	}
 
-	res := d.rb.Emit()
+	// RemoveDisabledAttributes drops undeclared keys, so node metadata is set aside and
+	// re-added after it.
+	meta := map[string]string{}
+	for k, v := range res.Attributes().All() {
+		if key, ok := strings.CutPrefix(k, metaAttributePrefix); ok {
+			meta[key] = v.Str()
+		}
+	}
+
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
 
 	prefix := ""
 	if metadata.ProcessorResourcedetectionConsulPrefixMetaAttributesFeatureGate.IsEnabled() {
 		prefix = metaAttributePrefix
 	}
-	for key, element := range md.HostMetadata {
-		res.Attributes().PutStr(prefix+key, element)
+	for key, value := range meta {
+		res.Attributes().PutStr(prefix+key, value)
 	}
 
-	return res, conventions.SchemaURL, nil
+	return res, schemaURL, nil
 }

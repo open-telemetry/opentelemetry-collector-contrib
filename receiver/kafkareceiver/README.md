@@ -83,17 +83,13 @@ The following settings can be optionally configured:
 - `max_decompress_batch_bytes` (default = `1073741824`, 1 GiB): The maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after decompression, so it bounds the memory required for a decompressed record batch. This setting is independent of `max_fetch_size` and `max_partition_fetch_size`, which limit compressed bytes on the wire. If a record batch exceeds this decompression limit, the partition will stop making progress until the configuration is increased and the consumer is restarted.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
-  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
-    - `username`: The username to use.
-    - `password`: The password to use
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use.
     - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, or PLAIN)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
-  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client`, `azure_auth` or `bearertokenauth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -130,7 +126,6 @@ The following settings can be optionally configured:
   - `max_prefetch`:
     - `batches` (default = 1): Maximum number of fetched batches waiting for each partition worker. Must be greater than zero when independent processing is enabled.
     - `bytes` (default = 0, no cap): Fetching for a partition pauses once the batches waiting for its worker reach this many bytes. Bytes are counted as in `max_in_flight.bytes`. A batch that crosses the cap is still admitted, so the overshoot is at most one batch. Must not be negative. Applies only when `independent` is true and `batches` is above 1.
-  - `max_buffered_batches` (deprecated, use `max_prefetch.batches`): Same as `max_prefetch.batches`. Setting both is an error. Will be removed in v0.166.0.
   - `max_in_flight`:
     - `records` (default = 1): Maximum number of concurrent unmarshal-plus-Consume calls for each partition worker. Applies only when `independent` is true. Must be greater than zero when independent processing is enabled. Values above 1 give up record ordering within a partition. Values above 1 always mark after processing, so `message_marking.after: false` does not mark before Consume.
     - `bytes` (default = 0, no cap): Maximum bytes held by the records of each partition worker that have started and are not marked yet. A record counts its key, value, and headers after decompression, plus a fixed overhead of about 250 bytes per record and 40 per header. Must not be negative. Applies only when `independent` is true and `records` is above 1. A record above the cap still runs, alone.
@@ -187,6 +182,10 @@ consumed message:
 Additionally, all Kafka message headers are included in the request metadata.
 
 This metadata can then be used throughout the pipeline, for example to set attributes using the [attributes processor](../../processor/attributesprocessor/README.md).
+
+Encoding extensions can implement the [message decoder interfaces](../../extension/encoding/message.go)
+to receive Kafka headers and record metadata through `encoding.WithMessageMetadata`, independently of `header_extraction`.
+The receiver prefers these interfaces when implemented and otherwise uses the existing byte-only unmarshaler.
 
 ### Trace context propagation
 
@@ -253,6 +252,10 @@ service:
 The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
 as a token source, which supports managed identity, workload identity, and service principal
 for authenticating against Azure Event Hubs.
+
+The [`bearertokenauth`](../../extension/bearertokenauthextension/README.md) extension can be used
+as a token source when the token is obtained out of band and made available to the collector as a
+file, such as a Kubernetes projected service account token.
 
 #### Header extraction
 
@@ -333,7 +336,11 @@ Each partition has one worker and one mailbox. `max_prefetch.batches` is how man
 
 `max_in_flight.window: cross_fetch` lets the worker take the next batch while calls from earlier batches still run, up to `records` and `bytes` for the whole partition. Use it when the next consumer holds Consume open until it has aggregated enough data, for example an exporter with `sending_queue.wait_for_result: true` and `batch.min_size` set. With `per_fetch`, such a consumer never sees more than one fetched batch at once and flushes undersized batches on its timeout. Marking is the same in both modes: the worker marks only the contiguous accepted prefix, in fetch order. The cost is a larger replay window. Records that finished above a slow or failed record stay unmarked, and a crash or rebalance replays them. After a revoke, data already accepted by a batching exporter can still export while the next owner replays it. Under `wait_for_result`, the sending queue also limits the window, so `sending_queue.queue_size` must exceed `batch.min_size` by at least the largest record.
 
-Unmarshal must be safe for concurrent calls. The receiver uses one unmarshaler for all workers. It cannot clone encoding extensions. Independent workers call Unmarshal at the same time across partitions. `max_in_flight.records` above 1 does the same inside a partition. 
+Encoding extensions must support concurrent calls to their message decoding or
+byte-only unmarshal methods. The receiver shares the extension across workers;
+message context, metadata options, and decoding state must remain local to each
+call. Independent workers can decode at the same time across partitions.
+`max_in_flight.records` above 1 also permits concurrent decoding inside a partition.
 
 > **WARNING**: Built-in `text` and `text_*` encodings keep one decoder and are not concurrent-safe. Encoding extensions must be concurrent-safe as well.
 

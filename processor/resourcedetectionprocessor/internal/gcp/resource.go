@@ -7,6 +7,7 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
@@ -24,6 +25,19 @@ func setFromCallable(set func(string), detect func() (string, error)) error {
 		return err
 	}
 	set(v)
+	return nil
+}
+
+func setIntFromCallable(set func(int64), detect func() (string, error)) error {
+	v, err := detect()
+	if err != nil {
+		return err
+	}
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return err
+	}
+	set(i)
 	return nil
 }
 

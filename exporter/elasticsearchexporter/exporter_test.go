@@ -1086,47 +1086,6 @@ func TestExporterLogs(t *testing.T) {
 	})
 }
 
-func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
-	rec := newBulkRecorder()
-	server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-		rec.Record(docs)
-		// Ensure the produced index corresponds to OTel mapping (contains ".otel-")
-		require.GreaterOrEqual(t, len(docs), 1)
-		assert.Contains(t, string(docs[0].Action), ".otel-")
-		return itemsAllOK(docs)
-	})
-	params := exportertest.NewNopSettings(metadata.Type)
-
-	// create config that sets Mapping.Mode (deprecated) to ecs
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{server.URL}
-		cfg.QueueBatchConfig.Get().NumConsumers = 1
-		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
-		cfg.Mapping.Mode = "ecs"
-	})
-	require.NoError(t, confmap.Validate(cfg))
-
-	f := NewFactory()
-	exp, err := f.CreateLogs(t.Context(), params, cfg)
-	require.NoError(t, err)
-
-	// start exporter so bulk indexers are initialized
-	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
-	}()
-
-	// send a simple log record without any client metadata or scope attribute
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	lr := sl.LogRecords().AppendEmpty()
-	lr.Body().SetStr("hello")
-
-	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
-	rec.WaitItems(1)
-}
-
 func TestExporterMetrics(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
@@ -1417,7 +1376,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,1,2,1,1],"values":[-24.0,-3.0,0.0,6.0,12.0]}},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":0,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,1,2,1,1],"values":[-24.0,-3.0,0.0,6.0,12.0]}},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
@@ -1453,10 +1412,205 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"exponential_histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":0,"zero":{"count":2},"negative":{"indices":[1,4],"counts":[1,1]},"positive":{"indices":[2,3],"counts":[1,1]}}},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":0,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":0,"zero":{"count":2},"negative":{"indices":[1,4],"counts":[1,1]},"positive":{"indices":[2,3],"counts":[1,1]}}},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("publishes cumulative exponential histogram when mode is otel and ES >= 9.5.0", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.5.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"exponential_histogram"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":0,"temporality":"cumulative","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":0,"zero":{"count":2},"negative":{"indices":[1,4],"counts":[1,1]},"positive":{"indices":[2,3],"counts":[1,1]}}},"_metric_names_hash":"b23939f78dc5f649"}`),
+			},
+		}
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("publishes cumulative exponential histogram when metric is histogram and mode is otel and ES >= 9.5.0, min/max not injected to histogram buckets", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.5.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		dp.SetMin(10)
+		dp.SetMax(50)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"exponential_histogram"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":3600000,"temporality":"cumulative","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":38,"positive":{"indices":[-274877906945,160793267838,363368827853,435671174782],"counts":[1,2,3,4]},"min":10,"max":50}},"_metric_names_hash":"b23939f78dc5f649"}`),
+			},
+		}
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("publishes exponential histogram when metric is histogram and mode is otel and ES >= 9.4.0, min/max are injected into histogram buckets", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.4.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		dp.SetMin(10)
+		dp.SetMax(50)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"exponential_histogram"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":38,"positive":{"indices":[913124641741,160793267838,363368827853,435671174782,1551371376538],"counts":[1,2,3,3,1]},"min":10,"max":50}},"_metric_names_hash":"b23939f78dc5f649"}`),
+			},
+		}
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("cumulative exponential histogram is dropped when mode is otel and mapping hint uses aggregate_metric_double", func(t *testing.T) {
+		server := newESTestServerWithVersion(t, "9.5.0", func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+		fillAttributeMap(dp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count", "aggregate_metric_double"},
+		})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		err := exporter.ConsumeMetrics(ctx, metrics)
+		assert.NoError(t, err)
+	})
+
+	t.Run("cumulative exponential histogram is dropped when ES < v9.5.0", func(t *testing.T) {
+		server := newESTestServerWithVersion(t, "9.4.0", func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		err := exporter.ConsumeMetrics(ctx, metrics)
+		require.NoError(t, err)
+	})
+
+	t.Run("cumulative histogram is dropped when ES < v9.5.0", func(t *testing.T) {
+		server := newESTestServerWithVersion(t, "9.4.0", func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		dp.SetMin(10)
+		dp.SetMax(50)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		err := exporter.ConsumeMetrics(ctx, metrics)
+		require.NoError(t, err)
 	})
 
 	t.Run("converts OTLP histogram to exponential histogram when mode is otel and ES >= 9.4.0", func(t *testing.T) {
@@ -1487,7 +1641,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"exponential_histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":38,"positive":{"indices":[-274877906945,160793267838,363368827853,435671174782],"counts":[1,2,3,4]}}},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"scale":38,"positive":{"indices":[-274877906945,160793267838,363368827853,435671174782],"counts":[1,2,3,4]}}},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
@@ -1521,7 +1675,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action: []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,2,3,4]
+				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,2,3,4]
  ,"values":[0.5,1.5,2.5,3.0]}},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 		}
@@ -1560,7 +1714,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"resource":{},"scope":{},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
@@ -1596,6 +1750,88 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("cumulative exponential histogram document includes temporality field when mode is otel and ES >= 9.5.0", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.5.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetZeroCount(2)
+		dp.Positive().SetOffset(1)
+		dp.Positive().BucketCounts().FromRaw([]uint64{0, 1, 1, 0})
+		dp.Negative().SetOffset(1)
+		dp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		items := rec.WaitItems(1)
+		require.Len(t, items, 1)
+
+		var doc map[string]any
+		require.NoError(t, json.Unmarshal(items[0].Document, &doc))
+		assert.Equal(t, "cumulative", doc["temporality"],
+			"expected serialized document to carry a temporality dimension field; got: %s", items[0].Document)
+	})
+
+	t.Run("cumulative and delta histograms with same identity are kept in separate documents (otel, ES >= 9.5.0)", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServerWithVersion(t, "9.5.0", func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		ts := pcommon.NewTimestampFromTime(time.Unix(3600, 0))
+
+		newExpHist := func(sm pmetric.ScopeMetrics, temporality pmetric.AggregationTemporality) {
+			m := sm.Metrics().AppendEmpty()
+			m.SetName("metric.foo")
+			eh := m.SetEmptyExponentialHistogram()
+			eh.SetAggregationTemporality(temporality)
+			dp := eh.DataPoints().AppendEmpty()
+			dp.SetTimestamp(ts)
+			dp.Positive().SetOffset(1)
+			dp.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+		}
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		newExpHist(sm, pmetric.AggregationTemporalityCumulative)
+		newExpHist(sm, pmetric.AggregationTemporalityDelta)
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		require.Eventually(t, func() bool { return rec.NumItems() == 2 }, 5*time.Second, 50*time.Millisecond,
+			"expected cumulative and delta to produce two separate documents, got %d", rec.NumItems())
+
+		got := map[string]int{}
+		for _, it := range rec.Items() {
+			var doc map[string]any
+			require.NoError(t, json.Unmarshal(it.Document, &doc))
+			if v, ok := doc["temporality"].(string); ok {
+				got[v]++
+			}
+		}
+		assert.Equal(t, map[string]int{"cumulative": 1, "delta": 1}, got)
 	})
 
 	t.Run("publish histogram cumulative temporality", func(t *testing.T) {
@@ -1786,11 +2022,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":0,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":0,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":3600000,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
+				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"},"require_data_stream":true}}`),
@@ -1985,11 +2221,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":0,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
+				Document: []byte(`{"@timestamp":0,"temporality":"delta","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"fcd1d6737d725996"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":3600000,"_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
+				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{},"_metric_names_hash":"6a10ca190ae63c5"}`),
 			},
 		}
 
@@ -2530,9 +2766,8 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 
-				testMetricsExporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-					cfg.Mapping.Mode = mode
-				})
+				testMetricsExporter := newTestMetricsExporter(t, server.URL)
+				ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {mode}})})
 
 				metrics := pmetric.NewMetrics()
 				resource := metrics.ResourceMetrics().AppendEmpty()
@@ -2560,7 +2795,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				bazHints := bazDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
 				bazHints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
 
-				mustSendMetrics(t, testMetricsExporter, metrics)
+				mustSendMetricsWithCtx(ctx, t, testMetricsExporter, metrics)
 
 				rec.WaitItems(1)
 				assert.Len(t, rec.Items(), 1)

@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // addResourceTargetInfoV2 converts the resource to the target info metric.
@@ -25,21 +27,24 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 	}
 
 	attributes := resource.Attributes()
-	identifyingAttrs := []string{
-		string(conventions.ServiceNamespaceKey),
-		string(conventions.ServiceNameKey),
-		string(conventions.ServiceInstanceIDKey),
-	}
-	nonIdentifyingAttrsCount := attributes.Len()
-	for _, a := range identifyingAttrs {
-		_, haveAttr := attributes.Get(a)
-		if haveAttr {
-			nonIdentifyingAttrsCount--
+	var identifyingAttrs []string
+	if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+		identifyingAttrs = []string{
+			string(conventions.ServiceNamespaceKey),
+			string(conventions.ServiceNameKey),
+			string(conventions.ServiceInstanceIDKey),
 		}
-	}
-	if nonIdentifyingAttrsCount == 0 {
-		// If we only have job + instance, then target_info isn't useful, so don't add it.
-		return nil
+		nonIdentifyingAttrsCount := attributes.Len()
+		for _, a := range identifyingAttrs {
+			_, haveAttr := attributes.Get(a)
+			if haveAttr {
+				nonIdentifyingAttrsCount--
+			}
+		}
+		if nonIdentifyingAttrsCount == 0 {
+			// If we only have job + instance, then target_info isn't useful, so don't add it.
+			return nil
+		}
 	}
 
 	name := otlptranslator.TargetInfoMetricName
@@ -48,7 +53,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), "", settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
@@ -96,7 +101,7 @@ func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timesta
 	}
 }
 
-func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope,
+func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string,
 	settings Settings, baseName string, metadata metadata,
 ) error {
 	var errs error
@@ -104,7 +109,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		startTimestamp := convertTimeStamp(pt.StartTimestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -126,14 +131,14 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 }
 
 func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string, metadata metadata,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, baseName string, metadata metadata,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		startTimestamp := convertTimeStamp(pt.StartTimestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue

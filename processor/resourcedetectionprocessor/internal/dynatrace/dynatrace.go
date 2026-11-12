@@ -10,93 +10,39 @@
 
 package dynatrace // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace"
 import (
-	"bufio"
 	"context"
-	"os"
-	"path/filepath"
-	"runtime"
-	"slices"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	"go.uber.org/zap"
+	dynatracedetector "go.opentelemetry.io/contrib/detectors/dynatrace"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
-const dtHostMetadataProperties = "dt_host_metadata.properties"
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return dynatracedetector.NewResourceDetector()
+}
 
-var dtHostProperties = []string{"dt.entity.host", "host.name", "dt.smartscape.host"}
+// Ensure Detector implements internal.Detector.
+var _ internal.Detector = (*Detector)(nil)
 
+// Detector reads the Dynatrace OneAgent host enrichment file. Detection is
+// delegated to the upstream SDK detector.
 type Detector struct {
-	enrichmentDirectory string
-	logger              *zap.Logger
+	detector sdkresource.Detector
 }
 
-func NewDetector(set processor.Settings, _ internal.DetectorConfig, _ bool) (internal.Detector, error) {
-	enrichmentDir := "/var/lib/dynatrace/enrichment"
-	if runtime.GOOS == "windows" {
-		// Windows default is "%ProgramData%\dynatrace\enrichment"
-		// If the ProgramData environment variable is not set,
-		// it falls back to C:\ProgramData
-		programDataDir := os.Getenv("ProgramData")
-		if programDataDir == "" {
-			programDataDir = `C:\ProgramData`
-		}
-
-		enrichmentDir = filepath.Join(programDataDir, "dynatrace", "enrichment")
-	}
-
-	return &Detector{
-		enrichmentDirectory: enrichmentDir,
-		logger:              set.Logger,
-	}, nil
+// NewDetector creates a new Dynatrace detector.
+func NewDetector(processor.Settings, internal.DetectorConfig, bool) (internal.Detector, error) {
+	return &Detector{detector: newResourceDetector()}, nil
 }
 
-func (d Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
-	res := pcommon.NewResource()
-
-	if err := d.readPropertiesFile(res.Attributes()); err != nil {
-		return res, "", err
-	}
-	return res, "", nil
-}
-
-func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
-	filePath := filepath.Join(d.enrichmentDirectory, dtHostMetadataProperties)
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-
-	defer func() {
-		_ = file.Close()
-	}()
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		// split by the first "=" character. If there is another "=" afterward, this will be part of the value
-		split := strings.SplitN(line, "=", 2)
-		if len(split) != 2 {
-			d.logger.Warn("Skipping line as it does not match the expected format of '<key>=<value>", zap.String("line", line))
-			continue
-		}
-		key, value := split[0], split[1]
-
-		if key != "" && value != "" {
-			if !slices.Contains(dtHostProperties, key) {
-				continue
-			}
-			attributes.PutStr(strings.TrimSpace(key), strings.TrimSpace(value))
-		}
-	}
-
-	return scanner.Err()
+// Detect returns the attributes declared in the enrichment file. A missing file
+// is not an error, as it means the host is not monitored by the OneAgent. A file
+// that cannot be read is always an error, regardless of fail_on_missing_metadata.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	return sdkbridge.Detect(ctx, d.detector)
 }
