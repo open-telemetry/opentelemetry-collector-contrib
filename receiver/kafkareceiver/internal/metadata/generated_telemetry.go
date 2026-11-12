@@ -7,10 +7,11 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -34,6 +35,7 @@ type TelemetryBuilder struct {
 	KafkaReceiverBytes                       metric.Int64Counter
 	KafkaReceiverBytesUncompressed           metric.Int64Counter
 	KafkaReceiverCurrentOffset               metric.Int64ObservableGauge
+	KafkaReceiverFetchErrDecompressTooLarge  metric.Int64Counter
 	KafkaReceiverLatency                     metric.Int64Histogram
 	KafkaReceiverMessages                    metric.Int64Counter
 	KafkaReceiverOffsetLag                   metric.Int64ObservableGauge
@@ -157,6 +159,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.KafkaReceiverCurrentOffset, err = builder.meter.Int64ObservableGauge(
 		"otelcol_kafka_receiver_current_offset",
 		metric.WithDescription("Current message offset [Development]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.KafkaReceiverFetchErrDecompressTooLarge, err = builder.meter.Int64Counter(
+		"otelcol_kafka_receiver_fetch_err_decompress_too_large",
+		metric.WithDescription("The total number of fetched record batches that decompressed beyond max_decompress_batch_bytes. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
