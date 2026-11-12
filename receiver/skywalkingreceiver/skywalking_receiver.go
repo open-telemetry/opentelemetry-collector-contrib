@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -139,8 +138,8 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 				sr.config.CollectorHTTPSettings.NetAddr.Endpoint, cerr)
 		}
 
-		nr := mux.NewRouter()
-		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
+		nr := http.NewServeMux()
+		nr.HandleFunc("POST /v3/segments", sr.traceReceiver.HTTPHandler)
 		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host.GetExtensions(), sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
