@@ -57,6 +57,10 @@ exclusions:
     lifecycle_test:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+    feature_gates:
+      - name: exporter.xray.allowDot
+        validation:
+          enabled: false
     goleak:
       enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
@@ -295,9 +299,6 @@ exclusions:
       - name: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
         validation:
           enabled: false
-      - name: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
-        validation:
-          enabled: false
       - name: internal.coreinternal.goldendataset.EmitV1DatabaseConventions
         validation:
           enabled: false
@@ -311,9 +312,6 @@ exclusions:
         validation:
           enabled: false
       - name: internal.coreinternal.goldendataset.EmitV1NetworkConventions
-        validation:
-          enabled: false
-      - name: internal.coreinternal.goldendataset.EmitV1RPCConventions
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
@@ -358,9 +356,6 @@ exclusions:
       - name: ottl.functions.enableLambda
         validation:
           enabled: false
-      - name: ottl.set.allowNil
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
     feature_gates:
       - name: logs.assignKeys
@@ -390,9 +385,6 @@ exclusions:
         validation:
           enabled: false
       - name: filelog.mtimeSortType
-        validation:
-          enabled: false
-      - name: filelog.protobufCheckpointEncoding
         validation:
           enabled: false
       - name: filelog.requireExplicitTopN
@@ -427,6 +419,9 @@ exclusions:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus
     feature_gates:
+      - name: pkg.translator.prometheus.CorrectUCUMUnits
+        validation:
+          enabled: false
       - name: pkg.translator.prometheus.PermissiveLabelSanitization
         validation:
           enabled: false

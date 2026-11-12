@@ -1,5 +1,56 @@
 metadata:
 #
+# -------------------------------------------- Active Partitioned DMLs -------------------------------------------------
+#
+  - name: "active partitioned dmls"
+    query: "SELECT SESSION_ID, TEXT, TEXT_FINGERPRINT, NUM_PARTITIONS_TOTAL, NUM_PARTITIONS_COMPLETE, NUM_TRIVIAL_PARTITIONS_COMPLETE, PROGRESS, ROWS_PROCESSED, START_TIMESTAMP, LAST_UPDATE_TIMESTAMP FROM SPANNER_SYS.ACTIVE_PARTITIONED_DMLS ORDER BY START_TIMESTAMP ASC, LAST_UPDATE_TIMESTAMP ASC, ROWS_PROCESSED DESC"
+    metric_name_prefix: "database/spanner/active_partitioned_dmls/"
+    high_cardinality: true
+    labels:
+      - name: "session_id"
+        column_name: "SESSION_ID"
+        value_type: "string"
+      - name: "query_text"
+        column_name: "TEXT"
+        value_type: "string"
+      - name: "query_text_fingerprint"
+        column_name: "TEXT_FINGERPRINT"
+        value_type: "string"
+      - name: "progress"
+        column_name: "PROGRESS"
+        value_type: "string"
+      - name: "start_timestamp"
+        column_name: "START_TIMESTAMP"
+        value_type: "timestamp"
+      - name: "last_update_timestamp"
+        column_name: "LAST_UPDATE_TIMESTAMP"
+        value_type: "timestamp"
+    metrics:
+      - name: "num_partitions_total"
+        column_name: "NUM_PARTITIONS_TOTAL"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "num_partitions_complete"
+        column_name: "NUM_PARTITIONS_COMPLETE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "num_trivial_partitions_complete"
+        column_name: "NUM_TRIVIAL_PARTITIONS_COMPLETE"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+      - name: "rows_processed"
+        column_name: "ROWS_PROCESSED"
+        value_type: "int"
+        data:
+          type: "gauge"
+        unit: "one"
+#
 # -------------------------------------------- Active Queries Summary --------------------------------------------------
 #
   - name: "active queries summary"
@@ -72,7 +123,7 @@ metadata:
 # -------------------------------------------- Locks Stats -------------------------------------------------------------
 #
   - name: "top minute lock stats"
-    query: "SELECT * FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC"
+    query: "SELECT INTERVAL_END, ROW_RANGE_START_KEY, SAMPLE_LOCK_REQUESTS_JSON_STRING, LOCK_WAIT_SECONDS FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC"
     metric_name_prefix: "database/spanner/lock_stats/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
@@ -81,8 +132,8 @@ metadata:
         column_name: "ROW_RANGE_START_KEY"
         value_type: "byte_slice"
       - name: "sample_lock_requests"
-        column_name: "SAMPLE_LOCK_REQUESTS"
-        value_type: "lock_request_slice"
+        column_name: "SAMPLE_LOCK_REQUESTS_JSON_STRING"
+        value_type: "lock_request_json"
     metrics:
       - name: "lock_wait_seconds"
         column_name: "LOCK_WAIT_SECONDS"
@@ -767,7 +818,7 @@ metadata:
         value_type: "string_slice"
       - name: "operations_by_table_json_string"
         column_name: "OPERATIONS_BY_TABLE_JSON_STRING"
-        value_type: "string"
+        value_type: "operations_by_table_json"
     metrics:
       - name: "commit_attempt_count"
         column_name: "COMMIT_ATTEMPT_COUNT"

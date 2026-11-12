@@ -26,6 +26,7 @@ const (
 	// to read data from stale replica nodes(at this time replica node will contain required data), since we are
 	// requesting data for mm:00. Also stale reads are faster than reads from main node.
 	dataStalenessSafeThresholdSeconds = 2 * dataStalenessSeconds
+	activePartitionedDMLsMetricName   = "active partitioned dmls"
 	oldestActiveQueriesMetricName     = "oldest active queries"
 	userSplitPointsMetricName         = "user split points"
 )
@@ -86,7 +87,7 @@ func (reader *currentStatsReader) Read(ctx context.Context) ([]*metadata.Metrics
 		}
 	}
 
-	if reader.truncateText && reader.metricsMetadata != nil && reader.metricsMetadata.Name == oldestActiveQueriesMetricName {
+	if reader.truncateText && reader.metricsMetadata != nil && (reader.metricsMetadata.Name == activePartitionedDMLsMetricName || reader.metricsMetadata.Name == oldestActiveQueriesMetricName) {
 		for _, dataPoint := range dataPoints {
 			dataPoint.TruncateQueryText(maxLengthTruncateText)
 		}

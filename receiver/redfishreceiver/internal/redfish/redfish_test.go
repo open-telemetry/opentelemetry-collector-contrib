@@ -4,12 +4,14 @@
 package redfish
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"path"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 const (
@@ -48,7 +50,7 @@ func Test_HPE(t *testing.T) {
 	ts := createRedfishTestServer(HPE, compSysID)
 	defer ts.Close()
 
-	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithInsecure(true))
+	client, err := NewClient(compSysID, ts.URL, USER, PASS)
 	require.NoError(t, err)
 
 	system, err := client.GetComputerSystem()
@@ -75,7 +77,7 @@ func Test_Dell(t *testing.T) {
 	ts := createRedfishTestServer(DELL, compSysID)
 	defer ts.Close()
 
-	client, err := NewClient(compSysID, ts.URL, USER, PASS, WithInsecure(true))
+	client, err := NewClient(compSysID, ts.URL, USER, PASS)
 	require.NoError(t, err)
 
 	system, err := client.GetComputerSystem()
@@ -95,4 +97,48 @@ func Test_Dell(t *testing.T) {
 	require.Nil(t, thermal.Temperatures[0].ReadingCelsius)
 	require.NotNil(t, thermal.Temperatures[1].ReadingCelsius)
 	require.Equal(t, int64(28), *thermal.Temperatures[1].ReadingCelsius)
+}
+
+// Test_BasicAuth is a function to test that basic auth is only sent when a username is set
+func Test_BasicAuth(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		user     string
+		pwd      string
+		wantAuth bool
+	}{
+		{desc: "No Username", wantAuth: false},
+		{desc: "With Username", user: USER, pwd: PASS, wantAuth: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				user, pass, ok := r.BasicAuth()
+				if ok != tc.wantAuth || user != tc.user || pass != tc.pwd {
+					http.Error(w, "unexpected basic auth", http.StatusUnauthorized)
+					return
+				}
+				http.ServeFile(w, r, path.Join("testdata/", HPE, "systems.json"))
+			}))
+			defer ts.Close()
+
+			client, err := NewClient("S7", ts.URL, tc.user, configopaque.String(tc.pwd))
+			require.NoError(t, err)
+			_, err = client.GetComputerSystem()
+			require.NoError(t, err)
+		})
+	}
+}
+
+// Test_WithTLSConfig is a function to test that the TLS config is used by the HTTP transport
+func Test_WithTLSConfig(t *testing.T) {
+	tlsConfig := &tls.Config{ServerName: "bmc.example.com"}
+
+	client, err := NewClient("S7", "https://localhost:3000", "", "", WithTLSConfig(tlsConfig))
+	require.NoError(t, err)
+
+	transport, ok := client.client.Transport.(*http.Transport)
+	require.True(t, ok)
+	require.Same(t, tlsConfig, transport.TLSClientConfig)
 }
