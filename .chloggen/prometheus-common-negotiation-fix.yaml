@@ -6,5 +6,5 @@ note: >-
 issues: [52665]
 subtext: |
   With `NoUTF8EscapingWithSuffixes` or `NoTranslation`, names are now underscore-escaped when the selected format has no escaping parameter.
-  To preserve UTF-8 names when the scraper requests them for OpenMetrics, set `enable_open_metrics: true`.
+  Prometheus scrapes requesting text format 1.0.0 with `escaping=allow-utf-8` preserve UTF-8 names without enabling OpenMetrics.
 change_logs: [user]
