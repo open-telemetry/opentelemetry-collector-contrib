@@ -88,7 +88,14 @@ Optionally, users can set different `translation_strategy` options to control ho
 
 ## Setting resource attributes as metric labels
 
-By default, resource attributes are added to a special metric called `target_info`. To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
+By default, resource attributes are added to a special metric called `target_info`. Enable the alpha feature gate
+`pkg.prometheus.KeepIdentifyingResourceAttributes` with
+`--feature-gates=pkg.prometheus.KeepIdentifyingResourceAttributes` to also preserve
+`service.name`, `service.namespace`, and `service.instance.id` on `target_info`.
+These attributes continue to populate `job` and `instance`.
+Label names follow the configured translation strategy.
+
+To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
 
 ```promql
 app_ads_ad_requests_total * on (job, instance) group_left target_info{k8s_namespace_name="my-namespace"}

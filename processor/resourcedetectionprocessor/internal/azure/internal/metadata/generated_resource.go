@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetAzureResourceGroupName sets provided value as "azure.resource_group.name" attribute.
+func (rb *ResourceBuilder) SetAzureResourceGroupName(val string) {
+	if rb.config.AzureResourceGroupName.Enabled {
+		rb.res.Attributes().PutStr("azure.resource_group.name", val)
+	}
+}
+
 // SetAzureResourcegroupName sets provided value as "azure.resourcegroup.name" attribute.
 func (rb *ResourceBuilder) SetAzureResourcegroupName(val string) {
 	if rb.config.AzureResourcegroupName.Enabled {
