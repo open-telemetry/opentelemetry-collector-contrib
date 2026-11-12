@@ -183,8 +183,8 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		resourcesIDsWithDefinitions := make(chan string)
 		go func(subscriptionID string) {
 			defer close(resourcesIDsWithDefinitions)
-			for resourceID := range s.resources[subscriptionID] {
-				s.loadMetricsDefinitions(ctx, subscriptionID, resourceID)
+			for resourceID, res := range s.resources[subscriptionID] {
+				s.loadMetricsDefinitions(ctx, subscriptionID, resourceID, res.resourceType)
 				resourcesIDsWithDefinitions <- resourceID
 			}
 		}(subscriptionID)
@@ -467,7 +467,7 @@ func (s *azureScraper) getResourcesFilter() string {
 	return fmt.Sprintf("(resourceType eq '%s')%s", resourcesTypeFilter, resourcesGroupFilterString)
 }
 
-func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionID, resourceID string) {
+func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionID, resourceID string, resourceType *string) {
 	s.settings.Logger.Debug("Loading the list of Azure Metrics Definitions",
 		zap.String("resource_id", resourceID),
 		zap.String("subscription_id", subscriptionID))
@@ -494,15 +494,17 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 
 	s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, nil, discoveredNamespaces)
 
+	var resType string
+	if resourceType != nil {
+		resType = *resourceType
+	}
+
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
 	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
-	// for each namespace configured in the metrics filter that was not already returned
+	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
-	for configNamespace := range s.cfg.Metrics {
-		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
-			continue
-		}
+	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resType) {
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: new(configNamespace),
 		}
@@ -879,4 +881,34 @@ func serializeArmMetadataValues(metadataValues []*armmonitor.MetadataValue) stri
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, ",")
+}
+
+// dedupAlreadyCollectedNamespaces returns configured metric namespaces that require an
+// explicit Definitions query for the given resourceType.
+//
+//  1. Namespaces already discovered by the default call are skipped.
+//  2. ARM resource types ("<provider>/<type>") for other services are skipped to prevent 400 BadRequest.
+//  3. Custom metric namespaces (e.g. "azure.vm.linux.guestmetrics", which do not contain '/')
+//     are retained because Azure Monitor only returns their definitions when explicitly requested.
+func dedupAlreadyCollectedNamespaces(metricsConfig NestedListAlias, discoveredNamespaces map[string]struct{}, resourceType string) []string {
+	resourceType = strings.TrimSpace(resourceType)
+	if resourceType == "" {
+		return nil
+	}
+
+	var toCollect []string
+	for configNamespace := range metricsConfig {
+		trimmed := strings.TrimSpace(configNamespace)
+		if trimmed == "" {
+			continue
+		}
+		if _, found := discoveredNamespaces[strings.ToLower(trimmed)]; found {
+			continue
+		}
+		if strings.Contains(trimmed, "/") && !strings.EqualFold(trimmed, resourceType) {
+			continue
+		}
+		toCollect = append(toCollect, configNamespace)
+	}
+	return toCollect
 }
