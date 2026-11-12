@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"sort"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -761,18 +763,26 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
-	t.Run("do not retry invalid request", func(t *testing.T) {
-		attempts := &atomic.Int64{}
+	t.Run("retry invalid request", func(t *testing.T) {
+		var attempts atomic.Int64
 		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
-		exporter := newTestLogsExporter(t, server.URL)
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
-
-		time.Sleep(200 * time.Millisecond)
-		assert.Equal(t, int64(1), attempts.Load())
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Retry.InitialInterval = time.Millisecond
+			cfg.Retry.MaxInterval = 5 * time.Millisecond
+			cfg.QueueBatchConfig.Get().WaitForResult = true
+		})
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		scopeLogs.LogRecords().AppendEmpty()
+		logs.MarkReadOnly()
+		err := exporter.ConsumeLogs(t.Context(), logs)
+		require.Error(t, err)
+		assert.Equal(t, int64(defaultMaxRetries+1), attempts.Load())
 	})
 
 	t.Run("retry single item", func(t *testing.T) {
@@ -806,6 +816,45 @@ func TestExporterLogs(t *testing.T) {
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 
 		time.Sleep(200 * time.Millisecond)
+		assert.Equal(t, int64(1), attempts.Load())
+	})
+
+	// testdata sets retry_on_document_status: []. An empty list disables
+	// document retries, so an HTTP 200 item 429 is not retried.
+	t.Run("empty retry_on_document_status does not retry item 429", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "retry_on_document_status_empty").String())
+		require.NoError(t, err)
+
+		parsed := createDefaultConfig().(*Config)
+		require.NoError(t, sub.Unmarshal(parsed))
+		assert.Equal(t, []int{}, parsed.Retry.RetryOnDocumentStatus)
+		assert.NotEqual(t, createDefaultConfig().(*Config).Retry.RetryOnDocumentStatus, parsed.Retry.RetryOnDocumentStatus)
+		assert.True(t, parsed.Retry.Enabled)
+
+		var attempts atomic.Int64
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			attempts.Add(1)
+			return itemsReportStatus(docs, http.StatusTooManyRequests)
+		})
+
+		parsed.ClientConfig.Endpoint = server.URL
+		parsed.Retry.InitialInterval = time.Millisecond
+		parsed.Retry.MaxInterval = 5 * time.Millisecond
+		parsed.QueueBatchConfig.Get().NumConsumers = 1
+		parsed.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+		parsed.QueueBatchConfig.Get().WaitForResult = true
+		require.NoError(t, confmap.Validate(parsed))
+
+		exp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), parsed)
+		require.NoError(t, err)
+		require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
+		})
+
+		mustSendLogRecords(t, exp, plog.NewLogRecord())
 		assert.Equal(t, int64(1), attempts.Load())
 	})
 
@@ -4261,14 +4310,15 @@ func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) str
 	return vString
 }
 
-func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
+func TestExporterTimeout_RetriesDeadlineExceeded(t *testing.T) {
 	var count atomic.Int32
-	done := make(chan struct{}, 1)
+	// Block every attempt until the client gives up. Closing done from
+	// defer lets the server shut down after ConsumeLogs returns.
+	done := make(chan struct{})
 	defer close(done)
 	server := newESTestServerBulkHandlerFunc(t, "", func(w http.ResponseWriter, _ *http.Request) {
-		if count.Add(1) == 1 {
-			<-done
-		}
+		count.Add(1)
+		<-done
 		w.WriteHeader(http.StatusTeapot)
 	})
 
@@ -4287,7 +4337,7 @@ func TestExporterTimeout_NoRetryOnTimeout(t *testing.T) {
 	logs.MarkReadOnly()
 	err := exporter.ConsumeLogs(t.Context(), logs)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
-	assert.Equal(t, int32(1), count.Load())
+	assert.Equal(t, int32(2), count.Load())
 }
 
 func TestExporterTimeout_Independent(t *testing.T) {
