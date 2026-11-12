@@ -219,6 +219,10 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
+	// Default the required PRW 2.0 Written response headers to 0 so that early errors
+	// (body read, protobuf unmarshal, or downstream consumer errors) report nothing written.
+	promremote.WriteResponseStats{}.SetHeaders(w)
+
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
 	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
@@ -237,29 +241,28 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	stats.SetHeaders(w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
-		return
-	}
+	m, stats, commitRMCache, badRequestErr := prw.translateV2WithStagedCache(req.Context(), &prw2Req)
 
-	// Return early if metric count is 0.
-	if m.MetricCount() == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
-	err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
-	if err != nil {
-		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		if consumererror.IsPermanent(err) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	dataPointCount := m.DataPointCount()
+	if dataPointCount > 0 {
+		obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+		err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
+		prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", dataPointCount, err)
+		if err != nil {
+			prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+			if consumererror.IsPermanent(err) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
 		}
+	}
+
+	commitRMCache()
+	stats.SetHeaders(w)
+	if badRequestErr != nil {
+		http.Error(w, badRequestErr.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
 		return
 	}
 
@@ -308,7 +311,8 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 //
 // This function always creates new ResourceMetrics per request, only copying attributes
 // from the LRU cache when available. Never returns cached objects to avoid shared
-// mutation across concurrent requests.
+// mutation across concurrent requests. Updates to prw.rmCache are deferred to commitRMCache
+// so a failed request or failed downstream ConsumeMetrics call leaves the cache untouched.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
 	// Hash job+instance directly to avoid allocating a temporary pcommon.Resource
 	// on every call (which happens once per time series).
@@ -325,25 +329,27 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 	}
 
 	rm := otelMetrics.ResourceMetrics().AppendEmpty()
-	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+	if existingRM, ok := prw.rmCache.Peek(hashedLabels); ok {
 		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
 		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
 	} else {
 		// When the ResourceMetrics does not exist in the global cache, we need to create a new one and add it to the request map.
-		// Saving the new ResourceMetrics in the global cache to avoid creating duplicates in the next requests.
-		parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-		snapshot := pmetric.NewResourceMetrics()
-		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
-		prw.rmCache.Add(hashedLabels, snapshot)
+		parseJobAndInstance(rm.Resource().Attributes(), job, instance)
 	}
 
 	reqRM[hashedLabels] = rm
 	return rm, hashedLabels
 }
 
-// translateV2 translates a v2 remote-write request into OTLP metrics.
+// translateV2 translates a v2 remote-write request into OTLP metrics and commits staged resource cache updates.
 // translate is not feature complete.
 func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+	m, stats, commitRMCache, err := prw.translateV2WithStagedCache(ctx, req)
+	commitRMCache()
+	return m, stats, err
+}
+
+func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, func(), error) {
 	var (
 		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
@@ -357,13 +363,14 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 		scopeCache  = make(map[scopeCacheKey]pmetric.ScopeMetrics)
-		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) had their resource attributes modified — for example, through target_info.
-		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
-		// This ensures that future requests start with the enriched resource attributes already applied.
+		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) were created or modified during translation.
+		// Updates to prw.rmCache are deferred to commitRMCache so that a failed request or failed ConsumeMetrics call does not mutate the cache.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
+		targetInfoModified     = make(map[uint64]bool)
 
 		// exemplarMap holds exemplars under the series key collectExemplars builds.
-		exemplarMap = collectExemplars(req, prw.settings, &stats)
+		exemplarMap          = collectExemplars(req, prw.settings)
+		droppedHistogramKeys = make(map[exemplarKey]struct{})
 
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
@@ -384,12 +391,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("error converting timeseries to labels: %w", err))
 			continue
 		}
+		if err := validateSeriesLabels(ls); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
-			continue
-		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
 			continue
 		}
 
@@ -411,16 +419,17 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 			attrs := rm.Resource().Attributes()
 
-			// Add the remaining labels as resource attributes
+			// Add the remaining labels as resource attributes. Labels with an empty value are skipped
+			// here for the same reason as in extractAttributes: the data model treats them as absent,
+			// so they would only add empty resource attributes. For the same reason an empty value
+			// does not clear an attribute an earlier target_info put in the cache.
 			ls.Range(func(l labels.Label) {
-				if l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
+				if l.Value != "" && l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
 					attrs.PutStr(l.Name, l.Value)
 				}
 			})
 
-			snapshot := pmetric.NewResourceMetrics()
-			attrs.CopyTo(snapshot.Resource().Attributes())
-			prw.rmCache.Add(hashed, snapshot)
+			targetInfoModified[hashed] = true
 			// target_info is not stored as a metric but PRW requires the response
 			// to report all received samples, including target_info, to avoid a stats mismatch
 			stats.Samples += len(ts.Samples)
@@ -443,7 +452,21 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 				prw.logDroppedSeries(ls, "classic_histogram")
 				continue
 			}
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget)
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, droppedHistogramKeys, &bucketBudget); err != nil {
+				badRequestErrors = errors.Join(badRequestErrors, err)
+			}
+			continue
+		}
+
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_GAUGE,
+			writev2.Metadata_METRIC_TYPE_UNSPECIFIED,
+			writev2.Metadata_METRIC_TYPE_COUNTER,
+			writev2.Metadata_METRIC_TYPE_INFO,
+			writev2.Metadata_METRIC_TYPE_STATESET,
+			writev2.Metadata_METRIC_TYPE_SUMMARY:
+		default:
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 			continue
 		}
 
@@ -507,9 +530,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 				droppedSummarySeries++
 				prw.logDroppedSeries(ls, "summary")
 				continue
-			default:
-				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
-				continue
 			}
 			metricCache[metricKey] = metric
 		} else if len(metric.Description()) < len(description) {
@@ -518,28 +538,34 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			metric.SetDescription(description)
 		}
 
+		var dataPoints pmetric.NumberDataPointSlice
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
-			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
+			dataPoints = metric.Gauge().DataPoints()
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
-			dataPoints := metric.Sum().DataPoints()
-			before := dataPoints.Len()
-			addNumberDatapoints(dataPoints, ls, ts, &stats)
-			// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
-			// metric built from the same labels, differing only by type or unit, from publishing a copy.
-			if len(exemplarMap) > 0 && dataPoints.Len() > before {
-				key := makeExemplarKey(ls)
-				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
-					ex.CopyTo(dataPoints.At(before).Exemplars())
-					delete(exemplarMap, key)
-				}
+			dataPoints = metric.Sum().DataPoints()
+		}
+		before := dataPoints.Len()
+		addNumberDatapoints(dataPoints, ls, ts, &stats)
+		// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
+		// metric built from the same labels, differing only by type or unit, from publishing a copy.
+		if len(exemplarMap) > 0 && dataPoints.Len() > before {
+			key := makeExemplarKey(ls)
+			if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+				ex.CopyTo(dataPoints.At(before).Exemplars())
+				stats.Exemplars += ex.Len()
+				delete(exemplarMap, key)
 			}
+		}
+	}
 
-		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			// Drop summary series as we will not handle them.
-			continue
-		default:
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+	// Exemplars still in exemplarMap had no data point to attach to (for example when a
+	// TimeSeries carries exemplars without samples, or its series is a classic histogram or
+	// summary dropped by design). Count them as written, unless their series only had dropped
+	// or refused native histograms, so the sender does not report a partial write on a 2xx response.
+	for key, ex := range exemplarMap {
+		if _, dropped := droppedHistogramKeys[key]; !dropped {
+			stats.Exemplars += ex.Len()
 		}
 	}
 
@@ -556,7 +582,74 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedSummarySeries, droppedSummaryAttrs)
 	}
 
-	return otelMetrics, stats, badRequestErrors
+	// Snapshot newly created or target_info-modified resource attributes before returning
+	// otelMetrics so commitRMCache never reads from otelMetrics after ownership is transferred
+	// to nextConsumer.ConsumeMetrics. Cache hits without target_info only need their LRU
+	// recency updated via Get on commit.
+	type stagedRMEntry struct {
+		snapshot           pmetric.ResourceMetrics
+		hasSnapshot        bool
+		targetInfoModified bool
+	}
+	stagedRMCache := make(map[uint64]stagedRMEntry, len(modifiedResourceMetric))
+	for hashed, rm := range modifiedResourceMetric {
+		entry := stagedRMEntry{
+			targetInfoModified: targetInfoModified[hashed],
+		}
+		if entry.targetInfoModified || !prw.rmCache.Contains(hashed) {
+			entry.snapshot = pmetric.NewResourceMetrics()
+			rm.Resource().Attributes().CopyTo(entry.snapshot.Resource().Attributes())
+			entry.hasSnapshot = true
+		}
+		stagedRMCache[hashed] = entry
+	}
+	commitRMCache := func() {
+		for hashed, entry := range stagedRMCache {
+			if entry.targetInfoModified {
+				prw.rmCache.Add(hashed, entry.snapshot)
+				continue
+			}
+			// Touch existing entry to update LRU recency, or add the detached snapshot on cache miss.
+			if _, ok := prw.rmCache.Get(hashed); !ok && entry.hasSnapshot {
+				prw.rmCache.Add(hashed, entry.snapshot)
+			}
+		}
+	}
+
+	return otelMetrics, stats, commitRMCache, badRequestErrors
+}
+
+// validateSeriesLabels reports what makes a label set unreadable: an empty name, which cannot
+// become an OTLP attribute key, and a duplicate name, where the set does not say which value
+// applies.
+//
+// What the Prometheus data model equates with absence is normalized rather than refused: a label
+// with an empty value is dropped where it would have become an attribute, as if it were not there.
+// Refusing it would lose the series, since common senders such as Prometheus treat a 400 as
+// non-recoverable and do not retry the batch.
+//
+// An empty name is refused instead of dropped because every attribute it could feed would be
+// unnamed, so no part of the label can be kept. An exemplar label is the exception: it annotates a
+// data point rather than identifying a series, so an empty name costs only that one attribute and
+// the label is dropped (see copyExemplarAttributes). The bare otel_scope_ prefix is the mirror
+// image: only the attribute it would produce is unusable, so that one is dropped and the series is
+// kept (see extractScopeInfo).
+//
+// ToLabels returns the labels sorted, so duplicate names are adjacent.
+func validateSeriesLabels(ls labels.Labels) error {
+	emptyName := false
+	ls.Range(func(l labels.Label) {
+		if l.Name == "" {
+			emptyName = true
+		}
+	})
+	if emptyName {
+		return errors.New("empty label name in labels")
+	}
+	if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
+		return fmt.Errorf("duplicate label %q in labels", duplicateLabel)
+	}
+	return nil
 }
 
 // logDroppedSeries logs a series dropped by design at Debug, since a sender keeps sending these
@@ -581,8 +674,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
+	droppedHistogramKeys map[exemplarKey]struct{},
 	bucketBudget *histogramBucketBudget,
-) {
+) error {
 	attrs := extractAttributes(ls)
 
 	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
@@ -604,6 +698,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		scopeID      identity.Scope
 		scope        pmetric.ScopeMetrics
 		rm           pmetric.ResourceMetrics
+		invalid      error // refusals Prometheus' own validation makes too, which fail the request
 	)
 
 	for i := range ts.Histograms {
@@ -655,6 +750,14 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
 				zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
 			)
+			// The request fails as well when Prometheus' own validation refuses the histogram. The
+			// count is rebuilt here rather than checked, so Prometheus is given one that cannot
+			// disagree with the buckets.
+			structural := histogram.ToIntHistogram()
+			structural.Count, structural.Sum = math.MaxUint64, math.NaN()
+			if err := structural.Validate(); err != nil {
+				invalid = errors.Join(invalid, fmt.Errorf("invalid histogram for metric %q: %w", metricName, err))
+			}
 		}
 
 		// A stale marker still copies its bounds to the data point, so they are checked before it
@@ -779,9 +882,14 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 		exemplars.CopyTo(exemplarSlice)
+		stats.Exemplars += exemplars.Len()
 		delete(exemplarMap, exemplarsKey)
 		haveExemplars = false
 	}
+	if len(ts.Histograms) > 0 && haveExemplars {
+		droppedHistogramKeys[exemplarsKey] = struct{}{}
+	}
+	return invalid
 }
 
 // setMetric append a new empty metric and assign the name, unit and description to it.
@@ -800,11 +908,13 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 		dest.PutStr("service.instance.id", instance)
 	}
 	if job != "" {
-		parts := strings.Split(job, "/")
-		if len(parts) == 2 {
-			dest.PutStr("service.namespace", parts[0])
-			dest.PutStr("service.name", parts[1])
-			return
+		if !metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.IsEnabled() {
+			parts := strings.Split(job, "/")
+			if len(parts) == 2 {
+				dest.PutStr("service.namespace", parts[0])
+				dest.PutStr("service.name", parts[1])
+				return
+			}
 		}
 		dest.PutStr("service.name", job)
 	}
@@ -1219,12 +1329,21 @@ func appendGap(buckets pcommon.UInt64Slice, nextAppend, index int64) int64 {
 	return index + 1
 }
 
-// extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
+// extractAttributes returns metric data point attributes, excluding job, instance, metric name, all
+// otel_scope_* labels, and labels with an empty value, which the Prometheus data model treats as
+// absent.
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	// job, instance and metric name will always become labels
+	// An upper bound: job, instance, the metric name and labels with an empty value all drop out.
 	attrs.EnsureCapacity(ls.Len() - 3)
 	ls.Range(func(l labels.Label) {
+		if l.Value == "" {
+			// An empty label value is not copied to an attribute: the Prometheus data model treats it
+			// as an absent label, and the Prometheus/OTLP compatibility spec excludes such labels
+			// from the metric labels that become data point attributes.
+			// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+			return
+		}
 		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
 			l.Name != model.MetricNameLabel && // Becomes metric name
 			!strings.HasPrefix(l.Name, "otel_scope_") { // Become instrumentation scope fields
@@ -1235,7 +1354,8 @@ func extractAttributes(ls labels.Labels) pcommon.Map {
 }
 
 // extractScopeInfo extracts all otel_scope_* labels into a scopeInfo per the Prometheus/OTLP compatibility spec.
-// Falls back to receiver build info when otel_scope_name is absent.
+// Falls back to receiver build info when otel_scope_name is absent or empty, since an empty label value is
+// the same as an absent label in the Prometheus data model.
 func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) scopeInfo {
 	si := scopeInfo{
 		Name:    prw.settings.BuildInfo.Description,
@@ -1243,19 +1363,22 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 	}
 
 	ls.Range(func(l labels.Label) {
+		if l.Value == "" {
+			// An empty label value means an absent label, so it sets no scope field: an absent
+			// otel_scope_name falls back to the build info above.
+			return
+		}
 		switch l.Name {
 		case "otel_scope_name":
-			if l.Value != "" {
-				si.Name = l.Value
-			}
+			si.Name = l.Value
 		case "otel_scope_version":
-			if l.Value != "" {
-				si.Version = l.Value
-			}
+			si.Version = l.Value
 		case "otel_scope_schema_url":
 			si.SchemaURL = l.Value
 		default:
-			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok {
+			// A label named exactly otel_scope_ leaves no key once the prefix is stripped, and an
+			// empty attribute key cannot be emitted, so the label is dropped like an empty value.
+			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok && attrKey != "" {
 				si.scopeAttrs = append(si.scopeAttrs, attribute{Key: attrKey, Value: l.Value})
 			}
 		}

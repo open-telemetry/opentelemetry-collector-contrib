@@ -35,10 +35,10 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -108,7 +108,7 @@ var (
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
 	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
-	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+	_ extensioncapabilities.ComponentStatusWatcher = (*opampAgent)(nil)
 
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
@@ -287,8 +287,8 @@ func (o *opampAgent) NotReady() error {
 	return nil
 }
 
-// ComponentStatusChanged implements the componentstatus.Watcher interface.
-func (o *opampAgent) ComponentStatusChanged(
+// Changed implements the extensioncapabilities.ComponentStatusWatcher interface.
+func (o *opampAgent) Changed(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {

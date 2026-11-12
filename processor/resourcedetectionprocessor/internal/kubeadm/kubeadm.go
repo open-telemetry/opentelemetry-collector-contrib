@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -17,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
@@ -31,33 +33,58 @@ var _ internal.Detector = (*detector)(nil)
 // SDK detector so that the attributes reported here match the ones the collector's own
 // telemetry reports.
 type detector struct {
+	apiConfig k8sconfigtypes.APIConfig
+	// mu guards detector, which is created on first use by getDetector so that the
+	// detector can be built outside Kubernetes.
+	mu                    sync.Mutex
 	detector              sdkresource.Detector
 	logger                *zap.Logger
 	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
+// NewDetector returns a kubeadm detector. The Kubernetes client is created on the
+// first Detect call, so the detector can be built outside Kubernetes.
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
+	if err := cfg.APIConfig.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &detector{
+		apiConfig:             cfg.APIConfig,
+		logger:                set.Logger,
+		resourceAttributes:    cfg.ResourceAttributes,
+		failOnMissingMetadata: failOnMissingMetadata,
+	}, nil
+}
+
+// getDetector returns the SDK detector, creating it and its Kubernetes client if they
+// don't exist yet. A failure is not cached, so the next Detect call tries again.
+func (d *detector) getDetector() (sdkresource.Detector, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.detector != nil {
+		return d.detector, nil
+	}
+
+	if err := internal.CheckInClusterEnv(d.apiConfig); err != nil {
+		return nil, err
+	}
 
 	// The client is built here rather than by the SDK detector so that the configured
 	// auth_type and kubeconfig keep applying.
-	client, err := makeClient(k8sconfig.FromConfigTypes(cfg.APIConfig))
+	client, err := makeClient(k8sconfig.FromConfigTypes(d.apiConfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed creating Kubernetes client: %w", err)
 	}
 
 	var sdkDetector sdkresource.Detector = kubeadmdetector.NewResourceDetector(kubeadmdetector.WithKubeClient(client))
-	if failOnMissingMetadata {
+	if d.failOnMissingMetadata {
 		sdkDetector = strictDetector{sdkDetector}
 	}
-
-	return &detector{
-		detector:              sdkDetector,
-		logger:                set.Logger,
-		resourceAttributes:    cfg.ResourceAttributes,
-		failOnMissingMetadata: failOnMissingMetadata,
-	}, nil
+	d.detector = sdkDetector
+	return sdkDetector, nil
 }
 
 // strictDetector reports a partial result as a failure. Each kubeadm attribute comes
@@ -77,10 +104,21 @@ func (s strictDetector) Detect(ctx context.Context) (*sdkresource.Resource, erro
 }
 
 func (d *detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	sdkDetector, err := d.getDetector()
+	if err != nil {
+		// Outside Kubernetes there is nothing to detect. Any other failure to create the
+		// client is reported whatever fail_on_missing_metadata says, as NewDetector used to.
+		if !errors.Is(err, internal.ErrNotInKubernetes) || d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
+		d.logger.Debug("kubeadm metadata unavailable", zap.Error(err))
+		return pcommon.NewResource(), "", nil
+	}
+
 	// Detection runs unfiltered so that an empty result answers "is this a kubeadm
 	// cluster?"; the configured attributes are applied afterwards. Unless
 	// fail_on_missing_metadata is set, the bridge keeps a partial result.
-	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
+	res, schemaURL, err := sdkbridge.Detect(ctx, sdkDetector)
 	if err != nil {
 		d.logger.Debug("kubeadm metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {

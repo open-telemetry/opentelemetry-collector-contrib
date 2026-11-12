@@ -7,24 +7,33 @@ package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	ecsdetector "go.opentelemetry.io/contrib/detectors/alibaba/ecs"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	ecsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
+
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return ecsdetector.NewResourceDetector()
+}
 
 var _ internal.Detector = (*Detector)(nil)
 
-// Detector queries the Alibaba Cloud ECS metadata service and emits resource attributes.
+// Detector is an Alibaba Cloud ECS metadata detector. Detection is delegated to the
+// upstream SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
-	metadataProvider      ecsprovider.Provider
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -33,15 +42,21 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig, failOnMis
 	cfg := dcfg.(Config)
 
 	return &Detector{
+		detector:              newResourceDetector(),
 		logger:                set.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		metadataProvider:      ecsprovider.NewProvider(),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	meta, err := d.metadataProvider.Metadata(ctx)
+// Detect queries the Alibaba Cloud ECS metadata service and returns a populated resource.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	// Detection runs unfiltered so that an empty result answers "is this process on an ECS
+	// instance?"; the configured attributes are applied afterwards. A partial result still
+	// came from a reachable metadata service, so the bridge keeps what it did return.
+	// fail_on_missing_metadata covers an unusable metadata service, not individual fields
+	// absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
 		d.logger.Debug("Alibaba Cloud ECS metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
@@ -50,15 +65,16 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.CloudProviderAlibabaCloud.Value.AsString())
-	d.rb.SetCloudPlatform(conventions.CloudPlatformAlibabaCloudECS.Value.AsString())
-	d.rb.SetCloudAccountID(meta.OwnerAccountID)
-	d.rb.SetCloudRegion(meta.RegionID)
-	d.rb.SetCloudAvailabilityZone(meta.ZoneID)
-	d.rb.SetHostID(meta.InstanceID)
-	d.rb.SetHostName(meta.Hostname)
-	d.rb.SetHostImageID(meta.ImageID)
-	d.rb.SetHostType(meta.InstanceType)
+	// The SDK detector reports an empty resource and no error when the metadata service
+	// cannot be reached or something else answered the token request.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("Alibaba Cloud ECS detector: metadata unavailable or not running on an ECS instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("alibaba_ecs metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
+	}
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }
