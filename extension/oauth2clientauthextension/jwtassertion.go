@@ -28,7 +28,7 @@ func parseSigningMethod(alg string) (*jwt.SigningMethodRSA, error) {
 	case jwt.SigningMethodRS512.Name:
 		return jwt.SigningMethodRS512, nil
 	default:
-		return nil, errInvalidSignatureAlg
+		return nil, fmt.Errorf("signature algorithm %q: %w", alg, errInvalidSignatureAlg)
 	}
 }
 
@@ -120,7 +120,7 @@ func postTokenRequest(ctx context.Context, tokenURL string, v, endpointParams ur
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %w", err)
 	}
-	if c := resp.StatusCode; c < 200 || c > 299 {
+	if resp.StatusCode/100 != 2 {
 		return nil, &oauth2.RetrieveError{
 			Response: resp,
 			Body:     body,

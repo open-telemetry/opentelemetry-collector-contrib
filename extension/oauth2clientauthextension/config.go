@@ -4,6 +4,7 @@
 package oauth2clientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"net/url"
@@ -128,10 +129,10 @@ func (cfg *Config) Validate() error {
 	switch cfg.TokenEndpointAuthMethod {
 	case "", authMethodClientSecretBasic, authMethodClientSecretPost, authMethodPrivateKeyJWT:
 	default:
-		return fmt.Errorf("%w %q", errInvalidAuthMethod, cfg.TokenEndpointAuthMethod)
+		return fmt.Errorf("auth method %q: %w", cfg.TokenEndpointAuthMethod, errInvalidAuthMethod)
 	}
-	hasKey := cfg.ClientCertificateKey != "" || cfg.ClientCertificateKeyFile != ""
-	hasSecret := cfg.ClientSecret != "" || cfg.ClientSecretFile != ""
+	hasKey := cmp.Or(string(cfg.ClientCertificateKey), cfg.ClientCertificateKeyFile) != ""
+	hasSecret := cmp.Or(string(cfg.ClientSecret), cfg.ClientSecretFile) != ""
 	switch {
 	case cfg.GrantType == grantTypeJWTBearer:
 		if cfg.TokenEndpointAuthMethod != "" {
