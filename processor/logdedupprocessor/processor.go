@@ -144,7 +144,6 @@ func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Lo
 			if err := nextConsumer.ConsumeLogs(exportCtx, logs); err != nil {
 				logger.Error("failed to consume logs", zap.Error(err))
 			}
-			shard.aggregator.Reset()
 		}
 	}
 }

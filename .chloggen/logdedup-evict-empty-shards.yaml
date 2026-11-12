@@ -7,7 +7,7 @@ change_type: bug_fix
 component: processor/log_dedup
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Evict flushed shards from multiShardAggregator to prevent memory leaks and permanent rejection under metadata_cardinality_limit.
+note: Release metadata combinations after each flush so `metadata_cardinality_limit` no longer permanently rejects new combinations and idle combinations no longer hold memory.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [53053]

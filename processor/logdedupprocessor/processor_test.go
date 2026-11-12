@@ -538,8 +538,8 @@ func TestMetadataKeysCardinalityLimitAfterFlush(t *testing.T) {
 	// First tenant is accepted.
 	require.NoError(t, p.ConsumeLogs(metadataContext(t, "tenant-a"), newSimpleLog()))
 
-	// Wait for tenant-a to be exported and reset.
-	assert.Eventually(t, func() bool {
+	// Wait for tenant-a to be exported.
+	require.Eventually(t, func() bool {
 		return sink.logRecordCount() == 1
 	}, 1*time.Second, 10*time.Millisecond)
 
