@@ -101,6 +101,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/exporter v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/extension v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.165.1-0.20261112090518-6cdf06bb71bc // indirect

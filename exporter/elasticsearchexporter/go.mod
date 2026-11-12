@@ -9,7 +9,7 @@ require (
 	github.com/elastic/go-docappender/v2 v2.15.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/lestrrat-go/strftime v1.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
@@ -85,6 +85,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/config/configretry v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/consumer v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
