@@ -30,13 +30,13 @@ The following settings can be optionally configured:
 - `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
   - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
   - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
-- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Can be disabled entirely via the `exporter.prometheus.DisableResourceToTelemetryConversion` feature gate.
+- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Disabled by default via the `exporter.prometheus.DisableResourceToTelemetryConversion` feature gate.
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is setting `included: ["*"]`.
   - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
 - `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
-- `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead. This setting is ignored when `translation_strategy` is explicitly set.
-- `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over `add_metric_suffixes`. Available options:
+- `add_metric_suffixes`: (default = `true`): **Deprecated and ignored**: The `exporter.prometheusexporter.DisableAddMetricSuffixes` feature gate is now stable, so `add_metric_suffixes` is always ignored and `translation_strategy` is used instead.
+- `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Available options:
   - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
   - `UnderscoreEscapingWithoutSuffixes`: Metric names will continue to escape special characters to `_`, but suffixes won't be attached.
   - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.
@@ -59,11 +59,10 @@ exporters:
     send_timestamps: true
     metric_expiration: 180m
     enable_open_metrics: true
-    # Legacy configuration - deprecated, ignored when translation_strategy is set
-    add_metric_suffixes: false
     translation_strategy: "UnderscoreEscapingWithoutSuffixes"
-    resource_to_telemetry_conversion:
-      enabled: true
+    resource_constant_labels:
+      included:
+        - "*"
 ```
 
 Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.

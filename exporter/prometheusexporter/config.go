@@ -53,11 +53,10 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
 	//
-	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
+	// Deprecated: This setting is ignored and TranslationStrategy is always used.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
-	// When set, this takes precedence over AddMetricSuffixes.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
 }
 

@@ -8,7 +8,7 @@ import (
 
 var ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheus.DisableResourceToTelemetryConversion",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the deprecated resource_to_telemetry_conversion section and legacy conversion fields are disabled, and resource_constant_labels must be used instead"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861"),
 	featuregate.WithRegisterFromVersion("v0.160.0"),
@@ -16,8 +16,9 @@ var ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate = featureg
 
 var ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusexporter.DisableAddMetricSuffixes",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 	featuregate.WithRegisterFromVersion("v0.132.0"),
+	featuregate.WithRegisterToVersion("v0.167.0"),
 )
