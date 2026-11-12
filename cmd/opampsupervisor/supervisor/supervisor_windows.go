@@ -21,11 +21,15 @@ import (
 )
 
 type windowsService struct {
-	sup *Supervisor
+	sup  *Supervisor
+	opts []Option
 }
 
-func NewSvcHandler() svc.Handler {
-	return &windowsService{}
+// NewSvcHandler returns the Windows service handler. opts are passed to
+// NewSupervisor, so a distribution registers its addon types on this path the
+// same way it does for interactive runs.
+func NewSvcHandler(opts ...Option) svc.Handler {
+	return &windowsService{opts: opts}
 }
 
 func (ws *windowsService) Execute(args []string, requests <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -79,7 +83,7 @@ func (ws *windowsService) start(elog *eventlog.Log) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	sup, err := NewSupervisor(context.Background(), logger, cfg)
+	sup, err := NewSupervisor(context.Background(), logger, cfg, ws.opts...)
 	if err != nil {
 		return fmt.Errorf("new supervisor: %w", err)
 	}
