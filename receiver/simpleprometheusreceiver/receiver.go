@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -108,6 +109,11 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 			logger.Warn("tls settings have no equivalent in the prometheus scrape config and are ignored",
 				zap.Strings("settings", keys))
 		}
+	}
+
+	if keys := unsupportedHTTPSettings(cfg.ClientConfig); len(keys) > 0 {
+		logger.Warn("http client settings are not applied to the prometheus scrape and are ignored",
+			zap.Strings("settings", keys))
 	}
 
 	if bearerTokenFile != "" {
@@ -208,6 +214,57 @@ func unsupportedTLSSettings(tls configtls.ClientConfig) []string {
 	// listed because the prometheus client re-reads changed files on its own.
 	if tls.TPMConfig.Enabled {
 		keys = append(keys, "tpm")
+	}
+	return keys
+}
+
+// unsupportedHTTPSettings returns the keys of the http client settings that are
+// set to a non-default value but not applied to the prometheus scrape. The tls
+// settings are checked by unsupportedTLSSettings.
+func unsupportedHTTPSettings(cc confighttp.ClientConfig) []string {
+	defaults := confighttp.NewDefaultClientConfig()
+	var keys []string
+	if cc.DialerMiddleware.HasValue() {
+		keys = append(keys, "dialer_middleware")
+	}
+	if cc.ReadBufferSize != 0 {
+		keys = append(keys, "read_buffer_size")
+	}
+	if cc.WriteBufferSize != 0 {
+		keys = append(keys, "write_buffer_size")
+	}
+	if cc.Auth.HasValue() {
+		keys = append(keys, "auth")
+	}
+	if cc.Compression != "" {
+		keys = append(keys, "compression")
+	}
+	if cc.CompressionParams != defaults.CompressionParams {
+		keys = append(keys, "compression_params")
+	}
+	if cc.MaxConnsPerHost != 0 {
+		keys = append(keys, "max_conns_per_host")
+	}
+	if cc.HTTP2ReadIdleTimeout != 0 {
+		keys = append(keys, "http2_read_idle_timeout")
+	}
+	if cc.HTTP2PingTimeout != 0 {
+		keys = append(keys, "http2_ping_timeout")
+	}
+	if cc.Cookies.HasValue() {
+		keys = append(keys, "cookies")
+	}
+	if cc.ForceAttemptHTTP2 != defaults.ForceAttemptHTTP2 {
+		keys = append(keys, "force_attempt_http2")
+	}
+	if len(cc.Middlewares) > 0 {
+		keys = append(keys, "middlewares")
+	}
+	// The default keeps keep-alives enabled; disabling them or changing their
+	// limits has no effect on the prometheus client.
+	if cc.Keepalive.HasValue() != defaults.Keepalive.HasValue() ||
+		(cc.Keepalive.HasValue() && *cc.Keepalive.Get() != *defaults.Keepalive.Get()) {
+		keys = append(keys, "keepalive")
 	}
 	return keys
 }

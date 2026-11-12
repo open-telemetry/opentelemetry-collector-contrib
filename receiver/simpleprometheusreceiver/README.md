@@ -67,7 +67,8 @@ Certificate, key and CA files are re-read when they change, so
   are not used.
 
 Other HTTP client settings that the configuration accepts, such as `auth` and
-`compression`, are not applied to the scrape.
+`compression`, are not applied to the scrape. Setting one of them to a
+non-default value logs a warning at start that names it.
 
 Example:
 
